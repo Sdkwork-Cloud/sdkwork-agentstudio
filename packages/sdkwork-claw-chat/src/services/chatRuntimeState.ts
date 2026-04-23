@@ -1,13 +1,19 @@
 import type { KernelChatAuthorityKind } from '@sdkwork/claw-types';
 import type { KernelChatAdapterCapabilities } from './kernelChatAdapter.ts';
 import type { InstanceChatRouteMode } from './instanceChatRouteService.ts';
+import { resolveGatewayAuthoritativeKernelChat } from './kernelChatAuthorityPolicy.ts';
 
 export interface ChatRuntimeState {
   hasResolvedContext: boolean;
   authorityKind: KernelChatAuthorityKind | null;
   isBlocked: boolean;
   isChatAvailable: boolean;
-  isOpenClawGateway: boolean;
+  isGatewayAuthority: boolean;
+  agentCatalogMode: 'sharedCatalog' | 'kernelCatalog';
+  sessionScopeMode: 'all' | 'agentBound';
+  sendMode: 'local' | 'gateway';
+  newSessionModelMode: 'modelName' | 'modelId';
+  supportsSessionScopeSync: boolean;
   routeLabelKey:
     | 'chat.page.route.unsupported'
     | 'chat.page.route.gateway'
@@ -31,8 +37,15 @@ export function resolveChatRuntimeState(
     !hasSelectedInstance || Boolean(input.routeMode && input.adapterCapabilities);
   const authorityKind =
     input.sessionState?.authorityKind ?? input.adapterCapabilities?.authorityKind ?? null;
-  const isOpenClawGateway =
-    input.adapterCapabilities?.adapterId === 'openclawGateway' || authorityKind === 'gateway';
+  const isGatewayAuthority = resolveGatewayAuthoritativeKernelChat({
+    adapterCapabilities: input.adapterCapabilities,
+    sessionAuthorityKind: authorityKind,
+  });
+  const agentCatalogMode = isGatewayAuthority ? 'kernelCatalog' : 'sharedCatalog';
+  const sessionScopeMode = isGatewayAuthority ? 'agentBound' : 'all';
+  const sendMode = isGatewayAuthority ? 'gateway' : 'local';
+  const newSessionModelMode = isGatewayAuthority ? 'modelId' : 'modelName';
+  const supportsSessionScopeSync = sessionScopeMode === 'agentBound';
   const isAdapterSupported =
     !hasSelectedInstance || input.adapterCapabilities?.supported !== false;
   const isRouteReady =
@@ -45,10 +58,15 @@ export function resolveChatRuntimeState(
     authorityKind,
     isBlocked,
     isChatAvailable: !isBlocked,
-    isOpenClawGateway,
+    isGatewayAuthority,
+    agentCatalogMode,
+    sessionScopeMode,
+    sendMode,
+    newSessionModelMode,
+    supportsSessionScopeSync,
     routeLabelKey: isBlocked
       ? 'chat.page.route.unsupported'
-      : isOpenClawGateway
+      : isGatewayAuthority
         ? 'chat.page.route.gateway'
         : 'chat.page.route.direct',
   };

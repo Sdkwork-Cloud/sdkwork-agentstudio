@@ -1,5 +1,5 @@
 import React, { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Copy,
@@ -14,7 +14,11 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { useInstanceStore } from '@sdkwork/claw-core';
+import {
+  instanceDirectoryService,
+  type CreateKernelAgentResult,
+  useInstanceStore,
+} from '@sdkwork/claw-core';
 import { openDiagnosticPath, openExternalUrl, runtime } from '@sdkwork/claw-infrastructure';
 import {
   Button,
@@ -49,6 +53,7 @@ import {
 import {
   applyInstanceDetailInstanceSwitchResetState,
   buildOpenClawAgentDialogStateHandlers,
+  createOpenClawAgentCreateDialogState,
   applyInstanceDetailAgentWorkbenchSyncState,
   createInstanceDetailAgentMutationExecutors,
   createInstanceDetailAgentSkillMutationExecutors,
@@ -122,7 +127,7 @@ import {
   instanceService,
   instanceWorkbenchService,
   shouldRefreshWorkbenchForBuiltInOpenClawStatusChange,
-  type InstanceDetailSource,
+  type InstanceDetailPageProps,
   type OpenClawAgentFormState,
 } from '../services';
 import type {
@@ -132,14 +137,27 @@ import type {
   InstanceWorkbenchSnapshot,
 } from '../types';
 
+const INSTANCE_DETAIL_DEEP_LINK_SECTIONS = new Set<InstanceWorkbenchSectionId>([
+  'overview',
+  'channels',
+  'cronTasks',
+  'llmProviders',
+  'agents',
+  'skills',
+  'files',
+  'memory',
+  'tools',
+  'config',
+]);
+
 export function OpenClawInstanceDetailPage({
   source,
-}: {
-  source?: InstanceDetailSource;
-} = {}) {
+  onOpenAgentMarketModal,
+}: InstanceDetailPageProps) {
   const { t } = useTranslation();
   const { id: routeInstanceId } = useParams<{ id: string }>();
-  const id = source?.instanceId ?? routeInstanceId;
+  const [searchParams] = useSearchParams();
+  const id = source.instanceId ?? routeInstanceId;
   const navigate = useNavigate();
   const { activeInstanceId, setActiveInstanceId } = useInstanceStore();
   const [activeSection, setActiveSection] = useState<InstanceWorkbenchSectionId>('overview');
@@ -197,6 +215,7 @@ export function OpenClawInstanceDetailPage({
   const [dreamingError, setDreamingError] = useState<string | null>(null);
   const [isSavingDreaming, setIsSavingDreaming] = useState(false);
   const [isRetryingBundledStartup, setIsRetryingBundledStartup] = useState(false);
+  const [isAgentCreationWorkflowOpen, setIsAgentCreationWorkflowOpen] = useState(false);
   const [isAgentDialogOpen, setIsAgentDialogOpen] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [selectedAgentWorkbench, setSelectedAgentWorkbench] =
@@ -212,6 +231,8 @@ export function OpenClawInstanceDetailPage({
   const [isInstallingAgentSkill, setIsInstallingAgentSkill] = useState(false);
   const [updatingAgentSkillKeys, setUpdatingAgentSkillKeys] = useState<string[]>([]);
   const [removingAgentSkillKeys, setRemovingAgentSkillKeys] = useState<string[]>([]);
+  const requestedSectionId = searchParams.get('section')?.trim() ?? null;
+  const requestedAgentId = searchParams.get('agentId')?.trim() ?? null;
   const loadWorkbenchRequestRef = useRef<ReturnType<typeof startLoadInstanceDetailWorkbench> | null>(null);
   const consoleErrorReporters = createInstanceDetailConsoleErrorReporters({
     console,
@@ -239,7 +260,7 @@ export function OpenClawInstanceDetailPage({
       setConfig,
       setIsLoading,
       loadWorkbench: async (instanceId) => (
-        source?.instanceId === instanceId
+        source.instanceId === instanceId
           ? getOpenClawWorkbenchFromModulePayload(await source.loadModulePayload())
               ?? await instanceWorkbenchService.getInstanceWorkbench(instanceId)
               ?? null
@@ -266,6 +287,22 @@ export function OpenClawInstanceDetailPage({
 
     void loadWorkbench(id);
   }, [id]);
+
+  useEffect(() => {
+    if (!requestedSectionId || !INSTANCE_DETAIL_DEEP_LINK_SECTIONS.has(requestedSectionId as InstanceWorkbenchSectionId)) {
+      return;
+    }
+
+    setActiveSection(requestedSectionId as InstanceWorkbenchSectionId);
+  }, [requestedSectionId]);
+
+  useEffect(() => {
+    if (!requestedAgentId) {
+      return;
+    }
+
+    setSelectedAgentId(requestedAgentId);
+  }, [requestedAgentId]);
 
   const handleBuiltInOpenClawStatusChanged = useEffectEvent(
     (event: { instanceId: string }) => {
@@ -422,26 +459,6 @@ export function OpenClawInstanceDetailPage({
   }, [workbench?.agents]);
 
   useEffect(() => {
-    const workbenchLoaderBindings = createInstanceDetailWorkbenchLoaderBindings({
-      agentWorkbenchService,
-      instanceWorkbenchService,
-    });
-
-    return startLoadInstanceDetailAgentWorkbench({
-      activeSection,
-      instanceId: id,
-      workbench,
-      selectedAgentId,
-      setSelectedAgentWorkbench,
-      setAgentWorkbenchError,
-      setIsAgentWorkbenchLoading,
-      loadAgentWorkbench: workbenchLoaderBindings.loadAgentWorkbench,
-      reportError: consoleErrorReporters.reportAgentWorkbenchLoadError,
-      fallbackErrorMessage: 'Failed to load agent detail.',
-    });
-  }, [activeSection, id, selectedAgentId, workbench]);
-
-  useEffect(() => {
     applyInstanceDetailInstanceSwitchResetState({
       providerDialogResetDrafts: createOpenClawProviderDialogResetDrafts(),
       setIsWorkbenchFilesLoading,
@@ -474,6 +491,7 @@ export function OpenClawInstanceDetailPage({
       setDreamingDraft,
       setDreamingError,
       setIsSavingDreaming,
+      setIsAgentCreationWorkflowOpen,
       setIsAgentDialogOpen,
       setSelectedAgentId,
       setSelectedAgentWorkbench,
@@ -523,6 +541,7 @@ export function OpenClawInstanceDetailPage({
     ],
   );
   const {
+    workbench: displayWorkbench,
     detail,
     configFilePath,
     configChannels,
@@ -581,30 +600,45 @@ export function OpenClawInstanceDetailPage({
   });
 
   useEffect(() => {
+    return startLoadInstanceDetailAgentWorkbench({
+      activeSection,
+      instanceId: id,
+      workbench: displayWorkbench,
+      selectedAgentId,
+      setSelectedAgentWorkbench,
+      setAgentWorkbenchError,
+      setIsAgentWorkbenchLoading,
+      loadAgentWorkbench: workbenchLoaderBindings.loadAgentWorkbench,
+      reportError: consoleErrorReporters.reportAgentWorkbenchLoadError,
+      fallbackErrorMessage: 'Failed to load agent detail.',
+    });
+  }, [activeSection, displayWorkbench, id, selectedAgentId]);
+
+  useEffect(() => {
     return startLazyLoadInstanceWorkbenchFiles({
       activeSection,
       detail,
       instanceId: id,
-      workbench,
+      workbench: displayWorkbench,
       setIsLoading: setIsWorkbenchFilesLoading,
       setWorkbench,
       loadFiles: workbenchLoaderBindings.loadFiles,
       reportError: consoleErrorReporters.reportInstanceFilesLoadError,
     });
-  }, [activeSection, detail, id, workbench]);
+  }, [activeSection, detail, displayWorkbench, id]);
 
   useEffect(() => {
     return startLazyLoadInstanceWorkbenchMemory({
       activeSection,
       detail,
       instanceId: id,
-      workbench,
+      workbench: displayWorkbench,
       setIsLoading: setIsWorkbenchMemoryLoading,
       setWorkbench,
       loadMemories: workbenchLoaderBindings.loadMemories,
       reportError: consoleErrorReporters.reportInstanceMemoriesLoadError,
     });
-  }, [activeSection, detail, id, workbench]);
+  }, [activeSection, detail, displayWorkbench, id]);
   const editorTheme =
     typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
       ? 'vs-dark'
@@ -619,10 +653,43 @@ export function OpenClawInstanceDetailPage({
   const getSharedStatusLabel = createSharedStatusLabelGetter(t);
   const detailNavigationHandlers = buildInstanceDetailNavigationHandlers({
     instance,
-    instanceId: id,
     navigate,
+    openAgentMarketModal: () => {
+      onOpenAgentMarketModal({
+        instanceId: id ?? null,
+        onInstalled: async (result: CreateKernelAgentResult) => {
+          if (!id || result.instanceId !== id) {
+            return;
+          }
+
+          setSelectedAgentId(result.agentId);
+          await loadWorkbench(result.instanceId, {
+            withSpinner: false,
+            preserveStateOnError: true,
+          });
+        },
+      });
+    },
     setActiveInstanceId,
   });
+  const handleAgentCreated = useEffectEvent(async (result: CreateKernelAgentResult) => {
+    if (!id || result.instanceId !== id) {
+      return;
+    }
+
+    setSelectedAgentId(result.agentId);
+    await loadWorkbench(result.instanceId, {
+      withSpinner: false,
+      preserveStateOnError: true,
+    });
+  });
+  const openAgentCreationWorkflow = () => {
+    const dialogState = createOpenClawAgentCreateDialogState();
+
+    setEditingAgentId(dialogState.editingAgentId);
+    setAgentDialogDraft(dialogState.draft);
+    setIsAgentCreationWorkflowOpen(true);
+  };
 
   const agentDialogStateHandlers = buildOpenClawAgentDialogStateHandlers({
     selectedAgentWorkbench,
@@ -631,6 +698,7 @@ export function OpenClawInstanceDetailPage({
     setIsAgentDialogOpen,
   });
   const agentMutationStateBindings = createInstanceDetailAgentMutationStateBindings({
+    setIsAgentCreationWorkflowOpen,
     setIsAgentDialogOpen,
     setEditingAgentId,
     setAgentDeleteId,
@@ -724,11 +792,23 @@ export function OpenClawInstanceDetailPage({
     agentDeleteId,
     clearAgentDeleteId: agentMutationStateBindings.clearAgentDeleteId,
     executeMutation: runAgentMutation,
+    afterSaveSuccess: async (agent, kind) => {
+      if (kind !== 'create' || !id) {
+        return;
+      }
+
+      await handleAgentCreated({
+        instanceId: id,
+        kernelId: displayWorkbench?.detail.instance.runtimeKind || 'openclaw',
+        agentId: agent.id,
+        displayName: agent.name || agent.id,
+      });
+    },
     reportError: toastReporters.reportError,
     t,
   });
 
-  const runLifecycleAction = createInstanceLifecycleActionRunner({
+  const baseRunLifecycleAction = createInstanceLifecycleActionRunner({
     reloadWorkbench: workbenchReloadHandlers.reloadWorkbenchImmediately,
     reportSuccess: toastReporters.reportSuccess,
     reportError: toastReporters.reportError,
@@ -737,6 +817,24 @@ export function OpenClawInstanceDetailPage({
   const lifecycleMutationExecutors = createInstanceDetailLifecycleMutationExecutors({
     instanceService,
   });
+  const runLifecycleAction = async (request: {
+    instanceId: string;
+    execute: (instanceId: string) => Promise<void>;
+    successKey: string;
+    failureKey: string;
+  }) => {
+    const didSucceed = await baseRunLifecycleAction(request);
+    if (
+      didSucceed &&
+      (request.successKey === 'instances.detail.toasts.started' ||
+        request.successKey === 'instances.detail.toasts.restarted' ||
+        request.successKey === 'instances.detail.toasts.retriedBundledStartup')
+    ) {
+      setActiveInstanceId(request.instanceId);
+    }
+    await instanceDirectoryService.refresh().catch(() => undefined);
+    return didSucceed;
+  };
   const lifecycleActionHandlers = buildInstanceLifecycleActionHandlers({
     instanceId: id,
     runLifecycleAction,
@@ -903,7 +1001,7 @@ export function OpenClawInstanceDetailPage({
   });
 
   const renderWorkbenchSectionAvailability = createInstanceDetailSectionAvailabilityRenderer({
-    workbench,
+    workbench: displayWorkbench,
     t,
     formatWorkbenchLabel,
     getCapabilityTone,
@@ -915,13 +1013,15 @@ export function OpenClawInstanceDetailPage({
   });
 
   const agentSectionProps = buildAgentSectionProps({
-    workbench,
+    workbench: displayWorkbench,
     selectedAgentWorkbench,
     agentWorkbenchError,
     selectedAgentId,
     onSelectedAgentIdChange: setSelectedAgentId,
-    onOpenAgentMarket: detailNavigationHandlers.onOpenAgentMarket,
-    onCreateAgent: agentDialogStateHandlers.openCreateAgentDialog,
+    instanceId: id,
+    instanceName: displayWorkbench?.instance.name || detail?.instance.name || '',
+    instanceKernelId: displayWorkbench?.detail.instance.runtimeKind || 'openclaw',
+    onOpenAgentCreationWorkflow: openAgentCreationWorkflow,
     onEditAgent: agentDialogStateHandlers.openEditAgentDialog,
     onRequestDeleteAgent: setAgentDeleteId,
     onInstallSkill: agentSkillMutationHandlers.onInstallAgentSkill,
@@ -933,16 +1033,19 @@ export function OpenClawInstanceDetailPage({
     isInstallingSkill: isInstallingAgentSkill,
     updatingAgentSkillKeys,
     removingAgentSkillKeys,
-    instanceId: id,
     loadWorkbench,
+    isAgentCreationWorkflowOpen,
     isAgentDialogOpen,
     editingAgentId,
     agentDialogDraft,
     availableAgentModelOptions,
     isSavingAgentDialog,
+    setIsAgentCreationWorkflowOpen,
     setIsAgentDialogOpen,
     setEditingAgentId,
     setAgentDialogDraft,
+    onAgentCreated: handleAgentCreated,
+    onSaveAgentCreation: agentMutationHandlers.onSaveAgentDialog,
     onSaveAgentDialog: agentMutationHandlers.onSaveAgentDialog,
     agentDeleteId,
     setAgentDeleteId,
@@ -950,7 +1053,7 @@ export function OpenClawInstanceDetailPage({
   });
 
   const llmProviderSectionProps = buildLlmProviderSectionProps({
-    workbench,
+    workbench: displayWorkbench,
     selectedProvider,
     selectedProviderDraft,
     selectedProviderRequestDraft,
@@ -1019,14 +1122,14 @@ export function OpenClawInstanceDetailPage({
   });
 
   const tasksSectionContent = buildTasksSectionContent({
-    workbench,
+    workbench: displayWorkbench,
     instanceId: id,
   });
 
   const memorySectionProps = buildMemoryWorkbenchSectionProps({
     isLoading: isWorkbenchMemoryLoading,
     loadingLabel: t('common.loading'),
-    workbench,
+    workbench: displayWorkbench,
     memoryWorkbenchState,
     configDreaming,
     dreamingDraft,
@@ -1047,7 +1150,7 @@ export function OpenClawInstanceDetailPage({
   });
 
   const toolsSectionProps = buildConfigToolsSectionProps({
-    workbench,
+    workbench: displayWorkbench,
     configWebSearch,
     webSearchSharedDraft,
     selectedWebSearchProvider,
@@ -1111,7 +1214,7 @@ export function OpenClawInstanceDetailPage({
     );
   }
 
-  if (!instance || !workbench || !config) {
+  if (!instance || !displayWorkbench || !config) {
     return (
       <div className="mx-auto max-w-6xl p-4 text-center md:p-8">
         <h2 className="mb-4 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -1162,13 +1265,13 @@ export function OpenClawInstanceDetailPage({
         <InstanceDetailWorkbenchChrome
           activeSection={activeSection}
           instance={instance}
-          workbench={workbench}
+          workbench={displayWorkbench}
           t={t}
           onSectionSelect={setActiveSection}
         >
           <InstanceDetailSectionContent
             activeSection={activeSection}
-            workbench={workbench}
+            workbench={displayWorkbench}
             detail={detail ?? null}
             managementSummary={managementSummary}
             canRetryBundledStartup={canRetryBundledStartup}

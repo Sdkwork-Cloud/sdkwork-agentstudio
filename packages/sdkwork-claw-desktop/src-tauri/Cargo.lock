@@ -4098,6 +4098,7 @@ checksum = "ab3f43e3283ab1488b624b44b0e988d0acea0b3214e694730a055cb6b2efa801"
 dependencies = [
  "base64 0.22.1",
  "bytes",
+ "futures-channel",
  "futures-core",
  "futures-util",
  "h2",
@@ -4458,10 +4459,13 @@ dependencies = [
 name = "sdkwork-claw-host-studio"
 version = "0.1.0"
 dependencies = [
+ "reqwest",
  "sdkwork-claw-host-core",
  "serde",
  "serde_json",
  "time",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -4484,10 +4488,13 @@ dependencies = [
 name = "sdkwork-local-api-proxy-native"
 version = "0.1.0"
 dependencies = [
+ "axum",
  "json5",
+ "reqwest",
  "rusqlite",
  "serde",
  "serde_json",
+ "tokio",
  "uuid",
 ]
 

@@ -79,38 +79,51 @@ runTest('sdkwork-claw-agent stays local and exposes a dedicated market surface',
   assert.match(pageSource, /agentMarket\.error\.retry/);
 });
 
-runTest('sdkwork-claw-agent installs standard OpenClaw agent workspaces and enables multi-agent collaboration', () => {
+runTest('sdkwork-claw-agent delegates shared catalog and install logic to @sdkwork/claw-core while keeping a local market surface', () => {
   const catalogSource = read('packages/sdkwork-claw-agent/src/services/agentCatalog.ts');
   const installServiceSource = read('packages/sdkwork-claw-agent/src/services/agentInstallService.ts');
+  const sharedCatalogSource = read('packages/sdkwork-claw-core/src/services/agentCatalog.ts');
+  const sharedInstallServiceSource = read('packages/sdkwork-claw-core/src/services/agentInstallService.ts');
 
-  assert.match(catalogSource, /'AGENTS\.md'/);
-  assert.match(catalogSource, /'BOOT\.md'/);
-  assert.match(catalogSource, /'SOUL\.md'/);
-  assert.match(catalogSource, /'TOOLS\.md'/);
-  assert.match(catalogSource, /'IDENTITY\.md'/);
-  assert.match(catalogSource, /'USER\.md'/);
-  assert.match(catalogSource, /'HEARTBEAT\.md'/);
-  assert.match(catalogSource, /'BOOTSTRAP\.md'/);
-  assert.match(catalogSource, /'MEMORY\.md'/);
-  assert.match(catalogSource, /memory\/YYYY-MM-DD\.md/);
-  assert.match(catalogSource, /skip heartbeat API calls/);
-  assert.doesNotMatch(catalogSource, /HEARTBEAT_OK/);
-  assert.match(installServiceSource, /studio\.listInstances/);
-  assert.match(installServiceSource, /openClawConfigService\.resolveInstanceConfigPath/);
-  assert.match(installServiceSource, /openClawConfigService\.resolveAgentPaths/);
-  assert.match(installServiceSource, /Promise\.allSettled/);
-  assert.match(installServiceSource, /buildAgentWorkspaceFiles/);
-  assert.match(installServiceSource, /ensureAgentWorkspaceSkeleton/);
-  assert.match(installServiceSource, /buildCoordinatorWorkspaceFiles/);
-  assert.match(installServiceSource, /isBuiltIn/);
-  assert.match(installServiceSource, /openClawConfigService\.saveAgent/);
-  assert.match(installServiceSource, /openClawConfigService\.configureMultiAgentSupport/);
-  assert.match(installServiceSource, /coordinatorAgentId: 'main'/);
-  assert.match(installServiceSource, /maxConcurrent: 4/);
-  assert.match(installServiceSource, /maxSpawnDepth: 2/);
-  assert.match(installServiceSource, /maxChildrenPerAgent: 5/);
-  assert.doesNotMatch(installServiceSource, /fetch\(/);
-  assert.doesNotMatch(installServiceSource, /axios\./);
+  assert.match(catalogSource, /from '@sdkwork\/claw-core';/);
+  assert.match(catalogSource, /AGENT_MARKET_TEMPLATES/);
+  assert.match(catalogSource, /buildAgentWorkspaceFiles/);
+  assert.match(catalogSource, /buildCoordinatorWorkspaceFiles/);
+  assert.match(catalogSource, /createAgentMarketCatalog/);
+  assert.match(installServiceSource, /from '@sdkwork\/claw-core';/);
+  assert.match(installServiceSource, /agentInstallService/);
+  assert.match(installServiceSource, /AgentInstallTarget/);
+  assert.doesNotMatch(catalogSource, /function buildWorkspaceFiles/);
+  assert.doesNotMatch(installServiceSource, /class AgentInstallService/);
+
+  assert.match(sharedCatalogSource, /'AGENTS\.md'/);
+  assert.match(sharedCatalogSource, /'BOOT\.md'/);
+  assert.match(sharedCatalogSource, /'SOUL\.md'/);
+  assert.match(sharedCatalogSource, /'TOOLS\.md'/);
+  assert.match(sharedCatalogSource, /'IDENTITY\.md'/);
+  assert.match(sharedCatalogSource, /'USER\.md'/);
+  assert.match(sharedCatalogSource, /'HEARTBEAT\.md'/);
+  assert.match(sharedCatalogSource, /'BOOTSTRAP\.md'/);
+  assert.match(sharedCatalogSource, /'MEMORY\.md'/);
+  assert.match(sharedCatalogSource, /memory\/YYYY-MM-DD\.md/);
+  assert.match(sharedCatalogSource, /skip heartbeat API calls/);
+  assert.doesNotMatch(sharedCatalogSource, /HEARTBEAT_OK/);
+  assert.match(sharedInstallServiceSource, /studio\.listInstances/);
+  assert.match(sharedInstallServiceSource, /openClawConfigService\.resolveInstanceConfigPath/);
+  assert.match(sharedInstallServiceSource, /openClawConfigService\.resolveAgentPaths/);
+  assert.match(sharedInstallServiceSource, /Promise\.allSettled/);
+  assert.match(sharedInstallServiceSource, /buildAgentWorkspaceFiles/);
+  assert.match(sharedInstallServiceSource, /ensureAgentWorkspaceSkeleton/);
+  assert.match(sharedInstallServiceSource, /buildCoordinatorWorkspaceFiles/);
+  assert.match(sharedInstallServiceSource, /isBuiltIn/);
+  assert.match(sharedInstallServiceSource, /openClawConfigService\.saveAgent/);
+  assert.match(sharedInstallServiceSource, /openClawConfigService\.configureMultiAgentSupport/);
+  assert.match(sharedInstallServiceSource, /coordinatorAgentId: 'main'/);
+  assert.match(sharedInstallServiceSource, /maxConcurrent: 4/);
+  assert.match(sharedInstallServiceSource, /maxSpawnDepth: 2/);
+  assert.match(sharedInstallServiceSource, /maxChildrenPerAgent: 5/);
+  assert.doesNotMatch(sharedInstallServiceSource, /fetch\(/);
+  assert.doesNotMatch(sharedInstallServiceSource, /axios\./);
 });
 
 runTest('sdkwork-claw-agent parity checks use the shared Node TypeScript runner for OpenClaw install flows', () => {
@@ -124,7 +137,7 @@ runTest('sdkwork-claw-agent parity checks use the shared Node TypeScript runner 
   assert.match(installServiceTestSource, /@sdkwork\/claw-core/);
   assert.match(
     workspacePackageJson,
-    /"check:sdkwork-agent"\s*:\s*"node scripts\/run-sdkwork-agent-check\.mjs"/,
+    /"check:sdkwork-agent"\s*:\s*"sdkwork-run-node scripts\/run-sdkwork-agent-check\.mjs"/,
   );
   assert.ok(exists('scripts/run-sdkwork-agent-check.mjs'));
   assert.ok(exists('scripts/run-node-typescript-check.mjs'));

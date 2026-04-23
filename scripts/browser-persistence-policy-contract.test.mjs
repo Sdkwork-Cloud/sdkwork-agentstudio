@@ -36,6 +36,6 @@ runTest('foundation runner executes the browser persistence policy unit coverage
 runTest('automation gate freezes the browser persistence policy contract', () => {
   assert.match(
     packageJson.scripts['check:automation'] ?? '',
-    /node scripts\/browser-persistence-policy-contract\.test\.mjs/,
+    /sdkwork-run-node scripts\/browser-persistence-policy-contract\.test\.mjs/,
   );
 });

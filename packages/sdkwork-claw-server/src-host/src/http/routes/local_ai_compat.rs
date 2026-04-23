@@ -21,7 +21,10 @@ pub fn local_ai_compat_routes() -> Router<ServerState> {
         .route("/v1/embeddings", any(forward_local_ai_request))
         .route("/v1/messages", any(forward_local_ai_request))
         .route("/v1beta/models", any(forward_local_ai_request))
-        .route("/v1beta/models/{model_action}", any(forward_local_ai_request))
+        .route(
+            "/v1beta/models/{model_action}",
+            any(forward_local_ai_request),
+        )
         .route("/v1/models/{model_action}", any(forward_local_ai_request))
 }
 
@@ -70,7 +73,11 @@ async fn forward_proxy_request(
         .path_and_query()
         .map(|value| value.as_str())
         .unwrap_or_else(|| uri.path());
-    let upstream_url = format!("{}{}", upstream_base_url.trim_end_matches('/'), path_and_query);
+    let upstream_url = format!(
+        "{}{}",
+        upstream_base_url.trim_end_matches('/'),
+        path_and_query
+    );
     let mut request = client.request(method, upstream_url);
 
     for (name, value) in headers.iter() {
@@ -289,6 +296,8 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time")
             .as_millis();
-        std::env::temp_dir().join(format!("sdkwork-claw-server-local-ai-routes-{label}-{timestamp}"))
+        std::env::temp_dir().join(format!(
+            "sdkwork-claw-server-local-ai-routes-{label}-{timestamp}"
+        ))
     }
 }

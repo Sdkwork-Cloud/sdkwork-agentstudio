@@ -373,23 +373,19 @@ export async function launchServerBundle({
 } = {}) {
   const normalizedPlatform = normalizeDesktopPlatform(platform);
   const launcherRelativePath = normalizedPlatform === 'windows'
-    ? 'bin/sdkwork-claw-server.exe'
-    : 'start-claw-server.sh';
+    ? 'bin/claw-server.exe'
+    : 'bin/claw-server';
   const launcherAbsolutePath = path.join(bundleRoot, launcherRelativePath);
   if (!existsSyncFn(launcherAbsolutePath)) {
     throw new Error(`Missing bundled server launcher: ${launcherAbsolutePath}`);
   }
 
-  const smokeDataDir = path.join(bundleRoot, '.smoke-data');
-  mkdirSync(smokeDataDir, { recursive: true });
   const childOptions = {
     cwd: bundleRoot,
     env: {
       ...process.env,
       CLAW_SERVER_HOST: '127.0.0.1',
       CLAW_SERVER_PORT: String(port),
-      CLAW_SERVER_DATA_DIR: smokeDataDir,
-      CLAW_SERVER_WEB_DIST: path.join(bundleRoot, 'web', 'dist'),
     },
     stdio: 'ignore',
     ...(normalizedPlatform === 'windows'
@@ -398,9 +394,7 @@ export async function launchServerBundle({
       }
       : {}),
   };
-  const child = normalizedPlatform === 'windows'
-    ? spawnFn(launcherAbsolutePath, [], childOptions)
-    : spawnFn('sh', [launcherAbsolutePath], childOptions);
+  const child = spawnFn(launcherAbsolutePath, [], childOptions);
 
   return {
     baseUrl: `http://127.0.0.1:${port}`,

@@ -637,9 +637,7 @@ mod tests {
         }
     }
 
-    fn openclaw_config_file_path(
-        paths: &crate::framework::paths::AppPaths,
-    ) -> std::path::PathBuf {
+    fn openclaw_config_file_path(paths: &crate::framework::paths::AppPaths) -> std::path::PathBuf {
         KernelRuntimeAuthorityService::new()
             .active_config_file_path("openclaw", paths)
             .unwrap_or_else(|_| {

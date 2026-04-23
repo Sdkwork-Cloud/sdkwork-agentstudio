@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import type { KernelChatMessage, StudioConversationAttachment } from '@sdkwork/claw-types';
 import { resolveKernelChatMessageState } from './kernelChatMessageState.ts';
 
@@ -17,11 +18,15 @@ function runTest(name: string, callback: () => void | Promise<void>) {
 function createKernelMessage(input: Partial<KernelChatMessage> = {}): KernelChatMessage {
   return {
     id: 'message-1',
-    sessionRef: {
-      kernelId: 'openclaw',
-      instanceId: 'instance-1',
-      sessionId: 'session-1',
-    },
+          sessionRef: {
+            kernelId: 'openclaw',
+            instanceId: 'instance-1',
+            sessionId: 'session-1',
+            nativeSessionId: 'native-session-1',
+            routingKey: 'agent:main:session-1',
+            agentId: 'main',
+            lineageParentSessionId: 'root-session',
+          },
     role: 'assistant',
     status: 'complete',
     createdAt: 100,
@@ -99,6 +104,11 @@ await runTest(
           runId: 'kernel-run',
           model: 'kernel-model',
           senderLabel: 'Kernel Sender',
+          nativeMetadata: {
+            upstreamId: 'openclaw-message-1',
+            seq: 7,
+            chunkCount: 2,
+          },
         }),
       }),
       {
@@ -113,9 +123,16 @@ await runTest(
         kernelId: 'openclaw',
         instanceId: 'instance-1',
         sessionId: 'session-1',
-        nativeSessionId: undefined,
-        routingKey: undefined,
-        agentId: undefined,
+        nativeSessionId: 'native-session-1',
+        routingKey: 'agent:main:session-1',
+        agentId: 'main',
+        lineageParentSessionId: 'root-session',
+        seq: 7,
+        nativeMetadata: {
+          upstreamId: 'openclaw-message-1',
+          seq: 7,
+          chunkCount: 2,
+        },
         attachments: [kernelAttachment],
         reasoning: 'Kernel reasoning',
         toolCards: [
@@ -127,10 +144,34 @@ await runTest(
           {
             kind: 'result',
             name: 'Search',
+            isError: false,
             preview: 'Found 3 release notes',
           },
         ],
+        notices: [],
       },
+    );
+  },
+);
+
+await runTest(
+  'resolveKernelChatMessageState falls back to the legacy message sequence when no kernel message is attached',
+  () => {
+    assert.equal(
+      resolveKernelChatMessageState({
+        id: 'legacy-seq-message',
+        role: 'assistant',
+        content: 'Legacy seq text',
+        timestamp: 80,
+        seq: 11,
+      } as {
+        id: string;
+        role: string;
+        content: string;
+        timestamp: number;
+        seq: number;
+      }).seq,
+      11,
     );
   },
 );
@@ -178,6 +219,8 @@ await runTest(
         nativeSessionId: undefined,
         routingKey: undefined,
         agentId: undefined,
+        lineageParentSessionId: undefined,
+        nativeMetadata: null,
         attachments: [legacyAttachment],
         reasoning: 'Legacy reasoning',
         toolCards: [
@@ -187,7 +230,52 @@ await runTest(
             detail: 'legacy detail',
           },
         ],
+        notices: [],
       },
     );
+  },
+);
+
+await runTest(
+  'resolveKernelChatMessageState keeps kernel notices separate from the main markdown content surface',
+  () => {
+    assert.deepEqual(
+      resolveKernelChatMessageState({
+        kernelMessage: createKernelMessage({
+          text: '',
+          parts: [
+            {
+              kind: 'notice',
+              code: 'tool-progress',
+              text: 'Tool execution moved to background replay.',
+              level: 'info',
+            },
+          ],
+        }),
+      }).notices,
+      [
+        {
+          code: 'tool-progress',
+          text: 'Tool execution moved to background replay.',
+          level: 'info',
+        },
+      ],
+    );
+  },
+);
+
+await runTest(
+  'kernelChatMessageState composes the shared kernel message parts presenter instead of inlining part parsing logic',
+  () => {
+    const source = readFileSync(new URL('./kernelChatMessageState.ts', import.meta.url), 'utf8');
+
+    assert.match(
+      source,
+      /import \{ presentKernelChatMessageParts \} from '\.\/kernelChatMessagePartsPresentation\.ts';/,
+    );
+    assert.doesNotMatch(source, /function resolveKernelContent/);
+    assert.doesNotMatch(source, /function resolveKernelReasoning/);
+    assert.doesNotMatch(source, /function resolveKernelAttachments/);
+    assert.doesNotMatch(source, /function resolveKernelToolCards/);
   },
 );

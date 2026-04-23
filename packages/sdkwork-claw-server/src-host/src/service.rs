@@ -970,7 +970,9 @@ mod tests {
             .expect("service execution result should serialize");
 
         assert_eq!(
-            payload.get("configFile").and_then(serde_json::Value::as_str),
+            payload
+                .get("configFile")
+                .and_then(serde_json::Value::as_str),
             Some("D:/managed/config.json")
         );
         assert!(

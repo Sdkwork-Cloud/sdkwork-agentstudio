@@ -2,7 +2,6 @@ const sidebarRoutePrefetchers = [
   ['/chat', () => import('@sdkwork/claw-chat')],
   ['/dashboard', () => import('@sdkwork/claw-dashboard')],
   ['/usage', () => import('@sdkwork/claw-dashboard')],
-  ['/agents', () => import('@sdkwork/claw-agent')],
   ['/claw-center', () => import('@sdkwork/claw-center')],
   ['/community', () => import('@sdkwork/claw-community')],
   ['/instances', () => import('@sdkwork/claw-instances')],

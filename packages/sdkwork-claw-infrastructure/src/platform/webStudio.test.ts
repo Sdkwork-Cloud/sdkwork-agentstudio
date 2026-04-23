@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_BUNDLED_OPENCLAW_VERSION } from '@sdkwork/claw-types';
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+} from '@sdkwork/claw-types';
 import { WebStudioPlatform } from './webStudio.ts';
 
 async function runTest(name: string, fn: () => Promise<void>) {
@@ -14,6 +17,7 @@ async function runTest(name: string, fn: () => Promise<void>) {
 
 const INSTANCE_STORAGE_KEY = 'claw-studio:studio:instances:v1';
 const WORKBENCH_STORAGE_KEY = 'claw-studio:studio:workbench:v1';
+const BUILT_IN_INSTANCE_ID = STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID;
 
 interface MockedWindowStorageContext {
   storage: Map<string, string>;
@@ -59,7 +63,7 @@ await runTest('web studio persists created OpenClaw workbench tasks through inst
     const platform = new WebStudioPlatform();
     const taskName = 'Web studio main session cron test';
 
-    await platform.createInstanceTask('local-built-in', {
+    await platform.createInstanceTask(BUILT_IN_INSTANCE_ID, {
       name: taskName,
       description: 'Runs on the main session heartbeat.',
       enabled: true,
@@ -75,7 +79,7 @@ await runTest('web studio persists created OpenClaw workbench tasks through inst
       },
     });
 
-    const detail = await platform.getInstanceDetail('local-built-in');
+    const detail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
     const created = detail?.workbench?.cronTasks.tasks.find((task) => task.name === taskName);
 
     assert.ok(created);
@@ -91,7 +95,7 @@ await runTest('web studio preserves advanced OpenClaw cron fields inside the per
   await withMockedWindowStorage(async () => {
     const platform = new WebStudioPlatform();
 
-    await platform.createInstanceTask('local-built-in', {
+    await platform.createInstanceTask(BUILT_IN_INSTANCE_ID, {
       name: 'Web studio advanced cron source',
       description: 'Created as a baseline task before OpenClaw-style update.',
       enabled: true,
@@ -113,14 +117,14 @@ await runTest('web studio preserves advanced OpenClaw cron fields inside the per
       },
     });
 
-    const originalDetail = await platform.getInstanceDetail('local-built-in');
+    const originalDetail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
     const original = originalDetail?.workbench?.cronTasks.tasks.find(
       (task) => task.name === 'Web studio advanced cron source',
     );
 
     assert.ok(original);
 
-    await platform.updateInstanceTask('local-built-in', original.id, {
+    await platform.updateInstanceTask(BUILT_IN_INSTANCE_ID, original.id, {
       name: 'Web studio advanced cron mapped',
       description: 'Uses a persistent custom session and webhook delivery.',
       enabled: false,
@@ -149,7 +153,7 @@ await runTest('web studio preserves advanced OpenClaw cron fields inside the per
       },
     });
 
-    const updatedDetail = await platform.getInstanceDetail('local-built-in');
+    const updatedDetail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
     const updated = updatedDetail?.workbench?.cronTasks.tasks.find((task) => task.id === original.id);
 
     assert.ok(updated);
@@ -177,7 +181,7 @@ await runTest('web studio persists current-session OpenClaw jobs, file edits, an
     const platform = new WebStudioPlatform();
     const taskName = 'Web studio current session cron test';
 
-    await platform.createInstanceTask('local-built-in', {
+    await platform.createInstanceTask(BUILT_IN_INSTANCE_ID, {
       name: taskName,
       description: 'Runs against the current session context.',
       enabled: true,
@@ -200,7 +204,7 @@ await runTest('web studio persists current-session OpenClaw jobs, file edits, an
       },
     });
 
-    const taskDetail = await platform.getInstanceDetail('local-built-in');
+    const taskDetail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
     const created = taskDetail?.workbench?.cronTasks.tasks.find((task) => task.name === taskName);
 
     assert.ok(created);
@@ -215,11 +219,11 @@ await runTest('web studio persists current-session OpenClaw jobs, file edits, an
     const nextModelId = 'gpt-5.4';
 
     const fileUpdated = await platform.updateInstanceFileContent(
-      'local-built-in',
+      BUILT_IN_INSTANCE_ID,
       '/workspace/main/AGENTS.md',
       nextAgentsContent,
     );
-    const providerUpdated = await platform.updateInstanceLlmProviderConfig('local-built-in', 'openai', {
+    const providerUpdated = await platform.updateInstanceLlmProviderConfig(BUILT_IN_INSTANCE_ID, 'openai', {
       endpoint: 'https://api.openai.com/v1',
       apiKeySource: 'env:OPENAI_API_KEY',
       defaultModelId: nextModelId,
@@ -237,7 +241,7 @@ await runTest('web studio persists current-session OpenClaw jobs, file edits, an
     assert.equal(fileUpdated, true);
     assert.equal(providerUpdated, true);
 
-    const updatedDetail = await platform.getInstanceDetail('local-built-in');
+    const updatedDetail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
     assert.equal(
       updatedDetail?.workbench?.files.find((file) => file.id === '/workspace/main/AGENTS.md')?.content,
       nextAgentsContent,
@@ -258,7 +262,7 @@ await runTest('web studio persists current-session OpenClaw jobs, file edits, an
         }>;
       }>;
     } | null;
-    const persistedProvider = persistedWorkbench?.workbenches?.['local-built-in']?.llmProviders?.find(
+    const persistedProvider = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID]?.llmProviders?.find(
       (provider) => provider.id === 'openai',
     );
 
@@ -273,7 +277,7 @@ await runTest('web studio persists managed channel configuration through the bro
   await withMockedWindowStorage(async ({ readJson }) => {
     const platform = new WebStudioPlatform();
 
-    const saved = await platform.saveInstanceChannelConfig('local-built-in', 'wehcat', {
+    const saved = await platform.saveInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'wehcat', {
       appId: 'wx1234567890abcdef',
       appSecret: 'secret',
       token: 'verify-token',
@@ -281,7 +285,7 @@ await runTest('web studio persists managed channel configuration through the bro
 
     assert.equal(saved, true);
 
-    let detail = await platform.getInstanceDetail('local-built-in');
+    let detail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
     let wehcat = detail?.workbench?.channels.find((channel) => channel.id === 'wehcat') as
       | ({ values?: Record<string, string> } & NonNullable<
           NonNullable<typeof detail>['workbench']
@@ -309,10 +313,10 @@ await runTest('web studio persists managed channel configuration through the bro
         }>;
       }>;
     } | null;
-    const persistedWehcat = persistedWorkbench?.workbenches?.['local-built-in']?.channels?.find(
+    const persistedWehcat = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID]?.channels?.find(
       (channel) => channel.id === 'wehcat',
     );
-    const persistedConfigFile = persistedWorkbench?.workbenches?.['local-built-in']?.files?.find(
+    const persistedConfigFile = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID]?.files?.find(
       (file) => file.id === '/workspace/main/openclaw.json',
     );
     const persistedConfigRoot = persistedConfigFile
@@ -331,10 +335,10 @@ await runTest('web studio persists managed channel configuration through the bro
       enabled: true,
     });
 
-    const disabled = await platform.setInstanceChannelEnabled('local-built-in', 'wehcat', false);
+    const disabled = await platform.setInstanceChannelEnabled(BUILT_IN_INSTANCE_ID, 'wehcat', false);
     assert.equal(disabled, true);
 
-    detail = await platform.getInstanceDetail('local-built-in');
+    detail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
     wehcat = detail?.workbench?.channels.find((channel) => channel.id === 'wehcat') as
       | ({ values?: Record<string, string> } & NonNullable<
           NonNullable<typeof detail>['workbench']
@@ -347,10 +351,10 @@ await runTest('web studio persists managed channel configuration through the bro
     assert.equal(wehcat?.configuredFieldCount, 3);
     assert.equal(wehcat?.values?.token, undefined);
 
-    const deleted = await platform.deleteInstanceChannelConfig('local-built-in', 'wehcat');
+    const deleted = await platform.deleteInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'wehcat');
     assert.equal(deleted, true);
 
-    detail = await platform.getInstanceDetail('local-built-in');
+    detail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
     wehcat = detail?.workbench?.channels.find((channel) => channel.id === 'wehcat') as
       | ({ values?: Record<string, string> } & NonNullable<
           NonNullable<typeof detail>['workbench']
@@ -367,7 +371,7 @@ await runTest('web studio persists managed channel configuration through the bro
 await runTest('web studio does not fabricate OpenAI HTTP endpoints for the built-in OpenClaw gateway metadata', async () => {
   const platform = new WebStudioPlatform();
 
-  const detail = await platform.getInstanceDetail('local-built-in');
+  const detail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
 
   assert.ok(detail);
   assert.equal(detail.lifecycle.owner, 'appManaged');
@@ -494,7 +498,7 @@ await runTest('web studio strips trusted built-in instance config state from bro
   await withMockedWindowStorage(async ({ readJson }) => {
     const platform = new WebStudioPlatform();
 
-    await platform.updateInstanceConfig('local-built-in', {
+    await platform.updateInstanceConfig(BUILT_IN_INSTANCE_ID, {
       port: '18789',
       sandbox: true,
       autoUpdate: true,
@@ -506,7 +510,7 @@ await runTest('web studio strips trusted built-in instance config state from bro
       authToken: 'root-secret',
     });
 
-    const config = await platform.getInstanceConfig('local-built-in');
+    const config = await platform.getInstanceConfig(BUILT_IN_INSTANCE_ID);
     const persistedInstances = readJson(INSTANCE_STORAGE_KEY) as {
       instances?: Array<{
         id: string;
@@ -519,7 +523,7 @@ await runTest('web studio strips trusted built-in instance config state from bro
       }>;
     } | null;
     const persistedBuiltIn = persistedInstances?.instances?.find(
-      (instance) => instance.id === 'local-built-in',
+      (instance) => instance.id === STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
     );
 
     assert.equal(config?.workspacePath, undefined);
@@ -567,37 +571,43 @@ await runTest('web studio preserves future kernel identity in generic runtime no
 });
 
 await runTest(
-  'web studio rejects local-managed Hermes instances because Hermes must stay external',
+  'web studio accepts local-managed Hermes metadata and keeps it outside the browser-managed workbench',
   async () => {
     await withMockedWindowStorage(async () => {
       const platform = new WebStudioPlatform();
 
-      await assert.rejects(
-        () =>
-          platform.createInstance({
-            name: 'Hermes Local Managed',
-            description: 'Unsupported local-managed Hermes metadata.',
-            runtimeKind: 'hermes',
-            deploymentMode: 'local-managed',
-            transportKind: 'customHttp',
-            iconType: 'server',
-            typeLabel: 'Hermes Agent',
-            host: '127.0.0.1',
-            port: 19540,
-            baseUrl: 'http://127.0.0.1:19540',
-            websocketUrl: null,
-            config: {
-              port: '19540',
-              sandbox: true,
-              autoUpdate: false,
-              logLevel: 'info',
-              corsOrigins: '*',
-              baseUrl: 'http://127.0.0.1:19540',
-              websocketUrl: null,
-            },
-          }),
-        /local-external or remote deployment/i,
-      );
+      const created = await platform.createInstance({
+        name: 'Hermes Local Managed',
+        description: 'Managed Hermes metadata for the browser fallback.',
+        runtimeKind: 'hermes',
+        deploymentMode: 'local-managed',
+        transportKind: 'customHttp',
+        iconType: 'server',
+        typeLabel: 'Hermes Agent',
+        host: '127.0.0.1',
+        port: 19540,
+        baseUrl: 'http://127.0.0.1:19540',
+        websocketUrl: null,
+        config: {
+          port: '19540',
+          sandbox: true,
+          autoUpdate: false,
+          logLevel: 'info',
+          corsOrigins: '*',
+          baseUrl: 'http://127.0.0.1:19540',
+          websocketUrl: null,
+        },
+      });
+
+      const detail = await platform.getInstanceDetail(created.id);
+
+      assert.equal(created.runtimeKind, 'hermes');
+      assert.equal(created.deploymentMode, 'local-managed');
+      assert.ok(detail);
+      assert.equal(detail?.lifecycle.owner, 'externalProcess');
+      assert.equal(detail?.lifecycle.startStopSupported, false);
+      assert.equal(detail?.lifecycle.configWritable, false);
+      assert.equal(detail?.workbench, null);
     });
   },
 );
@@ -614,9 +624,9 @@ await runTest('web studio upgrades the stored built-in OpenClaw instance metadat
         version: 1,
         instances: [
           {
-            id: 'local-built-in',
-            name: 'Local Built-In',
-            description: 'Old bundled runtime',
+            id: 'unexpected-bundled-openclaw-id',
+            name: 'Unexpected Bundled OpenClaw Id',
+            description: 'Bundled runtime with a non-canonical persisted id.',
             runtimeKind: 'openclaw',
             deploymentMode: 'local-managed',
             transportKind: 'openclawGatewayWs',
@@ -664,7 +674,9 @@ await runTest('web studio upgrades the stored built-in OpenClaw instance metadat
 
     const platform = new WebStudioPlatform();
     const instances = await platform.listInstances();
-    const builtIn = instances.find((instance) => instance.id === 'local-built-in');
+    const builtIn = instances.find(
+      (instance) => instance.id === STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+    );
     const persistedDocument = readJson(INSTANCE_STORAGE_KEY) as {
       instances?: Array<{
         id: string;
@@ -676,7 +688,7 @@ await runTest('web studio upgrades the stored built-in OpenClaw instance metadat
       }>;
     } | null;
     const persistedBuiltIn = persistedDocument?.instances?.find(
-      (instance) => instance.id === 'local-built-in',
+      (instance) => instance.id === STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
     );
 
     assert.ok(builtIn);
@@ -693,7 +705,7 @@ await runTest('web studio upgrades the stored built-in OpenClaw instance metadat
 });
 
 await runTest(
-  'web studio preserves a stable built-in OpenClaw instance id instead of injecting a legacy local-built-in duplicate',
+  'web studio preserves a stable built-in OpenClaw instance id without introducing duplicate built-in entries',
   async () => {
     await withMockedWindowStorage(async () => {
       const storage = (globalThis as typeof globalThis & {
@@ -706,7 +718,7 @@ await runTest(
           version: 1,
           instances: [
             {
-              id: 'managed-openclaw-primary',
+              id: BUILT_IN_INSTANCE_ID,
               name: 'Built-In OpenClaw Primary',
               description: 'Stable built-in OpenClaw identity.',
               runtimeKind: 'openclaw',
@@ -760,13 +772,16 @@ await runTest(
       const persistedDocument = persisted ? JSON.parse(persisted) : null;
 
       assert.equal(instances.length, 1);
-      assert.equal(instances[0]?.id, 'managed-openclaw-primary');
+      assert.equal(instances[0]?.id, BUILT_IN_INSTANCE_ID);
       assert.equal(instances[0]?.name, 'Built-In OpenClaw Primary');
       assert.equal(instances[0]?.version, DEFAULT_BUNDLED_OPENCLAW_VERSION);
       assert.equal(instances[0]?.port, 18871);
-      assert.equal(instances.some((instance) => instance.id === 'local-built-in'), false);
+      assert.equal(
+        instances.some((instance) => instance.id === 'unexpected-bundled-openclaw-id'),
+        false,
+      );
       assert.equal(persistedDocument?.instances?.length, 1);
-      assert.equal(persistedDocument?.instances?.[0]?.id, 'managed-openclaw-primary');
+      assert.equal(persistedDocument?.instances?.[0]?.id, BUILT_IN_INSTANCE_ID);
       assert.equal(persistedDocument?.instances?.[0]?.name, 'Built-In OpenClaw Primary');
       assert.equal(
         persistedDocument?.instances?.[0]?.version,

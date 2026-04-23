@@ -1,4 +1,5 @@
 import type {
+  KernelAgentLibraryItem,
   OpenClawAgentInput,
   OpenClawAgentParamSource,
   OpenClawAgentParamValue,
@@ -72,6 +73,7 @@ export interface OpenClawAgentDialogState {
 }
 
 export interface OpenClawAgentWorkspaceResetState {
+  isCreationWorkflowOpen: boolean;
   isDialogOpen: boolean;
   selectedAgentId: string | null;
   selectedAgentWorkbench: null;
@@ -123,11 +125,31 @@ function formatAgentParamValue(
   return String(value);
 }
 
+function slugifyOpenClawAgentId(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function resolveParamSource(
   agent: InstanceWorkbenchAgent | null,
   key: OpenClawAgentParamKey,
 ): OpenClawAgentParamDisplaySource {
   return agent?.paramSources?.[key] || 'runtime';
+}
+
+function resolveStreamingMode(value: boolean | null): OpenClawStreamingMode {
+  if (value === true) {
+    return 'enabled';
+  }
+
+  if (value === false) {
+    return 'disabled';
+  }
+
+  return 'inherit';
 }
 
 export function buildOpenClawAgentModelOptions(
@@ -265,6 +287,28 @@ export function createOpenClawAgentFormState(
   };
 }
 
+export function createOpenClawAgentFormStateFromLibraryAgent(
+  agent: KernelAgentLibraryItem,
+): OpenClawAgentFormState {
+  return {
+    ...createOpenClawAgentFormState(null),
+    id: `${slugifyOpenClawAgentId(agent.agentId) || 'agent'}-copy`,
+    name: `${agent.displayName} Copy`,
+    avatar: agent.avatar,
+    primaryModel: agent.model.primary ?? '',
+    fallbackModelsText: agent.model.fallbacks.join('\n'),
+    temperature:
+      typeof agent.params.temperature === 'number' ? String(agent.params.temperature) : '',
+    topP: typeof agent.params.topP === 'number' ? String(agent.params.topP) : '',
+    maxTokens:
+      typeof agent.params.maxTokens === 'number' ? String(agent.params.maxTokens) : '',
+    timeoutMs:
+      typeof agent.params.timeoutMs === 'number' ? String(agent.params.timeoutMs) : '',
+    isDefault: false,
+    streamingMode: resolveStreamingMode(agent.params.streaming),
+  };
+}
+
 export function createOpenClawAgentCreateDialogState(): OpenClawAgentDialogState {
   return {
     editingAgentId: null,
@@ -274,6 +318,7 @@ export function createOpenClawAgentCreateDialogState(): OpenClawAgentDialogState
 
 export function createOpenClawAgentWorkspaceResetState(): OpenClawAgentWorkspaceResetState {
   return {
+    isCreationWorkflowOpen: false,
     isDialogOpen: false,
     selectedAgentId: null,
     selectedAgentWorkbench: null,

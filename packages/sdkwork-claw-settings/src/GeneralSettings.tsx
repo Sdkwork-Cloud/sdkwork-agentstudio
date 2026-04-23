@@ -53,6 +53,12 @@ const THEME_COLORS: { id: ThemeColor; labelKey: string; colorClass: string }[] =
   },
 ];
 
+const DEFAULT_GENERAL_PREFERENCES: UserPreferences['general'] = {
+  launchOnStartup: false,
+  startMinimized: false,
+  compactModelSelector: true,
+};
+
 export function GeneralSettings() {
   const {
     themeMode,
@@ -64,7 +70,7 @@ export function GeneralSettings() {
     hiddenSidebarItems,
     toggleSidebarItem,
   } = useAppStore();
-  const [prefs, setPrefs] = useState<UserPreferences['general'] | null>(null);
+  const [prefs, setPrefs] = useState<UserPreferences['general']>(DEFAULT_GENERAL_PREFERENCES);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -79,7 +85,7 @@ export function GeneralSettings() {
       })
       .catch(() => {
         if (!cancelled) {
-          toast.error(t('settings.general.updatePreferenceFailed'));
+          toast.error(t('settings.general.loadPreferenceFailed'));
         }
       });
 
@@ -89,10 +95,6 @@ export function GeneralSettings() {
   }, [t]);
 
   const handleToggle = async (key: keyof UserPreferences['general']) => {
-    if (!prefs) {
-      return;
-    }
-
     const nextPrefs = { ...prefs, [key]: !prefs[key] };
     setPrefs(nextPrefs);
 
@@ -109,7 +111,6 @@ export function GeneralSettings() {
     { id: 'channels', label: t('sidebar.channels') },
     { id: 'tasks', label: t('sidebar.cronTasks') },
     { id: 'instances', label: t('sidebar.instances') },
-    { id: 'agents', label: t('sidebar.agentMarket') },
     { id: 'extensions', label: t('sidebar.extensions') },
     { id: 'claw-upload', label: t('sidebar.clawUpload') },
     { id: 'community', label: t('sidebar.community') },
@@ -285,35 +286,29 @@ export function GeneralSettings() {
 
           <Section title={t('settings.general.startup')}>
             <div className="space-y-4">
-              {prefs ? (
-                <>
-                  <ToggleRow
-                    title={t('settings.general.launchOnStartup')}
-                    description={t('settings.general.launchOnStartupDescription')}
-                    enabled={prefs.launchOnStartup}
-                    onToggle={() => handleToggle('launchOnStartup')}
-                  />
-                  <ToggleRow
-                    title={t('settings.general.startMinimized')}
-                    description={t('settings.general.startMinimizedDescription')}
-                    enabled={prefs.startMinimized}
-                    onToggle={() => handleToggle('startMinimized')}
-                  />
-                </>
-              ) : null}
+              <ToggleRow
+                title={t('settings.general.launchOnStartup')}
+                description={t('settings.general.launchOnStartupDescription')}
+                enabled={prefs.launchOnStartup}
+                onToggle={() => handleToggle('launchOnStartup')}
+              />
+              <ToggleRow
+                title={t('settings.general.startMinimized')}
+                description={t('settings.general.startMinimizedDescription')}
+                enabled={prefs.startMinimized}
+                onToggle={() => handleToggle('startMinimized')}
+              />
             </div>
           </Section>
 
           <Section title={t('settings.general.chatComposer')}>
             <div className="space-y-4">
-              {prefs ? (
-                <ToggleRow
-                  title={t('settings.general.compactModelSelector')}
-                  description={t('settings.general.compactModelSelectorDescription')}
-                  enabled={prefs.compactModelSelector}
-                  onToggle={() => handleToggle('compactModelSelector')}
-                />
-              ) : null}
+              <ToggleRow
+                title={t('settings.general.compactModelSelector')}
+                description={t('settings.general.compactModelSelectorDescription')}
+                enabled={prefs.compactModelSelector}
+                onToggle={() => handleToggle('compactModelSelector')}
+              />
             </div>
           </Section>
         </div>

@@ -23,7 +23,11 @@ import {
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { useInstanceStore } from '@sdkwork/claw-core';
+import {
+  instanceDirectoryService,
+  resolvePreferredActiveInstanceId,
+  useInstanceStore,
+} from '@sdkwork/claw-core';
 import { openDiagnosticPath, runtime } from '@sdkwork/claw-infrastructure';
 import { listKernelReleaseConfigs, type KernelReleaseConfig } from '@sdkwork/claw-types';
 import { Button } from '@sdkwork/claw-ui';
@@ -210,7 +214,13 @@ export function Instances() {
       : translated;
   };
 
-  const loadInstances = async (options: { withSpinner?: boolean; silentError?: boolean } = {}) => {
+  const loadInstances = async (
+    options: {
+      withSpinner?: boolean;
+      silentError?: boolean;
+      preferredActiveInstanceId?: string | null;
+    } = {},
+  ) => {
     if (options.withSpinner !== false) {
       setIsLoading(true);
     }
@@ -218,6 +228,14 @@ export function Instances() {
     try {
       const data = await instanceService.getInstances();
       setInstances(data);
+      const nextActiveInstanceId = resolvePreferredActiveInstanceId({
+        instances: data,
+        activeInstanceId,
+        preferredInstanceId: options.preferredActiveInstanceId,
+      });
+      if (nextActiveInstanceId !== activeInstanceId) {
+        setActiveInstanceId(nextActiveInstanceId);
+      }
       setActionCapabilitiesByInstanceId(
         Object.fromEntries(
           data.map((instance) => [instance.id, buildInstanceActionCapabilities(instance, null)]),
@@ -373,12 +391,14 @@ export function Instances() {
     try {
       if (action === 'start') {
         await instanceService.startInstance(id);
+        setActiveInstanceId(id);
         toast.success(t('instances.list.toasts.started'));
       } else if (action === 'stop') {
         await instanceService.stopInstance(id);
         toast.success(t('instances.list.toasts.stopped'));
       } else if (action === 'restart') {
         await instanceService.restartInstance(id);
+        setActiveInstanceId(id);
         toast.success(t('instances.list.toasts.restarted'));
       } else if (action === 'delete') {
         if (!window.confirm(t('instances.list.confirmUninstall'))) {
@@ -392,7 +412,11 @@ export function Instances() {
         }
       }
 
-      await loadInstances();
+      await instanceDirectoryService.refresh().catch(() => undefined);
+      await loadInstances({
+        preferredActiveInstanceId:
+          action === 'start' || action === 'restart' ? id : null,
+      });
     } catch (error: any) {
       console.error(`Failed to ${action} instance:`, error);
       toast.error(t('instances.list.toasts.actionFailed', { action: getActionLabel(action) }), {
@@ -443,14 +467,17 @@ export function Instances() {
       setIsRetryingBuiltInStartup(true);
       try {
         await request.execute(request.instanceId);
+        setActiveInstanceId(request.instanceId);
         toast.success(t(request.successKey));
       } catch (error: any) {
         toast.error(error?.message || t(request.failureKey));
       } finally {
         setIsRetryingBuiltInStartup(false);
+        await instanceDirectoryService.refresh().catch(() => undefined);
         await loadInstances({
           withSpinner: false,
           silentError: true,
+          preferredActiveInstanceId: request.instanceId,
         });
       }
     },

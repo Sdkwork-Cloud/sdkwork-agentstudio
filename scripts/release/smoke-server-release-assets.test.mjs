@@ -80,7 +80,7 @@ test('server bundle smoke validates packaged server bundles and writes runtime-b
         assert.match(extractDir.replaceAll('\\', '/'), /claw-server-smoke-/);
         mkdirSync(path.join(extractedBundleRoot, 'bin'), { recursive: true });
         writeFileSync(path.join(extractedBundleRoot, 'start-claw-server.sh'), '#!/usr/bin/env sh\n', 'utf8');
-        writeFileSync(path.join(extractedBundleRoot, 'bin', 'sdkwork-claw-server'), 'binary\n', 'utf8');
+        writeFileSync(path.join(extractedBundleRoot, 'bin', 'claw-server'), 'binary\n', 'utf8');
         return extractedBundleRoot;
       },
       launchServerBundleFn: async ({ bundleRoot, platform, port }) => {
@@ -89,7 +89,7 @@ test('server bundle smoke validates packaged server bundles and writes runtime-b
         assert.equal(typeof port, 'number');
         return {
           baseUrl: `http://127.0.0.1:${port}`,
-          launcherRelativePath: 'start-claw-server.sh',
+          launcherRelativePath: 'bin/claw-server',
           async stop() {
             stopped = true;
           },
@@ -137,7 +137,7 @@ test('server bundle smoke validates packaged server bundles and writes runtime-b
     assert.equal(result.report.report.status, 'passed');
     assert.equal(result.report.report.smokeKind, 'bundle-runtime');
     assert.equal(result.report.report.runtimeBaseUrl, 'http://127.0.0.1:19797');
-    assert.equal(result.report.report.launcherRelativePath, 'start-claw-server.sh');
+    assert.equal(result.report.report.launcherRelativePath, 'bin/claw-server');
     assert.deepEqual(result.report.report.artifactRelativePaths, [archiveRelativePath]);
     assert.deepEqual(
       result.report.report.checks.map((check) => check.id),
@@ -170,7 +170,7 @@ test('server bundle smoke can extract Windows zip bundles produced by the releas
     writeSyntheticServerRuntime({
       serverTargetDir,
       targetTriple: 'x86_64-pc-windows-msvc',
-      binaryName: 'sdkwork-claw-server.exe',
+      binaryName: 'claw-server.exe',
       webDistDir,
       envExamplePath,
     });
@@ -206,7 +206,7 @@ test('server bundle smoke can extract Windows zip bundles produced by the releas
     });
 
     assert.equal(existsSync(archivePath), true, `missing expected server archive ${archivePath}`);
-    assert.equal(existsSync(path.join(bundleRoot, 'bin', 'sdkwork-claw-server.exe')), true);
+    assert.equal(existsSync(path.join(bundleRoot, 'bin', 'claw-server.exe')), true);
     assert.equal(existsSync(path.join(bundleRoot, 'start-claw-server.cmd')), true);
     assert.equal(existsSync(path.join(bundleRoot, 'web', 'dist', 'index.html')), true);
 
@@ -347,15 +347,15 @@ test('server bundle smoke launches the bundled server binary directly on Windows
         stopCalls.push({ receivedChild, options });
       },
       existsSyncFn(targetPath) {
-        return targetPath === path.join(bundleRoot, 'bin', 'sdkwork-claw-server.exe');
+        return targetPath === path.join(bundleRoot, 'bin', 'claw-server.exe');
       },
     });
 
     assert.equal(runtime.baseUrl, 'http://127.0.0.1:19897');
-    assert.equal(runtime.launcherRelativePath, 'bin/sdkwork-claw-server.exe');
+    assert.equal(runtime.launcherRelativePath, 'bin/claw-server.exe');
     assert.deepEqual(spawnCalls, [
       {
-        command: path.join(bundleRoot, 'bin', 'sdkwork-claw-server.exe'),
+        command: path.join(bundleRoot, 'bin', 'claw-server.exe'),
         args: [],
         options: {
           cwd: bundleRoot,
@@ -363,8 +363,6 @@ test('server bundle smoke launches the bundled server binary directly on Windows
             ...process.env,
             CLAW_SERVER_HOST: '127.0.0.1',
             CLAW_SERVER_PORT: '19897',
-            CLAW_SERVER_DATA_DIR: path.join(bundleRoot, '.smoke-data'),
-            CLAW_SERVER_WEB_DIST: path.join(bundleRoot, 'web', 'dist'),
           },
           stdio: 'ignore',
           windowsHide: true,
@@ -378,6 +376,71 @@ test('server bundle smoke launches the bundled server binary directly on Windows
         receivedChild: child,
         options: {
           platform: 'windows',
+        },
+      },
+    ]);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('server bundle smoke launches the bundled server binary directly on Linux', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-server-release-assets.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const spawnCalls = [];
+  const stopCalls = [];
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-launch-linux-'));
+  const bundleRoot = path.join(tempRoot, 'server-bundle');
+  const child = {
+    pid: 8484,
+    exitCode: 0,
+    signalCode: null,
+  };
+
+  try {
+    mkdirSync(bundleRoot, { recursive: true });
+
+    const runtime = await smoke.launchServerBundle({
+      bundleRoot,
+      platform: 'linux',
+      port: 20897,
+      spawnFn(command, args, options) {
+        spawnCalls.push({ command, args, options });
+        return child;
+      },
+      stopChildProcessFn: async (receivedChild, options) => {
+        stopCalls.push({ receivedChild, options });
+      },
+      existsSyncFn(targetPath) {
+        return targetPath === path.join(bundleRoot, 'bin', 'claw-server');
+      },
+    });
+
+    assert.equal(runtime.baseUrl, 'http://127.0.0.1:20897');
+    assert.equal(runtime.launcherRelativePath, 'bin/claw-server');
+    assert.deepEqual(spawnCalls, [
+      {
+        command: path.join(bundleRoot, 'bin', 'claw-server'),
+        args: [],
+        options: {
+          cwd: bundleRoot,
+          env: {
+            ...process.env,
+            CLAW_SERVER_HOST: '127.0.0.1',
+            CLAW_SERVER_PORT: '20897',
+          },
+          stdio: 'ignore',
+        },
+      },
+    ]);
+
+    await runtime.stop();
+    assert.deepEqual(stopCalls, [
+      {
+        receivedChild: child,
+        options: {
+          platform: 'linux',
         },
       },
     ]);

@@ -57,6 +57,11 @@ test('tauriBridge isolates direct studio Tauri command compatibility in a dedica
 
   assert.match(compatSource, /export interface DesktopLegacyStudioCompatApi/);
   assert.match(compatSource, /export const desktopLegacyStudioCompatApi/);
+  assert.doesNotMatch(compatSource, /from '@sdkwork\/claw-types'/);
+  assert.match(
+    compatSource,
+    /KernelChatAgentProfile,[\s\S]*KernelChatMessage,[\s\S]*KernelChatRun,[\s\S]*KernelChatSession,[\s\S]*from '@sdkwork\/claw-infrastructure'/,
+  );
   assert.match(compatSource, /DESKTOP_COMMANDS\.studioListInstances/);
   assert.match(compatSource, /DESKTOP_COMMANDS\.studioInvokeOpenClawGateway/);
   assert.match(compatSource, /DESKTOP_COMMANDS\.studioCreateInstanceTask/);
@@ -75,6 +80,148 @@ test('tauriBridge isolates direct studio Tauri command compatibility in a dedica
   assert.doesNotMatch(tauriBridgeSource, /export async function studioUpdateInstanceTask/);
   assert.doesNotMatch(tauriBridgeSource, /export async function studioListConversations/);
   assert.match(desktopIndexSource, /desktopLegacyStudioCompatApi/);
+});
+
+test('tauriBridge exposes authoritative kernel chat studio commands for local kernel-backed chat runtimes', () => {
+  const desktopRoot = path.resolve(import.meta.dirname, '../../');
+  const infrastructureRoot = path.resolve(import.meta.dirname, '../../../sdkwork-claw-infrastructure/src');
+  const tauriBridgeSource = fs.readFileSync(
+    path.join(import.meta.dirname, 'tauriBridge.ts'),
+    'utf8',
+  );
+  const catalogSource = fs.readFileSync(
+    path.join(import.meta.dirname, 'catalog.ts'),
+    'utf8',
+  );
+  const compatSource = fs.readFileSync(
+    path.join(import.meta.dirname, 'studioCommandCompat.ts'),
+    'utf8',
+  );
+  const studioContractSource = fs.readFileSync(
+    path.join(infrastructureRoot, 'platform/contracts/studio.ts'),
+    'utf8',
+  );
+  const bootstrapSource = fs.readFileSync(
+    path.join(desktopRoot, 'src-tauri/src/app/bootstrap.rs'),
+    'utf8',
+  );
+  const studioCommandsSource = fs.readFileSync(
+    path.join(desktopRoot, 'src-tauri/src/commands/studio_commands.rs'),
+    'utf8',
+  );
+
+  assert.match(studioContractSource, /listKernelChatSessions\?\(instanceId: string\): Promise<KernelChatSession\[]>;/);
+  assert.match(studioContractSource, /createKernelChatSession\?\(\s*input: StudioCreateKernelChatSessionInput,\s*\): Promise<KernelChatSession>;/);
+  assert.match(studioContractSource, /startKernelChatRun\?\(\s*input: StudioStartKernelChatRunInput,\s*\): Promise<KernelChatRun>;/);
+  assert.match(studioContractSource, /listKernelChatRuns\?\(\s*instanceId: string,\s*sessionId: string,\s*\): Promise<KernelChatRun\[]>;/);
+  assert.match(studioContractSource, /getKernelChatRun\?\(\s*instanceId: string,\s*sessionId: string,\s*runId: string,\s*\): Promise<KernelChatRun \| null>;/);
+  assert.match(studioContractSource, /loadKernelChatMessages\?\(\s*instanceId: string,\s*sessionId: string,\s*\): Promise<KernelChatMessage\[]>;/);
+  assert.match(catalogSource, /studioListKernelChatSessions:\s*'studio_list_kernel_chat_sessions'/);
+  assert.match(catalogSource, /studioCreateKernelChatSession:\s*'studio_create_kernel_chat_session'/);
+  assert.match(catalogSource, /studioStartKernelChatRun:\s*'studio_start_kernel_chat_run'/);
+  assert.match(catalogSource, /studioListKernelChatRuns:\s*'studio_list_kernel_chat_runs'/);
+  assert.match(catalogSource, /studioGetKernelChatRun:\s*'studio_get_kernel_chat_run'/);
+  assert.match(catalogSource, /studioLoadKernelChatMessages:\s*'studio_load_kernel_chat_messages'/);
+  assert.match(compatSource, /listKernelChatSessions\(instanceId: string\): Promise<KernelChatSession\[]>;/);
+  assert.match(compatSource, /createKernelChatSession\(input: StudioCreateKernelChatSessionInput\): Promise<KernelChatSession>;/);
+  assert.match(compatSource, /startKernelChatRun\(input: StudioStartKernelChatRunInput\): Promise<KernelChatRun>;/);
+  assert.match(compatSource, /listKernelChatRuns\(instanceId: string, sessionId: string\): Promise<KernelChatRun\[]>;/);
+  assert.match(compatSource, /getKernelChatRun\(\s*instanceId: string,\s*sessionId: string,\s*runId: string,\s*\): Promise<KernelChatRun \| null>;/);
+  assert.match(compatSource, /loadKernelChatMessages\(instanceId: string, sessionId: string\): Promise<KernelChatMessage\[]>;/);
+  assert.match(tauriBridgeSource, /createDesktopHttpFirstStudioPlatform\(\)/);
+  assert.match(tauriBridgeSource, /listKernelChatSessions:/);
+  assert.match(tauriBridgeSource, /createKernelChatSession:/);
+  assert.match(tauriBridgeSource, /startKernelChatRun:/);
+  assert.match(tauriBridgeSource, /listKernelChatRuns:/);
+  assert.match(tauriBridgeSource, /getKernelChatRun:/);
+  assert.match(tauriBridgeSource, /loadKernelChatMessages:/);
+  assert.match(studioCommandsSource, /pub async fn studio_list_kernel_chat_sessions/);
+  assert.match(studioCommandsSource, /pub async fn studio_create_kernel_chat_session/);
+  assert.match(studioCommandsSource, /pub async fn studio_start_kernel_chat_run/);
+  assert.match(studioCommandsSource, /pub async fn studio_list_kernel_chat_runs/);
+  assert.match(studioCommandsSource, /pub async fn studio_get_kernel_chat_run/);
+  assert.match(studioCommandsSource, /pub async fn studio_load_kernel_chat_messages/);
+  assert.match(bootstrapSource, /commands::studio_commands::studio_list_kernel_chat_sessions/);
+  assert.match(bootstrapSource, /commands::studio_commands::studio_create_kernel_chat_session/);
+  assert.match(bootstrapSource, /commands::studio_commands::studio_start_kernel_chat_run/);
+  assert.match(bootstrapSource, /commands::studio_commands::studio_list_kernel_chat_runs/);
+  assert.match(bootstrapSource, /commands::studio_commands::studio_get_kernel_chat_run/);
+  assert.match(bootstrapSource, /commands::studio_commands::studio_load_kernel_chat_messages/);
+});
+
+test('tauriBridge exposes desktop kernel agent creation commands through the studio contract chain', () => {
+  const desktopRoot = path.resolve(import.meta.dirname, '../../');
+  const infrastructureRoot = path.resolve(
+    import.meta.dirname,
+    '../../../sdkwork-claw-infrastructure/src',
+  );
+  const tauriBridgeSource = fs.readFileSync(
+    path.join(import.meta.dirname, 'tauriBridge.ts'),
+    'utf8',
+  );
+  const catalogSource = fs.readFileSync(
+    path.join(import.meta.dirname, 'catalog.ts'),
+    'utf8',
+  );
+  const compatSource = fs.readFileSync(
+    path.join(import.meta.dirname, 'studioCommandCompat.ts'),
+    'utf8',
+  );
+  const studioContractSource = fs.readFileSync(
+    path.join(infrastructureRoot, 'platform/contracts/studio.ts'),
+    'utf8',
+  );
+  const bootstrapSource = fs.readFileSync(
+    path.join(desktopRoot, 'src-tauri/src/app/bootstrap.rs'),
+    'utf8',
+  );
+  const studioCommandsSource = fs.readFileSync(
+    path.join(desktopRoot, 'src-tauri/src/commands/studio_commands.rs'),
+    'utf8',
+  );
+
+  assert.match(
+    studioContractSource,
+    /getKernelAgentCreationCapability\?\(\s*instanceId: string,\s*\): Promise<StudioKernelAgentCreationCapability>;/,
+  );
+  assert.match(
+    studioContractSource,
+    /createKernelAgent\?\(\s*input: StudioCreateKernelAgentInput,\s*\): Promise<StudioCreatedKernelAgentRecord>;/,
+  );
+  assert.match(
+    catalogSource,
+    /studioGetKernelAgentCreationCapability:\s*'studio_get_kernel_agent_creation_capability'/,
+  );
+  assert.match(
+    catalogSource,
+    /studioCreateKernelAgent:\s*'studio_create_kernel_agent'/,
+  );
+  assert.match(
+    compatSource,
+    /getKernelAgentCreationCapability\(\s*instanceId: string,\s*\): Promise<StudioKernelAgentCreationCapability>;/,
+  );
+  assert.match(
+    compatSource,
+    /createKernelAgent\(\s*input: StudioCreateKernelAgentInput\s*\): Promise<StudioCreatedKernelAgentRecord>;/,
+  );
+  assert.match(
+    compatSource,
+    /DESKTOP_COMMANDS\.studioGetKernelAgentCreationCapability/,
+  );
+  assert.match(compatSource, /DESKTOP_COMMANDS\.studioCreateKernelAgent/);
+  assert.match(tauriBridgeSource, /createDesktopHttpFirstStudioPlatform\(\)/);
+  assert.match(tauriBridgeSource, /getKernelAgentCreationCapability:/);
+  assert.match(tauriBridgeSource, /createKernelAgent:/);
+  assert.match(
+    studioCommandsSource,
+    /pub async fn studio_get_kernel_agent_creation_capability/,
+  );
+  assert.match(studioCommandsSource, /pub async fn studio_create_kernel_agent/);
+  assert.match(
+    bootstrapSource,
+    /commands::studio_commands::studio_get_kernel_agent_creation_capability/,
+  );
+  assert.match(bootstrapSource, /commands::studio_commands::studio_create_kernel_agent/);
 });
 
 test('tauriBridge exposes manage rollout and internal host platform contract surfaces', () => {
@@ -230,8 +377,9 @@ test('tauriBridge exposes native desktop notifications through the shared platfo
     /showNotification:\s*\(notification\)\s*=>\s*getPlatformBridge\(\)\.platform\.showNotification\(notification\)/,
   );
   assert.match(platformIndexSource, /PlatformNotificationRequest/);
+  assert.doesNotMatch(tauriBridgeSource, /import \{ invoke \} from '@tauri-apps\/api\/core';/);
   assert.match(tauriBridgeSource, /export async function showDesktopNotification/);
-  assert.match(tauriBridgeSource, /plugin:notification\|notify/);
+  assert.match(tauriBridgeSource, /invokeTauriRuntimeCommand<void>\(\s*'plugin:notification\|notify',/);
   assert.match(
     tauriBridgeSource,
     /showNotification:\s*\(notification\)\s*=>\s*showDesktopNotification\(notification\)/,
@@ -753,7 +901,11 @@ test('tauriBridge configures studio operations as HTTP-only over the embedded ho
   );
   assert.match(
     tauriBridgeSource,
-     /return createStaticDeferredDesktopHostedStudioPlatform\(\(\)\s*=>[\s\S]*'studio\.requestHostedSurface'/,
+     /const hostedPlatform = createStaticDeferredDesktopHostedStudioPlatform\(\(\)\s*=>[\s\S]*'studio\.requestHostedSurface'/,
+  );
+  assert.match(
+    tauriBridgeSource,
+     /return Object\.assign\(hostedPlatform,\s*\{/,
   );
   assert.match(
     tauriBridgeSource,
@@ -770,6 +922,30 @@ test('tauriBridge configures studio operations as HTTP-only over the embedded ho
   assert.match(
     tauriBridgeSource,
      /studio:\s*createDesktopHttpFirstStudioPlatform\(\),/,
+  );
+});
+
+test('tauriBridge keeps enough hosted runtime readiness budget for packaged cold starts', () => {
+  const tauriBridgeSource = fs.readFileSync(
+    path.join(import.meta.dirname, 'tauriBridge.ts'),
+    'utf8',
+  );
+  const readinessRetryTimeoutMatch = tauriBridgeSource.match(
+    /const DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_TIMEOUT_MS = ([0-9_]+);/,
+  );
+
+  assert.ok(
+    readinessRetryTimeoutMatch,
+    'desktop hosted runtime readiness timeout should stay explicit in tauriBridge.ts',
+  );
+
+  const readinessRetryTimeoutMs = Number(
+    readinessRetryTimeoutMatch[1].replaceAll('_', ''),
+  );
+
+  assert.ok(
+    readinessRetryTimeoutMs >= 120_000,
+    `packaged first-launch runtime extraction and gateway cold starts require at least 120000ms of readiness budget, received ${readinessRetryTimeoutMs}ms`,
   );
 });
 

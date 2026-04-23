@@ -87,7 +87,7 @@ The packaged server archive contains:
 - the Rust server binary under `bin/`
 - the built browser app under `web/dist/`
 - `.env.example`
-- launcher scripts
+- optional launcher wrappers
 - a bundle README
 
 ### Windows
@@ -95,7 +95,7 @@ The packaged server archive contains:
 Extract the archive and start the server with:
 
 ```powershell
-.\start-claw-server.cmd
+.\bin\claw-server.exe
 ```
 
 ### Linux And macOS
@@ -103,13 +103,15 @@ Extract the archive and start the server with:
 Extract the archive and start the server with:
 
 ```bash
-./start-claw-server.sh
+./bin/claw-server
 ```
 
-The bundled launchers default:
+When the packaged binary is launched from the extracted bundle, it defaults:
 
 - `CLAW_SERVER_WEB_DIST` to the embedded `web/dist`
 - `CLAW_SERVER_DATA_DIR` to `.claw-server` inside the extracted bundle
+
+Optional convenience wrappers `start-claw-server.cmd` and `start-claw-server.sh` invoke the same binary and preserve those bundled defaults.
 
 After startup, open `http://<host>:<port>` in a browser.
 
@@ -173,24 +175,44 @@ See [Environment](/reference/environment) and [Claw Server Runtime](/reference/c
 Windows:
 
 ```powershell
-taskkill /IM sdkwork-claw-server.exe /F
-.\start-claw-server.cmd
+taskkill /IM claw-server.exe /F
+.\bin\claw-server.exe
 ```
 
 Linux Or macOS:
 
 ```bash
-pkill -f sdkwork-claw-server || true
-./start-claw-server.sh
+pkill -f claw-server || true
+./bin/claw-server
 ```
 
-These commands are direct process-level examples for launcher-based bundles. If you install the native server as a system service, prefer `claw-server service start|stop|restart|status` so CLI control, browser management, and projected service manifests stay aligned.
+These commands are direct process-level examples for the packaged native binary. Optional wrapper scripts remain available for operator convenience, but the `bin/` binary is the canonical packaged entry point. If you install the native server as a system service, prefer `claw-server service start|stop|restart|status` so CLI control, browser management, and projected service manifests stay aligned.
+
+### Install The Native Server As A Managed Service
+
+Current packaged server bundles ship the native service-capable binary under `bin/` as the canonical runtime entry. `start-claw-server.sh` and `start-claw-server.cmd` remain optional convenience wrappers around that same binary.
+
+Windows:
+
+```powershell
+.\bin\claw-server.exe service install
+.\bin\claw-server.exe service status
+```
+
+Linux Or macOS:
+
+```bash
+./bin/claw-server service install
+./bin/claw-server service status
+```
+
+Use `service print-manifest --platform <linux|macos|windows>` when you need to inspect the projected unit before installing it. Service lifecycle commands default to the current platform, but they still require whatever privileges the host service manager expects.
 
 ### Inspect Container Deployment State
 
 ```bash
-docker compose -f deploy/docker-compose.yml ps
-docker compose -f deploy/docker-compose.yml logs --tail=200
+docker compose -f deploy/docker/docker-compose.yml ps
+docker compose -f deploy/docker/docker-compose.yml logs --tail=200
 ```
 
 ### Inspect Kubernetes Deployment State
@@ -212,25 +234,26 @@ Use a browser or curl against:
 ## Docker Deployment
 
 The container bundle packages the server runtime under `app/` and ships Docker deployment files under `deploy/`.
+Inside the image, Docker starts the canonical bundled binary at `app/bin/claw-server` directly rather than routing through the optional shell wrapper.
 
-Run these commands from the extracted bundle root. The compose files resolve env overlays from `deploy/profiles/*` and use the extracted bundle root as the Docker build context.
+Run these commands from the extracted bundle root. The compose files resolve env overlays from `deploy/docker/profiles/*` and use the extracted bundle root as the Docker build context.
 
 Base deployment:
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d
+docker compose -f deploy/docker/docker-compose.yml up -d
 ```
 
 NVIDIA CUDA overlay:
 
 ```bash
-docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.nvidia-cuda.yml up -d
+docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.nvidia-cuda.yml up -d
 ```
 
 AMD ROCm overlay:
 
 ```bash
-docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.amd-rocm.yml up -d
+docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.amd-rocm.yml up -d
 ```
 
 ## Kubernetes Deployment
@@ -267,16 +290,18 @@ pnpm release:plan
 Local packaging prerequisites:
 
 - `pnpm release:package:desktop` only packages finished desktop installers and app bundles. Run `pnpm release:desktop` or `pnpm tauri:build` first.
-- `pnpm release:package:server` auto-builds the native server release binary first when you use the root local wrapper.
-- `pnpm release:package:container` auto-builds a matching Linux server binary first when you use the root local wrapper. On Windows, `pnpm server:build -- --target x86_64-unknown-linux-gnu` can build that target through WSL automatically when a Linux distro is installed. On macOS, the same fallback still depends on an explicit Linux target toolchain.
+- `pnpm release:package:server` refreshes the matching native server release binary first when you use the root local wrapper. That build remains incremental, but it guarantees the packaged archive uses the current target output instead of a stale prior binary.
+- `pnpm release:package:container` refreshes a matching Linux server binary first when you use the root local wrapper. On Windows, `pnpm server:build -- --target x86_64-unknown-linux-gnu` can build that target through WSL automatically when a Linux distro is installed. On macOS, the same fallback still depends on an explicit Linux target toolchain.
 - `pnpm release:package:kubernetes` packages chart and values assets only, so it can be prepared locally without building the server binary.
-- `pnpm release:finalize` reads packaged assets from the active release asset directory. The local wrapper defaults that directory to `artifacts/release`, while GitHub workflows use `release-assets/`.
+- `pnpm release:finalize` reads packaged assets from the active release asset directory. The local wrapper defaults that directory to `artifacts/release`, while GitHub workflows use `release-assets/`. During local finalization, `release-manifest.json.repository` resolves from `SDKWORK_RELEASE_REPOSITORY`, then `GITHUB_REPOSITORY`, then `git remote origin`, and structured `status=skipped` deployment smoke for `container` and `kubernetes` is preserved instead of being flattened into a false pass.
 
 ## Current Service-Manager Boundary
 
-The packaged server archives currently ship launcher scripts, not a built-in system service installer.
+The packaged server archives currently ship the native service-capable server binary as the canonical entry point plus optional convenience wrappers.
 
 That means:
 
-- `systemd`, Windows Service, or `launchd` wrappers should currently be added by the deployment environment
-- service-manager-first lifecycle commands should be documented as environment-specific until the native service management feature lands in the server package
+- non-service deployments should start `./bin/claw-server` or `.\bin\claw-server.exe`
+- `start-claw-server.sh` and `start-claw-server.cmd` remain optional convenience aliases for local operator startup
+- managed installs should run through `./bin/claw-server service *` or `.\bin\claw-server.exe service *`
+- `systemd`, `launchd`, and Windows Service lifecycles are still executed through the host platform's own service manager, so installation and control require the corresponding operator privileges

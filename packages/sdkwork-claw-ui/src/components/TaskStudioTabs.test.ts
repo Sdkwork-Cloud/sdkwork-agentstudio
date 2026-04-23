@@ -28,6 +28,7 @@ runTest('TaskStudioTabs renders compact top tabs with counts and active emphasis
   assert.match(markup, /Task List/);
   assert.match(markup, /Execution History/);
   assert.match(markup, /data-slot="task-studio-tabs"/);
+  assert.match(markup, /inline-flex w-fit max-w-full/);
   assert.match(markup, /gap-1/);
   assert.match(markup, /rounded-\[0\.875rem\]/);
   assert.match(markup, /p-1/);

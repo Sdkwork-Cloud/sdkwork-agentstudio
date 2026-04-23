@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { connectGatewayInstancesBestEffort } from './connectGatewayInstances.ts';
 
 function runTest(name: string, callback: () => void | Promise<void>) {
@@ -96,5 +97,15 @@ await runTest(
     });
 
     assert.deepEqual(released, ['instance-b']);
+  },
+);
+
+await runTest(
+  'gateway preconnect derives gateway hydration from the shared route helper instead of embedding the OpenClaw gateway route literal',
+  () => {
+    const source = readFileSync(new URL('./connectGatewayInstances.ts', import.meta.url), 'utf8');
+
+    assert.match(source, /isGatewayAuthoritativeRouteMode\(mode\)/);
+    assert.doesNotMatch(source, /mode === 'instanceOpenClawGatewayWs'/);
   },
 );

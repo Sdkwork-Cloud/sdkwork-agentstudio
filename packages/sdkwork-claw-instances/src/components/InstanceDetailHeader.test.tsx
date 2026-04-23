@@ -3,6 +3,8 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { InstanceDetailHeader } from './InstanceDetailHeader.tsx';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 function runTest(name: string, fn: () => void | Promise<void>) {
   return Promise.resolve()
     .then(fn)
@@ -69,7 +71,7 @@ await runTest(
       <InstanceDetailHeader
         activeInstanceId={null}
         instance={{
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Built-In OpenClaw',
           status: 'online',
           ip: '127.0.0.1',

@@ -14,8 +14,13 @@ type KernelAwareChatSessionLike = {
       kernelId?: string | null;
       instanceId?: string | null;
       sessionId?: string | null;
+      nativeSessionId?: string | null;
       agentId?: string | null;
       routingKey?: string | null;
+      lineageParentSessionId?: string | null;
+    } | null;
+    actorBinding?: {
+      agentId?: string | null;
     } | null;
     authority?: {
       kind?: string | null;
@@ -25,6 +30,7 @@ type KernelAwareChatSessionLike = {
     } | null;
     lifecycle?: string | null;
     sessionKind?: string | null;
+    nativeMetadata?: Record<string, unknown> | null;
     modelBinding?: {
       model?: string | null;
       defaultModel?: string | null;
@@ -66,6 +72,10 @@ function normalizeAuthorityKind(
     : null;
 }
 
+function cloneNativeMetadata(value: Record<string, unknown> | null | undefined) {
+  return value ? { ...value } : null;
+}
+
 export function resolveKernelChatSessionState(session: KernelAwareChatSessionLike | null | undefined) {
   const kernelSession = session?.kernelSession ?? null;
   const modelBinding = kernelSession?.modelBinding ?? null;
@@ -74,8 +84,12 @@ export function resolveKernelChatSessionState(session: KernelAwareChatSessionLik
     kernelId: trimNullableString(kernelSession?.ref?.kernelId),
     instanceId: trimNullableString(kernelSession?.ref?.instanceId),
     sessionId: trimNullableString(kernelSession?.ref?.sessionId),
-    agentId: trimNullableString(kernelSession?.ref?.agentId),
+    nativeSessionId: trimNullableString(kernelSession?.ref?.nativeSessionId),
+    agentId:
+      trimNullableString(kernelSession?.ref?.agentId) ??
+      trimNullableString(kernelSession?.actorBinding?.agentId),
     routingKey: trimNullableString(kernelSession?.ref?.routingKey),
+    lineageParentSessionId: trimNullableString(kernelSession?.ref?.lineageParentSessionId),
     authorityKind: normalizeAuthorityKind(kernelSession?.authority?.kind),
     authoritySource: trimNullableString(kernelSession?.authority?.source),
     authorityDurable:
@@ -88,6 +102,7 @@ export function resolveKernelChatSessionState(session: KernelAwareChatSessionLik
         : null,
     lifecycle: trimNullableString(kernelSession?.lifecycle),
     sessionKind: trimNullableString(kernelSession?.sessionKind) ?? trimNullableString(session?.sessionKind),
+    nativeMetadata: cloneNativeMetadata(kernelSession?.nativeMetadata),
     activeRunId: trimNullableString(kernelSession?.activeRunId) ?? trimNullableString(session?.runId),
     model: trimNullableString(modelBinding?.model) ?? trimNullableString(session?.model),
     defaultModel:

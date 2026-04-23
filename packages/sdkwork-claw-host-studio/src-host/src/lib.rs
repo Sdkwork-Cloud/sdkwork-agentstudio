@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use reqwest::Client;
 use sdkwork_claw_host_core::openclaw_control_plane::{
     OpenClawControlPlane, OpenClawGatewayInvokeRequest as ControlPlaneOpenClawGatewayInvokeRequest,
 };
@@ -12,6 +13,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Number, Value};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -43,6 +45,54 @@ pub struct StudioOpenClawGatewayInvokePayload {
     pub options: StudioOpenClawGatewayInvokeOptions,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudioCreateKernelChatSessionInput {
+    pub instance_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub agent_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudioPatchKernelChatSessionInput {
+    pub instance_id: String,
+    pub session_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub thinking_level: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fast_mode: Option<Option<bool>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verbose_level: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reasoning_level: Option<Option<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudioStartKernelChatRunInput {
+    pub instance_id: String,
+    pub session_id: String,
+    pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct StudioAbortKernelChatRunInput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub run_id: Option<String>,
+}
+
 pub trait StudioPublicApiProvider: Send + Sync + Debug {
     fn list_instances(&self) -> Result<Value, String>;
     fn create_instance(&self, input: Value) -> Result<Value, String>;
@@ -56,6 +106,33 @@ pub trait StudioPublicApiProvider: Send + Sync + Debug {
     fn get_instance_config(&self, id: &str) -> Result<Option<Value>, String>;
     fn update_instance_config(&self, id: &str, config: Value) -> Result<Option<Value>, String>;
     fn get_instance_logs(&self, id: &str) -> Result<String, String>;
+    fn list_kernel_chat_agent_profiles(&self, instance_id: &str) -> Result<Value, String>;
+    fn list_kernel_chat_sessions(&self, instance_id: &str) -> Result<Value, String>;
+    fn get_kernel_chat_session(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+    ) -> Result<Option<Value>, String>;
+    fn create_kernel_chat_session(&self, input: Value) -> Result<Value, String>;
+    fn list_kernel_chat_runs(&self, instance_id: &str, session_id: &str) -> Result<Value, String>;
+    fn get_kernel_chat_run(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+        run_id: &str,
+    ) -> Result<Option<Value>, String>;
+    fn patch_kernel_chat_session(&self, input: Value) -> Result<Value, String>;
+    fn delete_kernel_chat_session(&self, instance_id: &str, session_id: &str)
+        -> Result<(), String>;
+    fn start_kernel_chat_run(&self, input: Value) -> Result<Value, String>;
+    fn abort_kernel_chat_run(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+        run_id: Option<String>,
+    ) -> Result<bool, String>;
+    fn load_kernel_chat_messages(&self, instance_id: &str, session_id: &str)
+        -> Result<Value, String>;
     fn invoke_openclaw_gateway(
         &self,
         instance_id: &str,
@@ -196,7 +273,7 @@ pub fn build_default_studio_public_api_provider(
     data_dir: PathBuf,
     openclaw_control_plane: Arc<OpenClawControlPlane>,
 ) -> Result<Arc<dyn StudioPublicApiProvider>, String> {
-    Ok(build_typed_studio_public_api_provider(ServerStudioPublicApiProvider::new(
+    Ok(Arc::new(ServerStudioPublicApiProvider::new(
         data_dir,
         openclaw_control_plane,
     )?))
@@ -209,16 +286,20 @@ where
     Arc::new(TypedStudioPublicApiProvider { backend })
 }
 
-const BUILT_IN_INSTANCE_ID: &str = "local-built-in";
+const BUILT_IN_INSTANCE_ID: &str = "managed-openclaw-primary";
 const DEFAULT_PORT: u16 = 18_789;
 const STORAGE_DIR_NAME: &str = "studio-public-api";
 const INSTANCES_FILE_NAME: &str = "instances.json";
 const CONVERSATIONS_FILE_NAME: &str = "conversations.json";
 const WORKBENCHES_FILE_NAME: &str = "workbenches.json";
+const KERNEL_CHATS_FILE_NAME: &str = "kernel-chats.json";
 const DEFAULT_OPENCLAW_PROVIDER_ID: &str = "openai";
 const DEFAULT_OPENCLAW_AGENT_FILE_ID: &str = "/workspace/main/AGENTS.md";
 const DEFAULT_OPENCLAW_MEMORY_FILE_ID: &str = "/workspace/main/MEMORY.md";
 const DEFAULT_OPENCLAW_CONFIG_FILE_ID: &str = "/workspace/main/openclaw.json";
+const DEFAULT_KERNEL_CHAT_SESSION_TITLE: &str = "New Chat";
+const DEFAULT_HERMES_AGENT_ID: &str = "hermes-default";
+const DEFAULT_HERMES_AGENT_LABEL: &str = "Hermes";
 
 #[derive(Debug)]
 struct ServerStudioPublicApiProvider {
@@ -252,6 +333,56 @@ struct ConversationsDocument {
 #[serde(default, rename_all = "camelCase")]
 struct WorkbenchesDocument {
     workbenches: BTreeMap<String, Value>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+struct KernelChatsDocument {
+    instances: BTreeMap<String, StoredKernelChatInstance>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+struct StoredKernelChatInstance {
+    sessions: BTreeMap<String, StoredKernelChatSession>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+struct StoredKernelChatSession {
+    title: Option<String>,
+    model: Option<String>,
+    thinking_level: Option<String>,
+    fast_mode: Option<bool>,
+    verbose_level: Option<String>,
+    reasoning_level: Option<String>,
+    agent_id: Option<String>,
+    created_at: u64,
+    updated_at: u64,
+    messages: Vec<StoredKernelChatMessage>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StoredKernelChatMessage {
+    id: String,
+    role: String,
+    text: String,
+    created_at: u64,
+    updated_at: u64,
+    run_id: Option<String>,
+    model: Option<String>,
+    sender_label: Option<String>,
+    native_metadata: Option<Value>,
+}
+
+#[derive(Debug, Clone)]
+struct ProjectedKernelChatRun {
+    id: String,
+    created_at: u64,
+    updated_at: u64,
+    model: Option<String>,
+    has_assistant_message: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -301,6 +432,10 @@ impl ServerStudioPublicApiProvider {
         self.storage_dir.join(WORKBENCHES_FILE_NAME)
     }
 
+    fn kernel_chats_path(&self) -> PathBuf {
+        self.storage_dir.join(KERNEL_CHATS_FILE_NAME)
+    }
+
     fn read_instances(&self) -> Result<InstancesDocument, String> {
         let mut document = read_json_document(&self.instances_path())?;
         if normalize_default_instance_selection(&mut document) {
@@ -327,6 +462,29 @@ impl ServerStudioPublicApiProvider {
 
     fn write_workbenches(&self, document: &WorkbenchesDocument) -> Result<(), String> {
         write_json_document(&self.workbenches_path(), document)
+    }
+
+    fn read_kernel_chats(&self) -> Result<KernelChatsDocument, String> {
+        read_json_document(&self.kernel_chats_path())
+    }
+
+    fn write_kernel_chats(&self, document: &KernelChatsDocument) -> Result<(), String> {
+        write_json_document(&self.kernel_chats_path(), document)
+    }
+
+    fn require_managed_hermes_kernel_chat_instance(&self, instance_id: &str) -> Result<Value, String> {
+        let instances = self.read_instances()?;
+        let instance = self
+            .get_projected_instance(&instances, instance_id)
+            .ok_or_else(|| format!("studio instance \"{instance_id}\" does not exist"))?;
+
+        if !is_managed_hermes_kernel_chat_instance(&instance) {
+            return Err(format!(
+                "studio instance \"{instance_id}\" does not expose managed Hermes kernel chat"
+            ));
+        }
+
+        Ok(instance)
     }
 
     fn built_in_status(&self) -> &'static str {
@@ -381,6 +539,8 @@ impl ServerStudioPublicApiProvider {
 
     fn built_in_instance_id_from_raw(raw: Option<&Value>) -> String {
         raw.and_then(|value| non_empty_string(value.get("id")))
+            .map(|value| canonical_built_in_instance_id(value.as_str()).to_string())
+            .filter(|value| value == BUILT_IN_INSTANCE_ID)
             .unwrap_or_else(|| BUILT_IN_INSTANCE_ID.to_string())
     }
 
@@ -752,7 +912,7 @@ impl ServerStudioPublicApiProvider {
 
     fn get_projected_instance(&self, document: &InstancesDocument, id: &str) -> Option<Value> {
         let built_in = self.project_built_in_instance(document.built_in_instance.clone());
-        if built_in.get("id").and_then(Value::as_str) == Some(id) {
+        if built_in.get("id").and_then(Value::as_str) == Some(id.trim()) {
             return Some(built_in);
         }
         document
@@ -770,6 +930,30 @@ impl ServerStudioPublicApiProvider {
             .and_then(Value::as_array)
             .cloned()
             .unwrap_or_default();
+        let primary_instance_id = object
+            .get("primaryInstanceId")
+            .and_then(Value::as_str)
+            .map(|value| canonicalize_built_in_instance_value(value, built_in_instance_id))
+            .unwrap_or_else(|| built_in_instance_id.to_string());
+        let participant_instance_ids = object
+            .get("participantInstanceIds")
+            .and_then(Value::as_array)
+            .cloned()
+            .map(|items| {
+                Value::Array(
+                    items.into_iter()
+                        .filter_map(|item| item.as_str().map(|value| {
+                            Value::String(canonicalize_built_in_instance_value(
+                                value,
+                                built_in_instance_id,
+                            ))
+                        }))
+                        .collect(),
+                )
+            })
+            .unwrap_or_else(|| {
+                Value::Array(vec![Value::String(built_in_instance_id.to_string())])
+            });
         object.insert("id".to_string(), Value::String(id.to_string()));
         object.insert(
             "title".to_string(),
@@ -783,22 +967,11 @@ impl ServerStudioPublicApiProvider {
         );
         object.insert(
             "primaryInstanceId".to_string(),
-            Value::String(
-                object
-                    .get("primaryInstanceId")
-                    .and_then(Value::as_str)
-                    .map(ToOwned::to_owned)
-                    .unwrap_or_else(|| built_in_instance_id.to_string()),
-            ),
+            Value::String(primary_instance_id),
         );
         object.insert(
             "participantInstanceIds".to_string(),
-            object
-                .get("participantInstanceIds")
-                .cloned()
-                .unwrap_or_else(|| {
-                    Value::Array(vec![Value::String(built_in_instance_id.to_string())])
-                }),
+            participant_instance_ids,
         );
         object.insert(
             "createdAt".to_string(),
@@ -1280,6 +1453,153 @@ impl StudioPublicApiProvider for ServerStudioPublicApiProvider {
         })
     }
 
+    fn list_kernel_chat_agent_profiles(&self, instance_id: &str) -> Result<Value, String> {
+        self.with_io_lock(|provider| {
+            let instance = provider.require_managed_hermes_kernel_chat_instance(instance_id)?;
+            Ok(Value::Array(build_managed_hermes_kernel_chat_agent_profiles(
+                instance_id,
+                &instance,
+            )))
+        })
+    }
+
+    fn list_kernel_chat_sessions(&self, instance_id: &str) -> Result<Value, String> {
+        self.with_io_lock(|provider| {
+            let _instance = provider.require_managed_hermes_kernel_chat_instance(instance_id)?;
+            let document = provider.read_kernel_chats()?;
+            Ok(Value::Array(list_kernel_chat_sessions_from_document(
+                &document,
+                instance_id,
+            )))
+        })
+    }
+
+    fn get_kernel_chat_session(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+    ) -> Result<Option<Value>, String> {
+        self.with_io_lock(|provider| {
+            let _instance = provider.require_managed_hermes_kernel_chat_instance(instance_id)?;
+            let document = provider.read_kernel_chats()?;
+            Ok(find_kernel_chat_session_value(
+                &document,
+                instance_id,
+                session_id,
+            ))
+        })
+    }
+
+    fn create_kernel_chat_session(&self, input: Value) -> Result<Value, String> {
+        let input: StudioCreateKernelChatSessionInput =
+            deserialize_provider_value(input, "studio create kernel chat session input")?;
+        self.with_io_lock(|provider| {
+            let instance =
+                provider.require_managed_hermes_kernel_chat_instance(input.instance_id.as_str())?;
+            let mut document = provider.read_kernel_chats()?;
+            let session = create_kernel_chat_session_in_document(&mut document, &instance, input)?;
+            provider.write_kernel_chats(&document)?;
+            Ok(session)
+        })
+    }
+
+    fn list_kernel_chat_runs(&self, instance_id: &str, session_id: &str) -> Result<Value, String> {
+        self.with_io_lock(|provider| {
+            let _instance = provider.require_managed_hermes_kernel_chat_instance(instance_id)?;
+            let document = provider.read_kernel_chats()?;
+            Ok(Value::Array(list_kernel_chat_runs_from_document(
+                &document,
+                instance_id,
+                session_id,
+            )))
+        })
+    }
+
+    fn get_kernel_chat_run(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+        run_id: &str,
+    ) -> Result<Option<Value>, String> {
+        self.with_io_lock(|provider| {
+            let _instance = provider.require_managed_hermes_kernel_chat_instance(instance_id)?;
+            let document = provider.read_kernel_chats()?;
+            Ok(find_kernel_chat_run_value(
+                &document,
+                instance_id,
+                session_id,
+                run_id,
+            ))
+        })
+    }
+
+    fn patch_kernel_chat_session(&self, input: Value) -> Result<Value, String> {
+        let input: StudioPatchKernelChatSessionInput =
+            deserialize_provider_value(input, "studio patch kernel chat session input")?;
+        self.with_io_lock(|provider| {
+            let instance =
+                provider.require_managed_hermes_kernel_chat_instance(input.instance_id.as_str())?;
+            let mut document = provider.read_kernel_chats()?;
+            let session = patch_kernel_chat_session_in_document(&mut document, &instance, input)?;
+            provider.write_kernel_chats(&document)?;
+            Ok(session)
+        })
+    }
+
+    fn delete_kernel_chat_session(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+    ) -> Result<(), String> {
+        self.with_io_lock(|provider| {
+            let _instance = provider.require_managed_hermes_kernel_chat_instance(instance_id)?;
+            let mut document = provider.read_kernel_chats()?;
+            delete_kernel_chat_session_in_document(&mut document, instance_id, session_id);
+            provider.write_kernel_chats(&document)
+        })
+    }
+
+    fn start_kernel_chat_run(&self, input: Value) -> Result<Value, String> {
+        let input: StudioStartKernelChatRunInput =
+            deserialize_provider_value(input, "studio start kernel chat run input")?;
+        self.with_io_lock(|provider| {
+            let instance =
+                provider.require_managed_hermes_kernel_chat_instance(input.instance_id.as_str())?;
+            let mut document = provider.read_kernel_chats()?;
+            let run = start_kernel_chat_run_in_document(&mut document, &instance, input)?;
+            provider.write_kernel_chats(&document)?;
+            Ok(run)
+        })
+    }
+
+    fn abort_kernel_chat_run(
+        &self,
+        instance_id: &str,
+        _session_id: &str,
+        _run_id: Option<String>,
+    ) -> Result<bool, String> {
+        self.with_io_lock(|provider| {
+            let _instance = provider.require_managed_hermes_kernel_chat_instance(instance_id)?;
+            Ok(false)
+        })
+    }
+
+    fn load_kernel_chat_messages(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+    ) -> Result<Value, String> {
+        self.with_io_lock(|provider| {
+            let _instance = provider.require_managed_hermes_kernel_chat_instance(instance_id)?;
+            let document = provider.read_kernel_chats()?;
+            Ok(Value::Array(load_kernel_chat_messages_from_document(
+                &document,
+                instance_id,
+                session_id,
+            )))
+        })
+    }
+
     fn create_instance_task(&self, instance_id: &str, payload: Value) -> Result<(), String> {
         self.with_io_lock(|provider| {
             let instances = provider.read_instances()?;
@@ -1552,6 +1872,8 @@ impl StudioPublicApiProvider for ServerStudioPublicApiProvider {
         self.with_io_lock(|provider| {
             let instances = provider.read_instances()?;
             let built_in_id = provider.built_in_instance_id(&instances);
+            let resolved_instance_id =
+                canonicalize_built_in_instance_value(instance_id, built_in_id.as_str());
             let mut records = provider
                 .read_conversations()?
                 .conversations
@@ -1562,12 +1884,13 @@ impl StudioPublicApiProvider for ServerStudioPublicApiProvider {
                         provider.project_conversation(id.as_str(), value, built_in_id.as_str());
                     let primary_matches =
                         projected.get("primaryInstanceId").and_then(Value::as_str)
-                            == Some(instance_id);
+                            == Some(resolved_instance_id.as_str());
                     let participant_matches = projected
                         .get("participantInstanceIds")
                         .and_then(Value::as_array)
                         .is_some_and(|items| {
-                            items.iter().any(|item| item.as_str() == Some(instance_id))
+                            items.iter()
+                                .any(|item| item.as_str() == Some(resolved_instance_id.as_str()))
                         });
                     if primary_matches || participant_matches {
                         Some(projected)
@@ -1902,6 +2225,88 @@ where
         self.backend.get_instance_logs(id)
     }
 
+    fn list_kernel_chat_agent_profiles(&self, instance_id: &str) -> Result<Value, String> {
+        Err(format!(
+            "typed studio public api backend does not expose kernel chat agent profiles for instance \"{instance_id}\""
+        ))
+    }
+
+    fn list_kernel_chat_sessions(&self, instance_id: &str) -> Result<Value, String> {
+        Err(format!(
+            "typed studio public api backend does not expose kernel chat sessions for instance \"{instance_id}\""
+        ))
+    }
+
+    fn get_kernel_chat_session(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+    ) -> Result<Option<Value>, String> {
+        Err(format!(
+            "typed studio public api backend does not expose kernel chat session \"{session_id}\" for instance \"{instance_id}\""
+        ))
+    }
+
+    fn create_kernel_chat_session(&self, _input: Value) -> Result<Value, String> {
+        Err("typed studio public api backend does not expose kernel chat session creation".to_string())
+    }
+
+    fn list_kernel_chat_runs(&self, instance_id: &str, session_id: &str) -> Result<Value, String> {
+        Err(format!(
+            "typed studio public api backend does not expose kernel chat runs for session \"{session_id}\" on instance \"{instance_id}\""
+        ))
+    }
+
+    fn get_kernel_chat_run(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+        run_id: &str,
+    ) -> Result<Option<Value>, String> {
+        Err(format!(
+            "typed studio public api backend does not expose kernel chat run \"{run_id}\" for session \"{session_id}\" on instance \"{instance_id}\""
+        ))
+    }
+
+    fn patch_kernel_chat_session(&self, _input: Value) -> Result<Value, String> {
+        Err("typed studio public api backend does not expose kernel chat session mutation".to_string())
+    }
+
+    fn delete_kernel_chat_session(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+    ) -> Result<(), String> {
+        Err(format!(
+            "typed studio public api backend does not expose kernel chat session deletion for session \"{session_id}\" on instance \"{instance_id}\""
+        ))
+    }
+
+    fn start_kernel_chat_run(&self, _input: Value) -> Result<Value, String> {
+        Err("typed studio public api backend does not expose kernel chat run start".to_string())
+    }
+
+    fn abort_kernel_chat_run(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+        _run_id: Option<String>,
+    ) -> Result<bool, String> {
+        Err(format!(
+            "typed studio public api backend does not expose kernel chat run abort for session \"{session_id}\" on instance \"{instance_id}\""
+        ))
+    }
+
+    fn load_kernel_chat_messages(
+        &self,
+        instance_id: &str,
+        session_id: &str,
+    ) -> Result<Value, String> {
+        Err(format!(
+            "typed studio public api backend does not expose kernel chat messages for session \"{session_id}\" on instance \"{instance_id}\""
+        ))
+    }
+
     fn invoke_openclaw_gateway(
         &self,
         instance_id: &str,
@@ -2004,6 +2409,706 @@ where
     fn delete_instance_task(&self, instance_id: &str, task_id: &str) -> Result<bool, String> {
         self.backend.delete_instance_task(instance_id, task_id)
     }
+}
+
+fn normalize_optional_string(value: Option<String>) -> Option<String> {
+    value
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+}
+
+fn resolve_optional_string_patch(
+    patch: Option<Option<String>>,
+    current: Option<String>,
+) -> Option<String> {
+    match patch {
+        Some(next) => normalize_optional_string(next),
+        None => normalize_optional_string(current),
+    }
+}
+
+fn resolve_optional_bool_patch(
+    patch: Option<Option<bool>>,
+    current: Option<bool>,
+) -> Option<bool> {
+    match patch {
+        Some(next) => next,
+        None => current,
+    }
+}
+
+fn normalize_kernel_chat_title(value: Option<String>) -> String {
+    normalize_optional_string(value).unwrap_or_else(|| DEFAULT_KERNEL_CHAT_SESSION_TITLE.to_string())
+}
+
+fn is_managed_hermes_kernel_chat_instance(instance: &Value) -> bool {
+    instance.get("runtimeKind").and_then(Value::as_str) == Some("hermes")
+        && instance.get("deploymentMode").and_then(Value::as_str) == Some("local-managed")
+}
+
+fn build_managed_hermes_kernel_chat_agent_profiles(
+    instance_id: &str,
+    instance: &Value,
+) -> Vec<Value> {
+    let label = non_empty_string(instance.get("name")).unwrap_or_else(|| DEFAULT_HERMES_AGENT_LABEL.to_string());
+    vec![json!({
+        "kernelId": "hermes",
+        "instanceId": instance_id,
+        "agentId": DEFAULT_HERMES_AGENT_ID,
+        "label": label,
+        "description": "Managed Hermes kernel chat profile projected by the canonical host.",
+        "source": "studioProjection",
+        "systemPrompt": Value::Null,
+        "avatar": Value::Null,
+        "creator": "claw-studio-host"
+    })]
+}
+
+fn kernel_chat_instance_store_mut<'a>(
+    document: &'a mut KernelChatsDocument,
+    instance_id: &str,
+) -> &'a mut StoredKernelChatInstance {
+    document
+        .instances
+        .entry(instance_id.to_string())
+        .or_default()
+}
+
+fn build_kernel_chat_session_ref_value(
+    instance_id: &str,
+    session_id: &str,
+    agent_id: Option<&str>,
+) -> Value {
+    json!({
+        "kernelId": "hermes",
+        "instanceId": instance_id,
+        "sessionId": session_id,
+        "nativeSessionId": session_id,
+        "routingKey": Value::Null,
+        "agentId": agent_id
+            .map(|value| Value::String(value.to_string()))
+            .unwrap_or(Value::Null),
+        "lineageParentSessionId": Value::Null
+    })
+}
+
+fn build_kernel_chat_authority_value() -> Value {
+    json!({
+        "kind": "http",
+        "source": "studioProjection",
+        "durable": true,
+        "writable": true
+    })
+}
+
+fn build_kernel_chat_session_value(
+    instance_id: &str,
+    session_id: &str,
+    stored: &StoredKernelChatSession,
+) -> Value {
+    let last_message_preview = stored
+        .messages
+        .last()
+        .map(|message| message.text.trim().chars().take(120).collect::<String>())
+        .filter(|value| !value.is_empty());
+    let title = normalize_kernel_chat_title(stored.title.clone());
+    let lifecycle = if stored.messages.is_empty() {
+        "draft"
+    } else {
+        "ready"
+    };
+
+    json!({
+        "ref": build_kernel_chat_session_ref_value(
+            instance_id,
+            session_id,
+            stored.agent_id.as_deref(),
+        ),
+        "authority": build_kernel_chat_authority_value(),
+        "lifecycle": lifecycle,
+        "title": title,
+        "createdAt": stored.created_at,
+        "updatedAt": stored.updated_at.max(stored.created_at),
+        "messageCount": stored.messages.len() as u64,
+        "lastMessagePreview": last_message_preview.map(Value::String).unwrap_or(Value::Null),
+        "sessionKind": "authoritative",
+        "actorBinding": {
+            "agentId": stored.agent_id.clone().map(Value::String).unwrap_or(Value::Null),
+            "profileId": Value::Null,
+            "label": stored
+                .agent_id
+                .clone()
+                .map(Value::String)
+                .unwrap_or(Value::Null)
+        },
+        "modelBinding": {
+            "model": stored.model.clone().map(Value::String).unwrap_or(Value::Null),
+            "defaultModel": stored.model.clone().map(Value::String).unwrap_or(Value::Null),
+            "thinkingLevel": stored
+                .thinking_level
+                .clone()
+                .map(Value::String)
+                .unwrap_or(Value::Null),
+            "fastMode": stored.fast_mode.map(Value::Bool).unwrap_or(Value::Null),
+            "verboseLevel": stored
+                .verbose_level
+                .clone()
+                .map(Value::String)
+                .unwrap_or(Value::Null),
+            "reasoningLevel": stored
+                .reasoning_level
+                .clone()
+                .map(Value::String)
+                .unwrap_or(Value::Null)
+        },
+        "capabilities": ["runs", "sessionMutation"],
+        "activeRunId": Value::Null,
+        "nativeMetadata": {
+            "provider": "studio-public-api",
+            "runtimeKind": "hermes"
+        }
+    })
+}
+
+fn build_kernel_chat_message_value(
+    instance_id: &str,
+    session_id: &str,
+    message: &StoredKernelChatMessage,
+) -> Value {
+    let trimmed = message.text.trim();
+    let parts = if trimmed.is_empty() {
+        json!([{
+            "kind": "notice",
+            "code": "empty-content",
+            "text": message.text
+        }])
+    } else {
+        json!([{
+            "kind": "text",
+            "text": trimmed
+        }])
+    };
+
+    json!({
+        "id": message.id,
+        "sessionRef": build_kernel_chat_session_ref_value(instance_id, session_id, None),
+        "role": message.role,
+        "status": "complete",
+        "createdAt": message.created_at,
+        "updatedAt": message.updated_at.max(message.created_at),
+        "text": message.text,
+        "parts": parts,
+        "runId": message.run_id.clone().map(Value::String).unwrap_or(Value::Null),
+        "model": message.model.clone().map(Value::String).unwrap_or(Value::Null),
+        "senderLabel": message
+            .sender_label
+            .clone()
+            .map(Value::String)
+            .unwrap_or(Value::Null),
+        "nativeMetadata": message
+            .native_metadata
+            .clone()
+            .unwrap_or(Value::Null)
+    })
+}
+
+fn build_kernel_chat_run_value(
+    instance_id: &str,
+    session_id: &str,
+    session: &StoredKernelChatSession,
+    run: &ProjectedKernelChatRun,
+) -> Value {
+    let agent_id = normalize_optional_string(session.agent_id.clone());
+    let model = run
+        .model
+        .clone()
+        .or_else(|| normalize_optional_string(session.model.clone()));
+    let status = if run.has_assistant_message {
+        "completed"
+    } else {
+        "running"
+    };
+
+    let mut native_metadata = serde_json::Map::new();
+    native_metadata.insert(
+        "provider".to_string(),
+        Value::String("studio-public-api".to_string()),
+    );
+    native_metadata.insert(
+        "runtimeKind".to_string(),
+        Value::String("hermes".to_string()),
+    );
+    native_metadata.insert("persisted".to_string(), Value::Bool(true));
+    if let Some(agent_id) = agent_id.as_ref() {
+        native_metadata.insert("agentId".to_string(), Value::String(agent_id.clone()));
+    }
+    if let Some(model) = model.as_ref() {
+        native_metadata.insert("model".to_string(), Value::String(model.clone()));
+    }
+
+    json!({
+        "id": run.id,
+        "sessionRef": build_kernel_chat_session_ref_value(
+            instance_id,
+            session_id,
+            agent_id.as_deref(),
+        ),
+        "status": status,
+        "createdAt": run.created_at,
+        "updatedAt": run.updated_at.max(run.created_at),
+        "abortable": false,
+        "nativeMetadata": Value::Object(native_metadata)
+    })
+}
+
+fn project_kernel_chat_runs(session: &StoredKernelChatSession) -> Vec<ProjectedKernelChatRun> {
+    let mut runs = BTreeMap::<String, ProjectedKernelChatRun>::new();
+
+    for message in &session.messages {
+        let Some(run_id) = normalize_optional_string(message.run_id.clone()) else {
+            continue;
+        };
+        let message_updated_at = message.updated_at.max(message.created_at);
+        let message_model = normalize_optional_string(message.model.clone());
+        let is_assistant_message = message.role.eq_ignore_ascii_case("assistant");
+
+        runs.entry(run_id.clone())
+            .and_modify(|run| {
+                run.created_at = run.created_at.min(message.created_at);
+                run.updated_at = run.updated_at.max(message_updated_at);
+                if run.model.is_none() {
+                    run.model = message_model.clone();
+                }
+                run.has_assistant_message = run.has_assistant_message || is_assistant_message;
+            })
+            .or_insert_with(|| ProjectedKernelChatRun {
+                id: run_id,
+                created_at: message.created_at,
+                updated_at: message_updated_at,
+                model: message_model,
+                has_assistant_message: is_assistant_message,
+            });
+    }
+
+    let mut items = runs.into_values().collect::<Vec<_>>();
+    items.sort_by(|left, right| {
+        right
+            .updated_at
+            .cmp(&left.updated_at)
+            .then_with(|| right.created_at.cmp(&left.created_at))
+            .then_with(|| right.id.cmp(&left.id))
+    });
+    items
+}
+
+fn list_kernel_chat_sessions_from_document(
+    document: &KernelChatsDocument,
+    instance_id: &str,
+) -> Vec<Value> {
+    let mut items = document
+        .instances
+        .get(instance_id)
+        .map(|instance| {
+            instance
+                .sessions
+                .iter()
+                .map(|(session_id, stored)| {
+                    (
+                        stored.updated_at,
+                        stored.created_at,
+                        build_kernel_chat_session_value(instance_id, session_id, stored),
+                    )
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    items.sort_by(|left, right| right.0.cmp(&left.0).then_with(|| right.1.cmp(&left.1)));
+    items.into_iter().map(|(_, _, value)| value).collect()
+}
+
+fn find_kernel_chat_session_value(
+    document: &KernelChatsDocument,
+    instance_id: &str,
+    session_id: &str,
+) -> Option<Value> {
+    document
+        .instances
+        .get(instance_id)?
+        .sessions
+        .get(session_id)
+        .map(|stored| build_kernel_chat_session_value(instance_id, session_id, stored))
+}
+
+fn load_kernel_chat_messages_from_document(
+    document: &KernelChatsDocument,
+    instance_id: &str,
+    session_id: &str,
+) -> Vec<Value> {
+    document
+        .instances
+        .get(instance_id)
+        .and_then(|instance| instance.sessions.get(session_id))
+        .map(|session| {
+            session
+                .messages
+                .iter()
+                .map(|message| build_kernel_chat_message_value(instance_id, session_id, message))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
+fn list_kernel_chat_runs_from_document(
+    document: &KernelChatsDocument,
+    instance_id: &str,
+    session_id: &str,
+) -> Vec<Value> {
+    document
+        .instances
+        .get(instance_id)
+        .and_then(|instance| instance.sessions.get(session_id))
+        .map(|session| {
+            project_kernel_chat_runs(session)
+                .into_iter()
+                .map(|run| build_kernel_chat_run_value(instance_id, session_id, session, &run))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
+fn find_kernel_chat_run_value(
+    document: &KernelChatsDocument,
+    instance_id: &str,
+    session_id: &str,
+    run_id: &str,
+) -> Option<Value> {
+    let normalized_run_id = run_id.trim();
+    if normalized_run_id.is_empty() {
+        return None;
+    }
+
+    let session = document
+        .instances
+        .get(instance_id)?
+        .sessions
+        .get(session_id)?;
+
+    project_kernel_chat_runs(session)
+        .into_iter()
+        .find(|run| run.id == normalized_run_id)
+        .map(|run| build_kernel_chat_run_value(instance_id, session_id, session, &run))
+}
+
+fn create_kernel_chat_session_in_document(
+    document: &mut KernelChatsDocument,
+    _instance: &Value,
+    input: StudioCreateKernelChatSessionInput,
+) -> Result<Value, String> {
+    let now = unix_timestamp_ms();
+    let session_id = Uuid::new_v4().to_string();
+    let stored = StoredKernelChatSession {
+        title: normalize_optional_string(input.title),
+        model: normalize_optional_string(input.model),
+        thinking_level: None,
+        fast_mode: None,
+        verbose_level: None,
+        reasoning_level: None,
+        agent_id: normalize_optional_string(input.agent_id).or_else(|| Some(DEFAULT_HERMES_AGENT_ID.to_string())),
+        created_at: now,
+        updated_at: now,
+        messages: Vec::new(),
+    };
+    kernel_chat_instance_store_mut(document, input.instance_id.as_str())
+        .sessions
+        .insert(session_id.clone(), stored.clone());
+    Ok(build_kernel_chat_session_value(
+        input.instance_id.as_str(),
+        session_id.as_str(),
+        &stored,
+    ))
+}
+
+fn patch_kernel_chat_session_in_document(
+    document: &mut KernelChatsDocument,
+    _instance: &Value,
+    input: StudioPatchKernelChatSessionInput,
+) -> Result<Value, String> {
+    let stored = kernel_chat_instance_store_mut(document, input.instance_id.as_str())
+        .sessions
+        .get_mut(input.session_id.as_str())
+        .ok_or_else(|| format!("kernel chat session \"{}\"", input.session_id))?;
+
+    stored.title = resolve_optional_string_patch(input.title, stored.title.clone());
+    stored.model = resolve_optional_string_patch(input.model, stored.model.clone());
+    stored.thinking_level =
+        resolve_optional_string_patch(input.thinking_level, stored.thinking_level.clone());
+    stored.fast_mode = resolve_optional_bool_patch(input.fast_mode, stored.fast_mode);
+    stored.verbose_level =
+        resolve_optional_string_patch(input.verbose_level, stored.verbose_level.clone());
+    stored.reasoning_level =
+        resolve_optional_string_patch(input.reasoning_level, stored.reasoning_level.clone());
+    stored.updated_at = unix_timestamp_ms();
+
+    Ok(build_kernel_chat_session_value(
+        input.instance_id.as_str(),
+        input.session_id.as_str(),
+        stored,
+    ))
+}
+
+fn delete_kernel_chat_session_in_document(
+    document: &mut KernelChatsDocument,
+    instance_id: &str,
+    session_id: &str,
+) {
+    if let Some(instance) = document.instances.get_mut(instance_id) {
+        instance.sessions.remove(session_id);
+        if instance.sessions.is_empty() {
+            document.instances.remove(instance_id);
+        }
+    }
+}
+
+fn build_hermes_message_payload(content: &str) -> Value {
+    json!([
+        {
+            "role": "user",
+            "content": content,
+        }
+    ])
+}
+
+fn resolve_hermes_chat_endpoint(instance: &Value) -> Result<String, String> {
+    let base_url = normalized_instance_base_url(instance)
+        .ok_or_else(|| "managed Hermes instance does not expose an HTTP base URL".to_string())?;
+
+    if base_url.ends_with("/v1/chat/completions")
+        || base_url.ends_with("/chat/completions")
+        || base_url.ends_with("/v1/responses")
+        || base_url.ends_with("/responses")
+    {
+        return Ok(base_url);
+    }
+
+    Ok(format!("{}/v1/chat/completions", base_url.trim_end_matches('/')))
+}
+
+fn request_hermes_chat_completion(
+    instance: &Value,
+    session_id: &str,
+    model: Option<&str>,
+    content: &str,
+) -> Result<Value, String> {
+    let endpoint = resolve_hermes_chat_endpoint(instance)?;
+    let auth_token = instance_config_string(instance, "authToken");
+    let session_id = session_id.to_string();
+    let endpoint = endpoint.to_string();
+    let mut body = serde_json::Map::new();
+    body.insert("messages".to_string(), build_hermes_message_payload(content));
+    body.insert("stream".to_string(), Value::Bool(false));
+    if let Some(model) = model.map(str::trim).filter(|value| !value.is_empty()) {
+        body.insert("model".to_string(), Value::String(model.to_string()));
+    }
+    let future = async move {
+        let client = Client::builder()
+            .build()
+            .map_err(|error| format!("build Hermes HTTP client: {error}"))?;
+        let mut request = client
+            .post(endpoint.as_str())
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+            .header("X-Hermes-Session-Id", session_id);
+
+        if let Some(auth_token) = auth_token {
+            request = request.bearer_auth(auth_token);
+        }
+
+        let response = request
+            .json(&Value::Object(body))
+            .send()
+            .await
+            .map_err(|error| format!("start Hermes kernel chat run: {error}"))?;
+        let status = response.status();
+        if !status.is_success() {
+            let response_text = response.text().await.unwrap_or_default();
+            return Err(format!(
+                "Hermes kernel chat run failed with status {}: {}",
+                status,
+                response_text.trim()
+            ));
+        }
+
+        response
+            .json::<Value>()
+            .await
+            .map_err(|error| format!("decode Hermes kernel chat response: {error}"))
+    };
+
+    std::thread::spawn(move || {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|error| format!("create Hermes runtime bridge: {error}"))?
+            .block_on(future)
+    })
+    .join()
+    .map_err(|_| "join Hermes runtime bridge thread".to_string())?
+}
+
+fn collect_text_fragments(value: &Value, fragments: &mut Vec<String>) {
+    match value {
+        Value::String(text) => {
+            let normalized = text.trim();
+            if !normalized.is_empty() {
+                fragments.push(normalized.to_string());
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                collect_text_fragments(item, fragments);
+            }
+        }
+        Value::Object(object) => {
+            if let Some(text) = object.get("text").and_then(Value::as_str) {
+                let normalized = text.trim();
+                if !normalized.is_empty() {
+                    fragments.push(normalized.to_string());
+                }
+            }
+            if let Some(content) = object.get("content") {
+                collect_text_fragments(content, fragments);
+            }
+            if let Some(message) = object.get("message") {
+                collect_text_fragments(message, fragments);
+            }
+            if let Some(output_text) = object.get("output_text").and_then(Value::as_str) {
+                let normalized = output_text.trim();
+                if !normalized.is_empty() {
+                    fragments.push(normalized.to_string());
+                }
+            }
+            for (key, value) in object {
+                if matches!(key.as_str(), "text" | "content" | "message" | "output_text") {
+                    continue;
+                }
+                collect_text_fragments(value, fragments);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn extract_hermes_message_text(payload: &Value) -> String {
+    if let Some(choices) = payload.get("choices").and_then(Value::as_array) {
+        let mut fragments = Vec::new();
+        for choice in choices {
+            if let Some(content) = choice
+                .get("message")
+                .and_then(|value| value.get("content"))
+            {
+                collect_text_fragments(content, &mut fragments);
+            }
+        }
+        if !fragments.is_empty() {
+            return fragments.join("\n\n");
+        }
+    }
+
+    if let Some(output) = payload.get("output") {
+        let mut fragments = Vec::new();
+        collect_text_fragments(output, &mut fragments);
+        if !fragments.is_empty() {
+            return fragments.join("\n\n");
+        }
+    }
+
+    let mut fragments = Vec::new();
+    collect_text_fragments(payload, &mut fragments);
+    if !fragments.is_empty() {
+        return fragments.join("\n\n");
+    }
+    payload
+        .as_str()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
+        .unwrap_or_else(|| payload.to_string())
+}
+
+fn start_kernel_chat_run_in_document(
+    document: &mut KernelChatsDocument,
+    instance: &Value,
+    input: StudioStartKernelChatRunInput,
+) -> Result<Value, String> {
+    let model = normalize_optional_string(input.model.clone());
+    let response_payload = request_hermes_chat_completion(
+        instance,
+        input.session_id.as_str(),
+        model.as_deref(),
+        input.content.as_str(),
+    )?;
+    let run_id = response_payload
+        .get("id")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
+        .unwrap_or_else(|| format!("hermes-run-{}", Uuid::new_v4()));
+    let now = unix_timestamp_ms();
+    let assistant_text = extract_hermes_message_text(&response_payload);
+    let instance_store = kernel_chat_instance_store_mut(document, input.instance_id.as_str());
+    let session = instance_store
+        .sessions
+        .get_mut(input.session_id.as_str())
+        .ok_or_else(|| format!("kernel chat session \"{}\"", input.session_id))?;
+
+    session.messages.push(StoredKernelChatMessage {
+        id: format!("message-{}", Uuid::new_v4()),
+        role: "user".to_string(),
+        text: input.content.clone(),
+        created_at: now,
+        updated_at: now,
+        run_id: Some(run_id.clone()),
+        model: model.clone(),
+        sender_label: Some("You".to_string()),
+        native_metadata: Some(json!({
+            "source": "studio-public-api"
+        })),
+    });
+    session.messages.push(StoredKernelChatMessage {
+        id: format!("message-{}", Uuid::new_v4()),
+        role: "assistant".to_string(),
+        text: assistant_text,
+        created_at: now,
+        updated_at: now,
+        run_id: Some(run_id.clone()),
+        model: model.clone(),
+        sender_label: Some(DEFAULT_HERMES_AGENT_LABEL.to_string()),
+        native_metadata: Some(json!({
+            "source": "studio-public-api",
+            "response": response_payload
+        })),
+    });
+    session.updated_at = unix_timestamp_ms().max(now);
+    if model.is_some() {
+        session.model = model.clone();
+    }
+
+    Ok(json!({
+        "id": run_id,
+        "sessionRef": build_kernel_chat_session_ref_value(
+            input.instance_id.as_str(),
+            input.session_id.as_str(),
+            session.agent_id.as_deref(),
+        ),
+        "status": "completed",
+        "createdAt": now,
+        "updatedAt": session.updated_at,
+        "abortable": false,
+        "nativeMetadata": {
+            "provider": "studio-public-api"
+        }
+    }))
 }
 
 fn is_built_in_local_openclaw_instance(instance: &Value) -> bool {
@@ -3521,6 +4626,23 @@ fn normalize_default_instance_selection(document: &mut InstancesDocument) -> boo
     changed
 }
 
+fn canonical_built_in_instance_id(value: &str) -> &str {
+    let normalized = value.trim();
+    if normalized == BUILT_IN_INSTANCE_ID {
+        BUILT_IN_INSTANCE_ID
+    } else {
+        normalized
+    }
+}
+
+fn canonicalize_built_in_instance_value(value: &str, built_in_instance_id: &str) -> String {
+    if value.trim() == built_in_instance_id {
+        built_in_instance_id.to_string()
+    } else {
+        value.trim().to_string()
+    }
+}
+
 fn to_control_plane_gateway_invoke_request(
     request: StudioOpenClawGatewayInvokeRequest,
     options: StudioOpenClawGatewayInvokeOptions,
@@ -3740,7 +4862,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     #[test]
-    fn default_provider_exposes_local_built_in_instance_projection() {
+    fn default_provider_exposes_canonical_built_in_instance_projection() {
         let root = tempfile::tempdir().expect("temp dir");
         let provider = build_default_studio_public_api_provider(
             root.path().to_path_buf(),
@@ -3753,7 +4875,8 @@ mod tests {
             .as_array()
             .and_then(|items| {
                 items.iter().find(|item| {
-                    item.get("id").and_then(serde_json::Value::as_str) == Some("local-built-in")
+                    item.get("id").and_then(serde_json::Value::as_str)
+                        == Some("managed-openclaw-primary")
                 })
             })
             .expect("built-in instance");
@@ -3799,7 +4922,7 @@ mod tests {
         .expect("provider");
 
         let built_in = provider
-            .get_instance("local-built-in")
+            .get_instance("managed-openclaw-primary")
             .expect("get instance")
             .expect("built-in instance");
 
@@ -3840,6 +4963,29 @@ mod tests {
                 .and_then(|value| value.get("baseUrl"))
                 .and_then(serde_json::Value::as_str),
             Some("http://10.0.0.8:42617")
+        );
+    }
+
+    #[test]
+    fn default_provider_rejects_legacy_built_in_openclaw_identity_requests() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let provider = build_default_studio_public_api_provider(
+            root.path().to_path_buf(),
+            std::sync::Arc::new(OpenClawControlPlane::inactive("test-host")),
+        )
+        .expect("provider");
+
+        assert_eq!(
+            provider
+                .get_instance("local-built-in")
+                .expect("legacy lookup should not error"),
+            None
+        );
+        assert_eq!(
+            provider
+                .get_instance_detail("local-built-in")
+                .expect("legacy detail lookup should not error"),
+            None
         );
     }
 
@@ -4004,12 +5150,12 @@ mod tests {
         .expect("provider");
 
         let detail = provider
-            .get_instance_detail("local-built-in")
+            .get_instance_detail("managed-openclaw-primary")
             .expect("detail request should succeed")
             .expect("built-in detail should exist");
         let task_create_error = provider
             .create_instance_task(
-                "local-built-in",
+                "managed-openclaw-primary",
                 json!({
                     "id": "job-1",
                     "name": "Daily Sync",
@@ -4028,14 +5174,14 @@ mod tests {
             .expect_err("inactive control plane should not expose managed task CRUD");
         let file_update_error = provider
             .update_instance_file_content(
-                "local-built-in",
+                "managed-openclaw-primary",
                 "/workspace/main/AGENTS.md",
                 "# Updated main agent".to_string(),
             )
             .expect_err("inactive control plane should not expose managed file edits");
         let provider_update_error = provider
             .update_instance_llm_provider_config(
-                "local-built-in",
+                "managed-openclaw-primary",
                 "openai",
                 json!({
                     "endpoint": "https://api.openai.com/v1",
@@ -4124,7 +5270,7 @@ mod tests {
             .to_string();
 
         let built_in = provider
-            .get_instance("local-built-in")
+            .get_instance("managed-openclaw-primary")
             .expect("get built-in")
             .expect("built-in projection");
         let remote = provider
@@ -4464,7 +5610,7 @@ mod tests {
         .expect("provider");
 
         let detail = provider
-            .get_instance_detail("local-built-in")
+            .get_instance_detail("managed-openclaw-primary")
             .expect("detail request should succeed")
             .expect("built-in detail should exist");
         assert_eq!(detail.get("consoleAccess"), Some(&Value::Null));
@@ -4497,7 +5643,7 @@ mod tests {
         .expect("provider");
 
         let detail = provider
-            .get_instance_detail("local-built-in")
+            .get_instance_detail("managed-openclaw-primary")
             .expect("detail request should succeed")
             .expect("built-in detail should exist");
         let console_access = detail
@@ -4829,7 +5975,7 @@ mod tests {
                 json!({
                     "title": "Shared Thread",
                     "primaryInstanceId": id,
-                    "participantInstanceIds": [id, "local-built-in"],
+                    "participantInstanceIds": [id, "managed-openclaw-primary"],
                     "messages": []
                 }),
             )
@@ -4849,7 +5995,7 @@ mod tests {
         assert!(provider.delete_instance(id).expect("delete instance"));
 
         let built_in_conversations = provider
-            .list_conversations("local-built-in")
+            .list_conversations("managed-openclaw-primary")
             .expect("list built-in conversations");
         let built_in_items = built_in_conversations
             .as_array()
@@ -4861,14 +6007,14 @@ mod tests {
 
         assert_eq!(
             shared.get("primaryInstanceId").and_then(Value::as_str),
-            Some("local-built-in")
+            Some("managed-openclaw-primary")
         );
         assert_eq!(
             shared
                 .get("participantInstanceIds")
                 .and_then(Value::as_array)
                 .cloned(),
-            Some(vec![Value::String("local-built-in".to_string())])
+            Some(vec![Value::String("managed-openclaw-primary".to_string())])
         );
         assert!(
             built_in_items
@@ -4901,7 +6047,8 @@ mod tests {
             .as_array()
             .and_then(|items| {
                 items.iter().find(|item| {
-                    item.get("id").and_then(serde_json::Value::as_str) == Some("local-built-in")
+                    item.get("id").and_then(serde_json::Value::as_str)
+                        == Some("managed-openclaw-primary")
                 })
             })
             .expect("built-in instance");

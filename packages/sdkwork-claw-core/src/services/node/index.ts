@@ -1,4 +1,6 @@
 export * from '../accountService.ts';
+export * from '../agentCatalog.ts';
+export * from '../agentInstallService.ts';
 export * from '../cronTaskPayload.ts';
 export * from '../dashboardCommerceService.ts';
 export * from '../hostEndpointService.ts';
@@ -9,6 +11,9 @@ export * from '../instanceDirectoryService.ts';
 export * from '../kernelConfigAttachmentService.ts';
 export * from '../kernelConfigDiscoveryService.ts';
 export * from '../kernelDetailModuleRegistry.ts';
+export * from '../kernelAgentManagementService.ts';
+export * from '../kernelAgentLibraryService.ts';
+export * from '../kernelOwnedAgentLibraryService.ts';
 export * from '../kernelPlatformService.ts';
 export * from '../hermesKernelConfigPathService.ts';
 export * from '../hermesPathResolutionService.ts';

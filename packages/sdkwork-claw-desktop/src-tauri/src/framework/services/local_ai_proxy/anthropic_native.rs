@@ -2,7 +2,6 @@ use super::{
     observability, request_context,
     response_io::{build_buffered_upstream_response, ProxyRouteOutcome},
     streaming,
-    support::proxy_error,
     types::{LocalAiProxyAppState, LocalAiProxyTokenUsage, ProxyHttpResult},
     ANTHROPIC_BETA_HEADER, ANTHROPIC_CLIENT_PROTOCOL, ANTHROPIC_VERSION_HEADER,
     DEFAULT_ANTHROPIC_VERSION, X_API_KEY_HEADER,
@@ -13,6 +12,7 @@ use axum::{
     http::{header::CONTENT_TYPE, HeaderMap, HeaderValue, StatusCode},
     response::Response,
 };
+use sdkwork_local_api_proxy_native::support::proxy_error;
 use serde_json::Value;
 use std::time::Instant;
 

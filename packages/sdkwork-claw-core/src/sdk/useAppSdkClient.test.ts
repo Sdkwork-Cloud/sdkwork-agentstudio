@@ -3,6 +3,7 @@ import {
   clearAppSdkSessionTokens,
   createAppSdkClientConfig,
   persistAppSdkSessionTokens,
+  readAppSdkSessionTokens,
   resetAppSdkClient,
 } from './useAppSdkClient.ts';
 
@@ -36,13 +37,20 @@ function stubRuntimeEnv(name: string, value: string): void {
   process.env[name] = value;
 }
 
-function installBrowserStorage(storage: Storage): void {
+function installBrowserStorage(
+  localStorage: Storage,
+  sessionStorage: Storage = createMemoryStorage(),
+): void {
   Object.defineProperty(globalThis, 'localStorage', {
-    value: storage,
+    value: localStorage,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis, 'sessionStorage', {
+    value: sessionStorage,
     configurable: true,
   });
   Object.defineProperty(globalThis, 'window', {
-    value: { localStorage: storage },
+    value: { localStorage, sessionStorage },
     configurable: true,
   });
 }
@@ -50,7 +58,7 @@ function installBrowserStorage(storage: Storage): void {
 beforeEach(() => {
   resetAppSdkClient();
   clearAppSdkSessionTokens();
-  installBrowserStorage(createMemoryStorage());
+  installBrowserStorage(createMemoryStorage(), createMemoryStorage());
 });
 
 afterEach(() => {
@@ -67,6 +75,7 @@ afterEach(() => {
 describe('createAppSdkClientConfig', () => {
   it('supports owner-scoped organization base urls and access tokens', () => {
     stubRuntimeEnv('VITE_APP_ENV', 'development');
+    stubRuntimeEnv('MODE', 'development');
     stubRuntimeEnv('VITE_OWNER_MODE', 'organization');
     stubRuntimeEnv('VITE_API_BASE_URL', 'https://api-root.sdkwork.com');
     stubRuntimeEnv('VITE_ORGANIZATION_API_BASE_URL', 'https://api-org.sdkwork.com/');
@@ -76,13 +85,13 @@ describe('createAppSdkClientConfig', () => {
 
     const config = createAppSdkClientConfig();
 
-    expect(config.env).toBe('development');
+    expect(config.env).toBe(process.env.VITEST ? 'test' : 'development');
     expect(config.baseUrl).toBe('https://api-org.sdkwork.com');
     expect(config.accessToken).toBe('organization-access-token');
     expect(config.platform).toBe('desktop');
   });
 
-  it('persists auth runtime state into standardized core storage keys', () => {
+  it('persists auth runtime state into standardized core and user-center storage keys', () => {
     persistAppSdkSessionTokens({
       authToken: 'Bearer auth-token',
       accessToken: 'owner-access-token',
@@ -92,6 +101,21 @@ describe('createAppSdkClientConfig', () => {
     expect(globalThis.localStorage.getItem('sdkwork.core.pc-react.auth-token')).toBe('auth-token');
     expect(globalThis.localStorage.getItem('sdkwork.core.pc-react.access-token')).toBe('owner-access-token');
     expect(globalThis.localStorage.getItem('sdkwork.core.pc-react.refresh-token')).toBe('refresh-token');
+    expect(globalThis.sessionStorage.getItem('claw-studio.user-center.auth-token')).toBe('auth-token');
+    expect(globalThis.sessionStorage.getItem('claw-studio.user-center.access-token')).toBe('owner-access-token');
+    expect(globalThis.sessionStorage.getItem('claw-studio.user-center.refresh-token')).toBe('refresh-token');
     expect(globalThis.localStorage.getItem('claw-studio-auth-session')).toBeNull();
+  });
+
+  it('reads auth runtime state back from standardized user-center storage when runtime storage is empty', () => {
+    globalThis.sessionStorage.setItem('claw-studio.user-center.auth-token', 'user-center-auth');
+    globalThis.sessionStorage.setItem('claw-studio.user-center.access-token', 'user-center-access');
+    globalThis.sessionStorage.setItem('claw-studio.user-center.refresh-token', 'user-center-refresh');
+
+    const tokens = readAppSdkSessionTokens();
+
+    expect(tokens.authToken).toBe('user-center-auth');
+    expect(tokens.accessToken).toBe('user-center-access');
+    expect(tokens.refreshToken).toBe('user-center-refresh');
   });
 });

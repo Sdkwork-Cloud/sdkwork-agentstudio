@@ -911,8 +911,7 @@ fn ensure_built_in_openclaw_state(
     fs::create_dir_all(&paths.openclaw_credentials_dir)?;
     let authority = KernelRuntimeAuthorityService::new();
     let config_file_path = authority.active_config_file_path("openclaw", paths)?;
-    let imported_config =
-        authority.import_or_default_openclaw_config(paths, &config_file_path)?;
+    let imported_config = authority.import_or_default_openclaw_config(paths, &config_file_path)?;
 
     let mut config = imported_config.root;
     sanitize_legacy_provider_runtime_config(&mut config);
@@ -2498,11 +2497,7 @@ mod tests {
             LOCAL_AI_PROXY_DEFAULT_PORT
         );
 
-        fs::write(
-            &paths.openclaw_config_file,
-            seeded_openclaw_config,
-        )
-        .expect("seed config file");
+        fs::write(&paths.openclaw_config_file, seeded_openclaw_config).expect("seed config file");
 
         service
             .ensure_bundled_runtime_from_root(&paths, &resource_root)

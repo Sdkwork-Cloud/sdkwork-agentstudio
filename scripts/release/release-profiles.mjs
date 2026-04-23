@@ -95,7 +95,7 @@ const CLAW_STUDIO_RELEASE_PROFILE = Object.freeze({
     }),
   },
   server: Object.freeze({
-    binaryName: 'sdkwork-claw-server',
+    binaryName: 'claw-server',
     matrix: Object.freeze(
       NATIVE_RELEASE_TARGET_MATRIX.map((entry) => Object.freeze({
         ...entry,

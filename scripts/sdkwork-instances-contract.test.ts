@@ -203,7 +203,10 @@ runTest(
     assert.match(routeSource, /resolveSupportedInstanceDetailModule/);
     assert.match(routeSource, /createInstanceDetailSource/);
     assert.match(routeSource, /detailModule\.DetailPage/);
-    assert.match(routeSource, /<DetailPage source=\{detailSource\} \/>/);
+    assert.match(
+      routeSource,
+      /<DetailPage[\s\S]*source=\{detailSource\}[\s\S]*onOpenAgentMarketModal=\{onOpenAgentMarketModal\}[\s\S]*\/>/,
+    );
     assert.match(routeSource, /loadBaseDetail:\s*(?:async\s*)?\(instanceId\)\s*=>/);
     assert.match(routeSource, /loadModulePayload:\s*(?:async\s*)?\(instanceId\)\s*=>/);
     assert.doesNotMatch(routeSource, /extensions:\s*\{/);
@@ -211,7 +214,8 @@ runTest(
     assert.match(routeSource, /loadBaseDetail:\s*\(\)\s*=>\s*loadBaseDetail\(instanceId\)/);
     assert.doesNotMatch(routeSource, /function OpenClawInstanceDetailPage\(/);
     assert.match(detailSource, /function OpenClawInstanceDetailPage\(/);
-    assert.match(detailSource, /source\??:\s*InstanceDetailSource/);
+    assert.match(detailSource, /type InstanceDetailPageProps,/);
+    assert.match(detailSource, /\}: InstanceDetailPageProps\)/);
     assert.match(detailSource, /source\s*\.\s*loadModulePayload\(\)/);
     assert.match(detailSource, /getOpenClawWorkbenchFromModulePayload/);
     assert.match(detailSource, /instanceWorkbenchService\.getInstanceWorkbench\(/);
@@ -233,7 +237,13 @@ runTest(
     assert.doesNotMatch(detailSourceContractSource, /OpenClawInstanceDetailSourceExtension/);
     assert.doesNotMatch(detailSourceContractSource, /extensions\?: TExtensions/);
     assert.doesNotMatch(detailSourceContractSource, /getOpenClawInstanceDetailSourceExtension/);
-    assert.match(detailModuleTypesSource, /DetailPage: ComponentType<\{ source: InstanceDetailSource \}>/);
+    assert.match(detailModuleTypesSource, /export interface InstanceDetailPageProps \{/);
+    assert.match(detailModuleTypesSource, /source: InstanceDetailSource;/);
+    assert.match(
+      detailModuleTypesSource,
+      /onOpenAgentMarketModal:\s*\(\s*request: InstanceDetailAgentMarketModalRequest,\s*\)\s*=>\s*void;/,
+    );
+    assert.match(detailModuleTypesSource, /DetailPage: ComponentType<InstanceDetailPageProps>;/);
     assert.match(detailModuleTypesSource, /export interface InstanceDetailModulePayloadLoadContext/);
     assert.match(detailModuleTypesSource, /loadBaseDetail: \(\) => Promise<InstanceBaseDetail \| null>/);
     assert.match(
@@ -952,8 +962,8 @@ runTest(
     assert.match(navigationHandlers, /createSharedStatusLabelGetter\(t\)/);
     assert.match(navigationHandlers, /buildInstanceDetailNavigationHandlers\(\{/);
     assert.match(navigationHandlers, /instance,/);
-    assert.match(navigationHandlers, /instanceId: id,/);
     assert.match(navigationHandlers, /navigate,/);
+    assert.match(navigationHandlers, /openAgentMarketModal: \(\) => \{/);
     assert.match(navigationHandlers, /setActiveInstanceId,/);
 
     assert.doesNotMatch(detailSource, /const getSharedStatusLabel = \(status: string\) => /);
@@ -962,7 +972,7 @@ runTest(
     assert.doesNotMatch(detailSource, /onClick=\{\(\) => navigate\('\/instances'\)\}/);
     assert.doesNotMatch(detailSource, /onSetActive=\{\(\) => setActiveInstanceId\(instance\.id\)\}/);
 
-    assert.match(detailSource, /onOpenAgentMarket: detailNavigationHandlers\.onOpenAgentMarket,/);
+    assert.doesNotMatch(detailSource, /onOpenAgentMarket: detailNavigationHandlers\.onOpenAgentMarket,/);
     assert.match(detailSource, /onOpenProviderCenter: detailNavigationHandlers\.onOpenProviderCenter,/);
     assert.match(detailSource, /onClick=\{detailNavigationHandlers\.onBackToInstances\}/);
     assert.match(detailSource, /onSetActive=\{detailNavigationHandlers\.onSetActive\}/);
@@ -1005,7 +1015,7 @@ runTest(
       availabilityRendererBuilder,
       /const renderWorkbenchSectionAvailability = createInstanceDetailSectionAvailabilityRenderer\(\{/,
     );
-    assert.match(availabilityRendererBuilder, /workbench,/);
+    assert.match(availabilityRendererBuilder, /workbench(?:\s*,|:\s*displayWorkbench,)/);
     assert.match(availabilityRendererBuilder, /t,/);
     assert.match(availabilityRendererBuilder, /formatWorkbenchLabel,/);
     assert.match(availabilityRendererBuilder, /getCapabilityTone,/);
@@ -1143,7 +1153,11 @@ runTest(
     assert.match(providerCatalogRunner, /reloadWorkbench: workbenchReloadHandlers\.reloadWorkbench,/);
     assert.match(agentSkillRunner, /reloadWorkbench: workbenchReloadHandlers\.reloadWorkbench,/);
     assert.match(agentRunner, /reloadWorkbench: workbenchReloadHandlers\.reloadWorkbench,/);
-    assert.match(lifecycleRunner, /reloadWorkbench: workbenchReloadHandlers\.reloadWorkbenchImmediately,/);
+    assert.match(
+      detailSource,
+      /const baseRunLifecycleAction = createInstanceLifecycleActionRunner\(\{[\s\S]*reloadWorkbench: workbenchReloadHandlers\.reloadWorkbenchImmediately,[\s\S]*\}\);/s,
+    );
+    assert.match(lifecycleRunner, /const didSucceed = await baseRunLifecycleAction\(request\);/);
     assert.match(
       configChannelRunner,
       /reloadWorkbench: workbenchReloadHandlers\.reloadWorkbench,/,
@@ -1313,7 +1327,7 @@ runTest(
     assert.match(agentMutationHandlers, /reportError: toastReporters\.reportError,/);
     assert.match(
       detailSource,
-      /const agentMutationStateBindings = createInstanceDetailAgentMutationStateBindings\(\{\s*setIsAgentDialogOpen,\s*setEditingAgentId,\s*setAgentDeleteId,\s*\}\);/s,
+      /const agentMutationStateBindings = createInstanceDetailAgentMutationStateBindings\(\{\s*setIsAgentCreationWorkflowOpen,\s*setIsAgentDialogOpen,\s*setEditingAgentId,\s*setAgentDeleteId,\s*\}\);/s,
     );
     assert.match(
       agentMutationHandlers,
@@ -1359,6 +1373,10 @@ runTest(
       /export function createInstanceDetailAgentMutationStateBindings\(args: \{/,
     );
     assert.match(agentMutationStateSupportSource, /dismissAgentDialog: \(\) => \{/);
+    assert.match(
+      agentMutationStateSupportSource,
+      /args\.setIsAgentCreationWorkflowOpen\(false\);/,
+    );
     assert.match(agentMutationStateSupportSource, /args\.setIsAgentDialogOpen\(false\);/);
     assert.match(agentMutationStateSupportSource, /args\.setEditingAgentId\(null\);/);
     assert.match(
@@ -1411,7 +1429,9 @@ runTest(
     assert.match(agentDialogHandlers, /setIsAgentDialogOpen,/);
     assert.doesNotMatch(detailSource, /const openCreateAgentDialog = \(\) => \{/);
     assert.doesNotMatch(detailSource, /const openEditAgentDialog = /);
-    assert.match(detailSource, /onCreateAgent: agentDialogStateHandlers\.openCreateAgentDialog,/);
+    assert.match(detailSource, /const openAgentCreationWorkflow = \(\) => \{/);
+    assert.match(detailSource, /createOpenClawAgentCreateDialogState\(\)/);
+    assert.match(detailSource, /onOpenAgentCreationWorkflow: openAgentCreationWorkflow,/);
     assert.match(detailSource, /onEditAgent: agentDialogStateHandlers\.openEditAgentDialog,/);
 
     assert.match(
@@ -1504,7 +1524,7 @@ runTest(
       mainWorkbenchLoadBlock,
       /loadWorkbench:\s*async\s*\(instanceId\)\s*=>/,
     );
-    assert.match(mainWorkbenchLoadBlock, /source\?\.instanceId === instanceId/);
+    assert.match(mainWorkbenchLoadBlock, /source\.instanceId === instanceId/);
     assert.match(
       mainWorkbenchLoadBlock,
       /getOpenClawWorkbenchFromModulePayload\(await source\.loadModulePayload\(\)\)/,
@@ -1545,11 +1565,15 @@ runTest(
     );
     assert.match(
       workbenchStateSource,
-      /if \(cancelled\) \{\s*return;\s*\}\s*setWorkbench\(nextWorkbench\);/s,
+      /import \{ normalizeInstanceWorkbenchSnapshot \} from '\.\/instanceWorkbenchNormalization\.ts';/,
     );
     assert.match(
       workbenchStateSource,
-      /setConfig\(nextWorkbench\?\.config \|\| null\);/,
+      /if \(cancelled\) \{\s*return;\s*\}\s*const normalizedWorkbench = normalizeInstanceWorkbenchSnapshot\(nextWorkbench\);\s*setWorkbench\(normalizedWorkbench\);/s,
+    );
+    assert.match(
+      workbenchStateSource,
+      /setConfig\(normalizedWorkbench\?\.config \|\| null\);/,
     );
     assert.match(workbenchStateSource, /reportError\(error\);/);
     assert.match(
@@ -1566,6 +1590,7 @@ runTest(
     );
     assert.doesNotMatch(workbenchStateSource, /instanceWorkbenchService\./);
     assert.doesNotMatch(workbenchStateSource, /source\.loadModulePayload/);
+    assert.match(servicesIndexSource, /instanceWorkbenchNormalization/);
   },
 );
 
@@ -1778,7 +1803,7 @@ runTest(
     const agentWorkbenchLoadEffect = extractBetween(
       detailSource,
       'return startLoadInstanceDetailAgentWorkbench({',
-      'applyInstanceDetailInstanceSwitchResetState({',
+      '}, [activeSection, displayWorkbench, id, selectedAgentId]);',
     );
 
     assert.match(detailSource, /applyInstanceDetailAgentWorkbenchSyncState\(\{/);
@@ -1790,6 +1815,7 @@ runTest(
     assert.doesNotMatch(agentSelectionSyncEffect, /agents\.some/);
 
     assert.match(detailSource, /startLoadInstanceDetailAgentWorkbench\(\{/);
+    assert.match(detailSource, /workbench: displayWorkbench,/);
     assert.match(
       detailSource,
       /loadAgentWorkbench: workbenchLoaderBindings\.loadAgentWorkbench,/,
@@ -2095,13 +2121,11 @@ runTest(
     assert.match(servicesIndexSource, /instanceLifecycleActionSupport/);
     assert.match(servicesIndexSource, /instanceDetailLifecycleMutationSupport/);
     assert.match(servicesIndexSource, /instanceDetailDeleteSupport/);
-    assert.match(lifecycleRunner, /createInstanceLifecycleActionRunner\(\{/);
     assert.match(
-      lifecycleRunner,
-      /reloadWorkbench: workbenchReloadHandlers\.reloadWorkbenchImmediately,/,
+      detailSource,
+      /const baseRunLifecycleAction = createInstanceLifecycleActionRunner\(\{[\s\S]*reloadWorkbench: workbenchReloadHandlers\.reloadWorkbenchImmediately,[\s\S]*reportSuccess: toastReporters\.reportSuccess,[\s\S]*reportError: toastReporters\.reportError,[\s\S]*\}\);/s,
     );
-    assert.match(lifecycleRunner, /reportSuccess: toastReporters\.reportSuccess,/);
-    assert.match(lifecycleRunner, /reportError: toastReporters\.reportError,/);
+    assert.match(lifecycleRunner, /const didSucceed = await baseRunLifecycleAction\(request\);/);
 
     assert.match(lifecycleHandlers, /runLifecycleAction,/);
     assert.match(
@@ -3434,18 +3458,43 @@ runTest('sdkwork-claw-instances keeps the OpenClaw workbench file explorer align
   assert.match(rustWorkbenchSource, /"MEMORY\.md"/);
 });
 
-runTest('sdkwork-claw-instances links the agents workbench to the agent marketplace for the current instance', () => {
+runTest('sdkwork-claw-instances routes agent creation through one centered workflow modal instead of split market and create buttons', () => {
   const detailSource = readInstanceDetailPageSources();
-  const presentationSource = read(
-    'packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.ts',
+  const agentsSectionSource = read(
+    'packages/sdkwork-claw-instances/src/components/InstanceDetailAgentsSection.tsx',
+  );
+  const workflowSource = read(
+    'packages/sdkwork-claw-instances/src/components/InstanceAgentCreationWorkflowDialog.tsx',
   );
   const panelSource = read('packages/sdkwork-claw-instances/src/components/AgentWorkbenchPanel.tsx');
+  const editorSource = read(
+    'packages/sdkwork-claw-instances/src/components/OpenClawAgentEditorForm.tsx',
+  );
 
-  assert.match(detailSource, /buildInstanceDetailNavigationHandlers/);
-  assert.match(detailSource, /onOpenAgentMarket: detailNavigationHandlers\.onOpenAgentMarket,/);
-  assert.match(panelSource, /sidebar\.agentMarket/);
-  assert.match(presentationSource, /BriefcaseBusiness/);
-  assert.doesNotMatch(detailSource, /<Bot className="h-4 w-4" \/>/);
+  assert.ok(exists('packages/sdkwork-claw-instances/src/components/InstanceAgentCreationWorkflowDialog.tsx'));
+  assert.match(panelSource, /onOpenAgentCreationWorkflow/);
+  assert.match(panelSource, /instances\.detail\.instanceWorkbench\.agents\.panel\.newAgent/);
+  assert.doesNotMatch(panelSource, /sidebar\.agentMarket/);
+  assert.doesNotMatch(panelSource, /BriefcaseBusiness/);
+  assert.doesNotMatch(detailSource, /onOpenAgentMarket: detailNavigationHandlers\.onOpenAgentMarket,/);
+  assert.doesNotMatch(detailSource, /onCreateAgent: agentDialogStateHandlers\.openCreateAgentDialog,/);
+  assert.match(agentsSectionSource, /InstanceAgentCreationWorkflowDialog/);
+  assert.match(agentsSectionSource, /onOpenAgentCreationWorkflow=\{onOpenAgentCreationWorkflow\}/);
+  assert.match(workflowSource, /left-1\/2 top-1\/2/);
+  assert.match(workflowSource, /kernelAgentLibraryService/);
+  assert.match(workflowSource, /kernelOwnedAgentLibraryService/);
+  assert.match(workflowSource, /agentInstallService/);
+  assert.match(
+    workflowSource,
+    /instances\.detail\.instanceWorkbench\.agents\.creationWorkflow\./,
+  );
+  assert.match(
+    editorSource,
+    /instances\.detail\.instanceWorkbench\.agents\.(creationWorkflow|dialog)\./,
+  );
+  assert.doesNotMatch(workflowSource, /chat\.sidebar\./);
+  assert.doesNotMatch(editorSource, /chat\.sidebar\./);
+  assert.doesNotMatch(workflowSource, /window\.setTimeout/);
   assert.match(detailSource, /isReadonly:\s*!isOpenClawConfigWritable/);
   assert.match(panelSource, /disabled=\{isReadonly\}/);
   assert.match(panelSource, /instances\.detail\.instanceWorkbench\.agents\.marketReadonlyNotice/);
@@ -3471,7 +3520,8 @@ runTest('sdkwork-claw-instances turns agents into a master-detail workbench back
   assert.match(sectionModelsSource, /InstanceDetailAgentsSection/);
   assert.match(agentsSectionSource, /data-slot="instance-detail-agents-section"/);
   assert.match(agentsSectionSource, /AgentWorkbenchPanel/);
-  assert.match(agentsSectionSource, /onOpenAgentMarket=\{onOpenAgentMarket\}/);
+  assert.match(agentsSectionSource, /onOpenAgentCreationWorkflow=\{onOpenAgentCreationWorkflow\}/);
+  assert.match(agentsSectionSource, /InstanceAgentCreationWorkflowDialog/);
   assert.match(agentsSectionSource, /onDeleteAgent=\{onRequestDeleteAgent\}/);
   assert.match(panelSource, /data-slot="agent-workbench-sidebar"/);
   assert.match(panelSource, /data-slot="agent-workbench-detail"/);
@@ -3515,7 +3565,7 @@ runTest('sdkwork-claw-instances routes remote provider config patch building thr
   assert.doesNotMatch(coreSource, /function buildRemoteOpenClawProviderConfigPatch\(/);
 });
 
-runTest('sdkwork-claw-instances routes fallback OpenClaw config-path resolution through a shared helper', () => {
+runTest('sdkwork-claw-instances routes fallback kernel config-path resolution through a shared helper', () => {
   const instanceServiceCoreSource = read(
     'packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts',
   );
@@ -3523,9 +3573,10 @@ runTest('sdkwork-claw-instances routes fallback OpenClaw config-path resolution 
     'packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts',
   );
 
-  assert.ok(exists('packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.ts'));
-  assert.match(instanceServiceCoreSource, /from '\.\/openClawConfigPathFallback\.ts'/);
-  assert.match(instanceWorkbenchServiceCoreSource, /from '\.\/openClawConfigPathFallback\.ts'/);
+  assert.ok(exists('packages/sdkwork-claw-instances/src/services/kernelConfigPathFallback.ts'));
+  assert.ok(!exists('packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.ts'));
+  assert.match(instanceServiceCoreSource, /from '\.\/kernelConfigPathFallback\.ts'/);
+  assert.match(instanceWorkbenchServiceCoreSource, /from '\.\/kernelConfigPathFallback\.ts'/);
   assert.doesNotMatch(instanceServiceCoreSource, /function resolveFallbackInstanceConfigPath\(/);
   assert.doesNotMatch(
     instanceWorkbenchServiceCoreSource,
@@ -4572,6 +4623,51 @@ runTest('sdkwork-claw-instances keeps direct InstanceDetail i18n keys mapped in 
   assert.deepEqual(missingKeys, []);
 });
 
+runTest('sdkwork-claw-instances labels instance-detail channels as chat channels across split and aggregate locales', () => {
+  const enLocale = readJson<Record<string, unknown>>('packages/sdkwork-claw-i18n/src/locales/en.json');
+  const zhLocale = readJson<Record<string, unknown>>('packages/sdkwork-claw-i18n/src/locales/zh.json');
+  const enInstancesLocale = readJson<Record<string, unknown>>(
+    'packages/sdkwork-claw-i18n/src/locales/en/instances.json',
+  );
+  const zhInstancesLocale = readJson<Record<string, unknown>>(
+    'packages/sdkwork-claw-i18n/src/locales/zh/instances.json',
+  );
+
+  assert.equal(
+    getLocaleValue(enInstancesLocale, 'detail.instanceWorkbench.sidebar.channels'),
+    'Chat Channels',
+  );
+  assert.equal(
+    getLocaleValue(zhInstancesLocale, 'detail.instanceWorkbench.sidebar.channels'),
+    '聊天通道',
+  );
+  assert.equal(
+    getLocaleValue(enInstancesLocale, 'detail.instanceWorkbench.sections.channels.title'),
+    'Chat Channels',
+  );
+  assert.equal(
+    getLocaleValue(zhInstancesLocale, 'detail.instanceWorkbench.sections.channels.title'),
+    '聊天通道',
+  );
+
+  assert.equal(
+    getLocaleValue(enLocale, 'instances.detail.instanceWorkbench.sidebar.channels'),
+    getLocaleValue(enInstancesLocale, 'detail.instanceWorkbench.sidebar.channels'),
+  );
+  assert.equal(
+    getLocaleValue(zhLocale, 'instances.detail.instanceWorkbench.sidebar.channels'),
+    getLocaleValue(zhInstancesLocale, 'detail.instanceWorkbench.sidebar.channels'),
+  );
+  assert.equal(
+    getLocaleValue(enLocale, 'instances.detail.instanceWorkbench.sections.channels.title'),
+    getLocaleValue(enInstancesLocale, 'detail.instanceWorkbench.sections.channels.title'),
+  );
+  assert.equal(
+    getLocaleValue(zhLocale, 'instances.detail.instanceWorkbench.sections.channels.title'),
+    getLocaleValue(zhInstancesLocale, 'detail.instanceWorkbench.sections.channels.title'),
+  );
+});
+
 runTest('sdkwork-claw-instances config workbench editor source avoids mojibake fallback copy', () => {
   const editorSource = read(
     'packages/sdkwork-claw-instances/src/components/InstanceConfigSchemaSectionEditor.tsx',
@@ -4833,7 +4929,7 @@ runTest('OpenClaw test fixtures use the canonical user-root config path outside 
     'packages/sdkwork-claw-instances/src/services/nodeInventoryService.test.ts',
     'packages/sdkwork-claw-instances/src/services/kernelConfigProjection.test.ts',
     'packages/sdkwork-claw-channels/src/services/channelService.test.ts',
-    'packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.test.ts',
+    'packages/sdkwork-claw-instances/src/services/kernelConfigPathFallback.test.ts',
     'packages/sdkwork-claw-core/src/services/openClawConfigService.test.ts',
     'packages/sdkwork-claw-core/src/services/kernelPlatformService.test.ts',
     'packages/sdkwork-claw-core/src/services/openClawMirrorService.test.ts',

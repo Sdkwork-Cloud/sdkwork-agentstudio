@@ -4,24 +4,23 @@ import {
   resolveOpenClawVisibleActiveSessionId,
   shouldKeepHiddenOpenClawSessionVisible,
 } from './chatSessionBootstrap.ts';
-import { resolveKernelChatSessionState } from './kernelChatSessionState.ts';
+import { resolveChatRunBinding, type ChatRunBindingSource } from './chatRunBinding.ts';
 
 type ChatSessionLike = {
   id: string;
   sessionKind?: string | null;
 };
 
-type ChatRunningSessionLike = {
+type ChatRunningSessionLike = ChatRunBindingSource & {
   id: string;
-  runId?: string | null;
 };
 
 export function resolveChatSessionViewState<T extends ChatSessionLike>(params: {
   sessions: T[];
   activeSessionId: string | null;
   isChatSupported?: boolean;
-  isOpenClawGateway: boolean;
-  openClawAgentId?: string | null;
+  sessionScopeMode: 'all' | 'agentBound';
+  sessionScopeAgentId?: string | null;
 }) {
   if (params.isChatSupported === false) {
     return {
@@ -31,15 +30,16 @@ export function resolveChatSessionViewState<T extends ChatSessionLike>(params: {
     };
   }
 
-  const baseVisibleSessions = params.isOpenClawGateway
-    ? filterUserFacingOpenClawSessionsByAgent(params.sessions, params.openClawAgentId)
+  const isAgentBoundScope = params.sessionScopeMode === 'agentBound';
+  const baseVisibleSessions = isAgentBoundScope
+    ? filterUserFacingOpenClawSessionsByAgent(params.sessions, params.sessionScopeAgentId)
     : params.sessions;
   const hiddenActiveSession =
-    params.isOpenClawGateway && params.activeSessionId
+    isAgentBoundScope && params.activeSessionId
       ? params.sessions.find((session) => session.id === params.activeSessionId)
       : undefined;
   const visibleSessions =
-    params.isOpenClawGateway &&
+    isAgentBoundScope &&
     shouldKeepHiddenOpenClawSessionVisible(hiddenActiveSession) &&
     hiddenActiveSession &&
     !baseVisibleSessions.some((session) => session.id === hiddenActiveSession.id)
@@ -48,43 +48,74 @@ export function resolveChatSessionViewState<T extends ChatSessionLike>(params: {
 
   return {
     visibleSessions,
-    selectableSessions: params.isOpenClawGateway ? visibleSessions : params.sessions,
-    effectiveActiveSessionId: params.isOpenClawGateway
-      ? resolveOpenClawVisibleActiveSessionId(
-          params.activeSessionId,
-          visibleSessions.map((session) => session.id),
-        )
+    selectableSessions: isAgentBoundScope ? visibleSessions : params.sessions,
+    effectiveActiveSessionId: isAgentBoundScope
+      ? params.activeSessionId === null
+        ? null
+        : resolveOpenClawVisibleActiveSessionId(
+            params.activeSessionId,
+            visibleSessions.map((session) => session.id),
+          )
       : params.activeSessionId,
   };
 }
 
 export function resolveChatSendSessionId(params: {
-  activeSessionId: string | null;
-  effectiveActiveSessionId: string | null;
-  isOpenClawGateway: boolean;
+  selectedSessionId: string | null;
+  displaySessionId: string | null;
+  sendMode: 'local' | 'gateway';
 }) {
-  return params.isOpenClawGateway ? params.effectiveActiveSessionId : params.activeSessionId;
+  return params.selectedSessionId;
 }
 
-export function resolveChatRunningSessionId<T extends ChatRunningSessionLike>(params: {
-  isOpenClawGateway: boolean;
+export function isExplicitBlankChatWorkspace(params: {
+  activeSessionId: string | null;
+  selectedAgentId?: string | null | undefined;
+}) {
+  return params.activeSessionId === null && params.selectedAgentId !== undefined;
+}
+
+export function resolveChatRunningRunBinding<T extends ChatRunningSessionLike>(params: {
+  sendMode: 'local' | 'gateway';
   selectableSessions: T[];
 }) {
-  if (!params.isOpenClawGateway) {
+  if (params.sendMode !== 'gateway') {
     return null;
   }
 
-  return params.selectableSessions.find((session) =>
-    Boolean(resolveKernelChatSessionState(session).activeRunId)
-  )?.id ?? null;
+  for (const session of params.selectableSessions) {
+    const runBinding = resolveChatRunBinding(session);
+    if (runBinding.isActive) {
+      return runBinding;
+    }
+  }
+
+  return null;
+}
+
+export function resolveChatRunningSessionId<T extends ChatRunningSessionLike>(params: {
+  sendMode: 'local' | 'gateway';
+  selectableSessions: T[];
+}) {
+  return resolveChatRunningRunBinding(params)?.sessionId ?? null;
 }
 
 export function resolveGatewayVisibleSessionSyncTarget(params: {
-  isOpenClawGateway: boolean;
+  supportsVisibleSessionSync: boolean;
   activeSessionId: string | null;
   effectiveActiveSessionId: string | null;
+  selectedAgentId?: string | null | undefined;
 }) {
-  if (!params.isOpenClawGateway || !params.effectiveActiveSessionId) {
+  if (!params.supportsVisibleSessionSync || !params.effectiveActiveSessionId) {
+    return null;
+  }
+
+  if (
+    isExplicitBlankChatWorkspace({
+      activeSessionId: params.activeSessionId,
+      selectedAgentId: params.selectedAgentId,
+    })
+  ) {
     return null;
   }
 
@@ -96,22 +127,25 @@ export function resolveGatewayVisibleSessionSyncTarget(params: {
 }
 
 export function resolveNewChatSessionModel(params: {
-  isOpenClawGateway: boolean;
+  newSessionModelMode: 'modelName' | 'modelId';
   activeModelId?: string | null;
   activeModelName?: string | null;
 }) {
-  const modelValue = params.isOpenClawGateway ? params.activeModelId : params.activeModelName;
+  const modelValue =
+    params.newSessionModelMode === 'modelId'
+      ? params.activeModelId
+      : params.activeModelName;
   const normalizedModel = modelValue?.trim();
   return normalizedModel || undefined;
 }
 
 export function resolveOpenClawDraftSessionId(params: {
-  isOpenClawGateway: boolean;
-  openClawAgentId?: string | null;
+  sessionScopeMode: 'all' | 'agentBound';
+  sessionScopeAgentId?: string | null;
 }) {
-  if (!params.isOpenClawGateway) {
+  if (params.sessionScopeMode !== 'agentBound') {
     return undefined;
   }
 
-  return buildOpenClawMainSessionKey(params.openClawAgentId);
+  return buildOpenClawMainSessionKey(params.sessionScopeAgentId);
 }

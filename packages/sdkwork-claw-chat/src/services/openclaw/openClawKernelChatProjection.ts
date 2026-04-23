@@ -10,6 +10,7 @@ import {
   createKernelChatSessionRef,
 } from '@sdkwork/claw-types';
 import type { OpenClawToolCard } from '../openClawMessagePresentation.ts';
+import { normalizeUserVisibleChatSenderLabel } from '../chatSenderLabelPolicy.ts';
 import {
   buildKernelChatMessageParts,
   trimOptionalString,
@@ -20,6 +21,7 @@ export interface OpenClawKernelChatProjectionMessage {
   role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
   timestamp: number;
+  seq?: number;
   senderLabel?: string | null;
   model?: string;
   runId?: string;
@@ -55,6 +57,25 @@ export type OpenClawKernelChatProjectedSession<T extends OpenClawKernelChatProje
   messages: Array<OpenClawKernelChatProjectedMessage<T['messages'][number]>>;
   kernelSession: KernelChatSession;
 };
+
+function resolveProjectedMessageStatus(input: {
+  role: OpenClawKernelChatProjectionMessage['role'];
+  messageRunId?: string | null;
+  activeRunId?: string | null;
+}): KernelChatMessage['status'] {
+  const messageRunId = trimOptionalString(input.messageRunId);
+  const activeRunId = trimOptionalString(input.activeRunId);
+  if (
+    (input.role === 'assistant' || input.role === 'tool') &&
+    messageRunId &&
+    activeRunId &&
+    messageRunId === activeRunId
+  ) {
+    return 'streaming';
+  }
+
+  return 'complete';
+}
 
 export function parseOpenClawAgentSessionRoutingKey(routingKey: string): {
   agentId: string | null;
@@ -108,6 +129,7 @@ export function buildOpenClawKernelChatSession(input: {
     instanceId: input.instanceId,
     sessionId: input.session.id,
   });
+  const routing = parseOpenClawAgentSessionRoutingKey(input.session.id);
   return {
     ref: sessionRef,
     authority: buildOpenClawKernelChatAuthority(),
@@ -134,25 +156,42 @@ export function buildOpenClawKernelChatSession(input: {
       reasoningLevel: trimOptionalString(input.session.reasoningLevel),
     },
     activeRunId: trimOptionalString(input.session.runId),
+    nativeMetadata: {
+      upstreamSessionId: input.session.id,
+      routingKey: routing.routingKey,
+      logicalSessionId: routing.logicalKey,
+      agentId: routing.agentId,
+    },
   };
 }
 
 export function buildOpenClawKernelChatMessage(input: {
   sessionRef: KernelChatSessionRef;
   message: OpenClawKernelChatProjectionMessage;
+  activeRunId?: string | null;
 }): KernelChatMessage {
   return {
     id: input.message.id,
     sessionRef: input.sessionRef,
     role: input.message.role,
-    status: input.message.runId ? 'streaming' : 'complete',
+    status: resolveProjectedMessageStatus({
+      role: input.message.role,
+      messageRunId: input.message.runId,
+      activeRunId: input.activeRunId,
+    }),
     createdAt: input.message.timestamp,
     updatedAt: input.message.timestamp,
     text: input.message.content,
     parts: buildKernelChatMessageParts(input.message),
     runId: trimOptionalString(input.message.runId),
     model: trimOptionalString(input.message.model),
-    senderLabel: trimOptionalString(input.message.senderLabel),
+    senderLabel: normalizeUserVisibleChatSenderLabel(input.message.senderLabel),
+    nativeMetadata: {
+      upstreamMessageId: input.message.id,
+      routingKey: input.sessionRef.routingKey ?? null,
+      agentId: input.sessionRef.agentId ?? null,
+      ...(typeof input.message.seq === 'number' ? { seq: input.message.seq } : {}),
+    },
   };
 }
 
@@ -166,6 +205,7 @@ export function hydrateOpenClawKernelChatProjection<TSession extends OpenClawKer
     kernelMessage: buildOpenClawKernelChatMessage({
       sessionRef: kernelSession.ref,
       message,
+      activeRunId: kernelSession.activeRunId,
     }),
   })) as Array<OpenClawKernelChatProjectedMessage<TSession['messages'][number]>>;
 

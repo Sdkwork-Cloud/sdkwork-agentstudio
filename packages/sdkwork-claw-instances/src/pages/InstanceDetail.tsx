@@ -7,10 +7,17 @@ import {
   projectInstanceBaseDetail,
   resolveRegistryKernelId,
   resolveSupportedInstanceDetailModule,
+  type InstanceDetailAgentMarketModalRequest,
 } from '../services';
 import type { Instance } from '../types';
 import type { InstanceBaseDetail } from '../services';
 import { UnsupportedInstanceDetailPage } from './UnsupportedInstanceDetailPage';
+
+export interface InstanceDetailPageEntryProps {
+  onOpenAgentMarketModal: (
+    request: InstanceDetailAgentMarketModalRequest,
+  ) => void;
+}
 
 const INSTANCE_DETAIL_PLACEHOLDER: Instance = {
   id: '__instance-detail-placeholder__',
@@ -34,7 +41,9 @@ function renderInstanceDetailLoadingState() {
   );
 }
 
-export function InstanceDetail() {
+export function InstanceDetail({
+  onOpenAgentMarketModal,
+}: InstanceDetailPageEntryProps) {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -153,7 +162,10 @@ export function InstanceDetail() {
   const DetailPage = detailModule.DetailPage;
   return (
     <Suspense fallback={renderInstanceDetailLoadingState()}>
-      <DetailPage source={detailSource} />
+      <DetailPage
+        source={detailSource}
+        onOpenAgentMarketModal={onOpenAgentMarketModal}
+      />
     </Suspense>
   );
 }

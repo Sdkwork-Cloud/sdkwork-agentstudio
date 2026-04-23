@@ -35,65 +35,52 @@ await runTest(
       'function',
     );
     assert.equal(
-      typeof pathResolutionServiceModule?.resolveHermesUserPathFromConfigFile,
+      typeof pathResolutionServiceModule?.resolveHermesStateDatabasePathFromConfigFile,
+      'function',
+    );
+    assert.equal(
+      typeof pathResolutionServiceModule?.resolveHermesSessionsRootFromConfigFile,
+      'function',
+    );
+    assert.equal(
+      typeof pathResolutionServiceModule?.resolveHermesLogsRootFromConfigFile,
       'function',
     );
   },
 );
 
 await runTest(
-  'hermesPathResolutionService resolves built-in state roots, user roots, and relative user paths from canonical config files',
+  'hermesPathResolutionService resolves canonical config.yaml state, database, sessions, and logs paths from the standard user root',
   () => {
     assert.equal(
       pathResolutionServiceModule?.resolveHermesStateRootFromConfigFile(
-        'D:/Hermes/.hermes/hermes.json',
+        'D:/Hermes/.hermes/config.yaml',
       ),
       'D:/Hermes/.hermes',
     );
     assert.equal(
       pathResolutionServiceModule?.resolveHermesUserRootFromConfigFile(
-        'D:/Hermes/.hermes/hermes.json',
+        'D:/Hermes/.hermes/config.yaml',
       ),
       'D:/Hermes',
     );
     assert.equal(
-      pathResolutionServiceModule?.resolveHermesUserPathFromConfigFile(
-        'D:/Hermes/.hermes/hermes.json',
-        '~/workspace',
+      pathResolutionServiceModule?.resolveHermesStateDatabasePathFromConfigFile(
+        'D:/Hermes/.hermes/config.yaml',
       ),
-      'D:/Hermes/workspace',
+      'D:/Hermes/.hermes/state.db',
     );
     assert.equal(
-      pathResolutionServiceModule?.resolveHermesUserPathFromConfigFile(
-        'D:/Hermes/.hermes/hermes.json',
-        './agents/research',
+      pathResolutionServiceModule?.resolveHermesSessionsRootFromConfigFile(
+        'D:/Hermes/.hermes/config.yaml',
       ),
-      'D:/Hermes/.hermes/agents/research',
-    );
-  },
-);
-
-await runTest(
-  'hermesPathResolutionService resolves legacy config-root layouts back to the data root for relative paths',
-  () => {
-    assert.equal(
-      pathResolutionServiceModule?.resolveHermesStateRootFromConfigFile(
-        'D:/Hermes/data/config/hermes.json',
-      ),
-      'D:/Hermes/data',
+      'D:/Hermes/.hermes/sessions',
     );
     assert.equal(
-      pathResolutionServiceModule?.resolveHermesUserRootFromConfigFile(
-        'D:/Hermes/data/config/hermes.json',
+      pathResolutionServiceModule?.resolveHermesLogsRootFromConfigFile(
+        'D:/Hermes/.hermes/config.yaml',
       ),
-      'D:/Hermes',
-    );
-    assert.equal(
-      pathResolutionServiceModule?.resolveHermesUserPathFromConfigFile(
-        'D:/Hermes/data/config/hermes.json',
-        'workspace',
-      ),
-      'D:/Hermes/data/workspace',
+      'D:/Hermes/.hermes/logs',
     );
   },
 );

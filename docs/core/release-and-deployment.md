@@ -150,12 +150,12 @@ Local prerequisite notes:
 - `pnpm release:smoke:desktop` now re-runs the packaged desktop installer smoke and then closes the launched-session check for the same target. When `--startup-evidence-path` is omitted it launches the canonical packaged desktop artifact for that platform, waits until `desktop-startup-evidence.json` reaches `status=passed` and `phase=shell-mounted`, requires the captured evidence to preserve a running `localAiProxyRuntime`, and then writes `desktop-startup-smoke-report.json`. When `--startup-evidence-path` is provided it imports that external evidence instead of launching the package.
 - `pnpm release:smoke:desktop-packaged-launch` launches the canonical packaged desktop artifact for the requested target, captures isolated packaged-session startup evidence, and forwards that evidence into the canonical startup smoke report writer. On Linux it automatically falls back to `xvfb-run` when no desktop display is available.
 - `pnpm release:smoke:desktop-startup` validates only the captured launched-session startup evidence and copies that evidence into the canonical release asset path when you provide `--startup-evidence-path`. The resulting smoke report must preserve `localAiProxyRuntime.lifecycle`, `messageCaptureEnabled`, `observabilityDbPath`, `snapshotPath`, and `logPath`.
-- `pnpm release:package:server` now auto-builds the missing native server release binary before packaging when you invoke the root local wrapper.
+- `pnpm release:package:server` now refreshes the matching native server release binary before packaging when you invoke the root local wrapper. The build remains incremental, but packaging no longer depends on whatever prior target output happens to exist.
 - `pnpm release:package:server` now also runs packaged bundle-runtime smoke and persists a `release-smoke-report.json` beside the server `release-asset-manifest.json`.
-- `pnpm release:package:container` packages Docker deployment assets around a Linux server binary. The root local wrapper auto-builds that binary first when it is missing. On Windows, `pnpm server:build -- --target x86_64-unknown-linux-gnu` bridges into an installed WSL distro automatically. On macOS and other non-Linux hosts, the same fallback still depends on a working Linux target toolchain.
+- `pnpm release:package:container` packages Docker deployment assets around a Linux server binary. The root local wrapper refreshes that target binary first through an incremental build. On Windows, `pnpm server:build -- --target x86_64-unknown-linux-gnu` bridges into an installed WSL distro automatically. On macOS and other non-Linux hosts, the same fallback still depends on a working Linux target toolchain.
 - `pnpm release:package:kubernetes` packages chart assets and release values, so it does not require a locally built server binary.
 - `pnpm release:smoke:server` re-runs only the packaged server bundle smoke stage when you want fresh runtime evidence for an existing server artifact set without rebuilding it.
-- `pnpm release:smoke:container` now extracts the packaged deployment bundle, verifies that the packaged runtime profile keeps `CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false` and `CLAW_SERVER_DATA_DIR=/var/lib/claw-server`, verifies that the packaged Docker Compose layout requires explicit manage credentials and persists `/var/lib/claw-server`, runs Docker Compose against that packaged layout, requires Docker to report the packaged services healthy, and then verifies `/claw/health/ready`, `/claw/manage/v1/host-endpoints`, and the bundled browser shell before persisting `release-smoke-report.json`.
+- `pnpm release:smoke:container` now extracts the packaged deployment bundle, verifies that the packaged runtime profile keeps `CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false` and `CLAW_SERVER_DATA_DIR=/var/lib/claw-server`, verifies that the packaged Docker Compose layout requires explicit manage credentials and persists `/var/lib/claw-server`, runs Docker Compose against that packaged layout, requires Docker to report the packaged services healthy, and then verifies `/claw/health/ready`, `/claw/manage/v1/host-endpoints`, and the bundled browser shell before persisting `release-smoke-report.json`. When Docker and/or Docker Compose are unavailable on the current host, it emits machine-readable skipped evidence instead of hanging or silently succeeding.
 - `pnpm release:smoke:kubernetes` now renders the packaged chart with `helm template`, requires immutable image metadata from `release-metadata.json`, verifies the rendered readiness, Secret-backed credential wiring, and `/var/lib/claw-server` PersistentVolumeClaim contract, and uses `kubectl apply --dry-run=client` when `kubectl` is available. When Helm is unavailable, it still emits machine-readable skipped evidence instead of silently succeeding.
 
 The local wrapper defaults `release:plan`, `release:package:*`, and `release:finalize` to `artifacts/release`. CI still aggregates assets under `release-assets/`. Override the local defaults with environment variables such as:
@@ -172,6 +172,8 @@ The local wrapper defaults `release:plan`, `release:package:*`, and `release:fin
 - `SDKWORK_RELEASE_IMAGE_TAG`
 - `SDKWORK_RELEASE_IMAGE_DIGEST`
 - `SDKWORK_RELEASE_REPOSITORY`
+
+When `SDKWORK_RELEASE_REPOSITORY` is unset, the local wrapper falls back to `GITHUB_REPOSITORY` and then to the local `git remote origin` so `release-manifest.json.repository` remains populated during local finalization.
 
 ## Release Notes Source
 
@@ -195,7 +197,9 @@ Each unified release produces two top-level inventory files under the active rel
 
 `SHA256SUMS.txt` is the portable checksum surface.
 
-`release-manifest.json` is the machine-readable inventory surface for download portals, deployment automation, and release verification. Each artifact entry carries:
+`release-manifest.json` is the machine-readable inventory surface for download portals, deployment automation, and release verification. Its top-level metadata includes `profileId`, `productName`, `releaseTag`, `generatedAt`, `checksumFileName`, and `repository`. The `repository` value resolves from `SDKWORK_RELEASE_REPOSITORY`, then `GITHUB_REPOSITORY`, then the local `git remote origin` when you use the local wrapper without release-specific environment variables.
+
+Each artifact entry carries:
 
 - `family`: one of `desktop`, `web`, `server`, `container`, or `kubernetes`
 - `platform`: target platform such as `windows`, `linux`, `macos`, or `web`
@@ -234,6 +238,8 @@ Deployment artifacts also carry aggregated deployment evidence because packaging
 
 - `deploymentSmoke`: the aggregated deployment smoke summary lifted from `release-smoke-report.json` for `container` and `kubernetes` artifacts
 - `deploymentSmoke.checks`: ordered deployment checks proving packaged container runtime-profile, Docker Compose credential and persistence contracts, Compose startup, container health, and runtime readiness for `container`, plus rendered chart image-reference, readiness, Secret wiring, and persistent-storage validation for `kubernetes`
+
+Deployment smoke is allowed to be either `passed` or structurally `skipped`. A skipped deployment report is valid only when it preserves a non-empty `skippedReason`, and it may also persist discovered host `capabilities` such as Docker, Docker Compose, Helm, or `kubectl`. Release finalization lifts that skipped state verbatim into `release-manifest.json` rather than flattening it into a false pass.
 
 The persisted `desktopInstallerSmoke.kernelInstallReadiness.openclaw.installReadyLayout` object is intentionally stronger than `{ mode, installKey }`. It must prove all of the following:
 
@@ -286,12 +292,12 @@ Desktop remains the existing Tauri-first path:
 
 Server archives are native per-platform bundles. Each archive contains:
 
-- the Rust server binary
+- the canonical Rust server binary under `bin/`
 - the built browser app under `web/dist`
 - `.env.example`
-- launcher scripts
+- optional launcher wrappers
 
-The bundled launcher sets `CLAW_SERVER_WEB_DIST` to the extracted `web/dist` directory so the archive can run outside the repository source tree.
+The packaged native binary is the canonical bundled launcher. When the expected bundle layout is present, it auto-resolves `CLAW_SERVER_WEB_DIST` to the extracted `web/dist` directory and `CLAW_SERVER_DATA_DIR` to `.claw-server` inside the bundle. `start-claw-server.sh` and `start-claw-server.cmd` remain optional convenience wrappers around that same binary.
 
 Each packaged server target now also persists `release-smoke-report.json` next to its partial manifest. Release finalization rejects the server artifact if that report is missing, stale, or no longer matches the current archive set.
 
@@ -303,6 +309,9 @@ Container bundles package:
 - Docker build files
 - Docker Compose files
 - CPU and GPU-oriented env overlays
+
+The packaged Dockerfile launches `app/bin/claw-server` directly so container startup stays aligned
+with the canonical bundled server entrypoint instead of routing through the optional shell wrapper.
 
 The source repository keeps the container templates under `deploy/docker/` for review and
 packaging input:
@@ -403,6 +412,8 @@ pnpm release:finalize
 ```
 
 Finalization now requires `desktop-startup-smoke-report.json` beside every desktop partial manifest. It lifts that launched-session evidence onto the matching desktop artifact as `desktopStartupSmoke` and rejects desktop release assets when the packaged launch report or its captured `diagnostics/desktop-startup-evidence.json` evidence is missing, stale, or no longer matches the current artifact set. The finalizer also requires the packaged kernel context in startup smoke (`packageProfileId`, `includedKernelIds`, and `defaultEnabledKernelIds`) to match the desktop partial manifest, requires the `local-ai-proxy-runtime` startup-smoke check to pass, and requires the emitted `desktopStartupSmoke.localAiProxyRuntime` summary to match the captured launch evidence.
+
+For `container` and `kubernetes` artifacts, finalization accepts deployment smoke only when `status=passed` or when `status=skipped` is paired with a non-empty `skippedReason`. If the current host lacks Docker, Docker Compose, or Helm, the final manifest preserves that skipped deployment status and any captured capability snapshot instead of failing the whole release purely because the local machine could not execute that deployment family.
 
 ## GPU Variant Model
 

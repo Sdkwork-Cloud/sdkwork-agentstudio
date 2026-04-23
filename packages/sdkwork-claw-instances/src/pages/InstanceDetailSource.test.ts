@@ -30,7 +30,10 @@ await runTest(
     assert.match(routeSource, /resolveSupportedInstanceDetailModule\(/);
     assert.match(routeSource, /createInstanceDetailSource\(/);
     assert.match(routeSource, /detailModule\.DetailPage/);
-    assert.match(routeSource, /<DetailPage source=\{detailSource\} \/>/);
+    assert.match(
+      routeSource,
+      /<DetailPage[\s\S]*source=\{detailSource\}[\s\S]*onOpenAgentMarketModal=\{onOpenAgentMarketModal\}[\s\S]*\/>/,
+    );
     assert.match(routeSource, /loadBaseDetail:\s*(?:async\s*)?\(instanceId\)\s*=>/);
     assert.match(routeSource, /loadModulePayload:\s*(?:async\s*)?\(instanceId\)\s*=>/);
     assert.match(routeSource, /const detailSource = useMemo\(/);
@@ -60,16 +63,34 @@ await runTest(
     );
 
     assert.match(openClawDetailSource, /function OpenClawInstanceDetailPage\(/);
-    assert.match(openClawDetailSource, /source\??:\s*InstanceDetailSource/);
+    assert.match(openClawDetailSource, /type InstanceDetailPageProps,/);
+    assert.match(openClawDetailSource, /\}: InstanceDetailPageProps\)/);
     assert.match(openClawDetailSource, /buildOpenClawAgentDialogStateHandlers/);
     assert.match(openClawDetailSource, /buildInstanceConsoleHandlers/);
     assert.match(openClawDetailSource, /source\s*\.\s*loadModulePayload\(\)/);
     assert.match(openClawDetailSource, /getOpenClawWorkbenchFromModulePayload/);
     assert.match(openClawDetailSource, /instanceWorkbenchService\.getInstanceWorkbench\(instanceId\)/);
+    const openClawDerivedStateIndex = openClawDetailSource.indexOf('const instanceDetailDerivedState = useMemo(');
+    const openClawAgentWorkbenchEffectIndex = openClawDetailSource.indexOf(
+      'return startLoadInstanceDetailAgentWorkbench({',
+    );
+    assert.ok(
+      openClawDerivedStateIndex >= 0,
+      'Expected OpenClaw detail page to declare derived workbench state',
+    );
+    assert.ok(
+      openClawAgentWorkbenchEffectIndex >= 0,
+      'Expected OpenClaw detail page to load agent workbench from an effect',
+    );
+    assert.ok(
+      openClawDerivedStateIndex < openClawAgentWorkbenchEffectIndex,
+      'Expected derived workbench state to be declared before the agent workbench effect uses it',
+    );
     assert.doesNotMatch(openClawDetailSource, /getOpenClawInstanceDetailSourceExtension/);
 
     assert.match(hermesDetailSource, /function HermesInstanceDetailPage\(/);
-    assert.match(hermesDetailSource, /source\??:\s*InstanceDetailSource/);
+    assert.match(hermesDetailSource, /type InstanceDetailPageProps,/);
+    assert.match(hermesDetailSource, /\}: InstanceDetailPageProps\)/);
     assert.match(hermesDetailSource, /buildInstanceConsoleHandlers/);
     assert.match(hermesDetailSource, /source\s*\.\s*loadBaseDetail\(\)/);
     assert.match(hermesDetailSource, /source\s*\.\s*loadModulePayload\(\)/);

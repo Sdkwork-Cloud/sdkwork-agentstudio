@@ -1,4 +1,9 @@
 import type {
+  KernelChatAgentProfile,
+  KernelChatMessage,
+  PersistedKernelChatAgentRecord,
+  KernelChatRun,
+  KernelChatSession,
   StudioConversationRecord,
   StudioInstanceDetailRecord,
   StudioInstanceConfig,
@@ -50,6 +55,31 @@ export interface StudioUpdateInstanceLlmProviderConfigInput {
   config: StudioWorkbenchLLMProviderConfigRecord;
 }
 
+export interface StudioCreateKernelChatSessionInput {
+  instanceId: string;
+  model?: string | null;
+  agentId?: string | null;
+  title?: string | null;
+}
+
+export interface StudioPatchKernelChatSessionInput {
+  instanceId: string;
+  sessionId: string;
+  title?: string | null;
+  model?: string | null;
+  thinkingLevel?: string | null;
+  fastMode?: boolean | null;
+  verboseLevel?: string | null;
+  reasoningLevel?: string | null;
+}
+
+export interface StudioStartKernelChatRunInput {
+  instanceId: string;
+  sessionId: string;
+  content: string;
+  model?: string | null;
+}
+
 export interface StudioOpenClawGatewayInvokeRequest {
   tool: string;
   action?: string;
@@ -64,10 +94,108 @@ export interface StudioOpenClawGatewayInvokeOptions {
   headers?: Record<string, string>;
 }
 
+export type StudioKernelAgentCreationReasonCode =
+  | 'unsupportedKernel'
+  | 'configUnavailable'
+  | 'configNotWritable';
+
+export interface StudioKernelAgentCreationKernelOption {
+  kernelId: string;
+  label: string;
+  supported: boolean;
+  reasonCode: StudioKernelAgentCreationReasonCode | null;
+  reason: string | null;
+}
+
+export interface StudioKernelAgentCreationModelOption {
+  value: string;
+  label: string;
+  providerId: string;
+  providerLabel: string;
+}
+
+export interface StudioKernelAgentCreationCapability {
+  instanceId: string;
+  instanceName: string;
+  kernelOptions: StudioKernelAgentCreationKernelOption[];
+  defaultKernelId: string | null;
+  modelOptions: StudioKernelAgentCreationModelOption[];
+}
+
+export interface StudioCreateKernelAgentInput {
+  instanceId: string;
+  kernelId?: string | null;
+  agentId: string;
+  displayName: string;
+  avatar?: string | null;
+  isDefault?: boolean;
+  primaryModel?: string | null;
+  fallbackModels?: string[];
+  workspace?: string | null;
+  agentDir?: string | null;
+  temperature?: number | null;
+  topP?: number | null;
+  maxTokens?: number | null;
+  timeoutMs?: number | null;
+  streaming?: boolean | null;
+}
+
+export interface StudioCreatedKernelAgentRecord {
+  instanceId: string;
+  kernelId: string;
+  agentId: string;
+  displayName: string;
+}
+
 export interface StudioPlatformAPI {
   listInstances(): Promise<StudioInstanceRecord[]>;
   getInstance(id: string): Promise<StudioInstanceRecord | null>;
   getInstanceDetail(id: string): Promise<StudioInstanceDetailRecord | null>;
+  getKernelAgentCreationCapability?(
+    instanceId: string,
+  ): Promise<StudioKernelAgentCreationCapability>;
+  createKernelAgent?(
+    input: StudioCreateKernelAgentInput,
+  ): Promise<StudioCreatedKernelAgentRecord>;
+  listKernelChatAgentProfiles?(instanceId: string): Promise<KernelChatAgentProfile[]>;
+  listPersistedKernelChatAgents?(instanceId: string): Promise<PersistedKernelChatAgentRecord[]>;
+  replacePersistedKernelChatAgents?(
+    instanceId: string,
+    records: PersistedKernelChatAgentRecord[],
+  ): Promise<PersistedKernelChatAgentRecord[]>;
+  listKernelChatSessions?(instanceId: string): Promise<KernelChatSession[]>;
+  getKernelChatSession?(
+    instanceId: string,
+    sessionId: string,
+  ): Promise<KernelChatSession | null>;
+  createKernelChatSession?(
+    input: StudioCreateKernelChatSessionInput,
+  ): Promise<KernelChatSession>;
+  listKernelChatRuns?(
+    instanceId: string,
+    sessionId: string,
+  ): Promise<KernelChatRun[]>;
+  getKernelChatRun?(
+    instanceId: string,
+    sessionId: string,
+    runId: string,
+  ): Promise<KernelChatRun | null>;
+  patchKernelChatSession?(
+    input: StudioPatchKernelChatSessionInput,
+  ): Promise<KernelChatSession>;
+  deleteKernelChatSession?(instanceId: string, sessionId: string): Promise<void>;
+  startKernelChatRun?(
+    input: StudioStartKernelChatRunInput,
+  ): Promise<KernelChatRun>;
+  abortKernelChatRun?(
+    instanceId: string,
+    sessionId: string,
+    runId?: string | null,
+  ): Promise<boolean>;
+  loadKernelChatMessages?(
+    instanceId: string,
+    sessionId: string,
+  ): Promise<KernelChatMessage[]>;
   invokeOpenClawGateway?(
     instanceId: string,
     request: StudioOpenClawGatewayInvokeRequest,

@@ -28,6 +28,7 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..', '..');
 const DEFAULT_RELEASE_ASSETS_DIR = path.join(rootDir, 'artifacts', 'release');
 const RELEASE_ASSET_MANIFEST_FILENAME = 'release-asset-manifest.json';
+const DOCKER_SERVER_CAPABILITY_TIMEOUT_MS = 10000;
 
 function delay(milliseconds) {
   return new Promise((resolve) => {
@@ -81,6 +82,7 @@ function runCommand({
 function commandExists(command, args = ['--version']) {
   const result = spawnSync(command, args, {
     encoding: 'utf8',
+    timeout: DOCKER_SERVER_CAPABILITY_TIMEOUT_MS,
   });
 
   if (result.error) {
@@ -92,13 +94,18 @@ function commandExists(command, args = ['--version']) {
 
 export function detectDeploymentSmokeCapabilities({
   family,
+  commandExistsFn = commandExists,
+  probeDockerServerFn = probeDockerServer,
 } = {}) {
   const normalizedFamily = String(family ?? '').trim().toLowerCase();
 
   if (normalizedFamily === 'container') {
+    const dockerCliAvailable = commandExistsFn('docker', ['--version']);
     return {
-      docker: commandExists('docker', ['--version']),
-      dockerCompose: commandExists('docker', ['compose', 'version']),
+      docker: dockerCliAvailable && probeDockerServerFn({
+        timeoutMs: DOCKER_SERVER_CAPABILITY_TIMEOUT_MS,
+      }),
+      dockerCompose: commandExistsFn('docker', ['compose', 'version']),
     };
   }
 
@@ -110,6 +117,21 @@ export function detectDeploymentSmokeCapabilities({
   }
 
   throw new Error(`Unsupported deployment smoke family: ${family}`);
+}
+
+function probeDockerServer({
+  timeoutMs = DOCKER_SERVER_CAPABILITY_TIMEOUT_MS,
+} = {}) {
+  const result = spawnSync('docker', ['info', '--format', '{{.ServerVersion}}'], {
+    encoding: 'utf8',
+    timeout: timeoutMs,
+  });
+
+  if (result.error) {
+    return false;
+  }
+
+  return result.status === 0 && String(result.stdout ?? '').trim().length > 0;
 }
 
 function resolveDeploymentReleaseAssetManifestPath({
@@ -259,14 +281,14 @@ function resolveExpectedKubernetesNodeArch(arch = '') {
 }
 
 function resolveContainerComposeFilePaths(accelerator = 'cpu') {
-  const composeFiles = ['deploy/docker-compose.yml'];
+  const composeFiles = ['deploy/docker/docker-compose.yml'];
   const normalizedAccelerator = String(accelerator ?? '').trim().toLowerCase() || 'cpu';
 
   if (normalizedAccelerator === 'nvidia-cuda') {
-    composeFiles.push('deploy/docker-compose.nvidia-cuda.yml');
+    composeFiles.push('deploy/docker/docker-compose.nvidia-cuda.yml');
   }
   if (normalizedAccelerator === 'amd-rocm') {
-    composeFiles.push('deploy/docker-compose.amd-rocm.yml');
+    composeFiles.push('deploy/docker/docker-compose.amd-rocm.yml');
   }
 
   return composeFiles;
@@ -401,15 +423,15 @@ export function inspectContainerDeploymentContract({
   bundleRoot,
   accelerator = 'cpu',
 } = {}) {
-  const composePath = path.join(bundleRoot, 'deploy', 'docker-compose.yml');
-  const defaultProfilePath = path.join(bundleRoot, 'deploy', 'profiles', 'default.env');
+  const composePath = path.join(bundleRoot, 'deploy', 'docker', 'docker-compose.yml');
+  const defaultProfilePath = path.join(bundleRoot, 'deploy', 'docker', 'profiles', 'default.env');
   const releaseMetadata = requireDeploymentBundleReleaseMetadata(bundleRoot);
   const normalizedAccelerator = normalizeDeploymentAccelerator(accelerator);
   if (!existsSync(composePath)) {
-    throw new Error(`Packaged container bundle is missing deploy/docker-compose.yml: ${composePath}`);
+    throw new Error(`Packaged container bundle is missing deploy/docker/docker-compose.yml: ${composePath}`);
   }
   if (!existsSync(defaultProfilePath)) {
-    throw new Error(`Packaged container bundle is missing deploy/profiles/default.env: ${defaultProfilePath}`);
+    throw new Error(`Packaged container bundle is missing deploy/docker/profiles/default.env: ${defaultProfilePath}`);
   }
 
   const composeDefinition = readFileSync(composePath, 'utf8');
@@ -438,8 +460,19 @@ export function inspectContainerDeploymentContract({
       );
     }
   } else {
-    const overlayProfilePath = path.join(bundleRoot, 'deploy', 'profiles', `${normalizedAccelerator}.env`);
-    const overlayComposePath = path.join(bundleRoot, 'deploy', `docker-compose.${normalizedAccelerator}.yml`);
+    const overlayProfilePath = path.join(
+      bundleRoot,
+      'deploy',
+      'docker',
+      'profiles',
+      `${normalizedAccelerator}.env`,
+    );
+    const overlayComposePath = path.join(
+      bundleRoot,
+      'deploy',
+      'docker',
+      `docker-compose.${normalizedAccelerator}.yml`,
+    );
     if (!existsSync(overlayProfilePath)) {
       throw new Error(`Packaged container bundle is missing accelerator profile ${overlayProfilePath}.`);
     }
@@ -653,7 +686,7 @@ export async function smokeContainerDeploymentBundle({
     }));
 
     return {
-      launcherRelativePath: 'deploy/docker-compose.yml',
+      launcherRelativePath: 'deploy/docker/docker-compose.yml',
       runtimeBaseUrl: baseUrl,
       checks,
     };

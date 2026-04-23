@@ -6,6 +6,8 @@ import type {
   StudioInstanceStatus,
 } from '@sdkwork/claw-types';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 async function runTest(name: string, callback: () => Promise<void> | void) {
   try {
     await callback();
@@ -291,7 +293,7 @@ function createStudioStub(
 }
 
 await runTest(
-  'agentInstallService includes config-backed built-in OpenClaw targets, sorts them first, and skips metadata-only fallbacks',
+  'agentInstallService includes config-backed built-in OpenClaw targets, surfaces install kernel ids, sorts them first, and skips metadata-only fallbacks',
   async () => {
     const { configurePlatformBridge, getPlatformBridge } = await import('@sdkwork/claw-infrastructure');
     const { agentInstallService } = await import('./agentInstallService.ts');
@@ -346,7 +348,7 @@ await runTest(
       'D:/External/.openclaw/agents',
     ]);
     const builtInInstance = createInstanceRecord({
-      id: 'local-built-in',
+      id: BUILT_IN_INSTANCE_ID,
       name: 'Local Built-In',
       description: 'Packaged local OpenClaw kernel managed by Claw Studio.',
       isBuiltIn: true,
@@ -396,9 +398,13 @@ await runTest(
       assert.deepEqual(
         targets.map((target) => [target.id, target.isBuiltIn, target.deploymentMode]),
         [
-          ['local-built-in', true, 'local-managed'],
+          [BUILT_IN_INSTANCE_ID, true, 'local-managed'],
           ['external-openclaw', false, 'local-external'],
         ],
+      );
+      assert.deepEqual(
+        targets.map((target) => target.kernelId),
+        ['openclaw', 'openclaw'],
       );
       assert.equal(targets[0]?.typeLabel, 'Built-In OpenClaw');
       assert.equal(targets[0]?.configFile, builtInConfigPath);
@@ -437,7 +443,7 @@ await runTest(
     ]);
 
     const builtInInstance = createInstanceRecord({
-      id: 'local-built-in',
+      id: BUILT_IN_INSTANCE_ID,
       name: 'Local Built-In',
       description: 'Packaged local OpenClaw kernel managed by Claw Studio.',
       isBuiltIn: true,
@@ -475,7 +481,7 @@ await runTest(
 
       assert.deepEqual(
         targets.map((target) => target.id),
-        ['local-built-in'],
+        [BUILT_IN_INSTANCE_ID],
       );
     } finally {
       configurePlatformBridge(originalBridge);

@@ -33,7 +33,7 @@ runTest('sdkwork-claw-account parity checks use the shared Node TypeScript runne
 
   assert.match(
     workspacePackageJson,
-    /"check:sdkwork-account"\s*:\s*"node scripts\/run-sdkwork-account-check\.mjs"/,
+    /"check:sdkwork-account"\s*:\s*"sdkwork-run-node scripts\/run-sdkwork-account-check\.mjs"/,
   );
   assert.match(accountCheckRunner, /runNodeTypeScriptChecks/);
   assert.match(accountCheckRunner, /accountService\.test\.ts/);

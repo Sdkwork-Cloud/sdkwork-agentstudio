@@ -2,6 +2,8 @@
   "page": {
     "noInstanceTitle": "No Instance Selected",
     "noInstanceDescription": "Please select an instance from the sidebar to start chatting.",
+    "noInstanceAgentTitle": "{{agent}} is ready",
+    "noInstanceAgentDescription": "The next conversation will start with {{agent}}. Select or start an available instance before sending your first message.",
     "manageInstances": "Manage Instances",
     "selectModel": "Select Model",
     "selectAgent": "Select Agent",
@@ -14,6 +16,7 @@
     "searchAgentsPlaceholder": "Search agents...",
     "noneDefault": "None (Default)",
     "defaultAgentGatewayDescription": "Use the instance default gateway agent for this conversation.",
+    "defaultAgentKernelDescription": "Use the kernel default agent for this conversation.",
     "defaultAgentDirectDescription": "Use the default assistant behavior for this conversation.",
     "availableSkills": "Available Skills",
     "searchSkillsPlaceholder": "Search skills...",
@@ -182,12 +185,147 @@
     "fileSizeMb": "{{size}} MB"
   },
   "sidebar": {
+    "mainAgent": "Main Agent",
+    "mainAgentBadge": "Main",
+    "previewYou": "You",
+    "previewTool": "Tool",
+    "previewAttachment": "Attachment",
+    "previewAttachments": "Attachments",
+    "agentRailEmptyPreview": "No conversations yet",
     "newChat": "New Chat",
+    "newAgent": "New Agent",
+    "createButtonLabel": "Create",
+    "newAgentOptions": "Create Agent options",
+    "agentSearchPlaceholder": "Search current agents...",
+    "createAgentCustom": "Custom create",
+    "createAgentCustomDescription": "Create a new agent from scratch for the current instance.",
+    "createAgentFromLibrary": "Choose from library",
+    "createAgentFromLibraryDescription": "Browse reusable agent templates and add one into your workspace.",
+    "createAgentFromMarket": "Buy from market",
+    "createAgentFromMarketDescription": "Open the agent market and purchase a ready-made packaged agent.",
+    "createAgentFromMyAgents": "Copy from my agents",
+    "createAgentFromMyAgentsDescription": "Open your existing agents and duplicate one as the starting point.",
+    "dismissCreateAgentMenu": "Close create agent menu",
+    "noMatchingAgents": "No agents match this search",
+    "noMatchingAgentsDescription": "Try a different keyword or clear the search to see all agents.",
+    "currentAgentTab": "Current Agent ({{agentName}})",
+    "allConversations": "All Conversations",
+    "pinned": "Pinned",
+    "favorites": "Favorites",
     "today": "Today",
     "previous7Days": "Previous 7 Days",
     "older": "Older",
+    "moreActions": "More actions",
+    "favoriteChat": "Favorite",
+    "unfavoriteChat": "Remove favorite",
+    "pinChat": "Pin",
+    "unpinChat": "Unpin",
+    "publishAgentToMarket": "Publish to market",
+    "agentSettings": "Settings",
+    "removeAgent": "Remove from instance",
+    "relativeTimeYesterday": "Yesterday",
+    "relativeTimeDaysAgo": "{{count}} days ago",
+    "agentActivationFailed": "{{agent}} is ready, but Claw Studio could not switch to it automatically. Select it from the list manually.",
+    "selectAgentFailed": "Unable to switch to the selected agent.",
+    "selectSessionFailed": "Unable to open the selected conversation.",
+    "removeAgentFailed": "Unable to remove the selected agent from this instance.",
+    "dismissSelectionError": "Dismiss",
+    "dismissAgentActionsMenu": "Close agent actions menu",
+    "dismissSessionActionsMenu": "Close session actions menu",
     "deleteChat": "Delete chat",
     "noHistory": "No chat history",
-    "noHistoryDescription": "Start a new conversation to see it here."
+    "noHistoryDescription": "Start a new conversation to see it here.",
+    "myAgentsDialog": {
+      "title": "My Agents",
+      "description": "Choose a local kernel agent as the template for the new agent you are about to create.",
+      "searchPlaceholder": "Search local agents...",
+      "notSet": "Not set",
+      "badges": {
+        "default": "Default",
+        "builtIn": "Built-in"
+      },
+      "sections": {
+        "source": "Source",
+        "model": "Model",
+        "fallbackModels": "Fallback Models",
+        "parameters": "Parameters"
+      },
+      "status": {
+        "loading": "Loading local kernel agents...",
+        "loadFailed": "Failed to load local agents.",
+        "emptyTitle": "No local agents available",
+        "emptyDescription": "Create or import an agent into a writable kernel instance and it will appear here as a copy template."
+      },
+      "actions": {
+        "retry": "Retry",
+        "copy": "Use as Template"
+      }
+    },
+    "newAgentDialog": {
+      "title": "Create Agent",
+      "copyTitle": "Copy Agent",
+      "description": "Create a new agent for the selected instance. If more than one kernel supports agent creation, choose the target kernel first.",
+      "copyDescription": "Start from a local kernel agent, keep the portable settings, and create a new agent in the current instance.",
+      "instance": "Instance",
+      "labels": {
+        "kernel": "Kernel",
+        "sourceAgent": "Source Agent",
+        "agentId": "Agent ID",
+        "displayName": "Display Name",
+        "avatar": "Avatar",
+        "primaryModel": "Primary Model",
+        "fallbackModels": "Fallback Models",
+        "workspace": "Workspace",
+        "agentDir": "Agent Directory",
+        "temperature": "Temperature",
+        "topP": "Top P",
+        "maxTokens": "Max Tokens",
+        "timeoutMs": "Timeout (ms)",
+        "defaultAgent": "Default Agent",
+        "streaming": "Streaming"
+      },
+      "placeholders": {
+        "agentId": "coding-engineer",
+        "displayName": "Coding Engineer",
+        "avatar": "CE",
+        "fallbackModels": "openai/gpt-5.1\nanthropic/claude-sonnet-4",
+        "workspace": "/workspace/project",
+        "agentDir": ".agents/coding-engineer"
+      },
+      "actions": {
+        "backToTemplates": "Back to templates",
+        "create": "Create Agent",
+        "createCopy": "Create Copy",
+        "created": "Created"
+      },
+      "status": {
+        "loading": "Loading available kernels and model options...",
+        "available": "Available",
+        "unavailable": "Unavailable",
+        "kernelUnavailable": "This kernel cannot create agents yet.",
+        "creating": "Creating...",
+        "createFailed": "Failed to create the agent.",
+        "loadFailed": "Failed to load agent creation capability."
+      },
+      "validation": {
+        "agentIdRequired": "Agent ID is required.",
+        "displayNameRequired": "Display name is required.",
+        "invalidNumber": "{{field}} must be a valid number."
+      },
+      "modelInherit": "Inherit instance default",
+      "modelHint": "No model options were discovered from the instance workbench. Leave this empty to inherit runtime defaults.",
+      "defaultAgentDescription": "Set this as the default agent for the selected kernel configuration.",
+      "streamingDescription": "Override the runtime streaming behavior for this agent only.",
+      "streamingModes": {
+        "inherit": "Inherit runtime default",
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
+      "reasons": {
+        "unsupportedKernel": "{{kernel}} does not implement agent creation yet.",
+        "configUnavailable": "No writable kernel config is available for this instance.",
+        "configNotWritable": "The attached kernel config is read-only and cannot accept new agents."
+      }
+    }
   }
 }

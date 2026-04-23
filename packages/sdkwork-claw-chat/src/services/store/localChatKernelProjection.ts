@@ -6,17 +6,21 @@ import type {
   StudioConversationAttachment,
 } from '@sdkwork/claw-types';
 import {
+  STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
   createKernelChatAuthority,
   createKernelChatSessionRef,
 } from '@sdkwork/claw-types';
 import type { OpenClawToolCard } from '../openClawMessagePresentation.ts';
+import { mergeChatMessageSequenceIntoNativeMetadata } from '../chatMessageSequence.ts';
+import { normalizeUserVisibleChatSenderLabel } from '../chatSenderLabelPolicy.ts';
+import { resolveLatestChatMessageForDisplay } from '../chatMessageOrdering.ts';
 import {
   buildKernelChatMessageParts,
   trimOptionalString,
 } from '../kernelChatProjectionParts.ts';
 
 export const LOCAL_CHAT_PROJECTION_KERNEL_ID = 'studio-direct';
-export const LOCAL_CHAT_PROJECTION_INSTANCE_ID = 'local-built-in';
+export const LOCAL_CHAT_PROJECTION_INSTANCE_ID = STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID;
 export const LOCAL_CHAT_PROJECTION_SESSION_KIND = 'direct';
 
 export interface LocalChatKernelProjectionMessage {
@@ -24,6 +28,7 @@ export interface LocalChatKernelProjectionMessage {
   role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
   timestamp: number;
+  seq?: number;
   senderLabel?: string | null;
   model?: string;
   runId?: string;
@@ -40,6 +45,8 @@ export interface LocalChatKernelProjectionSession {
   messages: LocalChatKernelProjectionMessage[];
   model: string;
   instanceId?: string;
+  agentId?: string | null;
+  agentLabel?: string | null;
   defaultModel?: string | null;
   runId?: string | null;
   thinkingLevel?: string | null;
@@ -48,6 +55,13 @@ export interface LocalChatKernelProjectionSession {
   reasoningLevel?: string | null;
   lastMessagePreview?: string;
   sessionKind?: string | null;
+  kernelSession?: {
+    actorBinding?: {
+      agentId?: string | null;
+      profileId?: string | null;
+      label?: string | null;
+    } | null;
+  } | null;
 }
 
 export type LocalChatProjectedMessage<T extends LocalChatKernelProjectionMessage =
@@ -60,6 +74,25 @@ export type LocalChatProjectedSession<T extends LocalChatKernelProjectionSession
   messages: Array<LocalChatProjectedMessage<T['messages'][number]>>;
   kernelSession: KernelChatSession;
 };
+
+function resolveProjectedMessageStatus(input: {
+  role: LocalChatKernelProjectionMessage['role'];
+  messageRunId?: string | null;
+  activeRunId?: string | null;
+}): KernelChatMessage['status'] {
+  const messageRunId = trimOptionalString(input.messageRunId);
+  const activeRunId = trimOptionalString(input.activeRunId);
+  if (
+    (input.role === 'assistant' || input.role === 'tool') &&
+    messageRunId &&
+    activeRunId &&
+    messageRunId === activeRunId
+  ) {
+    return 'streaming';
+  }
+
+  return 'complete';
+}
 
 function normalizeTimestamp(value: number | undefined) {
   return typeof value === 'number' ? value : 0;
@@ -79,7 +112,17 @@ function resolveLastMessagePreview(session: LocalChatKernelProjectionSession) {
     return previewFromSession;
   }
 
-  return trimOptionalString(session.messages[session.messages.length - 1]?.content.slice(0, 120));
+  return trimOptionalString(
+    resolveLatestChatMessageForDisplay(session.messages)?.content.slice(0, 120),
+  );
+}
+
+function resolveActorBindingLabel(session: LocalChatKernelProjectionSession) {
+  return (
+    trimOptionalString(session.agentLabel) ??
+    trimOptionalString(session.kernelSession?.actorBinding?.label) ??
+    null
+  );
 }
 
 export function buildLocalChatKernelChatAuthority(): KernelChatAuthority {
@@ -91,11 +134,13 @@ export function buildLocalChatKernelChatAuthority(): KernelChatAuthority {
 export function buildLocalChatKernelChatSessionRef(input: {
   sessionId: string;
   instanceId?: string;
+  agentId?: string | null;
 }): KernelChatSessionRef {
   return createKernelChatSessionRef({
     kernelId: LOCAL_CHAT_PROJECTION_KERNEL_ID,
     instanceId: resolveLocalProjectionInstanceId(input.instanceId),
     sessionId: input.sessionId,
+    agentId: trimOptionalString(input.agentId),
   });
 }
 
@@ -105,7 +150,10 @@ export function buildLocalChatKernelChatSession(input: {
   const sessionRef = buildLocalChatKernelChatSessionRef({
     sessionId: input.session.id,
     instanceId: input.session.instanceId,
+    agentId: input.session.agentId,
   });
+  const agentId = trimOptionalString(input.session.agentId);
+  const actorBindingLabel = resolveActorBindingLabel(input.session);
 
   return {
     ref: sessionRef,
@@ -117,7 +165,13 @@ export function buildLocalChatKernelChatSession(input: {
     messageCount: input.session.messages.length,
     lastMessagePreview: resolveLastMessagePreview(input.session),
     sessionKind: resolveSessionKind(input.session.sessionKind),
-    actorBinding: null,
+    actorBinding: agentId
+      ? {
+          agentId,
+          profileId: trimOptionalString(input.session.kernelSession?.actorBinding?.profileId),
+          label: actorBindingLabel,
+        }
+      : null,
     modelBinding: {
       model: trimOptionalString(input.session.model),
       defaultModel: trimOptionalString(input.session.defaultModel),
@@ -133,19 +187,30 @@ export function buildLocalChatKernelChatSession(input: {
 export function buildLocalChatKernelChatMessage(input: {
   sessionRef: KernelChatSessionRef;
   message: LocalChatKernelProjectionMessage;
+  activeRunId?: string | null;
 }): KernelChatMessage {
   return {
     id: input.message.id,
     sessionRef: input.sessionRef,
     role: input.message.role,
-    status: input.message.runId ? 'streaming' : 'complete',
+    status: resolveProjectedMessageStatus({
+      role: input.message.role,
+      messageRunId: input.message.runId,
+      activeRunId: input.activeRunId,
+    }),
     createdAt: normalizeTimestamp(input.message.timestamp),
     updatedAt: normalizeTimestamp(input.message.timestamp),
     text: input.message.content,
     parts: buildKernelChatMessageParts(input.message),
     runId: trimOptionalString(input.message.runId),
     model: trimOptionalString(input.message.model),
-    senderLabel: trimOptionalString(input.message.senderLabel),
+    senderLabel: normalizeUserVisibleChatSenderLabel(input.message.senderLabel),
+    nativeMetadata: mergeChatMessageSequenceIntoNativeMetadata(
+      {
+        upstreamMessageId: input.message.id,
+      },
+      input.message.seq,
+    ),
   };
 }
 
@@ -160,6 +225,7 @@ export function hydrateLocalChatKernelProjection<
     kernelMessage: buildLocalChatKernelChatMessage({
       sessionRef: kernelSession.ref,
       message,
+      activeRunId: kernelSession.activeRunId,
     }),
   })) as Array<LocalChatProjectedMessage<TSession['messages'][number]>>;
 

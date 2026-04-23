@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
+import { rmSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -15,9 +16,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 const serverPackageDir = path.join(rootDir, 'packages', 'sdkwork-claw-server');
+const serverHostTargetDir = path.join(serverPackageDir, 'src-host', 'target');
 const SERVER_BUILD_TARGET_ENV_VAR = 'SDKWORK_SERVER_TARGET';
 const SERVER_BUILD_WSL_DISTRO_ENV_VAR = 'SDKWORK_SERVER_BUILD_WSL_DISTRO';
 const SERVER_BUILD_DISABLE_WSL_ENV_VAR = 'SDKWORK_SERVER_BUILD_DISABLE_WSL';
+const LEGACY_SERVER_BINARY_BASENAME = 'sdkwork-claw-server';
+const LEGACY_SERVER_PDB_BASENAME = 'sdkwork_claw_server';
 const DEFAULT_WSL_DISTRIBUTION_PREFERENCES = [
   'Ubuntu-24.04',
   'Ubuntu-22.04',
@@ -216,6 +220,40 @@ function createNativeServerBuildPlan({
   };
 }
 
+function resolveServerBuildReleaseDir(resolvedTargetTriple = '') {
+  const normalizedTargetTriple = String(resolvedTargetTriple ?? '').trim();
+  return normalizedTargetTriple.length > 0
+    ? path.join(serverHostTargetDir, normalizedTargetTriple, 'release')
+    : path.join(serverHostTargetDir, 'release');
+}
+
+function buildLegacyServerBuildArtifactPaths(resolvedTargetTriple = '') {
+  const normalizedTargetTriple = String(resolvedTargetTriple ?? '').trim();
+  const releaseDirectories = [
+    resolveServerBuildReleaseDir(normalizedTargetTriple),
+  ];
+
+  if (normalizedTargetTriple.length > 0) {
+    releaseDirectories.push(resolveServerBuildReleaseDir(''));
+  }
+
+  return [...new Set(releaseDirectories)].flatMap((releaseDir) => [
+    path.join(releaseDir, `${LEGACY_SERVER_BINARY_BASENAME}.exe`),
+    path.join(releaseDir, LEGACY_SERVER_BINARY_BASENAME),
+    path.join(releaseDir, `${LEGACY_SERVER_BINARY_BASENAME}.d`),
+    path.join(releaseDir, `${LEGACY_SERVER_PDB_BASENAME}.pdb`),
+  ]);
+}
+
+export function removeLegacyServerBuildArtifacts({
+  resolvedTargetTriple = '',
+  fileSystem = { rmSync },
+} = {}) {
+  for (const artifactPath of buildLegacyServerBuildArtifactPaths(resolvedTargetTriple)) {
+    fileSystem.rmSync(artifactPath, { force: true });
+  }
+}
+
 function createWslServerBuildPlan({
   resolvedTargetTriple = '',
   wslDistribution = '',
@@ -293,9 +331,14 @@ export function runServerBuild({
   spawnSyncImpl = spawnSync,
   ensureRustToolchain = ensureTauriRustToolchain,
   withRustToolchainPathFn = withRustToolchainPath,
+  fileSystem = { rmSync },
   ...options
 } = {}) {
   const runtimeEnv = options.env ?? process.env;
+  const resolvedTargetTriple = resolveServerBuildTarget({
+    targetTriple: options.targetTriple,
+    env: runtimeEnv,
+  });
   const plan = createServerBuildPlan({
     ...options,
     env: runtimeEnv,
@@ -326,6 +369,11 @@ export function runServerBuild({
       `server build failed with exit code ${result.status ?? 'unknown'}`,
     );
   }
+
+  removeLegacyServerBuildArtifacts({
+    resolvedTargetTriple,
+    fileSystem,
+  });
 
   return plan;
 }

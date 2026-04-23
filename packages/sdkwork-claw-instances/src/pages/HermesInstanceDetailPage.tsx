@@ -10,13 +10,9 @@ import {
   formatWorkbenchLabel,
   getHermesInstanceDetailModulePayload,
   type InstanceBaseDetail,
-  type InstanceDetailSource,
+  type InstanceDetailPageProps,
   type HermesInstanceDetailModulePayload,
 } from '../services';
-
-interface HermesInstanceDetailPageProps {
-  source: InstanceDetailSource;
-}
 
 interface HermesMetric {
   id: string;
@@ -76,7 +72,8 @@ function buildReadinessTone(status: string) {
 
 export function HermesInstanceDetailPage({
   source,
-}: HermesInstanceDetailPageProps) {
+  onOpenAgentMarketModal: _onOpenAgentMarketModal,
+}: InstanceDetailPageProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [baseDetail, setBaseDetail] = useState<InstanceBaseDetail | null>(null);

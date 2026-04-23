@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Input, Modal } from '@sdkwork/claw-ui';
+import { Input, Modal, TaskStudioTabs } from '@sdkwork/claw-ui';
 import {
   AGENT_MARKET_TEMPLATES,
   agentInstallService,
@@ -81,8 +81,8 @@ function EmptyState({
   onAction?: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-14 text-center dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-zinc-500 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-300 dark:ring-zinc-800">
+    <div className="rounded-[20px] border border-dashed border-zinc-300 bg-white/85 px-6 py-14 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[18px] bg-white text-zinc-500 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-300 dark:ring-zinc-800">
         {icon}
       </div>
       <h3 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">{title}</h3>
@@ -122,9 +122,9 @@ function TemplateCard({
   installCountLabel: string;
 }) {
   return (
-    <article className="flex h-full flex-col rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <article className="flex h-full flex-col rounded-[20px] border border-zinc-200/80 bg-white/90 p-5 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/85">
       <div className="flex items-start gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-2xl dark:bg-zinc-900">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-zinc-100 text-2xl dark:bg-zinc-950">
           {template.emoji}
         </div>
         <div className="min-w-0 flex-1">
@@ -141,7 +141,7 @@ function TemplateCard({
               </span>
             ) : null}
           </div>
-          <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+          <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
             {localizedTemplate.summary}
           </p>
           <p className="mt-3 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
@@ -161,7 +161,7 @@ function TemplateCard({
         ))}
       </div>
 
-      <div className="mt-5 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+      <div className="mt-5 border-t border-zinc-200/80 pt-4 dark:border-zinc-800">
         <div className="text-sm text-zinc-600 dark:text-zinc-400">{localizedTemplate.focus}</div>
         <button
           type="button"
@@ -409,6 +409,21 @@ export function AgentMarket() {
   const localizedSelectedTemplate = selectedTemplate ? localizeTemplate(selectedTemplate, t) : null;
   const hasResolvedTargets = isFetched;
   const isTargetsLoading = !!selectedTemplate && !hasResolvedTargets && (isLoading || isFetching);
+  const categoryTabs = useMemo(
+    () =>
+      catalog.categories.map((category) => ({
+        id: category,
+        label:
+          category === 'All'
+            ? t('agentMarket.categories.All')
+            : t(`agentMarket.categories.${category}`, { defaultValue: category }),
+        count:
+          category === 'All'
+            ? AGENT_MARKET_TEMPLATES.length
+            : AGENT_MARKET_TEMPLATES.filter((template) => template.category === category).length,
+      })),
+    [catalog.categories, t],
+  );
 
   React.useEffect(() => {
     if (!catalog.categories.includes(activeCategory)) {
@@ -428,133 +443,130 @@ export function AgentMarket() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-zinc-50 dark:bg-zinc-950">
-      <div className="flex w-full flex-col gap-5 px-4 pb-14 pt-4 sm:px-5 md:pb-16 lg:px-6 lg:pt-6 xl:px-8 2xl:px-10">
-        <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 xl:p-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-wrap gap-2">
-              {catalog.categories.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => {
-                    startTransition(() => {
-                      setActiveCategory(category);
-                    });
-                  }}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium ${
-                    activeCategory === category
-                      ? 'border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-500/20 dark:bg-primary-500/10 dark:text-primary-200'
-                      : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900'
-                  }`}
-                >
-                  {category === 'All'
-                    ? t('agentMarket.categories.All')
-                    : t(`agentMarket.categories.${category}`, { defaultValue: category })}
-                </button>
-              ))}
+    <div className="flex h-full overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="w-full space-y-4">
+          <div
+            className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between"
+            data-slot="agent-market-topbar"
+          >
+            <div
+              className="w-fit max-w-full min-w-0 overflow-x-auto"
+              data-slot="agent-market-category-tabs"
+            >
+              <TaskStudioTabs
+                activeTab={activeCategory}
+                tabs={categoryTabs}
+                onChange={(tabId) => {
+                  startTransition(() => {
+                    setActiveCategory(tabId);
+                  });
+                }}
+              />
             </div>
-            <div className="relative w-full xl:max-w-sm">
+            <div className="relative w-full 2xl:max-w-sm">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <Input
                 type="text"
                 value={searchQuery}
                 placeholder={t('agentMarket.searchPlaceholder')}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="h-11 rounded-xl border-zinc-200 bg-zinc-50 pl-11 pr-4 text-sm shadow-none focus-visible:border-primary-300 focus-visible:bg-white focus-visible:ring-0 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-visible:border-primary-500/30"
+                className="h-11 rounded-[16px] border-zinc-200/80 bg-white pl-11 pr-4 text-sm shadow-none focus-visible:border-primary-300 focus-visible:bg-white focus-visible:ring-0 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-visible:border-primary-500/30"
               />
             </div>
           </div>
-        </section>
 
-        {selectedTemplate && isError && hasResolvedTargets ? (
-          <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-600 ring-1 ring-amber-200 dark:bg-zinc-950 dark:text-amber-300 dark:ring-amber-500/20">
-                  <AlertCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                    {t('agentMarket.error.title')}
-                  </h2>
-                  <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                    {t('agentMarket.error.description')}
-                  </p>
-                  {error instanceof Error ? (
-                    <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                      {error.message}
+          {selectedTemplate && isError && hasResolvedTargets ? (
+            <section className="rounded-[20px] border border-amber-200 bg-amber-50/70 p-4 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] bg-white text-amber-600 ring-1 ring-amber-200 dark:bg-zinc-950 dark:text-amber-300 dark:ring-amber-500/20">
+                    <AlertCircle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                      {t('agentMarket.error.title')}
+                    </h2>
+                    <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                      {t('agentMarket.error.description')}
                     </p>
-                  ) : null}
+                    {error instanceof Error ? (
+                      <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                        {error.message}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void refetch();
+                  }}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-primary-600 bg-primary-600 px-4 text-sm font-medium text-white dark:border-primary-500 dark:bg-primary-500"
+                >
+                  {t('agentMarket.error.retry')}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  void refetch();
-                }}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-primary-600 bg-primary-600 px-4 text-sm font-medium text-white dark:border-primary-500 dark:bg-primary-500"
-              >
-                {t('agentMarket.error.retry')}
-              </button>
-            </div>
-          </section>
-        ) : null}
+            </section>
+          ) : null}
 
-        <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 xl:p-6">
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }, (_, index) => (
-                <div
-                  key={index}
-                  className="h-72 rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900"
-                />
-              ))}
-            </div>
-          ) : catalog.templates.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {catalog.templates.map((template) => {
-                const installCount = hasResolvedTargets
-                  ? targets.filter((target) => target.installedTemplateIds.includes(template.id))
-                      .length
-                  : 0;
-                const localizedTemplate = localizeTemplate(template, t);
-                return (
-                  <TemplateCard
-                    key={template.id}
-                    template={template}
-                    installCount={installCount}
-                    disabled={hasResolvedTargets && targets.length > 0 && installCount === targets.length}
-                    onInstall={() => {
-                      setSelectedTemplate(template);
-                      setSelectedTargetId(
-                        resolvePreferredTargetId(targets, template.id, preferredTargetId),
-                      );
-                    }}
-                    categoryLabel={t(`agentMarket.categories.${template.category}`, {
-                      defaultValue: template.category,
-                    })}
-                    localizedTemplate={localizedTemplate}
-                    actionLabel={
-                      hasResolvedTargets && targets.length > 0 && installCount === targets.length
-                        ? t('agentMarket.actions.installed')
-                        : t('agentMarket.actions.install')
-                    }
-                    installCountLabel={t('agentMarket.labels.installedInCount', {
-                      count: installCount,
-                    })}
+          <section className="w-full">
+            {isLoading ? (
+              <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(19rem,1fr))]">
+                {Array.from({ length: 6 }, (_, index) => (
+                  <div
+                    key={index}
+                    className="h-72 rounded-[20px] border border-zinc-200/80 bg-white/75 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70"
                   />
-                );
-              })}
-            </div>
-          ) : (
-            <EmptyState
-              icon={<Search className="h-6 w-6" />}
-              title={t('agentMarket.empty.searchTitle')}
-              description={t('agentMarket.empty.searchDescription')}
-            />
-          )}
-        </section>
+                ))}
+              </div>
+            ) : catalog.templates.length > 0 ? (
+              <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(19rem,1fr))]">
+                {catalog.templates.map((template) => {
+                  const installCount = hasResolvedTargets
+                    ? targets.filter((target) => target.installedTemplateIds.includes(template.id))
+                        .length
+                    : 0;
+                  const localizedTemplate = localizeTemplate(template, t);
+                  return (
+                    <TemplateCard
+                      key={template.id}
+                      template={template}
+                      installCount={installCount}
+                      disabled={
+                        hasResolvedTargets && targets.length > 0 && installCount === targets.length
+                      }
+                      onInstall={() => {
+                        setSelectedTemplate(template);
+                        setSelectedTargetId(
+                          resolvePreferredTargetId(targets, template.id, preferredTargetId),
+                        );
+                      }}
+                      categoryLabel={t(`agentMarket.categories.${template.category}`, {
+                        defaultValue: template.category,
+                      })}
+                      localizedTemplate={localizedTemplate}
+                      actionLabel={
+                        hasResolvedTargets && targets.length > 0 && installCount === targets.length
+                          ? t('agentMarket.actions.installed')
+                          : t('agentMarket.actions.install')
+                      }
+                      installCountLabel={t('agentMarket.labels.installedInCount', {
+                        count: installCount,
+                      })}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState
+                icon={<Search className="h-6 w-6" />}
+                title={t('agentMarket.empty.searchTitle')}
+                description={t('agentMarket.empty.searchDescription')}
+              />
+            )}
+          </section>
+        </div>
       </div>
 
       <Modal

@@ -1,3 +1,4 @@
+import { isGatewayAuthoritativeRouteMode } from '../services/index.ts';
 import type { InstanceChatRouteMode } from '../services/store/index.ts';
 
 export interface ConnectGatewayInstancesBestEffortOptions {
@@ -20,7 +21,7 @@ export async function connectGatewayInstancesBestEffort(
         const mode = await options.resolveRouteMode(instanceId);
         options.setRouteMode(instanceId, mode);
 
-        if (mode === 'instanceOpenClawGatewayWs') {
+        if (isGatewayAuthoritativeRouteMode(mode)) {
           await options.hydrateGatewayInstance(instanceId);
         } else {
           await options.releaseGatewayInstance?.(instanceId);

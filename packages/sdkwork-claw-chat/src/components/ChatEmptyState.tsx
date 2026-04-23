@@ -1,4 +1,10 @@
 import { Sparkles } from 'lucide-react';
+import { cn } from '@sdkwork/claw-ui';
+import {
+  CHAT_SURFACE_ELEVATED_PANEL_CLASS,
+  CHAT_SURFACE_INSET_PANEL_CLASS,
+  CHAT_SURFACE_INTERACTIVE_PANEL_CLASS,
+} from './chatChromeSurface';
 
 export interface ChatEmptyStateHighlight {
   label: string;
@@ -24,7 +30,12 @@ export function ChatEmptyState({
 }: ChatEmptyStateProps) {
   return (
     <div className="grid w-full max-w-6xl gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)] lg:items-center xl:gap-6">
-      <div className="flex flex-col items-center rounded-[2rem] border border-zinc-200/70 bg-white/80 p-6 text-center shadow-[0_18px_48px_rgba(15,23,42,0.08)] sm:p-8 lg:items-start lg:p-10 lg:text-left dark:border-zinc-800/70 dark:bg-zinc-900/80 dark:shadow-none">
+      <div
+        className={cn(
+          CHAT_SURFACE_ELEVATED_PANEL_CLASS,
+          'flex flex-col items-center p-6 text-center sm:p-8 lg:items-start lg:p-10 lg:text-left',
+        )}
+      >
         <span className="mb-6 inline-flex items-center rounded-full border border-primary-500/15 bg-primary-500/8 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-primary-600 dark:border-primary-400/20 dark:bg-primary-400/10 dark:text-primary-300">
           <span className="max-w-full truncate">{appName.toUpperCase()}</span>
         </span>
@@ -49,7 +60,10 @@ export function ChatEmptyState({
                 className={
                   highlight.tone === 'primary'
                     ? 'inline-flex max-w-full items-center rounded-2xl border border-primary-500/15 bg-primary-500/8 px-4 py-2 text-sm text-primary-600 dark:border-primary-400/20 dark:bg-primary-400/10 dark:text-primary-300'
-                    : 'inline-flex max-w-full items-center rounded-2xl border border-zinc-200/80 bg-zinc-50/90 px-4 py-2 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-300'
+                    : cn(
+                        CHAT_SURFACE_INSET_PANEL_CLASS,
+                        'inline-flex max-w-full items-center px-4 py-2 text-sm text-zinc-600 dark:text-zinc-300',
+                      )
                 }
               >
                 <span className="truncate">{highlight.label}</span>
@@ -63,9 +77,12 @@ export function ChatEmptyState({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           {suggestions.map((suggestion, index) => (
             <button
-              key={suggestion}
+              key={`${index}:${suggestion}`}
               onClick={() => onSuggestionSelect(suggestion)}
-              className="group relative flex min-h-[8.5rem] flex-col justify-between overflow-hidden rounded-[1.75rem] border border-zinc-200/80 bg-white p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-500/50 hover:shadow-lg hover:shadow-primary-500/5 dark:border-zinc-800/80 dark:bg-zinc-900 dark:hover:border-primary-500/50"
+              className={cn(
+                CHAT_SURFACE_INTERACTIVE_PANEL_CLASS,
+                'group relative flex min-h-[8.5rem] flex-col justify-between overflow-hidden p-5 text-left',
+              )}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 via-primary-500/0 to-primary-500/0 transition-colors duration-500 group-hover:from-primary-500/5 group-hover:via-primary-500/0 group-hover:to-transparent" />
               <span className="relative z-10 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">

@@ -1,4 +1,8 @@
-import { DEFAULT_BUNDLED_OPENCLAW_VERSION } from '@sdkwork/claw-types';
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+  isBuiltInOpenClawInstanceId,
+} from '@sdkwork/claw-types';
 import type {
   StudioConversationMessage,
   StudioConversationRecord,
@@ -54,7 +58,7 @@ import {
 const INSTANCE_STORAGE_KEY = 'claw-studio:studio:instances:v1';
 const CONVERSATION_STORAGE_KEY = 'claw-studio:studio:conversations:v1';
 const WORKBENCH_STORAGE_KEY = 'claw-studio:studio:workbench:v1';
-const DEFAULT_INSTANCE_ID = 'local-built-in';
+const DEFAULT_INSTANCE_ID = STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID;
 const DEFAULT_OPENCLAW_PROVIDER_ID = 'openai';
 const DEFAULT_OPENCLAW_AGENT_FILE_ID = '/workspace/main/AGENTS.md';
 const DEFAULT_OPENCLAW_MEMORY_FILE_ID = '/workspace/main/MEMORY.md';
@@ -509,6 +513,33 @@ function isManagedBuiltInOpenClawInstance(instance: StudioInstanceRecord) {
   );
 }
 
+function resolveRequestedInstanceId(
+  instances: StudioInstanceRecord[],
+  requestedId: string,
+) {
+  const normalizedRequestedId = requestedId.trim();
+  if (!normalizedRequestedId) {
+    return requestedId;
+  }
+
+  if (normalizedRequestedId === STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID) {
+    return (
+      instances.find(isManagedBuiltInOpenClawInstance)?.id ??
+      STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID
+    );
+  }
+
+  return normalizedRequestedId;
+}
+
+function findRequestedInstance(
+  instances: StudioInstanceRecord[],
+  requestedId: string,
+) {
+  const resolvedId = resolveRequestedInstanceId(instances, requestedId);
+  return instances.find((instance) => instance.id === resolvedId) ?? null;
+}
+
 function normalizeBuiltInInstance(instance: StudioInstanceRecord): StudioInstanceRecord {
   const baseline = createDefaultBuiltInInstance();
   const resolvedName = instance.name?.trim() || baseline.name;
@@ -530,6 +561,7 @@ function normalizeBuiltInInstance(instance: StudioInstanceRecord): StudioInstanc
   return {
     ...baseline,
     ...instance,
+    id: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
     name: resolvedName,
     description: resolvedDescription,
     runtimeKind: 'openclaw',
@@ -1101,17 +1133,19 @@ function updateBuiltInOpenClawWorkbench(
   updater: (snapshot: StudioWorkbenchSnapshot, instance: StudioInstanceRecord) => StudioWorkbenchSnapshot,
 ): StudioWorkbenchSnapshot | null {
   const instances = readInstances().instances;
-  const instance = instances.find((entry) => entry.id === instanceId);
+  const instance = findRequestedInstance(instances, instanceId);
   if (!instance || !isBuiltInOpenClawWorkbenchInstance(instance)) {
     return null;
   }
+  const resolvedInstanceId = instance.id;
 
   const document = readWorkbenchRegistry(instances);
-  const current = document.workbenches[instanceId] || createDefaultWorkbenchSnapshot(instance);
+  const current =
+    document.workbenches[resolvedInstanceId] || createDefaultWorkbenchSnapshot(instance);
   const next = updater(cloneWorkbenchSnapshot(current), instance);
   next.memory = buildOpenClawMemoryEntries(next.files);
   const sanitizedNext = sanitizeBrowserWorkbenchSnapshot(next);
-  document.workbenches[instanceId] = sanitizedNext;
+  document.workbenches[resolvedInstanceId] = sanitizedNext;
   writeWorkbenchRegistry(document);
   return cloneWorkbenchSnapshot(sanitizedNext);
 }
@@ -1941,6 +1975,12 @@ function summarizeConversation(
     participantInstanceIds: [...conversation.participantInstanceIds],
     createdAt: conversation.createdAt,
     updatedAt: conversation.updatedAt,
+    lastSeenAt:
+      typeof conversation.lastSeenAt === 'number' &&
+      Number.isFinite(conversation.lastSeenAt) &&
+      conversation.lastSeenAt >= 0
+        ? conversation.lastSeenAt
+        : null,
     messageCount: conversation.messages.length,
     lastMessagePreview: lastMessage?.content?.slice(0, 120) || '',
   };
@@ -1961,14 +2001,29 @@ function withConversationDerivedFields(
   conversation: StudioConversationRecord,
 ): StudioConversationRecord {
   const messages = normalizeConversationMessages(conversation);
+  const normalizedPrimaryInstanceId =
+    conversation.primaryInstanceId.trim() || conversation.primaryInstanceId;
+  const normalizedParticipantInstanceIds = Array.from(
+    new Set(
+      conversation.participantInstanceIds.map(
+        (participantInstanceId) =>
+          participantInstanceId.trim() || participantInstanceId,
+      ),
+    ),
+  );
   const summary = summarizeConversation({
     ...conversation,
+    primaryInstanceId: normalizedPrimaryInstanceId,
+    participantInstanceIds: normalizedParticipantInstanceIds,
     messages,
   });
 
   return {
     ...conversation,
     ...summary,
+    primaryInstanceId: normalizedPrimaryInstanceId,
+    participantInstanceIds: normalizedParticipantInstanceIds,
+    lastSeenAt: summary.lastSeenAt,
     messages,
   };
 }
@@ -2049,7 +2104,7 @@ export class WebStudioPlatform implements StudioPlatformAPI {
   }
 
   async getInstance(id: string): Promise<StudioInstanceRecord | null> {
-    return readInstances().instances.find((instance) => instance.id === id) ?? null;
+    return findRequestedInstance(readInstances().instances, id);
   }
 
   async getInstanceDetail(id: string): Promise<StudioInstanceDetailRecord | null> {
@@ -2077,15 +2132,16 @@ export class WebStudioPlatform implements StudioPlatformAPI {
     input: StudioUpdateInstanceInput,
   ): Promise<StudioInstanceRecord> {
     const document = readInstances();
-    const current = document.instances.find((instance) => instance.id === id);
+    const current = findRequestedInstance(document.instances, id);
     if (!current) {
       throw new Error(`Instance "${id}" not found`);
     }
+    const resolvedId = current.id;
 
     if (input.isDefault) {
       document.instances = document.instances.map((instance) => ({
         ...instance,
-        isDefault: instance.id === id,
+        isDefault: instance.id === resolvedId,
       }));
     }
 
@@ -2112,7 +2168,7 @@ export class WebStudioPlatform implements StudioPlatformAPI {
     };
 
     document.instances = document.instances.map((instance) =>
-      instance.id === id ? updated : instance,
+      instance.id === resolvedId ? updated : instance,
     );
     writeInstances(document);
     synchronizeBuiltInOpenClawWorkbench(updated);
@@ -2121,16 +2177,17 @@ export class WebStudioPlatform implements StudioPlatformAPI {
 
   async deleteInstance(id: string): Promise<boolean> {
     const document = readInstances();
-    const target = document.instances.find((instance) => instance.id === id);
+    const target = findRequestedInstance(document.instances, id);
     if (!target) {
       return false;
     }
+    const resolvedId = target.id;
 
     if (target.isBuiltIn) {
       throw new Error('The built-in instance cannot be deleted');
     }
 
-    document.instances = document.instances.filter((instance) => instance.id !== id);
+    document.instances = document.instances.filter((instance) => instance.id !== resolvedId);
     if (!document.instances.some((instance) => instance.isDefault)) {
       document.instances = document.instances.map((instance, index) => ({
         ...instance,
@@ -2142,11 +2199,11 @@ export class WebStudioPlatform implements StudioPlatformAPI {
     const conversations = readConversations();
     conversations.conversations = conversations.conversations.filter(
       (conversation) =>
-        conversation.primaryInstanceId !== id &&
-        !conversation.participantInstanceIds.includes(id),
+        conversation.primaryInstanceId !== resolvedId &&
+        !conversation.participantInstanceIds.includes(resolvedId),
     );
     writeConversations(conversations);
-    removeBuiltInOpenClawWorkbench(id);
+    removeBuiltInOpenClawWorkbench(resolvedId);
     return true;
   }
 
@@ -2642,10 +2699,15 @@ export class WebStudioPlatform implements StudioPlatformAPI {
   }
 
   async listConversations(instanceId: string): Promise<StudioConversationRecord[]> {
+    const normalizedInstanceId =
+      instanceId.trim() || instanceId;
     return readConversations()
       .conversations
-      .filter((conversation) => conversation.primaryInstanceId === instanceId)
       .map(withConversationDerivedFields)
+      .filter(
+        (conversation) =>
+          conversation.primaryInstanceId === normalizedInstanceId,
+      )
       .sort((left, right) => right.updatedAt - left.updatedAt);
   }
 

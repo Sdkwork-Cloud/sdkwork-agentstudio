@@ -42,7 +42,12 @@ await runTest(
         authorityKind: 'gateway',
         isBlocked: true,
         isChatAvailable: false,
-        isOpenClawGateway: true,
+        isGatewayAuthority: true,
+        agentCatalogMode: 'kernelCatalog',
+        sessionScopeMode: 'agentBound',
+        sendMode: 'gateway',
+        newSessionModelMode: 'modelId',
+        supportsSessionScopeSync: true,
         routeLabelKey: 'chat.page.route.unsupported',
       },
     );
@@ -77,8 +82,53 @@ await runTest(
         authorityKind: 'http',
         isBlocked: false,
         isChatAvailable: true,
-        isOpenClawGateway: false,
+        isGatewayAuthority: false,
+        agentCatalogMode: 'sharedCatalog',
+        sessionScopeMode: 'all',
+        sendMode: 'local',
+        newSessionModelMode: 'modelName',
+        supportsSessionScopeSync: false,
         routeLabelKey: 'chat.page.route.direct',
+      },
+    );
+  },
+);
+
+await runTest(
+  'resolveChatRuntimeState derives gateway runtime semantics from authority instead of a specific adapter id',
+  () => {
+    assert.deepEqual(
+      resolveChatRuntimeState({
+        activeInstanceId: 'instance-gateway-custom',
+        routeMode: 'instanceOpenAiHttp',
+        adapterCapabilities: {
+          adapterId: 'customGatewayBridge',
+          authorityKind: 'gateway',
+          supported: true,
+          durable: true,
+          writable: true,
+          supportsStreaming: true,
+          supportsRuns: true,
+          supportsAgentProfiles: true,
+          supportsSessionMutation: true,
+          reason: null,
+        },
+        sessionState: {
+          authorityKind: 'gateway',
+        },
+      }),
+      {
+        hasResolvedContext: true,
+        authorityKind: 'gateway',
+        isBlocked: false,
+        isChatAvailable: true,
+        isGatewayAuthority: true,
+        agentCatalogMode: 'kernelCatalog',
+        sessionScopeMode: 'agentBound',
+        sendMode: 'gateway',
+        newSessionModelMode: 'modelId',
+        supportsSessionScopeSync: true,
+        routeLabelKey: 'chat.page.route.gateway',
       },
     );
   },

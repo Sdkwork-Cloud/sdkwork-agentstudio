@@ -2,6 +2,7 @@
 export * from './platform/index.ts';
 export * from './platform-impl/index.ts';
 export * from './services/node/index.ts';
+export * from './sdk/userCenterContract.ts';
 export * from './stores/simpleStore.ts';
 export * from './stores/instanceStore.ts';
 export * from './stores/llmStore.ts';

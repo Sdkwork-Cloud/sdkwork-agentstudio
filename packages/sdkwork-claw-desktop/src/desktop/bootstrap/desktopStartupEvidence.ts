@@ -20,8 +20,10 @@ import { resolveBuiltInOpenClawInstance } from '../builtInOpenClawInstanceSelect
 export const DESKTOP_STARTUP_EVIDENCE_RELATIVE_PATH =
   'diagnostics/desktop-startup-evidence.json';
 
-export type DesktopStartupEvidenceStatus = 'passed' | 'failed';
+export type DesktopStartupEvidenceStatus = 'running' | 'passed' | 'failed';
 export type DesktopStartupEvidencePhase =
+  | 'bootstrap-started'
+  | 'bootstrap-failed'
   | 'runtime-ready'
   | 'shell-mounted'
   | 'runtime-readiness-failed'
@@ -110,6 +112,22 @@ export interface DesktopStartupEvidenceDocument {
   readinessEvidence: DesktopHostedRuntimeReadinessEvidence | null;
   localAiProxy: DesktopStartupEvidenceLocalAiProxy | null;
   error: DesktopStartupEvidenceErrorSummary | null;
+}
+
+export function resolvePassingDesktopStartupEvidencePhase(
+  hasShellMounted: boolean,
+): DesktopStartupEvidencePhase {
+  return hasShellMounted ? 'shell-mounted' : 'runtime-ready';
+}
+
+export function shouldPersistShellMountedDesktopStartupEvidence({
+  runtimeReadinessFailed,
+  readinessSnapshot,
+}: {
+  runtimeReadinessFailed: boolean;
+  readinessSnapshot: DesktopHostedRuntimeReadinessSnapshot | null | undefined;
+}): boolean {
+  return !runtimeReadinessFailed && readinessSnapshot?.evidence?.ready === true;
 }
 
 export function sanitizeDesktopStartupDescriptor(

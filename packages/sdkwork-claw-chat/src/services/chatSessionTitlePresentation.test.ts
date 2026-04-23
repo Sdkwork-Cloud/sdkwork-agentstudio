@@ -160,6 +160,17 @@ await runTest('getChatSessionDisplayTitle hides agent thread session ids when no
   );
 });
 
+await runTest('getChatSessionDisplayTitle hides technical message preview ids when no readable content exists', () => {
+  assert.equal(
+    getChatSessionDisplayTitle({
+      title: 'New Conversation',
+      messages: [],
+      lastMessagePreview: 'message-42',
+    }),
+    'New Conversation',
+  );
+});
+
 await runTest('getChatSessionDisplayTitle prefers kernel-authored first user message text over legacy content mirrors', () => {
   assert.equal(
     getChatSessionDisplayTitle({

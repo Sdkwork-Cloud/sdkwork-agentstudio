@@ -180,15 +180,29 @@ export type {
   StoragePutTextResult,
 } from './contracts/storage.ts';
 export type {
+  StudioCreatedKernelAgentRecord,
+  StudioCreateKernelAgentInput,
+  StudioKernelAgentCreationCapability,
+  StudioKernelAgentCreationKernelOption,
+  StudioKernelAgentCreationModelOption,
+  StudioKernelAgentCreationReasonCode,
+  StudioCreateKernelChatSessionInput,
   StudioCreateInstanceInput,
   StudioInstanceTaskMutationPayload,
   StudioOpenClawGatewayInvokeOptions,
   StudioOpenClawGatewayInvokeRequest,
+  StudioPatchKernelChatSessionInput,
   StudioPlatformAPI,
+  StudioStartKernelChatRunInput,
   StudioUpdateInstanceLlmProviderConfigInput,
   StudioUpdateInstanceInput,
 } from './contracts/studio.ts';
 export type {
+  KernelChatAgentProfile,
+  KernelChatMessage,
+  KernelChatRun,
+  KernelChatSession,
+  PersistedKernelChatAgentRecord,
   LocalAiProxyLoggedMessage,
   LocalAiProxyMessageCaptureSettings,
   LocalAiProxyMessageLogRecord,
@@ -217,6 +231,12 @@ export type {
   StudioInstanceConfig,
   StudioInstanceRecord,
   StudioWorkbenchTaskExecutionRecord,
+} from '@sdkwork/claw-types';
+export {
+  STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+  canonicalizeBuiltInOpenClawInstanceId,
+  isBuiltInOpenClawInstanceId,
+  matchesBuiltInOpenClawInstanceId,
 } from '@sdkwork/claw-types';
 export {
   components,

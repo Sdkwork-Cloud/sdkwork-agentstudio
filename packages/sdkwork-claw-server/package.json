@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "cargo run --manifest-path src-host/Cargo.toml",
-    "build": "node ../../scripts/run-claw-server-build.mjs"
+    "build": "sdkwork-run-node ../../scripts/run-claw-server-build.mjs"
   },
   "dependencies": {
     "@sdkwork/claw-host-core": "workspace:*"

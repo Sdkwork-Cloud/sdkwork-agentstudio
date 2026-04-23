@@ -8,6 +8,7 @@ const DEFAULT_BUNDLED_OPENCLAW_VERSION = DEFAULT_RUNTIME_VERSION;
 const DEFAULT_BUNDLED_OPENCLAW_NODE_VERSION = DEFAULT_NODE_VERSION;
 const LOCAL_AI_PROXY_ROOT_BASE_URL = 'http://localhost:21280';
 const LOCAL_AI_PROXY_BASE_URL = `${LOCAL_AI_PROXY_ROOT_BASE_URL}/v1`;
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
   try {
@@ -1116,7 +1117,7 @@ if (kernelCenterServiceModule) {
         descriptorStateStoreProfileId: 'default-sqlite',
         descriptorBrowserBaseUrl: 'http://127.0.0.1:18797',
         manageBaseUrl: 'http://127.0.0.1:18797',
-        builtInInstanceId: 'local-built-in',
+        builtInInstanceId: BUILT_IN_INSTANCE_ID,
         builtInInstanceName: 'Local Built-In',
         builtInInstanceVersion: DEFAULT_BUNDLED_OPENCLAW_VERSION,
         builtInInstanceRuntimeKind: 'openclaw',
@@ -1185,7 +1186,7 @@ if (kernelCenterServiceModule) {
         'default-sqlite',
       );
       assert.equal(dashboard.startupEvidence.manageBaseUrl, 'http://127.0.0.1:18797');
-      assert.equal(dashboard.startupEvidence.builtInInstanceId, 'local-built-in');
+      assert.equal(dashboard.startupEvidence.builtInInstanceId, BUILT_IN_INSTANCE_ID);
       assert.equal(dashboard.startupEvidence.builtInInstanceName, 'Local Built-In');
       assert.equal(
         dashboard.startupEvidence.builtInInstanceVersion,

@@ -1,12 +1,23 @@
 import type {
+  KernelChatAgentProfile,
+  KernelChatMessage,
+  KernelChatRun,
+  KernelChatSession,
+  PersistedKernelChatAgentRecord,
+  StudioCreatedKernelAgentRecord,
+  StudioCreateKernelChatSessionInput,
+  StudioCreateKernelAgentInput,
   StudioConversationRecord,
   StudioCreateInstanceInput,
   StudioInstanceConfig,
   StudioInstanceDetailRecord,
   StudioInstanceRecord,
+  StudioKernelAgentCreationCapability,
   StudioInstanceTaskMutationPayload,
   StudioOpenClawGatewayInvokeOptions,
   StudioOpenClawGatewayInvokeRequest,
+  StudioPatchKernelChatSessionInput,
+  StudioStartKernelChatRunInput,
   StudioUpdateInstanceInput,
   StudioUpdateInstanceLlmProviderConfigInput,
   StudioWorkbenchTaskExecutionRecord,
@@ -21,6 +32,34 @@ export interface DesktopLegacyStudioCompatApi {
   listInstances(): Promise<StudioInstanceRecord[]>;
   getInstance(id: string): Promise<StudioInstanceRecord | null>;
   getInstanceDetail(id: string): Promise<StudioInstanceDetailRecord | null>;
+  getKernelAgentCreationCapability(
+    instanceId: string,
+  ): Promise<StudioKernelAgentCreationCapability>;
+  createKernelAgent(input: StudioCreateKernelAgentInput): Promise<StudioCreatedKernelAgentRecord>;
+  listKernelChatAgentProfiles(instanceId: string): Promise<KernelChatAgentProfile[]>;
+  listPersistedKernelChatAgents(instanceId: string): Promise<PersistedKernelChatAgentRecord[]>;
+  replacePersistedKernelChatAgents(
+    instanceId: string,
+    records: PersistedKernelChatAgentRecord[],
+  ): Promise<PersistedKernelChatAgentRecord[]>;
+  listKernelChatSessions(instanceId: string): Promise<KernelChatSession[]>;
+  getKernelChatSession(instanceId: string, sessionId: string): Promise<KernelChatSession | null>;
+  createKernelChatSession(input: StudioCreateKernelChatSessionInput): Promise<KernelChatSession>;
+  listKernelChatRuns(instanceId: string, sessionId: string): Promise<KernelChatRun[]>;
+  getKernelChatRun(
+    instanceId: string,
+    sessionId: string,
+    runId: string,
+  ): Promise<KernelChatRun | null>;
+  patchKernelChatSession(input: StudioPatchKernelChatSessionInput): Promise<KernelChatSession>;
+  deleteKernelChatSession(instanceId: string, sessionId: string): Promise<void>;
+  startKernelChatRun(input: StudioStartKernelChatRunInput): Promise<KernelChatRun>;
+  abortKernelChatRun(
+    instanceId: string,
+    sessionId: string,
+    runId?: string | null,
+  ): Promise<boolean>;
+  loadKernelChatMessages(instanceId: string, sessionId: string): Promise<KernelChatMessage[]>;
   invokeOpenClawGateway(
     instanceId: string,
     request: StudioOpenClawGatewayInvokeRequest,
@@ -117,6 +156,96 @@ export const desktopLegacyStudioCompatApi: DesktopLegacyStudioCompatApi = {
       'studio.getInstanceDetail',
       DESKTOP_COMMANDS.studioGetInstanceDetail,
       { id },
+    ),
+  getKernelAgentCreationCapability: (instanceId) =>
+    runStudioCompatCommand<StudioKernelAgentCreationCapability>(
+      'studio.getKernelAgentCreationCapability',
+      DESKTOP_COMMANDS.studioGetKernelAgentCreationCapability,
+      { instanceId },
+    ),
+  createKernelAgent: (input) =>
+    runStudioCompatCommand<StudioCreatedKernelAgentRecord>(
+      'studio.createKernelAgent',
+      DESKTOP_COMMANDS.studioCreateKernelAgent,
+      { input },
+    ),
+  listKernelChatAgentProfiles: (instanceId) =>
+    runStudioCompatCommand<KernelChatAgentProfile[]>(
+      'studio.listKernelChatAgentProfiles',
+      DESKTOP_COMMANDS.studioListKernelChatAgentProfiles,
+      { instanceId },
+    ),
+  listPersistedKernelChatAgents: (instanceId) =>
+    runStudioCompatCommand<PersistedKernelChatAgentRecord[]>(
+      'studio.listPersistedKernelChatAgents',
+      DESKTOP_COMMANDS.studioListPersistedKernelChatAgents,
+      { instanceId },
+    ),
+  replacePersistedKernelChatAgents: (instanceId, records) =>
+    runStudioCompatCommand<PersistedKernelChatAgentRecord[]>(
+      'studio.replacePersistedKernelChatAgents',
+      DESKTOP_COMMANDS.studioReplacePersistedKernelChatAgents,
+      { instanceId, records },
+    ),
+  listKernelChatSessions: (instanceId) =>
+    runStudioCompatCommand<KernelChatSession[]>(
+      'studio.listKernelChatSessions',
+      DESKTOP_COMMANDS.studioListKernelChatSessions,
+      { instanceId },
+    ),
+  getKernelChatSession: (instanceId, sessionId) =>
+    runStudioCompatCommand<KernelChatSession | null>(
+      'studio.getKernelChatSession',
+      DESKTOP_COMMANDS.studioGetKernelChatSession,
+      { instanceId, sessionId },
+    ),
+  createKernelChatSession: (input) =>
+    runStudioCompatCommand<KernelChatSession>(
+      'studio.createKernelChatSession',
+      DESKTOP_COMMANDS.studioCreateKernelChatSession,
+      { input },
+    ),
+  listKernelChatRuns: (instanceId, sessionId) =>
+    runStudioCompatCommand<KernelChatRun[]>(
+      'studio.listKernelChatRuns',
+      DESKTOP_COMMANDS.studioListKernelChatRuns,
+      { instanceId, sessionId },
+    ),
+  getKernelChatRun: (instanceId, sessionId, runId) =>
+    runStudioCompatCommand<KernelChatRun | null>(
+      'studio.getKernelChatRun',
+      DESKTOP_COMMANDS.studioGetKernelChatRun,
+      { instanceId, sessionId, runId },
+    ),
+  patchKernelChatSession: (input) =>
+    runStudioCompatCommand<KernelChatSession>(
+      'studio.patchKernelChatSession',
+      DESKTOP_COMMANDS.studioPatchKernelChatSession,
+      { input },
+    ),
+  deleteKernelChatSession: (instanceId, sessionId) =>
+    runStudioCompatVoidCommand(
+      'studio.deleteKernelChatSession',
+      DESKTOP_COMMANDS.studioDeleteKernelChatSession,
+      { instanceId, sessionId },
+    ),
+  startKernelChatRun: (input) =>
+    runStudioCompatCommand<KernelChatRun>(
+      'studio.startKernelChatRun',
+      DESKTOP_COMMANDS.studioStartKernelChatRun,
+      { input },
+    ),
+  abortKernelChatRun: (instanceId, sessionId, runId) =>
+    runStudioCompatCommand<boolean>(
+      'studio.abortKernelChatRun',
+      DESKTOP_COMMANDS.studioAbortKernelChatRun,
+      { instanceId, sessionId, runId: runId ?? null },
+    ),
+  loadKernelChatMessages: (instanceId, sessionId) =>
+    runStudioCompatCommand<KernelChatMessage[]>(
+      'studio.loadKernelChatMessages',
+      DESKTOP_COMMANDS.studioLoadKernelChatMessages,
+      { instanceId, sessionId },
     ),
   invokeOpenClawGateway: (
     instanceId,
@@ -260,6 +389,48 @@ export const studioListInstances = () => desktopLegacyStudioCompatApi.listInstan
 export const studioGetInstance = (id: string) => desktopLegacyStudioCompatApi.getInstance(id);
 export const studioGetInstanceDetail = (id: string) =>
   desktopLegacyStudioCompatApi.getInstanceDetail(id);
+export const studioGetKernelAgentCreationCapability = (instanceId: string) =>
+  desktopLegacyStudioCompatApi.getKernelAgentCreationCapability(instanceId);
+export const studioCreateKernelAgent = (input: StudioCreateKernelAgentInput) =>
+  desktopLegacyStudioCompatApi.createKernelAgent(input);
+export const studioListKernelChatAgentProfiles = (instanceId: string) =>
+  desktopLegacyStudioCompatApi.listKernelChatAgentProfiles(instanceId);
+export const studioListPersistedKernelChatAgents = (instanceId: string) =>
+  desktopLegacyStudioCompatApi.listPersistedKernelChatAgents(instanceId);
+export const studioReplacePersistedKernelChatAgents = (
+  instanceId: string,
+  records: PersistedKernelChatAgentRecord[],
+) => desktopLegacyStudioCompatApi.replacePersistedKernelChatAgents(instanceId, records);
+export const studioListKernelChatSessions = (instanceId: string) =>
+  desktopLegacyStudioCompatApi.listKernelChatSessions(instanceId);
+export const studioGetKernelChatSession = (instanceId: string, sessionId: string) =>
+  desktopLegacyStudioCompatApi.getKernelChatSession(instanceId, sessionId);
+export const studioCreateKernelChatSession = (
+  input: StudioCreateKernelChatSessionInput,
+) => desktopLegacyStudioCompatApi.createKernelChatSession(input);
+export const studioListKernelChatRuns = (instanceId: string, sessionId: string) =>
+  desktopLegacyStudioCompatApi.listKernelChatRuns(instanceId, sessionId);
+export const studioGetKernelChatRun = (
+  instanceId: string,
+  sessionId: string,
+  runId: string,
+) => desktopLegacyStudioCompatApi.getKernelChatRun(instanceId, sessionId, runId);
+export const studioPatchKernelChatSession = (
+  input: StudioPatchKernelChatSessionInput,
+) => desktopLegacyStudioCompatApi.patchKernelChatSession(input);
+export const studioDeleteKernelChatSession = (instanceId: string, sessionId: string) =>
+  desktopLegacyStudioCompatApi.deleteKernelChatSession(instanceId, sessionId);
+export const studioStartKernelChatRun = (input: StudioStartKernelChatRunInput) =>
+  desktopLegacyStudioCompatApi.startKernelChatRun(input);
+export const studioAbortKernelChatRun = (
+  instanceId: string,
+  sessionId: string,
+  runId?: string | null,
+) => desktopLegacyStudioCompatApi.abortKernelChatRun(instanceId, sessionId, runId);
+export const studioLoadKernelChatMessages = (
+  instanceId: string,
+  sessionId: string,
+) => desktopLegacyStudioCompatApi.loadKernelChatMessages(instanceId, sessionId);
 export const invokeOpenClawGateway = (
   instanceId: string,
   request: StudioOpenClawGatewayInvokeRequest,

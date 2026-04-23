@@ -47,6 +47,6 @@ runTest('server integration tests lock remote origins out of control-plane surfa
 runTest('automation gate freezes the control-plane cors/auth contract', () => {
   assert.match(
     packageJson.scripts['check:automation'] ?? '',
-    /node scripts\/control-plane-cors-auth-contract\.test\.mjs/,
+    /sdkwork-run-node scripts\/control-plane-cors-auth-contract\.test\.mjs/,
   );
 });

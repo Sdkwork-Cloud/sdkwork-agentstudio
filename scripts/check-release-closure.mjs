@@ -51,37 +51,37 @@ export function main() {
   );
   assert.match(
     packageJson.scripts['check:multi-mode'],
-    /pnpm check:desktop && pnpm check:server && pnpm check:sdkwork-host-runtime && pnpm check:desktop-openclaw-runtime && pnpm check:release-flow/,
+    /sdkwork-run-pnpm check:desktop && sdkwork-run-pnpm check:server && sdkwork-run-pnpm check:sdkwork-host-runtime && sdkwork-run-pnpm check:desktop-openclaw-runtime && sdkwork-run-pnpm check:release-flow/,
     'package.json must expose the unified multi-mode verification command',
   );
   assert.match(
     packageJson.scripts['check:release-flow'],
-    /node scripts\/check-release-closure\.mjs/,
+    /sdkwork-run-node scripts\/check-release-closure\.mjs/,
     'check:release-flow must execute the release closure guard',
   );
   assert.match(
     packageJson.scripts['release:smoke:desktop-packaged-launch'],
-    /node scripts\/release\/smoke-desktop-packaged-launch\.mjs/,
+    /sdkwork-run-node scripts\/release\/smoke-desktop-packaged-launch\.mjs/,
     'package.json must expose the dedicated desktop packaged launch smoke command',
   );
   assert.match(
     packageJson.scripts['release:smoke:desktop-startup'],
-    /node scripts\/release\/smoke-desktop-startup-evidence\.mjs/,
+    /sdkwork-run-node scripts\/release\/smoke-desktop-startup-evidence\.mjs/,
     'package.json must expose the dedicated desktop startup smoke command',
   );
   assert.match(
     packageJson.scripts['release:smoke:server'],
-    /node scripts\/release\/local-release-command\.mjs smoke server/,
+    /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke server/,
     'package.json must expose the packaged server smoke command',
   );
   assert.match(
     packageJson.scripts['release:smoke:container'],
-    /node scripts\/release\/local-release-command\.mjs smoke container/,
+    /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke container/,
     'package.json must expose the packaged container smoke command',
   );
   assert.match(
     packageJson.scripts['release:smoke:kubernetes'],
-    /node scripts\/release\/local-release-command\.mjs smoke kubernetes/,
+    /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke kubernetes/,
     'package.json must expose the packaged kubernetes smoke command',
   );
 

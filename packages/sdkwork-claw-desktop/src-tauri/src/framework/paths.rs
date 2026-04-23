@@ -1,4 +1,9 @@
 use crate::framework::{FrameworkError, Result};
+use sdkwork_local_api_proxy_native::kernel::{
+    build_standard_hermes_config_file_path, build_standard_hermes_root_dir,
+    build_standard_openclaw_config_file_path, build_standard_openclaw_root_dir,
+    build_standard_openclaw_workspace_dir,
+};
 use std::{fs, path::PathBuf};
 #[cfg(not(windows))]
 use tauri::Manager;
@@ -118,19 +123,23 @@ impl AppPaths {
 
         let kernel_state_dir = self.kernels_state_dir.join(normalized_runtime_id);
         let runtime_dir = self.managed_runtimes_dir.join(normalized_runtime_id);
-        let (config_dir, config_file) =
-            if normalized_runtime_id == OPENCLAW_KERNEL_ID {
-                (
-                    self.openclaw_root_dir.clone(),
-                    self.openclaw_config_file.clone(),
-                )
-            } else {
-                let config_dir = kernel_state_dir.join("config");
-                (
-                    config_dir.clone(),
-                    config_dir.join(format!("{normalized_runtime_id}.json")),
-                )
-            };
+        let (config_dir, config_file) = if normalized_runtime_id == OPENCLAW_KERNEL_ID {
+            (
+                build_standard_openclaw_root_dir(&self.user_root),
+                build_standard_openclaw_config_file_path(&self.user_root),
+            )
+        } else if normalized_runtime_id == HERMES_KERNEL_ID {
+            (
+                build_standard_hermes_root_dir(&self.user_root),
+                build_standard_hermes_config_file_path(&self.user_root),
+            )
+        } else {
+            let config_dir = kernel_state_dir.join("config");
+            (
+                config_dir.clone(),
+                config_dir.join(format!("{normalized_runtime_id}.json")),
+            )
+        };
         Ok(KernelPaths {
             runtime_id: normalized_runtime_id.to_string(),
             kernel_state_dir: kernel_state_dir.clone(),
@@ -293,9 +302,9 @@ fn build_paths(install_root: PathBuf, machine_root: PathBuf, user_root: PathBuf)
     let machine_logs_dir = machine_root.join("logs");
 
     let user_bin_dir = user_root.join("bin");
-    let openclaw_root_dir = user_root.join(".openclaw");
-    let openclaw_config_file = openclaw_root_dir.join("openclaw.json");
-    let openclaw_workspace_dir = openclaw_root_dir.join("workspace");
+    let openclaw_root_dir = build_standard_openclaw_root_dir(&user_root);
+    let openclaw_config_file = build_standard_openclaw_config_file_path(&user_root);
+    let openclaw_workspace_dir = build_standard_openclaw_workspace_dir(&user_root);
     let openclaw_workspace_memory_dir = openclaw_workspace_dir.join("memory");
     let openclaw_workspace_skills_dir = openclaw_workspace_dir.join("skills");
     let openclaw_workspace_extensions_dir =
@@ -698,8 +707,8 @@ mod tests {
             .ends_with("machine/state/kernels/hermes/migrations.json"));
         assert!(normalize(&hermes.runtime_upgrades_file)
             .ends_with("machine/state/kernels/hermes/runtime-upgrades.json"));
-        assert!(normalize(&hermes.config_dir).ends_with("machine/state/kernels/hermes/config"));
-        assert!(normalize(&hermes.config_file).ends_with("machine/state/kernels/hermes/config/hermes.json"));
+        assert!(normalize(&hermes.config_dir).ends_with("user-home/.hermes"));
+        assert!(normalize(&hermes.config_file).ends_with("user-home/.hermes/config.yaml"));
         assert!(
             normalize(&hermes.quarantine_dir).ends_with("machine/state/kernels/hermes/quarantine")
         );
@@ -722,6 +731,8 @@ mod tests {
         paths.openclaw_migrations_file = compatibility_root.join("migrations.json");
         paths.openclaw_runtime_upgrades_file = compatibility_root.join("runtime-upgrades.json");
         paths.openclaw_quarantine_dir = compatibility_root.join("quarantine");
+        paths.openclaw_root_dir = compatibility_root.join(".openclaw");
+        paths.openclaw_config_file = compatibility_root.join(".openclaw").join("openclaw.json");
 
         let openclaw = paths
             .kernel_paths("openclaw")

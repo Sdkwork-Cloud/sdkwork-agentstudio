@@ -5,6 +5,7 @@ import { Check, ChevronDown, Server, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   instanceDirectoryService,
+  resolvePreferredActiveInstanceId,
   useInstanceStore,
   type InstanceDirectoryItem,
 } from '@sdkwork/claw-core';
@@ -19,36 +20,38 @@ export function InstanceSwitcher() {
   useEffect(() => {
     let disposed = false;
 
+    const syncInstances = (nextInstances: InstanceDirectoryItem[]) => {
+      if (disposed) {
+        return;
+      }
+
+      setInstances(nextInstances);
+    };
+
     async function fetchInstances() {
       try {
-        const data = await instanceDirectoryService.listInstances();
-        if (disposed) {
-          return;
-        }
-
-        setInstances(data);
+        syncInstances(await instanceDirectoryService.listInstances());
       } catch (error) {
         console.error('Failed to fetch instances for header switcher:', error);
       }
     }
 
+    const unsubscribe = instanceDirectoryService.subscribe(syncInstances);
     void fetchInstances();
 
     return () => {
       disposed = true;
+      unsubscribe();
     };
   }, []);
 
   useEffect(() => {
-    if (instances.length === 0) {
-      if (activeInstanceId) {
-        setActiveInstanceId(null);
-      }
-      return;
-    }
-
-    if (!activeInstanceId || !instances.some((instance) => instance.id === activeInstanceId)) {
-      setActiveInstanceId(instances[0].id);
+    const nextActiveInstanceId = resolvePreferredActiveInstanceId({
+      instances,
+      activeInstanceId,
+    });
+    if (nextActiveInstanceId !== activeInstanceId) {
+      setActiveInstanceId(nextActiveInstanceId);
     }
   }, [activeInstanceId, instances, setActiveInstanceId]);
 

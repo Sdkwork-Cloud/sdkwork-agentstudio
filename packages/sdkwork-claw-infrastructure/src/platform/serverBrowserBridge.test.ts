@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import type {
+  KernelChatAgentProfile,
+  KernelChatMessage,
+  KernelChatRun,
+  KernelChatSession,
   StudioConversationRecord,
   StudioInstanceConfig,
   StudioInstanceDetailRecord,
@@ -19,6 +23,8 @@ import {
   platform,
   studio,
 } from './index.ts';
+
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
 
 function runTest(name: string, fn: () => Promise<void> | void) {
   return Promise.resolve()
@@ -242,13 +248,126 @@ function createConversation(instanceId: string): StudioConversationRecord {
   };
 }
 
+function createKernelChatSession(instanceId: string, sessionId: string): KernelChatSession {
+  return {
+    ref: {
+      kernelId: 'hermes',
+      instanceId,
+      sessionId,
+      nativeSessionId: sessionId,
+      routingKey: null,
+      agentId: 'researcher',
+      lineageParentSessionId: null,
+    },
+    authority: {
+      kind: 'sqlite',
+      source: 'kernel',
+      durable: true,
+      writable: true,
+    },
+    lifecycle: 'ready',
+    title: 'Hosted Hermes Session',
+    createdAt: 1,
+    updatedAt: 2,
+    messageCount: 2,
+    lastMessagePreview: 'Hosted authoritative completion',
+    sessionKind: 'authoritative',
+    actorBinding: {
+      agentId: 'researcher',
+      profileId: null,
+      label: 'Researcher',
+    },
+    modelBinding: {
+      model: 'hermes-large',
+      defaultModel: 'hermes-large',
+      thinkingLevel: null,
+      fastMode: null,
+      verboseLevel: null,
+      reasoningLevel: null,
+    },
+    capabilities: ['runs', 'sessionMutation'],
+    activeRunId: 'run-1',
+    nativeMetadata: {
+      authorityFile: 'state.db',
+    },
+  };
+}
+
+function createKernelChatRun(instanceId: string, sessionId: string): KernelChatRun {
+  return {
+    id: 'run-1',
+    sessionRef: {
+      kernelId: 'hermes',
+      instanceId,
+      sessionId,
+      nativeSessionId: sessionId,
+      routingKey: null,
+      agentId: 'researcher',
+      lineageParentSessionId: null,
+    },
+    status: 'completed',
+    createdAt: 3,
+    updatedAt: 4,
+    abortable: true,
+    nativeMetadata: {
+      provider: 'hosted-server',
+    },
+  };
+}
+
+function createKernelChatMessage(instanceId: string, sessionId: string): KernelChatMessage {
+  return {
+    id: 'message-1',
+    sessionRef: {
+      kernelId: 'hermes',
+      instanceId,
+      sessionId,
+      nativeSessionId: sessionId,
+      routingKey: null,
+      agentId: 'researcher',
+      lineageParentSessionId: null,
+    },
+    role: 'assistant',
+    status: 'complete',
+    createdAt: 5,
+    updatedAt: 6,
+    text: 'Hosted authoritative completion',
+    parts: [
+      {
+        kind: 'text',
+        text: 'Hosted authoritative completion',
+      },
+    ],
+    runId: 'run-1',
+    model: 'hermes-large',
+    senderLabel: 'Researcher',
+    nativeMetadata: {
+      transport: 'server-browser',
+    },
+  };
+}
+
+function createKernelChatAgentProfile(instanceId: string): KernelChatAgentProfile {
+  return {
+    kernelId: 'hermes',
+    instanceId,
+    agentId: 'researcher',
+    label: 'Researcher',
+    description: 'Hosted Hermes research profile.',
+    source: 'kernelCatalog',
+    systemPrompt: 'Investigate deeply.',
+    avatar: null,
+    creator: 'hosted-server',
+  };
+}
+
 await runTest('server browser bridge routes canonical studio reads and conversation writes through hosted api paths', async () => {
   const originalBridge = getPlatformBridge();
   const requests: Array<{ input: string; method: string; body?: string | null }> = [];
-  const instance = createInstance('local-built-in');
-  const detail = createInstanceDetail('local-built-in');
+  const instance = createInstance(BUILT_IN_INSTANCE_ID);
+  const detail = createInstanceDetail(BUILT_IN_INSTANCE_ID);
   const config: StudioInstanceConfig = detail.config;
-  const conversation = createConversation('local-built-in');
+  const conversation = createConversation(BUILT_IN_INSTANCE_ID);
 
   try {
     const configured = configureServerBrowserPlatformBridge({
@@ -270,23 +389,23 @@ await runTest('server browser bridge routes canonical studio reads and conversat
           return createJsonResponse([instance]) as Response;
         }
 
-        if (inputText === '/claw/api/v1/studio/instances/local-built-in') {
+        if (inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}`) {
           return createJsonResponse(instance) as Response;
         }
 
-        if (inputText === '/claw/api/v1/studio/instances/local-built-in/detail') {
+        if (inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/detail`) {
           return createJsonResponse(detail) as Response;
         }
 
-        if (inputText === '/claw/api/v1/studio/instances/local-built-in/config') {
+        if (inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/config`) {
           return createJsonResponse(config) as Response;
         }
 
-        if (inputText === '/claw/api/v1/studio/instances/local-built-in/logs') {
+        if (inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/logs`) {
           return createJsonResponse('Hosted logs') as Response;
         }
 
-        if (inputText === '/claw/api/v1/studio/instances/local-built-in/conversations') {
+        if (inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/conversations`) {
           return createJsonResponse([conversation]) as Response;
         }
 
@@ -307,17 +426,17 @@ await runTest('server browser bridge routes canonical studio reads and conversat
     assert.equal(configured, true);
 
     const instances = await studio.listInstances();
-    const hydrated = await studio.getInstance('local-built-in');
-    const hydratedDetail = await studio.getInstanceDetail('local-built-in');
-    const hydratedConfig = await studio.getInstanceConfig('local-built-in');
-    const logs = await studio.getInstanceLogs('local-built-in');
-    const conversations = await studio.listConversations('local-built-in');
+    const hydrated = await studio.getInstance(BUILT_IN_INSTANCE_ID);
+    const hydratedDetail = await studio.getInstanceDetail(BUILT_IN_INSTANCE_ID);
+    const hydratedConfig = await studio.getInstanceConfig(BUILT_IN_INSTANCE_ID);
+    const logs = await studio.getInstanceLogs(BUILT_IN_INSTANCE_ID);
+    const conversations = await studio.listConversations(BUILT_IN_INSTANCE_ID);
     const saved = await studio.putConversation(conversation);
     const deleted = await studio.deleteConversation('conversation-1');
 
     assert.equal(instances.length, 1);
-    assert.equal(hydrated?.id, 'local-built-in');
-    assert.equal(hydratedDetail?.instance.id, 'local-built-in');
+    assert.equal(hydrated?.id, BUILT_IN_INSTANCE_ID);
+    assert.equal(hydratedDetail?.instance.id, BUILT_IN_INSTANCE_ID);
     assert.equal(hydratedConfig?.port, '18789');
     assert.equal(logs, 'Hosted logs');
     assert.equal(conversations.length, 1);
@@ -326,27 +445,27 @@ await runTest('server browser bridge routes canonical studio reads and conversat
     assert.deepEqual(requests, [
       { input: '/claw/api/v1/studio/instances', method: 'GET', body: null },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}`,
         method: 'GET',
         body: null,
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/detail',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/detail`,
         method: 'GET',
         body: null,
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/config',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/config`,
         method: 'GET',
         body: null,
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/logs',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/logs`,
         method: 'GET',
         body: null,
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/conversations',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/conversations`,
         method: 'GET',
         body: null,
       },
@@ -476,6 +595,198 @@ await runTest('desktopCombined hosted browser mode forwards browser session toke
         input: '/claw/api/v1/studio/instances',
         method: 'GET',
         browserSessionToken: 'desktop-session-token',
+      },
+    ]);
+  } finally {
+    configurePlatformBridge(originalBridge);
+  }
+});
+
+await runTest('server browser bridge routes canonical kernel chat operations through hosted api paths', async () => {
+  const originalBridge = getPlatformBridge();
+  const requests: Array<{ input: string; method: string; body?: string | null }> = [];
+  const instanceId = 'instance-hermes-managed';
+  const sessionId = 'session-1';
+  const session = createKernelChatSession(instanceId, sessionId);
+  const run = createKernelChatRun(instanceId, sessionId);
+  const message = createKernelChatMessage(instanceId, sessionId);
+  const profile = createKernelChatAgentProfile(instanceId);
+
+  try {
+    const configured = configureServerBrowserPlatformBridge({
+      document: createMetaDocument({
+        [SERVER_HOST_MODE_META_NAME]: 'server',
+        [SERVER_MANAGE_BASE_PATH_META_NAME]: '/claw/manage/v1',
+        [SERVER_INTERNAL_BASE_PATH_META_NAME]: '/claw/internal/v1',
+        [SERVER_API_BASE_PATH_META_NAME]: '/claw/api/v1',
+      }) as Document,
+      fetchImpl: async (input, init) => {
+        const inputText = String(input);
+        requests.push({
+          input: inputText,
+          method: init?.method ?? 'GET',
+          body: typeof init?.body === 'string' ? init.body : null,
+        });
+
+        if (inputText === `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/agent-profiles`) {
+          return createJsonResponse([profile]) as Response;
+        }
+
+        if (inputText === `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions`) {
+          if ((init?.method ?? 'GET') === 'GET') {
+            return createJsonResponse([session]) as Response;
+          }
+          if ((init?.method ?? 'GET') === 'POST') {
+            return createJsonResponse(session) as Response;
+          }
+        }
+
+        if (inputText === `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}`) {
+          if ((init?.method ?? 'GET') === 'GET') {
+            return createJsonResponse(session) as Response;
+          }
+          if ((init?.method ?? 'GET') === 'PATCH') {
+            return createJsonResponse(session) as Response;
+          }
+          if ((init?.method ?? 'GET') === 'DELETE') {
+            return createJsonResponse(null) as Response;
+          }
+        }
+
+        if (inputText === `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}:run`) {
+          return createJsonResponse(run) as Response;
+        }
+
+        if (inputText === `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}:abort`) {
+          return createJsonResponse(true) as Response;
+        }
+
+        if (inputText === `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}/runs`) {
+          return createJsonResponse([run]) as Response;
+        }
+
+        if (inputText === `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}/runs/${run.id}`) {
+          return createJsonResponse(run) as Response;
+        }
+
+        if (inputText === `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}/messages`) {
+          return createJsonResponse([message]) as Response;
+        }
+
+        throw new Error(`unexpected fetch input: ${inputText}`);
+      },
+    });
+
+    assert.equal(configured, true);
+
+    assert.deepEqual(await studio.listKernelChatAgentProfiles?.(instanceId), [profile]);
+    assert.deepEqual(await studio.listKernelChatSessions?.(instanceId), [session]);
+    assert.deepEqual(await studio.getKernelChatSession?.(instanceId, sessionId), session);
+    assert.deepEqual(
+      await studio.createKernelChatSession?.({
+        instanceId,
+        title: 'Hosted Hermes Session',
+        model: 'hermes-large',
+        agentId: 'researcher',
+      }),
+      session,
+    );
+    assert.deepEqual(
+      await studio.patchKernelChatSession?.({
+        instanceId,
+        sessionId,
+        title: 'Hosted Hermes Session',
+        model: 'hermes-large',
+      }),
+      session,
+    );
+    await studio.deleteKernelChatSession?.(instanceId, sessionId);
+    assert.deepEqual(
+      await studio.startKernelChatRun?.({
+        instanceId,
+        sessionId,
+        content: 'Investigate the host state.',
+        model: 'hermes-large',
+      }),
+      run,
+    );
+    assert.equal(await studio.abortKernelChatRun?.(instanceId, sessionId, 'run-1'), true);
+    assert.deepEqual(await studio.listKernelChatRuns?.(instanceId, sessionId), [run]);
+    assert.deepEqual(await studio.getKernelChatRun?.(instanceId, sessionId, run.id), run);
+    assert.deepEqual(await studio.loadKernelChatMessages?.(instanceId, sessionId), [message]);
+
+    assert.deepEqual(requests, [
+      {
+        input: `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/agent-profiles`,
+        method: 'GET',
+        body: null,
+      },
+      {
+        input: `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions`,
+        method: 'GET',
+        body: null,
+      },
+      {
+        input: `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}`,
+        method: 'GET',
+        body: null,
+      },
+      {
+        input: `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions`,
+        method: 'POST',
+        body: JSON.stringify({
+          instanceId,
+          title: 'Hosted Hermes Session',
+          model: 'hermes-large',
+          agentId: 'researcher',
+        }),
+      },
+      {
+        input: `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}`,
+        method: 'PATCH',
+        body: JSON.stringify({
+          instanceId,
+          sessionId,
+          title: 'Hosted Hermes Session',
+          model: 'hermes-large',
+        }),
+      },
+      {
+        input: `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}`,
+        method: 'DELETE',
+        body: null,
+      },
+      {
+        input: `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}:run`,
+        method: 'POST',
+        body: JSON.stringify({
+          instanceId,
+          sessionId,
+          content: 'Investigate the host state.',
+          model: 'hermes-large',
+        }),
+      },
+      {
+        input: `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}:abort`,
+        method: 'POST',
+        body: JSON.stringify({
+          runId: 'run-1',
+        }),
+      },
+      {
+        input: `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}/runs`,
+        method: 'GET',
+        body: null,
+      },
+      {
+        input: `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}/runs/${run.id}`,
+        method: 'GET',
+        body: null,
+      },
+      {
+        input: `/claw/api/v1/studio/instances/${instanceId}/kernel-chat/sessions/${sessionId}/messages`,
+        method: 'GET',
+        body: null,
       },
     ]);
   } finally {
@@ -742,7 +1053,7 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
   const requests: Array<{ input: string; method: string; body?: string | null }> = [];
   const createdInstance = createInstance('created-instance');
   const updatedInstance = {
-    ...createInstance('local-built-in'),
+    ...createInstance(BUILT_IN_INSTANCE_ID),
     name: 'Updated instance',
     status: 'offline',
   } satisfies StudioInstanceRecord;
@@ -774,32 +1085,32 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
           return createJsonResponse(createdInstance) as Response;
         }
 
-        if (inputText === '/claw/api/v1/studio/instances/local-built-in' && (init?.method ?? 'GET') === 'PUT') {
+        if (inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}` && (init?.method ?? 'GET') === 'PUT') {
           return createJsonResponse(updatedInstance) as Response;
         }
 
-        if (inputText === '/claw/api/v1/studio/instances/local-built-in' && (init?.method ?? 'GET') === 'DELETE') {
+        if (inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}` && (init?.method ?? 'GET') === 'DELETE') {
           return createJsonResponse(true) as Response;
         }
 
-        if (inputText === '/claw/api/v1/studio/instances/local-built-in:start') {
+        if (inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}:start`) {
           return createJsonResponse({ ...updatedInstance, status: 'online' }) as Response;
         }
 
-        if (inputText === '/claw/api/v1/studio/instances/local-built-in:stop') {
+        if (inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}:stop`) {
           return createJsonResponse({ ...updatedInstance, status: 'offline' }) as Response;
         }
 
-        if (inputText === '/claw/api/v1/studio/instances/local-built-in:restart') {
+        if (inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}:restart`) {
           return createJsonResponse({ ...updatedInstance, status: 'online' }) as Response;
         }
 
-        if (inputText === '/claw/api/v1/studio/instances/local-built-in/config' && (init?.method ?? 'GET') === 'PUT') {
+        if (inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/config` && (init?.method ?? 'GET') === 'PUT') {
           return createJsonResponse(updatedConfig) as Response;
         }
 
         if (
-          inputText === '/claw/api/v1/studio/instances/local-built-in/gateway/invoke' &&
+          inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/gateway/invoke` &&
           (init?.method ?? 'GET') === 'POST'
         ) {
           return createJsonResponse({
@@ -811,28 +1122,28 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
         }
 
         if (
-          inputText === '/claw/api/v1/studio/instances/local-built-in/tasks' &&
+          inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks` &&
           (init?.method ?? 'GET') === 'POST'
         ) {
           return createJsonResponse(null) as Response;
         }
 
         if (
-          inputText === '/claw/api/v1/studio/instances/local-built-in/tasks/job-1' &&
+          inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1` &&
           (init?.method ?? 'GET') === 'PUT'
         ) {
           return createJsonResponse(null) as Response;
         }
 
         if (
-          inputText === '/claw/api/v1/studio/instances/local-built-in/tasks/job-1:clone' &&
+          inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1:clone` &&
           (init?.method ?? 'GET') === 'POST'
         ) {
           return createJsonResponse(null) as Response;
         }
 
         if (
-          inputText === '/claw/api/v1/studio/instances/local-built-in/tasks/job-1:run' &&
+          inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1:run` &&
           (init?.method ?? 'GET') === 'POST'
         ) {
           return createJsonResponse({
@@ -847,7 +1158,7 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
         }
 
         if (
-          inputText === '/claw/api/v1/studio/instances/local-built-in/tasks/job-1/executions' &&
+          inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1/executions` &&
           (init?.method ?? 'GET') === 'GET'
         ) {
           return createJsonResponse([
@@ -864,14 +1175,14 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
         }
 
         if (
-          inputText === '/claw/api/v1/studio/instances/local-built-in/tasks/job-1:status' &&
+          inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1:status` &&
           (init?.method ?? 'GET') === 'POST'
         ) {
           return createJsonResponse(null) as Response;
         }
 
         if (
-          inputText === '/claw/api/v1/studio/instances/local-built-in/tasks/job-1' &&
+          inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1` &&
           (init?.method ?? 'GET') === 'DELETE'
         ) {
           return createJsonResponse(true) as Response;
@@ -879,14 +1190,14 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
 
         if (
           inputText ===
-            '/claw/api/v1/studio/instances/local-built-in/files/%2Fworkspace%2Fmain%2FAGENTS.md' &&
+            `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/files/%2Fworkspace%2Fmain%2FAGENTS.md` &&
           (init?.method ?? 'GET') === 'PUT'
         ) {
           return createJsonResponse(true) as Response;
         }
 
         if (
-          inputText === '/claw/api/v1/studio/instances/local-built-in/llm-providers/openai' &&
+          inputText === `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/llm-providers/openai` &&
           (init?.method ?? 'GET') === 'PUT'
         ) {
           return createJsonResponse(true) as Response;
@@ -904,17 +1215,17 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
       deploymentMode: 'local-managed',
       transportKind: 'openclawGatewayWs',
     });
-    const updated = await studio.updateInstance('local-built-in', {
+    const updated = await studio.updateInstance(BUILT_IN_INSTANCE_ID, {
       name: 'Updated instance',
       status: 'offline',
     });
-    const deleted = await studio.deleteInstance('local-built-in');
-    const started = await studio.startInstance('local-built-in');
-    const stopped = await studio.stopInstance('local-built-in');
-    const restarted = await studio.restartInstance('local-built-in');
-    const config = await studio.updateInstanceConfig('local-built-in', updatedConfig);
+    const deleted = await studio.deleteInstance(BUILT_IN_INSTANCE_ID);
+    const started = await studio.startInstance(BUILT_IN_INSTANCE_ID);
+    const stopped = await studio.stopInstance(BUILT_IN_INSTANCE_ID);
+    const restarted = await studio.restartInstance(BUILT_IN_INSTANCE_ID);
+    const config = await studio.updateInstanceConfig(BUILT_IN_INSTANCE_ID, updatedConfig);
     const gatewayInvokeResult = await studio.invokeOpenClawGateway?.(
-      'local-built-in',
+      BUILT_IN_INSTANCE_ID,
       {
         tool: 'models',
         action: 'list',
@@ -924,7 +1235,7 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
         messageChannel: 'assistant',
       },
     );
-    await studio.createInstanceTask('local-built-in', {
+    await studio.createInstanceTask(BUILT_IN_INSTANCE_ID, {
       id: 'job-1',
       name: 'Daily Sync',
       schedule: {
@@ -938,7 +1249,7 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
         model: 'openai/gpt-5.4',
       },
     });
-    await studio.updateInstanceTask('local-built-in', 'job-1', {
+    await studio.updateInstanceTask(BUILT_IN_INSTANCE_ID, 'job-1', {
       id: 'job-1',
       name: 'Updated Daily Sync',
       enabled: false,
@@ -953,17 +1264,17 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
         model: 'openai/gpt-5.4',
       },
     });
-    await studio.cloneInstanceTask('local-built-in', 'job-1', 'Daily Sync Copy');
-    const latestExecution = await studio.runInstanceTaskNow('local-built-in', 'job-1');
-    const executions = await studio.listInstanceTaskExecutions('local-built-in', 'job-1');
-    await studio.updateInstanceTaskStatus('local-built-in', 'job-1', 'paused');
+    await studio.cloneInstanceTask(BUILT_IN_INSTANCE_ID, 'job-1', 'Daily Sync Copy');
+    const latestExecution = await studio.runInstanceTaskNow(BUILT_IN_INSTANCE_ID, 'job-1');
+    const executions = await studio.listInstanceTaskExecutions(BUILT_IN_INSTANCE_ID, 'job-1');
+    await studio.updateInstanceTaskStatus(BUILT_IN_INSTANCE_ID, 'job-1', 'paused');
     const fileUpdated = await studio.updateInstanceFileContent(
-      'local-built-in',
+      BUILT_IN_INSTANCE_ID,
       '/workspace/main/AGENTS.md',
       '# Updated main agent',
     );
     const providerUpdated = await studio.updateInstanceLlmProviderConfig(
-      'local-built-in',
+      BUILT_IN_INSTANCE_ID,
       'openai',
       {
         endpoint: 'https://api.openai.com/v1',
@@ -980,7 +1291,7 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
         },
       },
     );
-    const taskDeleted = await studio.deleteInstanceTask('local-built-in', 'job-1');
+    const taskDeleted = await studio.deleteInstanceTask(BUILT_IN_INSTANCE_ID, 'job-1');
 
     assert.equal(created.id, 'created-instance');
     assert.equal(updated.name, 'Updated instance');
@@ -1008,82 +1319,82 @@ await runTest('hosted browser studio bridge routes canonical instance and workbe
         body: '{"name":"Created instance","runtimeKind":"openclaw","deploymentMode":"local-managed","transportKind":"openclawGatewayWs"}',
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}`,
         method: 'PUT',
         body: '{"name":"Updated instance","status":"offline"}',
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}`,
         method: 'DELETE',
         body: null,
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in:start',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}:start`,
         method: 'POST',
         body: null,
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in:stop',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}:stop`,
         method: 'POST',
         body: null,
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in:restart',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}:restart`,
         method: 'POST',
         body: null,
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/config',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/config`,
         method: 'PUT',
         body: '{"port":"28888","sandbox":true,"autoUpdate":false,"logLevel":"debug","corsOrigins":"http://localhost:3001"}',
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/gateway/invoke',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/gateway/invoke`,
         method: 'POST',
         body: '{"request":{"tool":"models","action":"list","args":{}},"options":{"messageChannel":"assistant"}}',
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/tasks',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks`,
         method: 'POST',
         body: '{"id":"job-1","name":"Daily Sync","schedule":{"kind":"cron","expr":"0 9 * * *","tz":"Asia/Shanghai"},"payload":{"kind":"agentTurn","message":"Summarize updates.","model":"openai/gpt-5.4"}}',
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/tasks/job-1',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1`,
         method: 'PUT',
         body: '{"id":"job-1","name":"Updated Daily Sync","enabled":false,"schedule":{"kind":"cron","expr":"0 10 * * *","tz":"Asia/Shanghai"},"payload":{"kind":"agentTurn","message":"Summarize only critical updates.","model":"openai/gpt-5.4"}}',
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/tasks/job-1:clone',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1:clone`,
         method: 'POST',
         body: '{"name":"Daily Sync Copy"}',
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/tasks/job-1:run',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1:run`,
         method: 'POST',
         body: null,
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/tasks/job-1/executions',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1/executions`,
         method: 'GET',
         body: null,
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/tasks/job-1:status',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1:status`,
         method: 'POST',
         body: '{"status":"paused"}',
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/files/%2Fworkspace%2Fmain%2FAGENTS.md',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/files/%2Fworkspace%2Fmain%2FAGENTS.md`,
         method: 'PUT',
         body: '{"content":"# Updated main agent"}',
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/llm-providers/openai',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/llm-providers/openai`,
         method: 'PUT',
         body: '{"endpoint":"https://api.openai.com/v1","apiKeySource":"env:OPENAI_API_KEY","defaultModelId":"gpt-5.4","reasoningModelId":"o4-mini","embeddingModelId":"text-embedding-3-large","config":{"temperature":0.1,"topP":1,"maxTokens":4096,"timeoutMs":60000,"streaming":true}}',
       },
       {
-        input: '/claw/api/v1/studio/instances/local-built-in/tasks/job-1',
+        input: `/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}/tasks/job-1`,
         method: 'DELETE',
         body: null,
       },

@@ -255,26 +255,43 @@ async function invokeTauriCommand<T>(
   throw createDesktopUnavailableError(command, command);
 }
 
+export async function invokeTauriRuntimeCommand<T>(
+  command: string,
+  payload?: Record<string, unknown>,
+  options?: {
+    operation?: string;
+    desktopCommand?: DesktopCommandName;
+  },
+): Promise<T> {
+  const operation = options?.operation ?? command;
+  if (!(await waitForTauriRuntime())) {
+    throw createDesktopUnavailableError(operation, options?.desktopCommand);
+  }
+
+  try {
+    return await invokeTauriCommand<T>(
+      options?.desktopCommand ?? (command as DesktopCommandName),
+      payload,
+    );
+  } catch (cause) {
+    throw new DesktopBridgeError({
+      operation,
+      runtime: 'desktop',
+      command: options?.desktopCommand,
+      cause,
+    });
+  }
+}
+
 export async function invokeDesktopCommand<T>(
   command: DesktopCommandName,
   payload?: Record<string, unknown>,
   options?: { operation?: string },
 ): Promise<T> {
-  const operation = options?.operation ?? command;
-  if (!(await waitForTauriRuntime())) {
-    throw createDesktopUnavailableError(operation, command);
-  }
-
-  try {
-    return await invokeTauriCommand<T>(command, payload);
-  } catch (cause) {
-    throw new DesktopBridgeError({
-      operation,
-      runtime: 'desktop',
-      command,
-      cause,
-    });
-  }
+  return invokeTauriRuntimeCommand(command, payload, {
+    operation: options?.operation ?? command,
+    desktopCommand: command,
+  });
 }
 
 export async function listenDesktopEvent<T>(

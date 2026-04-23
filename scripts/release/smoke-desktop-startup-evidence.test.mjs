@@ -6,6 +6,7 @@ import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
 
 function writeJsonFile(filePath, value) {
   mkdirSync(path.dirname(filePath), { recursive: true });
@@ -305,7 +306,7 @@ test('desktop startup smoke accepts the managed built-in OpenClaw instance when 
         arch: 'x64',
       }),
       buildDesktopStartupEvidence({
-        builtInInstanceId: 'managed-openclaw-primary',
+        builtInInstanceId: BUILT_IN_INSTANCE_ID,
       }),
     );
 
@@ -315,7 +316,7 @@ test('desktop startup smoke accepts the managed built-in OpenClaw instance when 
       arch: 'x64',
     });
 
-    assert.equal(result.report.builtInInstanceId, 'managed-openclaw-primary');
+    assert.equal(result.report.builtInInstanceId, BUILT_IN_INSTANCE_ID);
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -630,3 +631,4 @@ test('desktop startup smoke parses explicit evidence path overrides', async () =
     'D:/synthetic/desktop-startup-evidence.json',
   );
 });
+

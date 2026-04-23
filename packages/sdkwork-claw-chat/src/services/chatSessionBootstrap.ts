@@ -174,6 +174,7 @@ export function resolveOpenClawVisibleActiveSessionId(
 export function resolveChatBootstrapAction(params: {
   activeInstanceId: string | null | undefined;
   routeMode: InstanceChatRouteMode | undefined;
+  sendMode?: 'local' | 'gateway';
   syncState: 'idle' | 'loading' | 'error';
   hasActiveModel: boolean;
   activeSessionId: string | null;
@@ -195,16 +196,21 @@ export function resolveChatBootstrapAction(params: {
     return { type: 'idle' };
   }
 
-  const isOpenClawGateway = params.routeMode === 'instanceOpenClawGatewayWs';
+  if (!params.sendMode) {
+    return { type: 'idle' };
+  }
+
+  const sendMode = params.sendMode;
+  const isGatewaySendMode = sendMode === 'gateway';
   const hasActiveSession =
     params.activeSessionId !== null && params.sessionIds.includes(params.activeSessionId);
 
   if (!params.activeSessionId) {
-    if (params.sessionIds.length > 0 && !isOpenClawGateway) {
+    if (params.sessionIds.length > 0 && !isGatewaySendMode) {
       return { type: 'select', sessionId: params.sessionIds[0] };
     }
 
-    if (params.hasActiveModel && !isOpenClawGateway) {
+    if (params.hasActiveModel && !isGatewaySendMode) {
       return { type: 'create' };
     }
 
@@ -212,11 +218,11 @@ export function resolveChatBootstrapAction(params: {
   }
 
   if (!hasActiveSession) {
-    if (params.sessionIds.length > 0 && !isOpenClawGateway) {
+    if (params.sessionIds.length > 0 && !isGatewaySendMode) {
       return { type: 'select', sessionId: params.sessionIds[0] };
     }
 
-    if (params.hasActiveModel && !isOpenClawGateway) {
+    if (params.hasActiveModel && !isGatewaySendMode) {
       return { type: 'create' };
     }
   }

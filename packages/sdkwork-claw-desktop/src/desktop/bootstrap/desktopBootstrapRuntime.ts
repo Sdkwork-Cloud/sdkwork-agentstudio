@@ -42,8 +42,8 @@ interface RunDesktopBootstrapSequenceOptions {
   prefetchSidebarRoutes: (paths: string[]) => void;
   scheduleTask: (callback: () => void) => number;
   clearScheduledTask: (handle: number) => void;
-  startRenderTransition: (callback: () => void) => void;
   resolveErrorMessage: (error: unknown) => string;
+  onBootstrapFailed?: (error: unknown) => void | Promise<void>;
   log: (level: StartupLogLevel, message: string, details?: unknown) => void;
   actions: DesktopBootstrapStateActions;
 }
@@ -109,10 +109,8 @@ export async function runDesktopBootstrapSequence(
     }
 
     options.actions.updateMilestones((current) => ({ ...current, hasShellBootstrapped: true }));
-    options.startRenderTransition(() => {
-      options.actions.setShouldRenderShell(true);
-      options.actions.setStatus('launching');
-    });
+    options.actions.setShouldRenderShell(true);
+    options.actions.setStatus('launching');
 
     return 'launched';
   } catch (error) {
@@ -122,6 +120,7 @@ export async function runDesktopBootstrapSequence(
       return 'cancelled';
     }
 
+    await options.onBootstrapFailed?.(error);
     options.log('error', 'Bootstrap failed.', {
       error,
       runId: options.runId,

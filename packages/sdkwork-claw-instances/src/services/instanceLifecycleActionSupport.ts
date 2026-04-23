@@ -16,7 +16,7 @@ export interface InstanceLifecycleActionRequest {
 
 export interface BuildInstanceLifecycleActionHandlersArgs {
   instanceId: string | undefined;
-  runLifecycleAction: (request: InstanceLifecycleActionRequest) => Promise<void>;
+  runLifecycleAction: (request: InstanceLifecycleActionRequest) => Promise<boolean | void>;
   executeRestart: LifecycleActionExecutor;
   executeStop: LifecycleActionExecutor;
   executeStart: LifecycleActionExecutor;
@@ -26,7 +26,7 @@ export interface BuildBundledStartupRecoveryHandlerArgs {
   instanceId: string | undefined;
   canRetryBundledStartup: boolean;
   preferRestart: boolean;
-  runLifecycleAction: (request: InstanceLifecycleActionRequest) => Promise<void>;
+  runLifecycleAction: (request: InstanceLifecycleActionRequest) => Promise<boolean | void>;
   executeRestart: LifecycleActionExecutor;
   executeStart: LifecycleActionExecutor;
 }
@@ -63,20 +63,25 @@ export function createInstanceLifecycleActionRunner(
   args: CreateInstanceLifecycleActionRunnerArgs,
 ) {
   return async (request: InstanceLifecycleActionRequest) => {
+    let didSucceed = false;
+
     try {
       await request.execute(request.instanceId);
+      didSucceed = true;
       args.reportSuccess(args.t(request.successKey));
     } catch (error: any) {
       args.reportError(error?.message || args.t(request.failureKey));
     } finally {
       await args.reloadWorkbench(request.instanceId);
     }
+
+    return didSucceed;
   };
 }
 
 function createInstanceLifecycleActionHandler(args: {
   instanceId: string | undefined;
-  runLifecycleAction: (request: InstanceLifecycleActionRequest) => Promise<void>;
+  runLifecycleAction: (request: InstanceLifecycleActionRequest) => Promise<boolean | void>;
   execute: LifecycleActionExecutor;
   successKey: string;
   failureKey: string;

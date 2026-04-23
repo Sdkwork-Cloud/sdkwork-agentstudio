@@ -1,5 +1,4 @@
 import type { ChannelWorkspaceItem } from '@sdkwork/claw-ui';
-import { resolveAttachedKernelConfig } from '@sdkwork/claw-core';
 import type {
   InstanceLLMProviderUpdate,
   InstanceWorkbenchSnapshot,
@@ -36,6 +35,7 @@ import {
   type OpenClawProviderSelectionState,
 } from './openClawProviderWorkspacePresentation.ts';
 import { buildKernelAuthorityProjection } from './kernelAuthorityProjection.ts';
+import { normalizeInstanceWorkbenchSnapshot } from './instanceWorkbenchNormalization.ts';
 
 interface TranslateFunction {
   (key: string): string;
@@ -58,6 +58,7 @@ export interface BuildInstanceDetailDerivedStateInput {
 }
 
 export interface InstanceDetailDerivedState {
+  workbench: InstanceWorkbenchSnapshot | null;
   instance: InstanceWorkbenchSnapshot['instance'] | null;
   detail: InstanceWorkbenchSnapshot['detail'] | null;
   configFilePath: string | null;
@@ -97,58 +98,6 @@ export interface InstanceDetailDerivedState {
   configChannelWorkspaceItems: ChannelWorkspaceItem[];
 }
 
-function normalizeDetailConfigDisplays(
-  detail: InstanceWorkbenchSnapshot['detail'] | null,
-  configFile: string | null,
-) {
-  if (!detail || !configFile) {
-    return detail;
-  }
-
-  let changed = false;
-  const routes = detail.dataAccess.routes.map((route) => {
-    if (route.scope !== 'config' || route.mode !== 'managedFile' || !route.target) {
-      return route;
-    }
-    if (route.target === configFile) {
-      return route;
-    }
-
-    changed = true;
-    return {
-      ...route,
-      target: configFile,
-    };
-  });
-  const artifacts = detail.artifacts.map((artifact) => {
-    if (artifact.kind !== 'configFile' || !artifact.location) {
-      return artifact;
-    }
-    if (artifact.location === configFile) {
-      return artifact;
-    }
-
-    changed = true;
-    return {
-      ...artifact,
-      location: configFile,
-    };
-  });
-
-  if (!changed) {
-    return detail;
-  }
-
-  return {
-    ...detail,
-    dataAccess: {
-      ...detail.dataAccess,
-      routes,
-    },
-    artifacts,
-  };
-}
-
 export function buildInstanceDetailDerivedState({
   id,
   workbench,
@@ -164,21 +113,8 @@ export function buildInstanceDetailDerivedState({
   providerDialogDraft,
   t,
 }: BuildInstanceDetailDerivedStateInput): InstanceDetailDerivedState {
-  const rawDetail = workbench?.detail || null;
-  const resolvedKernelConfig =
-    workbench?.kernelConfig || resolveAttachedKernelConfig(rawDetail);
-  const detail = normalizeDetailConfigDisplays(
-    rawDetail,
-    resolvedKernelConfig?.configFile || null,
-  );
-  const normalizedWorkbench: InstanceWorkbenchSnapshot | null =
-    workbench && (detail !== rawDetail || resolvedKernelConfig !== workbench.kernelConfig)
-      ? {
-          ...workbench,
-          detail: detail ?? workbench.detail,
-          kernelConfig: resolvedKernelConfig,
-        }
-      : workbench;
+  const normalizedWorkbench = normalizeInstanceWorkbenchSnapshot(workbench);
+  const detail = normalizedWorkbench?.detail || null;
   const instance = normalizedWorkbench?.instance || null;
   const kernelConfig = normalizedWorkbench?.kernelConfig || null;
   const kernelAuthority =
@@ -209,6 +145,7 @@ export function buildInstanceDetailDerivedState({
   const consoleAccess = detail?.consoleAccess || null;
 
   return {
+    workbench: normalizedWorkbench,
     instance,
     detail,
     configFilePath,

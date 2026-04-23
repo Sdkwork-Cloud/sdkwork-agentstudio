@@ -6,6 +6,7 @@ import {
   buildOpenClawAgentParamEntries,
   createOpenClawAgentCreateDialogState,
   createOpenClawAgentEditDialogState,
+  createOpenClawAgentFormStateFromLibraryAgent,
   createOpenClawAgentFormState,
   createOpenClawAgentWorkspaceResetState,
 } from './openClawAgentPresentation.ts';
@@ -13,6 +14,7 @@ import type {
   InstanceWorkbenchAgent,
   InstanceWorkbenchLLMProvider,
 } from '../types/index.ts';
+import type { KernelAgentLibraryItem } from '@sdkwork/claw-core';
 
 async function runTest(name: string, callback: () => void | Promise<void>) {
   try {
@@ -251,6 +253,54 @@ await runTest(
 );
 
 await runTest(
+  'createOpenClawAgentFormStateFromLibraryAgent creates a portable copy draft with cloned parameters and a copy-safe id',
+  () => {
+    const draft = createOpenClawAgentFormStateFromLibraryAgent({
+      sourceInstanceId: 'instance-2',
+      sourceInstanceName: 'Research Instance',
+      sourceKernelId: 'hermes',
+      sourceInstanceHost: 'local',
+      sourceInstanceBuiltIn: false,
+      sourceInstanceStatus: 'running',
+      sourceConfigFile: '/workspace/openclaw.json',
+      agentId: 'research-agent',
+      displayName: 'Research Agent',
+      avatar: 'RA',
+      description: 'Synthesizes findings.',
+      isDefault: true,
+      workspace: '/workspace/research',
+      agentDir: '.agents/research-agent',
+      model: {
+        primary: 'anthropic/claude-sonnet-4',
+        fallbacks: ['openai/gpt-5.4'],
+      },
+      params: {
+        temperature: 0.3,
+        topP: 0.8,
+        maxTokens: 16000,
+        timeoutMs: 120000,
+        streaming: true,
+      },
+    } satisfies KernelAgentLibraryItem);
+
+    assert.equal(draft.id, 'research-agent-copy');
+    assert.equal(draft.name, 'Research Agent Copy');
+    assert.equal(draft.avatar, 'RA');
+    assert.equal(draft.primaryModel, 'anthropic/claude-sonnet-4');
+    assert.equal(draft.fallbackModelsText, 'openai/gpt-5.4');
+    assert.equal(draft.workspace, '');
+    assert.equal(draft.agentDir, '');
+    assert.equal(draft.temperature, '0.3');
+    assert.equal(draft.topP, '0.8');
+    assert.equal(draft.maxTokens, '16000');
+    assert.equal(draft.timeoutMs, '120000');
+    assert.equal(draft.streamingMode, 'enabled');
+    assert.equal(draft.isDefault, false);
+    assert.equal(draft.fieldSources.model, 'agent');
+  },
+);
+
+await runTest(
   'createOpenClawAgentEditDialogState inherits the selected workbench model source when editing the active agent',
   () => {
     const agent = createWorkbenchAgent();
@@ -315,6 +365,7 @@ await runTest(
   'createOpenClawAgentWorkspaceResetState centralizes the page reset baseline for agent workbench state',
   () => {
     assert.deepEqual(createOpenClawAgentWorkspaceResetState(), {
+      isCreationWorkflowOpen: false,
       isDialogOpen: false,
       selectedAgentId: null,
       selectedAgentWorkbench: null,

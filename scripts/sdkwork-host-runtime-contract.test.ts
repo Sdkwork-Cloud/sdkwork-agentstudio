@@ -100,7 +100,7 @@ runTest('sdkwork-claw-web stays a Vite-only host without a business runtime serv
 
   assert.equal(
     pkg.scripts?.dev,
-    'node ../../scripts/run-vite-host.mjs serve --host 0.0.0.0 --port 3001 --mode development',
+    'sdkwork-run-node ../../scripts/run-vite-host.mjs serve --host 0.0.0.0 --port 3001 --mode development',
   );
   assert.equal(pkg.dependencies?.express, undefined);
   assert.equal(pkg.dependencies?.['sql.js'], undefined);
@@ -156,7 +156,7 @@ runTest('sdkwork-claw-desktop contains the Tauri runtime package surface', () =>
   assert.ok(exists('packages/sdkwork-claw-desktop/src-tauri/tauri.conf.json'));
   assert.equal(
     pkg.scripts?.['dev:tauri'],
-    'node ../../scripts/run-vite-host.mjs serve --host 127.0.0.1 --port 1426 --strictPort',
+    'sdkwork-run-node ../../scripts/run-vite-host.mjs serve --host 127.0.0.1 --port 1426 --strictPort',
   );
   assert.equal(pkg.dependencies?.['@sdkwork/claw-core'], undefined);
   assert.doesNotMatch(desktopLockImporter, /'@sdkwork\/claw-core':/);
@@ -673,7 +673,7 @@ runTest('sdkwork-claw-desktop bootstraps shell runtime before mounting the React
   );
   assert.match(
     connectDesktopRuntimeBody,
-    /phase:\s*'runtime-ready'/,
+    /phase:\s*resolvePassingDesktopStartupEvidencePhase\(\s*milestonesRef\.current\.hasShellMounted,\s*\)/,
   );
   assert.match(
     connectDesktopRuntimeBody,
@@ -709,7 +709,7 @@ runTest('sdkwork-claw-desktop bootstraps shell runtime before mounting the React
   );
   assert.match(
     desktopBootstrapAppSource,
-    /if \(!runtimeReadinessFailureRef\.current\) \{\s*void persistStartupEvidence\(\{\s*status:\s*'passed',\s*phase:\s*'shell-mounted'/,
+    /if \(shouldPersistShellMountedDesktopStartupEvidence\(\{\s*runtimeReadinessFailed:\s*runtimeReadinessFailureRef\.current,\s*readinessSnapshot:\s*startupEvidenceContextRef\.current\?\.readinessSnapshot\s*\?\?\s*null,\s*}\)\) \{\s*void persistStartupEvidence\(\{\s*status:\s*'passed',\s*phase:\s*'shell-mounted'/,
   );
   assert.match(
     desktopBootstrapAppSource,
@@ -1028,7 +1028,7 @@ runTest('desktop runtime authority internals use config_file_path terminology in
   assert.doesNotMatch(authorityServiceProductionSource, /pub fn active_managed_config_path\(/);
   assert.match(
     authorityServiceProductionSource,
-    /fn reconcile_openclaw_authority_config_file_path\(/,
+    /fn reconcile_runtime_authority_config_file_path\(/,
   );
   assert.doesNotMatch(
     authorityServiceProductionSource,
@@ -1231,7 +1231,7 @@ runTest('desktop OpenClaw legacy config path compatibility stays quarantined to 
 
   assert.match(authorityServiceSource, /\#\[cfg\(test\)\]\s*mod tests \{/);
   assert.match(authorityServiceSource, /fn legacy_managed_config_file_path\(/);
-  assert.match(authorityServiceProductionSource, /fn reconcile_openclaw_authority_config_file_path\(/);
+  assert.match(authorityServiceProductionSource, /fn reconcile_runtime_authority_config_file_path\(/);
   assert.doesNotMatch(authorityServiceProductionSource, /managed-config/);
   assert.doesNotMatch(authorityServiceProductionSource, /fn legacy_managed_config_file_path\(/);
   assert.doesNotMatch(authorityServiceProductionSource, /fn resolve_legacy_openclaw_config_source_path\(/);

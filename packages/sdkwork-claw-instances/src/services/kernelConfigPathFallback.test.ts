@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import type { StudioInstanceDetailRecord } from '@sdkwork/claw-types';
-import { resolveOpenClawConfigPathWithFallback } from './openClawConfigPathFallback.ts';
+import { resolveKernelConfigPathWithFallback } from './kernelConfigPathFallback.ts';
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
   try {
@@ -120,10 +120,10 @@ function createDetail(): StudioInstanceDetailRecord {
 }
 
 await runTest(
-  'resolveOpenClawConfigPathWithFallback prefers the standardized instance config path',
+  'resolveKernelConfigPathWithFallback prefers the standardized instance config path',
   () => {
     const detail = createDetail();
-    const resolved = resolveOpenClawConfigPathWithFallback(
+    const resolved = resolveKernelConfigPathWithFallback(
       {
         resolveInstanceConfigPath: () => 'C:/Users/admin/.openclaw/openclaw.json',
         resolveAttachedKernelConfigFile: () => 'C:/ProgramData/OpenClaw/config/openclaw.json',
@@ -136,10 +136,10 @@ await runTest(
 );
 
 await runTest(
-  'resolveOpenClawConfigPathWithFallback falls back to the legacy attachment resolver when needed',
+  'resolveKernelConfigPathWithFallback falls back to the legacy attachment resolver when needed',
   () => {
     const detail = createDetail();
-    const resolved = resolveOpenClawConfigPathWithFallback(
+    const resolved = resolveKernelConfigPathWithFallback(
       {
         resolveAttachedKernelConfigFile: () => 'C:/Users/admin/.openclaw/openclaw.json',
       },

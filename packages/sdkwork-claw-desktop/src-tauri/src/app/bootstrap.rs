@@ -171,6 +171,21 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             commands::studio_commands::studio_list_instances,
             commands::studio_commands::studio_get_instance,
             commands::studio_commands::studio_get_instance_detail,
+            commands::studio_commands::studio_get_kernel_agent_creation_capability,
+            commands::studio_commands::studio_create_kernel_agent,
+            commands::studio_commands::studio_list_kernel_chat_agent_profiles,
+            commands::studio_commands::studio_list_persisted_kernel_chat_agents,
+            commands::studio_commands::studio_replace_persisted_kernel_chat_agents,
+            commands::studio_commands::studio_list_kernel_chat_sessions,
+            commands::studio_commands::studio_get_kernel_chat_session,
+            commands::studio_commands::studio_create_kernel_chat_session,
+            commands::studio_commands::studio_list_kernel_chat_runs,
+            commands::studio_commands::studio_get_kernel_chat_run,
+            commands::studio_commands::studio_patch_kernel_chat_session,
+            commands::studio_commands::studio_delete_kernel_chat_session,
+            commands::studio_commands::studio_start_kernel_chat_run,
+            commands::studio_commands::studio_abort_kernel_chat_run,
+            commands::studio_commands::studio_load_kernel_chat_messages,
             commands::studio_commands::studio_invoke_openclaw_gateway,
             commands::studio_commands::studio_create_instance,
             commands::studio_commands::studio_update_instance,
@@ -760,7 +775,7 @@ fn sync_built_in_openclaw_status(context: &FrameworkContext, status: StudioInsta
 
     if let Err(error) =
         context.emit_built_in_openclaw_status_changed(BuiltInOpenClawStatusChangedPayload {
-            instance_id: "local-built-in".to_string(),
+            instance_id: "managed-openclaw-primary".to_string(),
             status,
         })
     {
@@ -1313,8 +1328,7 @@ mod tests {
         )
         .expect("active json");
         let openclaw_config = serde_json::from_str::<Value>(
-            &fs::read_to_string(&openclaw_config_file_path(&paths))
-                .expect("openclaw config file"),
+            &fs::read_to_string(&openclaw_config_file_path(&paths)).expect("openclaw config file"),
         )
         .expect("openclaw config json");
         assert_eq!(
@@ -1362,7 +1376,7 @@ mod tests {
                 &paths,
                 &context.config,
                 &context.services.storage,
-                "local-built-in",
+                "managed-openclaw-primary",
             )
             .expect("get built-in instance")
             .expect("built-in instance");
@@ -1406,7 +1420,7 @@ mod tests {
                 &paths,
                 &context.config,
                 &context.services.storage,
-                "local-built-in",
+                "managed-openclaw-primary",
             )
             .expect("get built-in instance")
             .expect("built-in instance");
@@ -1442,7 +1456,7 @@ mod tests {
                 &paths,
                 &context.config,
                 &context.services.storage,
-                "local-built-in",
+                "managed-openclaw-primary",
             )
             .expect("get built-in instance")
             .expect("built-in instance");
@@ -1537,9 +1551,7 @@ mod tests {
             .port()
     }
 
-    fn openclaw_config_file_path(
-        paths: &crate::framework::paths::AppPaths,
-    ) -> std::path::PathBuf {
+    fn openclaw_config_file_path(paths: &crate::framework::paths::AppPaths) -> std::path::PathBuf {
         crate::framework::services::kernel_runtime_authority::KernelRuntimeAuthorityService::new()
             .active_config_file_path("openclaw", paths)
             .unwrap_or_else(|_| {

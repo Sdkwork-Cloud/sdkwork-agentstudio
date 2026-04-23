@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -217,44 +217,44 @@ test('root package exposes release helper scripts for desktop and asset packagin
 
   assert.match(
     rootPackage.scripts['check:multi-mode'],
-    /pnpm check:desktop && pnpm check:server && pnpm check:sdkwork-host-runtime && pnpm check:desktop-openclaw-runtime && pnpm check:release-flow/,
+    /sdkwork-run-pnpm check:desktop && sdkwork-run-pnpm check:server && sdkwork-run-pnpm check:sdkwork-host-runtime && sdkwork-run-pnpm check:desktop-openclaw-runtime && sdkwork-run-pnpm check:release-flow/,
     'root package must expose one unified multi-mode verification command for desktop, server, deployment runtime, OpenClaw readiness, and release packaging',
   );
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release-flow-contract\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release-deployment-contract\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release-flow-contract\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release-deployment-contract\.test\.mjs/);
   assert.equal(existsSync(releaseClosureScriptPath), true, 'missing scripts/check-release-closure.mjs');
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/check-release-closure\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release\/release-profiles\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release\/kernel-definitions\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/run-desktop-release-build\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/run-claw-server-build\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release\/release-smoke-contract\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release\/finalize-release-assets\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release\/smoke-deployment-release-assets\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release\/smoke-server-release-assets\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release\/smoke-desktop-installers\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release\/smoke-desktop-packaged-launch\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release\/smoke-desktop-startup-evidence\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release\/local-release-command\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /node scripts\/release\/render-release-notes\.mjs --help/);
-  assert.match(rootPackage.scripts['check:ci-flow'], /node scripts\/ci-flow-contract\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/check-release-closure\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/release-profiles\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/kernel-definitions\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/run-desktop-release-build\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/run-claw-server-build\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/release-smoke-contract\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/finalize-release-assets\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/smoke-deployment-release-assets\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/smoke-server-release-assets\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/smoke-desktop-installers\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/smoke-desktop-packaged-launch\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/smoke-desktop-startup-evidence\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/local-release-command\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/render-release-notes\.mjs --help/);
+  assert.match(rootPackage.scripts['check:ci-flow'], /sdkwork-run-node scripts\/ci-flow-contract\.test\.mjs/);
   assert.match(
     rootPackage.scripts['check:automation'],
-    /node scripts\/openclaw-quality-gate-contract\.test\.mjs/,
+    /sdkwork-run-node scripts\/openclaw-quality-gate-contract\.test\.mjs/,
   );
-  assert.match(rootPackage.scripts['check:automation'], /pnpm check:release-flow && pnpm check:ci-flow/);
-  assert.match(rootPackage.scripts['lint'], /pnpm check:automation/);
-  assert.match(rootPackage.scripts['check:shared-sdk-release-parity'], /node scripts\/check-shared-sdk-release-parity\.mjs/);
-  assert.match(rootPackage.scripts['check:server'], /node scripts\/check-server-platform-foundation\.mjs/);
-  assert.match(rootPackage.scripts['check:server'], /node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-claw-server\/src-host\/Cargo\.toml/);
+  assert.match(rootPackage.scripts['check:automation'], /sdkwork-run-pnpm check:release-flow && sdkwork-run-pnpm check:ci-flow/);
+  assert.match(rootPackage.scripts['lint'], /sdkwork-run-pnpm check:automation/);
+  assert.match(rootPackage.scripts['check:shared-sdk-release-parity'], /sdkwork-run-node scripts\/check-shared-sdk-release-parity\.mjs/);
+  assert.match(rootPackage.scripts['check:server'], /sdkwork-run-node scripts\/check-server-platform-foundation\.mjs/);
+  assert.match(rootPackage.scripts['check:server'], /sdkwork-run-node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-claw-server\/src-host\/Cargo\.toml/);
   assert.match(
     rootPackage.scripts['check:desktop-openclaw-runtime'],
-    /node scripts\/verify-desktop-openclaw-release-assets\.test\.mjs/,
+    /sdkwork-run-node scripts\/verify-desktop-openclaw-release-assets\.test\.mjs/,
     'desktop OpenClaw runtime checks must include the dedicated release asset verifier test',
   );
   assert.match(
     rootPackage.scripts['check:desktop'],
-    /node scripts\/verify-desktop-openclaw-release-assets\.test\.mjs/,
+    /sdkwork-run-node scripts\/verify-desktop-openclaw-release-assets\.test\.mjs/,
     'desktop verification must include the dedicated OpenClaw release asset verifier test',
   );
   assert.match(
@@ -262,21 +262,39 @@ test('root package exposes release helper scripts for desktop and asset packagin
     /node scripts\/verify-desktop-openclaw-release-assets\.test\.mjs/,
     'release flow verification must include the dedicated OpenClaw release asset verifier test',
   );
-  assert.match(rootPackage.scripts['release:desktop'], /node scripts\/run-desktop-release-build\.mjs/);
-  assert.match(rootPackage.scripts['release:plan'], /node scripts\/release\/local-release-command\.mjs plan/);
-  assert.match(rootPackage.scripts['release:package:desktop'], /node scripts\/release\/local-release-command\.mjs package desktop/);
-  assert.match(rootPackage.scripts['release:package:server'], /node scripts\/release\/local-release-command\.mjs package server/);
-  assert.match(rootPackage.scripts['release:package:container'], /node scripts\/release\/local-release-command\.mjs package container/);
-  assert.match(rootPackage.scripts['release:package:kubernetes'], /node scripts\/release\/local-release-command\.mjs package kubernetes/);
-  assert.match(rootPackage.scripts['release:package:web'], /node scripts\/release\/local-release-command\.mjs package web/);
-  assert.match(rootPackage.scripts['release:smoke:desktop'], /node scripts\/release\/local-release-command\.mjs smoke desktop/);
-  assert.match(rootPackage.scripts['release:smoke:desktop-packaged-launch'], /node scripts\/release\/smoke-desktop-packaged-launch\.mjs/);
-  assert.match(rootPackage.scripts['release:smoke:desktop-startup'], /node scripts\/release\/smoke-desktop-startup-evidence\.mjs/);
-  assert.match(rootPackage.scripts['release:smoke:server'], /node scripts\/release\/local-release-command\.mjs smoke server/);
-  assert.match(rootPackage.scripts['release:smoke:container'], /node scripts\/release\/local-release-command\.mjs smoke container/);
-  assert.match(rootPackage.scripts['release:smoke:kubernetes'], /node scripts\/release\/local-release-command\.mjs smoke kubernetes/);
-  assert.match(rootPackage.scripts['release:finalize'], /node scripts\/release\/local-release-command\.mjs finalize/);
-  assert.match(rootPackage.scripts['server:build'], /node scripts\/run-claw-server-build\.mjs/);
+  assert.match(rootPackage.scripts['build:web'], /sdkwork-run-pnpm prepare:shared-sdk && sdkwork-run-pnpm --filter @sdkwork\/claw-web build/);
+  assert.match(rootPackage.scripts['build:server'], /sdkwork-run-node scripts\/run-claw-server-build\.mjs/);
+  assert.match(
+    rootPackage.scripts['build:desktop-host'],
+    /sdkwork-run-pnpm --dir packages\/sdkwork-claw-desktop build:prod/,
+  );
+  assert.match(
+    rootPackage.scripts['build:desktop'],
+    /sdkwork-run-pnpm --dir packages\/sdkwork-claw-desktop tauri:build:prod/,
+  );
+  assert.match(
+    rootPackage.scripts['package:desktop'],
+    /sdkwork-run-node scripts\/release\/local-release-command\.mjs package desktop/,
+  );
+  assert.match(
+    rootPackage.scripts['package:server'],
+    /sdkwork-run-node scripts\/release\/local-release-command\.mjs package server/,
+  );
+  assert.match(rootPackage.scripts['release:desktop'], /sdkwork-run-node scripts\/run-desktop-release-build\.mjs/);
+  assert.match(rootPackage.scripts['release:plan'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs plan/);
+  assert.match(rootPackage.scripts['release:package:desktop'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs package desktop/);
+  assert.match(rootPackage.scripts['release:package:server'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs package server/);
+  assert.match(rootPackage.scripts['release:package:container'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs package container/);
+  assert.match(rootPackage.scripts['release:package:kubernetes'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs package kubernetes/);
+  assert.match(rootPackage.scripts['release:package:web'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs package web/);
+  assert.match(rootPackage.scripts['release:smoke:desktop'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke desktop/);
+  assert.match(rootPackage.scripts['release:smoke:desktop-packaged-launch'], /sdkwork-run-node scripts\/release\/smoke-desktop-packaged-launch\.mjs/);
+  assert.match(rootPackage.scripts['release:smoke:desktop-startup'], /sdkwork-run-node scripts\/release\/smoke-desktop-startup-evidence\.mjs/);
+  assert.match(rootPackage.scripts['release:smoke:server'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke server/);
+  assert.match(rootPackage.scripts['release:smoke:container'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke container/);
+  assert.match(rootPackage.scripts['release:smoke:kubernetes'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke kubernetes/);
+  assert.match(rootPackage.scripts['release:finalize'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs finalize/);
+  assert.match(rootPackage.scripts['server:build'], /sdkwork-run-node scripts\/run-claw-server-build\.mjs/);
 });
 
 test('release closure guard passes against the committed release packaging contracts', () => {
@@ -1225,12 +1243,12 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   const openchatImWukongimAdapterPackageRoot = path.join(imRepoRoot, 'sdkwork-im-sdk-typescript', 'adapter-wukongim');
 
   function runGit(args, cwd) {
-    const result = spawnSync('git', args, {
+    const result = spawnSync(helper.resolveSpawnCommand('git'), args, {
       cwd,
       encoding: 'utf8',
-      shell: process.platform === 'win32',
+      shell: false,
     });
-    if (result.error?.code === 'EPERM') {
+    if (result.error?.code === 'EPERM' || result.error?.code === 'ENOENT') {
       t.skip('sandbox blocks git child processes; cannot materialize synthetic release git sources');
       return false;
     }
@@ -1493,8 +1511,9 @@ test('desktop release build runner injects the supported Visual Studio generator
     env: {},
   });
 
-  assert.equal(windowsPlan.command, 'pnpm.cmd');
+  assert.equal(windowsPlan.command, process.execPath);
   assert.deepEqual(windowsPlan.args, [
+    path.join(path.dirname(process.execPath), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
     '--filter',
     '@sdkwork/claw-desktop',
     'run',
@@ -1602,6 +1621,7 @@ test('desktop release build runner forwards explicit target triples to tauri bui
   });
 
   assert.deepEqual(arm64WindowsPlan.args, [
+    path.join(path.dirname(process.execPath), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
     '--filter',
     '@sdkwork/claw-desktop',
     'run',
@@ -2171,3 +2191,4 @@ test('release sync defers heavyweight openclaw builds to the dedicated preparati
     },
   );
 });
+

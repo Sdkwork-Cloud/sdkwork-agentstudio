@@ -72,3 +72,28 @@ await runTest('openclaw gateway kernel chat adapter exposes gateway authority an
   );
   assert.deepEqual(calls, ['hydrate:instance-openclaw', 'snapshot:instance-openclaw']);
 });
+
+await runTest(
+  'openclaw gateway kernel chat adapter does not overstate message-run capabilities that live outside the adapter surface',
+  () => {
+    const adapter = createOpenClawGatewayKernelChatAdapter({
+      gatewayStore: {
+        async hydrateInstance() {},
+        getSnapshot() {
+          return {
+            sessions: [],
+          };
+        },
+      },
+    });
+
+    const capabilities = adapter.getCapabilities();
+
+    assert.equal(capabilities.supportsStreaming, false);
+    assert.equal(capabilities.supportsRuns, false);
+    assert.equal(capabilities.supportsAgentProfiles, false);
+    assert.equal(capabilities.capabilitySet.supportsStreaming, false);
+    assert.equal(capabilities.capabilitySet.supportsRuns, false);
+    assert.equal(capabilities.capabilitySet.supportsAgentProfiles, false);
+  },
+);

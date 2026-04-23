@@ -1,3 +1,5 @@
+import type { ChatPageAgentCatalogMode } from './chatPageContracts';
+
 export function shouldLoadChatSkills({
   isRouteSupported = true,
   isSessionContextDrawerOpen,
@@ -17,19 +19,19 @@ export function shouldLoadChatSkills({
 export function shouldLoadChatDirectAgents({
   activeInstanceId,
   isRouteSupported = true,
-  isOpenClawGateway,
+  agentCatalogMode,
   isSessionContextDrawerOpen,
   selectedAgentId,
 }: {
   activeInstanceId: string | null | undefined;
   isRouteSupported?: boolean;
-  isOpenClawGateway: boolean;
+  agentCatalogMode: ChatPageAgentCatalogMode;
   isSessionContextDrawerOpen: boolean;
-  selectedAgentId: string | null;
+  selectedAgentId: string | null | undefined;
 }) {
-  if (!isRouteSupported || isOpenClawGateway || !activeInstanceId) {
+  if (!isRouteSupported || agentCatalogMode !== 'sharedCatalog' || !activeInstanceId) {
     return false;
   }
 
-  return isSessionContextDrawerOpen || Boolean(selectedAgentId);
+  return true;
 }

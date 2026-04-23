@@ -1,4 +1,6 @@
-import type { StudioInstanceRecord } from '@sdkwork/claw-infrastructure';
+import {
+  type StudioInstanceRecord,
+} from '@sdkwork/claw-infrastructure';
 
 export interface ResolveBuiltInOpenClawInstanceOptions {
   preferredInstanceId?: string | null;
@@ -89,7 +91,6 @@ export function resolveBuiltInOpenClawInstance(
       index,
       score: calculateGatewayMatchScore(instance, options),
       builtInOpenClawPriority: isBuiltInOpenClawInstance(instance) ? 1 : 0,
-      legacyPriority: normalizeRequiredString(instance.id) === 'local-built-in' ? 1 : 0,
     }))
     .sort((left, right) => {
       if (right.score !== left.score) {
@@ -97,9 +98,6 @@ export function resolveBuiltInOpenClawInstance(
       }
       if (right.builtInOpenClawPriority !== left.builtInOpenClawPriority) {
         return right.builtInOpenClawPriority - left.builtInOpenClawPriority;
-      }
-      if (right.legacyPriority !== left.legacyPriority) {
-        return right.legacyPriority - left.legacyPriority;
       }
       return left.index - right.index;
     });
@@ -116,13 +114,6 @@ export function resolveBuiltInOpenClawInstance(
   const defaultInstance = instances.find((instance) => instance.isDefault);
   if (defaultInstance) {
     return defaultInstance;
-  }
-
-  const legacyBuiltInInstance = instances.find(
-    (instance) => normalizeRequiredString(instance.id) === 'local-built-in',
-  );
-  if (legacyBuiltInInstance) {
-    return legacyBuiltInInstance;
   }
 
   const builtInOpenClawInstance = instances.find(isBuiltInOpenClawInstance);

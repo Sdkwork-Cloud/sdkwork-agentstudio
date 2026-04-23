@@ -50,18 +50,77 @@ await runTest('sdkwork-claw-chat is implemented locally instead of re-exporting 
 
 await runTest('sdkwork-claw-chat routes model selection through the composer', () => {
   const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const chatPageCompositionSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageCompositionState.ts',
+  );
+  const chatPagePresentationPropsSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPagePresentationPropsState.ts',
+  );
+  const conversationPaneSource = read(
+    'packages/sdkwork-claw-chat/src/components/ChatConversationPane.tsx',
+  );
+  const presentationHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPresentationState.ts',
+  );
+  const conversationPanePresentationHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatConversationPanePresentationState.ts',
+  );
+  const presentationNavigationHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPresentationNavigation.ts',
+  );
+  const compactModelPreferenceHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatCompactModelPreference.ts',
+  );
   const composerPanelSource = read('packages/sdkwork-claw-chat/src/components/ChatComposerPanel.tsx');
   const chatInputSource = read('packages/sdkwork-claw-chat/src/components/ChatInput.tsx');
 
   assert.ok(exists('packages/sdkwork-claw-chat/src/services/chatComposerState.ts'));
   assert.ok(exists('packages/sdkwork-claw-chat/src/components/ChatComposerPanel.tsx'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/components/ChatConversationPane.tsx'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/pages/useChatPresentationState.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/pages/useChatPresentationNavigation.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/pages/useChatCompactModelPreference.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/pages/useChatConversationPanePresentationState.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/pages/useChatSessionContextDrawerPresentationState.ts'));
   assert.doesNotMatch(chatPageSource, /showModelDropdown/);
   assert.doesNotMatch(chatPageSource, /setShowModelDropdown/);
   assert.doesNotMatch(chatPageSource, /chat\.page\.selectModel/);
-  assert.match(chatPageSource, /import \{ ChatComposerPanel \} from '\.\.\/components\/ChatComposerPanel';/);
-  assert.match(chatPageSource, /<ChatComposerPanel[\s\S]*inputProps=\{\{/);
-  assert.match(chatPageSource, /inputProps=\{\{[\s\S]*activeChannel,[\s\S]*activeModel,[\s\S]*onChannelChange: handleChannelChange,[\s\S]*onModelChange: handleModelChange,/);
+  assert.doesNotMatch(chatPageSource, /useNavigate/);
+  assert.match(chatPageSource, /import \{ ChatConversationPane \} from '\.\.\/components\/ChatConversationPane';/);
+  assert.match(chatPageSource, /import \{ useChatPageCompositionState \} from '\.\/useChatPageCompositionState';/);
+  assert.match(
+    chatPagePresentationPropsSource,
+    /const\s*\{\s*topControlsProps,\s*emptyStateProps,\s*composerPanelProps,\s*sessionContextDrawerProps,\s*onManageInstances,\s*\}\s*=\s*useChatPresentationState\(\{/s,
+  );
+  assert.match(chatPageSource, /<ChatConversationPane \{\.\.\.conversationPaneProps\} \/>/);
+  assert.match(
+    chatPagePresentationPropsSource,
+    /conversationPaneProps:\s*\{[\s\S]*composerPanelProps,[\s\S]*onManageInstances,[\s\S]*\}/s,
+  );
+  assert.match(chatPageSource, /<ChatSessionContextDrawer \{\.\.\.sessionContextDrawerProps\} \/>/);
+  assert.match(chatPagePresentationPropsSource, /sessionContextDrawerProps,/);
+  assert.match(
+    chatPageCompositionSource,
+    /const\s*\{\s*conversationPaneProps,\s*sessionContextDrawerProps,\s*\}\s*=\s*useChatPagePresentationPropsState\(\{/s,
+  );
   assert.doesNotMatch(chatPageSource, /<ChatInput[\s\S]*activeChannel=\{activeChannel\}/);
+  assert.match(presentationHookSource, /import \{ useChatPresentationNavigation \} from '\.\/useChatPresentationNavigation';/);
+  assert.match(presentationHookSource, /import \{ useChatCompactModelPreference \} from '\.\/useChatCompactModelPreference';/);
+  assert.match(
+    presentationHookSource,
+    /import \{[\s\S]*useChatConversationPanePresentationState[\s\S]*\} from '\.\/useChatConversationPanePresentationState';/s,
+  );
+  assert.doesNotMatch(presentationHookSource, /import \{ useNavigate \} from 'react-router-dom';/);
+  assert.doesNotMatch(presentationHookSource, /const navigate = useNavigate\(\);/);
+  assert.match(
+    conversationPanePresentationHookSource,
+    /const composerPanelProps = \{\s*showJumpToLatest,\s*hasMessages: activeMessagesCount > 0,\s*jumpToLatestLabel: t\('chat\.page\.jumpToLatest'\),\s*onJumpToLatest: jumpToLatest,\s*inputProps: \{[\s\S]*activeChannel,[\s\S]*activeModel,[\s\S]*onChannelChange: handleChannelChange,[\s\S]*onModelChange: handleModelChange,[\s\S]*compactModelSelector,[\s\S]*\},\s*\};/s,
+  );
+  assert.match(presentationNavigationHookSource, /import \{ useNavigate \} from 'react-router-dom';/);
+  assert.match(presentationNavigationHookSource, /const navigate = useNavigate\(\);/);
+  assert.match(compactModelPreferenceHookSource, /import \{[\s\S]*settingsService,[\s\S]*\} from '@sdkwork\/claw-core';/s);
+  assert.match(conversationPaneSource, /import \{ ChatComposerPanel \} from '\.\/ChatComposerPanel';/);
+  assert.match(conversationPaneSource, /<ChatComposerPanel \{\.\.\.composerPanelProps\} \/>/);
   assert.match(composerPanelSource, /<ChatInput \{\.\.\.inputProps\} \/>/);
   assert.match(chatInputSource, /onModelChange/);
   assert.match(chatInputSource, /activeChannel/);
@@ -82,14 +141,66 @@ await runTest('sdkwork-claw-chat routes model selection through the composer', (
 });
 
 await runTest('sdkwork-claw-chat derives active channel and model ids from instance config', () => {
-  const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const chatPageCompositionSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageCompositionState.ts',
+  );
+  const modelPreferenceStateHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatModelPreferenceSourceState.ts',
+  );
 
-  assert.match(chatPageSource, /const activeChannelId = instanceConfig\?\.activeChannelId \|\| '';/);
-  assert.match(chatPageSource, /const activeModelId = instanceConfig\?\.activeModelId \|\| '';/);
+  assert.match(chatPageCompositionSource, /useChatPageSourceState/);
+  assert.match(
+    modelPreferenceStateHookSource,
+    /activeChannelId: instanceConfig\?\.activeChannelId \|\| '',/,
+  );
+  assert.match(
+    modelPreferenceStateHookSource,
+    /activeModelId: instanceConfig\?\.activeModelId \|\| '',/,
+  );
+});
+
+await runTest('sdkwork-claw-chat keeps page-local UI state inside a dedicated page hook', () => {
+  const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const chatPageCompositionSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageCompositionState.ts',
+  );
+  const uiStateHookSource = read('packages/sdkwork-claw-chat/src/pages/useChatPageUiState.ts');
+
+  assert.match(chatPageCompositionSource, /useChatPageUiState/);
+  assert.doesNotMatch(chatPageSource, /import \{ useState \} from 'react';/);
+  assert.doesNotMatch(
+    chatPageSource,
+    /const \[isSessionContextDrawerOpen, setIsSessionContextDrawerOpen\] = useState\(false\);/,
+  );
+  assert.doesNotMatch(
+    chatPageSource,
+    /const \[selectedSkillId, setSelectedSkillId\] = useState<string \| null>\(null\);/,
+  );
+  assert.doesNotMatch(
+    chatPageSource,
+    /const \[selectedAgentId, setSelectedAgentId\] = useState<string \| null>\(null\);/,
+  );
+  assert.match(uiStateHookSource, /import \{ useState \} from 'react';/);
+  assert.match(uiStateHookSource, /export function useChatPageUiState\(\)/);
 });
 
 await runTest('sdkwork-claw-chat keeps route-level boundaries by consuming shared core services instead of other route packages', () => {
   const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const sourceStateHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageSourceState.ts',
+  );
+  const instanceSourceHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatInstanceSourceState.ts',
+  );
+  const modelPreferenceSourceHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatModelPreferenceSourceState.ts',
+  );
+  const chatContextCatalogHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatContextCatalogState.ts',
+  );
+  const chatSkillCatalogHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatSkillCatalogState.ts',
+  );
   const chatServiceSource = read('packages/sdkwork-claw-chat/src/services/chatService.ts');
   const chatInputSource = read('packages/sdkwork-claw-chat/src/components/ChatInput.tsx');
 
@@ -97,21 +208,36 @@ await runTest('sdkwork-claw-chat keeps route-level boundaries by consuming share
   assert.doesNotMatch(chatPageSource, /from '@sdkwork\/claw-settings'/);
   assert.doesNotMatch(chatServiceSource, /from '@sdkwork\/claw-settings'/);
   assert.doesNotMatch(chatInputSource, /from '@sdkwork\/claw-settings'/);
-  assert.match(chatPageSource, /from '@sdkwork\/claw-core'/);
+  assert.doesNotMatch(chatPageSource, /from '@sdkwork\/claw-core'/);
+  assert.doesNotMatch(sourceStateHookSource, /from '@sdkwork\/claw-core'/);
+  assert.match(instanceSourceHookSource, /from '@sdkwork\/claw-core'/);
+  assert.match(modelPreferenceSourceHookSource, /from '@sdkwork\/claw-core'/);
+  assert.doesNotMatch(chatContextCatalogHookSource, /from '@sdkwork\/claw-core'/);
+  assert.match(chatSkillCatalogHookSource, /from '@sdkwork\/claw-core'/);
   assert.match(chatServiceSource, /from '@sdkwork\/claw-core'/);
   assert.match(chatInputSource, /from '@sdkwork\/claw-core'/);
-  assert.match(chatPageSource, /clawHubService/);
+  assert.doesNotMatch(chatContextCatalogHookSource, /clawHubService/);
+  assert.match(chatSkillCatalogHookSource, /clawHubService/);
   assert.match(chatServiceSource, /llmStore/);
   assert.doesNotMatch(chatServiceSource, /useLLMStore/);
 });
 
 await runTest('sdkwork-claw-chat routes model configuration entry points into settings after api-router removal', () => {
   const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const presentationNavigationHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPresentationNavigation.ts',
+  );
+  const sessionContextDrawerPresentationHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatSessionContextDrawerPresentationState.ts',
+  );
+  const conversationPanePresentationHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatConversationPanePresentationState.ts',
+  );
 
-  assert.match(chatPageSource, /const handleOpenSessionSettings = \(\) => \{/);
-  assert.match(chatPageSource, /navigate\('\/settings\?tab=api'\)/);
-  assert.match(chatPageSource, /onOpenSettings=\{handleOpenSessionSettings\}/);
-  assert.match(chatPageSource, /onOpenModelConfig: \(\) => navigate\('\/settings\?tab=api'\)/);
+  assert.match(chatPageSource, /<ChatSessionContextDrawer \{\.\.\.sessionContextDrawerProps\} \/>/);
+  assert.match(presentationNavigationHookSource, /navigate\('\/settings\?tab=api'\)/);
+  assert.match(sessionContextDrawerPresentationHookSource, /onOpenSettings: handleOpenSettings,/);
+  assert.match(conversationPanePresentationHookSource, /onOpenModelConfig: handleOpenModelConfig,/);
   assert.doesNotMatch(chatPageSource, /navigate\('\/settings\/llm'\)/);
   assert.doesNotMatch(chatPageSource, /navigate\('\/api-router'\)/);
 });
@@ -156,6 +282,30 @@ await runTest('sdkwork-claw-chat exposes the kernel-native chat standard across 
   const chatStoreSource = read('packages/sdkwork-claw-chat/src/store/chatStore.ts');
   const agentServiceSource = read('packages/sdkwork-claw-chat/src/services/agentService.ts');
   const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const chatPageCompositionSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageCompositionState.ts',
+  );
+  const chatPageWorkspaceSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageWorkspaceState.ts',
+  );
+  const chatPageContractsSource = read(
+    'packages/sdkwork-claw-chat/src/pages/chatPageContracts.ts',
+  );
+  const chatSessionViewHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatSessionViewState.ts',
+  );
+  const chatActiveSessionProjectionHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatActiveSessionProjectionState.ts',
+  );
+  const chatMessageDisplayHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatMessageDisplayState.ts',
+  );
+  const chatInteractionHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatInteractionState.ts',
+  );
+  const chatSendExecutionHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatSendExecutionState.ts',
+  );
   const chatCheckRunner = read('scripts/run-sdkwork-chat-check.mjs');
 
   assert.ok(exists('packages/sdkwork-claw-types/src/kernelChatModel.ts'));
@@ -164,19 +314,71 @@ await runTest('sdkwork-claw-chat exposes the kernel-native chat standard across 
   assert.ok(exists('packages/sdkwork-claw-chat/src/services/kernelChatAgentCatalogService.ts'));
   assert.ok(exists('packages/sdkwork-claw-chat/src/services/kernelChatSessionState.ts'));
   assert.ok(exists('packages/sdkwork-claw-chat/src/services/kernelChatMessageState.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/services/chatHttpMessagePayload.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/services/chatHttpStreamProtocol.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/services/kernelChatMessagePartsPresentation.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/services/chatSessionOwnerPresentation.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/services/chatSidebarAgentRailPresentation.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/services/chatSidebarChromePresentation.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/services/chatSidebarHistoryPresentation.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/pages/chatPageContracts.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/pages/useChatActiveSessionProjectionState.ts'));
+  assert.ok(exists('packages/sdkwork-claw-chat/src/pages/useChatMessageDisplayState.ts'));
   assert.match(typesIndexSource, /kernelChatModel/);
+  assert.match(servicesIndexSource, /chatSessionOwnerPresentation/);
+  assert.match(servicesIndexSource, /chatHttpMessagePayload/);
+  assert.match(servicesIndexSource, /chatHttpStreamProtocol/);
+  assert.match(servicesIndexSource, /chatSidebarAgentRailPresentation/);
+  assert.match(servicesIndexSource, /chatSidebarChromePresentation/);
+  assert.match(servicesIndexSource, /chatSidebarHistoryPresentation/);
+  assert.match(servicesIndexSource, /kernelChatMessagePartsPresentation/);
   assert.match(servicesIndexSource, /kernelChatAgentCatalogService/);
   assert.match(servicesIndexSource, /kernelChatSessionState/);
   assert.match(servicesIndexSource, /kernelChatMessageState/);
+  assert.match(chatPageContractsSource, /export type ChatPageTranslate =/);
+  assert.match(chatPageContractsSource, /export type ChatPageSendMode =/);
+  assert.match(chatPageContractsSource, /export type ChatPageNewSessionModelMode =/);
+  assert.match(chatPageContractsSource, /export type ChatPageAgentCatalogMode =/);
+  assert.match(chatPageContractsSource, /export type ChatPageKernelSessionState = \{/);
+  assert.match(chatPageContractsSource, /export type ChatPageRuntimeAdapterCapabilities =/);
+  assert.match(chatPageContractsSource, /export type ChatPageSyncState = SyncState;/);
+  assert.match(chatPageContractsSource, /export type ChatPageSelectableSessionRef = Pick<ChatSession, 'id'>;/);
+  assert.match(chatPageContractsSource, /export type ChatPageSessionControlActions = \{/);
   assert.match(chatStoreSource, /kernelMessage\?: KernelChatMessage \| null;/);
   assert.match(chatStoreSource, /kernelSession\?: KernelChatSession \| null;/);
   assert.match(agentServiceSource, /kernelChatAgentCatalogService/);
-  assert.match(chatPageSource, /resolveKernelChatSessionState/);
-  assert.match(chatPageSource, /resolveKernelChatMessageState/);
+  assert.match(chatPageSource, /useChatPageCompositionState/);
+  assert.match(chatPageCompositionSource, /useChatPageWorkspaceState/);
+  assert.match(chatPageWorkspaceSource, /useChatSessionViewState/);
+  assert.match(chatPageWorkspaceSource, /useChatInteractionState/);
+  assert.match(
+    chatSessionViewHookSource,
+    /import \{ useChatActiveSessionProjectionState \} from '\.\/useChatActiveSessionProjectionState';/,
+  );
+  assert.match(
+    chatSessionViewHookSource,
+    /import \{ useChatMessageDisplayState \} from '\.\/useChatMessageDisplayState';/,
+  );
+  assert.doesNotMatch(chatSessionViewHookSource, /resolveKernelChatSessionState/);
+  assert.doesNotMatch(chatSessionViewHookSource, /resolveKernelChatMessageState/);
+  assert.match(chatSessionViewHookSource, /from '\.\/chatPageContracts';/);
+  assert.match(chatActiveSessionProjectionHookSource, /resolveKernelChatSessionState/);
+  assert.match(chatActiveSessionProjectionHookSource, /from '\.\/chatPageContracts';/);
+  assert.match(chatInteractionHookSource, /from '\.\/chatPageContracts';/);
+  assert.match(chatMessageDisplayHookSource, /resolveKernelChatMessageState/);
+  assert.match(chatSendExecutionHookSource, /createChatComposerSendActions/);
+  assert.match(chatSendExecutionHookSource, /from '\.\/chatPageContracts';/);
   assert.match(chatCheckRunner, /packages\/sdkwork-claw-types\/src\/kernelChatModel\.test\.ts/);
   assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/kernelChatAgentCatalogService\.test\.ts/);
   assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/kernelChatSessionState\.test\.ts/);
   assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/kernelChatMessageState\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/chatSessionOwnerPresentation\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/chatHttpMessagePayload\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/chatHttpStreamProtocol\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/kernelChatMessagePartsPresentation\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/chatSidebarAgentRailPresentation\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/chatSidebarChromePresentation\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/chatSidebarHistoryPresentation\.test\.ts/);
   assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/openclaw\/openClawKernelChatProjection\.test\.ts/);
   assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/services\/store\/localChatKernelProjection\.test\.ts/);
   assert.match(chatCheckRunner, /packages\/sdkwork-claw-chat\/src\/store\/openClawGatewayKernelProjection\.test\.ts/);
@@ -189,7 +391,7 @@ await runTest('sdkwork-claw-chat parity checks use the shared Node TypeScript ru
 
   assert.match(
     workspacePackageJson,
-    /"check:sdkwork-chat"\s*:\s*"node scripts\/run-sdkwork-chat-check\.mjs"/,
+    /"check:sdkwork-chat"\s*:\s*"sdkwork-run-node scripts\/run-sdkwork-chat-check\.mjs"/,
   );
   assert.ok(exists('scripts/run-sdkwork-chat-check.mjs'));
   assert.ok(exists('scripts/run-node-typescript-check.mjs'));
@@ -224,6 +426,8 @@ await runTest('sdkwork-claw-chat chat service forbids browser-direct provider ca
   assert.doesNotMatch(chatServiceSource, /channel\.baseUrl}\/chat\/completions/);
   assert.doesNotMatch(chatServiceSource, /new GoogleGenAI/);
   assert.match(chatServiceSource, /Select or start an AI-compatible instance to chat\./);
+  assert.match(chatServiceSource, /buildChatHttpRequestMessages/);
+  assert.match(chatServiceSource, /normalizeChatTransportStream/);
 });
 
 await runTest('sdkwork-claw-chat chat service requires a real active instance before streaming', async () => {
@@ -370,84 +574,201 @@ await runTest('sdkwork-claw-chat keeps active session state isolated per instanc
   const localGatewaySource = read('packages/sdkwork-claw-chat/src/store/studioConversationGateway.ts');
   const chatMappingSource = read('packages/sdkwork-claw-chat/src/chatSessionMapping.ts');
   const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const chatPageCompositionSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageCompositionState.ts',
+  );
+  const chatPageWorkspaceSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageWorkspaceState.ts',
+  );
+  const sourceStateHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageSourceState.ts',
+  );
+  const runtimeSourceHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatRuntimeSourceState.ts',
+  );
+  const chatPageRuntimeHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageRuntimeState.ts',
+  );
+  const chatInteractionHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatInteractionState.ts',
+  );
+  const chatSendExecutionHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatSendExecutionState.ts',
+  );
   const chatSidebarSource = read('packages/sdkwork-claw-chat/src/components/ChatSidebar.tsx');
 
   assert.match(chatStoreSource, /activeSessionIdByInstance/);
   assert.match(chatStoreSource, /syncStateByInstance/);
   assert.match(chatStoreSource, /connectGatewayInstances/);
-  assert.match(chatStoreSource, /sendGatewayMessage/);
+  assert.match(chatStoreSource, /sendKernelMessage/);
   assert.match(chatStoreSource, /abortSession/);
   assert.match(chatStoreSource, /instanceRouteModeById/);
   assert.match(chatStoreSource, /instanceChatAdapterCapabilitiesById/);
-  assert.match(chatStoreSource, /createKernelChatAdapterRegistry/);
+  assert.match(chatStoreSource, /createAuthoritativeKernelChatAdapterRegistry/);
   assert.match(chatStoreSource, /transport\?: 'local' \| 'kernelAdapter' \| 'openclawGateway';/);
   assert.match(chatStoreSource, /transport: 'kernelAdapter'/);
   assert.match(localGatewaySource, /Instance-scoped kernel chat sessions are not persisted through the studio conversation store/);
   assert.match(localGatewaySource, /return \[\];/);
-  assert.match(chatMappingSource, /Instance-scoped kernel chat sessions must not be persisted through the studio conversation store/);
+  assert.match(
+    chatMappingSource,
+    /Durable(?: or gateway-authoritative)? kernel chat sessions must not be persisted through the studio conversation store/,
+  );
   assert.doesNotMatch(chatMappingSource, /hydrateLocalChatKernelProjection/);
-  assert.match(chatPageSource, /const activeAdapterCapabilities =/);
-  assert.match(chatPageSource, /const adapterRuntimeState = resolveChatRuntimeState\(/);
-  assert.match(chatPageSource, /const isOpenClawGateway = adapterRuntimeState\.isOpenClawGateway;/);
-  assert.match(chatPageSource, /sendGatewayMessage/);
-  assert.match(chatPageSource, /abortSession/);
-  assert.match(chatSidebarSource, /activeSessionIdByInstance/);
-  assert.match(chatSidebarSource, /getChatSessionDisplayTitle/);
+  assert.match(chatPageSource, /useChatPageCompositionState/);
+  assert.match(chatPageCompositionSource, /useChatPageSourceState/);
+  assert.match(chatPageCompositionSource, /useChatPageWorkspaceState/);
+  assert.match(sourceStateHookSource, /useChatRuntimeSourceState/);
+  assert.match(runtimeSourceHookSource, /sendKernelMessage/);
+  assert.match(runtimeSourceHookSource, /abortSession/);
+  assert.match(chatPageWorkspaceSource, /useChatPageRuntimeState/);
+  assert.match(chatPageRuntimeHookSource, /const activeAdapterCapabilities =/);
+  assert.match(chatPageRuntimeHookSource, /const adapterRuntimeState = resolveChatRuntimeState\(/);
+  assert.match(chatPageRuntimeHookSource, /const sendMode = adapterRuntimeState\.sendMode;/);
+  assert.match(chatPageWorkspaceSource, /useChatInteractionState/);
+  assert.match(chatSendExecutionHookSource, /const sessionRunActions = createChatSessionRunActions\(/);
+  assert.match(chatPageWorkspaceSource, /sendKernelMessage/);
+  assert.match(chatPageWorkspaceSource, /abortSession/);
+  assert.match(chatSidebarSource, /resolveChatSidebarViewState/);
+  assert.match(chatSidebarSource, /activeHistorySessions\.find\(\(session\) => session\.id === item\.sessionId\)/);
   assert.doesNotMatch(chatSidebarSource, /\{session\.title\}/);
 });
 
 await runTest('sdkwork-claw-chat does not fall back to local HTTP while an instance route is still unresolved', () => {
   const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const chatPageCompositionSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageCompositionState.ts',
+  );
+  const chatPageWorkspaceSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageWorkspaceState.ts',
+  );
+  const chatPageRuntimeHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageRuntimeState.ts',
+  );
+  const chatSessionViewHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatSessionViewState.ts',
+  );
+  const chatActiveSessionProjectionHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatActiveSessionProjectionState.ts',
+  );
+  const chatInteractionHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatInteractionState.ts',
+  );
+  const chatSendExecutionHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatSendExecutionState.ts',
+  );
 
+  assert.match(chatPageCompositionSource, /useChatPageWorkspaceState/);
   assert.match(
-    chatPageSource,
+    chatPageRuntimeHookSource,
     /const routeMode = activeInstanceId \? instanceRouteModeById\[activeInstanceId\] : 'directLlm';/,
   );
-  assert.match(chatPageSource, /const adapterRuntimeState = resolveChatRuntimeState\(\{/);
-  assert.match(chatPageSource, /const isChatSupportedRoute = adapterRuntimeState\.isChatAvailable;/);
-  assert.match(chatPageSource, /const chatRuntimeState = resolveChatRuntimeState\(\{/);
-  assert.match(chatPageSource, /const isUnsupportedRoute = chatRuntimeState\.isBlocked;/);
+  assert.match(chatPageRuntimeHookSource, /const adapterRuntimeState = resolveChatRuntimeState\(\{/);
+  assert.match(chatPageRuntimeHookSource, /const isChatSupportedRoute = adapterRuntimeState\.isChatAvailable;/);
+  assert.match(chatPageWorkspaceSource, /useChatPageRuntimeState/);
+  assert.match(chatPageWorkspaceSource, /useChatSessionViewState/);
+  assert.match(
+    chatSessionViewHookSource,
+    /useChatActiveSessionProjectionState\(\{/,
+  );
+  assert.match(
+    chatActiveSessionProjectionHookSource,
+    /const chatRuntimeState = resolveChatRuntimeState\(\{/,
+  );
+  assert.match(
+    chatActiveSessionProjectionHookSource,
+    /const isUnsupportedRoute = chatRuntimeState\.isBlocked;/,
+  );
   assert.doesNotMatch(
-    chatPageSource,
+    chatPageRuntimeHookSource,
     /const routeMode = activeInstanceId \? instanceRouteModeById\[activeInstanceId\] \?\? 'directLlm' : 'directLlm';/,
   );
   assert.match(
+    chatSendExecutionHookSource,
+    /const composerSendActions = createChatComposerSendActions\(\{\s*activeInstanceId,\s*selectedSessionId,\s*sendMode,\s*hasActiveChannel: Boolean\(activeChannel\),\s*isChatSupportedRoute,\s*isBusy,\s*hasPendingInstanceRoute: Boolean\(activeInstanceId && !routeMode\),/s,
+  );
+  assert.match(chatSendExecutionHookSource, /const handleSend = composerSendActions\.submit;/);
+  assert.match(chatPageSource, /useChatPageCompositionState/);
+  assert.doesNotMatch(
     chatPageSource,
     /if\s*\(\s*!activeModel\s*\|\|\s*!activeChannel\s*\|\|\s*!isChatSupportedRoute\s*\|\|\s*isBusy\s*\|\|\s*\(activeInstanceId && !routeMode\)\s*\)\s*\{/,
   );
-  assert.match(chatPageSource, /if \(isOpenClawGateway && activeInstanceId\) \{/);
 });
 
 await runTest('sdkwork-claw-chat re-hydrates the active instance when the same instance route authority changes after the route has already resolved', () => {
   const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const chatPageCompositionSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageCompositionState.ts',
+  );
+  const pageSynchronizationHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageSynchronizationState.ts',
+  );
+  const runtimeSynchronizationHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatRuntimeSynchronization.ts',
+  );
+  const instanceHydrationSynchronizationHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatInstanceHydrationSynchronization.ts',
+  );
   const servicesIndexSource = read('packages/sdkwork-claw-chat/src/services/index.ts');
 
   assert.match(
     servicesIndexSource,
-    /export \* from '\.\/chatInstanceHydrationPolicy';/,
+    /export \* from '\.\/chatInstanceHydrationPolicy(?:\.ts)?';/,
+  );
+  assert.match(chatPageSource, /useChatPageCompositionState/);
+  assert.match(
+    chatPageCompositionSource,
+    /import \{ useChatPageSynchronizationState \} from '\.\/useChatPageSynchronizationState';/,
   );
   assert.match(
-    chatPageSource,
-    /import \{[\s\S]*resolveChatInstanceHydrationKey,[\s\S]*\} from '\.\.\/services';/s,
+    pageSynchronizationHookSource,
+    /import \{[\s\S]*useChatRuntimeSynchronization[\s\S]*\} from '\.\/useChatRuntimeSynchronization';/s,
   );
   assert.match(
-    chatPageSource,
+    pageSynchronizationHookSource,
+    /useChatRuntimeSynchronization\(runtimeSynchronization\);/,
+  );
+  assert.match(
+    runtimeSynchronizationHookSource,
+    /import \{ useChatInstanceHydrationSynchronization \} from '\.\/useChatInstanceHydrationSynchronization';/,
+  );
+  assert.match(
+    runtimeSynchronizationHookSource,
+    /useChatInstanceHydrationSynchronization\(\{\s*activeInstanceId,\s*routeMode,\s*hydrateInstance,\s*\}\);/s,
+  );
+  assert.doesNotMatch(
+    runtimeSynchronizationHookSource,
+    /resolveChatInstanceHydrationKey/,
+  );
+  assert.match(
+    instanceHydrationSynchronizationHookSource,
+    /import[\s\S]*resolveChatInstanceHydrationKey[\s\S]*from '\.\.\/services';/s,
+  );
+  assert.match(
+    instanceHydrationSynchronizationHookSource,
     /const lastResolvedRouteHydrationKeyRef = useRef<string \| null>\(null\);/,
   );
   assert.match(
-    chatPageSource,
+    instanceHydrationSynchronizationHookSource,
     /const nextHydrationKey = resolveChatInstanceHydrationKey\(\{\s*activeInstanceId,\s*routeMode,\s*\}\);/,
   );
   assert.match(
-    chatPageSource,
+    instanceHydrationSynchronizationHookSource,
+    /if \(lastResolvedRouteHydrationKeyRef\.current === nextHydrationKey\) \{\s*return;\s*\}/,
+  );
+  assert.match(
+    instanceHydrationSynchronizationHookSource,
     /const hadResolvedHydrationKey = lastResolvedRouteHydrationKeyRef\.current !== null;/,
   );
   assert.match(
-    chatPageSource,
+    instanceHydrationSynchronizationHookSource,
+    /lastResolvedRouteHydrationKeyRef\.current = nextHydrationKey;/,
+  );
+  assert.match(
+    instanceHydrationSynchronizationHookSource,
     /if \(!nextHydrationKey \|\| !hadResolvedHydrationKey\) \{\s*return;\s*\}/,
   );
   assert.match(
-    chatPageSource,
+    instanceHydrationSynchronizationHookSource,
     /void hydrateInstance\(activeInstanceId\);/,
   );
 });
@@ -570,11 +891,23 @@ await runTest('sdkwork-claw-chat re-resolves authoritative instance routes befor
 
   assert.match(
     chatStoreSource,
-    /async deleteSession\(id, instanceId\) \{[\s\S]*if \(session\?\.transport === 'openclawGateway' && resolvedInstanceId\) \{[\s\S]*const resolvedContext = await resolveInstanceChatContext\(resolvedInstanceId\);/s,
+    /async deleteSession\(id, instanceId\) \{[\s\S]*if \(isGatewayAuthoritativeStoredSession\(session\) && resolvedInstanceId\) \{[\s\S]*const resolvedContext = await resolveInstanceChatContext\(resolvedInstanceId\);/s,
   );
   assert.match(
     chatStoreSource,
-    /async clearSession\(id, instanceId\) \{[\s\S]*if \(session\?\.transport === 'openclawGateway' && resolvedInstanceId\) \{[\s\S]*const resolvedRoute = await resolveInstanceRouteMode\(resolvedInstanceId\);/s,
+    /async clearSession\(id, instanceId\) \{[\s\S]*if \(isGatewayAuthoritativeStoredSession\(session\) && resolvedInstanceId\) \{[\s\S]*const resolvedContext = await resolveInstanceChatContext\(resolvedInstanceId\);/s,
+  );
+  assert.doesNotMatch(
+    chatStoreSource,
+    /async clearSession\(id, instanceId\) \{[\s\S]*const resolvedRoute = await resolveInstanceRouteMode\(resolvedInstanceId\);/s,
+  );
+  assert.doesNotMatch(
+    chatStoreSource,
+    /async deleteSession\(id, instanceId\) \{[\s\S]*if \(session\?\.transport === 'openclawGateway' && resolvedInstanceId\) \{/s,
+  );
+  assert.doesNotMatch(
+    chatStoreSource,
+    /async clearSession\(id, instanceId\) \{[\s\S]*if \(session\?\.transport === 'openclawGateway' && resolvedInstanceId\) \{/s,
   );
 });
 
@@ -610,7 +943,7 @@ await runTest('sdkwork-claw-chat transport-backed session clearing and flush kee
   );
   assert.match(
     chatStoreSource,
-    /async flushSession\(id\) \{[\s\S]*const nextAdapterSessions = listScopeAdapterSessions\(state\.sessions, session\.instanceId\);[\s\S]*return applyAdapterInstanceScopeState\(state, session\.instanceId, \{\s*preservedAdapterSessions: nextAdapterSessions,\s*preferredActiveSessionId: session\.id,\s*syncState: 'idle',\s*lastError: undefined,\s*\}\);/s,
+    /async flushSession\(id\) \{[\s\S]*const sessionInstanceId = session\.instanceId;[\s\S]*const nextAdapterSessions = listScopeAdapterSessions\(state\.sessions, sessionInstanceId\);[\s\S]*return applyAdapterInstanceScopeState\(state, sessionInstanceId, \{\s*preservedAdapterSessions: nextAdapterSessions,\s*preferredActiveSessionId: session\.id,\s*syncState: 'idle',\s*lastError: undefined,\s*\}\);/s,
   );
 });
 
@@ -633,6 +966,14 @@ await runTest('sdkwork-claw-chat bootstrap state machine does not auto-create lo
   assert.match(
     bootstrapSource,
     /if \(params\.syncState === 'error'\) \{\s*return \{ type: 'idle' \};\s*\}/,
+  );
+  assert.match(
+    bootstrapSource,
+    /if \(!params\.sendMode\) \{\s*return \{ type: 'idle' \};\s*\}/,
+  );
+  assert.doesNotMatch(
+    bootstrapSource,
+    /params\.sendMode \?\? \(params\.routeMode === 'instanceOpenClawGatewayWs' \? 'gateway' : 'local'\)/,
   );
 });
 
@@ -940,57 +1281,296 @@ await runTest('sdkwork-claw-chat resolves runtime chat routes for multiple claw 
 
 await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on smaller screens', () => {
   const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const chatPageCompositionSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatPageCompositionState.ts',
+  );
+  const sidebarChromeSource = read(
+    'packages/sdkwork-claw-chat/src/components/ChatSidebarChrome.tsx',
+  );
+  const conversationPaneSource = read(
+    'packages/sdkwork-claw-chat/src/components/ChatConversationPane.tsx',
+  );
+  const conversationPanePresentationHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatConversationPanePresentationState.ts',
+  );
+  const sidebarHookSource = read('packages/sdkwork-claw-chat/src/pages/useChatSidebarState.ts');
   const chatSidebarSource = read('packages/sdkwork-claw-chat/src/components/ChatSidebar.tsx');
+  const chatSidebarViewStateSource = read(
+    'packages/sdkwork-claw-chat/src/services/chatSidebarViewState.ts',
+  );
   const topControlsSource = read('packages/sdkwork-claw-chat/src/components/ChatTopControls.tsx');
   const composerPanelSource = read('packages/sdkwork-claw-chat/src/components/ChatComposerPanel.tsx');
   const chatInputSource = read('packages/sdkwork-claw-chat/src/components/ChatInput.tsx');
   const chatMessageSource = read('packages/sdkwork-claw-chat/src/components/ChatMessage.tsx');
+  const createAgentMenuSource = read(
+    'packages/sdkwork-claw-chat/src/components/ChatSidebarCreateAgentMenu.tsx',
+  );
+  const sidebarItemPrimitivesSource = read(
+    'packages/sdkwork-claw-chat/src/components/chatSidebarItemPrimitives.ts',
+  );
+  const sessionActionMenuSource = read(
+    'packages/sdkwork-claw-chat/src/components/ChatSidebarSessionActionMenu.tsx',
+  );
+  const chatChromeSurfaceSource = read(
+    'packages/sdkwork-claw-chat/src/components/chatChromeSurface.ts',
+  );
+  const englishChatLocaleSource = read('packages/sdkwork-claw-i18n/src/locales/en/chat.json');
+  const chineseChatLocaleSource = read('packages/sdkwork-claw-i18n/src/locales/zh/chat.json');
 
-  assert.match(chatPageSource, /const \[isSidebarOpen, setIsSidebarOpen\] = useState\(false\);/);
-  assert.match(chatPageSource, /className="hidden h-full w-72 shrink-0 lg:flex xl:w-80"/);
-  assert.match(chatPageSource, /className="fixed inset-0 z-40 bg-zinc-950\/45 backdrop-blur-sm lg:hidden"/);
-  assert.match(chatPageSource, /className="fixed inset-y-0 left-0 z-50 w-\[min\(22rem,calc\(100vw-1rem\)\)\] lg:hidden"/);
-  assert.match(chatPageSource, /import \{ ChatTopControls \} from '\.\.\/components\/ChatTopControls';/);
-  assert.match(chatPageSource, /import \{ ChatComposerPanel \} from '\.\.\/components\/ChatComposerPanel';/);
-  assert.match(chatPageSource, /className="relative flex h-full min-w-0 flex-1 flex-col"/);
+  assert.match(chatPageSource, /useChatPageCompositionState/);
+  assert.match(
+    chatPageCompositionSource,
+    /import \{ useChatSidebarState \} from '\.\/useChatSidebarState';/,
+  );
+  assert.match(
+    chatPageCompositionSource,
+    /const\s*\{\s*isSidebarOpen,\s*closeSidebar,\s*openSidebar,\s*sidebarBackdropLabel,\s*desktopSidebarProps,\s*mobileSidebarProps,\s*\}\s*=\s*useChatSidebarState\(\{[\s\S]*t,[\s\S]*sourceState,[\s\S]*pageUiState,[\s\S]*workspaceState,[\s\S]*\}\);/s,
+  );
+  assert.match(chatPageSource, /import \{ ChatSidebarChrome \} from '\.\.\/components\/ChatSidebarChrome';/);
+  assert.match(chatPageSource, /<ChatSidebarChrome \{\.\.\.sidebarChromeProps\} \/>/);
+  assert.match(
+    chatPageCompositionSource,
+    /sidebarChromeProps:\s*\{[\s\S]*desktopSidebarProps,[\s\S]*mobileSidebarProps,[\s\S]*\}/s,
+  );
+  assert.doesNotMatch(chatPageSource, /className="hidden h-full w-72 shrink-0 lg:flex xl:w-80"/);
+  assert.doesNotMatch(chatPageSource, /className="fixed inset-0 z-40 bg-zinc-950\/45 backdrop-blur-sm lg:hidden"/);
+  assert.doesNotMatch(chatPageSource, /className="fixed inset-y-0 left-0 z-50 w-\[min\(22rem,calc\(100vw-1rem\)\)\] lg:hidden"/);
+  assert.match(sidebarChromeSource, /const CHAT_SIDEBAR_WIDTH_STORAGE_KEY = 'claw-studio\.chat\.sidebar\.width';/);
+  assert.match(sidebarChromeSource, /className="group\/chat-sidebar-resize relative hidden h-full shrink-0 lg:flex"/);
+  assert.match(sidebarChromeSource, /style=\{\{ width: `\$\{sidebarWidth\}px` \}\}/);
+  assert.match(sidebarChromeSource, /className="absolute inset-y-0 right-\[-6px\] z-20 hidden w-3 cursor-col-resize touch-none lg:flex"/);
+  assert.match(sidebarChromeSource, /onDoubleClick=\{handleDesktopSidebarReset\}/);
+  assert.match(sidebarChromeSource, /event\.currentTarget\.setPointerCapture\(event\.pointerId\);/);
+  assert.match(sidebarChromeSource, /className="fixed inset-0 z-40 bg-zinc-950\/45 backdrop-blur-sm lg:hidden"/);
+  assert.match(sidebarChromeSource, /className="fixed inset-y-0 left-0 z-50 w-\[min\(22rem,calc\(100vw-1rem\)\)\] lg:hidden"/);
+  assert.match(chatPageSource, /import \{ ChatConversationPane \} from '\.\.\/components\/ChatConversationPane';/);
+  assert.match(
+    chatPageCompositionSource,
+    /import \{ useChatPagePresentationPropsState \} from '\.\/useChatPagePresentationPropsState';/,
+  );
+  assert.match(sidebarHookSource, /const \[isSidebarOpen, setIsSidebarOpen\] = useState\(false\);/);
+  assert.match(sidebarHookSource, /const sharedSidebarProps = \{/);
+  assert.match(sidebarHookSource, /desktopSidebarProps: sharedSidebarProps,/);
+  assert.match(
+    sidebarHookSource,
+    /mobileSidebarProps: \{[\s\S]*\.\.\.sharedSidebarProps,[\s\S]*async onSelectAgent\(selection\) \{[\s\S]*const result = await handleAgentSelection\(selection\);[\s\S]*if \(result\.status === 'completed'\) \{[\s\S]*closeSidebar\(\);[\s\S]*\}[\s\S]*\},[\s\S]*async onSessionSelect\(selection\) \{[\s\S]*const result = await handleSessionSelection\(selection\);[\s\S]*if \(result\.status === 'completed'\) \{[\s\S]*closeSidebar\(\);[\s\S]*\}[\s\S]*\},[\s\S]*onClose: closeSidebar,[\s\S]*\},/s,
+  );
+  assert.match(conversationPaneSource, /import \{ ChatTopControls \} from '\.\/ChatTopControls';/);
+  assert.match(conversationPaneSource, /import \{ ChatComposerPanel \} from '\.\/ChatComposerPanel';/);
+  assert.match(conversationPaneSource, /className="relative flex h-full min-w-0 flex-1 flex-col"/);
   assert.doesNotMatch(chatPageSource, /className="relative flex h-full min-w-0 flex-1 flex-col pt-11 sm:pt-12"/);
-  assert.match(chatPageSource, /className="min-h-0 flex-1 overflow-y-auto scrollbar-hide"/);
-  assert.match(chatPageSource, /className="flex-shrink-0 bg-gradient-to-t from-zinc-50 via-zinc-50\/78 to-transparent px-3 pb-3 pt-1\.5 sm:px-4 sm:pb-4 sm:pt-2 lg:px-6 dark:from-zinc-950 dark:via-zinc-950\/38 dark:to-transparent"/);
+  assert.match(conversationPaneSource, /className="min-h-0 flex-1 overflow-y-auto scrollbar-hide"/);
+  assert.match(chatChromeSurfaceSource, /export const CHAT_CHROME_COMPOSER_LAYER_CLASS =/);
+  assert.match(chatChromeSurfaceSource, /flex-shrink-0 bg-transparent px-3 pb-3 pt-1\.5 sm:px-4 sm:pb-4 sm:pt-2 lg:px-6/);
+  assert.doesNotMatch(chatChromeSurfaceSource, /export const CHAT_CHROME_COMPOSER_LAYER_CLASS =\s*'[^']*border-t[^']*';/);
+  assert.doesNotMatch(chatChromeSurfaceSource, /export const CHAT_CHROME_COMPOSER_LAYER_CLASS =\s*'[^']*bg-gradient-to-t[^']*';/);
+  assert.doesNotMatch(chatChromeSurfaceSource, /export const CHAT_CHROME_COMPOSER_LAYER_CLASS =\s*'[^']*backdrop-blur-xl[^']*';/);
+  assert.match(conversationPaneSource, /<div className=\{CHAT_CHROME_COMPOSER_LAYER_CLASS\}>/);
   assert.doesNotMatch(chatPageSource, /const composerSurfaceRef = useRef<HTMLDivElement \| null>\(null\);/);
   assert.doesNotMatch(chatPageSource, /const \[composerSurfaceHeight, setComposerSurfaceHeight\] = useState\(0\);/);
   assert.doesNotMatch(chatPageSource, /const messageListBottomPadding = `calc\(\$\{composerSurfaceHeight \+ 32\}px \+ env\(safe-area-inset-bottom\)\)`;/);
   assert.doesNotMatch(chatPageSource, /const emptyStateBottomPadding = `calc\(\$\{composerSurfaceHeight \+ 52\}px \+ env\(safe-area-inset-bottom\)\)`;/);
   assert.doesNotMatch(chatPageSource, /style=\{\{\s*paddingBottom: messageListBottomPadding,\s*\}\}/);
   assert.doesNotMatch(chatPageSource, /new ResizeObserver\(\(\[entry\]\) => \{/);
-  assert.match(chatPageSource, /mx-auto flex w-full max-w-6xl text-\[10px\] tracking-normal text-zinc-400 dark:text-zinc-500/);
+  assert.match(conversationPaneSource, /mx-auto flex w-full max-w-6xl text-\[10px\] tracking-normal text-zinc-400 dark:text-zinc-500/);
   assert.match(
-    chatPageSource,
+    conversationPaneSource,
     /group\.role === 'user'\s*\?\s*'justify-end pl-4 pr-2 sm:pl-6 sm:pr-3 lg:pl-8 lg:pr-4'\s*:\s*'justify-start px-4 sm:px-6 lg:px-8'/,
   );
-  assert.match(chatPageSource, /flex min-w-0 max-w-full flex-wrap items-center gap-x-1\.5 gap-y-0\.5/);
-  assert.match(chatPageSource, /<span className="truncate font-medium text-zinc-500 dark:text-zinc-400">/);
-  assert.match(chatPageSource, /<span className="shrink-0 text-zinc-300 dark:text-zinc-600">\/<\/span>/);
-  assert.match(chatPageSource, /<span className="truncate text-zinc-400 dark:text-zinc-500">\s*\{footerPresentation\.modelLabel\}\s*<\/span>/);
-  assert.doesNotMatch(chatPageSource, /rounded-full border border-zinc-200 bg-white\/80 px-2 py-0\.5 text-\[10px\] font-semibold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900\/70 dark:text-zinc-300/);
-  assert.doesNotMatch(chatPageSource, /'inline-flex shrink-0 items-center gap-1\.5 rounded-full border px-2\.5 py-1 text-\[11px\] font-semibold'/);
+  assert.match(conversationPaneSource, /flex min-w-0 max-w-full flex-wrap items-center gap-x-1\.5 gap-y-0\.5/);
+  assert.match(conversationPaneSource, /<span className="truncate font-medium text-zinc-500 dark:text-zinc-400">/);
+  assert.match(conversationPaneSource, /<span className="shrink-0 text-zinc-300 dark:text-zinc-600">\/<\/span>/);
+  assert.match(conversationPaneSource, /<span className="truncate text-zinc-400 dark:text-zinc-500">\s*\{group\.footer\.modelLabel\}\s*<\/span>/);
+  assert.doesNotMatch(conversationPaneSource, /rounded-full border border-zinc-200 bg-white\/80 px-2 py-0\.5 text-\[10px\] font-semibold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900\/70 dark:text-zinc-300/);
+  assert.doesNotMatch(conversationPaneSource, /'inline-flex shrink-0 items-center gap-1\.5 rounded-full border px-2\.5 py-1 text-\[11px\] font-semibold'/);
   assert.match(topControlsSource, /className="pointer-events-none absolute left-2\.5 top-2\.5 z-20 sm:left-3 sm:top-3 lg:hidden"/);
   assert.match(topControlsSource, /className="pointer-events-none absolute right-2\.5 top-2\.5 z-20 sm:right-3 sm:top-3 lg:right-4"/);
   assert.doesNotMatch(topControlsSource, /lg:right-32 xl:right-36/);
   assert.match(composerPanelSource, /className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8"/);
   assert.match(composerPanelSource, /<ChatInput \{\.\.\.inputProps\} \/>/);
+  assert.match(conversationPanePresentationHookSource, /const topControlsProps = \{/);
 
-  assert.match(chatSidebarSource, /onSessionSelect\?: \(\) => void;/);
+  assert.match(
+    chatSidebarSource,
+    /onSessionSelect\?: \([\s\S]*selection\?: ChatSidebarSessionSelection[\s\S]*\) =>[\s\S]*Promise<ChatSidebarSelectionActionResult \| void>[\s\S]*ChatSidebarSelectionActionResult[\s\S]*void;/s,
+  );
+  assert.match(
+    chatSidebarSource,
+    /onSelectAgent\?: \([\s\S]*selection: ChatSidebarAgentSelection[\s\S]*\) =>[\s\S]*Promise<ChatSidebarSelectionActionResult \| void>[\s\S]*ChatSidebarSelectionActionResult[\s\S]*void;/s,
+  );
   assert.match(chatSidebarSource, /onClose\?: \(\) => void;/);
+  assert.match(chatSidebarSource, /selectionErrorMessage\?: string \| null;/);
+  assert.match(chatSidebarSource, /onDismissSelectionError\?: \(\) => void;/);
+  assert.match(
+    chatSidebarSource,
+    /selectionErrorMessage \? \([\s\S]*t\('chat\.sidebar\.dismissSelectionError'\)[\s\S]*onDismissSelectionError\?\.\(\)[\s\S]*\) : null/s,
+  );
+  assert.match(chatSidebarSource, /resolveChatSidebarViewState/);
   assert.match(chatSidebarSource, /'flex h-full min-h-0 w-full flex-col border-r border-zinc-200 bg-zinc-50\/50/);
   assert.match(chatSidebarSource, /<h3 className="mb-1\.5 px-3 text-\[10px\] font-medium uppercase tracking-\[0\.14em\] text-zinc-400 dark:text-zinc-500">/);
-  assert.match(chatSidebarSource, /'group relative flex cursor-pointer items-start rounded-xl px-3 py-2\.5 transition-all'/);
-  assert.match(chatSidebarSource, /<div className="flex min-w-0 flex-1 flex-col gap-0\.5 overflow-hidden">/);
-  assert.match(chatSidebarSource, /<span className="min-w-0 flex-1 truncate text-\[13px\] font-medium leading-5">/);
-  assert.match(chatSidebarSource, /<span className="shrink-0 text-\[10px\] font-medium tabular-nums text-zinc-400 dark:text-zinc-500">\s*\{presentation\.relativeTimeLabel\}\s*<\/span>/);
-  assert.match(chatSidebarSource, /<div className="truncate text-\[11px\] leading-5 text-zinc-400 dark:text-zinc-500">\s*\{presentation\.preview\}\s*<\/div>/);
-  assert.match(chatSidebarSource, /className="ml-2 mt-0\.5 shrink-0 rounded-md p-1 opacity-100 transition-opacity hover:bg-zinc-200 sm:opacity-0 sm:group-hover:opacity-100 dark:hover:bg-zinc-700"/);
-  assert.doesNotMatch(chatSidebarSource, /<MessageSquare\s+className=\{cn\(\s*'mt-0\.5 h-4 w-4 shrink-0'/);
-  assert.doesNotMatch(chatSidebarSource, /<div className="mt-0\.5 flex min-w-0 items-center gap-1\.5 text-\[11px\] leading-5 text-zinc-400 dark:text-zinc-500">/);
+  assert.match(chatSidebarSource, /chat\.sidebar\.mainAgentBadge/);
+  assert.match(chatSidebarSource, /from '\.\/chatSidebarItemPrimitives';/);
+  assert.match(chatSidebarSource, /CHAT_SIDEBAR_ROW_BUTTON_CLASS/);
+  assert.match(chatSidebarSource, /CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS/);
+  assert.match(chatSidebarSource, /CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS/);
+  assert.match(chatSidebarSource, /CHAT_SIDEBAR_PREVIEW_TEXT_CLASS/);
+  assert.match(chatSidebarSource, /CHAT_SIDEBAR_TIME_LABEL_CLASS/);
+  assert.match(chatSidebarSource, /className="group relative"/);
+  assert.match(
+    sidebarItemPrimitivesSource,
+    /'flex w-full items-stretch gap-3 rounded-\[0\.75rem\] px-3 py-3 text-left transition-colors disabled:cursor-wait'/,
+  );
+  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_ROW_BUTTON_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_PRIMARY_BADGE_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_PREVIEW_TEXT_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_TIME_LABEL_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const SESSION_OWNER_SLOT_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const SESSION_KERNEL_SLOT_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export function resolveKernelBadgeLabel\(/);
+  assert.match(chatSidebarSource, /<div className="min-w-0 flex-1 overflow-hidden">/);
+  assert.match(chatSidebarSource, /<span className=\{SESSION_OWNER_SLOT_CLASS\} title=\{agent\.name\}>/);
+  assert.match(
+    chatSidebarViewStateSource,
+    /const agentRail = resolveChatSidebarAgentRailPresentation\(\{[\s\S]*agentOptions: params\.agentOptions,[\s\S]*sessions: instanceSessions,[\s\S]*activeSessionId: params\.activeSessionId,[\s\S]*isChatSupported: params\.isChatSupported,[\s\S]*sessionScopeMode: params\.sessionScopeMode,[\s\S]*selectedAgentId: effectiveSelectedAgentId,[\s\S]*primaryAgentId: params\.primaryAgentId,[\s\S]*previewLabels: params\.previewLabels,[\s\S]*relativeTimeLabels: params\.relativeTimeLabels,[\s\S]*locale: params\.locale,[\s\S]*timeZone: params\.timeZone,[\s\S]*emptyPreviewLabel: params\.agentRailEmptyPreviewLabel,[\s\S]*\}\);/s,
+  );
+  assert.match(
+    chatSidebarViewStateSource,
+    /const sidebarChrome = resolveChatSidebarChromePresentation\(\{[\s\S]*agentRailItemCount: agentRail\.items\.length,[\s\S]*historySections: activeSidebarHistory\.sections,[\s\S]*totalHistoryItems: activeSidebarHistory\.totalItems,[\s\S]*\}\);/s,
+  );
+  assert.match(
+    chatSidebarViewStateSource,
+    /const currentAgentHistory = resolveChatSidebarHistoryPresentation\(\{[\s\S]*sessions: currentAgentHistorySessions,[\s\S]*selectedSessionId:[\s\S]*sessionScopeMode: params\.sessionScopeMode,[\s\S]*sessionScopeAgentId: params\.sessionScopeAgentId,[\s\S]*agentOptions: params\.agentOptions,[\s\S]*fallbackMainAgentName: params\.fallbackMainAgentName,[\s\S]*previewLabels: params\.previewLabels,[\s\S]*locale: params\.locale,[\s\S]*\}\);/s,
+  );
+  assert.doesNotMatch(chatSidebarSource, /const SESSION_OWNER_SLOT_CLASS =/);
+  assert.doesNotMatch(chatSidebarSource, /const SESSION_KERNEL_SLOT_CLASS =/);
+  assert.doesNotMatch(chatSidebarSource, /function resolveKernelBadgeLabel\(/);
+  assert.match(chatSidebarSource, /className=\{SESSION_OWNER_SLOT_CLASS\}/);
+  assert.match(
+    chatSidebarSource,
+    /item\.ownerKernelLabel \?\s*\(\s*<span className=\{SESSION_KERNEL_SLOT_CLASS\} title=\{item\.ownerKernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(item\.ownerKernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
+  );
+  assert.match(
+    chatSidebarSource,
+    /agent\.kernelLabel \?\s*\(\s*<span className=\{SESSION_KERNEL_SLOT_CLASS\} title=\{agent\.kernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(agent\.kernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
+  );
+  assert.match(
+    chatSidebarSource,
+    /const agentPreviewText = agent\.preview \?\? t\('chat\.sidebar\.agentRailEmptyPreview'\);/,
+  );
+  assert.match(chatSidebarSource, /agent\.relativeTimeLabel \?\s*\(/);
+  assert.match(chatSidebarSource, /<span className=\{SESSION_OWNER_SLOT_CLASS\} title=\{agent\.name\}>/);
+  assert.match(
+    chatSidebarSource,
+    /<p[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_PREVIEW_TEXT_CLASS,[\s\S]*\)\}[\s\S]*>\s*\{agentPreviewText\}\s*<\/p>/,
+  );
+  assert.doesNotMatch(
+    chatSidebarSource,
+    /agent\.kernelLabel \?\s*\(\s*<span className="mt-0\.5 block truncate text-\[10px\] font-medium uppercase tracking-\[0\.12em\] text-zinc-400 dark:text-zinc-500">\s*\{agent\.kernelLabel\}\s*<\/span>\s*\) : null/,
+  );
+  assert.match(chatSidebarSource, /<div className="flex min-w-0 items-center gap-1\.5">/);
+  assert.match(chatSidebarSource, /item\.pinOrigin === 'system' \?\s*\(/);
+  assert.match(chatSidebarSource, /item\.pinOrigin === 'user' \?\s*\(/);
+  assert.match(chatSidebarSource, /item\.isFavorited \?\s*\(/);
+  assert.match(chatSidebarSource, /item\.hasUnread \?\s*\(/);
+  assert.match(
+    chatSidebarSource,
+    /<span[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_TIME_LABEL_CLASS,[\s\S]*'transition-opacity',[\s\S]*\)\}[\s\S]*>\s*\{item\.relativeTimeLabel\}\s*<\/span>/,
+  );
+  assert.match(
+    chatSidebarSource,
+    /<p[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_PREVIEW_TEXT_CLASS,[\s\S]*\)\}[\s\S]*>\s*\{previewText\}\s*<\/p>/,
+  );
+  assert.match(
+    chatSidebarSource,
+    /sidebarChrome\.showAgentRail[\s\S]*visibleAgentRailItems\.map\(renderAgentRailItem\)/s,
+  );
+  assert.match(chatSidebarSource, /const \[agentSearchQuery, setAgentSearchQuery\] = React\.useState\(''\);/);
+  assert.match(chatSidebarSource, /const visibleAgentRailItems = React\.useMemo\(\(\) => \{/);
+  assert.match(chatSidebarSource, /placeholder=\{t\('chat\.sidebar\.agentSearchPlaceholder'\)\}/);
+  assert.match(chatSidebarSource, /openCreateAgentMenuAtElement\(event\.currentTarget, event\.currentTarget\)/);
+  assert.match(chatSidebarSource, /closeSessionMenu\(\);\s*setCreateAgentMenuState\(\{/);
+  assert.match(chatSidebarSource, /onSelectAction=\{handleCreateAgentMenuAction\}/);
+  assert.match(chatSidebarSource, /className="max-h-\[22\.875rem\] overflow-y-auto pr-1"/);
+  assert.match(chatSidebarSource, /visibleAgentRailItems\.length === 0 && agentSearchQuery\.trim\(\)/);
+  assert.match(chatSidebarSource, /title=\{t\('chat\.sidebar\.newAgentOptions'\)\}/);
+  assert.match(chatSidebarSource, /aria-label=\{t\('chat\.sidebar\.newAgentOptions'\)\}/);
+  assert.match(chatSidebarSource, /if \(isCreateAgentMenuOpen\) \{\s*closeCreateAgentMenu\(\);\s*return;\s*\}/);
+  assert.match(chatSidebarSource, /<span>\{t\('chat\.sidebar\.createButtonLabel'\)\}<\/span>/);
+  assert.doesNotMatch(chatSidebarSource, /hidden sm:inline/);
+  assert.match(createAgentMenuSource, /role="menu"/);
+  assert.match(createAgentMenuSource, /action\.id === 'custom'/);
+  assert.match(createAgentMenuSource, /action\.id === 'library'/);
+  assert.match(createAgentMenuSource, /action\.id === 'market'/);
+  assert.match(createAgentMenuSource, /action\.id === 'copy'/);
+  assert.match(createAgentMenuSource, /aria-label=\{closeLabel\}/);
+  assert.match(createAgentMenuSource, /\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(
+    chatSidebarSource,
+    /sidebarChrome\.sections\.map\(\(\{ section, titleKey \}\) => \([\s\S]*renderSessionGroup\(section, t\(titleKey\)\)[\s\S]*<\/React\.Fragment>/s,
+  );
+  assert.match(
+    chatSidebarSource,
+    /className=\{cn\(\s*'absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-all hover:bg-zinc-900\/\[0\.06\] hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white\/\[0\.08\] dark:hover:text-zinc-200',[\s\S]*\)\}/,
+  );
+  assert.match(chatSidebarSource, /event\.key === 'Enter'/);
+  assert.match(chatSidebarSource, /event\.key === ' '/);
+  assert.match(chatSidebarSource, /event\.key === 'ContextMenu'/);
+  assert.match(chatSidebarSource, /event\.shiftKey && event\.key === 'F10'/);
+  assert.match(
+    chatSidebarSource,
+    /openSessionMenuAtElement\(event\.currentTarget, item, event\.currentTarget\)/,
+  );
+  assert.match(chatSidebarSource, /closeCreateAgentMenu\(\);\s*setSessionMenuState\(\{/);
+  assert.match(
+    chatSidebarSource,
+    /if \(isSessionMenuOpen\) \{\s*closeSessionMenu\(\);\s*return;\s*\}[\s\S]*openSessionMenuAtElement\(event\.currentTarget, item, event\.currentTarget\);/,
+  );
+  assert.match(chatSidebarSource, /group-hover:opacity-0 group-focus-within:opacity-0/);
+  assert.match(chatSidebarSource, /aria-haspopup="menu"/);
+  assert.match(chatSidebarSource, /aria-expanded=\{isSessionMenuOpen\}/);
+  assert.match(
+    chatSidebarSource,
+    /closeLabel=\{t\('chat\.sidebar\.dismissSessionActionsMenu'\)\}/,
+  );
+  assert.match(
+    chatSidebarSource,
+    /restoreFocusElement=\{sessionMenuState\?\.restoreFocusElement \?\? null\}/,
+  );
+  assert.match(
+    chatSidebarSource,
+    /group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100/,
+  );
+  assert.match(sessionActionMenuSource, /aria-label=\{closeLabel\}/);
+  assert.match(sessionActionMenuSource, /\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(englishChatLocaleSource, /"agentSearchPlaceholder":\s*"Search current agents\.\.\."/);
+  assert.match(englishChatLocaleSource, /"agentRailEmptyPreview":\s*"No conversations yet"/);
+  assert.match(englishChatLocaleSource, /"createButtonLabel":\s*"Create"/);
+  assert.match(englishChatLocaleSource, /"newAgentOptions":\s*"Create Agent options"/);
+  assert.match(englishChatLocaleSource, /"dismissCreateAgentMenu":\s*"Close create agent menu"/);
+  assert.match(englishChatLocaleSource, /"selectAgentFailed":\s*"Unable to switch to the selected agent\."/);
+  assert.match(englishChatLocaleSource, /"selectSessionFailed":\s*"Unable to open the selected conversation\."/);
+  assert.match(englishChatLocaleSource, /"dismissSelectionError":\s*"Dismiss"/);
+  assert.match(chineseChatLocaleSource, /"agentSearchPlaceholder":/);
+  assert.match(chineseChatLocaleSource, /"agentRailEmptyPreview":/);
+  assert.match(chineseChatLocaleSource, /"createButtonLabel":/);
+  assert.match(chineseChatLocaleSource, /"dismissCreateAgentMenu":/);
+  assert.match(chineseChatLocaleSource, /"selectAgentFailed":/);
+  assert.match(chineseChatLocaleSource, /"selectSessionFailed":/);
+  assert.match(chineseChatLocaleSource, /"dismissSelectionError":/);
+  assert.match(englishChatLocaleSource, /"dismissSessionActionsMenu":\s*"Close session actions menu"/);
+  assert.match(chineseChatLocaleSource, /"dismissSessionActionsMenu":/);
+  assert.doesNotMatch(chatSidebarSource, /resolveChatSessionOwnerPresentation/);
+  assert.doesNotMatch(chatSidebarSource, /presentChatSessionListItem/);
+  assert.doesNotMatch(chatSidebarSource, /agentItems/);
+  assert.doesNotMatch(chatSidebarSource, /sectionTitleKeyById/);
+  assert.doesNotMatch(chatSidebarSource, /const SESSION_TIME_SLOT_CLASS =/);
+  assert.doesNotMatch(chatSidebarSource, /<div className=\{SESSION_TIME_SLOT_CLASS\}>/);
+  assert.doesNotMatch(chatSidebarSource, /className="rounded-md p-1 opacity-100 transition-opacity hover:bg-zinc-900\/\[0\.06\] sm:opacity-0 sm:group-hover:opacity-100 dark:hover:bg-white\/\[0\.08\]"/);
+  assert.match(chatSidebarSource, /const historyTabs = \[/);
+  assert.match(chatSidebarSource, /id: 'currentAgent'/);
+  assert.match(chatSidebarSource, /id: 'allSessions'/);
 
   assert.match(chatInputSource, /const viewportPadding = window\.innerWidth < 640 \? 12 : 16;/);
   assert.match(chatInputSource, /Math\.max\(window\.innerWidth < 640 \? 280 : 320/);
@@ -1008,12 +1588,13 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
     /rounded-br-md bg-zinc-100 px-3\.5 py-1\.5 text-zinc-900 sm:max-w-\[95%\] dark:bg-zinc-800 dark:text-zinc-100/,
   );
   assert.match(chatMessageSource, /:\s*isTool\s*\?\s*'w-full px-0 py-0 text-zinc-900 dark:text-zinc-100'\s*:\s*'w-full px-0 py-0 text-zinc-900 dark:text-zinc-100'/);
-  assert.match(chatMessageSource, /relative mb-4 mt-3 min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-\[#1E1E1E\]/);
+  assert.match(chatMessageSource, /CHAT_SURFACE_PANEL_CLASS,/);
+  assert.match(chatMessageSource, /'relative mb-4 mt-3 min-w-0 overflow-hidden rounded-xl dark:bg-\[#1E1E1E\]'/);
   assert.match(chatMessageSource, /prose-headings:font-semibold prose-headings:tracking-tight prose-headings:mb-2 prose-headings:mt-4 prose-a:text-primary-500 hover:prose-a:text-primary-600/);
   assert.match(chatMessageSource, /'prose prose-zinc prose-sm relative max-w-none break-words text-\[14px\] leading-6 dark:prose-invert sm:prose-sm'/);
   assert.match(chatMessageSource, /prose-code:before:content-none prose-code:after:content-none prose-p:my-2 prose-p:leading-6 prose-pre:my-3 prose-pre:bg-transparent prose-pre:p-0 prose-ul:my-2 prose-ol:my-2/);
   assert.match(chatMessageSource, /attachments\.length > 0 \? \(\s*<div className="mb-2\.5 grid gap-3 sm:grid-cols-2">/);
-  assert.match(chatMessageSource, /reasoning \? \(\s*<details className="mb-2\.5 overflow-hidden rounded-2xl border/);
+  assert.match(chatMessageSource, /reasoning \? \(\s*<details[\s\S]*CHAT_SURFACE_INSET_PANEL_CLASS,[\s\S]*'mb-2\.5 overflow-hidden dark:bg-zinc-900\/65'/s);
   assert.match(
     chatMessageSource,
     /<div className=\{hasRenderableContent \? 'mt-1\.5' : (?:undefined|null)\}>/,
@@ -1030,18 +1611,27 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
 
 await runTest('sdkwork-claw-chat empty state scales from stacked mobile welcome to a balanced desktop split layout', () => {
   const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const conversationPaneSource = read(
+    'packages/sdkwork-claw-chat/src/components/ChatConversationPane.tsx',
+  );
+  const conversationPanePresentationHookSource = read(
+    'packages/sdkwork-claw-chat/src/pages/useChatConversationPanePresentationState.ts',
+  );
   const chatEmptyStateSource = read('packages/sdkwork-claw-chat/src/components/ChatEmptyState.tsx');
 
-  assert.match(chatPageSource, /const appName = t\('common\.productName'\);/);
-  assert.match(chatPageSource, /import \{ ChatEmptyState \} from '\.\.\/components\/ChatEmptyState';/);
-  assert.match(chatPageSource, /className="flex min-h-full flex-1 items-center justify-center px-3 pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pt-10"/);
-  assert.match(chatPageSource, /const emptyStateHighlights = \[/);
-  assert.match(chatPageSource, /<ChatEmptyState/);
-  assert.match(chatPageSource, /description=\{emptyStateDescription\}/);
-  assert.match(chatPageSource, /highlights=\{emptyStateHighlights\}/);
+  assert.match(chatPageSource, /import \{ ChatConversationPane \} from '\.\.\/components\/ChatConversationPane';/);
+  assert.match(conversationPaneSource, /import \{ ChatEmptyState \} from '\.\/ChatEmptyState';/);
+  assert.match(conversationPaneSource, /className="flex min-h-full flex-1 items-center justify-center px-3 pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pt-10"/);
+  assert.match(conversationPanePresentationHookSource, /const appName = t\('common\.productName'\);/);
+  assert.match(conversationPanePresentationHookSource, /const emptyStateHighlights = \[/);
+  assert.match(conversationPanePresentationHookSource, /description: emptyStateDescription,/);
+  assert.match(conversationPanePresentationHookSource, /highlights: emptyStateHighlights,/);
+  assert.match(conversationPaneSource, /<ChatEmptyState \{\.\.\.emptyStateProps\} \/>/);
   assert.match(chatEmptyStateSource, /className="grid w-full max-w-6xl gap-4 lg:grid-cols-\[minmax\(0,1\.05fr\)_minmax\(20rem,0\.95fr\)\] lg:items-center xl:gap-6"/);
-  assert.match(chatEmptyStateSource, /className="flex flex-col items-center rounded-\[2rem\] border border-zinc-200\/70 bg-white\/80 p-6 text-center shadow-\[0_18px_48px_rgba\(15,23,42,0\.08\)\] sm:p-8 lg:items-start lg:p-10 lg:text-left/);
+  assert.match(chatEmptyStateSource, /CHAT_SURFACE_ELEVATED_PANEL_CLASS,/);
+  assert.match(chatEmptyStateSource, /'flex flex-col items-center p-6 text-center sm:p-8 lg:items-start lg:p-10 lg:text-left'/);
   assert.match(chatEmptyStateSource, /className="mb-6 inline-flex items-center rounded-full border border-primary-500\/15 bg-primary-500\/8 px-3 py-1 text-xs font-semibold tracking-\[0\.16em\] text-primary-600/);
   assert.match(chatEmptyStateSource, /className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"/);
-  assert.match(chatEmptyStateSource, /className="group relative flex min-h-\[8\.5rem\] flex-col justify-between overflow-hidden rounded-\[1\.75rem\] border border-zinc-200\/80 bg-white p-5 text-left/);
+  assert.match(chatEmptyStateSource, /CHAT_SURFACE_INTERACTIVE_PANEL_CLASS,/);
+  assert.match(chatEmptyStateSource, /'group relative flex min-h-\[8\.5rem\] flex-col justify-between overflow-hidden p-5 text-left'/);
 });

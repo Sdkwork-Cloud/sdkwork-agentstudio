@@ -18,7 +18,7 @@
     "supportedKernels": {
       "summary": {
         "openclaw": "The primary built-in kernel supported directly by Claw Studio and ready for managed installation.",
-        "hermes": "A multi-kernel external runtime that stays attached through supported host or remote environments."
+        "hermes": "A multi-kernel runtime that standardizes supported local-managed, local-external, and remote Linux deployment environments."
       },
       "deployment": {
         "bundled": "Built-In",
@@ -364,7 +364,7 @@
     "modules": {
       "hermes": {
         "eyebrow": "Hermes Kernel",
-        "description": "Hermes runs as an externally managed kernel. This detail module tracks transport posture, external runtime policy, data-access shape, and the machine-facing evidence required to keep Hermes support predictable across supported local, WSL2, and remote Linux deployments.",
+        "description": "Hermes runs through standardized supported host environments. This detail module tracks transport posture, runtime policy, user-root kernel state, and the machine-facing evidence required to keep Hermes support predictable across supported local-managed, local-external, WSL2, and remote Linux deployments.",
         "metrics": {
           "runtime": "Runtime",
           "deployment": "Deployment",
@@ -390,8 +390,8 @@
           "title": "Readiness Posture",
           "deploymentTarget": {
             "label": "Deployment target",
-            "configured": "This instance already reports a supported Hermes deployment posture. Hermes may run as a local-external runtime on Linux, macOS, or Windows WSL2, or as a remote Linux deployment.",
-            "required": "Hermes must stay external. Use a local-external runtime on Linux, macOS, or Windows WSL2, or attach a remote Linux deployment instead of a native Windows or app-managed local target."
+            "configured": "This instance already reports a supported Hermes deployment posture. Hermes may run as a local-managed or local-external runtime on Linux, macOS, or Windows WSL2, or as a remote Linux deployment.",
+            "required": "Use a supported Hermes deployment posture: local-managed or local-external on Linux, macOS, or Windows WSL2, or a remote Linux deployment. Native Windows local execution remains unsupported."
           },
           "endpointExposure": {
             "label": "Connectivity endpoints",
@@ -423,7 +423,7 @@
         "title": "Instance Workbench",
         "description": "Switch between the runtime capabilities available on this OpenClaw instance.",
         "overview": "Overview",
-        "channels": "Channels",
+        "channels": "Chat Channels",
         "cronTasks": "Cron Tasks",
         "llmProviders": "LLM Providers",
         "agents": "Agents",
@@ -451,7 +451,7 @@
           "description": "Inspect the runtime contract, connectivity, storage binding, and capability posture for this instance."
         },
         "channels": {
-          "title": "Channels",
+          "title": "Chat Channels",
           "description": "Inspect delivery readiness, configuration depth, and connection state for this instance."
         },
         "cronTasks": {
@@ -1414,6 +1414,91 @@
             "fallbackModels": "one provider/model per line",
             "workspace": "Leave blank to let OpenClaw derive workspace-<agentId>",
             "agentDir": "Leave blank to use .openclaw/agents/<agentId>/agent"
+          }
+        },
+        "creationWorkflow": {
+          "menu": {
+            "title": "Create Agent",
+            "description": "Choose how to create the next agent for this instance without leaving the current workbench.",
+            "options": {
+              "custom": {
+                "title": "Start from scratch",
+                "description": "Define a new agent manually for this writable kernel instance."
+              },
+              "library": {
+                "title": "Use local library",
+                "description": "Browse reusable local kernel agents and use one as the starting template."
+              },
+              "copy": {
+                "title": "Copy my agents",
+                "description": "Duplicate an agent that already belongs to this instance so you can iterate safely."
+              },
+              "market": {
+                "title": "Install from market",
+                "description": "Browse curated agent packages and install one directly into this instance."
+              }
+            }
+          },
+          "library": {
+            "title": "Use local library",
+            "description": "Browse reusable local kernel agents and use one as the starting template."
+          },
+          "copy": {
+            "title": "Copy my agents",
+            "description": "Reuse an existing agent from this instance as the starting point for a new copy."
+          },
+          "form": {
+            "title": "Create Agent",
+            "copyTitle": "Copy Agent",
+            "description": "Create a new agent for the current instance and kernel.",
+            "copyDescription": "Start from an existing local kernel agent, keep the portable settings, and create a new agent in this instance."
+          },
+          "market": {
+            "title": "Install from market",
+            "description": "Browse packaged agent templates and install the selected one directly into this instance.",
+            "status": {
+              "loading": "Loading installation targets..."
+            }
+          },
+          "actions": {
+            "back": "Back",
+            "retry": "Retry",
+            "useTemplate": "Use as Template",
+            "create": "Create Agent",
+            "createCopy": "Create Copy"
+          },
+          "searchPlaceholder": "Search local agents...",
+          "notSet": "Not set",
+          "badges": {
+            "default": "Default"
+          },
+          "sections": {
+            "source": "Source",
+            "model": "Model",
+            "fallbackModels": "Fallback Models",
+            "parameters": "Parameters"
+          },
+          "labels": {
+            "sourceAgent": "Source Agent",
+            "instance": "Instance",
+            "kernel": "Kernel",
+            "temperature": "Temperature",
+            "topP": "Top P",
+            "maxTokens": "Max Tokens",
+            "timeoutMs": "Timeout (ms)",
+            "streaming": "Streaming"
+          },
+          "status": {
+            "loading": "Loading local kernel agents...",
+            "loadFailed": "Failed to load local agents.",
+            "emptyTitle": "No local agents available",
+            "emptyDescription": "Create or import an agent into a writable kernel instance and it will appear here as a template."
+          },
+          "modelInherit": "Inherit instance default",
+          "streamingModes": {
+            "inherit": "Inherit runtime default",
+            "enabled": "Enabled",
+            "disabled": "Disabled"
           }
         },
         "deleteDialog": {

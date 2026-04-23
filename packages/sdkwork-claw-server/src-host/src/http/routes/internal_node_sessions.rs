@@ -84,10 +84,7 @@ fn resolve_host_platform_lifecycle(state: &ServerState, updated_at: u64) -> &'st
         .ok()
         .map(|projection| projection.lifecycle);
 
-    merge_hosted_openclaw_lifecycle(
-        runtime_lifecycle.as_deref(),
-        gateway_lifecycle.as_deref(),
-    )
+    merge_hosted_openclaw_lifecycle(runtime_lifecycle.as_deref(), gateway_lifecycle.as_deref())
 }
 
 fn merge_hosted_openclaw_lifecycle(

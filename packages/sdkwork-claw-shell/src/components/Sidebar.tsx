@@ -8,7 +8,6 @@ import {
 } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  BriefcaseBusiness,
   CalendarClock,
   ChevronUp,
   CircleUserRound,
@@ -52,6 +51,25 @@ interface SidebarNavGroup {
   items: SidebarNavItem[];
 }
 
+function getSidebarNavToneClasses(isActive: boolean) {
+  if (isActive) {
+    return {
+      item: 'font-medium',
+      iconBadge:
+        'bg-primary-500 text-primary-50 shadow-lg shadow-primary-950/25 ring-1 ring-primary-300/30',
+      icon: 'fill-current stroke-[2.15px] text-primary-50',
+      label: 'text-primary-400',
+    };
+  }
+
+  return {
+    item: '',
+    iconBadge: 'bg-transparent group-hover:bg-white/[0.04]',
+    icon: 'text-zinc-500 group-hover:text-zinc-300',
+    label: 'text-zinc-500 group-hover:text-zinc-300',
+  };
+}
+
 function CollapsedSidebarStack({
   label,
   labelClassName,
@@ -65,7 +83,7 @@ function CollapsedSidebarStack({
     <div className="flex min-w-0 flex-col items-center justify-center gap-1 text-center">
       {children}
       <span
-        className={`line-clamp-2 max-w-[52px] text-[10px] font-medium leading-[1.15] tracking-tight text-inherit ${
+        className={`line-clamp-2 max-w-[52px] text-[10px] font-medium leading-[1.15] tracking-tight ${
           labelClassName ?? ''
         }`}
       >
@@ -193,12 +211,6 @@ export function Sidebar() {
     {
       section: t('sidebar.ecosystem'),
       items: [
-        {
-          id: 'agents',
-          to: '/agents',
-          icon: BriefcaseBusiness,
-          label: t('sidebar.agentMarket'),
-        },
         { id: 'extensions', to: '/extensions', icon: PlugZap, label: t('sidebar.extensions') },
         { id: 'claw-upload', to: '/claw-center', icon: Waypoints, label: t('sidebar.clawUpload') },
         { id: 'community', to: '/community', icon: Newspaper, label: t('sidebar.community') },
@@ -267,15 +279,15 @@ export function Sidebar() {
             isSidebarCollapsed ? 'px-2 py-4' : 'px-3 py-5'
           }`}
         >
-          {navItems.map((group) => (
+          {navItems.map((group, groupIndex) => (
             <div key={group.section}>
               {!isSidebarCollapsed ? (
                 <div className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-500">
                   {group.section}
                 </div>
-              ) : (
+              ) : groupIndex > 0 ? (
                 <div className="mx-2 my-4 h-px bg-white/6" />
-              )}
+              ) : null}
               <div className="space-y-1">
                 {group.items.map((item) => (
                   <NavLink
@@ -287,54 +299,57 @@ export function Sidebar() {
                     onMouseLeave={() => cancelSidebarRoutePrefetch(item.to)}
                     onFocus={() => scheduleSidebarRoutePrefetch(item.to)}
                     onBlur={() => cancelSidebarRoutePrefetch(item.to)}
-                    className={({ isActive }) =>
-                      `group relative flex items-center transition-all duration-200 ${
+                    className={({ isActive }) => {
+                      const tone = getSidebarNavToneClasses(isActive);
+
+                      return `group relative flex items-center transition-all duration-200 ${
                         isSidebarCollapsed
                           ? 'mx-auto min-h-[4rem] w-full max-w-[3.5rem] justify-center rounded-xl px-1 py-1.5'
                           : 'justify-between rounded-2xl px-3 py-2.5'
-                      } ${
-                        isActive
-                          ? 'bg-white/[0.08] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
-                          : 'text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-200'
-                      }`
-                    }
+                      } hover:bg-white/[0.05] ${tone.item}`;
+                    }}
                   >
-                    {({ isActive }) => (
-                      <>
-                        {isActive && !isSidebarCollapsed ? (
-                          <motion.div
-                            layoutId="sidebar-active-indicator"
-                            className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary-500"
-                          />
-                        ) : null}
-                        {isSidebarCollapsed ? (
-                          <CollapsedSidebarStack
-                            label={item.label}
-                            labelClassName={isActive ? 'text-primary-200' : undefined}
-                          >
-                            <item.icon
-                              className={`h-5 w-5 shrink-0 transition-colors ${
-                                isActive ? 'text-primary-400' : 'text-zinc-500 group-hover:text-zinc-300'
-                              }`}
+                    {({ isActive }) => {
+                      const tone = getSidebarNavToneClasses(isActive);
+
+                      return (
+                        <>
+                          {isActive && !isSidebarCollapsed ? (
+                            <motion.div
+                              layoutId="sidebar-active-indicator"
+                              className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary-500"
                             />
-                          </CollapsedSidebarStack>
-                        ) : (
-                          <div className="flex items-center gap-3">
-                            <item.icon
-                              className={`h-4 w-4 shrink-0 transition-colors ${
-                                isActive ? 'text-primary-400' : 'text-zinc-500 group-hover:text-zinc-300'
-                              }`}
-                            />
-                            <span className="text-[14px] tracking-tight">{item.label}</span>
-                          </div>
-                        )}
-                        {!isSidebarCollapsed && item.badge ? (
-                          <span className="rounded-full border border-primary-500/20 bg-primary-500/15 px-1.5 py-0.5 text-[10px] font-bold text-primary-300">
-                            {item.badge}
-                          </span>
-                        ) : null}
-                      </>
-                    )}
+                          ) : null}
+                          {isSidebarCollapsed ? (
+                            <CollapsedSidebarStack label={item.label} labelClassName={tone.label}>
+                              <div
+                                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-all duration-200 ${tone.iconBadge}`}
+                              >
+                                <item.icon
+                                  className={`h-5 w-5 shrink-0 transition-colors ${tone.icon}`}
+                                />
+                              </div>
+                            </CollapsedSidebarStack>
+                          ) : (
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${tone.iconBadge}`}
+                              >
+                                <item.icon className={`h-4 w-4 shrink-0 transition-colors ${tone.icon}`} />
+                              </div>
+                              <span className={`text-[14px] tracking-tight ${tone.label}`}>
+                                {item.label}
+                              </span>
+                            </div>
+                          )}
+                          {!isSidebarCollapsed && item.badge ? (
+                            <span className="rounded-full border border-primary-500/20 bg-primary-500/15 px-1.5 py-0.5 text-[10px] font-bold text-primary-300">
+                              {item.badge}
+                            </span>
+                          ) : null}
+                        </>
+                      );
+                    }}
                   </NavLink>
                 ))}
               </div>
@@ -342,7 +357,7 @@ export function Sidebar() {
           ))}
         </nav>
 
-        <div className="flex flex-col gap-1 border-t border-white/5 p-3">
+        <div className="flex flex-col gap-1 p-3">
           {utilityItems.map((item) => (
             <NavLink
               key={item.id}
@@ -353,49 +368,52 @@ export function Sidebar() {
               onMouseLeave={() => cancelSidebarRoutePrefetch(item.to)}
               onFocus={() => scheduleSidebarRoutePrefetch(item.to)}
               onBlur={() => cancelSidebarRoutePrefetch(item.to)}
-              className={({ isActive }) =>
-                `group relative flex items-center transition-all duration-200 ${
+              className={({ isActive }) => {
+                const tone = getSidebarNavToneClasses(isActive);
+
+                return `group relative flex items-center transition-all duration-200 ${
                   isSidebarCollapsed
                     ? 'mx-auto min-h-[4rem] w-full max-w-[3.5rem] justify-center rounded-xl px-1 py-1.5'
                     : 'gap-3 rounded-2xl px-3 py-2.5'
-                } ${
-                  isActive
-                    ? 'bg-white/[0.08] font-medium text-white'
-                    : 'text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-200'
-                }`
-              }
+                } hover:bg-white/[0.05] ${tone.item}`;
+              }}
             >
-              {({ isActive }) => (
-                <>
-                  {isActive && !isSidebarCollapsed ? (
-                    <motion.div
-                      layoutId="sidebar-active-indicator"
-                      className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary-500"
-                    />
-                  ) : null}
-                  {isSidebarCollapsed ? (
-                    <CollapsedSidebarStack
-                      label={item.label}
-                      labelClassName={isActive ? 'text-primary-200' : undefined}
-                    >
-                      <item.icon
-                        className={`h-5 w-5 shrink-0 transition-colors ${
-                          isActive ? 'text-primary-400' : 'text-zinc-500 group-hover:text-zinc-300'
-                        }`}
+              {({ isActive }) => {
+                const tone = getSidebarNavToneClasses(isActive);
+
+                return (
+                  <>
+                    {isActive && !isSidebarCollapsed ? (
+                      <motion.div
+                        layoutId="sidebar-active-indicator"
+                        className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary-500"
                       />
-                    </CollapsedSidebarStack>
-                  ) : (
-                    <>
-                      <item.icon
-                        className={`h-4 w-4 shrink-0 transition-colors ${
-                          isActive ? 'text-primary-400' : 'text-zinc-500 group-hover:text-zinc-300'
-                        }`}
-                      />
-                      <span className="text-[14px] tracking-tight">{item.label}</span>
-                    </>
-                  )}
-                </>
-              )}
+                    ) : null}
+                    {isSidebarCollapsed ? (
+                      <CollapsedSidebarStack label={item.label} labelClassName={tone.label}>
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-all duration-200 ${tone.iconBadge}`}
+                        >
+                          <item.icon
+                            className={`h-5 w-5 shrink-0 transition-colors ${tone.icon}`}
+                          />
+                        </div>
+                      </CollapsedSidebarStack>
+                    ) : (
+                      <>
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${tone.iconBadge}`}
+                        >
+                          <item.icon className={`h-4 w-4 shrink-0 transition-colors ${tone.icon}`} />
+                        </div>
+                        <span className={`text-[14px] tracking-tight ${tone.label}`}>
+                          {item.label}
+                        </span>
+                      </>
+                    )}
+                  </>
+                );
+              }}
             </NavLink>
           ))}
           <div ref={userMenuRef} className="relative">

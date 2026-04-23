@@ -23,6 +23,7 @@ use super::{
 };
 use crate::framework::storage::{StorageGetTextRequest, StorageListKeysRequest};
 use crate::framework::{config::AppConfig, paths::AppPaths, FrameworkError, Result};
+use sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_config_file_path;
 use serde_json::Value;
 use std::{
     collections::{HashMap, HashSet},
@@ -1017,7 +1018,7 @@ fn active_openclaw_config_path(paths: &AppPaths) -> PathBuf {
             paths
                 .kernel_paths("openclaw")
                 .map(|kernel| kernel.config_file)
-                .unwrap_or_else(|_| paths.openclaw_config_file.clone())
+                .unwrap_or_else(|_| build_standard_openclaw_config_file_path(&paths.user_root))
         })
 }
 
@@ -1047,18 +1048,14 @@ fn verify_managed_workspace(paths: &AppPaths) -> OpenClawMirrorImportVerificatio
             "managed-workspace",
             "OpenClaw workspace restored",
             "passed",
-            format!(
-                "Restored OpenClaw workspace directory is present at {workspace_path}."
-            ),
+            format!("Restored OpenClaw workspace directory is present at {workspace_path}."),
         )
     } else {
         verification_check(
             "managed-workspace",
             "OpenClaw workspace restored",
             "failed",
-            format!(
-                "OpenClaw workspace directory is missing after import at {workspace_path}."
-            ),
+            format!("OpenClaw workspace directory is missing after import at {workspace_path}."),
         )
     }
 }
@@ -1195,9 +1192,15 @@ fn verify_openclaw_plugin_assets(
                 let path = resolve_openclaw_asset_path(paths, &asset.anchor, &asset.relative_path)?;
                 match asset.entry_kind.as_str() {
                     "directory" if plugin_asset_directory_is_valid(&path) => None,
-                    "directory" => Some(format!("plugin asset missing or invalid: {}", normalize_path(&path))),
+                    "directory" => Some(format!(
+                        "plugin asset missing or invalid: {}",
+                        normalize_path(&path)
+                    )),
                     "file" if plugin_asset_file_is_valid(&path) => None,
-                    "file" => Some(format!("plugin asset missing or invalid: {}", normalize_path(&path))),
+                    "file" => Some(format!(
+                        "plugin asset missing or invalid: {}",
+                        normalize_path(&path)
+                    )),
                     other => Some(format!(
                         "plugin asset entry kind is unsupported: {} ({})",
                         normalize_path(&path),
@@ -4605,8 +4608,7 @@ mod tests {
 
         let error_text = error.to_string();
         assert!(
-            error_text
-                .contains("plugin asset inventory path is outside the canonical root"),
+            error_text.contains("plugin asset inventory path is outside the canonical root"),
             "unexpected error: {error_text}"
         );
         assert!(
@@ -4694,8 +4696,8 @@ mod tests {
         )
         .expect("import mirror");
 
-        let config_text = fs::read_to_string(&openclaw_config_file_path(&paths))
-            .expect("restored config text");
+        let config_text =
+            fs::read_to_string(&openclaw_config_file_path(&paths)).expect("restored config text");
         let state_text = fs::read_to_string(
             paths
                 .openclaw_root_dir
@@ -5015,8 +5017,7 @@ mod tests {
             "unexpected error: {error_text}"
         );
         assert_eq!(
-            fs::read_to_string(&openclaw_config_file_path(&paths))
-                .expect("config after failure"),
+            fs::read_to_string(&openclaw_config_file_path(&paths)).expect("config after failure"),
             original_config
         );
         assert_eq!(
@@ -5095,8 +5096,7 @@ mod tests {
             "unexpected error: {error_text}"
         );
         assert_eq!(
-            fs::read_to_string(&openclaw_config_file_path(&paths))
-                .expect("config after failure"),
+            fs::read_to_string(&openclaw_config_file_path(&paths)).expect("config after failure"),
             original_config
         );
         assert_eq!(
@@ -5151,8 +5151,7 @@ mod tests {
         .expect("import mirror");
 
         let restored_openclaw_config = serde_json::from_str::<Value>(
-            &fs::read_to_string(&openclaw_config_file_path(&paths))
-                .expect("restored config text"),
+            &fs::read_to_string(&openclaw_config_file_path(&paths)).expect("restored config text"),
         )
         .expect("restored config json");
         let agents_list = restored_openclaw_config["agents"]["list"]
@@ -5242,8 +5241,7 @@ mod tests {
         .expect("import mirror");
 
         let restored_openclaw_config = serde_json::from_str::<Value>(
-            &fs::read_to_string(&openclaw_config_file_path(&paths))
-                .expect("restored config text"),
+            &fs::read_to_string(&openclaw_config_file_path(&paths)).expect("restored config text"),
         )
         .expect("restored config json");
         let extra_dirs = restored_openclaw_config["skills"]["load"]["extraDirs"]
@@ -5291,8 +5289,7 @@ mod tests {
         .expect("import mirror");
 
         let restored_openclaw_config = serde_json::from_str::<Value>(
-            &fs::read_to_string(&openclaw_config_file_path(&paths))
-                .expect("restored config text"),
+            &fs::read_to_string(&openclaw_config_file_path(&paths)).expect("restored config text"),
         )
         .expect("restored config json");
         let plugin_paths = restored_openclaw_config["plugins"]["load"]["paths"]

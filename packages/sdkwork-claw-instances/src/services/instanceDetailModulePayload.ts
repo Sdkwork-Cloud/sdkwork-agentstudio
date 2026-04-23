@@ -129,7 +129,9 @@ function buildHermesReadinessChecks(
 ): HermesReadinessCheckItem[] {
   const deploymentMode = baseDetail?.instance.deploymentMode;
   const hasSupportedDeploymentTarget =
-    deploymentMode === 'remote' || deploymentMode === 'local-external';
+    deploymentMode === 'remote' ||
+    deploymentMode === 'local-external' ||
+    deploymentMode === 'local-managed';
   const hasPublishedEndpoints = (baseDetail?.connectivity.endpoints.length || 0) > 0;
   const hasObservability = baseDetail?.observability.logAvailable === true;
 

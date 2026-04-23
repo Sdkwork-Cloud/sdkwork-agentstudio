@@ -62,7 +62,7 @@ import {
   isProviderCenterControlledOpenClawDetail,
   shouldProbeOpenClawGateway,
 } from './openClawManagementCapabilities.ts';
-import { resolveOpenClawConfigPathWithFallback } from './openClawConfigPathFallback.ts';
+import { resolveKernelConfigPathWithFallback } from './kernelConfigPathFallback.ts';
 import { buildRemoteOpenClawProviderConfigPatch } from './openClawProviderConfigPatch.ts';
 
 export interface CreateInstanceDTO {
@@ -569,7 +569,7 @@ class InstanceService implements IInstanceService {
       return null;
     }
 
-    const configPath = resolveOpenClawConfigPathWithFallback(
+    const configPath = resolveKernelConfigPathWithFallback(
       this.dependencies.kernelConfigAttachmentApi,
       resolvedDetail,
     );

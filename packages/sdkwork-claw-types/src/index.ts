@@ -1,3 +1,7 @@
+import type {
+  KernelChatMessage,
+  KernelChatSession,
+} from './kernelChatModel.ts';
 import type { PaginatedResult, PaginationParams } from './service.ts';
 
 export * from './service.ts';
@@ -6,6 +10,7 @@ export * from './openclawMirror.ts';
 export * from './kernelReleaseCatalog.ts';
 export * from './openclawRelease.ts';
 export * from './kernelModel.ts';
+export * from './builtInKernelIdentity.ts';
 
 export interface Agent {
   id: string;
@@ -636,6 +641,7 @@ export interface StudioConversationMessage {
   senderInstanceId?: string | null;
   status: StudioConversationMessageStatus;
   attachments?: StudioConversationAttachment[];
+  kernelMessage?: KernelChatMessage | null;
 }
 
 export interface StudioConversationSummary {
@@ -645,8 +651,10 @@ export interface StudioConversationSummary {
   participantInstanceIds: string[];
   createdAt: number;
   updatedAt: number;
+  lastSeenAt?: number | null;
   messageCount: number;
   lastMessagePreview?: string;
+  kernelSession?: KernelChatSession | null;
 }
 
 export interface StudioConversationRecord extends StudioConversationSummary {

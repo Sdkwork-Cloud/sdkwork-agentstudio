@@ -93,22 +93,22 @@ assertPath(
 const rootPackage = readJson('package.json');
 const serverPackage = readJson('packages/sdkwork-claw-server/package.json');
 
-if (rootPackage?.scripts?.['server:dev'] !== 'pnpm --dir packages/sdkwork-claw-server dev') {
+if (rootPackage?.scripts?.['server:dev'] !== 'sdkwork-run-pnpm --dir packages/sdkwork-claw-server dev') {
   failures.push('Root package server:dev script must delegate to the server package dev entry.');
 }
-if (rootPackage?.scripts?.['server:build'] !== 'node scripts/run-claw-server-build.mjs') {
+if (rootPackage?.scripts?.['server:build'] !== 'sdkwork-run-node scripts/run-claw-server-build.mjs') {
   failures.push('Root package server:build script must use the shared server build helper.');
 }
 if (
   rootPackage?.scripts?.['check:server']
-  !== 'node scripts/check-server-platform-foundation.mjs && node scripts/run-cargo.mjs test --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml'
+  !== 'sdkwork-run-node scripts/check-server-platform-foundation.mjs && sdkwork-run-node scripts/run-cargo.mjs test --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml'
 ) {
   failures.push('Root package check:server script must execute cargo through the shared Rust toolchain launcher.');
 }
 if (serverPackage?.scripts?.dev !== 'cargo run --manifest-path src-host/Cargo.toml') {
   failures.push('Server package dev script must run the native Rust host entry.');
 }
-if (serverPackage?.scripts?.build !== 'node ../../scripts/run-claw-server-build.mjs') {
+if (serverPackage?.scripts?.build !== 'sdkwork-run-node ../../scripts/run-claw-server-build.mjs') {
   failures.push('Server package build script must use the shared server build helper.');
 }
 

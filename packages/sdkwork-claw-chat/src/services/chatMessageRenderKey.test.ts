@@ -87,3 +87,23 @@ await runTest(
     );
   },
 );
+
+await runTest(
+  'resolveChatMessageRenderKey prefers authoritative message sequence before index-based fallbacks',
+  () => {
+    assert.equal(
+      resolveChatMessageRenderKey({
+        sessionId: 'session-a',
+        message: {
+          role: 'assistant',
+          seq: 7,
+        } as {
+          role: string;
+          seq: number;
+        },
+        index: 4,
+      }),
+      'session:session-a:msg:seq:7',
+    );
+  },
+);

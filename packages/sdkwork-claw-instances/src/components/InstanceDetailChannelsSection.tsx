@@ -68,6 +68,8 @@ export function InstanceDetailChannelsSection({
         saveAction: t('common.save'),
         savingAction: t('common.loading'),
         deleteConfigurationAction: t('channels.page.actions.deleteConfiguration'),
+        validationRequiredField: (fieldLabel: string) =>
+          t('channels.page.validation.requiredField', { field: fieldLabel }),
       }}
       onOpenOfficialLink={(_channel, link) => void onOpenOfficialLink(link.href)}
       onSelectedChannelIdChange={onSelectedChannelIdChange}

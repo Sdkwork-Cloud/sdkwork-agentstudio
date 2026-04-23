@@ -59,7 +59,7 @@ await runTest('shouldLoadChatDirectAgents skips the direct-agent catalog for ope
     shouldLoadChatDirectAgents({
       activeInstanceId: 'instance-1',
       isRouteSupported: true,
-      isOpenClawGateway: true,
+      agentCatalogMode: 'kernelCatalog',
       isSessionContextDrawerOpen: true,
       selectedAgentId: 'agent-1',
     }),
@@ -67,34 +67,34 @@ await runTest('shouldLoadChatDirectAgents skips the direct-agent catalog for ope
   );
 });
 
-await runTest('shouldLoadChatDirectAgents hydrates direct agents only when the selector is opened or already selected', () => {
+await runTest('shouldLoadChatDirectAgents always hydrates direct agents for active shared-catalog chats so the agent rail can render immediately', () => {
   assert.equal(
     shouldLoadChatDirectAgents({
       activeInstanceId: null,
       isRouteSupported: true,
-      isOpenClawGateway: false,
+      agentCatalogMode: 'sharedCatalog',
       isSessionContextDrawerOpen: true,
       selectedAgentId: null,
     }),
-    false,
+      false,
   );
 
   assert.equal(
     shouldLoadChatDirectAgents({
       activeInstanceId: 'instance-1',
       isRouteSupported: true,
-      isOpenClawGateway: false,
+      agentCatalogMode: 'sharedCatalog',
       isSessionContextDrawerOpen: false,
       selectedAgentId: null,
     }),
-    false,
+    true,
   );
 
   assert.equal(
     shouldLoadChatDirectAgents({
       activeInstanceId: 'instance-1',
       isRouteSupported: true,
-      isOpenClawGateway: false,
+      agentCatalogMode: 'sharedCatalog',
       isSessionContextDrawerOpen: true,
       selectedAgentId: null,
     }),
@@ -105,7 +105,7 @@ await runTest('shouldLoadChatDirectAgents hydrates direct agents only when the s
     shouldLoadChatDirectAgents({
       activeInstanceId: 'instance-1',
       isRouteSupported: true,
-      isOpenClawGateway: false,
+      agentCatalogMode: 'sharedCatalog',
       isSessionContextDrawerOpen: false,
       selectedAgentId: 'agent-1',
     }),
@@ -118,7 +118,7 @@ await runTest('shouldLoadChatDirectAgents skips direct agents for unsupported ch
     shouldLoadChatDirectAgents({
       activeInstanceId: 'instance-1',
       isRouteSupported: false,
-      isOpenClawGateway: false,
+      agentCatalogMode: 'sharedCatalog',
       isSessionContextDrawerOpen: true,
       selectedAgentId: 'agent-1',
     }),

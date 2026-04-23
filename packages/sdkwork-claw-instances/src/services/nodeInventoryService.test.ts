@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import {
+  buildBuiltInKernelPrimaryInstanceId,
+  STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+} from '@sdkwork/claw-types';
 
 const DEFAULT_RUNTIME_VERSION = 'v2026.4.11';
 const DEFAULT_NODE_VERSION = '22.0.0';
+const BUILT_IN_PHOENIXCLAW_INSTANCE_ID =
+  buildBuiltInKernelPrimaryInstanceId('phoenixclaw') ?? 'managed-phoenixclaw-primary';
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
   try {
@@ -90,7 +96,7 @@ function createKernelSnapshot(overrides: Record<string, unknown> = {}) {
 
 function createInstance(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'local-built-in',
+    id: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
     name: 'Local Built-In',
     description: 'Packaged local OpenClaw kernel.',
     runtimeKind: 'openclaw',
@@ -150,8 +156,8 @@ function createHostPlatformStatus(overrides: Record<string, unknown> = {}) {
 
 function createNodeSession(overrides: Record<string, unknown> = {}) {
   return {
-    sessionId: 'desktop-combined-local-built-in',
-    nodeId: 'local-built-in',
+    sessionId: `desktop-combined-${STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID}`,
+    nodeId: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
     state: 'admitted',
     compatibilityState: 'compatible',
     desiredStateRevision: 6,
@@ -216,13 +222,19 @@ if (nodeInventoryServiceModule) {
 
       const inventory = await service.listNodes();
 
-      assert.deepEqual(inventory.map((node) => node.id), ['local-built-in', 'remote-attached']);
+      assert.deepEqual(inventory.map((node) => node.id), [
+        STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+        'remote-attached',
+      ]);
       assert.equal(inventory[0]?.kind, 'localPrimary');
       assert.equal(inventory[0]?.management, 'managed');
       assert.equal(inventory[0]?.topologyKind, 'localManagedNative');
       assert.equal(inventory[0]?.health, 'ok');
       assert.equal(inventory[0]?.version, DEFAULT_RUNTIME_VERSION);
-      assert.equal(inventory[0]?.detailPath, '/instances/local-built-in');
+      assert.equal(
+        inventory[0]?.detailPath,
+        `/instances/${STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID}`,
+      );
       assert.equal(inventory[0]?.sessionState, 'admitted');
       assert.equal(inventory[1]?.kind, 'attachedRemote');
       assert.equal(inventory[1]?.management, 'attached');
@@ -249,19 +261,19 @@ if (nodeInventoryServiceModule) {
           getStatus: async () => createHostPlatformStatus(),
           listNodeSessions: async () => [
             createNodeSession({
-              nodeId: 'local-built-in-phoenixclaw',
+              nodeId: BUILT_IN_PHOENIXCLAW_INSTANCE_ID,
             }),
           ],
         },
         studioApi: {
           getInstances: async () => [
             createInstance({
-              id: 'local-built-in',
+              id: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
               name: 'Local Built-In OpenClaw',
               description: 'Packaged local OpenClaw kernel.',
             }),
             createInstance({
-              id: 'local-built-in-phoenixclaw',
+              id: BUILT_IN_PHOENIXCLAW_INSTANCE_ID,
               name: 'Local PhoenixClaw',
               description: 'Packaged future built-in kernel.',
               runtimeKind: 'phoenixclaw',
@@ -278,16 +290,24 @@ if (nodeInventoryServiceModule) {
 
       const inventory = await service.listNodes();
 
-      const phoenixNode = inventory.find((node) => node.id === 'local-built-in-phoenixclaw');
-      const openClawNode = inventory.find((node) => node.id === 'local-built-in');
+      const phoenixNode = inventory.find((node) => node.id === BUILT_IN_PHOENIXCLAW_INSTANCE_ID);
+      const openClawNode = inventory.find(
+        (node) => node.id === STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+      );
 
       assert.equal(inventory.length, 2);
       assert.equal(phoenixNode?.source, 'kernel');
       assert.equal(phoenixNode?.kind, 'localPrimary');
-      assert.equal(phoenixNode?.detailPath, '/instances/local-built-in-phoenixclaw');
+      assert.equal(
+        phoenixNode?.detailPath,
+        `/instances/${BUILT_IN_PHOENIXCLAW_INSTANCE_ID}`,
+      );
       assert.equal(phoenixNode?.sessionState, 'admitted');
       assert.equal(openClawNode?.source, 'instance');
-      assert.equal(openClawNode?.detailPath, '/instances/local-built-in');
+      assert.equal(
+        openClawNode?.detailPath,
+        `/instances/${STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID}`,
+      );
     },
   );
 
@@ -310,7 +330,7 @@ if (nodeInventoryServiceModule) {
           getStatus: async () => createHostPlatformStatus(),
           listNodeSessions: async () => [
             createNodeSession({
-              nodeId: 'local-built-in-phoenixclaw',
+              nodeId: BUILT_IN_PHOENIXCLAW_INSTANCE_ID,
             }),
           ],
         },
@@ -322,7 +342,7 @@ if (nodeInventoryServiceModule) {
       const inventory = await service.listNodes();
 
       assert.equal(inventory.length, 1);
-      assert.equal(inventory[0]?.id, 'local-built-in-phoenixclaw');
+      assert.equal(inventory[0]?.id, BUILT_IN_PHOENIXCLAW_INSTANCE_ID);
       assert.equal(inventory[0]?.source, 'kernel');
       assert.equal(inventory[0]?.sessionState, 'admitted');
     },

@@ -2,6 +2,12 @@ import { studio } from '@sdkwork/claw-infrastructure';
 import type { StudioInstanceRecord } from '@sdkwork/claw-types';
 import type { KernelChatAdapter, KernelChatAdapterCapabilities } from './kernelChatAdapter.ts';
 import { createKernelChatAdapterCapabilities } from './kernelChatAdapter.ts';
+import {
+  isHermesChatInstance,
+  isManagedHermesAuthoritativeChatInstance,
+  isOpenClawGatewayChatInstance,
+  isTransportBackedChatInstance,
+} from './kernelChatInstancePolicy.ts';
 
 export interface KernelChatAdapterResolution {
   instanceId: string;
@@ -32,29 +38,6 @@ export interface KernelChatAdapterRegistryDependencyOverrides {
   createTransportBackedAdapter?: KernelChatAdapterRegistryDependencies['createTransportBackedAdapter'];
   createHermesAdapter?: KernelChatAdapterRegistryDependencies['createHermesAdapter'];
   createUnsupportedAdapter?: KernelChatAdapterRegistryDependencies['createUnsupportedAdapter'];
-}
-
-const TRANSPORT_BACKED_CHAT_TRANSPORTS = new Set<StudioInstanceRecord['transportKind']>([
-  'zeroclawHttp',
-  'openaiHttp',
-  'customHttp',
-  'ironclawWeb',
-  'customWs',
-]);
-
-function isOpenClawGatewayInstance(instance: StudioInstanceRecord) {
-  return (
-    instance.runtimeKind === 'openclaw' ||
-    instance.transportKind === 'openclawGatewayWs'
-  );
-}
-
-function isHermesInstance(instance: StudioInstanceRecord) {
-  return instance.runtimeKind === 'hermes';
-}
-
-function isTransportBackedChatInstance(instance: StudioInstanceRecord) {
-  return TRANSPORT_BACKED_CHAT_TRANSPORTS.has(instance.transportKind);
 }
 
 function createDefaultUnsupportedAdapter(
@@ -103,12 +86,14 @@ class DefaultKernelChatAdapterRegistry {
       };
     }
 
-    const adapter = isOpenClawGatewayInstance(instance)
+    const adapter = isOpenClawGatewayChatInstance(instance)
       ? this.dependencies.createOpenClawGatewayAdapter(instance)
-      : isHermesInstance(instance)
+      : isManagedHermesAuthoritativeChatInstance(instance)
         ? this.dependencies.createHermesAdapter(instance)
-        : isTransportBackedChatInstance(instance)
-          ? this.dependencies.createTransportBackedAdapter(instance)
+      : isTransportBackedChatInstance(instance)
+        ? this.dependencies.createTransportBackedAdapter(instance)
+        : isHermesChatInstance(instance)
+          ? this.dependencies.createHermesAdapter(instance)
           : this.dependencies.createUnsupportedAdapter({
               instance,
               reason: 'This runtime does not expose a standardized kernel chat adapter.',

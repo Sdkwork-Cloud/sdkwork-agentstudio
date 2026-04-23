@@ -9,8 +9,8 @@
     "react-i18next": "^17.0.2"
   },
   "scripts": {
-    "check:locales": "node ./scripts/check-locale-structure.mjs",
-    "sync:locales": "node ./scripts/sync-compatibility-locales.mjs"
+    "check:locales": "sdkwork-run-node ./scripts/check-locale-structure.mjs",
+    "sync:locales": "sdkwork-run-node ./scripts/sync-compatibility-locales.mjs"
   },
   "exports": {
     ".": "./src/index.ts"

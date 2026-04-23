@@ -683,6 +683,61 @@ test('release asset packager explains how to build missing desktop and server re
   }
 });
 
+test('server asset packager rejects shared release binaries when an explicit target triple is required', async () => {
+  const packagerPath = path.join(rootDir, 'scripts', 'release', 'package-release-assets.mjs');
+  const packager = await import(pathToFileURL(packagerPath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-explicit-target-'));
+  const outputDir = path.join(tempRoot, 'release-assets');
+  const serverTargetDir = path.join(tempRoot, 'server-target');
+  const webDistDir = path.join(tempRoot, 'web-dist');
+  const envExamplePath = path.join(tempRoot, '.env.example');
+
+  try {
+    writeSyntheticServerRuntime({
+      serverTargetDir,
+      targetTriple: '',
+      binaryName: 'claw-server',
+      webDistDir,
+      envExamplePath,
+    });
+
+    assert.throws(
+      () => packager.packageServerAssets({
+        releaseTag: 'release-2026-04-21-01',
+        platform: 'linux',
+        arch: 'x64',
+        target: 'x86_64-unknown-linux-gnu',
+        outputDir,
+        serverBuildTargetDir: serverTargetDir,
+        serverWebDistDir: webDistDir,
+        serverEnvPath: envExamplePath,
+      }),
+      (error) => {
+        assert.match(
+          error.message,
+          /Missing server binary output\./,
+        );
+        assert.match(
+          error.message,
+          /x86_64-unknown-linux-gnu[\\/]+release[\\/]+claw-server/,
+        );
+        assert.doesNotMatch(
+          error.message,
+          /server-target[\\/]+release[\\/]+claw-server/,
+        );
+        assert.match(
+          error.message,
+          /pnpm server:build -- --target x86_64-unknown-linux-gnu/,
+        );
+        return true;
+      },
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('release asset packager exposes desktop, web, server, container, and kubernetes packaging entrypoints', async () => {
   const packagerPath = path.join(rootDir, 'scripts', 'release', 'package-release-assets.mjs');
   const packager = await import(pathToFileURL(packagerPath).href);
@@ -838,7 +893,7 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
     writeSyntheticServerRuntime({
       serverTargetDir,
       targetTriple: 'x86_64-unknown-linux-gnu',
-      binaryName: 'sdkwork-claw-server',
+      binaryName: 'claw-server',
       webDistDir,
       envExamplePath,
     });
@@ -873,7 +928,7 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
 
     assert.equal(existsSync(archivePath), true, `missing expected server archive ${archivePath}`);
     assert.equal(existsSync(`${archivePath}.sha256.txt`), true, 'missing expected server checksum');
-    assert.equal(archiveEntries.has(`${bundleRoot}/bin/sdkwork-claw-server`), true);
+    assert.equal(archiveEntries.has(`${bundleRoot}/bin/claw-server`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/web/dist/index.html`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/.env.example`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/start-claw-server.sh`), true);
@@ -881,6 +936,22 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
     assert.match(
       archiveEntries.get(`${bundleRoot}/start-claw-server.sh`).content.toString('utf8'),
       /CLAW_SERVER_WEB_DIST="\$\{CLAW_SERVER_WEB_DIST:-\$SCRIPT_DIR\/web\/dist\}"/,
+    );
+    assert.match(
+      archiveEntries.get(`${bundleRoot}/README.md`).content.toString('utf8'),
+      /Run the canonical bundled server binary from the extracted directory root:/,
+    );
+    assert.match(
+      archiveEntries.get(`${bundleRoot}/README.md`).content.toString('utf8'),
+      /\.\/bin\/claw-server/,
+    );
+    assert.match(
+      archiveEntries.get(`${bundleRoot}/README.md`).content.toString('utf8'),
+      /native binary automatically defaults[\s\S]*CLAW_SERVER_WEB_DIST[\s\S]*CLAW_SERVER_DATA_DIR/,
+    );
+    assert.match(
+      archiveEntries.get(`${bundleRoot}/README.md`).content.toString('utf8'),
+      /start-claw-server\.sh` and `start-claw-server\.cmd` remain optional convenience wrappers[\s\S]*same native binary/,
     );
 
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -913,7 +984,7 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
     writeSyntheticServerRuntime({
       serverTargetDir,
       targetTriple: 'x86_64-unknown-linux-gnu',
-      binaryName: 'sdkwork-claw-server',
+      binaryName: 'claw-server',
       webDistDir,
       envExamplePath,
     });
@@ -952,7 +1023,7 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
 
     assert.equal(existsSync(archivePath), true, `missing expected container archive ${archivePath}`);
     assert.equal(existsSync(`${archivePath}.sha256.txt`), true, 'missing expected container checksum');
-    assert.equal(archiveEntries.has(`${bundleRoot}/app/bin/sdkwork-claw-server`), true);
+    assert.equal(archiveEntries.has(`${bundleRoot}/app/bin/claw-server`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/app/start-claw-server.sh`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/deploy/docker/Dockerfile`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/deploy/docker/docker-compose.nvidia-cuda.yml`), true);
@@ -973,6 +1044,10 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
       .toString('utf8');
     const deployReadmeSource = archiveEntries
       .get(`${bundleRoot}/deploy/docker/README.md`)
+      .content
+      .toString('utf8');
+    const dockerfileSource = archiveEntries
+      .get(`${bundleRoot}/deploy/docker/Dockerfile`)
       .content
       .toString('utf8');
     const composeDir = `${bundleRoot}/deploy/docker`;
@@ -1021,6 +1096,21 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
       deployReadmeSource,
       /extracted bundle root[\s\S]*deploy\/docker\/docker-compose\.yml/i,
       'packaged deployment README must preserve the extracted bundle command surface for operators',
+    );
+    assert.match(
+      deployReadmeSource,
+      /refreshes a matching Linux server binary through an incremental build/i,
+      'packaged deployment README must preserve the local incremental rebuild contract for container packaging',
+    );
+    assert.match(
+      dockerfileSource,
+      /CMD\s+\["\/opt\/claw\/app\/bin\/claw-server"\]/,
+      'packaged dockerfile must launch the canonical bundled claw-server binary directly',
+    );
+    assert.doesNotMatch(
+      dockerfileSource,
+      /CMD\s+\["\/bin\/sh",\s*"\/opt\/claw\/app\/start-claw-server\.sh"\]/,
+      'packaged dockerfile must not launch the optional wrapper script as the container entrypoint',
     );
     assert.match(
       archiveEntries.get(`${bundleRoot}/release-metadata.json`).content.toString('utf8'),

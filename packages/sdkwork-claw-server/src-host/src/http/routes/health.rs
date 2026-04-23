@@ -18,8 +18,7 @@ fn runtime_projection_is_ready(
     websocket_url: Option<&str>,
     active_port: Option<u16>,
 ) -> bool {
-    lifecycle == "ready"
-        && (base_url.is_some() || websocket_url.is_some() || active_port.is_some())
+    lifecycle == "ready" && (base_url.is_some() || websocket_url.is_some() || active_port.is_some())
 }
 
 fn bundled_server_endpoint_is_ready(state: &ServerState, updated_at: u64) -> bool {

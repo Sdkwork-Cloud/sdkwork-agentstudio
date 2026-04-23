@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     body::Bytes,
     extract::{Path, State},
@@ -7,17 +9,16 @@ use axum::{
     Json, Router,
 };
 use sdkwork_claw_host_core::internal::error::{InternalErrorCategory, InternalErrorResolution};
-use sdkwork_claw_host_studio::{StudioOpenClawGatewayInvokePayload, StudioPublicApiProvider};
+use sdkwork_claw_host_studio::{
+    StudioAbortKernelChatRunInput, StudioOpenClawGatewayInvokePayload, StudioPublicApiProvider,
+};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::sync::Arc;
 
 use crate::{
     bootstrap::ServerState,
-    http::{
-        auth::authorize_public_studio_request, error_response::categorized_error_response,
-    },
+    http::{auth::authorize_public_studio_request, error_response::categorized_error_response},
 };
 
 pub fn api_public_routes() -> Router<ServerState> {
@@ -38,6 +39,34 @@ pub fn api_public_routes() -> Router<ServerState> {
         .route(
             "/studio/instances/{id}/config",
             get(get_public_studio_instance_config).put(put_public_studio_instance_config),
+        )
+        .route(
+            "/studio/instances/{id}/kernel-chat/agent-profiles",
+            get(list_public_studio_kernel_chat_agent_profiles),
+        )
+        .route(
+            "/studio/instances/{id}/kernel-chat/sessions",
+            get(list_public_studio_kernel_chat_sessions)
+                .post(create_public_studio_kernel_chat_session),
+        )
+        .route(
+            "/studio/instances/{id}/kernel-chat/sessions/{sessionIdRoute}",
+            get(get_public_studio_kernel_chat_session)
+                .patch(patch_public_studio_kernel_chat_session)
+                .delete(delete_public_studio_kernel_chat_session)
+                .post(post_public_studio_kernel_chat_session_action),
+        )
+        .route(
+            "/studio/instances/{id}/kernel-chat/sessions/{sessionId}/runs",
+            get(list_public_studio_kernel_chat_runs),
+        )
+        .route(
+            "/studio/instances/{id}/kernel-chat/sessions/{sessionId}/runs/{runId}",
+            get(get_public_studio_kernel_chat_run),
+        )
+        .route(
+            "/studio/instances/{id}/kernel-chat/sessions/{sessionId}/messages",
+            get(load_public_studio_kernel_chat_messages),
         )
         .route(
             "/studio/instances/{id}/logs",
@@ -204,12 +233,12 @@ async fn post_public_studio_instance_action(
     };
 
     let response = match action {
-        "start" => provider
-            .start_instance(instance_id)
-            .map_err(|error| studio_public_api_lifecycle_error_response(&state, instance_id, "start", error))?,
-        "stop" => provider
-            .stop_instance(instance_id)
-            .map_err(|error| studio_public_api_lifecycle_error_response(&state, instance_id, "stop", error))?,
+        "start" => provider.start_instance(instance_id).map_err(|error| {
+            studio_public_api_lifecycle_error_response(&state, instance_id, "start", error)
+        })?,
+        "stop" => provider.stop_instance(instance_id).map_err(|error| {
+            studio_public_api_lifecycle_error_response(&state, instance_id, "stop", error)
+        })?,
         "restart" => provider.restart_instance(instance_id).map_err(|error| {
             studio_public_api_lifecycle_error_response(&state, instance_id, "restart", error)
         })?,
@@ -301,6 +330,337 @@ async fn put_public_studio_instance_config(
         })
 }
 
+async fn list_public_studio_kernel_chat_agent_profiles(
+    Path(id): Path<String>,
+    headers: HeaderMap,
+    State(state): State<ServerState>,
+) -> Result<Json<Value>, Response> {
+    authorize_public_studio_request(&headers, &state)?;
+    let provider = require_studio_public_api_provider(&state)?;
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(&state, "list kernel chat agent profiles", move || {
+        provider.list_kernel_chat_agent_profiles(instance_id.as_str())
+    })
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_kernel_chat_error_response(
+            &state,
+            id.as_str(),
+            None,
+            "list kernel chat agent profiles",
+            error,
+        )
+    })
+}
+
+async fn list_public_studio_kernel_chat_sessions(
+    Path(id): Path<String>,
+    headers: HeaderMap,
+    State(state): State<ServerState>,
+) -> Result<Json<Value>, Response> {
+    authorize_public_studio_request(&headers, &state)?;
+    let provider = require_studio_public_api_provider(&state)?;
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(&state, "list kernel chat sessions", move || {
+        provider.list_kernel_chat_sessions(instance_id.as_str())
+    })
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_kernel_chat_error_response(
+            &state,
+            id.as_str(),
+            None,
+            "list kernel chat sessions",
+            error,
+        )
+    })
+}
+
+async fn create_public_studio_kernel_chat_session(
+    Path(id): Path<String>,
+    headers: HeaderMap,
+    State(state): State<ServerState>,
+    Json(mut input): Json<Value>,
+) -> Result<Json<Value>, Response> {
+    authorize_public_studio_request(&headers, &state)?;
+    if let Some(object) = input.as_object_mut() {
+        object.insert("instanceId".to_string(), Value::String(id.clone()));
+    }
+    let provider = require_studio_public_api_provider(&state)?;
+    run_blocking_studio_public_api_call(&state, "create kernel chat session", move || {
+        provider.create_kernel_chat_session(input)
+    })
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_kernel_chat_error_response(
+            &state,
+            id.as_str(),
+            None,
+            "create kernel chat session",
+            error,
+        )
+    })
+}
+
+async fn get_public_studio_kernel_chat_session(
+    Path((id, session_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    State(state): State<ServerState>,
+) -> Result<Json<Value>, Response> {
+    authorize_public_studio_request(&headers, &state)?;
+    let provider = require_studio_public_api_provider(&state)?;
+    let instance_id = id.clone();
+    let requested_session_id = session_id.clone();
+    run_blocking_studio_public_api_call(&state, "get kernel chat session", move || {
+        provider.get_kernel_chat_session(instance_id.as_str(), requested_session_id.as_str())
+    })
+    .await?
+    .map(|record| Json(record.unwrap_or(Value::Null)))
+    .map_err(|error| {
+        studio_public_api_kernel_chat_error_response(
+            &state,
+            id.as_str(),
+            Some(session_id.as_str()),
+            "get kernel chat session",
+            error,
+        )
+    })
+}
+
+async fn patch_public_studio_kernel_chat_session(
+    Path((id, session_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    State(state): State<ServerState>,
+    Json(mut input): Json<Value>,
+) -> Result<Json<Value>, Response> {
+    authorize_public_studio_request(&headers, &state)?;
+    if let Some(object) = input.as_object_mut() {
+        object.insert("instanceId".to_string(), Value::String(id.clone()));
+        object.insert("sessionId".to_string(), Value::String(session_id.clone()));
+    }
+    let provider = require_studio_public_api_provider(&state)?;
+    run_blocking_studio_public_api_call(&state, "patch kernel chat session", move || {
+        provider.patch_kernel_chat_session(input)
+    })
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_kernel_chat_error_response(
+            &state,
+            id.as_str(),
+            Some(session_id.as_str()),
+            "patch kernel chat session",
+            error,
+        )
+    })
+}
+
+async fn delete_public_studio_kernel_chat_session(
+    Path((id, session_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    State(state): State<ServerState>,
+) -> Result<Json<Value>, Response> {
+    authorize_public_studio_request(&headers, &state)?;
+    let provider = require_studio_public_api_provider(&state)?;
+    let instance_id = id.clone();
+    let requested_session_id = session_id.clone();
+    run_blocking_studio_public_api_call(&state, "delete kernel chat session", move || {
+        provider.delete_kernel_chat_session(instance_id.as_str(), requested_session_id.as_str())
+    })
+    .await?
+    .map(|_| Json(Value::Null))
+    .map_err(|error| {
+        studio_public_api_kernel_chat_error_response(
+            &state,
+            id.as_str(),
+            Some(session_id.as_str()),
+            "delete kernel chat session",
+            error,
+        )
+    })
+}
+
+async fn post_public_studio_kernel_chat_session_action(
+    Path((id, session_action)): Path<(String, String)>,
+    headers: HeaderMap,
+    State(state): State<ServerState>,
+    body: Bytes,
+) -> Result<Json<Value>, Response> {
+    authorize_public_studio_request(&headers, &state)?;
+    let Some((session_id, action)) = session_action.rsplit_once(':') else {
+        return Err(studio_public_api_unknown_kernel_chat_action_response(
+            &state,
+            session_action.as_str(),
+        ));
+    };
+    let provider = require_studio_public_api_provider(&state)?;
+
+    match action {
+        "run" => {
+            let mut input: Value = serde_json::from_slice(&body).map_err(|error| {
+                categorized_error_response(
+                    "studio_public_api_invalid_kernel_chat_run_body",
+                    InternalErrorCategory::Validation,
+                    &format!(
+                        "The canonical studio public API could not start a kernel chat run because the request body was invalid JSON: {error}"
+                    ),
+                    StatusCode::BAD_REQUEST,
+                    false,
+                    InternalErrorResolution::FixRequest,
+                    state.host_platform_updated_at(),
+                )
+            })?;
+            if let Some(object) = input.as_object_mut() {
+                object.insert("instanceId".to_string(), Value::String(id.clone()));
+                object.insert(
+                    "sessionId".to_string(),
+                    Value::String(session_id.to_string()),
+                );
+            }
+            run_blocking_studio_public_api_call(&state, "start kernel chat run", move || {
+                provider.start_kernel_chat_run(input)
+            })
+            .await?
+            .map(Json)
+            .map_err(|error| {
+                studio_public_api_kernel_chat_error_response(
+                    &state,
+                    id.as_str(),
+                    Some(session_id),
+                    "start kernel chat run",
+                    error,
+                )
+            })
+        }
+        "abort" => {
+            let input = if body.is_empty() {
+                StudioAbortKernelChatRunInput::default()
+            } else {
+                serde_json::from_slice::<StudioAbortKernelChatRunInput>(&body).map_err(|error| {
+                    categorized_error_response(
+                        "studio_public_api_invalid_kernel_chat_abort_body",
+                        InternalErrorCategory::Validation,
+                        &format!(
+                            "The canonical studio public API could not abort a kernel chat run because the request body was invalid JSON: {error}"
+                        ),
+                        StatusCode::BAD_REQUEST,
+                        false,
+                        InternalErrorResolution::FixRequest,
+                        state.host_platform_updated_at(),
+                    )
+                })?
+            };
+            let instance_id = id.clone();
+            let requested_session_id = session_id.to_string();
+            run_blocking_studio_public_api_call(&state, "abort kernel chat run", move || {
+                provider.abort_kernel_chat_run(
+                    instance_id.as_str(),
+                    requested_session_id.as_str(),
+                    input.run_id,
+                )
+            })
+            .await?
+            .map(|aborted| Json(Value::Bool(aborted)))
+            .map_err(|error| {
+                studio_public_api_kernel_chat_error_response(
+                    &state,
+                    id.as_str(),
+                    Some(session_id),
+                    "abort kernel chat run",
+                    error,
+                )
+            })
+        }
+        _ => Err(studio_public_api_unknown_kernel_chat_action_response(
+            &state,
+            session_action.as_str(),
+        )),
+    }
+}
+
+async fn load_public_studio_kernel_chat_messages(
+    Path((id, session_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    State(state): State<ServerState>,
+) -> Result<Json<Value>, Response> {
+    authorize_public_studio_request(&headers, &state)?;
+    let provider = require_studio_public_api_provider(&state)?;
+    let instance_id = id.clone();
+    let requested_session_id = session_id.clone();
+    run_blocking_studio_public_api_call(&state, "load kernel chat messages", move || {
+        provider.load_kernel_chat_messages(instance_id.as_str(), requested_session_id.as_str())
+    })
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_kernel_chat_error_response(
+            &state,
+            id.as_str(),
+            Some(session_id.as_str()),
+            "load kernel chat messages",
+            error,
+        )
+    })
+}
+
+async fn list_public_studio_kernel_chat_runs(
+    Path((id, session_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    State(state): State<ServerState>,
+) -> Result<Json<Value>, Response> {
+    authorize_public_studio_request(&headers, &state)?;
+    let provider = require_studio_public_api_provider(&state)?;
+    let instance_id = id.clone();
+    let requested_session_id = session_id.clone();
+    run_blocking_studio_public_api_call(&state, "list kernel chat runs", move || {
+        provider.list_kernel_chat_runs(instance_id.as_str(), requested_session_id.as_str())
+    })
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_kernel_chat_error_response(
+            &state,
+            id.as_str(),
+            Some(session_id.as_str()),
+            "list kernel chat runs",
+            error,
+        )
+    })
+}
+
+async fn get_public_studio_kernel_chat_run(
+    Path((id, session_id, run_id)): Path<(String, String, String)>,
+    headers: HeaderMap,
+    State(state): State<ServerState>,
+) -> Result<Json<Value>, Response> {
+    authorize_public_studio_request(&headers, &state)?;
+    let provider = require_studio_public_api_provider(&state)?;
+    let instance_id = id.clone();
+    let requested_session_id = session_id.clone();
+    let requested_run_id = run_id.clone();
+    run_blocking_studio_public_api_call(&state, "get kernel chat run", move || {
+        provider.get_kernel_chat_run(
+            instance_id.as_str(),
+            requested_session_id.as_str(),
+            requested_run_id.as_str(),
+        )
+    })
+    .await?
+    .map(|record| Json(record.unwrap_or(Value::Null)))
+    .map_err(|error| {
+        studio_public_api_kernel_chat_error_response(
+            &state,
+            id.as_str(),
+            Some(session_id.as_str()),
+            "get kernel chat run",
+            error,
+        )
+    })
+}
+
 async fn get_public_studio_instance_logs(
     Path(id): Path<String>,
     headers: HeaderMap,
@@ -331,7 +691,9 @@ async fn post_public_studio_instance_openclaw_gateway_invoke(
     provider
         .invoke_openclaw_gateway(id.as_str(), payload.request, payload.options)
         .map(Json)
-        .map_err(|error| studio_public_api_openclaw_gateway_error_response(&state, id.as_str(), error))
+        .map_err(|error| {
+            studio_public_api_openclaw_gateway_error_response(&state, id.as_str(), error)
+        })
 }
 
 async fn post_public_studio_instance_task(
@@ -458,8 +820,11 @@ async fn post_public_studio_instance_task_action(
     }
 
     if let Some(task_id) = task_id_action.strip_suffix(":status") {
-        let input =
-            parse_task_action_body::<StudioTaskStatusInput>(&state, &body, "update studio task status")?;
+        let input = parse_task_action_body::<StudioTaskStatusInput>(
+            &state,
+            &body,
+            "update studio task status",
+        )?;
         return provider
             .update_instance_task_status(id.as_str(), task_id, input.status)
             .map(|_| Json(Value::Null))
@@ -573,6 +938,24 @@ fn require_studio_public_api_provider(
         .ok_or_else(|| studio_public_api_unavailable_response(state))
 }
 
+async fn run_blocking_studio_public_api_call<T, F>(
+    state: &ServerState,
+    action: &str,
+    call: F,
+) -> Result<Result<T, String>, Response>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+{
+    tokio::task::spawn_blocking(call).await.map_err(|error| {
+        studio_public_api_projection_error(
+            state,
+            action,
+            format!("blocking studio public api task failed: {error}"),
+        )
+    })
+}
+
 fn studio_public_api_unavailable_response(state: &ServerState) -> Response {
     categorized_error_response(
         "studio_public_api_unavailable",
@@ -616,6 +999,23 @@ fn studio_public_api_unknown_task_action_response(
     )
 }
 
+fn studio_public_api_unknown_kernel_chat_action_response(
+    state: &ServerState,
+    session_action: &str,
+) -> Response {
+    categorized_error_response(
+        "studio_public_api_unknown_kernel_chat_action",
+        InternalErrorCategory::Validation,
+        &format!(
+            "The canonical studio public API does not support kernel chat action route \"{session_action}\"."
+        ),
+        StatusCode::NOT_FOUND,
+        false,
+        InternalErrorResolution::FixRequest,
+        state.host_platform_updated_at(),
+    )
+}
+
 fn studio_public_api_projection_error(
     state: &ServerState,
     action: &str,
@@ -630,6 +1030,63 @@ fn studio_public_api_projection_error(
         InternalErrorResolution::Retry,
         state.host_platform_updated_at(),
     )
+}
+
+fn studio_public_api_kernel_chat_error_response(
+    state: &ServerState,
+    instance_id: &str,
+    session_id: Option<&str>,
+    action: &str,
+    error: String,
+) -> Response {
+    let normalized = error.to_ascii_lowercase();
+
+    if normalized.contains("does not exist") {
+        return categorized_error_response(
+            "studio_public_api_instance_missing",
+            InternalErrorCategory::Validation,
+            &format!(
+                "The canonical studio public API could not {action} because studio instance \"{instance_id}\" was not found."
+            ),
+            StatusCode::NOT_FOUND,
+            false,
+            InternalErrorResolution::FixRequest,
+            state.host_platform_updated_at(),
+        );
+    }
+
+    if normalized.contains("does not expose managed hermes kernel chat") {
+        return categorized_error_response(
+            "studio_public_api_kernel_chat_unavailable",
+            InternalErrorCategory::State,
+            &format!(
+                "The canonical studio public API cannot {action} for studio instance \"{instance_id}\" because managed Hermes kernel chat is not available on the requested projection."
+            ),
+            StatusCode::CONFLICT,
+            false,
+            InternalErrorResolution::FetchLatestProjection,
+            state.host_platform_updated_at(),
+        );
+    }
+
+    if normalized.contains("kernel chat session") && normalized.contains('\"') {
+        return categorized_error_response(
+            "studio_public_api_kernel_chat_session_missing",
+            InternalErrorCategory::Validation,
+            &format!(
+                "The canonical studio public API could not {action} because kernel chat session {} was not found for studio instance \"{instance_id}\".",
+                session_id
+                    .map(|value| format!("\"{value}\""))
+                    .unwrap_or_else(|| "\"unknown\"".to_string())
+            ),
+            StatusCode::NOT_FOUND,
+            false,
+            InternalErrorResolution::FixRequest,
+            state.host_platform_updated_at(),
+        );
+    }
+
+    studio_public_api_projection_error(state, action, error)
 }
 
 fn studio_public_api_workbench_error_response(
@@ -699,11 +1156,7 @@ fn studio_public_api_lifecycle_error_response(
     )
 }
 
-fn parse_task_action_body<T>(
-    state: &ServerState,
-    body: &Bytes,
-    action: &str,
-) -> Result<T, Response>
+fn parse_task_action_body<T>(state: &ServerState, body: &Bytes, action: &str) -> Result<T, Response>
 where
     T: DeserializeOwned,
 {

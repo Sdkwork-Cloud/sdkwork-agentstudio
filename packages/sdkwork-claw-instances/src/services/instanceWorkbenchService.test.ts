@@ -10,6 +10,8 @@ import {
   type InstanceWorkbenchServiceDependencyOverrides,
 } from './instanceWorkbenchServiceCore.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 function runTest(name: string, fn: () => Promise<void> | void) {
   return Promise.resolve()
     .then(fn)
@@ -500,9 +502,9 @@ function createOpenClawDetail(
 
 function createBuiltInOpenClawDetail(): StudioInstanceDetailRecord {
   return {
-    ...createOpenClawDetail('local-built-in'),
+    ...createOpenClawDetail(BUILT_IN_INSTANCE_ID),
     instance: {
-      ...createOpenClawDetail('local-built-in').instance,
+      ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
       isBuiltIn: true,
       isDefault: true,
       deploymentMode: 'local-managed',
@@ -511,7 +513,7 @@ function createBuiltInOpenClawDetail(): StudioInstanceDetailRecord {
       websocketUrl: 'ws://127.0.0.1:18789',
     },
     config: {
-      ...createOpenClawDetail('local-built-in').config,
+      ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).config,
       baseUrl: 'http://127.0.0.1:18789',
       websocketUrl: 'ws://127.0.0.1:18789',
     },
@@ -2378,7 +2380,7 @@ await runTest('getInstanceWorkbench keeps Provider Center managed llmProviders a
       },
     });
 
-    const workbench = await service.getInstanceWorkbench('local-built-in');
+    const workbench = await service.getInstanceWorkbench(BUILT_IN_INSTANCE_ID);
 
     assert.ok(workbench);
     assert.deepEqual(
@@ -3131,7 +3133,7 @@ await runTest(
       },
     });
 
-    const workbench = await service.getInstanceWorkbench('local-built-in');
+    const workbench = await service.getInstanceWorkbench(BUILT_IN_INSTANCE_ID);
 
     assert.ok(workbench);
     assert.ok(gatewayCalls.includes('getConfig'));
@@ -3197,7 +3199,7 @@ await runTest(
       },
     });
 
-    const workbench = await service.getInstanceWorkbench('local-built-in');
+    const workbench = await service.getInstanceWorkbench(BUILT_IN_INSTANCE_ID);
     const task = workbench?.tasks.find((entry) => entry.id === 'job-ops-daily');
 
     assert.ok(task);
@@ -3616,7 +3618,7 @@ await runTest(
       },
     });
 
-    const workbench = await service.getInstanceWorkbench('local-built-in');
+    const workbench = await service.getInstanceWorkbench(BUILT_IN_INSTANCE_ID);
 
     assert.ok(workbench);
     assert.equal(workbench?.tasks.length, 1);
@@ -3632,11 +3634,11 @@ await runTest(
     assert.deepEqual(executions, [backendExecution]);
     assert.deepEqual(gatewayTaskCalls, []);
     assert.deepEqual(studioCalls, [
-      ['cloneInstanceTask', 'local-built-in', 'backend-task-1', 'Backend Snapshot Task Copy'],
-      ['runInstanceTaskNow', 'local-built-in', 'backend-task-1'],
-      ['listInstanceTaskExecutions', 'local-built-in', 'backend-task-1'],
-      ['updateInstanceTaskStatus', 'local-built-in', 'backend-task-1', 'paused'],
-      ['deleteInstanceTask', 'local-built-in', 'backend-task-1'],
+      ['cloneInstanceTask', BUILT_IN_INSTANCE_ID, 'backend-task-1', 'Backend Snapshot Task Copy'],
+      ['runInstanceTaskNow', BUILT_IN_INSTANCE_ID, 'backend-task-1'],
+      ['listInstanceTaskExecutions', BUILT_IN_INSTANCE_ID, 'backend-task-1'],
+      ['updateInstanceTaskStatus', BUILT_IN_INSTANCE_ID, 'backend-task-1', 'paused'],
+      ['deleteInstanceTask', BUILT_IN_INSTANCE_ID, 'backend-task-1'],
     ]);
     await assert.rejects(service.runTaskNow('backend-task-1'), /Task is not available/i);
   },
@@ -3733,7 +3735,7 @@ await runTest(
       },
     });
 
-    await service.createTask('local-built-in', {
+    await service.createTask(BUILT_IN_INSTANCE_ID, {
       name: 'Created Backend Task',
       description: 'Created through backend bridge.',
       prompt: 'Created through backend bridge.',
@@ -3751,7 +3753,7 @@ await runTest(
       deliveryMode: 'publishSummary',
     });
 
-    await service.updateTask('local-built-in', 'backend-task-1', {
+    await service.updateTask(BUILT_IN_INSTANCE_ID, 'backend-task-1', {
       name: 'Backend Snapshot Task Updated',
       payload: {
         kind: 'agentTurn',
@@ -3765,11 +3767,11 @@ await runTest(
       [
         {
           name: 'createInstanceTask',
-          instanceId: 'local-built-in',
+          instanceId: BUILT_IN_INSTANCE_ID,
         },
         {
           name: 'updateInstanceTask',
-          instanceId: 'local-built-in',
+          instanceId: BUILT_IN_INSTANCE_ID,
         },
       ],
     );

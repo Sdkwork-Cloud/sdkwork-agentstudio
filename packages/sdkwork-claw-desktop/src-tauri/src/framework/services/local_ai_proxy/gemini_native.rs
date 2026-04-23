@@ -2,9 +2,8 @@ use super::{
     observability, request_context,
     response_io::{build_buffered_upstream_response, ProxyRouteOutcome},
     streaming,
-    support::proxy_error,
     types::{LocalAiProxyAppState, LocalAiProxyTokenUsage, ProxyHttpResult},
-    upstream, LocalAiProxyRouteSnapshot, GEMINI_CLIENT_PROTOCOL, X_GOOG_API_KEY_HEADER,
+    LocalAiProxyRouteSnapshot, GEMINI_CLIENT_PROTOCOL, X_GOOG_API_KEY_HEADER,
 };
 use axum::{
     body::Bytes,
@@ -13,6 +12,8 @@ use axum::{
     response::Response,
     Json,
 };
+use sdkwork_local_api_proxy_native::support::proxy_error;
+use sdkwork_local_api_proxy_native::upstream::build_gemini_upstream_request_url;
 use serde_json::{json, Value};
 use std::time::Instant;
 
@@ -122,7 +123,7 @@ async fn model_action_handler(
     let result = async {
         let response = state
             .client
-            .post(upstream::build_gemini_upstream_request_url(
+            .post(build_gemini_upstream_request_url(
                 route,
                 api_version,
                 &model_action,

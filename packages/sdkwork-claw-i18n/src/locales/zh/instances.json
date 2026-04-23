@@ -361,7 +361,7 @@
     "modules": {
       "hermes": {
         "eyebrow": "Hermes \u5185\u6838",
-        "description": "Hermes \u4ee5\u5916\u90e8\u6258\u7ba1\u5185\u6838\u65b9\u5f0f\u8fd0\u884c\u3002\u8be5\u8be6\u60c5\u6a21\u5757\u805a\u7126\u4f20\u8f93\u5f62\u6001\u3001\u5916\u90e8\u8fd0\u884c\u65f6\u6807\u51c6\u3001\u6570\u636e\u8bbf\u95ee\u9762\uff0c\u4ee5\u53ca\u5728\u53d7\u652f\u6301\u7684\u672c\u5730\u3001WSL2 \u548c\u8fdc\u7a0b Linux \u90e8\u7f72\u4e0b\u4fdd\u6301\u7a33\u5b9a\u63a5\u5165\u6240\u9700\u7684\u8fd0\u884c\u8bc1\u636e\u3002",
+        "description": "Hermes \u8fd0\u884c\u5728\u6807\u51c6\u5316\u7684\u53d7\u652f\u6301\u5bbf\u4e3b\u73af\u5883\u4e2d\u3002\u8be5\u8be6\u60c5\u6a21\u5757\u805a\u7126\u4f20\u8f93\u5f62\u6001\u3001\u8fd0\u884c\u65f6\u6807\u51c6\u3001user-root \u5185\u6838\u72b6\u6001\uff0c\u4ee5\u53ca\u5728\u53d7\u652f\u6301\u7684 local-managed\u3001local-external\u3001WSL2 \u548c\u8fdc\u7a0b Linux \u90e8\u7f72\u4e0b\u4fdd\u6301\u7a33\u5b9a\u63a5\u5165\u6240\u9700\u7684\u8fd0\u884c\u8bc1\u636e\u3002",
         "metrics": {
           "runtime": "\u8fd0\u884c\u65f6",
           "deployment": "\u90e8\u7f72\u65b9\u5f0f",
@@ -387,8 +387,8 @@
           "title": "\u5c31\u7eea\u6001\u52bf",
           "deploymentTarget": {
             "label": "\u90e8\u7f72\u76ee\u6807",
-            "configured": "\u8be5\u5b9e\u4f8b\u5df2\u7ecf\u5448\u73b0\u53d7\u652f\u6301\u7684 Hermes \u90e8\u7f72\u5f62\u6001\u3002Hermes \u53ef\u4ee5\u4f5c\u4e3a Linux\u3001macOS \u6216 Windows WSL2 \u4e0a\u7684 local-external \u8fd0\u884c\u65f6\u63a5\u5165\uff0c\u4e5f\u53ef\u4ee5\u8fde\u63a5\u8fdc\u7a0b Linux \u90e8\u7f72\u3002",
-            "required": "Hermes \u5fc5\u987b\u4fdd\u6301\u5916\u7f6e\u8fd0\u884c\u3002\u8bf7\u6539\u7528 Linux\u3001macOS \u6216 Windows WSL2 \u4e0a\u7684 local-external \u8fd0\u884c\u65f6\uff0c\u6216\u8fde\u63a5\u8fdc\u7a0b Linux \u90e8\u7f72\uff0c\u800c\u4e0d\u662f\u539f\u751f Windows \u6216\u5e94\u7528\u6258\u7ba1\u7684\u672c\u5730\u76ee\u6807\u3002"
+            "configured": "\u8be5\u5b9e\u4f8b\u5df2\u7ecf\u5448\u73b0\u53d7\u652f\u6301\u7684 Hermes \u90e8\u7f72\u5f62\u6001\u3002Hermes \u53ef\u4ee5\u4f5c\u4e3a Linux\u3001macOS \u6216 Windows WSL2 \u4e0a\u7684 local-managed \u6216 local-external \u8fd0\u884c\u65f6\u63a5\u5165\uff0c\u4e5f\u53ef\u4ee5\u8fde\u63a5\u8fdc\u7a0b Linux \u90e8\u7f72\u3002",
+            "required": "\u8bf7\u4f7f\u7528\u53d7\u652f\u6301\u7684 Hermes \u90e8\u7f72\u5f62\u6001\uff1aLinux\u3001macOS \u6216 Windows WSL2 \u4e0a\u7684 local-managed \u6216 local-external\uff0c\u6216\u8fdc\u7a0b Linux \u90e8\u7f72\u3002\u539f\u751f Windows \u672c\u5730\u8fd0\u884c\u4ecd\u4e0d\u53d7\u652f\u6301\u3002"
           },
           "endpointExposure": {
             "label": "\u8fde\u63a5\u7aef\u70b9",
@@ -420,7 +420,7 @@
         "title": "实例工作台",
         "description": "在这个 OpenClaw 实例提供的运行时能力之间切换。",
         "overview": "概览",
-        "channels": "渠道",
+        "channels": "聊天通道",
         "cronTasks": "Cron 任务",
         "llmProviders": "LLM 提供方",
         "agents": "智能体",
@@ -448,7 +448,7 @@
           "description": "查看当前实例的运行时契约、连接方式、存储绑定与能力状态。"
         },
         "channels": {
-          "title": "渠道",
+          "title": "聊天通道",
           "description": "检查此实例的交付就绪度、配置深度与连接状态。"
         },
         "cronTasks": {
@@ -1368,6 +1368,91 @@
             "fallbackModels": "每行填写一个 provider/model",
             "workspace": "留空则由 OpenClaw 自动推导 workspace-<agentId>",
             "agentDir": "留空则使用 .openclaw/agents/<agentId>/agent"
+          }
+        },
+        "creationWorkflow": {
+          "menu": {
+            "title": "新建 Agent",
+            "description": "在不离开当前工作台的前提下，选择最适合当前实例的 Agent 创建方式。",
+            "options": {
+              "custom": {
+                "title": "从零创建",
+                "description": "为当前可写内核实例手动定义一个全新的 Agent。"
+              },
+              "library": {
+                "title": "从本地模板选择",
+                "description": "浏览可复用的本地内核 Agent，并将其作为创建模板。"
+              },
+              "copy": {
+                "title": "复制我的 Agent",
+                "description": "复制当前实例中已有的 Agent，安全迭代出一个新版本。"
+              },
+              "market": {
+                "title": "从市场安装",
+                "description": "浏览精选 Agent 套件，并直接安装到当前实例。"
+              }
+            }
+          },
+          "library": {
+            "title": "从本地模板选择",
+            "description": "浏览可复用的本地内核 Agent，并将其作为创建模板。"
+          },
+          "copy": {
+            "title": "复制我的 Agent",
+            "description": "从当前实例已有 Agent 继续，快速创建一个新的副本。"
+          },
+          "form": {
+            "title": "创建 Agent",
+            "copyTitle": "复制 Agent",
+            "description": "为当前实例和内核创建一个新的 Agent。",
+            "copyDescription": "从现有本地内核 Agent 继承可移植配置，并在当前实例中创建新的 Agent。"
+          },
+          "market": {
+            "title": "从市场安装",
+            "description": "浏览打包好的 Agent 模板，并将所选模板直接安装到当前实例。",
+            "status": {
+              "loading": "正在加载可安装目标..."
+            }
+          },
+          "actions": {
+            "back": "返回",
+            "retry": "重试",
+            "useTemplate": "作为模板使用",
+            "create": "创建 Agent",
+            "createCopy": "创建副本"
+          },
+          "searchPlaceholder": "搜索本地 Agent...",
+          "notSet": "未设置",
+          "badges": {
+            "default": "默认"
+          },
+          "sections": {
+            "source": "来源",
+            "model": "模型",
+            "fallbackModels": "回退模型",
+            "parameters": "参数"
+          },
+          "labels": {
+            "sourceAgent": "源 Agent",
+            "instance": "实例",
+            "kernel": "内核",
+            "temperature": "温度",
+            "topP": "Top P",
+            "maxTokens": "Max Tokens",
+            "timeoutMs": "超时（毫秒）",
+            "streaming": "流式输出"
+          },
+          "status": {
+            "loading": "正在加载本地内核 Agent...",
+            "loadFailed": "加载本地 Agent 失败。",
+            "emptyTitle": "暂无可用本地 Agent",
+            "emptyDescription": "在可写的内核实例中创建或导入 Agent 后，这里会显示为可复用模板。"
+          },
+          "modelInherit": "继承实例默认值",
+          "streamingModes": {
+            "inherit": "继承运行时默认值",
+            "enabled": "已启用",
+            "disabled": "已禁用"
           }
         },
         "deleteDialog": {

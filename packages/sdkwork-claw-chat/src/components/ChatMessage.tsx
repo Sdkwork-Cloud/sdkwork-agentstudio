@@ -21,9 +21,16 @@ import remarkGfm from 'remark-gfm';
 import { cn } from '@sdkwork/claw-ui';
 import {
   detectChatJsonBlock,
+  type KernelChatNoticePresentation,
   type OpenClawToolCard,
 } from '../services/index.ts';
 import { ChatMessageCodeHighlighter } from './chatMessageCodeHighlighter.tsx';
+import {
+  CHAT_SURFACE_CONTROL_CLASS,
+  CHAT_SURFACE_INSET_PANEL_CLASS,
+  CHAT_SURFACE_PANEL_CLASS,
+  CHAT_SURFACE_PANEL_HEADER_CLASS,
+} from './chatChromeSurface';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant' | 'system' | 'tool';
@@ -34,6 +41,7 @@ interface ChatMessageProps {
   onRegenerate?: () => void;
   isTyping?: boolean;
   attachments?: StudioConversationAttachment[];
+  notices?: KernelChatNoticePresentation[];
   reasoning?: string | null;
   toolCards?: OpenClawToolCard[];
   showHeader?: boolean;
@@ -133,8 +141,18 @@ const CodeBlock = memo(
     };
 
     return (
-      <div className="relative mb-4 mt-3 min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-[#1E1E1E]">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-100 px-4 py-2 dark:border-zinc-800 dark:bg-zinc-900/50">
+      <div
+        className={cn(
+          CHAT_SURFACE_PANEL_CLASS,
+          'relative mb-4 mt-3 min-w-0 overflow-hidden rounded-xl dark:bg-[#1E1E1E]',
+        )}
+      >
+        <div
+          className={cn(
+            CHAT_SURFACE_PANEL_HEADER_CLASS,
+            'flex flex-wrap items-center justify-between gap-2 px-4 py-2',
+          )}
+        >
           <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">{match[1]}</span>
           <button
             onClick={handleCopy}
@@ -179,8 +197,11 @@ const AttachmentTile = memo(function AttachmentTile({
     formatDuration(attachment.durationMs),
   ].filter(Boolean);
   const surfaceClassName = isUser
-    ? 'border-zinc-300/80 bg-white/90 dark:border-zinc-700 dark:bg-zinc-900/70'
-    : 'border-zinc-200/80 bg-white/70 dark:border-zinc-800 dark:bg-zinc-900/50';
+    ? cn(
+        CHAT_SURFACE_PANEL_CLASS,
+        'border-zinc-300/80 bg-zinc-50/96 dark:border-zinc-700 dark:bg-zinc-900/78',
+      )
+    : CHAT_SURFACE_PANEL_CLASS;
 
   if (
     previewUrl &&
@@ -192,7 +213,7 @@ const AttachmentTile = memo(function AttachmentTile({
         target="_blank"
         rel="noreferrer"
         className={cn(
-          'group relative overflow-hidden rounded-2xl border transition-all hover:-translate-y-0.5 hover:shadow-lg',
+          'group relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg',
           surfaceClassName,
         )}
       >
@@ -222,7 +243,7 @@ const AttachmentTile = memo(function AttachmentTile({
     return (
       <div
         className={cn(
-          'rounded-2xl border p-4 shadow-sm backdrop-blur-sm',
+          'p-4',
           surfaceClassName,
         )}
       >
@@ -251,7 +272,7 @@ const AttachmentTile = memo(function AttachmentTile({
     return (
       <div
         className={cn(
-          'overflow-hidden rounded-2xl border shadow-sm backdrop-blur-sm',
+          'overflow-hidden',
           surfaceClassName,
         )}
       >
@@ -279,7 +300,7 @@ const AttachmentTile = memo(function AttachmentTile({
       target={displayUrl ? '_blank' : undefined}
       rel={displayUrl ? 'noreferrer' : undefined}
       className={cn(
-        'flex min-w-0 items-start gap-3 rounded-2xl border p-4 shadow-sm backdrop-blur-sm transition-colors hover:border-primary-500/40',
+        'flex min-w-0 items-start gap-3 p-4 transition-colors hover:border-primary-500/40',
         surfaceClassName,
       )}
     >
@@ -327,7 +348,7 @@ const JsonContentBlock = memo(function JsonContentBlock({
         : t('chat.message.jsonObjectCount', { count: jsonBlock.keyCount });
 
   return (
-    <details className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-zinc-50/85 dark:border-zinc-800 dark:bg-zinc-950/50">
+    <details className={cn(CHAT_SURFACE_INSET_PANEL_CLASS, 'overflow-hidden')}>
       <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3">
         <span className="rounded-md bg-zinc-900 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white dark:bg-zinc-100 dark:text-zinc-950">
           {t('chat.message.json')}
@@ -345,6 +366,37 @@ const JsonContentBlock = memo(function JsonContentBlock({
   );
 });
 
+const NoticeList = memo(function NoticeList({
+  notices,
+}: {
+  notices: KernelChatNoticePresentation[];
+}) {
+  return (
+    <div className="mb-2.5 space-y-2">
+      {notices.map((notice, index) => (
+        <div
+          key={`${notice.code}:${index}`}
+          className={cn(
+            'rounded-2xl border px-4 py-3 text-[12px] leading-6 backdrop-blur-sm',
+            notice.level === 'error'
+              ? 'border-rose-200/80 bg-rose-50/85 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200'
+              : notice.level === 'warning'
+                ? 'border-amber-200/80 bg-amber-50/85 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200'
+                : 'border-sky-200/80 bg-sky-50/85 text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-200',
+          )}
+        >
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70">
+              {notice.code}
+            </span>
+          </div>
+          <div className="mt-1 whitespace-pre-wrap break-words">{notice.text}</div>
+        </div>
+      ))}
+    </div>
+  );
+});
+
 const ToolLinksPanel = memo(function ToolLinksPanel({
   toolCards,
 }: {
@@ -357,10 +409,11 @@ const ToolLinksPanel = memo(function ToolLinksPanel({
     const toolName = toolCard.name.trim() || 'Tool';
     const occurrence = (occurrenceByName.get(toolName) ?? 0) + 1;
     occurrenceByName.set(toolName, occurrence);
+    const stableToolId = toolCard.toolCallId?.trim() || `${toolCard.kind}:${toolName}:${index}`;
 
     return {
       ...toolCard,
-      id: `${toolCard.kind}:${toolName}:${index}`,
+      id: stableToolId,
       label: occurrence > 1 ? `${toolName} ${occurrence}` : toolName,
       typeLabel: toolCard.kind === 'call'
         ? t('chat.message.toolCall')
@@ -426,7 +479,14 @@ const ToolLinksPanel = memo(function ToolLinksPanel({
           ) : null}
 
           {expandedTool.preview ? (
-            <div className="mt-1 whitespace-pre-wrap break-words text-[11px] leading-5 text-zinc-600 dark:text-zinc-300">
+            <div
+              className={cn(
+                'mt-1 whitespace-pre-wrap break-words text-[11px] leading-5',
+                expandedTool.isError
+                  ? 'text-rose-700 dark:text-rose-300'
+                  : 'text-zinc-600 dark:text-zinc-300',
+              )}
+            >
               {expandedTool.preview}
             </div>
           ) : expandedTool.kind === 'result' ? (
@@ -449,6 +509,7 @@ export const ChatMessage = memo(function ChatMessage({
   onRegenerate,
   isTyping,
   attachments = [],
+  notices = [],
   reasoning,
   toolCards = [],
   showHeader = true,
@@ -576,7 +637,10 @@ export const ChatMessage = memo(function ChatMessage({
               )}
             >
               {renderCopyButton(
-                'rounded-md border border-zinc-200/70 bg-white/95 p-1.5 text-zinc-500 shadow-sm backdrop-blur transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900/95 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-100',
+                cn(
+                  CHAT_SURFACE_CONTROL_CLASS,
+                  'rounded-md border p-1.5 text-zinc-500 shadow-sm backdrop-blur transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-100',
+                ),
               )}
             </div>
           ) : null}
@@ -620,8 +684,17 @@ export const ChatMessage = memo(function ChatMessage({
             </div>
           ) : null}
 
+          {notices.length > 0 ? (
+            <NoticeList notices={notices} />
+          ) : null}
+
           {reasoning ? (
-            <details className="mb-2.5 overflow-hidden rounded-2xl border border-zinc-200/80 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-900/65">
+            <details
+              className={cn(
+                CHAT_SURFACE_INSET_PANEL_CLASS,
+                'mb-2.5 overflow-hidden dark:bg-zinc-900/65',
+              )}
+            >
               <summary className="cursor-pointer px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                 {t('chat.message.reasoning')}
               </summary>

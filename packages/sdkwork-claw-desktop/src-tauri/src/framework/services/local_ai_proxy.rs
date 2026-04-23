@@ -11,14 +11,16 @@ use super::{
     storage::StorageService,
 };
 use crate::framework::{config::AppConfig, paths::AppPaths, FrameworkError, Result};
+use sdkwork_local_api_proxy_native::probe::probe_route;
+use sdkwork_local_api_proxy_native::runtime::start_local_api_proxy_server;
+use sdkwork_local_api_proxy_native::runtime::LocalApiProxyServerHandle;
+use sdkwork_local_api_proxy_native::support::current_time_ms;
 use std::{
     fs,
     path::Path,
-    sync::{mpsc, Arc, Mutex, MutexGuard},
-    thread,
+    sync::{Arc, Mutex, MutexGuard},
     time::Duration,
 };
-use tokio::sync::oneshot;
 
 pub const SERVICE_ID_LOCAL_AI_PROXY: &str = "local_ai_proxy";
 pub(crate) use sdkwork_local_api_proxy_native::constants::{
@@ -46,7 +48,6 @@ mod health;
 mod observability;
 mod observability_store;
 mod openai_compatible;
-mod probe;
 mod projection;
 mod request_context;
 mod request_translation;
@@ -54,9 +55,7 @@ mod response_io;
 mod response_translation;
 mod router;
 mod streaming;
-mod support;
 mod types;
-mod upstream;
 
 use types::LocalAiProxyAppState;
 
@@ -77,15 +76,9 @@ struct LocalAiProxyRuntime {
     health: Option<LocalAiProxyServiceHealth>,
     snapshot: Option<LocalAiProxySnapshot>,
     last_error: Option<String>,
-    handle: Option<LocalAiProxyHandle>,
+    handle: Option<LocalApiProxyServerHandle>,
     observability: Arc<Mutex<observability_store::LocalAiProxyObservabilityStore>>,
     observability_repo: Option<LocalAiProxyObservabilityRepository>,
-}
-
-#[derive(Debug)]
-struct LocalAiProxyHandle {
-    shutdown: Option<oneshot::Sender<()>>,
-    join_handle: Option<std::thread::JoinHandle<()>>,
 }
 
 impl Default for LocalAiProxyRuntime {
@@ -172,93 +165,23 @@ impl LocalAiProxyService {
                 observability,
                 observability_repo,
             };
-            let bind_host = snapshot.bind_host.clone();
-            let requested_port = snapshot.requested_port;
+            let router = router::build_router(state);
             let log_path = paths.local_ai_proxy_log_file.clone();
-            let (ready_tx, ready_rx) = mpsc::channel();
-            let (shutdown_tx, shutdown_rx) = oneshot::channel();
-
-            let join_handle = thread::spawn(move || {
-                let runtime = match tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                {
-                    Ok(runtime) => runtime,
-                    Err(error) => {
-                        let _ =
-                            ready_tx.send(Err(format!("failed to build tokio runtime: {error}")));
-                        return;
-                    }
-                };
-
-                runtime.block_on(async move {
-                    let listener = match tokio::net::TcpListener::bind((
-                        bind_host.as_str(),
-                        requested_port,
-                    ))
-                    .await
-                    {
-                        Ok(listener) => listener,
-                        Err(error)
-                            if requested_port > 0
-                                && error.kind() == std::io::ErrorKind::AddrInUse =>
-                        {
-                            match tokio::net::TcpListener::bind((bind_host.as_str(), 0)).await {
-                                Ok(listener) => listener,
-                                Err(fallback_error) => {
-                                    let _ = ready_tx.send(Err(format!(
-                                        "failed to bind local ai proxy on requested port {requested_port} and dynamic fallback: {fallback_error}"
-                                    )));
-                                    return;
-                                }
-                            }
-                        }
-                        Err(error) => {
-                            let _ = ready_tx.send(Err(format!(
-                                "failed to bind local ai proxy: {error}"
-                            )));
-                            return;
-                        }
-                    };
-                    let active_port = match listener.local_addr() {
-                        Ok(address) => address.port(),
-                        Err(error) => {
-                            let _ = ready_tx.send(Err(format!(
-                                "failed to resolve local ai proxy address: {error}"
-                            )));
-                            return;
-                        }
-                    };
-                    if ready_tx.send(Ok(active_port)).is_err() {
-                        return;
-                    }
-
-                    if let Err(error) = axum::serve(listener, router::build_router(state))
-                        .with_graceful_shutdown(async move {
-                            let _ = shutdown_rx.await;
-                        })
-                        .await
-                    {
-                        let _ = append_proxy_log(
-                            &log_path,
-                            &format!("local ai proxy serve loop stopped unexpectedly: {error}"),
-                        );
-                    }
-                });
-            });
-
-            let active_port = ready_rx
-                .recv_timeout(Duration::from_secs(10))
-                .map_err(|_| {
-                    FrameworkError::Timeout(
-                        "timed out waiting for the local ai proxy to bind a loopback port"
-                            .to_string(),
-                    )
-                })?
-                .map_err(FrameworkError::Internal)?;
+            let server = start_local_api_proxy_server(
+                router,
+                snapshot.bind_host.clone(),
+                snapshot.requested_port,
+                Duration::from_secs(10),
+                move |error| {
+                    let _ = append_proxy_log(
+                        &log_path,
+                        &format!("local ai proxy serve loop stopped unexpectedly: {error}"),
+                    );
+                },
+            )?;
             let health = health::build_health(
                 &snapshot,
-                active_port,
+                server.active_port,
                 &proxy_config.public_base_host,
                 paths,
             );
@@ -268,10 +191,7 @@ impl LocalAiProxyService {
             runtime.health = Some(health.clone());
             runtime.snapshot = Some(snapshot);
             runtime.last_error = None;
-            runtime.handle = Some(LocalAiProxyHandle {
-                shutdown: Some(shutdown_tx),
-                join_handle: Some(join_handle),
-            });
+            runtime.handle = Some(server.handle);
 
             Ok(health)
         })();
@@ -292,12 +212,7 @@ impl LocalAiProxyService {
         };
 
         if let Some(handle) = handle.as_mut() {
-            if let Some(shutdown) = handle.shutdown.take() {
-                let _ = shutdown.send(());
-            }
-            if let Some(join_handle) = handle.join_handle.take() {
-                let _ = join_handle.join();
-            }
+            handle.stop();
         }
 
         Ok(())
@@ -353,10 +268,9 @@ impl LocalAiProxyService {
         paths: &AppPaths,
         enabled: bool,
     ) -> Result<LocalAiProxyMessageCaptureSettings> {
-        Ok(self.ensure_observability_repo(paths)?.update_message_capture_settings(
-            enabled,
-            support::current_time_ms(),
-        )?)
+        Ok(self
+            .ensure_observability_repo(paths)?
+            .update_message_capture_settings(enabled, current_time_ms())?)
     }
 
     pub fn list_request_logs(
@@ -364,7 +278,9 @@ impl LocalAiProxyService {
         paths: &AppPaths,
         query: LocalAiProxyRequestLogsQuery,
     ) -> Result<LocalAiProxyPaginatedResult<LocalAiProxyRequestLogRecord>> {
-        Ok(self.ensure_observability_repo(paths)?.list_request_logs(query)?)
+        Ok(self
+            .ensure_observability_repo(paths)?
+            .list_request_logs(query)?)
     }
 
     pub fn list_message_logs(
@@ -372,7 +288,9 @@ impl LocalAiProxyService {
         paths: &AppPaths,
         query: LocalAiProxyMessageLogsQuery,
     ) -> Result<LocalAiProxyPaginatedResult<LocalAiProxyMessageLogRecord>> {
-        Ok(self.ensure_observability_repo(paths)?.list_message_logs(query)?)
+        Ok(self
+            .ensure_observability_repo(paths)?
+            .list_message_logs(query)?)
     }
 
     pub fn test_route_by_id(&self, route_id: &str) -> Result<LocalAiProxyRouteTestRecord> {
@@ -400,7 +318,7 @@ impl LocalAiProxyService {
             .cloned()
             .ok_or_else(|| FrameworkError::NotFound(format!("local ai proxy route {route_id}")))?;
 
-        let record = probe::probe_route(&route)?;
+        let record = probe_route(&route)?;
         let mut store = observability_store::lock_observability(&observability)?;
         store.route_tests.insert(route.id.clone(), record.clone());
         Ok(record)
@@ -514,6 +432,9 @@ mod tests {
         routing::post,
         Json, Router,
     };
+    use sdkwork_local_api_proxy_native::runtime::{
+        start_local_api_proxy_server, LocalApiProxyServerHandle,
+    };
     use serde_json::{json, Value};
     use std::{
         fs,
@@ -549,13 +470,12 @@ mod tests {
         let snapshot =
             create_system_default_local_ai_proxy_snapshot(0, LOCAL_AI_PROXY_DEFAULT_CLIENT_API_KEY);
 
-        let health =
-            super::health::build_health(
-                &snapshot,
-                LOCAL_AI_PROXY_DEFAULT_PORT,
-                &expected_test_public_host(),
-                &paths,
-            );
+        let health = super::health::build_health(
+            &snapshot,
+            LOCAL_AI_PROXY_DEFAULT_PORT,
+            &expected_test_public_host(),
+            &paths,
+        );
 
         assert_eq!(
             health
@@ -3764,9 +3684,7 @@ mod tests {
         format!("{}/v1", expected_test_public_root_base_url(port))
     }
 
-    fn openclaw_config_file_path(
-        paths: &crate::framework::paths::AppPaths,
-    ) -> std::path::PathBuf {
+    fn openclaw_config_file_path(paths: &crate::framework::paths::AppPaths) -> std::path::PathBuf {
         crate::framework::services::kernel_runtime_authority::KernelRuntimeAuthorityService::new()
             .active_config_file_path("openclaw", paths)
             .unwrap_or_else(|_| {
@@ -3906,551 +3824,522 @@ mod tests {
     struct TestUpstreamServer {
         base_url: String,
         capture: Arc<Mutex<Option<UpstreamCapture>>>,
-        shutdown: Option<tokio::sync::oneshot::Sender<()>>,
-        join_handle: Option<std::thread::JoinHandle<()>>,
+        handle: Option<LocalApiProxyServerHandle>,
     }
 
     impl TestUpstreamServer {
         fn start() -> Self {
             let capture = Arc::new(Mutex::new(None));
             let state = capture.clone();
-            let (ready_tx, ready_rx) = std::sync::mpsc::channel();
-            let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+            async fn chat_handler(
+                State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
+                headers: HeaderMap,
+                uri: axum::http::Uri,
+                Json(body): Json<Value>,
+            ) -> axum::response::Response {
+                let stream = body.get("stream").and_then(Value::as_bool).unwrap_or(false);
+                let detailed_usage_requested = body
+                    .pointer("/messages/0/content")
+                    .and_then(Value::as_str)
+                    .map(|value| value.contains("usage detail request"))
+                    .unwrap_or(false);
+                *capture.lock().expect("capture") = Some(UpstreamCapture {
+                    path: uri.path_and_query().map(|value| value.to_string()),
+                    authorization: headers
+                        .get("authorization")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_api_key: headers
+                        .get("x-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_goog_api_key: headers
+                        .get("x-goog-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    anthropic_version: headers
+                        .get("anthropic-version")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    body,
+                });
 
-            let join_handle = std::thread::spawn(move || {
-                let runtime = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .expect("tokio runtime");
+                if stream {
+                    let stream = async_stream::stream! {
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "data: {\"choices\":[{\"delta\":{\"content\":\"proxied chunk 1\"}}]}\n\n",
+                        ));
+                        tokio::time::sleep(Duration::from_millis(900)).await;
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "data: {\"choices\":[{\"delta\":{\"content\":\"proxied chunk 2\"}}]}\n\n",
+                        ));
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from("data: [DONE]\n\n"));
+                    };
 
-                runtime.block_on(async move {
-                    async fn chat_handler(
-                        State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
-                        headers: HeaderMap,
-                        uri: axum::http::Uri,
-                        Json(body): Json<Value>,
-                    ) -> axum::response::Response {
-                        let stream = body
-                            .get("stream")
-                            .and_then(Value::as_bool)
-                            .unwrap_or(false);
-                        let detailed_usage_requested = body
-                            .pointer("/messages/0/content")
-                            .and_then(Value::as_str)
-                            .map(|value| value.contains("usage detail request"))
-                            .unwrap_or(false);
-                        *capture.lock().expect("capture") = Some(UpstreamCapture {
-                            path: uri.path_and_query().map(|value| value.to_string()),
-                            authorization: headers
-                                .get("authorization")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_api_key: headers
-                                .get("x-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_goog_api_key: headers
-                                .get("x-goog-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            anthropic_version: headers
-                                .get("anthropic-version")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            body,
-                        });
+                    return axum::response::Response::builder()
+                        .status(StatusCode::OK)
+                        .header("content-type", "text/event-stream")
+                        .body(axum::body::Body::from_stream(stream))
+                        .expect("stream response");
+                }
 
-                        if stream {
-                            let stream = async_stream::stream! {
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "data: {\"choices\":[{\"delta\":{\"content\":\"proxied chunk 1\"}}]}\n\n",
-                                ));
-                                tokio::time::sleep(Duration::from_millis(900)).await;
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "data: {\"choices\":[{\"delta\":{\"content\":\"proxied chunk 2\"}}]}\n\n",
-                                ));
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from("data: [DONE]\n\n"));
-                            };
+                (
+                    StatusCode::OK,
+                    Json(json!({
+                        "id": "chatcmpl-local-proxy",
+                        "object": "chat.completion",
+                        "choices": [
+                            {
+                                "index": 0,
+                                "message": {
+                                    "role": "assistant",
+                                    "content": "proxied response"
+                                }
+                            }
+                        ],
+                        "usage": detailed_usage_requested.then_some(json!({
+                            "prompt_tokens": 12_307,
+                            "completion_tokens": 6,
+                            "total_tokens": 12_313,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 4_096
+                            }
+                        }))
+                    })),
+                )
+                    .into_response()
+            }
 
-                            return axum::response::Response::builder()
-                                .status(StatusCode::OK)
-                                .header("content-type", "text/event-stream")
-                                .body(axum::body::Body::from_stream(stream))
-                                .expect("stream response");
-                        }
+            async fn responses_handler(
+                State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
+                headers: HeaderMap,
+                uri: axum::http::Uri,
+                Json(body): Json<Value>,
+            ) -> impl IntoResponse {
+                let detailed_usage_requested = body
+                    .pointer("/input")
+                    .map(Value::to_string)
+                    .map(|value| value.contains("responses usage detail request"))
+                    .unwrap_or(false);
+                *capture.lock().expect("capture") = Some(UpstreamCapture {
+                    path: uri.path_and_query().map(|value| value.to_string()),
+                    authorization: headers
+                        .get("authorization")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_api_key: headers
+                        .get("x-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_goog_api_key: headers
+                        .get("x-goog-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    anthropic_version: headers
+                        .get("anthropic-version")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    body,
+                });
 
-                        (
-                            StatusCode::OK,
-                            Json(json!({
-                                "id": "chatcmpl-local-proxy",
-                                "object": "chat.completion",
-                                "choices": [
-                                    {
-                                        "index": 0,
-                                        "message": {
-                                            "role": "assistant",
-                                            "content": "proxied response"
-                                        }
-                                    }
-                                ],
-                                "usage": detailed_usage_requested.then_some(json!({
-                                    "prompt_tokens": 12_307,
-                                    "completion_tokens": 6,
-                                    "total_tokens": 12_313,
-                                    "prompt_tokens_details": {
-                                        "cached_tokens": 4_096
-                                    }
-                                }))
-                            })),
-                        )
-                            .into_response()
-                    }
-
-                    async fn responses_handler(
-                        State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
-                        headers: HeaderMap,
-                        uri: axum::http::Uri,
-                        Json(body): Json<Value>,
-                    ) -> impl IntoResponse {
-                        let detailed_usage_requested = body
-                            .pointer("/input")
-                            .map(Value::to_string)
-                            .map(|value| value.contains("responses usage detail request"))
-                            .unwrap_or(false);
-                        *capture.lock().expect("capture") = Some(UpstreamCapture {
-                            path: uri.path_and_query().map(|value| value.to_string()),
-                            authorization: headers
-                                .get("authorization")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_api_key: headers
-                                .get("x-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_goog_api_key: headers
-                                .get("x-goog-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            anthropic_version: headers
-                                .get("anthropic-version")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            body,
-                        });
-
-                        (
-                            StatusCode::OK,
-                            Json(json!({
-                                "id": "resp_local_proxy",
-                                "object": "response",
-                                "output": [
-                                    {
-                                        "type": "message",
-                                        "role": "assistant",
-                                        "content": [
-                                            {
-                                                "type": "output_text",
-                                                "text": "responses proxied response"
-                                            }
-                                        ]
-                                    }
-                                ],
-                                "usage": detailed_usage_requested.then_some(json!({
-                                    "input_tokens": 12_307,
-                                    "output_tokens": 6,
-                                    "total_tokens": 12_313,
-                                    "input_tokens_details": {
-                                        "cached_tokens": 4_096
-                                    }
-                                }))
-                            })),
-                        )
-                    }
-
-                    async fn embeddings_handler(
-                        State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
-                        headers: HeaderMap,
-                        uri: axum::http::Uri,
-                        Json(body): Json<Value>,
-                    ) -> impl IntoResponse {
-                        *capture.lock().expect("capture") = Some(UpstreamCapture {
-                            path: uri.path_and_query().map(|value| value.to_string()),
-                            authorization: headers
-                                .get("authorization")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_api_key: headers
-                                .get("x-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_goog_api_key: headers
-                                .get("x-goog-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            anthropic_version: headers
-                                .get("anthropic-version")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            body,
-                        });
-
-                        (
-                            StatusCode::OK,
-                            Json(json!({
-                                "object": "list",
-                                "data": [
-                                    {
-                                        "object": "embedding",
-                                        "index": 0,
-                                        "embedding": [0.12, 0.34, 0.56]
-                                    }
-                                ]
-                            })),
-                        )
-                    }
-
-                    async fn anthropic_messages_handler(
-                        State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
-                        headers: HeaderMap,
-                        uri: axum::http::Uri,
-                        Json(body): Json<Value>,
-                    ) -> axum::response::Response {
-                        let stream = body
-                            .get("stream")
-                            .and_then(Value::as_bool)
-                            .unwrap_or(false);
-                        *capture.lock().expect("capture") = Some(UpstreamCapture {
-                            path: uri.path_and_query().map(|value| value.to_string()),
-                            authorization: headers
-                                .get("authorization")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_api_key: headers
-                                .get("x-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_goog_api_key: headers
-                                .get("x-goog-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            anthropic_version: headers
-                                .get("anthropic-version")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            body,
-                        });
-
-                        if stream {
-                            let stream = async_stream::stream! {
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg-local-proxy\",\"model\":\"claude-sonnet-4-20250514\",\"usage\":{\"input_tokens\":12,\"output_tokens\":0},\"content\":[]}}\n\n",
-                                ));
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"anthropic stream chunk 1\"}}\n\n",
-                                ));
-                                tokio::time::sleep(Duration::from_millis(900)).await;
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"anthropic stream chunk 2\"}}\n\n",
-                                ));
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":8}}\n\n",
-                                ));
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
-                                ));
-                            };
-
-                            return axum::response::Response::builder()
-                                .status(StatusCode::OK)
-                                .header("content-type", "text/event-stream")
-                                .body(axum::body::Body::from_stream(stream))
-                                .expect("stream response");
-                        }
-
-                        (
-                            StatusCode::OK,
-                            Json(json!({
-                                "id": "msg-local-proxy",
+                (
+                    StatusCode::OK,
+                    Json(json!({
+                        "id": "resp_local_proxy",
+                        "object": "response",
+                        "output": [
+                            {
                                 "type": "message",
-                                "model": "claude-sonnet-4-20250514",
                                 "role": "assistant",
                                 "content": [
                                     {
-                                        "type": "text",
-                                        "text": "anthropic proxied response"
+                                        "type": "output_text",
+                                        "text": "responses proxied response"
                                     }
-                                ],
-                                "usage": {
-                                    "input_tokens": 12,
-                                    "output_tokens": 8
-                                }
-                            })),
-                        )
-                            .into_response()
-                    }
+                                ]
+                            }
+                        ],
+                        "usage": detailed_usage_requested.then_some(json!({
+                            "input_tokens": 12_307,
+                            "output_tokens": 6,
+                            "total_tokens": 12_313,
+                            "input_tokens_details": {
+                                "cached_tokens": 4_096
+                            }
+                        }))
+                    })),
+                )
+            }
 
-                    async fn gemini_generate_handler(
-                        State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
-                        headers: HeaderMap,
-                        uri: axum::http::Uri,
-                        Json(body): Json<Value>,
-                    ) -> axum::response::Response {
-                        let stream = uri.path().contains(":streamGenerateContent");
-                        *capture.lock().expect("capture") = Some(UpstreamCapture {
-                            path: uri.path_and_query().map(|value| value.to_string()),
-                            authorization: headers
-                                .get("authorization")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_api_key: headers
-                                .get("x-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_goog_api_key: headers
-                                .get("x-goog-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            anthropic_version: headers
-                                .get("anthropic-version")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            body,
-                        });
-
-                        if stream {
-                            let stream = async_stream::stream! {
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"gemini stream chunk 1\"}]}}]}\n\n",
-                                ));
-                                tokio::time::sleep(Duration::from_millis(900)).await;
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"gemini stream chunk 2\"}],\"role\":\"model\"},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":8,\"totalTokenCount\":18}}\n\n",
-                                ));
-                            };
-
-                            return axum::response::Response::builder()
-                                .status(StatusCode::OK)
-                                .header("content-type", "text/event-stream")
-                                .body(axum::body::Body::from_stream(stream))
-                                .expect("stream response");
-                        }
-
-                        (
-                            StatusCode::OK,
-                            Json(json!({
-                                "candidates": [
-                                    {
-                                        "content": {
-                                            "parts": [
-                                                { "text": "gemini proxied response" }
-                                            ]
-                                        }
-                                    }
-                                ],
-                                "usageMetadata": {
-                                    "promptTokenCount": 10,
-                                    "candidatesTokenCount": 8,
-                                    "totalTokenCount": 18
-                                }
-                            })),
-                        )
-                            .into_response()
-                    }
-
-                    async fn gemini_embed_handler(
-                        State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
-                        headers: HeaderMap,
-                        uri: axum::http::Uri,
-                        Json(body): Json<Value>,
-                    ) -> impl IntoResponse {
-                        *capture.lock().expect("capture") = Some(UpstreamCapture {
-                            path: uri.path_and_query().map(|value| value.to_string()),
-                            authorization: headers
-                                .get("authorization")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_api_key: headers
-                                .get("x-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_goog_api_key: headers
-                                .get("x-goog-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            anthropic_version: headers
-                                .get("anthropic-version")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            body,
-                        });
-
-                        (
-                            StatusCode::OK,
-                            Json(json!({
-                                "embedding": {
-                                    "values": [0.12, 0.34, 0.56]
-                                }
-                            })),
-                        )
-                    }
-
-                    async fn ollama_chat_handler(
-                        State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
-                        headers: HeaderMap,
-                        uri: axum::http::Uri,
-                        Json(body): Json<Value>,
-                    ) -> axum::response::Response {
-                        let stream = body
-                            .get("stream")
-                            .and_then(Value::as_bool)
-                            .unwrap_or(false);
-                        *capture.lock().expect("capture") = Some(UpstreamCapture {
-                            path: uri.path_and_query().map(|value| value.to_string()),
-                            authorization: headers
-                                .get("authorization")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_api_key: headers
-                                .get("x-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_goog_api_key: headers
-                                .get("x-goog-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            anthropic_version: headers
-                                .get("anthropic-version")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            body,
-                        });
-
-                        if stream {
-                            let stream = async_stream::stream! {
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "{\"model\":\"glm-4.7-flash\",\"message\":{\"role\":\"assistant\",\"content\":\"ollama stream chunk 1\"},\"done\":false}\n",
-                                ));
-                                tokio::time::sleep(Duration::from_millis(900)).await;
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "{\"model\":\"glm-4.7-flash\",\"message\":{\"role\":\"assistant\",\"content\":\"ollama stream chunk 2\"},\"done\":false}\n",
-                                ));
-                                yield Ok::<Bytes, std::io::Error>(Bytes::from(
-                                    "{\"model\":\"glm-4.7-flash\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true,\"done_reason\":\"stop\",\"prompt_eval_count\":10,\"eval_count\":8}\n",
-                                ));
-                            };
-
-                            return axum::response::Response::builder()
-                                .status(StatusCode::OK)
-                                .header("content-type", "application/x-ndjson")
-                                .body(axum::body::Body::from_stream(stream))
-                                .expect("ollama stream response");
-                        }
-
-                        (
-                            StatusCode::OK,
-                            Json(json!({
-                                "model": "glm-4.7-flash",
-                                "message": {
-                                    "role": "assistant",
-                                    "content": "ollama proxied response"
-                                },
-                                "done": true,
-                                "done_reason": "stop",
-                                "prompt_eval_count": 10,
-                                "eval_count": 8
-                            })),
-                        )
-                            .into_response()
-                    }
-
-                    async fn ollama_embed_handler(
-                        State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
-                        headers: HeaderMap,
-                        uri: axum::http::Uri,
-                        Json(body): Json<Value>,
-                    ) -> impl IntoResponse {
-                        *capture.lock().expect("capture") = Some(UpstreamCapture {
-                            path: uri.path_and_query().map(|value| value.to_string()),
-                            authorization: headers
-                                .get("authorization")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_api_key: headers
-                                .get("x-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            x_goog_api_key: headers
-                                .get("x-goog-api-key")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            anthropic_version: headers
-                                .get("anthropic-version")
-                                .and_then(|value| value.to_str().ok())
-                                .map(|value| value.to_string()),
-                            body,
-                        });
-
-                        (
-                            StatusCode::OK,
-                            Json(json!({
-                                "model": "nomic-embed-text",
-                                "embeddings": [[0.12, 0.34, 0.56]],
-                                "prompt_eval_count": 5
-                            })),
-                        )
-                    }
-
-                    let router = Router::new()
-                        .route("/v1/chat/completions", post(chat_handler))
-                        .route("/openai/v1/chat/completions", post(chat_handler))
-                        .route("/v1/responses", post(responses_handler))
-                        .route("/v1/embeddings", post(embeddings_handler))
-                        .route("/v1/messages", post(anthropic_messages_handler))
-                        .route(
-                            "/v1beta/models/gemini-2.5-pro:generateContent",
-                            post(gemini_generate_handler),
-                        )
-                        .route(
-                            "/v1beta/models/gemini-2.5-pro:streamGenerateContent",
-                            post(gemini_generate_handler),
-                        )
-                        .route(
-                            "/v1/models/gemini-2.5-pro:generateContent",
-                            post(gemini_generate_handler),
-                        )
-                        .route(
-                            "/v1/models/gemini-2.5-pro:streamGenerateContent",
-                            post(gemini_generate_handler),
-                        )
-                        .route(
-                            "/v1beta/models/text-embedding-004:embedContent",
-                            post(gemini_embed_handler),
-                        )
-                        .route("/api/chat", post(ollama_chat_handler))
-                        .route("/api/embed", post(ollama_embed_handler))
-                        .with_state(state);
-                    let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
-                        .await
-                        .expect("bind upstream server");
-                    ready_tx
-                        .send(listener.local_addr().expect("local addr").port())
-                        .expect("send upstream port");
-                    axum::serve(listener, router)
-                        .with_graceful_shutdown(async move {
-                            let _ = shutdown_rx.await;
-                        })
-                        .await
-                        .expect("serve upstream");
+            async fn embeddings_handler(
+                State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
+                headers: HeaderMap,
+                uri: axum::http::Uri,
+                Json(body): Json<Value>,
+            ) -> impl IntoResponse {
+                *capture.lock().expect("capture") = Some(UpstreamCapture {
+                    path: uri.path_and_query().map(|value| value.to_string()),
+                    authorization: headers
+                        .get("authorization")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_api_key: headers
+                        .get("x-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_goog_api_key: headers
+                        .get("x-goog-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    anthropic_version: headers
+                        .get("anthropic-version")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    body,
                 });
-            });
 
-            let port = ready_rx.recv().expect("upstream port");
+                (
+                    StatusCode::OK,
+                    Json(json!({
+                        "object": "list",
+                        "data": [
+                            {
+                                "object": "embedding",
+                                "index": 0,
+                                "embedding": [0.12, 0.34, 0.56]
+                            }
+                        ]
+                    })),
+                )
+            }
+
+            async fn anthropic_messages_handler(
+                State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
+                headers: HeaderMap,
+                uri: axum::http::Uri,
+                Json(body): Json<Value>,
+            ) -> axum::response::Response {
+                let stream = body.get("stream").and_then(Value::as_bool).unwrap_or(false);
+                *capture.lock().expect("capture") = Some(UpstreamCapture {
+                    path: uri.path_and_query().map(|value| value.to_string()),
+                    authorization: headers
+                        .get("authorization")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_api_key: headers
+                        .get("x-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_goog_api_key: headers
+                        .get("x-goog-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    anthropic_version: headers
+                        .get("anthropic-version")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    body,
+                });
+
+                if stream {
+                    let stream = async_stream::stream! {
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg-local-proxy\",\"model\":\"claude-sonnet-4-20250514\",\"usage\":{\"input_tokens\":12,\"output_tokens\":0},\"content\":[]}}\n\n",
+                        ));
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"anthropic stream chunk 1\"}}\n\n",
+                        ));
+                        tokio::time::sleep(Duration::from_millis(900)).await;
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"anthropic stream chunk 2\"}}\n\n",
+                        ));
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":8}}\n\n",
+                        ));
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
+                        ));
+                    };
+
+                    return axum::response::Response::builder()
+                        .status(StatusCode::OK)
+                        .header("content-type", "text/event-stream")
+                        .body(axum::body::Body::from_stream(stream))
+                        .expect("stream response");
+                }
+
+                (
+                    StatusCode::OK,
+                    Json(json!({
+                        "id": "msg-local-proxy",
+                        "type": "message",
+                        "model": "claude-sonnet-4-20250514",
+                        "role": "assistant",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "anthropic proxied response"
+                            }
+                        ],
+                        "usage": {
+                            "input_tokens": 12,
+                            "output_tokens": 8
+                        }
+                    })),
+                )
+                    .into_response()
+            }
+
+            async fn gemini_generate_handler(
+                State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
+                headers: HeaderMap,
+                uri: axum::http::Uri,
+                Json(body): Json<Value>,
+            ) -> axum::response::Response {
+                let stream = uri.path().contains(":streamGenerateContent");
+                *capture.lock().expect("capture") = Some(UpstreamCapture {
+                    path: uri.path_and_query().map(|value| value.to_string()),
+                    authorization: headers
+                        .get("authorization")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_api_key: headers
+                        .get("x-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_goog_api_key: headers
+                        .get("x-goog-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    anthropic_version: headers
+                        .get("anthropic-version")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    body,
+                });
+
+                if stream {
+                    let stream = async_stream::stream! {
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"gemini stream chunk 1\"}]}}]}\n\n",
+                        ));
+                        tokio::time::sleep(Duration::from_millis(900)).await;
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"gemini stream chunk 2\"}],\"role\":\"model\"},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":8,\"totalTokenCount\":18}}\n\n",
+                        ));
+                    };
+
+                    return axum::response::Response::builder()
+                        .status(StatusCode::OK)
+                        .header("content-type", "text/event-stream")
+                        .body(axum::body::Body::from_stream(stream))
+                        .expect("stream response");
+                }
+
+                (
+                    StatusCode::OK,
+                    Json(json!({
+                        "candidates": [
+                            {
+                                "content": {
+                                    "parts": [
+                                        { "text": "gemini proxied response" }
+                                    ]
+                                }
+                            }
+                        ],
+                        "usageMetadata": {
+                            "promptTokenCount": 10,
+                            "candidatesTokenCount": 8,
+                            "totalTokenCount": 18
+                        }
+                    })),
+                )
+                    .into_response()
+            }
+
+            async fn gemini_embed_handler(
+                State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
+                headers: HeaderMap,
+                uri: axum::http::Uri,
+                Json(body): Json<Value>,
+            ) -> impl IntoResponse {
+                *capture.lock().expect("capture") = Some(UpstreamCapture {
+                    path: uri.path_and_query().map(|value| value.to_string()),
+                    authorization: headers
+                        .get("authorization")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_api_key: headers
+                        .get("x-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_goog_api_key: headers
+                        .get("x-goog-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    anthropic_version: headers
+                        .get("anthropic-version")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    body,
+                });
+
+                (
+                    StatusCode::OK,
+                    Json(json!({
+                        "embedding": {
+                            "values": [0.12, 0.34, 0.56]
+                        }
+                    })),
+                )
+            }
+
+            async fn ollama_chat_handler(
+                State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
+                headers: HeaderMap,
+                uri: axum::http::Uri,
+                Json(body): Json<Value>,
+            ) -> axum::response::Response {
+                let stream = body.get("stream").and_then(Value::as_bool).unwrap_or(false);
+                *capture.lock().expect("capture") = Some(UpstreamCapture {
+                    path: uri.path_and_query().map(|value| value.to_string()),
+                    authorization: headers
+                        .get("authorization")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_api_key: headers
+                        .get("x-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_goog_api_key: headers
+                        .get("x-goog-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    anthropic_version: headers
+                        .get("anthropic-version")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    body,
+                });
+
+                if stream {
+                    let stream = async_stream::stream! {
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "{\"model\":\"glm-4.7-flash\",\"message\":{\"role\":\"assistant\",\"content\":\"ollama stream chunk 1\"},\"done\":false}\n",
+                        ));
+                        tokio::time::sleep(Duration::from_millis(900)).await;
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "{\"model\":\"glm-4.7-flash\",\"message\":{\"role\":\"assistant\",\"content\":\"ollama stream chunk 2\"},\"done\":false}\n",
+                        ));
+                        yield Ok::<Bytes, std::io::Error>(Bytes::from(
+                            "{\"model\":\"glm-4.7-flash\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true,\"done_reason\":\"stop\",\"prompt_eval_count\":10,\"eval_count\":8}\n",
+                        ));
+                    };
+
+                    return axum::response::Response::builder()
+                        .status(StatusCode::OK)
+                        .header("content-type", "application/x-ndjson")
+                        .body(axum::body::Body::from_stream(stream))
+                        .expect("ollama stream response");
+                }
+
+                (
+                    StatusCode::OK,
+                    Json(json!({
+                        "model": "glm-4.7-flash",
+                        "message": {
+                            "role": "assistant",
+                            "content": "ollama proxied response"
+                        },
+                        "done": true,
+                        "done_reason": "stop",
+                        "prompt_eval_count": 10,
+                        "eval_count": 8
+                    })),
+                )
+                    .into_response()
+            }
+
+            async fn ollama_embed_handler(
+                State(capture): State<Arc<Mutex<Option<UpstreamCapture>>>>,
+                headers: HeaderMap,
+                uri: axum::http::Uri,
+                Json(body): Json<Value>,
+            ) -> impl IntoResponse {
+                *capture.lock().expect("capture") = Some(UpstreamCapture {
+                    path: uri.path_and_query().map(|value| value.to_string()),
+                    authorization: headers
+                        .get("authorization")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_api_key: headers
+                        .get("x-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    x_goog_api_key: headers
+                        .get("x-goog-api-key")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    anthropic_version: headers
+                        .get("anthropic-version")
+                        .and_then(|value| value.to_str().ok())
+                        .map(|value| value.to_string()),
+                    body,
+                });
+
+                (
+                    StatusCode::OK,
+                    Json(json!({
+                        "model": "nomic-embed-text",
+                        "embeddings": [[0.12, 0.34, 0.56]],
+                        "prompt_eval_count": 5
+                    })),
+                )
+            }
+
+            let router = Router::new()
+                .route("/v1/chat/completions", post(chat_handler))
+                .route("/openai/v1/chat/completions", post(chat_handler))
+                .route("/v1/responses", post(responses_handler))
+                .route("/v1/embeddings", post(embeddings_handler))
+                .route("/v1/messages", post(anthropic_messages_handler))
+                .route(
+                    "/v1beta/models/gemini-2.5-pro:generateContent",
+                    post(gemini_generate_handler),
+                )
+                .route(
+                    "/v1beta/models/gemini-2.5-pro:streamGenerateContent",
+                    post(gemini_generate_handler),
+                )
+                .route(
+                    "/v1/models/gemini-2.5-pro:generateContent",
+                    post(gemini_generate_handler),
+                )
+                .route(
+                    "/v1/models/gemini-2.5-pro:streamGenerateContent",
+                    post(gemini_generate_handler),
+                )
+                .route(
+                    "/v1beta/models/text-embedding-004:embedContent",
+                    post(gemini_embed_handler),
+                )
+                .route("/api/chat", post(ollama_chat_handler))
+                .route("/api/embed", post(ollama_embed_handler))
+                .with_state(state);
+            let server = start_local_api_proxy_server(
+                router,
+                "127.0.0.1".to_string(),
+                0,
+                Duration::from_secs(10),
+                |error| eprintln!("test upstream server stopped unexpectedly: {error}"),
+            )
+            .expect("start upstream server");
 
             Self {
-                base_url: format!("http://127.0.0.1:{port}"),
+                base_url: format!("http://127.0.0.1:{}", server.active_port),
                 capture,
-                shutdown: Some(shutdown_tx),
-                join_handle: Some(join_handle),
+                handle: Some(server.handle),
             }
         }
 
@@ -4465,11 +4354,8 @@ mod tests {
 
     impl Drop for TestUpstreamServer {
         fn drop(&mut self) {
-            if let Some(shutdown) = self.shutdown.take() {
-                let _ = shutdown.send(());
-            }
-            if let Some(join_handle) = self.join_handle.take() {
-                let _ = join_handle.join();
+            if let Some(handle) = self.handle.as_mut() {
+                handle.stop();
             }
         }
     }

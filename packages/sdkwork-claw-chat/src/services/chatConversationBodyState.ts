@@ -2,7 +2,7 @@ export type ChatConversationBodyMode = 'loading' | 'empty' | 'messages';
 
 export function resolveChatConversationBodyState(params: {
   messageCount: number;
-  isGatewayHistoryLoading: boolean;
+  isHistoryLoading: boolean;
 }) {
   if (params.messageCount > 0) {
     return {
@@ -11,6 +11,6 @@ export function resolveChatConversationBodyState(params: {
   }
 
   return {
-    mode: params.isGatewayHistoryLoading ? ('loading' as const) : ('empty' as const),
+    mode: params.isHistoryLoading ? ('loading' as const) : ('empty' as const),
   };
 }

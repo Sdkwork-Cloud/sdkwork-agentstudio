@@ -1,14 +1,9 @@
-use super::{
-    support::{duration_to_ms, proxy_error, trim_optional_text},
-    types::LocalAiProxyTokenUsage,
-    types::ProxyHttpResult,
-};
+use super::{types::LocalAiProxyTokenUsage, types::ProxyHttpResult};
 use axum::{
     body::{Body, Bytes},
     http::{header::CONTENT_TYPE, HeaderValue, StatusCode},
     response::Response,
 };
-use serde_json::{json, Value};
 use sdkwork_local_api_proxy_native::streaming::{
     build_openai_chat_stream_chunk, build_openai_response_completed_event,
     build_openai_response_created_event, build_openai_response_delta_event,
@@ -16,6 +11,8 @@ use sdkwork_local_api_proxy_native::streaming::{
     merge_stream_usage, project_anthropic_openai_stream_frame, project_gemini_openai_stream_frame,
     project_ollama_openai_stream_frame, ParsedSseEvent,
 };
+use sdkwork_local_api_proxy_native::support::{duration_to_ms, proxy_error, trim_optional_text};
+use serde_json::{json, Value};
 use std::time::Instant;
 use uuid::Uuid;
 

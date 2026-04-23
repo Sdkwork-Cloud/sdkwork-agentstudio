@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
 
 import {
@@ -16,6 +18,8 @@ import {
   resolveBackgroundRuntimeReadinessRecoveryToastCopy,
   retryBackgroundRuntimeReadinessRecovery,
 } from './desktopBackgroundRuntimeReadinessRecovery.ts';
+
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
 
 function createBootstrapState(): DesktopBootstrapState {
   return {
@@ -74,6 +78,36 @@ function createManualTaskScheduler() {
   };
 }
 
+test('desktop bootstrap app defines a next-paint wait helper for startup window reveal sequencing', () => {
+  const source = readFileSync(
+    path.join(import.meta.dirname, 'DesktopBootstrapApp.tsx'),
+    'utf8',
+  );
+
+  assert.match(source, /function waitForNextPaint\(\)/);
+});
+
+test('desktop bootstrap app resolves passing startup evidence phases from the latest milestone ref inside background readiness callbacks', () => {
+  const source = readFileSync(
+    path.join(import.meta.dirname, 'DesktopBootstrapApp.tsx'),
+    'utf8',
+  );
+
+  assert.match(source, /milestonesRef\.current\.hasShellMounted/);
+});
+
+test('desktop bootstrap app refreshes local ai proxy startup evidence from a fresh desktop kernel info probe instead of reusing the early bootstrap cache', () => {
+  const source = readFileSync(
+    path.join(import.meta.dirname, 'DesktopBootstrapApp.tsx'),
+    'utf8',
+  );
+
+  assert.match(
+    source,
+    /const captureLocalAiProxyEvidence = async[\s\S]*await getDesktopKernelInfo\(\)/,
+  );
+});
+
 test('desktop bootstrap runtime requests shell render only after the window, runtime, and shell bootstrap all succeed', async () => {
   const state = createBootstrapState();
   const actions = createStateActions(state);
@@ -123,10 +157,6 @@ test('desktop bootstrap runtime requests shell render only after the window, run
       events.push(`clear-task:${handle}`);
       scheduler.clear(handle);
     },
-    startRenderTransition(callback) {
-      events.push('start-transition');
-      callback();
-    },
     resolveErrorMessage(error) {
       return error instanceof Error ? error.message : String(error);
     },
@@ -165,10 +195,44 @@ test('desktop bootstrap runtime requests shell render only after the window, run
     'schedule-warm-prefetch',
     'prefetch-startup:/chat',
     'bootstrap-shell',
-    'start-transition',
     'list-prefetch-routes',
     'prefetch-warm:/instances,/settings',
   ]);
+});
+
+test('desktop bootstrap runtime does not gate the initial shell render behind transition scheduling', async () => {
+  const state = createBootstrapState();
+  const actions = createStateActions(state);
+
+  const result = await runDesktopBootstrapSequence({
+    pathname: '/chat',
+    runId: 11,
+    isRunCurrent: () => true,
+    revealStartupWindow: async () => {},
+    connectDesktopRuntime: async () => {},
+    bootstrapShellRuntime: async () => {},
+    resolveSidebarStartupRoute() {
+      return '/chat';
+    },
+    listSidebarRoutePrefetchPaths() {
+      return ['/chat'];
+    },
+    prefetchSidebarRoute() {},
+    prefetchSidebarRoutes() {},
+    scheduleTask() {
+      return 1;
+    },
+    clearScheduledTask() {},
+    resolveErrorMessage(error) {
+      return error instanceof Error ? error.message : String(error);
+    },
+    log() {},
+    actions,
+  });
+
+  assert.equal(result, 'launched');
+  assert.equal(state.shouldRenderShell, true);
+  assert.equal(state.status, 'launching');
 });
 
 test('desktop bootstrap runtime enters error state and clears deferred sidebar warmup when shell bootstrap fails', async () => {
@@ -210,9 +274,6 @@ test('desktop bootstrap runtime enters error state and clears deferred sidebar w
       events.push(`clear-task:${handle}`);
       scheduler.clear(handle);
     },
-    startRenderTransition() {
-      events.push('start-transition');
-    },
     resolveErrorMessage(error) {
       return error instanceof Error ? `resolved:${error.message}` : 'resolved';
     },
@@ -249,6 +310,50 @@ test('desktop bootstrap runtime enters error state and clears deferred sidebar w
     events.includes('log:error:Bootstrap failed.'),
     true,
   );
+});
+
+test('desktop bootstrap runtime reports the original bootstrap failure so the desktop shell can persist startup evidence', async () => {
+  const state = createBootstrapState();
+  const actions = createStateActions(state);
+  const scheduler = createManualTaskScheduler();
+  const reportedFailures: unknown[] = [];
+  const bootstrapFailure = new Error('shell bootstrap failed');
+
+  const result = await runDesktopBootstrapSequence({
+    pathname: '/chat',
+    runId: 21,
+    isRunCurrent: () => true,
+    revealStartupWindow: async () => {},
+    connectDesktopRuntime: async () => {},
+    bootstrapShellRuntime: async () => {
+      throw bootstrapFailure;
+    },
+    resolveSidebarStartupRoute() {
+      return '/chat';
+    },
+    listSidebarRoutePrefetchPaths() {
+      return ['/chat'];
+    },
+    prefetchSidebarRoute() {},
+    prefetchSidebarRoutes() {},
+    scheduleTask(callback) {
+      return scheduler.schedule(callback);
+    },
+    clearScheduledTask(handle) {
+      scheduler.clear(handle);
+    },
+    resolveErrorMessage(error) {
+      return error instanceof Error ? error.message : String(error);
+    },
+    onBootstrapFailed(error) {
+      reportedFailures.push(error);
+    },
+    log() {},
+    actions,
+  });
+
+  assert.equal(result, 'failed');
+  assert.deepEqual(reportedFailures, [bootstrapFailure]);
 });
 
 test('desktop bootstrap runtime stops cleanly when the run becomes stale before shell render is requested', async () => {
@@ -290,9 +395,6 @@ test('desktop bootstrap runtime stops cleanly when the run becomes stale before 
     clearScheduledTask(handle) {
       events.push(`clear-task:${handle}`);
       scheduler.clear(handle);
-    },
-    startRenderTransition() {
-      events.push('start-transition');
     },
     resolveErrorMessage(error) {
       return error instanceof Error ? error.message : String(error);
@@ -464,7 +566,7 @@ test('retryBackgroundRuntimeReadinessRecovery clears prior failure state, restar
   const events: string[] = [];
 
   await retryBackgroundRuntimeReadinessRecovery({
-    instanceId: 'local-built-in',
+    instanceId: BUILT_IN_INSTANCE_ID,
     clearFailureState: () => {
       events.push('clearFailureState');
     },
@@ -479,7 +581,7 @@ test('retryBackgroundRuntimeReadinessRecovery clears prior failure state, restar
 
   assert.deepEqual(events, [
     'clearFailureState',
-    'restartInstance:local-built-in',
+    `restartInstance:${BUILT_IN_INSTANCE_ID}`,
     'reconnectHostedRuntimeReadiness',
   ]);
 });
@@ -490,7 +592,7 @@ test('retryBackgroundRuntimeReadinessRecovery stops before reconnect when the bu
   await assert.rejects(
     () =>
       retryBackgroundRuntimeReadinessRecovery({
-        instanceId: 'local-built-in',
+        instanceId: BUILT_IN_INSTANCE_ID,
         clearFailureState: () => {
           events.push('clearFailureState');
         },
@@ -507,7 +609,7 @@ test('retryBackgroundRuntimeReadinessRecovery stops before reconnect when the bu
 
   assert.deepEqual(events, [
     'clearFailureState',
-    'restartInstance:local-built-in',
+    `restartInstance:${BUILT_IN_INSTANCE_ID}`,
   ]);
 });
 

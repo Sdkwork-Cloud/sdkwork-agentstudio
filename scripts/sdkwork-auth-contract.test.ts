@@ -344,7 +344,7 @@ runTest('sdkwork-claw-auth parity checks use the shared Node TypeScript runner f
 
   assert.match(
     workspacePackageJson,
-    /"check:sdkwork-auth"\s*:\s*"node scripts\/run-sdkwork-auth-check\.mjs"/,
+    /"check:sdkwork-auth"\s*:\s*"sdkwork-run-node scripts\/run-sdkwork-auth-check\.mjs"/,
   );
   assert.ok(exists('scripts/run-sdkwork-auth-check.mjs'));
   assert.ok(exists('scripts/run-node-typescript-check.mjs'));
@@ -354,6 +354,7 @@ runTest('sdkwork-claw-auth parity checks use the shared Node TypeScript runner f
   assert.match(authCheckRunner, /authConfig\.test\.ts/);
   assert.match(authCheckRunner, /appAuthService\.test\.ts/);
   assert.match(authCheckRunner, /useAuthStore\.test\.ts/);
+  assert.match(authCheckRunner, /user-center-standard-bridge\.test\.ts/);
   assert.doesNotMatch(authCheckRunner, /tsx/);
   assert.doesNotMatch(authStoreSource, /zustand/);
   assert.doesNotMatch(useAuthStoreSource, /zustand/);

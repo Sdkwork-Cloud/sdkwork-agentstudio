@@ -22,7 +22,42 @@ export const DEFAULT_SHARED_SDK_CORE_REPO_URL = 'https://github.com/Sdkwork-Clou
 export const DEFAULT_SHARED_IM_SDK_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git';
 export const DEFAULT_SHARED_SDK_RELEASE_CONFIG_PATH = 'config/shared-sdk-release-sources.json';
 
-function resolveSpawnCommand(command) {
+function resolveGitCommand() {
+  const configuredCandidates = [
+    process.env.GIT_EXE,
+    process.env.GIT,
+  ].filter((value) => typeof value === 'string' && value.trim().length > 0);
+  const defaultCandidates = [
+    'C:\\Program Files\\Git\\cmd\\git.exe',
+    'C:\\Program Files\\Git\\bin\\git.exe',
+    'C:\\Program Files (x86)\\Git\\cmd\\git.exe',
+    'C:\\Program Files (x86)\\Git\\bin\\git.exe',
+  ];
+
+  for (const candidate of [...configuredCandidates, ...defaultCandidates]) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  const whereResult = spawnSync('where.exe', ['git'], {
+    encoding: 'utf8',
+    shell: false,
+  });
+  if (whereResult.status === 0) {
+    const resolvedCandidate = (whereResult.stdout ?? '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line.length > 0);
+    if (resolvedCandidate) {
+      return resolvedCandidate;
+    }
+  }
+
+  return 'git.exe';
+}
+
+export function resolveSpawnCommand(command) {
   if (process.platform !== 'win32') {
     return command;
   }
@@ -33,6 +68,10 @@ function resolveSpawnCommand(command) {
 
   if (command === 'pnpm') {
     return 'pnpm.cmd';
+  }
+
+  if (command === 'git') {
+    return resolveGitCommand();
   }
 
   return command;

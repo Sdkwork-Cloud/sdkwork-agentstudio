@@ -28,6 +28,7 @@
 | `pnpm tauri:icon` | 重新生成桌面端图标资源 |
 | `pnpm tauri:info` | 输出 Tauri 环境信息 |
 | `pnpm check:desktop` | 校验桌面端运行时与命令契约 |
+| `pnpm check:desktop-openclaw-runtime` | 校验内置 OpenClaw 运行时的升级就绪度、打包元数据与 release 资产契约 |
 | `pnpm release:desktop` | 执行 CI 使用的桌面端 release 构建入口 |
 | `pnpm release:package:desktop` | 将已经构建完成的桌面端安装器与校验文件收集到 `artifacts/release`；需要先执行 `pnpm release:desktop` 或 `pnpm tauri:build` |
 | `pnpm release:package:web` | 将 Web 与 docs 产物打包到 `artifacts/release` |
@@ -38,12 +39,20 @@
 | --- | --- |
 | `pnpm server:dev` | 以开发模式启动原生 Rust Server |
 | `pnpm server:build` | 构建原生 Rust Server 二进制，可追加 `-- --target <triple>` 指定目标三元组；在 Windows 上如果已安装 WSL 发行版，构建 Linux target 时会自动桥接到 WSL |
+| `pnpm check:multi-mode` | 运行本地最高信号门禁，一次覆盖 desktop、server、统一 host runtime、OpenClaw 就绪度与 release 打包契约 |
 | `pnpm check:server` | 校验 Server 结构并运行 Rust 测试 |
+| `pnpm check:sdkwork-host-runtime` | 校验跨 desktop、server、docker、kubernetes 的统一运行时 authority 与 smoke 契约 |
 | `pnpm release:plan` | 解析当前 multi-family release 矩阵 |
-| `pnpm release:package:server` | 打包原生 Server 归档到 `artifacts/release`；根级本地 wrapper 在缺少二进制时会先自动构建 |
-| `pnpm release:package:container` | 打包 Docker 部署包到 `artifacts/release`；根级本地 wrapper 在缺少匹配的 Linux Server 二进制时会先自动构建；在 Windows 上这一步可以自动复用 WSL |
+| `pnpm release:package:server` | 打包原生 Server 归档到 `artifacts/release`；根级本地 wrapper 会先对对应 target 执行一次增量构建，确保打包使用的是最新的原生 Server 二进制 |
+| `pnpm release:package:container` | 打包 Docker 部署包到 `artifacts/release`；根级本地 wrapper 会先对匹配 target 的 Linux Server 二进制执行一次增量构建；在 Windows 上这一步可以自动复用 WSL |
 | `pnpm release:package:kubernetes` | 打包 Kubernetes 部署包到 `artifacts/release`；只处理 chart 与 values 产物，不要求本地先构建 Server 二进制 |
-| `pnpm release:finalize` | 归并所有 family manifest、计算校验和并生成最终清单；本地默认输出目录为 `artifacts/release` |
+| `pnpm release:smoke:desktop` | 对已打包的桌面端目标重新执行 installer smoke 与启动态 smoke |
+| `pnpm release:smoke:desktop-packaged-launch` | 启动指定目标的标准桌面安装产物并捕获隔离的 packaged-session 启动证据 |
+| `pnpm release:smoke:desktop-startup` | 校验已捕获的桌面端启动证据，并生成标准化的 desktop startup smoke 报告 |
+| `pnpm release:smoke:server` | 对已打包的 Server 产物重新执行 bundle 运行态 smoke |
+| `pnpm release:smoke:container` | 对已打包的 Docker 部署 bundle 重新执行 deployment smoke |
+| `pnpm release:smoke:kubernetes` | 对已打包的 Kubernetes chart bundle 重新执行渲染与就绪性 smoke |
+| `pnpm release:finalize` | 归并所有 family manifest、计算校验和并生成最终清单；本地默认输出目录为 `artifacts/release`。本地 wrapper 会依次从 `SDKWORK_RELEASE_REPOSITORY`、`GITHUB_REPOSITORY`、`git remote origin` 推断 `repository`，并保留 `container` / `kubernetes` 的结构化 `skipped` deployment smoke 证据 |
 
 ## 发布与 CI 自动化
 

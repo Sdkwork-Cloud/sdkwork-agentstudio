@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { createDeviceService } from './deviceService.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 async function runTest(name: string, callback: () => Promise<void> | void) {
   try {
     await callback();
@@ -26,7 +28,7 @@ await runTest('getWorkspaceSnapshot selects the default OpenClaw instance and no
             status: 'online',
           },
           {
-            id: 'local-built-in',
+            id: BUILT_IN_INSTANCE_ID,
             name: 'Local Built-In',
             runtimeKind: 'openclaw',
             isDefault: true,
@@ -75,8 +77,8 @@ await runTest('getWorkspaceSnapshot selects the default OpenClaw instance and no
 
   const snapshot = await service.getWorkspaceSnapshot();
 
-  assert.deepEqual(calls, [{ instanceId: 'local-built-in', method: 'listDevicePairings' }]);
-  assert.equal(snapshot.instance.id, 'local-built-in');
+  assert.deepEqual(calls, [{ instanceId: BUILT_IN_INSTANCE_ID, method: 'listDevicePairings' }]);
+  assert.equal(snapshot.instance.id, BUILT_IN_INSTANCE_ID);
   assert.equal(snapshot.pending.length, 1);
   assert.equal(snapshot.pending[0]?.requestId, 'req-1');
   assert.equal(snapshot.pending[0]?.name, 'Warehouse iPad');
@@ -94,7 +96,7 @@ await runTest('rotateToken delegates to the OpenClaw gateway for the resolved in
       async listInstances() {
         return [
           {
-            id: 'local-built-in',
+            id: BUILT_IN_INSTANCE_ID,
             name: 'Local Built-In',
             runtimeKind: 'openclaw',
             isDefault: true,
@@ -129,7 +131,7 @@ await runTest('rotateToken delegates to the OpenClaw gateway for the resolved in
 
   assert.deepEqual(calls, [
     {
-      instanceId: 'local-built-in',
+      instanceId: BUILT_IN_INSTANCE_ID,
       method: 'rotateDeviceToken',
       args: {
         deviceId: 'device-2',

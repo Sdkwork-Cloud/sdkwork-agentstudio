@@ -9,6 +9,7 @@ use crate::framework::{
     services::kernel_runtime_authority::KernelRuntimeAuthorityService,
     FrameworkError, Result,
 };
+use sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_config_file_path;
 #[cfg(unix)]
 use std::io;
 #[cfg(unix)]
@@ -41,7 +42,9 @@ const DEFAULT_RESTART_WINDOW_MS: u64 = 60_000;
 const DEFAULT_RESTART_BACKOFF_MS: u64 = 5_000;
 const DEFAULT_MAX_RESTARTS: usize = 3;
 const DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MS: u64 = 10_000;
-const DEFAULT_OPENCLAW_GATEWAY_READY_TIMEOUT_MS: u64 = 30_000;
+// Packaged OpenClaw cold starts on Windows can take more than 26s before the
+// loopback listener binds, so the supervisor needs extra startup slack.
+const DEFAULT_OPENCLAW_GATEWAY_READY_TIMEOUT_MS: u64 = 60_000;
 const DEFAULT_OPENCLAW_GATEWAY_START_RETRY_ATTEMPTS: usize = 3;
 const DEFAULT_OPENCLAW_GATEWAY_START_RETRY_DELAY_MS: u64 = 250;
 const DEFAULT_OPENCLAW_GATEWAY_HEALTH_PROBE_INTERVAL_MS: u64 = 500;
@@ -49,6 +52,7 @@ const DEFAULT_OPENCLAW_GATEWAY_HEALTH_PROBE_TIMEOUT_MS: u64 = 750;
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_CONNECT_TIMEOUT_MS: u64 = 200;
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_READY_IO_TIMEOUT_MS: u64 = 1_500;
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_INVOKE_IO_TIMEOUT_MS: u64 = 300;
+const DEFAULT_OPENCLAW_GATEWAY_HTTP_LIVE_PATH: &str = "/healthz";
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_READY_PATH: &str = "/readyz";
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -755,12 +759,15 @@ impl SupervisorService {
                 return Ok(());
             };
 
-            let readiness = self
+            // Running-state supervision should use shallow liveness first. OpenClaw
+            // can temporarily drop /readyz while channels or sidecars reconnect even
+            // though the gateway process and HTTP listener are still healthy.
+            let health = self
                 .paths
                 .as_ref()
-                .map(|paths| probe_gateway_ready(&runtime, paths, true))
-                .unwrap_or_else(|| probe_gateway_invoke_ready(&runtime));
-            if readiness.is_ready() {
+                .map(|paths| probe_running_gateway_health(&runtime, Some(paths)))
+                .unwrap_or_else(|| probe_running_gateway_health(&runtime, None));
+            if health.is_ready() {
                 if matches!(lifecycle, ManagedServiceLifecycle::Failed) {
                     self.record_running(service_id, observed_pid)?;
                 }
@@ -771,7 +778,7 @@ impl SupervisorService {
                     format!(
                         "OpenClaw gateway on 127.0.0.1:{} is not ready ({})",
                         runtime.gateway_port,
-                        readiness.detail()
+                        health.detail()
                     ),
                 )?;
             }
@@ -1013,7 +1020,58 @@ fn probe_gateway_ready(
 }
 
 fn probe_gateway_http_ready(runtime: &ActivatedOpenClawRuntime) -> GatewayProbeStatus {
-    probe_gateway_http_status(runtime, DEFAULT_OPENCLAW_GATEWAY_HTTP_READY_PATH, "ready probe")
+    probe_gateway_http_status(
+        runtime,
+        DEFAULT_OPENCLAW_GATEWAY_HTTP_READY_PATH,
+        "ready probe",
+    )
+}
+
+fn probe_gateway_http_live(runtime: &ActivatedOpenClawRuntime) -> GatewayProbeStatus {
+    probe_gateway_http_status(
+        runtime,
+        DEFAULT_OPENCLAW_GATEWAY_HTTP_LIVE_PATH,
+        "live probe",
+    )
+}
+
+fn probe_running_gateway_health(
+    runtime: &ActivatedOpenClawRuntime,
+    paths: Option<&AppPaths>,
+) -> GatewayProbeStatus {
+    let live_probe = probe_gateway_http_live(runtime);
+    if live_probe.is_ready() {
+        return live_probe;
+    }
+
+    let ready_probe = probe_gateway_http_ready(runtime);
+    if ready_probe.is_ready() {
+        return ready_probe;
+    }
+
+    let Some(paths) = paths else {
+        return GatewayProbeStatus::Pending(format!(
+            "{}; {}",
+            live_probe.detail(),
+            ready_probe.detail()
+        ));
+    };
+
+    let health_probe = probe_gateway_cli_health_ready(
+        runtime,
+        paths,
+        DEFAULT_OPENCLAW_GATEWAY_HEALTH_PROBE_TIMEOUT_MS,
+    );
+    if health_probe.is_ready() {
+        return health_probe;
+    }
+
+    GatewayProbeStatus::Pending(format!(
+        "{}; {}; {}",
+        live_probe.detail(),
+        ready_probe.detail(),
+        health_probe.detail()
+    ))
 }
 
 fn probe_gateway_http_status(
@@ -1073,9 +1131,7 @@ fn probe_gateway_http_status(
     let status_line = match read_http_status_line(&mut stream) {
         Ok(Some(status_line)) => status_line,
         Ok(None) => {
-            return GatewayProbeStatus::Pending(format!(
-                "{label} returned an empty response"
-            ))
+            return GatewayProbeStatus::Pending(format!("{label} returned an empty response"))
         }
         Err(error) => {
             return GatewayProbeStatus::Pending(format!(
@@ -1388,7 +1444,7 @@ fn readable_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
 }
 
 fn default_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
-    paths.user_root.join(".openclaw").join("openclaw.json")
+    build_standard_openclaw_config_file_path(&paths.user_root)
 }
 
 fn built_in_openclaw_runtime_dir(paths: &AppPaths) -> PathBuf {
@@ -2304,6 +2360,45 @@ mod tests {
     }
 
     #[test]
+    fn supervisor_keeps_running_gateway_healthy_when_only_readiness_temporarily_drops() {
+        let service = SupervisorService::new();
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let runtime = fake_gateway_runtime_with_script(
+            &paths,
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nconst degradeAt = Date.now() + 500;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  process.stderr.write('readiness degraded while channels reconnect');\n  process.exit(1);\n}\nconst server = http.createServer((req, res) => {\n  if (req.url === '/health' || req.url === '/healthz') {\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, status: 'live' }));\n    return;\n  }\n  if (req.url === '/ready' || req.url === '/readyz') {\n    if (Date.now() >= degradeAt) {\n      res.writeHead(503, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ready: false, failing: ['channels'], uptimeMs: 1200 }));\n      return;\n    }\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 300 }));\n    return;\n  }\n  if (req.url === '/tools/invoke' && req.method === 'POST') {\n    req.on('data', () => {});\n    req.on('end', () => {\n      res.writeHead(503, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'gateway still reconnecting channels' } }));\n    });\n    return;\n  }\n  res.writeHead(404, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
+                .to_string(),
+        );
+
+        service
+            .configure_openclaw_gateway(&runtime)
+            .expect("configure runtime");
+        service
+            .start_openclaw_gateway(&paths)
+            .expect("start gateway");
+
+        thread::sleep(Duration::from_millis(700));
+
+        assert!(
+            service
+                .is_openclaw_gateway_running()
+                .expect("gateway running state"),
+            "gateway should stay running while shallow liveness remains healthy even if /readyz temporarily reports not ready"
+        );
+
+        let snapshot = service.snapshot().expect("snapshot");
+        let openclaw = snapshot
+            .services
+            .into_iter()
+            .find(|managed_service| managed_service.id == SERVICE_ID_OPENCLAW_GATEWAY)
+            .expect("openclaw service");
+        assert_eq!(openclaw.lifecycle, ManagedServiceLifecycle::Running);
+        assert_eq!(openclaw.last_error, None);
+
+        service.begin_shutdown().expect("shutdown");
+    }
+
+    #[test]
     fn supervisor_reclaims_stale_openclaw_gateway_before_refreshing_the_managed_port() {
         let service = SupervisorService::new();
         let root = tempfile::tempdir().expect("temp dir");
@@ -2455,9 +2550,7 @@ mod tests {
         }
     }
 
-    fn openclaw_config_file_path(
-        paths: &crate::framework::paths::AppPaths,
-    ) -> std::path::PathBuf {
+    fn openclaw_config_file_path(paths: &crate::framework::paths::AppPaths) -> std::path::PathBuf {
         KernelRuntimeAuthorityService::new()
             .active_config_file_path("openclaw", paths)
             .unwrap_or_else(|_| {
@@ -2567,8 +2660,7 @@ mod tests {
     }
 
     #[test]
-    fn configured_gateway_port_uses_canonical_config_file_path_when_compatibility_field_drifts()
-    {
+    fn configured_gateway_port_uses_canonical_config_file_path_when_compatibility_field_drifts() {
         let root = tempfile::tempdir().expect("temp dir");
         let mut paths = resolve_paths_for_root(root.path()).expect("paths");
         let openclaw = paths
@@ -2630,6 +2722,14 @@ mod tests {
             .expect("production source");
 
         assert!(!production_source.contains(".active_openclaw_config_path("));
+    }
+
+    #[test]
+    fn supervisor_keeps_enough_budget_for_packaged_gateway_cold_start() {
+        assert!(
+            super::DEFAULT_OPENCLAW_GATEWAY_READY_TIMEOUT_MS >= 60_000,
+            "packaged OpenClaw gateway cold starts can take more than 26 seconds before binding; keep at least a 60s supervisor readiness budget"
+        );
     }
 
     #[test]

@@ -44,6 +44,9 @@ export function createOpenClawGatewayKernelChatAdapter(
       return createKernelChatAdapterCapabilities({
         adapterId: 'openclawGateway',
         authorityKind: 'gateway',
+        supportsStreaming: false,
+        supportsRuns: false,
+        supportsAgentProfiles: false,
       });
     },
     async listSessions(instanceId) {

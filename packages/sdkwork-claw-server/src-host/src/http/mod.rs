@@ -11,7 +11,7 @@ pub mod routes {
     pub mod manage_openclaw;
     pub mod manage_rollouts;
     pub mod manage_service;
-    pub mod openclaw_gateway_proxy;
     pub mod openapi;
+    pub mod openclaw_gateway_proxy;
 }
 pub mod static_assets;

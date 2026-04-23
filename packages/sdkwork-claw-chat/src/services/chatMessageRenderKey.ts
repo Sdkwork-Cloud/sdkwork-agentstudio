@@ -2,6 +2,7 @@ type ChatMessageRenderLike = {
   id?: string;
   messageId?: string;
   toolCallId?: string;
+  seq?: number;
   role?: string;
   timestamp?: number;
 };
@@ -25,6 +26,11 @@ function resolveBaseMessageRenderKey(message: ChatMessageRenderLike, index: numb
   const messageId = typeof message.messageId === 'string' ? message.messageId.trim() : '';
   if (messageId) {
     return `msg:${messageId}`;
+  }
+
+  const seq = typeof message.seq === 'number' && Number.isFinite(message.seq) ? message.seq : null;
+  if (seq !== null) {
+    return `msg:seq:${seq}`;
   }
 
   const timestamp = typeof message.timestamp === 'number' ? message.timestamp : null;

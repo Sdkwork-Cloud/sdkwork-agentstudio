@@ -37,6 +37,10 @@ use sdkwork_claw_server::bootstrap::{
     host_platform_capability_keys_for_mode, ServerStateStoreProfileRecord,
     ServerStateStoreProviderRecord, ServerStateStoreSnapshot,
 };
+use sdkwork_local_api_proxy_native::kernel::{
+    build_standard_hermes_config_file_path, build_standard_hermes_root_dir,
+    build_standard_openclaw_config_file_path,
+};
 use serde::{de::Error as SerdeDeError, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Map, Number, Value};
 use std::{
@@ -46,9 +50,19 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+mod hermes_chat;
+mod kernel_chat;
+mod kernel_chat_service;
+mod openclaw_chat;
 mod openclaw_control;
 mod openclaw_workbench;
 
+pub use kernel_chat::{
+    KernelChatAgentProfile, KernelChatMessage, KernelChatRun, KernelChatSession,
+    PersistedKernelChatAgentRecord,
+    StudioCreateKernelChatSessionInput, StudioPatchKernelChatSessionInput,
+    StudioStartKernelChatRunInput,
+};
 use openclaw_control::{
     clone_openclaw_task, create_openclaw_task, delete_openclaw_task, invoke_openclaw_gateway,
     list_openclaw_task_executions, require_running_openclaw_runtime, run_openclaw_task_now,
@@ -60,7 +74,9 @@ const INSTANCE_NAMESPACE: &str = "studio.instances";
 const INSTANCE_REGISTRY_KEY: &str = "registry";
 const CHAT_NAMESPACE: &str = "studio.chat";
 const CONVERSATION_KEY_PREFIX: &str = "conversation:";
-const DEFAULT_INSTANCE_ID: &str = "local-built-in";
+const PERSISTED_KERNEL_CHAT_AGENT_KEY_PREFIX: &str = "kernel-agent:";
+const CHAT_STORAGE_PROFILE_ID: &str = "default-sqlite";
+const DEFAULT_INSTANCE_ID: &str = "managed-openclaw-primary";
 const OPENCLAW_INSTALLER_SOFTWARE_NAME: &str = "openclaw";
 const OPENCLAW_PROVIDER_RUNTIME_DEFAULT_TEMPERATURE: f64 = 0.2;
 const OPENCLAW_PROVIDER_RUNTIME_DEFAULT_TOP_P: f64 = 1.0;
@@ -1111,6 +1127,97 @@ pub struct StudioOpenClawGatewayInvokeOptions {
     pub headers: BTreeMap<String, String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StudioKernelAgentCreationReasonCode {
+    UnsupportedKernel,
+    ConfigUnavailable,
+    ConfigNotWritable,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudioKernelAgentCreationKernelOption {
+    pub kernel_id: String,
+    pub label: String,
+    pub supported: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason_code: Option<StudioKernelAgentCreationReasonCode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudioKernelAgentCreationModelOption {
+    pub value: String,
+    pub label: String,
+    pub provider_id: String,
+    pub provider_label: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudioKernelAgentCreationCapability {
+    pub instance_id: String,
+    pub instance_name: String,
+    pub kernel_options: Vec<StudioKernelAgentCreationKernelOption>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_kernel_id: Option<String>,
+    pub model_options: Vec<StudioKernelAgentCreationModelOption>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct StudioCreateKernelAgentInput {
+    pub instance_id: String,
+    pub kernel_id: Option<String>,
+    pub agent_id: String,
+    pub display_name: String,
+    pub avatar: Option<String>,
+    pub is_default: bool,
+    pub primary_model: Option<String>,
+    pub fallback_models: Vec<String>,
+    pub workspace: Option<String>,
+    pub agent_dir: Option<String>,
+    pub temperature: Option<f64>,
+    pub top_p: Option<f64>,
+    pub max_tokens: Option<u32>,
+    pub timeout_ms: Option<u32>,
+    pub streaming: Option<bool>,
+}
+
+impl Default for StudioCreateKernelAgentInput {
+    fn default() -> Self {
+        Self {
+            instance_id: String::new(),
+            kernel_id: None,
+            agent_id: String::new(),
+            display_name: String::new(),
+            avatar: None,
+            is_default: false,
+            primary_model: None,
+            fallback_models: Vec::new(),
+            workspace: None,
+            agent_dir: None,
+            temperature: None,
+            top_p: None,
+            max_tokens: None,
+            timeout_ms: None,
+            streaming: None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudioCreatedKernelAgentRecord {
+    pub instance_id: String,
+    pub kernel_id: String,
+    pub agent_id: String,
+    pub display_name: String,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct PartialStudioStorageBinding {
@@ -1803,7 +1910,7 @@ impl StudioService {
         let index = registry
             .instances
             .iter()
-            .position(|instance| instance.id == id)
+            .position(|instance| matches_requested_instance_id(instance, id))
             .ok_or_else(|| FrameworkError::NotFound(format!("instance \"{id}\"")))?;
 
         let current = registry.instances[index].clone();
@@ -1878,7 +1985,7 @@ impl StudioService {
             paths,
             config,
             StorageListKeysRequest {
-                profile_id: None,
+                profile_id: chat_storage_profile_id(),
                 namespace: Some(CHAT_NAMESPACE.to_string()),
             },
         )?;
@@ -1913,7 +2020,7 @@ impl StudioService {
                         paths,
                         config,
                         StorageDeleteRequest {
-                            profile_id: None,
+                            profile_id: chat_storage_profile_id(),
                             namespace: Some(CHAT_NAMESPACE.to_string()),
                             key,
                         },
@@ -2083,7 +2190,7 @@ impl StudioService {
         let index = registry
             .instances
             .iter()
-            .position(|instance| instance.id == id)
+            .position(|instance| matches_requested_instance_id(instance, id))
             .ok_or_else(|| FrameworkError::NotFound(format!("instance \"{id}\"")))?;
 
         let now = unix_timestamp_ms()?;
@@ -2104,9 +2211,8 @@ impl StudioService {
         status: StudioInstanceStatus,
     ) -> Result<StudioInstanceRecord> {
         let mut registry = self.load_instance_registry(paths, config, storage)?;
-        let index = find_built_in_openclaw_index(&registry.instances).ok_or_else(|| {
-            FrameworkError::NotFound("built-in OpenClaw instance".to_string())
-        })?;
+        let index = find_built_in_openclaw_index(&registry.instances)
+            .ok_or_else(|| FrameworkError::NotFound("built-in OpenClaw instance".to_string()))?;
         let now = unix_timestamp_ms()?;
         registry.instances[index].status = status;
         registry.instances[index].updated_at = now;
@@ -2476,7 +2582,7 @@ impl StudioService {
             .load_instance_registry_projected(paths, config, storage, supervisor)?
             .instances
             .into_iter()
-            .find(|instance| instance.id == id))
+            .find(|instance| matches_requested_instance_id(instance, id)))
     }
 
     fn get_instance_detail_internal(
@@ -2545,6 +2651,210 @@ impl StudioService {
         }))
     }
 
+    pub fn get_kernel_agent_creation_capability(
+        &self,
+        paths: &AppPaths,
+        config: &AppConfig,
+        storage: &StorageService,
+        instance_id: &str,
+    ) -> Result<StudioKernelAgentCreationCapability> {
+        let instance = self
+            .get_instance(paths, config, storage, instance_id)?
+            .ok_or_else(|| FrameworkError::NotFound(format!("instance \"{instance_id}\"")))?;
+        let instance_kernel_id = kernel_runtime_kind_id(&instance.runtime_kind);
+
+        if is_built_in_openclaw_instance(&instance) {
+            let config_path = readable_openclaw_config_file_path(paths);
+            let config_exists = config_path.exists();
+            let config_readonly = config_exists
+                && fs::metadata(&config_path)
+                    .map(|metadata| metadata.permissions().readonly())
+                    .unwrap_or(false);
+            let reason = if !config_exists {
+                Some((
+                    StudioKernelAgentCreationReasonCode::ConfigUnavailable,
+                    format!(
+                        "Desktop OpenClaw agent creation requires the managed config file at {}.",
+                        config_path.display()
+                    ),
+                ))
+            } else if config_readonly {
+                Some((
+                    StudioKernelAgentCreationReasonCode::ConfigNotWritable,
+                    format!(
+                        "Desktop OpenClaw agent creation cannot update the read-only config file at {}.",
+                        config_path.display()
+                    ),
+                ))
+            } else {
+                None
+            };
+            let model_options = if config_exists {
+                build_openclaw_kernel_agent_creation_model_options(&read_openclaw_config(paths)?)
+            } else {
+                Vec::new()
+            };
+
+            return Ok(StudioKernelAgentCreationCapability {
+                instance_id: instance.id,
+                instance_name: instance.name,
+                kernel_options: vec![build_kernel_agent_creation_kernel_option(
+                    instance_kernel_id.as_str(),
+                    reason.is_none(),
+                    reason.as_ref().map(|(code, _)| code.clone()),
+                    reason.map(|(_, message)| message),
+                )],
+                default_kernel_id: Some(instance_kernel_id),
+                model_options,
+            });
+        }
+
+        let (reason_code, reason) = if is_managed_hermes_instance(&instance) {
+            (
+                StudioKernelAgentCreationReasonCode::UnsupportedKernel,
+                "Hermes desktop agent creation is not yet supported because managed Hermes runtime profiles do not yet honor per-agent model and runtime parameters.".to_string(),
+            )
+        } else if instance.runtime_kind == StudioRuntimeKind::Openclaw {
+            (
+                StudioKernelAgentCreationReasonCode::ConfigUnavailable,
+                "Desktop OpenClaw agent creation currently requires the managed local OpenClaw runtime configuration owned by Claw Studio.".to_string(),
+            )
+        } else {
+            (
+                StudioKernelAgentCreationReasonCode::UnsupportedKernel,
+                format!(
+                    "Kernel \"{}\" does not currently expose a desktop agent creation contract.",
+                    instance_kernel_id
+                ),
+            )
+        };
+
+        Ok(StudioKernelAgentCreationCapability {
+            instance_id: instance.id,
+            instance_name: instance.name,
+            kernel_options: vec![build_kernel_agent_creation_kernel_option(
+                instance_kernel_id.as_str(),
+                false,
+                Some(reason_code),
+                Some(reason),
+            )],
+            default_kernel_id: Some(instance_kernel_id),
+            model_options: Vec::new(),
+        })
+    }
+
+    pub fn create_kernel_agent(
+        &self,
+        paths: &AppPaths,
+        config: &AppConfig,
+        storage: &StorageService,
+        input: StudioCreateKernelAgentInput,
+    ) -> Result<StudioCreatedKernelAgentRecord> {
+        let instance_id = trim_required_kernel_agent_field(input.instance_id.as_str(), "instanceId")?;
+        let capability =
+            self.get_kernel_agent_creation_capability(paths, config, storage, instance_id.as_str())?;
+        let requested_kernel_id = normalize_kernel_agent_kernel_id(input.kernel_id.as_deref())
+            .or(capability.default_kernel_id.clone())
+            .ok_or_else(|| {
+                FrameworkError::InvalidOperation(format!(
+                    "instance \"{}\" does not expose a kernel agent creation target",
+                    instance_id
+                ))
+            })?;
+        let selected_kernel = capability
+            .kernel_options
+            .iter()
+            .find(|option| option.kernel_id == requested_kernel_id)
+            .ok_or_else(|| {
+                FrameworkError::InvalidOperation(format!(
+                    "instance \"{}\" does not expose kernel \"{}\" for agent creation",
+                    instance_id, requested_kernel_id
+                ))
+            })?;
+
+        if !selected_kernel.supported {
+            return Err(FrameworkError::InvalidOperation(
+                selected_kernel.reason.clone().unwrap_or_else(|| {
+                    format!(
+                        "kernel \"{}\" is not available for desktop agent creation",
+                        requested_kernel_id
+                    )
+                }),
+            ));
+        }
+
+        match requested_kernel_id.as_str() {
+            "openclaw" => {
+                self.require_built_in_openclaw_instance(paths, config, storage, instance_id.as_str())?;
+                let supported_model_refs = capability
+                    .model_options
+                    .iter()
+                    .map(|option| option.value.clone())
+                    .collect::<BTreeSet<_>>();
+                let primary_model =
+                    normalize_optional_kernel_agent_field(input.primary_model.as_deref());
+                if let Some(primary_model_ref) = primary_model.as_ref() {
+                    ensure_openclaw_model_ref_is_supported(
+                        &supported_model_refs,
+                        primary_model_ref,
+                        "primaryModel",
+                    )?;
+                }
+                let fallback_models = normalize_kernel_agent_fallback_models(
+                    &input.fallback_models,
+                    primary_model.as_deref(),
+                );
+                for fallback_model in fallback_models.iter() {
+                    ensure_openclaw_model_ref_is_supported(
+                        &supported_model_refs,
+                        fallback_model,
+                        "fallbackModels",
+                    )?;
+                }
+
+                let normalized_agent_id =
+                    normalize_openclaw_kernel_agent_id(&trim_required_kernel_agent_field(
+                        input.agent_id.as_str(),
+                        "agentId",
+                    )?);
+                let display_name =
+                    trim_required_kernel_agent_field(input.display_name.as_str(), "displayName")?;
+                let mut root = read_openclaw_config(paths)?;
+
+                save_openclaw_kernel_agent_to_config_root(
+                    &mut root,
+                    OpenClawKernelAgentConfigInput {
+                        id: normalized_agent_id.clone(),
+                        display_name: display_name.clone(),
+                        avatar: normalize_optional_kernel_agent_field(input.avatar.as_deref()),
+                        is_default: input.is_default,
+                        primary_model,
+                        fallback_models,
+                        workspace: normalize_optional_kernel_agent_field(input.workspace.as_deref()),
+                        agent_dir: normalize_optional_kernel_agent_field(input.agent_dir.as_deref()),
+                        temperature: input.temperature,
+                        top_p: input.top_p,
+                        max_tokens: input.max_tokens,
+                        timeout_ms: input.timeout_ms,
+                        streaming: input.streaming,
+                    },
+                );
+                write_openclaw_config_file(paths, &root)?;
+
+                Ok(StudioCreatedKernelAgentRecord {
+                    instance_id,
+                    kernel_id: requested_kernel_id,
+                    agent_id: normalized_agent_id,
+                    display_name,
+                })
+            }
+            _ => Err(FrameworkError::InvalidOperation(format!(
+                "kernel \"{}\" is not implemented for desktop agent creation",
+                requested_kernel_id
+            ))),
+        }
+    }
+
     pub fn list_conversations(
         &self,
         paths: &AppPaths,
@@ -2556,7 +2866,7 @@ impl StudioService {
             paths,
             config,
             StorageListKeysRequest {
-                profile_id: None,
+                profile_id: chat_storage_profile_id(),
                 namespace: Some(CHAT_NAMESPACE.to_string()),
             },
         )?;
@@ -2582,6 +2892,149 @@ impl StudioService {
 
         conversations.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
         Ok(conversations)
+    }
+
+    pub fn list_persisted_kernel_chat_agents(
+        &self,
+        paths: &AppPaths,
+        config: &AppConfig,
+        storage: &StorageService,
+        instance_id: &str,
+    ) -> Result<Vec<PersistedKernelChatAgentRecord>> {
+        let response = storage.list_keys(
+            paths,
+            config,
+            StorageListKeysRequest {
+                profile_id: chat_storage_profile_id(),
+                namespace: Some(CHAT_NAMESPACE.to_string()),
+            },
+        )?;
+        let key_prefix = persisted_kernel_chat_agent_storage_key_prefix(instance_id);
+        let mut records = Vec::new();
+
+        for key in response.keys {
+            if !key.starts_with(key_prefix.as_str()) {
+                continue;
+            }
+
+            let Some(record) = self.read_persisted_kernel_chat_agent(paths, config, storage, &key)?
+            else {
+                continue;
+            };
+            records.push(record);
+        }
+
+        records.sort_by(|left, right| {
+            left.sort_order
+                .cmp(&right.sort_order)
+                .then_with(|| {
+                    if left.is_default == right.is_default {
+                        std::cmp::Ordering::Equal
+                    } else if left.is_default {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
+                })
+                .then_with(|| left.label.cmp(&right.label))
+        });
+
+        Ok(records)
+    }
+
+    pub fn replace_persisted_kernel_chat_agents(
+        &self,
+        paths: &AppPaths,
+        config: &AppConfig,
+        storage: &StorageService,
+        instance_id: &str,
+        mut records: Vec<PersistedKernelChatAgentRecord>,
+    ) -> Result<Vec<PersistedKernelChatAgentRecord>> {
+        let registry = self.load_instance_registry(paths, config, storage)?;
+        if !registry
+            .instances
+            .iter()
+            .any(|instance| instance.id == instance_id)
+        {
+            return Err(FrameworkError::NotFound(format!(
+                "instance \"{instance_id}\""
+            )));
+        }
+
+        let response = storage.list_keys(
+            paths,
+            config,
+            StorageListKeysRequest {
+                profile_id: chat_storage_profile_id(),
+                namespace: Some(CHAT_NAMESPACE.to_string()),
+            },
+        )?;
+        let key_prefix = persisted_kernel_chat_agent_storage_key_prefix(instance_id);
+
+        for key in response.keys {
+            if !key.starts_with(key_prefix.as_str()) {
+                continue;
+            }
+
+            storage.delete(
+                paths,
+                config,
+                StorageDeleteRequest {
+                    profile_id: chat_storage_profile_id(),
+                    namespace: Some(CHAT_NAMESPACE.to_string()),
+                    key,
+                },
+            )?;
+        }
+
+        for (index, record) in records.iter_mut().enumerate() {
+            record.instance_id = trim_required_storage_field(
+                record.instance_id.as_str(),
+                "instanceId",
+            )?;
+            if record.instance_id != instance_id {
+                return Err(FrameworkError::InvalidOperation(format!(
+                    "persisted kernel chat agent \"{}\" targets instance \"{}\" instead of \"{}\"",
+                    record.id, record.instance_id, instance_id,
+                )));
+            }
+            record.kernel_id =
+                trim_required_storage_field(record.kernel_id.as_str(), "kernelId")?;
+            record.agent_id =
+                trim_required_storage_field(record.agent_id.as_str(), "agentId")?;
+            record.label = trim_required_storage_field(record.label.as_str(), "label")?;
+            record.description = normalize_optional_storage_field(record.description.take());
+            record.source = trim_required_storage_field(record.source.as_str(), "source")?;
+            record.system_prompt =
+                normalize_optional_storage_field(record.system_prompt.take());
+            record.avatar = normalize_optional_storage_field(record.avatar.take());
+            record.creator = normalize_optional_storage_field(record.creator.take());
+            record.sort_order = index as u32;
+            if record.synced_at == 0 {
+                record.synced_at = unix_timestamp_ms()?;
+            }
+            record.id = format!(
+                "{}:{}:{}",
+                record.instance_id, record.kernel_id, record.agent_id
+            );
+
+            storage.put_text(
+                paths,
+                config,
+                StoragePutTextRequest {
+                    profile_id: chat_storage_profile_id(),
+                    namespace: Some(CHAT_NAMESPACE.to_string()),
+                    key: persisted_kernel_chat_agent_storage_key(
+                        record.instance_id.as_str(),
+                        record.kernel_id.as_str(),
+                        record.agent_id.as_str(),
+                    ),
+                    value: serde_json::to_string_pretty(&record)?,
+                },
+            )?;
+        }
+
+        self.list_persisted_kernel_chat_agents(paths, config, storage, instance_id)
     }
 
     pub fn put_conversation(
@@ -2638,7 +3091,7 @@ impl StudioService {
             paths,
             config,
             StoragePutTextRequest {
-                profile_id: None,
+                profile_id: chat_storage_profile_id(),
                 namespace: Some(CHAT_NAMESPACE.to_string()),
                 key: conversation_storage_key(&record.id),
                 value: serde_json::to_string_pretty(&record)?,
@@ -2660,7 +3113,7 @@ impl StudioService {
                 paths,
                 config,
                 StorageDeleteRequest {
-                    profile_id: None,
+                    profile_id: chat_storage_profile_id(),
                     namespace: Some(CHAT_NAMESPACE.to_string()),
                     key: conversation_storage_key(id),
                 },
@@ -2746,7 +3199,7 @@ impl StudioService {
             paths,
             config,
             StorageGetTextRequest {
-                profile_id: None,
+                profile_id: chat_storage_profile_id(),
                 namespace: Some(CHAT_NAMESPACE.to_string()),
                 key: key.to_string(),
             },
@@ -2756,6 +3209,31 @@ impl StudioService {
             .value
             .as_deref()
             .map(serde_json::from_str::<StudioConversationRecord>)
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    fn read_persisted_kernel_chat_agent(
+        &self,
+        paths: &AppPaths,
+        config: &AppConfig,
+        storage: &StorageService,
+        key: &str,
+    ) -> Result<Option<PersistedKernelChatAgentRecord>> {
+        let response = storage.get_text(
+            paths,
+            config,
+            StorageGetTextRequest {
+                profile_id: chat_storage_profile_id(),
+                namespace: Some(CHAT_NAMESPACE.to_string()),
+                key: key.to_string(),
+            },
+        )?;
+
+        response
+            .value
+            .as_deref()
+            .map(serde_json::from_str::<PersistedKernelChatAgentRecord>)
             .transpose()
             .map_err(Into::into)
     }
@@ -2770,9 +3248,7 @@ impl StudioService {
             .instances
             .into_iter()
             .find(is_built_in_openclaw_instance)
-            .ok_or_else(|| {
-                FrameworkError::NotFound("built-in OpenClaw instance".to_string())
-            })
+            .ok_or_else(|| FrameworkError::NotFound("built-in OpenClaw instance".to_string()))
     }
 
     fn sync_built_in_runtime_config(
@@ -2971,6 +3447,7 @@ fn build_lifecycle_snapshot(
     supervisor: Option<&SupervisorService>,
 ) -> Result<StudioInstanceLifecycleSnapshot> {
     let built_in_openclaw = uses_built_in_openclaw_config(instance);
+    let managed_hermes = is_managed_hermes_instance(instance);
     let mut snapshot = if built_in_openclaw {
         StudioInstanceLifecycleSnapshot {
             owner: StudioInstanceLifecycleOwner::AppManaged,
@@ -2982,6 +3459,23 @@ fn build_lifecycle_snapshot(
             last_activation_stage: None,
             last_error: None,
             notes: vec!["Lifecycle is managed by Claw Studio.".to_string()],
+        }
+    } else if managed_hermes {
+        StudioInstanceLifecycleSnapshot {
+            owner: StudioInstanceLifecycleOwner::AppManaged,
+            start_stop_supported: false,
+            config_writable: true,
+            lifecycle_controllable: false,
+            workbench_managed: false,
+            endpoint_observed: false,
+            last_activation_stage: None,
+            last_error: None,
+            notes: vec![
+                "Hermes kernel state is managed by Claw Studio under the user-root kernel layout."
+                    .to_string(),
+                "Hermes runtime lifecycle control is not wired to a desktop supervisor yet."
+                    .to_string(),
+            ],
         }
     } else {
         match instance.deployment_mode {
@@ -3960,11 +4454,12 @@ fn discover_openclaw_config_path(
     paths: &AppPaths,
     install_method: &StudioInstanceConsoleInstallMethod,
 ) -> Option<PathBuf> {
+    let config_path = readable_openclaw_config_file_path(paths);
     match install_method {
         StudioInstanceConsoleInstallMethod::Wsl
         | StudioInstanceConsoleInstallMethod::Docker
         | StudioInstanceConsoleInstallMethod::Podman => None,
-        _ if paths.openclaw_config_file.is_file() => Some(paths.openclaw_config_file.clone()),
+        _ if config_path.is_file() => Some(config_path),
         _ => None,
     }
 }
@@ -4067,6 +4562,7 @@ fn build_data_access_snapshot(
         discover_local_external_openclaw_config_path(paths, instance)
             .map(|path| path.to_string_lossy().into_owned());
     let built_in_openclaw = uses_built_in_openclaw_config(instance);
+    let managed_hermes = is_managed_hermes_instance(instance);
     let primary_endpoint = primary_connectivity_target(connectivity);
     let openai_endpoint = connectivity
         .endpoints
@@ -4082,23 +4578,29 @@ fn build_data_access_snapshot(
                 StudioInstanceDataAccessScope::Config,
                 if built_in_openclaw {
                     StudioInstanceDataAccessMode::ManagedFile
+                } else if managed_hermes {
+                    StudioInstanceDataAccessMode::ManagedFile
                 } else {
                     StudioInstanceDataAccessMode::MetadataOnly
                 },
                 StudioInstanceDataAccessStatus::Ready,
                 if built_in_openclaw {
                     Some(openclaw_config_target(paths))
+                } else if managed_hermes {
+                    Some(hermes_config_target(paths))
                 } else {
                     registry_target.clone()
                 },
                 false,
-                built_in_openclaw,
+                built_in_openclaw || managed_hermes,
                 if built_in_openclaw {
                     "Claw Studio reads and writes the built-in OpenClaw config file directly."
+                } else if managed_hermes {
+                    "Claw Studio reads and writes the managed Hermes config file directly from the user-root kernel layout."
                 } else {
-                    "Claw Studio stores registry metadata for this local-managed runtime, but does not assume the built-in OpenClaw config file belongs to it."
+                    "Claw Studio stores registry metadata for this local-managed runtime, but does not yet project a managed kernel config file for it."
                 },
-                if built_in_openclaw {
+                if built_in_openclaw || managed_hermes {
                     StudioInstanceDetailSource::Config
                 } else {
                     StudioInstanceDetailSource::Integration
@@ -4108,23 +4610,53 @@ fn build_data_access_snapshot(
                 "logs",
                 "Logs",
                 StudioInstanceDataAccessScope::Logs,
-                StudioInstanceDataAccessMode::ManagedFile,
-                if observability.log_file_path.is_some() {
-                    StudioInstanceDataAccessStatus::Ready
+                if built_in_openclaw {
+                    StudioInstanceDataAccessMode::ManagedFile
+                } else if managed_hermes {
+                    StudioInstanceDataAccessMode::ManagedDirectory
                 } else {
-                    StudioInstanceDataAccessStatus::Limited
+                    StudioInstanceDataAccessMode::MetadataOnly
                 },
-                observability.log_file_path.clone(),
+                if built_in_openclaw {
+                    if observability.log_file_path.is_some() {
+                        StudioInstanceDataAccessStatus::Ready
+                    } else {
+                        StudioInstanceDataAccessStatus::Limited
+                    }
+                } else {
+                    StudioInstanceDataAccessStatus::Planned
+                },
+                if built_in_openclaw {
+                    observability.log_file_path.clone()
+                } else if managed_hermes {
+                    Some(hermes_logs_target(paths))
+                } else {
+                    None
+                },
                 true,
-                true,
-                "Log inspection comes from the managed gateway log file owned by Claw Studio.",
-                StudioInstanceDetailSource::Derived,
+                built_in_openclaw || managed_hermes,
+                if built_in_openclaw {
+                    "Log inspection comes from the managed gateway log file owned by Claw Studio."
+                } else if managed_hermes {
+                    "Managed Hermes logs are projected from the user-root kernel logs directory when runtime diagnostics are emitted."
+                } else {
+                    "Claw Studio does not yet ingest logs from this local-managed runtime."
+                },
+                if built_in_openclaw {
+                    StudioInstanceDetailSource::Derived
+                } else {
+                    StudioInstanceDetailSource::Runtime
+                },
             ));
             routes.push(data_access_entry(
                 "files",
                 "Workspace",
                 StudioInstanceDataAccessScope::Files,
-                StudioInstanceDataAccessMode::ManagedDirectory,
+                if built_in_openclaw || managed_hermes {
+                    StudioInstanceDataAccessMode::ManagedDirectory
+                } else {
+                    StudioInstanceDataAccessMode::MetadataOnly
+                },
                 if workspace_target.is_some() {
                     StudioInstanceDataAccessStatus::Ready
                 } else {
@@ -4132,9 +4664,19 @@ fn build_data_access_snapshot(
                 },
                 workspace_target,
                 false,
-                true,
-                "Runtime workspace files live in the managed local workspace directory.",
-                StudioInstanceDetailSource::Runtime,
+                built_in_openclaw || managed_hermes,
+                if built_in_openclaw {
+                    "Runtime workspace files live in the managed local workspace directory."
+                } else if managed_hermes {
+                    "Managed Hermes workspace files live under the user-root kernel workspace directory."
+                } else {
+                    "Claw Studio only stores metadata for this local-managed runtime workspace."
+                },
+                if built_in_openclaw || managed_hermes {
+                    StudioInstanceDetailSource::Runtime
+                } else {
+                    StudioInstanceDetailSource::Integration
+                },
             ));
         }
         StudioInstanceDeploymentMode::LocalExternal => {
@@ -4397,6 +4939,27 @@ fn build_artifacts(
             "Claw Studio desktop shell log with bootstrap stages and supervisor activity.",
             StudioInstanceDetailSource::Runtime,
         ));
+    } else if is_managed_hermes_instance(instance) {
+        artifacts.push(artifact_record(
+            "config-file",
+            "Config File",
+            StudioInstanceArtifactKind::ConfigFile,
+            StudioInstanceArtifactStatus::Available,
+            Some(hermes_config_target(paths)),
+            false,
+            "Hermes runtime configuration file owned by the managed kernel layout.",
+            StudioInstanceDetailSource::Config,
+        ));
+        artifacts.push(artifact_record(
+            "runtime-directory",
+            "Runtime Directory",
+            StudioInstanceArtifactKind::RuntimeDirectory,
+            StudioInstanceArtifactStatus::Configured,
+            Some(hermes_runtime_target(paths)),
+            true,
+            "Managed Hermes runtime installation directory reserved by Claw Studio.",
+            StudioInstanceDetailSource::Runtime,
+        ));
     } else if let Some(config_path) = local_external_openclaw_config_path {
         artifacts.push(artifact_record(
             "config-file",
@@ -4583,6 +5146,9 @@ fn local_workspace_target(paths: &AppPaths, instance: &StudioInstanceRecord) -> 
     if uses_built_in_openclaw_config(instance) {
         return Some(paths.openclaw_workspace_dir.to_string_lossy().into_owned());
     }
+    if is_managed_hermes_instance(instance) {
+        return Some(hermes_workspace_target(paths));
+    }
 
     instance.config.workspace_path.clone()
 }
@@ -4598,17 +5164,37 @@ fn is_built_in_openclaw_instance(instance: &StudioInstanceRecord) -> bool {
         && instance.transport_kind == StudioInstanceTransportKind::OpenclawGatewayWs
 }
 
+fn is_managed_hermes_instance(instance: &StudioInstanceRecord) -> bool {
+    instance.runtime_kind == StudioRuntimeKind::Hermes
+        && instance.deployment_mode == StudioInstanceDeploymentMode::LocalManaged
+}
+
+fn canonical_built_in_openclaw_instance_id(value: &str) -> &str {
+    let normalized = value.trim();
+    if normalized == DEFAULT_INSTANCE_ID {
+        DEFAULT_INSTANCE_ID
+    } else {
+        normalized
+    }
+}
+
+fn matches_requested_instance_id(instance: &StudioInstanceRecord, requested_id: &str) -> bool {
+    if instance.id == requested_id {
+        return true;
+    }
+
+    is_built_in_openclaw_instance(instance)
+        && canonical_built_in_openclaw_instance_id(instance.id.as_str())
+            == canonical_built_in_openclaw_instance_id(requested_id)
+}
+
 fn find_built_in_openclaw_index(instances: &[StudioInstanceRecord]) -> Option<usize> {
     instances
         .iter()
         .position(|instance| {
             is_built_in_openclaw_instance(instance) && instance.id != DEFAULT_INSTANCE_ID
         })
-        .or_else(|| {
-            instances
-                .iter()
-                .position(is_built_in_openclaw_instance)
-        })
+        .or_else(|| instances.iter().position(is_built_in_openclaw_instance))
 }
 
 fn primary_connectivity_target(
@@ -4840,13 +5426,7 @@ fn compare_version_like(left: &str, right: &str) -> std::cmp::Ordering {
 }
 
 fn validate_create_instance_input(input: &StudioCreateInstanceInput) -> Result<()> {
-    if input.runtime_kind == StudioRuntimeKind::Hermes
-        && input.deployment_mode == StudioInstanceDeploymentMode::LocalManaged
-    {
-        return Err(FrameworkError::ValidationFailed(
-            "Hermes instances must use local-external or remote deployment. local-managed Hermes is not supported because Hermes remains externally managed and Windows support is limited to WSL2 or remote Linux.".to_string(),
-        ));
-    }
+    let _ = input;
 
     Ok(())
 }
@@ -4989,10 +5569,11 @@ fn upsert_built_in_instance(
         return true;
     };
 
+    let previous_instances = instances.clone();
     let previous = instances[index].clone();
-    let preferred_id = previous.id.clone();
+    let preferred_id = DEFAULT_INSTANCE_ID.to_string();
     let merged = StudioInstanceRecord {
-        id: previous.id.clone(),
+        id: preferred_id.clone(),
         name: previous.name.clone(),
         description: previous.description.clone(),
         type_label: previous.type_label.clone(),
@@ -5004,23 +5585,10 @@ fn upsert_built_in_instance(
         ..built_in
     };
 
-    let initial_len = instances.len();
-    instances.retain(|instance| {
-        !is_built_in_openclaw_instance(instance) || instance.id == preferred_id
-    });
-    let mut changed = instances.len() != initial_len;
+    instances.retain(|instance| !is_built_in_openclaw_instance(instance));
+    instances.insert(index.min(instances.len()), merged);
 
-    if let Some(current_index) = instances
-        .iter()
-        .position(|instance| instance.id == preferred_id)
-    {
-        if instances[current_index] != merged {
-            instances[current_index] = merged;
-            changed = true;
-        }
-    }
-
-    changed
+    *instances != previous_instances
 }
 
 fn project_built_in_instance_live_state(
@@ -5207,6 +5775,469 @@ fn normalize_participant_instance_ids(
 
 fn conversation_storage_key(id: &str) -> String {
     format!("{CONVERSATION_KEY_PREFIX}{id}")
+}
+
+fn persisted_kernel_chat_agent_storage_key_prefix(instance_id: &str) -> String {
+    format!("{PERSISTED_KERNEL_CHAT_AGENT_KEY_PREFIX}{instance_id}:")
+}
+
+fn persisted_kernel_chat_agent_storage_key(
+    instance_id: &str,
+    kernel_id: &str,
+    agent_id: &str,
+) -> String {
+    format!(
+        "{PERSISTED_KERNEL_CHAT_AGENT_KEY_PREFIX}{instance_id}:{kernel_id}:{agent_id}"
+    )
+}
+
+struct OpenClawKernelAgentConfigInput {
+    id: String,
+    display_name: String,
+    avatar: Option<String>,
+    is_default: bool,
+    primary_model: Option<String>,
+    fallback_models: Vec<String>,
+    workspace: Option<String>,
+    agent_dir: Option<String>,
+    temperature: Option<f64>,
+    top_p: Option<f64>,
+    max_tokens: Option<u32>,
+    timeout_ms: Option<u32>,
+    streaming: Option<bool>,
+}
+
+fn trim_required_kernel_agent_field(value: &str, field_name: &str) -> Result<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(FrameworkError::InvalidOperation(format!(
+            "kernel agent field \"{field_name}\" must not be empty"
+        )));
+    }
+
+    Ok(trimmed.to_string())
+}
+
+fn normalize_optional_kernel_agent_field(value: Option<&str>) -> Option<String> {
+    value.and_then(|entry| {
+        let trimmed = entry.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
+}
+
+fn normalize_kernel_agent_kernel_id(value: Option<&str>) -> Option<String> {
+    normalize_optional_kernel_agent_field(value).map(|entry| entry.to_ascii_lowercase())
+}
+
+fn kernel_runtime_kind_id(kind: &StudioRuntimeKind) -> String {
+    kind.as_serialized().to_string()
+}
+
+fn title_case_kernel_identifier(value: &str) -> String {
+    value
+        .split(['-', '_', '.'])
+        .filter(|segment| !segment.is_empty())
+        .map(|segment| {
+            let mut chars = segment.chars();
+            match chars.next() {
+                Some(first) => format!("{}{}", first.to_ascii_uppercase(), chars.as_str()),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn kernel_agent_creation_kernel_label(kernel_id: &str) -> String {
+    match kernel_id {
+        "openclaw" => "OpenClaw".to_string(),
+        "hermes" => "Hermes".to_string(),
+        "zeroclaw" => "ZeroClaw".to_string(),
+        "ironclaw" => "IronClaw".to_string(),
+        other => title_case_kernel_identifier(other),
+    }
+}
+
+fn build_kernel_agent_creation_kernel_option(
+    kernel_id: &str,
+    supported: bool,
+    reason_code: Option<StudioKernelAgentCreationReasonCode>,
+    reason: Option<String>,
+) -> StudioKernelAgentCreationKernelOption {
+    StudioKernelAgentCreationKernelOption {
+        kernel_id: kernel_id.to_string(),
+        label: kernel_agent_creation_kernel_label(kernel_id),
+        supported,
+        reason_code,
+        reason,
+    }
+}
+
+fn build_openclaw_kernel_agent_creation_model_options(
+    root: &Value,
+) -> Vec<StudioKernelAgentCreationModelOption> {
+    let Some(providers) = get_nested_value(root, &["models", "providers"]).and_then(Value::as_object)
+    else {
+        return Vec::new();
+    };
+
+    let mut options = Vec::new();
+    let mut seen = BTreeSet::new();
+    let mut provider_ids = providers.keys().cloned().collect::<Vec<_>>();
+    provider_ids.sort();
+
+    for provider_id in provider_ids {
+        let Some(provider) = providers.get(provider_id.as_str()) else {
+            continue;
+        };
+        let provider_label = title_case_kernel_identifier(provider_id.as_str());
+        let Some(models) = get_nested_value(provider, &["models"]).and_then(Value::as_array) else {
+            continue;
+        };
+
+        for model in models {
+            let Some(model_id) = get_nested_string(model, &["id"]) else {
+                continue;
+            };
+            let Some(value) = build_openclaw_model_ref(provider_id.as_str(), model_id.as_str()) else {
+                continue;
+            };
+            if !seen.insert(value.clone()) {
+                continue;
+            }
+            let model_label = get_nested_string(model, &["name"]).unwrap_or_else(|| model_id.clone());
+
+            options.push(StudioKernelAgentCreationModelOption {
+                value: value.clone(),
+                label: format!("{provider_label} / {model_label}"),
+                provider_id: provider_id.clone(),
+                provider_label: provider_label.clone(),
+            });
+        }
+    }
+
+    options.sort_by(|left, right| {
+        left.provider_label
+            .cmp(&right.provider_label)
+            .then_with(|| left.label.cmp(&right.label))
+            .then_with(|| left.value.cmp(&right.value))
+    });
+    options
+}
+
+fn ensure_openclaw_model_ref_is_supported(
+    supported_model_refs: &BTreeSet<String>,
+    model_ref: &str,
+    field_name: &str,
+) -> Result<()> {
+    if supported_model_refs.contains(model_ref) {
+        return Ok(());
+    }
+
+    Err(FrameworkError::InvalidOperation(format!(
+        "kernel agent field \"{field_name}\" references unavailable model \"{model_ref}\""
+    )))
+}
+
+fn normalize_kernel_agent_fallback_models(
+    fallback_models: &[String],
+    primary_model: Option<&str>,
+) -> Vec<String> {
+    let mut seen = BTreeSet::new();
+    let mut normalized = Vec::new();
+
+    for fallback_model in fallback_models {
+        let Some(candidate) = normalize_optional_kernel_agent_field(Some(fallback_model.as_str())) else {
+            continue;
+        };
+        if primary_model.is_some_and(|primary| primary == candidate.as_str()) {
+            continue;
+        }
+        if seen.insert(candidate.clone()) {
+            normalized.push(candidate);
+        }
+    }
+
+    normalized
+}
+
+fn normalize_openclaw_kernel_agent_id(value: &str) -> String {
+    let lowered = value.trim().to_ascii_lowercase();
+    if lowered.is_empty() {
+        return "main".to_string();
+    }
+
+    let mut normalized = String::new();
+    let mut last_was_dash = false;
+    for character in lowered.chars() {
+        let next = if character.is_ascii_lowercase()
+            || character.is_ascii_digit()
+            || character == '.'
+            || character == '_'
+            || character == '-'
+        {
+            character
+        } else {
+            '-'
+        };
+
+        if next == '-' {
+            if normalized.is_empty() || last_was_dash {
+                continue;
+            }
+            last_was_dash = true;
+            normalized.push(next);
+        } else {
+            last_was_dash = false;
+            normalized.push(next);
+        }
+
+        if normalized.len() >= 64 {
+            break;
+        }
+    }
+
+    while normalized.ends_with('-') {
+        normalized.pop();
+    }
+
+    if normalized.is_empty() {
+        "main".to_string()
+    } else {
+        normalized
+    }
+}
+
+fn ensure_json_object(value: &mut Value) -> &mut Map<String, Value> {
+    if !value.is_object() {
+        *value = Value::Object(Map::new());
+    }
+
+    value.as_object_mut().expect("json object")
+}
+
+fn ensure_json_child_object<'a>(
+    parent: &'a mut Map<String, Value>,
+    key: &str,
+) -> &'a mut Map<String, Value> {
+    let reset_child = !matches!(parent.get(key), Some(Value::Object(_)));
+    if reset_child {
+        parent.insert(key.to_string(), Value::Object(Map::new()));
+    }
+
+    parent
+        .get_mut(key)
+        .and_then(Value::as_object_mut)
+        .expect("json child object")
+}
+
+fn ensure_json_child_array<'a>(parent: &'a mut Map<String, Value>, key: &str) -> &'a mut Vec<Value> {
+    let reset_child = !matches!(parent.get(key), Some(Value::Array(_)));
+    if reset_child {
+        parent.insert(key.to_string(), Value::Array(Vec::new()));
+    }
+
+    parent
+        .get_mut(key)
+        .and_then(Value::as_array_mut)
+        .expect("json child array")
+}
+
+fn read_json_scalar_string(value: &Value) -> Option<String> {
+    match value {
+        Value::String(entry) => normalize_optional_kernel_agent_field(Some(entry.as_str())),
+        Value::Number(entry) => Some(entry.to_string()),
+        Value::Bool(entry) => Some(entry.to_string()),
+        _ => None,
+    }
+}
+
+fn configured_openclaw_agent_id(entry: &Value) -> Option<String> {
+    entry.as_object()
+        .and_then(|object| object.get("id"))
+        .and_then(read_json_scalar_string)
+        .map(|id| normalize_openclaw_kernel_agent_id(id.as_str()))
+}
+
+fn set_optional_json_string(target: &mut Map<String, Value>, key: &str, value: Option<&str>) {
+    match normalize_optional_kernel_agent_field(value) {
+        Some(normalized) => {
+            target.insert(key.to_string(), Value::String(normalized));
+        }
+        None => {
+            target.remove(key);
+        }
+    }
+}
+
+fn ensure_single_default_openclaw_kernel_agent(agent_list: &mut [Value]) {
+    let default_index = agent_list
+        .iter()
+        .enumerate()
+        .find_map(|(index, entry)| {
+            entry.as_object().and_then(|object| {
+                object
+                    .get("default")
+                    .and_then(Value::as_bool)
+                    .filter(|is_default| *is_default)
+                    .map(|_| index)
+            })
+        })
+        .unwrap_or(0);
+
+    for (index, entry) in agent_list.iter_mut().enumerate() {
+        let Some(object) = entry.as_object_mut() else {
+            continue;
+        };
+        object.insert("default".to_string(), Value::Bool(index == default_index));
+    }
+}
+
+fn save_openclaw_kernel_agent_to_config_root(
+    root: &mut Value,
+    input: OpenClawKernelAgentConfigInput,
+) {
+    let root_object = ensure_json_object(root);
+    let agents_object = ensure_json_child_object(root_object, "agents");
+    let agent_list = ensure_json_child_array(agents_object, "list");
+    let target_index = if let Some(existing_index) = agent_list
+        .iter()
+        .position(|entry| configured_openclaw_agent_id(entry).as_deref() == Some(input.id.as_str()))
+    {
+        existing_index
+    } else {
+            agent_list.push(Value::Object(Map::new()));
+            agent_list.len() - 1
+        };
+    if !agent_list[target_index].is_object() {
+        agent_list[target_index] = Value::Object(Map::new());
+    }
+
+    let target = agent_list[target_index]
+        .as_object_mut()
+        .expect("agent config object");
+    target.insert("id".to_string(), Value::String(input.id.clone()));
+    target.insert("name".to_string(), Value::String(input.display_name));
+    set_optional_json_string(target, "workspace", input.workspace.as_deref());
+    set_optional_json_string(target, "agentDir", input.agent_dir.as_deref());
+
+    if input.primary_model.is_some() || !input.fallback_models.is_empty() {
+        let remove_model = {
+            let model_object = ensure_json_child_object(target, "model");
+            set_optional_json_string(model_object, "primary", input.primary_model.as_deref());
+            if input.fallback_models.is_empty() {
+                model_object.remove("fallbacks");
+            } else {
+                model_object.insert(
+                    "fallbacks".to_string(),
+                    Value::Array(
+                        input
+                            .fallback_models
+                            .into_iter()
+                            .map(Value::String)
+                            .collect::<Vec<_>>(),
+                    ),
+                );
+            }
+            model_object.is_empty()
+        };
+        if remove_model {
+            target.remove("model");
+        }
+    } else {
+        target.remove("model");
+    }
+
+    let mut params = Map::new();
+    if let Some(temperature) = input.temperature.and_then(Number::from_f64) {
+        params.insert("temperature".to_string(), Value::Number(temperature));
+    }
+    if let Some(top_p) = input.top_p.and_then(Number::from_f64) {
+        params.insert("topP".to_string(), Value::Number(top_p));
+    }
+    if let Some(max_tokens) = input.max_tokens {
+        params.insert("maxTokens".to_string(), Value::Number(Number::from(max_tokens)));
+    }
+    if let Some(timeout_ms) = input.timeout_ms {
+        params.insert("timeoutMs".to_string(), Value::Number(Number::from(timeout_ms)));
+    }
+    if let Some(streaming) = input.streaming {
+        params.insert("streaming".to_string(), Value::Bool(streaming));
+    }
+    if params.is_empty() {
+        target.remove("params");
+    } else {
+        target.insert("params".to_string(), Value::Object(params));
+    }
+
+    match input.avatar {
+        Some(avatar) => {
+            let remove_identity = {
+                let identity_object = ensure_json_child_object(target, "identity");
+                identity_object.insert("emoji".to_string(), Value::String(avatar));
+                identity_object.remove("avatar");
+                identity_object.is_empty()
+            };
+            if remove_identity {
+                target.remove("identity");
+            }
+        }
+        None => {
+            let remove_identity =
+                if let Some(identity) = target.get_mut("identity").and_then(Value::as_object_mut) {
+                    identity.remove("emoji");
+                    identity.remove("avatar");
+                    identity.is_empty()
+                } else {
+                    false
+                };
+            if remove_identity {
+                target.remove("identity");
+            }
+        }
+    }
+
+    if input.is_default {
+        for entry in agent_list.iter_mut() {
+            let is_target = configured_openclaw_agent_id(entry).as_deref() == Some(input.id.as_str());
+            let Some(object) = entry.as_object_mut() else {
+                continue;
+            };
+            object.insert("default".to_string(), Value::Bool(is_target));
+        }
+    } else {
+        ensure_single_default_openclaw_kernel_agent(agent_list.as_mut_slice());
+    }
+}
+
+fn trim_required_storage_field(value: &str, field_name: &str) -> Result<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(FrameworkError::InvalidOperation(format!(
+            "studio storage field \"{field_name}\" must not be empty"
+        )));
+    }
+
+    Ok(trimmed.to_string())
+}
+
+fn normalize_optional_storage_field(value: Option<String>) -> Option<String> {
+    value.and_then(|entry| {
+        let trimmed = entry.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
+}
+
+fn chat_storage_profile_id() -> Option<String> {
+    Some(CHAT_STORAGE_PROFILE_ID.to_string())
 }
 
 fn build_rollout_preview_summary(outcome: PreflightOutcome) -> ManageRolloutPreviewSummary {
@@ -5659,6 +6690,49 @@ fn openclaw_config_target(paths: &AppPaths) -> String {
         .into_owned()
 }
 
+fn hermes_state_root(paths: &AppPaths) -> PathBuf {
+    paths
+        .kernel_paths("hermes")
+        .map(|kernel| kernel.config_dir)
+        .unwrap_or_else(|_| build_standard_hermes_root_dir(&paths.user_root))
+}
+
+fn hermes_config_file_path(paths: &AppPaths) -> PathBuf {
+    paths
+        .kernel_paths("hermes")
+        .map(|kernel| kernel.config_file)
+        .unwrap_or_else(|_| build_standard_hermes_config_file_path(&paths.user_root))
+}
+
+fn hermes_config_target(paths: &AppPaths) -> String {
+    hermes_config_file_path(paths)
+        .to_string_lossy()
+        .into_owned()
+}
+
+fn hermes_workspace_target(paths: &AppPaths) -> String {
+    hermes_state_root(paths)
+        .join("workspace")
+        .to_string_lossy()
+        .into_owned()
+}
+
+fn hermes_logs_target(paths: &AppPaths) -> String {
+    hermes_state_root(paths)
+        .join("logs")
+        .to_string_lossy()
+        .into_owned()
+}
+
+fn hermes_runtime_target(paths: &AppPaths) -> String {
+    paths
+        .kernel_paths("hermes")
+        .map(|kernel| kernel.runtime_dir)
+        .unwrap_or_else(|_| paths.managed_runtimes_dir.join("hermes"))
+        .to_string_lossy()
+        .into_owned()
+}
+
 fn built_in_openclaw_runtime_dir(paths: &AppPaths) -> PathBuf {
     paths
         .kernel_paths("openclaw")
@@ -5677,7 +6751,7 @@ fn authority_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
             paths
                 .kernel_paths("openclaw")
                 .map(|kernel| kernel.config_file)
-                .unwrap_or_else(|_| paths.openclaw_config_file.clone())
+                .unwrap_or_else(|_| build_standard_openclaw_config_file_path(&paths.user_root))
         })
 }
 
@@ -5839,13 +6913,15 @@ mod tests {
         read_json5_object, EmbeddedHostRuntimeStatus, InstanceRegistryDocument,
         PartialStudioInstanceConfig, StudioConversationMessage, StudioConversationMessageStatus,
         StudioConversationRecord, StudioConversationRole, StudioCreateInstanceInput,
-        StudioInstanceArtifactKind, StudioInstanceAuthMode, StudioInstanceCapability,
-        StudioInstanceCapabilityStatus, StudioInstanceConfig, StudioInstanceConsoleInstallMethod,
-        StudioInstanceDataAccessMode, StudioInstanceDataAccessScope, StudioInstanceDeploymentMode,
-        StudioInstanceIconType, StudioInstanceLifecycleOwner, StudioInstanceRecord,
-        StudioInstanceStatus, StudioInstanceStorageStatus, StudioInstanceTransportKind,
-        StudioRuntimeKind, StudioService, StudioUpdateInstanceLlmProviderConfigInput,
-        StudioWorkbenchLLMProviderConfigRecord, DEFAULT_INSTANCE_ID,
+        StudioCreateKernelAgentInput, StudioInstanceArtifactKind, StudioInstanceAuthMode,
+        StudioInstanceCapability, StudioInstanceCapabilityStatus, StudioInstanceConfig,
+        StudioInstanceConsoleInstallMethod, StudioInstanceDataAccessMode,
+        StudioInstanceDataAccessScope, StudioInstanceDeploymentMode, StudioInstanceIconType,
+        StudioInstanceLifecycleOwner, StudioInstanceRecord, StudioInstanceStatus,
+        StudioInstanceStorageStatus, StudioInstanceTransportKind,
+        StudioKernelAgentCreationReasonCode, StudioRuntimeKind, StudioService,
+        StudioUpdateInstanceLlmProviderConfigInput, StudioWorkbenchLLMProviderConfigRecord,
+        DEFAULT_INSTANCE_ID,
     };
     use crate::framework::{
         config::AppConfig,
@@ -5959,16 +7035,18 @@ mod tests {
         .expect("write manifest");
     }
 
-    fn openclaw_config_file_path(
-        paths: &crate::framework::paths::AppPaths,
-    ) -> std::path::PathBuf {
+    fn openclaw_config_file_path(paths: &crate::framework::paths::AppPaths) -> std::path::PathBuf {
         KernelRuntimeAuthorityService::new()
             .active_config_file_path("openclaw", paths)
             .unwrap_or_else(|_| {
                 paths
                     .kernel_paths("openclaw")
                     .map(|kernel| kernel.config_file)
-                    .unwrap_or_else(|_| paths.openclaw_config_file.clone())
+                    .unwrap_or_else(|_| {
+                        sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_config_file_path(
+                            &paths.user_root,
+                        )
+                    })
             })
     }
 
@@ -6860,6 +7938,17 @@ mod tests {
     }
 
     #[test]
+    fn get_instance_rejects_legacy_built_in_openclaw_identity_requests() {
+        let (_root, paths, config, storage, service) = studio_context();
+
+        let built_in = service
+            .get_instance(&paths, &config, &storage, "local-built-in")
+            .expect("get built-in instance");
+
+        assert!(built_in.is_none());
+    }
+
+    #[test]
     fn start_instance_marks_built_in_openclaw_as_error_when_gateway_start_fails() {
         let (_root, paths, config, storage, service) = studio_context();
         let supervisor = SupervisorService::new();
@@ -7101,8 +8190,11 @@ mod tests {
             &fs::read_to_string(&paths.openclaw_authority_file).expect("authority state"),
         )
         .expect("authority state json");
-        authority["configFilePath"] =
-            Value::String(legacy_authority_config_file_path.to_string_lossy().into_owned());
+        authority["configFilePath"] = Value::String(
+            legacy_authority_config_file_path
+                .to_string_lossy()
+                .into_owned(),
+        );
         fs::write(
             &paths.openclaw_authority_file,
             format!(
@@ -7414,6 +8506,208 @@ mod tests {
     }
 
     #[test]
+    fn conversations_are_persisted_in_default_sqlite_profile() {
+        let (_root, paths, config, storage, service) = studio_context();
+        let conversation_id = "conversation-sqlite";
+
+        service
+            .put_conversation(
+                &paths,
+                &config,
+                &storage,
+                StudioConversationRecord {
+                    id: conversation_id.to_string(),
+                    title: "SQLite Conversation".to_string(),
+                    primary_instance_id: DEFAULT_INSTANCE_ID.to_string(),
+                    participant_instance_ids: vec![DEFAULT_INSTANCE_ID.to_string()],
+                    created_at: 1,
+                    updated_at: 1,
+                    message_count: 0,
+                    last_message_preview: None,
+                    messages: vec![StudioConversationMessage {
+                        id: "message-sqlite-1".to_string(),
+                        conversation_id: conversation_id.to_string(),
+                        role: StudioConversationRole::User,
+                        content: "persist me in sqlite".to_string(),
+                        created_at: 1,
+                        updated_at: 2,
+                        model: Some("gpt-4.1".to_string()),
+                        sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
+                        status: StudioConversationMessageStatus::Complete,
+                    }],
+                },
+            )
+            .expect("store conversation in sqlite-backed profile");
+
+        let sqlite_value = storage
+            .get_text(
+                &paths,
+                &config,
+                crate::framework::storage::StorageGetTextRequest {
+                    profile_id: Some("default-sqlite".to_string()),
+                    namespace: Some(super::CHAT_NAMESPACE.to_string()),
+                    key: super::conversation_storage_key(conversation_id),
+                },
+            )
+            .expect("read conversation from sqlite profile")
+            .value;
+        let local_value = storage
+            .get_text(
+                &paths,
+                &config,
+                crate::framework::storage::StorageGetTextRequest {
+                    profile_id: Some("default-local".to_string()),
+                    namespace: Some(super::CHAT_NAMESPACE.to_string()),
+                    key: super::conversation_storage_key(conversation_id),
+                },
+            )
+            .expect("read conversation from local profile")
+            .value;
+
+        assert!(sqlite_value.is_some(), "conversation should be stored in sqlite");
+        assert!(
+            local_value.is_none(),
+            "conversation should no longer be stored in the default local-file profile"
+        );
+    }
+
+    #[test]
+    fn persisted_kernel_chat_agents_are_stored_in_default_sqlite_profile() {
+        let (_root, paths, config, storage, service) = studio_context();
+
+        let stored = service
+            .replace_persisted_kernel_chat_agents(
+                &paths,
+                &config,
+                &storage,
+                DEFAULT_INSTANCE_ID,
+                vec![super::PersistedKernelChatAgentRecord {
+                    id: "managed-openclaw-primary:hermes:planner".to_string(),
+                    instance_id: DEFAULT_INSTANCE_ID.to_string(),
+                    kernel_id: "hermes".to_string(),
+                    agent_id: "planner".to_string(),
+                    label: "Planner".to_string(),
+                    description: Some("Persisted planner agent.".to_string()),
+                    source: "kernelCatalog".to_string(),
+                    system_prompt: Some("plan first".to_string()),
+                    avatar: Some("P".to_string()),
+                    creator: Some("Hermes".to_string()),
+                    is_default: true,
+                    sort_order: 0,
+                    synced_at: 42,
+                    native_metadata: Some(serde_json::json!({
+                        "persisted": true,
+                    })),
+                }],
+            )
+            .expect("store persisted kernel chat agents");
+
+        let sqlite_value = storage
+            .get_text(
+                &paths,
+                &config,
+                crate::framework::storage::StorageGetTextRequest {
+                    profile_id: Some("default-sqlite".to_string()),
+                    namespace: Some(super::CHAT_NAMESPACE.to_string()),
+                    key: super::persisted_kernel_chat_agent_storage_key(
+                        DEFAULT_INSTANCE_ID,
+                        "hermes",
+                        "planner",
+                    ),
+                },
+            )
+            .expect("read persisted kernel chat agent from sqlite profile")
+            .value;
+
+        assert_eq!(stored.len(), 1);
+        assert!(sqlite_value.is_some(), "persisted kernel chat agent should be stored in sqlite");
+    }
+
+    #[test]
+    fn replacing_persisted_kernel_chat_agents_removes_stale_agents_for_the_same_instance() {
+        let (_root, paths, config, storage, service) = studio_context();
+
+        service
+            .replace_persisted_kernel_chat_agents(
+                &paths,
+                &config,
+                &storage,
+                DEFAULT_INSTANCE_ID,
+                vec![super::PersistedKernelChatAgentRecord {
+                    id: "managed-openclaw-primary:hermes:planner".to_string(),
+                    instance_id: DEFAULT_INSTANCE_ID.to_string(),
+                    kernel_id: "hermes".to_string(),
+                    agent_id: "planner".to_string(),
+                    label: "Planner".to_string(),
+                    description: Some("Persisted planner agent.".to_string()),
+                    source: "kernelCatalog".to_string(),
+                    system_prompt: Some("plan first".to_string()),
+                    avatar: Some("P".to_string()),
+                    creator: Some("Hermes".to_string()),
+                    is_default: true,
+                    sort_order: 0,
+                    synced_at: 42,
+                    native_metadata: None,
+                }],
+            )
+            .expect("store initial persisted kernel chat agent");
+
+        let replaced = service
+            .replace_persisted_kernel_chat_agents(
+                &paths,
+                &config,
+                &storage,
+                DEFAULT_INSTANCE_ID,
+                vec![super::PersistedKernelChatAgentRecord {
+                    id: "managed-openclaw-primary:hermes:main".to_string(),
+                    instance_id: DEFAULT_INSTANCE_ID.to_string(),
+                    kernel_id: "hermes".to_string(),
+                    agent_id: "main".to_string(),
+                    label: "Main".to_string(),
+                    description: Some("Replacement persisted agent.".to_string()),
+                    source: "kernelCatalog".to_string(),
+                    system_prompt: Some("main".to_string()),
+                    avatar: Some("M".to_string()),
+                    creator: Some("Hermes".to_string()),
+                    is_default: true,
+                    sort_order: 0,
+                    synced_at: 43,
+                    native_metadata: None,
+                }],
+            )
+            .expect("replace persisted kernel chat agents");
+
+        let records = service
+            .list_persisted_kernel_chat_agents(&paths, &config, &storage, DEFAULT_INSTANCE_ID)
+            .expect("list persisted kernel chat agents");
+
+        let stale_value = storage
+            .get_text(
+                &paths,
+                &config,
+                crate::framework::storage::StorageGetTextRequest {
+                    profile_id: Some("default-sqlite".to_string()),
+                    namespace: Some(super::CHAT_NAMESPACE.to_string()),
+                    key: super::persisted_kernel_chat_agent_storage_key(
+                        DEFAULT_INSTANCE_ID,
+                        "hermes",
+                        "planner",
+                    ),
+                },
+            )
+            .expect("read stale persisted kernel chat agent")
+            .value;
+
+        assert_eq!(replaced.len(), 1);
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].agent_id, "main");
+        assert!(
+            stale_value.is_none(),
+            "stale persisted kernel chat agents should be removed when the snapshot is replaced"
+        );
+    }
+
+    #[test]
     fn built_in_instance_detail_reports_gateway_and_openai_http_endpoints_when_the_gateway_is_running(
     ) {
         let (_root, paths, config, storage, service) = studio_context();
@@ -7515,11 +8809,7 @@ mod tests {
             && route.mode == StudioInstanceDataAccessMode::ManagedFile
             && route.authoritative
             && route.target.as_deref()
-                == Some(
-                    openclaw_config_file_path(&paths)
-                        .to_string_lossy()
-                        .as_ref()
-                )));
+                == Some(openclaw_config_file_path(&paths).to_string_lossy().as_ref())));
         assert!(detail.artifacts.iter().any(|artifact| artifact.kind
             == StudioInstanceArtifactKind::WorkspaceDirectory
             && artifact.location.as_deref()
@@ -7608,8 +8898,7 @@ mod tests {
         )
         .expect("seed canonical config file");
 
-        let mut authority =
-            super::read_openclaw_authority_state(&paths).expect("authority state");
+        let mut authority = super::read_openclaw_authority_state(&paths).expect("authority state");
         authority.config_file_path = Some(legacy_config_file_path.to_string_lossy().into_owned());
         fs::write(
             &authority_file,
@@ -8031,11 +9320,7 @@ mod tests {
         assert!(!config_route.authoritative);
         assert_ne!(
             config_route.target.as_deref(),
-            Some(
-                openclaw_config_file_path(&paths)
-                    .to_string_lossy()
-                    .as_ref()
-            )
+            Some(openclaw_config_file_path(&paths).to_string_lossy().as_ref())
         );
         assert_eq!(
             config_route.target.as_deref(),
@@ -8044,20 +9329,20 @@ mod tests {
     }
 
     #[test]
-    fn create_instance_rejects_local_managed_hermes_records() {
+    fn create_instance_accepts_local_managed_hermes_records() {
         let (_root, paths, config, storage, service) = studio_context();
         let instances_before = service
             .list_instances(&paths, &config, &storage)
             .expect("list instances before");
 
-        let error = service
+        let created = service
             .create_instance(
                 &paths,
                 &config,
                 &storage,
                 StudioCreateInstanceInput {
                     name: "Hermes Local Managed".to_string(),
-                    description: Some("Unsupported local-managed Hermes runtime".to_string()),
+                    description: Some("Managed local Hermes runtime".to_string()),
                     runtime_kind: StudioRuntimeKind::Hermes,
                     deployment_mode: StudioInstanceDeploymentMode::LocalManaged,
                     transport_kind: StudioInstanceTransportKind::CustomHttp,
@@ -8076,15 +9361,37 @@ mod tests {
                     }),
                 },
             )
-            .expect_err("local-managed Hermes should be rejected");
-
-        assert!(error
-            .to_string()
-            .contains("local-external or remote deployment"));
+            .expect("local-managed Hermes should be accepted");
         let instances_after = service
             .list_instances(&paths, &config, &storage)
             .expect("list instances after");
-        assert_eq!(instances_after.len(), instances_before.len());
+        assert_eq!(instances_after.len(), instances_before.len() + 1);
+
+        let detail = service
+            .get_instance_detail(&paths, &config, &storage, &created.id)
+            .expect("load hermes instance detail")
+            .expect("managed hermes detail");
+
+        assert_eq!(detail.instance.runtime_kind, StudioRuntimeKind::Hermes);
+        assert_eq!(
+            detail.instance.deployment_mode,
+            StudioInstanceDeploymentMode::LocalManaged
+        );
+        assert_eq!(
+            detail.lifecycle.owner,
+            StudioInstanceLifecycleOwner::AppManaged
+        );
+        assert!(!detail.lifecycle.start_stop_supported);
+        assert!(detail.lifecycle.config_writable);
+        assert!(!detail.lifecycle.workbench_managed);
+        assert!(detail.data_access.routes.iter().any(|route| route.scope
+            == StudioInstanceDataAccessScope::Config
+            && route.mode == StudioInstanceDataAccessMode::ManagedFile
+            && route.authoritative
+            && route.target.as_deref().is_some_and(|target| target
+                .replace('\\', "/")
+                .ends_with("/user-home/.hermes/config.yaml"))));
+        assert!(detail.workbench.is_none());
     }
 
     #[test]
@@ -9216,8 +10523,7 @@ mod tests {
             )
             .expect("update managed provider");
 
-        let root =
-            read_json5_object(&openclaw_config_file_path(&paths)).expect("read config file");
+        let root = read_json5_object(&openclaw_config_file_path(&paths)).expect("read config file");
         let provider = get_nested_value(&root, &["models", "providers", "openai"])
             .and_then(Value::as_object)
             .expect("provider config");
@@ -9308,8 +10614,7 @@ mod tests {
             )
             .expect("update openrouter provider");
 
-        let root =
-            read_json5_object(&openclaw_config_file_path(&paths)).expect("read config file");
+        let root = read_json5_object(&openclaw_config_file_path(&paths)).expect("read config file");
         assert_eq!(
             get_nested_string(&root, &["agents", "defaults", "model", "primary"]).as_deref(),
             Some("openrouter/meta-llama/llama-3.1-8b-instruct")
@@ -9362,6 +10667,240 @@ mod tests {
             ]
         )
         .is_none());
+    }
+
+    #[test]
+    fn kernel_agent_creation_capability_reports_supported_openclaw_models_for_the_built_in_instance()
+    {
+        let (_root, paths, config, storage, service) = studio_context();
+        fs::write(
+            &openclaw_config_file_path(&paths),
+            r#"{
+  models: {
+    providers: {
+      openai: {
+        baseUrl: "https://api.openai.com/v1",
+        models: [
+          { id: "gpt-5.4", name: "GPT-5.4" },
+          { id: "o4-mini", name: "o4-mini", role: "reasoning" },
+        ],
+      },
+      openrouter: {
+        baseUrl: "https://openrouter.ai/api/v1",
+        models: [
+          {
+            id: "openrouter/meta-llama/llama-3.1-8b-instruct",
+            name: "Llama 3.1 8B Instruct",
+          },
+        ],
+      },
+    },
+  },
+}"#,
+        )
+        .expect("seed config file");
+
+        let capability = service
+            .get_kernel_agent_creation_capability(&paths, &config, &storage, DEFAULT_INSTANCE_ID)
+            .expect("get kernel agent creation capability");
+
+        assert_eq!(capability.instance_id, DEFAULT_INSTANCE_ID);
+        assert_eq!(capability.default_kernel_id.as_deref(), Some("openclaw"));
+        assert_eq!(capability.kernel_options.len(), 1);
+        assert_eq!(capability.kernel_options[0].kernel_id, "openclaw");
+        assert!(capability.kernel_options[0].supported);
+        assert_eq!(capability.kernel_options[0].reason_code, None);
+        assert!(
+            capability
+                .model_options
+                .iter()
+                .any(|option| option.value == "openai/gpt-5.4"
+                    && option.provider_id == "openai"
+                    && option.provider_label == "Openai")
+        );
+        assert!(
+            capability.model_options.iter().any(|option| option.value
+                == "openrouter/meta-llama/llama-3.1-8b-instruct"
+                && option.provider_id == "openrouter")
+        );
+    }
+
+    #[test]
+    fn kernel_agent_creation_capability_marks_managed_hermes_as_unsupported() {
+        let (_root, paths, config, storage, service) = studio_context();
+        let hermes = service
+            .create_instance(
+                &paths,
+                &config,
+                &storage,
+                StudioCreateInstanceInput {
+                    name: "Hermes Local Managed".to_string(),
+                    description: Some("Managed local Hermes runtime".to_string()),
+                    runtime_kind: StudioRuntimeKind::Hermes,
+                    deployment_mode: StudioInstanceDeploymentMode::LocalManaged,
+                    transport_kind: StudioInstanceTransportKind::CustomHttp,
+                    icon_type: None,
+                    version: Some("0.1.0".to_string()),
+                    type_label: Some("Hermes Agent".to_string()),
+                    host: Some("127.0.0.1".to_string()),
+                    port: Some(19540),
+                    base_url: Some("http://127.0.0.1:19540".to_string()),
+                    websocket_url: None,
+                    storage: None,
+                    config: Some(PartialStudioInstanceConfig {
+                        port: Some("19540".to_string()),
+                        base_url: Some("http://127.0.0.1:19540".to_string()),
+                        ..Default::default()
+                    }),
+                },
+            )
+            .expect("create hermes instance");
+
+        let capability = service
+            .get_kernel_agent_creation_capability(&paths, &config, &storage, &hermes.id)
+            .expect("get hermes kernel agent creation capability");
+
+        assert_eq!(capability.default_kernel_id.as_deref(), Some("hermes"));
+        assert_eq!(capability.kernel_options.len(), 1);
+        assert_eq!(capability.kernel_options[0].kernel_id, "hermes");
+        assert!(!capability.kernel_options[0].supported);
+        assert_eq!(
+            capability.kernel_options[0].reason_code,
+            Some(StudioKernelAgentCreationReasonCode::UnsupportedKernel)
+        );
+        assert!(
+            capability.kernel_options[0]
+                .reason
+                .as_deref()
+                .unwrap_or_default()
+                .contains("Hermes")
+        );
+        assert!(capability.model_options.is_empty());
+    }
+
+    #[test]
+    fn create_kernel_agent_persists_openclaw_agent_configuration() {
+        let (_root, paths, config, storage, service) = studio_context();
+        fs::write(
+            &openclaw_config_file_path(&paths),
+            r#"{
+  models: {
+    providers: {
+      openai: {
+        baseUrl: "https://api.openai.com/v1",
+        models: [
+          { id: "gpt-5.4", name: "GPT-5.4" },
+          { id: "o4-mini", name: "o4-mini", role: "reasoning" },
+        ],
+      },
+    },
+  },
+  agents: {
+    list: [
+      {
+        id: "main",
+        name: "Main",
+        default: true,
+      },
+    ],
+  },
+}"#,
+        )
+        .expect("seed config file");
+
+        let created = service
+            .create_kernel_agent(
+                &paths,
+                &config,
+                &storage,
+                StudioCreateKernelAgentInput {
+                    instance_id: DEFAULT_INSTANCE_ID.to_string(),
+                    kernel_id: Some("openclaw".to_string()),
+                    agent_id: "Reviewer Agent".to_string(),
+                    display_name: "Reviewer".to_string(),
+                    avatar: Some("R".to_string()),
+                    is_default: true,
+                    primary_model: Some("openai/gpt-5.4".to_string()),
+                    fallback_models: vec!["openai/o4-mini".to_string()],
+                    workspace: Some("~/agents/reviewer".to_string()),
+                    agent_dir: Some("agents/reviewer".to_string()),
+                    temperature: Some(0.3),
+                    top_p: Some(0.95),
+                    max_tokens: Some(12000),
+                    timeout_ms: Some(120000),
+                    streaming: Some(true),
+                },
+            )
+            .expect("create kernel agent");
+
+        assert_eq!(created.instance_id, DEFAULT_INSTANCE_ID);
+        assert_eq!(created.kernel_id, "openclaw");
+        assert_eq!(created.agent_id, "reviewer-agent");
+        assert_eq!(created.display_name, "Reviewer");
+
+        let root = read_json5_object(&openclaw_config_file_path(&paths)).expect("read config file");
+        let agents = get_nested_value(&root, &["agents", "list"])
+            .and_then(Value::as_array)
+            .expect("agent list");
+        let reviewer = agents
+            .iter()
+            .find(|entry| get_nested_string(entry, &["id"]).as_deref() == Some("reviewer-agent"))
+            .expect("reviewer agent entry");
+
+        assert_eq!(get_nested_string(reviewer, &["name"]).as_deref(), Some("Reviewer"));
+        assert_eq!(
+            get_nested_string(reviewer, &["identity", "emoji"]).as_deref(),
+            Some("R")
+        );
+        assert_eq!(
+            get_nested_string(reviewer, &["model", "primary"]).as_deref(),
+            Some("openai/gpt-5.4")
+        );
+        assert_eq!(
+            get_nested_value(reviewer, &["model", "fallbacks"])
+                .and_then(Value::as_array)
+                .cloned(),
+            Some(vec![Value::String("openai/o4-mini".to_string())])
+        );
+        assert_eq!(
+            get_nested_string(reviewer, &["workspace"]).as_deref(),
+            Some("~/agents/reviewer")
+        );
+        assert_eq!(
+            get_nested_string(reviewer, &["agentDir"]).as_deref(),
+            Some("agents/reviewer")
+        );
+        assert_eq!(
+            get_nested_value(reviewer, &["params", "temperature"]).and_then(Value::as_f64),
+            Some(0.3)
+        );
+        assert_eq!(
+            get_nested_value(reviewer, &["params", "topP"]).and_then(Value::as_f64),
+            Some(0.95)
+        );
+        assert_eq!(
+            get_nested_value(reviewer, &["params", "maxTokens"]).and_then(Value::as_u64),
+            Some(12000)
+        );
+        assert_eq!(
+            get_nested_value(reviewer, &["params", "timeoutMs"]).and_then(Value::as_u64),
+            Some(120000)
+        );
+        assert_eq!(
+            get_nested_value(reviewer, &["params", "streaming"]).and_then(Value::as_bool),
+            Some(true)
+        );
+
+        let default_agent_ids = agents
+            .iter()
+            .filter(|entry| {
+                get_nested_value(entry, &["default"])
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false)
+            })
+            .filter_map(|entry| get_nested_string(entry, &["id"]))
+            .collect::<Vec<_>>();
+        assert_eq!(default_agent_ids, vec!["reviewer-agent".to_string()]);
     }
 
     #[test]
@@ -9816,9 +11355,7 @@ Reads runtime diagnostics and summarizes them.
             )
             .expect_err("remote runtime should be rejected");
 
-        assert!(error
-            .to_string()
-            .contains("built-in OpenClaw instance"));
+        assert!(error.to_string().contains("built-in OpenClaw instance"));
     }
 
     #[test]

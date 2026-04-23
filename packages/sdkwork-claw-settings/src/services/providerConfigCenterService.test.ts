@@ -8,6 +8,8 @@ import {
   type ProviderConfigRecord,
 } from './providerConfigCenterService.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 type ProviderRoutingApiOverrides = NonNullable<
   ProviderConfigCenterServiceOverrides['providerRoutingApi']
 >;
@@ -105,7 +107,7 @@ function createOpenClawInstance(
   overrides: Partial<StudioInstanceRecord> = {},
 ): StudioInstanceRecord {
   return {
-    id: 'local-built-in',
+    id: BUILT_IN_INSTANCE_ID,
     name: 'Local Built-In',
     description: 'Packaged local OpenClaw kernel.',
     runtimeKind: 'openclaw',
@@ -1198,13 +1200,13 @@ await runTest('providerConfigCenterService exposes writable config-backed instan
   });
 
   const instances = await service.listApplyInstances();
-  const target = await service.getInstanceApplyTarget('local-built-in');
+  const target = await service.getInstanceApplyTarget(BUILT_IN_INSTANCE_ID);
 
   assert.deepEqual(
     instances.map((instance) => instance.id),
-    ['local-built-in', 'remote-custom'],
+    [BUILT_IN_INSTANCE_ID, 'remote-custom'],
   );
-  assert.equal(target.instance.id, 'local-built-in');
+  assert.equal(target.instance.id, BUILT_IN_INSTANCE_ID);
   assert.equal(target.instance.configFile, 'D:/OpenClaw/.openclaw/openclaw.json');
   assert.deepEqual(
     target.agents.map((agent) => agent.id),
@@ -1465,7 +1467,7 @@ await runTest('providerConfigCenterService applies a saved provider config throu
   });
 
   await service.applyProviderConfig({
-    instanceId: 'local-built-in',
+    instanceId: BUILT_IN_INSTANCE_ID,
     config: record,
     agentIds: ['main', 'research'],
   });
@@ -1624,7 +1626,7 @@ await runTest('providerConfigCenterService applies provider configs through the 
   });
 
   await service.applyProviderConfig({
-    instanceId: 'local-built-in',
+    instanceId: BUILT_IN_INSTANCE_ID,
     config: record,
     agentIds: ['main'],
   });
@@ -1767,7 +1769,7 @@ await runTest('providerConfigCenterService applies native gemini client routes t
   });
 
   await service.applyProviderConfig({
-    instanceId: 'local-built-in',
+    instanceId: BUILT_IN_INSTANCE_ID,
     config: record,
     agentIds: ['main'],
   });
@@ -1854,7 +1856,7 @@ await runTest(
     await assert.rejects(
       () =>
         service.applyProviderConfig({
-          instanceId: 'local-built-in',
+          instanceId: BUILT_IN_INSTANCE_ID,
           config: createRecord({
             id: 'provider-config-openai-prod',
           }),
@@ -2179,7 +2181,7 @@ await runTest(
     await assert.rejects(
       () =>
         service.applyProviderConfig({
-          instanceId: 'local-built-in',
+          instanceId: BUILT_IN_INSTANCE_ID,
           config: createRecord({
             id: 'provider-config-openai-prod',
           }),

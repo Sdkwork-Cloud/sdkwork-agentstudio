@@ -17,10 +17,14 @@ test('local release helper resolves usable defaults for root release commands', 
     env: {},
     platform: 'win32',
     arch: 'x64',
+    resolveGitRepositoryFn() {
+      return 'Sdkwork-Cloud/claw-studio';
+    },
   });
 
   assert.equal(planContext.releaseTag, 'release-local');
   assert.equal(planContext.profileId, 'claw-studio');
+  assert.equal(planContext.repository, 'Sdkwork-Cloud/claw-studio');
 
   const serverContext = helper.resolveLocalReleaseContext({
     mode: 'package:server',
@@ -144,6 +148,9 @@ test('local release helper resolves usable defaults for root release commands', 
     },
     platform: 'win32',
     arch: 'x64',
+    resolveGitRepositoryFn() {
+      return 'Sdkwork-Cloud/claw-studio';
+    },
   });
 
   assert.equal(envPackageProfileContext.packageProfileId, 'hermes-only');
@@ -152,35 +159,59 @@ test('local release helper resolves usable defaults for root release commands', 
     mode: 'package:desktop',
     env: {
       SDKWORK_RELEASE_PACKAGE_PROFILE: 'openclaw-only',
+      SDKWORK_RELEASE_REPOSITORY: 'Env-Owner/env-repo',
     },
     platform: 'win32',
     arch: 'x64',
     cliOverrides: {
       packageProfileId: 'dual-kernel',
+      repository: 'Cli-Owner/cli-repo',
+    },
+    resolveGitRepositoryFn() {
+      return 'Sdkwork-Cloud/claw-studio';
     },
   });
 
   assert.equal(cliPackageProfileContext.packageProfileId, 'dual-kernel');
+  assert.equal(cliPackageProfileContext.repository, 'Cli-Owner/cli-repo');
+
+  const envRepositoryContext = helper.resolveLocalReleaseContext({
+    mode: 'package:desktop',
+    env: {
+      SDKWORK_RELEASE_REPOSITORY: 'Env-Owner/env-repo',
+    },
+    platform: 'win32',
+    arch: 'x64',
+    resolveGitRepositoryFn() {
+      return 'Sdkwork-Cloud/claw-studio';
+    },
+  });
+
+  assert.equal(envRepositoryContext.repository, 'Env-Owner/env-repo');
 });
 
-test('local release helper auto-builds missing server prerequisites for local server and container packaging', async () => {
+test('local release helper always refreshes server prerequisites for local server and container packaging', async () => {
   const helperPath = path.join(rootDir, 'scripts', 'release', 'local-release-command.mjs');
   const helper = await import(pathToFileURL(helperPath).href);
 
   assert.equal(typeof helper.ensureLocalServerBuildPrerequisite, 'function');
 
   const buildCalls = [];
+  const existingBinaries = new Set([
+    'D:/synthetic/claw-server.exe',
+    'D:/synthetic/claw-server',
+  ]);
   const serverResult = helper.ensureLocalServerBuildPrerequisite({
     context: {
       mode: 'package:server',
       target: 'x86_64-pc-windows-msvc',
       platform: 'windows',
     },
-    fileExists() {
-      return false;
+    fileExists(targetPath) {
+      return existingBinaries.has(targetPath);
     },
     resolveBinaryPath() {
-      return 'D:/synthetic/sdkwork-claw-server.exe';
+      return 'D:/synthetic/claw-server.exe';
     },
     runServerBuildFn(options) {
       buildCalls.push(options);
@@ -193,11 +224,11 @@ test('local release helper auto-builds missing server prerequisites for local se
       target: 'x86_64-unknown-linux-gnu',
       platform: 'linux',
     },
-    fileExists() {
-      return false;
+    fileExists(targetPath) {
+      return existingBinaries.has(targetPath);
     },
     resolveBinaryPath() {
-      return 'D:/synthetic/sdkwork-claw-server';
+      return 'D:/synthetic/claw-server';
     },
     runServerBuildFn(options) {
       buildCalls.push(options);
@@ -209,13 +240,43 @@ test('local release helper auto-builds missing server prerequisites for local se
     { targetTriple: 'x86_64-unknown-linux-gnu' },
   ]);
   assert.deepEqual(serverResult, {
-    binaryPath: 'D:/synthetic/sdkwork-claw-server.exe',
+    binaryPath: 'D:/synthetic/claw-server.exe',
     built: true,
   });
   assert.deepEqual(containerResult, {
-    binaryPath: 'D:/synthetic/sdkwork-claw-server',
+    binaryPath: 'D:/synthetic/claw-server',
     built: true,
   });
+});
+
+test('local release helper rejects server prerequisite builds that do not materialize the canonical binary path', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'release', 'local-release-command.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+
+  assert.equal(typeof helper.ensureLocalServerBuildPrerequisite, 'function');
+
+  let existenceChecks = 0;
+
+  assert.throws(
+    () => helper.ensureLocalServerBuildPrerequisite({
+      context: {
+        mode: 'package:server',
+        target: 'x86_64-unknown-linux-gnu',
+        platform: 'linux',
+      },
+      fileExists() {
+        existenceChecks += 1;
+        return false;
+      },
+      resolveBinaryPath() {
+        return 'D:/synthetic/claw-server';
+      },
+      runServerBuildFn() {},
+    }),
+    /Server build completed without producing the canonical binary at D:\/synthetic\/claw-server/i,
+  );
+
+  assert.equal(existenceChecks, 1);
 });
 
 test('local release helper auto-builds stale desktop prerequisites for local desktop packaging', async () => {
@@ -258,6 +319,41 @@ test('local release helper auto-builds stale desktop prerequisites for local des
     built: true,
     staleTarget: true,
   });
+});
+
+test('local release helper rejects desktop prerequisite builds that do not materialize the canonical bundle root', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'release', 'local-release-command.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+
+  assert.equal(typeof helper.ensureLocalDesktopBuildPrerequisite, 'function');
+
+  let existenceChecks = 0;
+
+  assert.throws(
+    () => helper.ensureLocalDesktopBuildPrerequisite({
+      context: {
+        mode: 'package:desktop',
+        profileId: 'claw-studio',
+        target: 'x86_64-pc-windows-msvc',
+      },
+      fileExists() {
+        existenceChecks += 1;
+        return false;
+      },
+      resolveDesktopBundleRoot() {
+        return 'D:/synthetic/desktop-bundle';
+      },
+      inspectTauriTargetFn() {
+        return {
+          stale: true,
+        };
+      },
+      runDesktopBuildFn() {},
+    }),
+    /Desktop release build completed without producing the canonical bundle root at D:\/synthetic\/desktop-bundle/i,
+  );
+
+  assert.equal(existenceChecks, 2);
 });
 
 test('local release helper runs desktop prerequisite builds through the unified desktop release runner', async () => {
@@ -606,6 +702,11 @@ test('local release helper automatically runs server smoke after packaging serve
     fileExists() {
       return true;
     },
+    runServerBuildFn() {
+      callOrder.push({
+        step: 'build',
+      });
+    },
     packageServerAssetsFn(context) {
       callOrder.push({
         step: 'package',
@@ -625,13 +726,13 @@ test('local release helper automatically runs server smoke after packaging serve
 
   assert.deepEqual(
     callOrder.map((entry) => entry.step),
-    ['package', 'smoke'],
+    ['build', 'package', 'smoke'],
   );
-  assert.equal(callOrder[0].context.releaseAssetsDir.replaceAll('\\', '/'), 'D:/synthetic/release-assets');
   assert.equal(callOrder[1].context.releaseAssetsDir.replaceAll('\\', '/'), 'D:/synthetic/release-assets');
-  assert.equal(callOrder[1].context.platform, 'linux');
-  assert.equal(callOrder[1].context.arch, 'x64');
-  assert.equal(callOrder[1].context.target, 'x86_64-unknown-linux-gnu');
+  assert.equal(callOrder[2].context.releaseAssetsDir.replaceAll('\\', '/'), 'D:/synthetic/release-assets');
+  assert.equal(callOrder[2].context.platform, 'linux');
+  assert.equal(callOrder[2].context.arch, 'x64');
+  assert.equal(callOrder[2].context.target, 'x86_64-unknown-linux-gnu');
 });
 
 test('local release helper automatically runs deployment smoke after packaging container and kubernetes release assets', async () => {
@@ -647,6 +748,11 @@ test('local release helper automatically runs deployment smoke after packaging c
     releaseAssetsDir: 'D:/synthetic/release-assets',
     fileExists() {
       return true;
+    },
+    runServerBuildFn() {
+      callOrder.push({
+        step: 'build-container',
+      });
     },
     packageContainerAssetsFn(context) {
       callOrder.push({
@@ -690,14 +796,14 @@ test('local release helper automatically runs deployment smoke after packaging c
 
   assert.deepEqual(
     callOrder.map((entry) => entry.step),
-    ['package-container', 'smoke-container', 'package-kubernetes', 'smoke-kubernetes'],
+    ['build-container', 'package-container', 'smoke-container', 'package-kubernetes', 'smoke-kubernetes'],
   );
-  assert.equal(callOrder[1].context.releaseAssetsDir.replaceAll('\\', '/'), 'D:/synthetic/release-assets');
-  assert.equal(callOrder[1].context.platform, 'linux');
-  assert.equal(callOrder[1].context.arch, 'x64');
-  assert.equal(callOrder[1].context.accelerator, 'cpu');
-  assert.equal(callOrder[3].context.releaseAssetsDir.replaceAll('\\', '/'), 'D:/synthetic/release-assets');
-  assert.equal(callOrder[3].context.platform, 'linux');
-  assert.equal(callOrder[3].context.arch, 'arm64');
-  assert.equal(callOrder[3].context.family, 'kubernetes');
+  assert.equal(callOrder[2].context.releaseAssetsDir.replaceAll('\\', '/'), 'D:/synthetic/release-assets');
+  assert.equal(callOrder[2].context.platform, 'linux');
+  assert.equal(callOrder[2].context.arch, 'x64');
+  assert.equal(callOrder[2].context.accelerator, 'cpu');
+  assert.equal(callOrder[4].context.releaseAssetsDir.replaceAll('\\', '/'), 'D:/synthetic/release-assets');
+  assert.equal(callOrder[4].context.platform, 'linux');
+  assert.equal(callOrder[4].context.arch, 'arm64');
+  assert.equal(callOrder[4].context.family, 'kubernetes');
 });

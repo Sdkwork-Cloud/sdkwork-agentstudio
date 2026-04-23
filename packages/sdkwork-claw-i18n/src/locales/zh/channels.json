@@ -1,13 +1,16 @@
 {
   "page": {
     "title": "聊天通道",
-    "subtitle": "将你的 OpenClaw 智能体连接到外部消息平台和 API。",
+    "subtitle": "将你的 OpenClaw 智能体连接到外部消息平台与 API。",
     "feedback": {
-      "loadFailed": "\u65e0\u6cd5\u52a0\u8f7d\u901a\u9053\u914d\u7f6e\u3002",
-      "loadFailedServiceUnavailable": "\u901a\u9053\u670d\u52a1\u6682\u65f6\u4e0d\u53ef\u7528\uff0c\u8bf7\u786e\u8ba4\u5b9e\u4f8b\u4e0e Kernel \u5df2\u542f\u52a8\u540e\u91cd\u8bd5\u3002",
-      "saveFailed": "\u65e0\u6cd5\u4fdd\u5b58\u901a\u9053\u914d\u7f6e\u3002",
-      "deleteFailed": "\u65e0\u6cd5\u5220\u9664\u901a\u9053\u914d\u7f6e\u3002",
-      "toggleFailed": "\u65e0\u6cd5\u66f4\u65b0\u901a\u9053\u542f\u7528\u72b6\u6001\u3002"
+      "loadFailed": "暂时无法加载通道配置。",
+      "loadFailedServiceUnavailable": "通道服务暂时不可用，请确认实例与 Kernel 已启动后重试。",
+      "saveFailed": "暂时无法保存通道配置。",
+      "deleteFailed": "暂时无法删除通道配置。",
+      "toggleFailed": "暂时无法更新通道启用状态。"
+    },
+    "validation": {
+      "requiredField": "请填写{{field}}。"
     },
     "status": {
       "active": "已启用",
@@ -26,23 +29,319 @@
     },
     "panel": {
       "configuration": "通道配置",
-      "setupGuide": "配置指南",
-      "openOfficialSite": "前往官方配置页",
+      "setupGuide": "配置指引",
+      "openOfficialSite": "前往官方配置页面",
       "readFullDocumentation": "查看完整文档",
       "credentials": "凭证信息"
     },
     "catalog": {
       "tabs": {
         "domestic": "国内",
-        "global": "国外",
+        "global": "国际",
         "media": "媒体账号",
         "all": "全部"
       },
+      "descriptions": {
+        "domestic": "面向国内场景的消息与会话入口",
+        "global": "面向全球协作与聊天的接入通道",
+        "media": "面向公众号与广播触达的发送通道",
+        "all": "当前工作区可用的全部通道"
+      },
       "empty": {
         "domestic": "当前工作区暂无可配置的国内聊天通道。",
-        "global": "当前工作区暂无可配置的国外聊天通道。",
+        "global": "当前工作区暂无可配置的国际聊天通道。",
         "media": "当前工作区暂无可配置的媒体账号通道。",
         "all": "当前工作区暂无可配置的聊天通道。"
+      }
+    }
+  },
+  "definitions": {
+    "officialLinks": {
+      "sdkworkchat": "SDKWORK Chat 下载",
+      "wehcat": "微信公众号平台",
+      "feishu": "飞书开放平台",
+      "qq": "QQ 机器人平台",
+      "dingtalk": "钉钉开发者控制台",
+      "wecom": "企业微信管理后台",
+      "telegram": "Telegram Bot 平台",
+      "discord": "Discord 开发者后台",
+      "slack": "Slack API Apps",
+      "googlechat": "Google Chat 开发文档"
+    },
+    "sharedFields": {
+      "contextVisibility": {
+        "label": "上下文可见性",
+        "placeholder": "allowlist_quote",
+        "helpText": "可选的通道上下文可见策略，例如 quote、none 或 allowlist_quote。"
+      }
+    },
+    "channels": {
+      "sdkworkchat": {
+        "name": "SDKWORK 官方账号",
+        "description": "使用内置的 SDKWORK 官方账号投递链路，让 OpenClaw 无需额外配置凭证即可完成会话交接。",
+        "setupSteps": {
+          "0": "打开集成的 SDKWORK 官方账号体验；如果当前机器尚未登录，也可以先安装 SDKWORK 客户端。",
+          "1": "使用你的 SDKWORK 账号登录，使默认媒体通道立即可用。",
+          "2": "当当前运行时需要把会话交接到 SDKWORK 官方账号时，请保持此通道为启用状态。"
+        }
+      },
+      "wehcat": {
+        "name": "微信公众号",
+        "description": "接入微信公众号工作流，让 OpenClaw 能够覆盖面向国内的媒体消息场景。",
+        "setupSteps": {
+          "0": "在微信公众号平台中创建或管理目标公众号。",
+          "1": "在这里填写 App ID、App Secret、Token，以及可选的 AES Key。",
+          "2": "在微信侧配置回调地址后，再启用公众号通道。"
+        },
+        "fields": {
+          "appId": {
+            "label": "App ID",
+            "placeholder": "wx1234567890abcdef"
+          },
+          "appSecret": {
+            "label": "App Secret",
+            "placeholder": "微信公众号密钥"
+          },
+          "token": {
+            "label": "Token",
+            "placeholder": "校验 Token"
+          },
+          "encodingAesKey": {
+            "label": "Encoding AES Key",
+            "placeholder": "可选的 AES Key"
+          }
+        }
+      },
+      "qq": {
+        "name": "QQ",
+        "description": "接入 QQ 机器人，让 OpenClaw 可以把命令、告警和审批消息路由到 QQ 群。",
+        "setupSteps": {
+          "0": "在 QQ 机器人平台创建或管理目标机器人。",
+          "1": "在这里填写机器人密钥与目标群 ID。",
+          "2": "完成一次试投递后，再启用该通道。"
+        },
+        "fields": {
+          "botKey": {
+            "label": "机器人密钥",
+            "placeholder": "QQ 机器人密钥"
+          },
+          "groupId": {
+            "label": "群 ID",
+            "placeholder": "123456789",
+            "helpText": "接收 OpenClaw 更新消息的目标 QQ 群。"
+          }
+        }
+      },
+      "dingtalk": {
+        "name": "钉钉",
+        "description": "接入钉钉自定义机器人，让 OpenClaw 能将更新广播到钉钉工作空间。",
+        "setupSteps": {
+          "0": "在目标钉钉群中创建自定义机器人。",
+          "1": "把 Access Token 和签名 Secret 填写到此表单。",
+          "2": "首次连通性校验成功后，再启用该通道。"
+        },
+        "fields": {
+          "accessToken": {
+            "label": "Access Token",
+            "placeholder": "钉钉 Access Token"
+          },
+          "secret": {
+            "label": "Secret",
+            "placeholder": "机器人签名 Secret"
+          }
+        }
+      },
+      "wecom": {
+        "name": "企业微信",
+        "description": "接入企业微信应用，让 OpenClaw 能服务企业内部的企业微信会话。",
+        "setupSteps": {
+          "0": "创建具备机器人或客户联系权限的企业微信应用。",
+          "1": "在这里填写 Corp ID、Agent ID 和 Secret。",
+          "2": "保存配置后，验证消息投递是否成功。"
+        },
+        "fields": {
+          "corpId": {
+            "label": "Corp ID",
+            "placeholder": "ww1234567890abcdef"
+          },
+          "agentId": {
+            "label": "Agent ID",
+            "placeholder": "1000002"
+          },
+          "secret": {
+            "label": "Secret",
+            "placeholder": "企业微信应用密钥"
+          }
+        }
+      },
+      "feishu": {
+        "name": "飞书",
+        "description": "接入飞书机器人，让 OpenClaw 可以接收并回复团队消息。",
+        "setupSteps": {
+          "0": "在飞书开放平台创建应用。",
+          "1": "把 App ID 和 App Secret 填写到此表单。",
+          "2": "如果需要事件回调，请补充 OpenClaw 部署提供的回调地址。"
+        },
+        "fields": {
+          "appId": {
+            "label": "App ID",
+            "placeholder": "cli_xxxxxxxxxxxxx"
+          },
+          "appSecret": {
+            "label": "App Secret",
+            "placeholder": "应用密钥"
+          },
+          "encryptKey": {
+            "label": "Encrypt Key",
+            "placeholder": "可选的加密 Key"
+          },
+          "verificationToken": {
+            "label": "Verification Token",
+            "placeholder": "可选的验证 Token"
+          }
+        }
+      },
+      "telegram": {
+        "name": "Telegram",
+        "description": "使用 Telegram Bot Token，让 OpenClaw 能进入私聊与群聊会话。",
+        "setupSteps": {
+          "0": "通过 BotFather 创建机器人并复制 Bot Token。",
+          "1": "如需 Telegram 主动推送事件，可选配置 Webhook URL。",
+          "2": "填写完必要凭证后，再启用该通道。"
+        },
+        "fields": {
+          "botToken": {
+            "label": "Bot Token",
+            "placeholder": "123456:AA..."
+          },
+          "tokenFile": {
+            "label": "Token 文件",
+            "placeholder": "可选的 Token 文件路径"
+          },
+          "webhookUrl": {
+            "label": "Webhook URL",
+            "placeholder": "https://example.com/openclaw/telegram"
+          },
+          "webhookSecret": {
+            "label": "Webhook Secret",
+            "placeholder": "可选的 Webhook Secret"
+          },
+          "webhookPath": {
+            "label": "Webhook Path",
+            "placeholder": "/telegram/webhook"
+          },
+          "webhookHost": {
+            "label": "Webhook Host",
+            "placeholder": "0.0.0.0"
+          },
+          "webhookPort": {
+            "label": "Webhook Port",
+            "placeholder": "8443"
+          },
+          "errorPolicy": {
+            "label": "错误策略",
+            "placeholder": "retry",
+            "helpText": "可选的 Telegram 投递错误策略，例如 retry 或 disable。"
+          },
+          "errorCooldownMs": {
+            "label": "错误冷却时间（毫秒）",
+            "placeholder": "300000"
+          }
+        }
+      },
+      "whatsapp": {
+        "name": "WhatsApp",
+        "description": "管理可选的 WhatsApp 访问规则，用于控制私聊白名单与群组投递行为。",
+        "setupSteps": {
+          "0": "通过官方 CLI 或运行时登录流程完成 OpenClaw 的 WhatsApp 通道认证。",
+          "1": "可选地限制允许发送私聊的号码，或在这里定义群组级行为。",
+          "2": "保持该通道启用，以便复用运行时登录态并避免额外配置。"
+        },
+        "fields": {
+          "allowFrom": {
+            "label": "允许来源",
+            "placeholder": "+15555550123\n+15555550124",
+            "helpText": "可选的私聊发送方白名单。每行填写一个手机号，或直接提供 JSON 数组。"
+          },
+          "groups": {
+            "label": "群组规则",
+            "placeholder": "{\n  \"*\": {\n    \"requireMention\": true\n  }\n}",
+            "helpText": "可选的 WhatsApp 群组规则 JSON 对象。使用 \"*\" 可定义所有群组的默认规则。"
+          }
+        }
+      },
+      "discord": {
+        "name": "Discord",
+        "description": "将 OpenClaw 接入 Discord 机器人，用于服务器和私信会话。",
+        "setupSteps": {
+          "0": "在开发者后台创建 Discord 应用与机器人。",
+          "1": "在这里填写 Bot Token，并将机器人邀请到你的服务器。",
+          "2": "Token 验证通过后，再启用该通道。"
+        },
+        "fields": {
+          "token": {
+            "label": "Bot Token",
+            "placeholder": "Discord Bot Token"
+          }
+        }
+      },
+      "slack": {
+        "name": "Slack",
+        "description": "配置 Bot Token 与 App Token，让 OpenClaw 可在 Slack 工作区内运行。",
+        "setupSteps": {
+          "0": "创建或打开你的 Slack 应用，并安装到目标工作区。",
+          "1": "在下方填写 Bot Token 与 App Token。",
+          "2": "如果工作区使用 Slash Command 或 Events，再补充 Signing Secret。"
+        },
+        "fields": {
+          "botToken": {
+            "label": "Bot Token",
+            "placeholder": "xoxb-..."
+          },
+          "appToken": {
+            "label": "App Token",
+            "placeholder": "xapp-..."
+          },
+          "signingSecret": {
+            "label": "Signing Secret",
+            "placeholder": "可选的 Signing Secret"
+          }
+        }
+      },
+      "googlechat": {
+        "name": "Google Chat",
+        "description": "提供 Google Chat 服务账号或引用信息，用于企业工作区消息投递。",
+        "setupSteps": {
+          "0": "创建 Google Chat 应用和服务账号。",
+          "1": "填写内联服务账号 JSON，或提供服务账号引用地址。",
+          "2": "如部署要求，请继续补充 audience 或 webhook 信息。"
+        },
+        "fields": {
+          "serviceAccount": {
+            "label": "服务账号 JSON",
+            "placeholder": "{ \"type\": \"service_account\", ... }"
+          },
+          "serviceAccountRef": {
+            "label": "服务账号引用",
+            "placeholder": "secret://googlechat/service-account"
+          },
+          "audienceType": {
+            "label": "Audience 类型",
+            "placeholder": "SPACE 或 DM"
+          },
+          "audience": {
+            "label": "Audience",
+            "placeholder": "spaces/AAAA12345"
+          },
+          "webhookPath": {
+            "label": "Webhook Path",
+            "placeholder": "/googlechat/webhook"
+          },
+          "webhookUrl": {
+            "label": "Webhook URL",
+            "placeholder": "https://example.com/openclaw/googlechat"
+          }
+        }
       }
     }
   }

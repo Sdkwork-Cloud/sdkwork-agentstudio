@@ -6,6 +6,8 @@ import type {
 import { configurePlatformBridge, getPlatformBridge } from '@sdkwork/claw-infrastructure';
 import { getSharedOpenClawGatewayClient } from './openClawGatewayClientRegistry.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 function runTest(name: string, fn: () => Promise<void> | void) {
   return Promise.resolve()
     .then(fn)
@@ -22,7 +24,7 @@ function createInstance(
   overrides: Partial<StudioInstanceRecord> = {},
 ): StudioInstanceRecord {
   return {
-    id: 'local-built-in',
+    id: BUILT_IN_INSTANCE_ID,
     name: 'Local Built-In',
     description: 'Packaged local OpenClaw kernel.',
     runtimeKind: 'openclaw',

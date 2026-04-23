@@ -3,12 +3,14 @@ import test from 'node:test';
 
 import { resolveBuiltInOpenClawInstance } from './builtInOpenClawInstanceSelection.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 test('resolveBuiltInOpenClawInstance prefers the built-in OpenClaw instance that matches the active gateway urls', () => {
   const resolved = resolveBuiltInOpenClawInstance(
     [
       {
-        id: 'legacy-local-built-in',
-        name: 'Legacy Local Built-In',
+        id: 'unexpected-bundled-openclaw-id',
+        name: 'Unexpected Bundled OpenClaw Id',
         runtimeKind: 'openclaw',
         deploymentMode: 'local-managed',
         transportKind: 'openclawGatewayWs',
@@ -19,7 +21,7 @@ test('resolveBuiltInOpenClawInstance prefers the built-in OpenClaw instance that
         isDefault: false,
       },
       {
-        id: 'managed-openclaw-primary',
+        id: BUILT_IN_INSTANCE_ID,
         name: 'Built-In OpenClaw Primary',
         runtimeKind: 'openclaw',
         deploymentMode: 'local-managed',
@@ -37,14 +39,14 @@ test('resolveBuiltInOpenClawInstance prefers the built-in OpenClaw instance that
     },
   );
 
-  assert.equal(resolved?.id, 'managed-openclaw-primary');
+  assert.equal(resolved?.id, BUILT_IN_INSTANCE_ID);
 });
 
 test('resolveBuiltInOpenClawInstance honors an explicit preferred instance id when readiness evidence already resolved it', () => {
   const resolved = resolveBuiltInOpenClawInstance(
     [
       {
-        id: 'managed-openclaw-primary',
+        id: BUILT_IN_INSTANCE_ID,
         name: 'Built-In OpenClaw Primary',
         runtimeKind: 'openclaw',
         deploymentMode: 'local-managed',

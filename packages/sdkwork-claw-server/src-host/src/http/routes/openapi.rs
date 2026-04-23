@@ -93,10 +93,7 @@ pub(crate) fn build_native_v1_document(state: &ServerState) -> Value {
 pub(crate) fn build_local_ai_compat_document(state: &ServerState) -> Value {
     let mut paths = serde_json::Map::new();
     for path in LOCAL_AI_COMPAT_PATHS {
-        paths.insert(
-            (*path).to_string(),
-            build_local_ai_compat_path_item(path),
-        );
+        paths.insert((*path).to_string(), build_local_ai_compat_path_item(path));
     }
 
     json!({
@@ -467,6 +464,204 @@ fn build_paths(state: &ServerState) -> Value {
                     ),
                     "400": internal_error_json_response("The studio instance config payload was invalid."),
                     "500": internal_error_json_response("The studio instance config could not be updated."),
+                    "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
+                }
+            }
+        },
+        "/claw/api/v1/studio/instances/{id}/kernel-chat/agent-profiles": {
+            "get": {
+                "tags": ["api"],
+                "operationId": "apiListStudioKernelChatAgentProfiles",
+                "summary": "List kernel chat agent profiles for one studio instance",
+                "parameters": [studio_instance_id_parameter()],
+                "responses": {
+                    "200": json_array_response(
+                        "Kernel chat agent profiles projected for the requested studio instance.",
+                        "#/components/schemas/KernelChatAgentProfile"
+                    ),
+                    "500": internal_error_json_response("The kernel chat agent profiles could not be listed."),
+                    "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
+                }
+            }
+        },
+        "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions": {
+            "get": {
+                "tags": ["api"],
+                "operationId": "apiListStudioKernelChatSessions",
+                "summary": "List kernel chat sessions for one studio instance",
+                "parameters": [studio_instance_id_parameter()],
+                "responses": {
+                    "200": json_array_response(
+                        "Kernel chat sessions projected for the requested studio instance.",
+                        "#/components/schemas/KernelChatSession"
+                    ),
+                    "500": internal_error_json_response("The kernel chat sessions could not be listed."),
+                    "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
+                }
+            },
+            "post": {
+                "tags": ["api"],
+                "operationId": "apiCreateStudioKernelChatSession",
+                "summary": "Create one kernel chat session for one studio instance",
+                "parameters": [studio_instance_id_parameter()],
+                "requestBody": json_request_body(
+                    "#/components/schemas/StudioCreateKernelChatSessionInput",
+                    true,
+                    "Kernel chat session creation payload."
+                ),
+                "responses": {
+                    "200": json_response(
+                        "Created kernel chat session.",
+                        "#/components/schemas/KernelChatSession"
+                    ),
+                    "400": internal_error_json_response("The kernel chat session creation payload was invalid."),
+                    "500": internal_error_json_response("The kernel chat session could not be created."),
+                    "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
+                }
+            }
+        },
+        "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}": {
+            "get": {
+                "tags": ["api"],
+                "operationId": "apiGetStudioKernelChatSession",
+                "summary": "Read one kernel chat session for one studio instance",
+                "parameters": [studio_instance_id_parameter(), studio_session_id_parameter()],
+                "responses": {
+                    "200": json_response(
+                        "Requested kernel chat session or null when the session does not exist.",
+                        "#/components/schemas/KernelChatSessionNullableRecord"
+                    ),
+                    "500": internal_error_json_response("The kernel chat session could not be loaded."),
+                    "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
+                }
+            },
+            "patch": {
+                "tags": ["api"],
+                "operationId": "apiPatchStudioKernelChatSession",
+                "summary": "Patch one kernel chat session for one studio instance",
+                "parameters": [studio_instance_id_parameter(), studio_session_id_parameter()],
+                "requestBody": json_request_body(
+                    "#/components/schemas/StudioPatchKernelChatSessionInput",
+                    true,
+                    "Kernel chat session patch payload."
+                ),
+                "responses": {
+                    "200": json_response(
+                        "Updated kernel chat session.",
+                        "#/components/schemas/KernelChatSession"
+                    ),
+                    "400": internal_error_json_response("The kernel chat session patch payload was invalid."),
+                    "500": internal_error_json_response("The kernel chat session could not be updated."),
+                    "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
+                }
+            },
+            "delete": {
+                "tags": ["api"],
+                "operationId": "apiDeleteStudioKernelChatSession",
+                "summary": "Delete one kernel chat session for one studio instance",
+                "parameters": [studio_instance_id_parameter(), studio_session_id_parameter()],
+                "responses": {
+                    "200": json_response(
+                        "Kernel chat session deletion completed.",
+                        "#/components/schemas/StudioNullResult"
+                    ),
+                    "500": internal_error_json_response("The kernel chat session could not be deleted."),
+                    "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
+                }
+            }
+        },
+        "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}:run": {
+            "post": {
+                "tags": ["api"],
+                "operationId": "apiStartStudioKernelChatRun",
+                "summary": "Start one kernel chat run for one studio instance session",
+                "parameters": [studio_instance_id_parameter(), studio_session_id_parameter()],
+                "requestBody": json_request_body(
+                    "#/components/schemas/StudioStartKernelChatRunInput",
+                    true,
+                    "Kernel chat run start payload."
+                ),
+                "responses": {
+                    "200": json_response(
+                        "Started kernel chat run.",
+                        "#/components/schemas/KernelChatRun"
+                    ),
+                    "400": internal_error_json_response("The kernel chat run payload was invalid."),
+                    "500": internal_error_json_response("The kernel chat run could not be started."),
+                    "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
+                }
+            }
+        },
+        "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}:abort": {
+            "post": {
+                "tags": ["api"],
+                "operationId": "apiAbortStudioKernelChatRun",
+                "summary": "Abort one kernel chat run for one studio instance session",
+                "parameters": [studio_instance_id_parameter(), studio_session_id_parameter()],
+                "requestBody": json_request_body(
+                    "#/components/schemas/StudioAbortKernelChatRunInput",
+                    false,
+                    "Optional kernel chat run abort payload."
+                ),
+                "responses": {
+                    "200": json_response(
+                        "Whether the kernel chat run was aborted.",
+                        "#/components/schemas/StudioWorkbenchMutationResult"
+                    ),
+                    "400": internal_error_json_response("The kernel chat abort payload was invalid."),
+                    "500": internal_error_json_response("The kernel chat run could not be aborted."),
+                    "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
+                }
+            }
+        },
+        "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}/runs": {
+            "get": {
+                "tags": ["api"],
+                "operationId": "apiListStudioKernelChatRuns",
+                "summary": "List kernel chat runs for one studio instance session",
+                "parameters": [studio_instance_id_parameter(), studio_session_id_parameter()],
+                "responses": {
+                    "200": json_array_response(
+                        "Kernel chat runs projected for the requested studio instance session.",
+                        "#/components/schemas/KernelChatRun"
+                    ),
+                    "500": internal_error_json_response("The kernel chat runs could not be loaded."),
+                    "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
+                }
+            }
+        },
+        "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}/runs/{runId}": {
+            "get": {
+                "tags": ["api"],
+                "operationId": "apiGetStudioKernelChatRun",
+                "summary": "Read one kernel chat run for one studio instance session",
+                "parameters": [
+                    studio_instance_id_parameter(),
+                    studio_session_id_parameter(),
+                    studio_run_id_parameter()
+                ],
+                "responses": {
+                    "200": json_response(
+                        "Requested kernel chat run or null when the run does not exist.",
+                        "#/components/schemas/KernelChatRunNullableRecord"
+                    ),
+                    "500": internal_error_json_response("The kernel chat run could not be loaded."),
+                    "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
+                }
+            }
+        },
+        "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}/messages": {
+            "get": {
+                "tags": ["api"],
+                "operationId": "apiLoadStudioKernelChatMessages",
+                "summary": "Load kernel chat messages for one studio instance session",
+                "parameters": [studio_instance_id_parameter(), studio_session_id_parameter()],
+                "responses": {
+                    "200": json_array_response(
+                        "Kernel chat messages projected for the requested studio instance session.",
+                        "#/components/schemas/KernelChatMessage"
+                    ),
+                    "500": internal_error_json_response("The kernel chat messages could not be loaded."),
                     "503": internal_error_json_response("The canonical studio public API is not available for the active host shell.")
                 }
             }
@@ -1415,6 +1610,148 @@ fn build_schemas() -> Value {
             "additionalProperties": true,
             "description": "OpenClaw gateway invocation result payload."
         },
+        "StudioCreateKernelChatSessionInput": {
+            "type": "object",
+            "required": ["instanceId"],
+            "properties": {
+                "instanceId": {"type": "string"},
+                "model": {"type": ["string", "null"]},
+                "agentId": {"type": ["string", "null"]},
+                "title": {"type": ["string", "null"]}
+            }
+        },
+        "StudioPatchKernelChatSessionInput": {
+            "type": "object",
+            "required": ["instanceId", "sessionId"],
+            "properties": {
+                "instanceId": {"type": "string"},
+                "sessionId": {"type": "string"},
+                "title": {"type": ["string", "null"]},
+                "model": {"type": ["string", "null"]},
+                "thinkingLevel": {"type": ["string", "null"]},
+                "fastMode": {"type": ["boolean", "null"]},
+                "verboseLevel": {"type": ["string", "null"]},
+                "reasoningLevel": {"type": ["string", "null"]}
+            }
+        },
+        "StudioStartKernelChatRunInput": {
+            "type": "object",
+            "required": ["instanceId", "sessionId", "content"],
+            "properties": {
+                "instanceId": {"type": "string"},
+                "sessionId": {"type": "string"},
+                "content": {"type": "string"},
+                "model": {"type": ["string", "null"]}
+            }
+        },
+        "StudioAbortKernelChatRunInput": {
+            "type": "object",
+            "properties": {
+                "runId": {"type": ["string", "null"]}
+            }
+        },
+        "KernelChatAgentProfile": {
+            "type": "object",
+            "properties": {
+                "kernelId": {"type": "string"},
+                "instanceId": {"type": "string"},
+                "agentId": {"type": "string"},
+                "label": {"type": "string"},
+                "description": {"type": ["string", "null"]},
+                "source": {"type": "string"},
+                "systemPrompt": {"type": ["string", "null"]},
+                "avatar": {"type": ["string", "null"]},
+                "creator": {"type": ["string", "null"]}
+            },
+            "additionalProperties": true
+        },
+        "KernelChatSessionRef": {
+            "type": "object",
+            "properties": {
+                "kernelId": {"type": "string"},
+                "instanceId": {"type": "string"},
+                "sessionId": {"type": "string"},
+                "nativeSessionId": {"type": ["string", "null"]},
+                "routingKey": {"type": ["string", "null"]},
+                "agentId": {"type": ["string", "null"]},
+                "lineageParentSessionId": {"type": ["string", "null"]}
+            }
+        },
+        "KernelChatAuthority": {
+            "type": "object",
+            "properties": {
+                "kind": {"type": "string"},
+                "source": {"type": "string"},
+                "durable": {"type": "boolean"},
+                "writable": {"type": "boolean"}
+            }
+        },
+        "KernelChatSession": {
+            "type": "object",
+            "properties": {
+                "ref": schema_ref("#/components/schemas/KernelChatSessionRef"),
+                "authority": schema_ref("#/components/schemas/KernelChatAuthority"),
+                "lifecycle": {"type": "string"},
+                "title": {"type": "string"},
+                "createdAt": {"type": "integer", "format": "uint64", "minimum": 0},
+                "updatedAt": {"type": "integer", "format": "uint64", "minimum": 0},
+                "messageCount": {"type": "integer", "format": "uint64", "minimum": 0},
+                "lastMessagePreview": {"type": ["string", "null"]},
+                "sessionKind": {"type": ["string", "null"]},
+                "actorBinding": {"type": ["object", "null"], "additionalProperties": true},
+                "modelBinding": {"type": ["object", "null"], "additionalProperties": true},
+                "capabilities": string_array_schema(),
+                "activeRunId": {"type": ["string", "null"]},
+                "nativeMetadata": {"type": ["object", "null"], "additionalProperties": true}
+            },
+            "additionalProperties": true
+        },
+        "KernelChatSessionNullableRecord": {
+            "oneOf": [
+                schema_ref("#/components/schemas/KernelChatSession"),
+                {"type": "null"}
+            ]
+        },
+        "KernelChatRun": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"},
+                "sessionRef": schema_ref("#/components/schemas/KernelChatSessionRef"),
+                "status": {"type": "string"},
+                "createdAt": {"type": "integer", "format": "uint64", "minimum": 0},
+                "updatedAt": {"type": "integer", "format": "uint64", "minimum": 0},
+                "abortable": {"type": "boolean"},
+                "nativeMetadata": {"type": ["object", "null"], "additionalProperties": true}
+            },
+            "additionalProperties": true
+        },
+        "KernelChatRunNullableRecord": {
+            "oneOf": [
+                schema_ref("#/components/schemas/KernelChatRun"),
+                {"type": "null"}
+            ]
+        },
+        "KernelChatMessage": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"},
+                "sessionRef": schema_ref("#/components/schemas/KernelChatSessionRef"),
+                "role": {"type": "string"},
+                "status": {"type": "string"},
+                "createdAt": {"type": "integer", "format": "uint64", "minimum": 0},
+                "updatedAt": {"type": "integer", "format": "uint64", "minimum": 0},
+                "text": {"type": "string"},
+                "parts": {
+                    "type": "array",
+                    "items": {"type": "object", "additionalProperties": true}
+                },
+                "runId": {"type": ["string", "null"]},
+                "model": {"type": ["string", "null"]},
+                "senderLabel": {"type": ["string", "null"]},
+                "nativeMetadata": {"type": ["object", "null"], "additionalProperties": true}
+            },
+            "additionalProperties": true
+        },
         "StudioTaskMutationInput": {
             "type": "object",
             "properties": {
@@ -2310,6 +2647,30 @@ fn studio_provider_id_parameter() -> Value {
         "schema": {
             "type": "string"
         }
+    })
+}
+
+fn studio_session_id_parameter() -> Value {
+    json!({
+        "name": "sessionId",
+        "in": "path",
+        "required": true,
+        "description": "Kernel chat session identifier.",
+        "schema": {
+            "type": "string"
+        }
+    })
+}
+
+fn studio_run_id_parameter() -> Value {
+    json!({
+        "name": "runId",
+        "in": "path",
+        "required": true,
+        "schema": {
+            "type": "string"
+        },
+        "description": "Canonical studio kernel chat run identifier."
     })
 }
 

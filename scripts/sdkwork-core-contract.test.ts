@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -372,33 +372,37 @@ runTest('claw workspace defines tracked Vite env files for development, test, an
   assert.doesNotMatch(envProductionSource, /api-dev\.sdkwork\.com/);
   assert.doesNotMatch(envProductionSource, /api-test\.sdkwork\.com/);
 
-  assert.match(workspacePackageJson, /"dev:test"\s*:\s*"pnpm --filter @sdkwork\/claw-web run dev:test"/);
-  assert.match(workspacePackageJson, /"build:test"\s*:\s*"pnpm prepare:shared-sdk && pnpm --filter @sdkwork\/claw-web run build:test"/);
-  assert.match(workspacePackageJson, /"build"\s*:\s*"pnpm prepare:shared-sdk && pnpm --filter @sdkwork\/claw-web build"/);
-  assert.match(workspacePackageJson, /"build:prod"\s*:\s*"pnpm prepare:shared-sdk && pnpm --filter @sdkwork\/claw-web run build:prod"/);
-  assert.match(workspacePackageJson, /"tauri:dev:test"\s*:\s*"pnpm --dir packages\/sdkwork-claw-desktop tauri:dev:test"/);
-  assert.match(workspacePackageJson, /"tauri:build"\s*:\s*"pnpm --dir packages\/sdkwork-claw-desktop tauri:build"/);
-  assert.match(workspacePackageJson, /"tauri:build:test"\s*:\s*"pnpm --dir packages\/sdkwork-claw-desktop tauri:build:test"/);
-  assert.match(workspacePackageJson, /"tauri:build:prod"\s*:\s*"pnpm --dir packages\/sdkwork-claw-desktop tauri:build:prod"/);
+  assert.match(workspacePackageJson, /"dev:test"\s*:\s*"sdkwork-run-pnpm --filter @sdkwork\/claw-web run dev:test"/);
+  assert.match(workspacePackageJson, /"build:test"\s*:\s*"sdkwork-run-pnpm prepare:shared-sdk && sdkwork-run-pnpm --filter @sdkwork\/claw-web run build:test"/);
+  assert.match(workspacePackageJson, /"build"\s*:\s*"sdkwork-run-pnpm build:web"/);
+  assert.match(workspacePackageJson, /"build:prod"\s*:\s*"sdkwork-run-pnpm prepare:shared-sdk && sdkwork-run-pnpm --filter @sdkwork\/claw-web run build:prod"/);
+  assert.match(workspacePackageJson, /"tauri:dev:test"\s*:\s*"sdkwork-run-pnpm --dir packages\/sdkwork-claw-desktop tauri:dev:test"/);
+  assert.match(workspacePackageJson, /"tauri:build"\s*:\s*"sdkwork-run-pnpm --dir packages\/sdkwork-claw-desktop tauri:build"/);
+  assert.match(workspacePackageJson, /"tauri:build:test"\s*:\s*"sdkwork-run-pnpm --dir packages\/sdkwork-claw-desktop tauri:build:test"/);
+  assert.match(workspacePackageJson, /"tauri:build:prod"\s*:\s*"sdkwork-run-pnpm --dir packages\/sdkwork-claw-desktop tauri:build:prod"/);
 
-  assert.match(webPackageJson, /"dev:test"\s*:\s*"node \.\.\/\.\.\/scripts\/run-vite-host\.mjs serve --host 0\.0\.0\.0 --port 3001 --mode test"/);
+  assert.match(webPackageJson, /"dev:test"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/run-vite-host\.mjs serve --host 0\.0\.0\.0 --port 3001 --mode test"/);
   assert.match(
     webPackageJson,
-    /"build"\s*:\s*"node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build --mode production && node \.\.\/\.\.\/scripts\/check-web-performance-budget\.mjs"/,
+    /"build"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && sdkwork-run-node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build --mode production && sdkwork-run-node \.\.\/\.\.\/scripts\/check-web-performance-budget\.mjs"/,
   );
-  assert.match(webPackageJson, /"build:test"\s*:\s*"node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build --mode test"/);
+  assert.match(webPackageJson, /"build:test"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && sdkwork-run-node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build --mode test"/);
   assert.match(
     webPackageJson,
-    /"build:prod"\s*:\s*"node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build --mode production && node \.\.\/\.\.\/scripts\/check-web-performance-budget\.mjs"/,
+    /"build:prod"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && sdkwork-run-node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build --mode production && sdkwork-run-node \.\.\/\.\.\/scripts\/check-web-performance-budget\.mjs"/,
   );
+  assert.match(webPackageJson, /"clean"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/remove-path\.mjs dist"/);
+  assert.match(webPackageJson, /"lint"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/run-workspace-tsc\.mjs --noEmit"/);
 
-  assert.match(desktopPackageJson, /"dev:test"\s*:\s*"node \.\.\/\.\.\/scripts\/run-vite-host\.mjs serve --mode test"/);
-  assert.match(desktopPackageJson, /"build"\s*:\s*"node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build && node \.\.\/\.\.\/scripts\/verify-desktop-build-assets\.mjs"/);
-  assert.match(desktopPackageJson, /"build:prod"\s*:\s*"node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build --mode production && node \.\.\/\.\.\/scripts\/verify-desktop-build-assets\.mjs"/);
+  assert.match(desktopPackageJson, /"dev:test"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/run-vite-host\.mjs serve --mode test"/);
+  assert.match(desktopPackageJson, /"build"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && sdkwork-run-node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build && sdkwork-run-node \.\.\/\.\.\/scripts\/verify-desktop-build-assets\.mjs"/);
+  assert.match(desktopPackageJson, /"build:prod"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && sdkwork-run-node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build --mode production && sdkwork-run-node \.\.\/\.\.\/scripts\/verify-desktop-build-assets\.mjs"/);
   assert.match(desktopPackageJson, /"tauri:dev:test"\s*:\s*"[\s\S]*run-tauri-cli\.mjs dev --vite-mode test"/);
   assert.match(desktopPackageJson, /"tauri:build"\s*:\s*"[\s\S]*run-desktop-release-build\.mjs --phase bundle --vite-mode production"/);
   assert.match(desktopPackageJson, /"tauri:build:test"\s*:\s*"[\s\S]*run-desktop-release-build\.mjs --phase bundle --vite-mode test"/);
   assert.match(desktopPackageJson, /"tauri:build:prod"\s*:\s*"[\s\S]*run-desktop-release-build\.mjs --phase bundle --vite-mode production"/);
+  assert.match(desktopPackageJson, /"clean"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/remove-path\.mjs dist"/);
+  assert.match(desktopPackageJson, /"lint"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/run-workspace-tsc\.mjs --noEmit"/);
 
   for (const source of [webViteConfig, desktopViteConfig]) {
     assert.match(source, /const workspaceRootDir = path\.resolve\(__dirname, '\.\.\/\.\.'\);/);
@@ -482,14 +486,14 @@ runTest('claw workspace keeps relative-path shared sdk development while pinning
   assert.match(imBackendSource?.ref ?? '', /^[0-9a-f]{40}$/);
   assert.equal(openchatImSource?.ref, imBackendSource?.ref);
   assert.equal(openchatImWukongimSource?.ref, imBackendSource?.ref);
-  assert.match(workspacePackageJson, /"prepare:shared-sdk"\s*:\s*"node scripts\/prepare-shared-sdk-packages\.mjs"/);
-  assert.match(workspacePackageJson, /"build"\s*:\s*"pnpm prepare:shared-sdk && pnpm --filter @sdkwork\/claw-web build"/);
+  assert.match(workspacePackageJson, /"prepare:shared-sdk"\s*:\s*"sdkwork-run-node scripts\/prepare-shared-sdk-packages\.mjs"/);
+  assert.match(workspacePackageJson, /"build"\s*:\s*"sdkwork-run-pnpm build:web"/);
   assert.match(
     webPackageJson,
-    /"build"\s*:\s*"node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build --mode production && node \.\.\/\.\.\/scripts\/check-web-performance-budget\.mjs"/,
+    /"build"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && sdkwork-run-node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build --mode production && sdkwork-run-node \.\.\/\.\.\/scripts\/check-web-performance-budget\.mjs"/,
   );
-  assert.match(desktopPackageJson, /"build"\s*:\s*"node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build && node \.\.\/\.\.\/scripts\/verify-desktop-build-assets\.mjs"/);
-  assert.match(workspacePackageJson, /"check:sdkwork-core"\s*:\s*"node scripts\/run-sdkwork-core-check\.mjs"/);
+  assert.match(desktopPackageJson, /"build"\s*:\s*"sdkwork-run-node \.\.\/\.\.\/scripts\/prepare-shared-sdk-packages\.mjs && sdkwork-run-node \.\.\/\.\.\/scripts\/run-vite-host\.mjs build && sdkwork-run-node \.\.\/\.\.\/scripts\/verify-desktop-build-assets\.mjs"/);
+  assert.match(workspacePackageJson, /"check:sdkwork-core"\s*:\s*"sdkwork-run-node scripts\/run-sdkwork-core-check\.mjs"/);
   assert.match(prepareSharedSdkScript, /SDKWORK_SHARED_SDK_MODE/);
   assert.match(prepareSharedSdkScript, /resolveSharedSdkMode/);
   assert.match(prepareSharedSdkScript, /sharedImBackendSdkRoot/);
@@ -527,7 +531,7 @@ runTest('claw workspace keeps relative-path shared sdk development while pinning
   assert.match(coreCheckRunner, /providerRoutingCatalogService\.test\.ts/);
   assert.match(coreCheckRunner, /settingsService\.test\.ts/);
   assert.doesNotMatch(coreCheckRunner, /tsx/);
-  assert.match(workspacePackageJson, /"check:sdkwork-auth"\s*:\s*"node scripts\/run-sdkwork-auth-check\.mjs"/);
+  assert.match(workspacePackageJson, /"check:sdkwork-auth"\s*:\s*"sdkwork-run-node scripts\/run-sdkwork-auth-check\.mjs"/);
 });
 
 runTest('claw workspace tsconfig no longer hard-pins @sdkwork/app-sdk to an external source path', () => {
@@ -598,3 +602,4 @@ runTest('sdkwork-claw-core llm service routes generation through the active inst
   assert.doesNotMatch(llmServiceSource, /runtimeKind === 'openclaw'/);
   assert.match(llmServiceSource, /Select or start an AI-compatible instance/);
 });
+

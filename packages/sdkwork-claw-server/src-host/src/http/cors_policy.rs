@@ -101,6 +101,8 @@ pub fn append_cors_headers(headers: &mut HeaderMap, origin: &HeaderValue) {
     );
     headers.insert(
         header::VARY,
-        HeaderValue::from_static("Origin, Access-Control-Request-Method, Access-Control-Request-Headers"),
+        HeaderValue::from_static(
+            "Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
+        ),
     );
 }

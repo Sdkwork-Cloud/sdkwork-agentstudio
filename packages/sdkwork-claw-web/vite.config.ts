@@ -76,6 +76,14 @@ export default defineConfig(({ mode }) => {
     canonicalWorkspaceRootDir,
     '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/dist/index.js',
   );
+  const sdkworkAuthPcReactShimEntry = path.resolve(
+    __dirname,
+    './shims/sdkworkAuthPcReact.ts',
+  );
+  const sdkworkUserPcReactShimEntry = path.resolve(
+    __dirname,
+    './shims/sdkworkUserPcReact.ts',
+  );
   const sharedAppSdkChunkEntry = useSharedSdkSourceMode
     ? sharedAppSdkSourceEntry
     : sharedAppSdkDistEntry;
@@ -92,6 +100,8 @@ export default defineConfig(({ mode }) => {
     resolve: {
       dedupe: [...CLAW_VITE_DEDUPE_PACKAGES],
       alias: [
+        { find: '@sdkwork/auth-pc-react', replacement: sdkworkAuthPcReactShimEntry },
+        { find: '@sdkwork/user-pc-react', replacement: sdkworkUserPcReactShimEntry },
         { find: '@', replacement: path.resolve(__dirname, '.') },
         ...workspacePackageAliases,
         ...(useSharedSdkSourceMode

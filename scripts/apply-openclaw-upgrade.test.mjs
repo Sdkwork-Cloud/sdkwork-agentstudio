@@ -264,11 +264,11 @@ test('workspace exposes the apply-openclaw-upgrade entrypoint and validates it i
 
   assert.equal(
     packageJson.scripts['openclaw:upgrade:apply'],
-    'node scripts/apply-openclaw-upgrade.mjs',
+    'sdkwork-run-node scripts/apply-openclaw-upgrade.mjs',
   );
   assert.match(
     packageJson.scripts['check:desktop-openclaw-runtime'],
-    /node scripts\/apply-openclaw-upgrade\.test\.mjs/,
+    /sdkwork-run-node scripts\/apply-openclaw-upgrade\.test\.mjs/,
     'check:desktop-openclaw-runtime must validate the apply-openclaw-upgrade workflow contract',
   );
 });

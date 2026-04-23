@@ -13,7 +13,7 @@ export interface OpenClawAgentMutationRequest<TAgent> {
   agent?: TAgent;
   agentId?: string;
   setSaving?: (value: boolean) => void;
-  afterSuccess?: () => void;
+  afterSuccess?: () => void | Promise<void>;
   successKey: string;
   failureKey: string;
 }
@@ -55,6 +55,10 @@ export interface BuildOpenClawAgentMutationHandlersArgs {
   agentDeleteId: string | null;
   clearAgentDeleteId: () => void;
   executeMutation: (request: OpenClawAgentMutationRequest<OpenClawAgentInput>) => Promise<void>;
+  afterSaveSuccess?: (
+    agent: OpenClawAgentInput,
+    kind: 'create' | 'update',
+  ) => void | Promise<void>;
   reportError: ErrorReporter;
   t: TranslateFunction;
 }
@@ -64,7 +68,10 @@ export function buildOpenClawAgentSaveMutationRequest(args: {
   editingAgentId: string | null;
   agentDialogDraft: OpenClawAgentFormState;
   setSaving: (value: boolean) => void;
-  afterSuccess: () => void;
+  afterSuccess?: (
+    agent: OpenClawAgentInput,
+    kind: 'create' | 'update',
+  ) => void | Promise<void>;
   t: TranslateFunction;
 }): OpenClawAgentMutationBuildResult<OpenClawAgentInput> {
   if (!args.instanceId) {
@@ -81,14 +88,16 @@ export function buildOpenClawAgentSaveMutationRequest(args: {
     };
   }
 
+  const kind = args.editingAgentId ? 'update' : 'create';
+
   return {
     kind: 'mutation',
     request: {
       instanceId: args.instanceId,
-      kind: args.editingAgentId ? 'update' : 'create',
+      kind,
       agent: agentInput,
       setSaving: args.setSaving,
-      afterSuccess: args.afterSuccess,
+      afterSuccess: () => args.afterSuccess?.(agentInput, kind),
       successKey: args.editingAgentId
         ? 'instances.detail.instanceWorkbench.agents.toasts.agentUpdated'
         : 'instances.detail.instanceWorkbench.agents.toasts.agentCreated',
@@ -149,7 +158,7 @@ export function createOpenClawAgentMutationRunner<TAgent>(
       }
 
       args.reportSuccess(args.t(request.successKey));
-      request.afterSuccess?.();
+      await request.afterSuccess?.();
       await args.reloadWorkbench(request.instanceId, { withSpinner: false });
     } catch (error: any) {
       args.reportError(error?.message || args.t(request.failureKey));
@@ -174,7 +183,10 @@ export function buildOpenClawAgentMutationHandlers(
         editingAgentId: args.editingAgentId,
         agentDialogDraft: args.agentDialogDraft,
         setSaving: args.setSavingAgentDialog,
-        afterSuccess: dismissAgentDialog,
+        afterSuccess: async (agent, kind) => {
+          dismissAgentDialog();
+          await args.afterSaveSuccess?.(agent, kind);
+        },
         t: args.t,
       });
       if (mutationRequest.kind === 'error') {

@@ -1,3 +1,6 @@
+import { orderChatMessagesForDisplay } from './chatMessageOrdering.ts';
+import { normalizeUserVisibleChatSenderLabel } from './chatSenderLabelPolicy.ts';
+
 export type ChatMessageGroupItem<T> = {
   index: number;
   message: T;
@@ -10,19 +13,24 @@ export type ChatMessageGroup<T> = {
 };
 
 function normalizeSenderLabel(value: string | null | undefined) {
-  const normalized = typeof value === 'string' ? value.trim() : '';
-  return normalized || null;
+  return normalizeUserVisibleChatSenderLabel(value);
 }
 
 export function groupChatMessagesForDisplay<
-  T extends { role?: string | null; senderLabel?: string | null },
+  T extends {
+    role?: string | null;
+    senderLabel?: string | null;
+    seq?: number | null;
+    timestamp?: number | null;
+  },
 >(
   messages: T[],
 ): ChatMessageGroup<T>[] {
+  const orderedMessages = orderChatMessagesForDisplay(messages);
   const groups: ChatMessageGroup<T>[] = [];
 
-  for (let index = 0; index < messages.length; index += 1) {
-    const message = messages[index];
+  for (let index = 0; index < orderedMessages.length; index += 1) {
+    const message = orderedMessages[index];
     const role = typeof message.role === 'string' && message.role.trim() ? message.role : 'assistant';
     const senderLabel = role === 'user' ? normalizeSenderLabel(message.senderLabel) : null;
     const previousGroup = groups.at(-1);

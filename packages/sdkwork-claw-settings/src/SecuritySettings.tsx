@@ -6,12 +6,17 @@ import { Button, Input, Label, Switch } from '@sdkwork/claw-ui';
 import { Section, ToggleRow } from './Shared';
 import { settingsService, type UserPreferences } from './services';
 
+const DEFAULT_SECURITY_PREFERENCES: UserPreferences['security'] = {
+  twoFactorAuth: false,
+  loginAlerts: true,
+};
+
 export function SecuritySettings() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [prefs, setPrefs] = useState<UserPreferences['security'] | null>(null);
+  const [prefs, setPrefs] = useState<UserPreferences['security']>(DEFAULT_SECURITY_PREFERENCES);
   const { t } = useTranslation();
   const passwordPlaceholder = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
 
@@ -27,7 +32,7 @@ export function SecuritySettings() {
       })
       .catch(() => {
         if (!cancelled) {
-          toast.error(t('settings.security.toasts.preferenceUpdateFailed'));
+          toast.error(t('settings.security.toasts.loadPreferenceFailed'));
         }
       });
 
@@ -62,10 +67,6 @@ export function SecuritySettings() {
   };
 
   const handleToggle = async (key: keyof UserPreferences['security']) => {
-    if (!prefs) {
-      return;
-    }
-
     const nextPrefs = { ...prefs, [key]: !prefs[key] };
     setPrefs(nextPrefs);
 
@@ -153,7 +154,7 @@ export function SecuritySettings() {
                 <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
                   <div>
                     <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                      {prefs?.twoFactorAuth
+                      {prefs.twoFactorAuth
                         ? t('settings.security.twoFactor.disable')
                         : t('settings.security.twoFactor.enable')}
                     </div>
@@ -162,7 +163,7 @@ export function SecuritySettings() {
                     </div>
                   </div>
                   <Switch
-                    checked={Boolean(prefs?.twoFactorAuth)}
+                    checked={prefs.twoFactorAuth}
                     onCheckedChange={() => handleToggle('twoFactorAuth')}
                   />
                 </div>
@@ -174,14 +175,12 @@ export function SecuritySettings() {
         <div className="space-y-6">
           <Section title={t('settings.security.alerts.title')}>
             <div className="space-y-4">
-              {prefs ? (
-                <ToggleRow
-                  title={t('settings.security.alerts.loginAlerts')}
-                  description={t('settings.security.alerts.loginAlertsDescription')}
-                  enabled={prefs.loginAlerts}
-                  onToggle={() => handleToggle('loginAlerts')}
-                />
-              ) : null}
+              <ToggleRow
+                title={t('settings.security.alerts.loginAlerts')}
+                description={t('settings.security.alerts.loginAlertsDescription')}
+                enabled={prefs.loginAlerts}
+                onToggle={() => handleToggle('loginAlerts')}
+              />
             </div>
           </Section>
 

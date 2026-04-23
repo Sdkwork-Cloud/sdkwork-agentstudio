@@ -1,5 +1,9 @@
 import type { HostPlatformSnapshot, KernelPlatformSnapshot } from '@sdkwork/claw-core';
-import type { StudioInstanceRecord } from '@sdkwork/claw-types';
+import {
+  buildBuiltInKernelPrimaryInstanceId,
+  STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+  type StudioInstanceRecord,
+} from '@sdkwork/claw-types';
 import {
   isBuiltInLocalInstance,
   mapInstanceNode,
@@ -177,10 +181,10 @@ function resolveFallbackKernelNodeId(
 ) {
   const runtimeId = normalizeRuntimeId(snapshot.runtimeId);
   if (!runtimeId || runtimeId === 'openclaw') {
-    return 'local-built-in';
+    return STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID;
   }
 
-  return `local-built-in-${runtimeId}`;
+  return buildBuiltInKernelPrimaryInstanceId(runtimeId) ?? STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID;
 }
 
 function resolveKernelNodeDetailPath(

@@ -75,7 +75,7 @@ import {
 import {
   buildRegistryBackedDetail,
 } from './instanceRegistryWorkbenchSupport.ts';
-import { resolveOpenClawConfigPathWithFallback } from './openClawConfigPathFallback.ts';
+import { resolveKernelConfigPathWithFallback } from './kernelConfigPathFallback.ts';
 import {
   buildDetailOnlyWorkbenchSnapshot,
   buildOpenClawChannelCatalog,
@@ -574,7 +574,7 @@ class InstanceWorkbenchService {
       return null;
     }
 
-    const configFile = resolveOpenClawConfigPathWithFallback(
+    const configFile = resolveKernelConfigPathWithFallback(
       this.dependencies.kernelConfigAttachmentApi,
       detail,
     );

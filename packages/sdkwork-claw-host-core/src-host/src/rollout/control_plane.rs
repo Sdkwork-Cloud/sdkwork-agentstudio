@@ -6,6 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
+use crate::domain::node::BUILT_IN_OPENCLAW_PRIMARY_NODE_ID;
 use crate::domain::rollout::{
     ManageRolloutCandidateRevisionSummary, ManageRolloutListResult, ManageRolloutPreview,
     ManageRolloutPreviewSummary, ManageRolloutRecord, ManageRolloutTargetPreviewRecord,
@@ -588,7 +589,7 @@ fn seed_rollout_catalog() -> PersistedRolloutCatalog {
                 },
                 targets: vec![
                     PersistedRolloutTarget {
-                        node_id: "local-built-in".to_string(),
+                        node_id: BUILT_IN_OPENCLAW_PRIMARY_NODE_ID.to_string(),
                         capabilities: vec![
                             "desired-state.pull".to_string(),
                             "runtime.apply".to_string(),

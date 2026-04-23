@@ -91,16 +91,14 @@ impl KernelRuntimeAuthorityService {
         }
     }
 
-    pub fn active_config_file_path(
-        &self,
-        runtime_id: &str,
-        paths: &AppPaths,
-    ) -> Result<PathBuf> {
+    pub fn active_config_file_path(&self, runtime_id: &str, paths: &AppPaths) -> Result<PathBuf> {
         let normalized_runtime_id = normalize_runtime_id(runtime_id);
         let state_paths = resolve_runtime_state_paths(runtime_id, paths)?;
         let contract = self.contract(normalized_runtime_id, paths)?;
-        if normalized_runtime_id == OPENCLAW_KERNEL_ID {
-            let _ = reconcile_openclaw_authority_config_file_path(
+        if normalized_runtime_id == OPENCLAW_KERNEL_ID || normalized_runtime_id == HERMES_KERNEL_ID
+        {
+            let _ = reconcile_runtime_authority_config_file_path(
+                normalized_runtime_id,
                 &state_paths.authority_file,
                 &contract.config_file_path,
             );
@@ -311,7 +309,7 @@ impl KernelRuntimeAdapter for OpenClawKernelAdapter {
         let openclaw = paths.kernel_paths(self.runtime_id())?;
         Ok(KernelRuntimeContract {
             runtime_id: self.runtime_id().to_string(),
-            config_file_path: paths.openclaw_config_file.clone(),
+            config_file_path: openclaw.config_file.clone(),
             owned_runtime_roots: vec![openclaw.runtime_dir.clone()],
             readiness_probe: KernelRuntimeReadinessProbe {
                 supports_loopback_health_probe: true,
@@ -370,7 +368,8 @@ fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
 
-fn reconcile_openclaw_authority_config_file_path(
+fn reconcile_runtime_authority_config_file_path(
+    runtime_id: &str,
     authority_file: &Path,
     config_file_path: &Path,
 ) -> Result<()> {
@@ -378,7 +377,7 @@ fn reconcile_openclaw_authority_config_file_path(
         return Ok(());
     }
 
-    let mut authority = read_runtime_authority_state(OPENCLAW_KERNEL_ID, authority_file)?;
+    let mut authority = read_runtime_authority_state(runtime_id, authority_file)?;
     let canonical_path = path_string(config_file_path);
     if authority.config_file_path.as_deref() == Some(canonical_path.as_str())
         && authority.legacy_runtime_roots.is_empty()
@@ -416,7 +415,10 @@ fn resolve_runtime_state_paths(
     })
 }
 
-fn read_runtime_authority_state(_runtime_id: &str, authority_file: &Path) -> Result<KernelAuthorityState> {
+fn read_runtime_authority_state(
+    _runtime_id: &str,
+    authority_file: &Path,
+) -> Result<KernelAuthorityState> {
     read_json_file::<KernelAuthorityState>(authority_file)
 }
 
@@ -607,17 +609,18 @@ fn unix_timestamp_ms() -> Result<u128> {
 
 #[cfg(test)]
 mod tests {
-    use super::{path_string, read_json_file, write_json_file, KernelAuthorityState, KernelRuntimeAuthorityService};
-    use crate::framework::{
-        layout::initialize_machine_state,
-        paths::resolve_paths_for_root,
+    use super::{
+        path_string, read_json_file, write_json_file, KernelAuthorityState,
+        KernelRuntimeAuthorityService,
     };
+    use crate::framework::{layout::initialize_machine_state, paths::resolve_paths_for_root};
     use serde_json::Value;
-    use std::{fs, path::{Path, PathBuf}};
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+    };
 
-    fn legacy_managed_config_file_path(
-        paths: &crate::framework::paths::AppPaths,
-    ) -> PathBuf {
+    fn legacy_managed_config_file_path(paths: &crate::framework::paths::AppPaths) -> PathBuf {
         paths
             .openclaw_kernel_dir
             .join("managed-config")
@@ -751,19 +754,59 @@ mod tests {
     }
 
     #[test]
+    fn source_tree_does_not_bypass_canonical_openclaw_config_authority_in_production() {
+        let src_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let forbidden_patterns = [
+            "paths.openclaw_config_file.clone()",
+            "paths.openclaw_config_file.is_file()",
+            "managed-config",
+        ];
+        let mut rust_sources = Vec::new();
+        let mut offenders = Vec::new();
+        collect_rust_sources(&src_root, &mut rust_sources);
+
+        for path in rust_sources {
+            let source = fs::read_to_string(&path).expect("read rust source");
+            let production_source = source
+                .split("mod tests {")
+                .next()
+                .expect("production source before tests");
+            let relative_path = path
+                .strip_prefix(&src_root)
+                .expect("source under src root")
+                .to_string_lossy()
+                .replace('\\', "/");
+
+            for (index, line) in production_source.lines().enumerate() {
+                for pattern in forbidden_patterns {
+                    if line.contains(pattern) && !line.contains("contains(\"") {
+                        offenders.push(format!("{relative_path}:{}:{}", index + 1, line.trim()));
+                    }
+                }
+            }
+        }
+
+        assert!(
+            offenders.is_empty(),
+            "Production code should use canonical kernel config authority instead of compatibility OpenClaw config shortcuts:\n{}",
+            offenders.join("\n")
+        );
+    }
+
+    #[test]
     fn openclaw_contract_exposes_config_file_path_and_owned_runtime_roots() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let openclaw = paths
+            .kernel_paths("openclaw")
+            .expect("openclaw kernel paths");
         let contract = KernelRuntimeAuthorityService::new()
             .contract("openclaw", &paths)
             .expect("openclaw contract");
 
         assert_eq!(contract.runtime_id, "openclaw");
-        assert_eq!(contract.config_file_path, paths.openclaw_config_file);
-        assert_eq!(
-            contract.owned_runtime_roots,
-            vec![paths.openclaw_runtime_dir.clone()]
-        );
+        assert_eq!(contract.config_file_path, openclaw.config_file);
+        assert_eq!(contract.owned_runtime_roots, vec![openclaw.runtime_dir]);
         assert!(contract.readiness_probe.supports_loopback_health_probe);
         assert_eq!(contract.readiness_probe.health_probe_timeout_ms, 750);
     }
@@ -777,13 +820,11 @@ mod tests {
             .expect("hermes contract");
 
         assert_eq!(contract.runtime_id, "hermes");
-        assert_eq!(
-            contract.config_file_path,
-            paths
-                .kernel_paths("hermes")
-                .expect("hermes kernel paths")
-                .config_file
-        );
+        assert!(contract
+            .config_file_path
+            .to_string_lossy()
+            .replace('\\', "/")
+            .ends_with("user-home/.hermes/config.yaml"));
         assert_eq!(
             contract.owned_runtime_roots,
             vec![paths.managed_runtimes_dir.join("hermes")]
@@ -795,6 +836,28 @@ mod tests {
             .contract("unsupported-kernel", &paths)
             .expect_err("unknown kernel runtime should still be rejected");
         assert!(!error.to_string().trim().is_empty());
+    }
+
+    #[test]
+    fn active_config_file_path_uses_canonical_hermes_path_when_authority_is_legacy() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let hermes_kernel = paths.kernel_paths("hermes").expect("hermes kernel paths");
+        let legacy_managed_config_path = paths
+            .kernels_state_dir
+            .join("hermes")
+            .join("config")
+            .join("hermes.json");
+        let mut authority = read_json_file::<KernelAuthorityState>(&hermes_kernel.authority_file)
+            .expect("authority state");
+        authority.config_file_path = Some(path_string(&legacy_managed_config_path));
+        write_json_file(&hermes_kernel.authority_file, &authority).expect("write authority");
+
+        let resolved = KernelRuntimeAuthorityService::new()
+            .active_config_file_path("hermes", &paths)
+            .expect("resolve config file path");
+
+        assert_eq!(resolved, hermes_kernel.config_file);
     }
 
     #[test]
@@ -835,9 +898,8 @@ mod tests {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let legacy_managed_config_path = legacy_managed_config_file_path(&paths);
-        let mut authority =
-            read_json_file::<KernelAuthorityState>(&paths.openclaw_authority_file)
-                .expect("authority state");
+        let mut authority = read_json_file::<KernelAuthorityState>(&paths.openclaw_authority_file)
+            .expect("authority state");
         authority.config_file_path = Some(path_string(&legacy_managed_config_path));
         write_json_file(&paths.openclaw_authority_file, &authority).expect("write authority");
 
@@ -853,9 +915,8 @@ mod tests {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let legacy_managed_config_path = legacy_managed_config_file_path(&paths);
-        let mut authority =
-            read_json_file::<KernelAuthorityState>(&paths.openclaw_authority_file)
-                .expect("authority state");
+        let mut authority = read_json_file::<KernelAuthorityState>(&paths.openclaw_authority_file)
+            .expect("authority state");
         authority.config_file_path = Some(path_string(&legacy_managed_config_path));
         write_json_file(&paths.openclaw_authority_file, &authority).expect("write authority");
 
@@ -879,17 +940,20 @@ mod tests {
         let config_file_path = paths.openclaw_config_file.clone();
         let legacy_managed_config_path = legacy_managed_config_file_path(&paths);
 
-        fs::create_dir_all(legacy_managed_config_path.parent().expect("legacy config parent"))
-            .expect("legacy config dir");
+        fs::create_dir_all(
+            legacy_managed_config_path
+                .parent()
+                .expect("legacy config parent"),
+        )
+        .expect("legacy config dir");
         fs::write(
             &legacy_managed_config_path,
             "{\n  commands: {\n    ownerDisplay: \"compact\",\n  },\n}\n",
         )
         .expect("seed legacy config");
 
-        let mut authority =
-            read_json_file::<KernelAuthorityState>(&paths.openclaw_authority_file)
-                .expect("authority state");
+        let mut authority = read_json_file::<KernelAuthorityState>(&paths.openclaw_authority_file)
+            .expect("authority state");
         authority.config_file_path = Some(path_string(&legacy_managed_config_path));
         write_json_file(&paths.openclaw_authority_file, &authority).expect("write authority");
 

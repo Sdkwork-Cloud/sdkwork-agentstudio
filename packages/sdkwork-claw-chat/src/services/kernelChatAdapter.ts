@@ -1,10 +1,12 @@
 import type {
   KernelChatAgentProfile,
   KernelChatAuthorityKind,
+  KernelChatCapabilitySet,
   KernelChatMessage,
   KernelChatRun,
   KernelChatSession,
 } from '@sdkwork/claw-types';
+import { createKernelChatCapabilitySet } from '@sdkwork/claw-types';
 
 export interface KernelChatAdapterCapabilities {
   adapterId: string;
@@ -16,6 +18,7 @@ export interface KernelChatAdapterCapabilities {
   supportsRuns: boolean;
   supportsAgentProfiles: boolean;
   supportsSessionMutation: boolean;
+  capabilitySet: KernelChatCapabilitySet;
   reason: string | null;
 }
 
@@ -30,6 +33,7 @@ export interface KernelChatAdapterCreateSessionInput {
   instanceId: string;
   model?: string | null;
   agentId?: string | null;
+  actorBindingLabel?: string | null;
   title?: string | null;
 }
 
@@ -38,6 +42,10 @@ export interface KernelChatAdapterPatchSessionInput {
   sessionId: string;
   title?: string | null;
   model?: string | null;
+  thinkingLevel?: string | null;
+  fastMode?: boolean | null;
+  verboseLevel?: string | null;
+  reasoningLevel?: string | null;
 }
 
 export interface KernelChatAdapterStartRunInput {
@@ -54,6 +62,12 @@ export interface KernelChatAdapter {
   listSessions?(instanceId: string): Promise<KernelChatSession[]>;
   getSession?(instanceId: string, sessionId: string): Promise<KernelChatSession | null>;
   createSession?(input: KernelChatAdapterCreateSessionInput): Promise<KernelChatSession>;
+  listRuns?(instanceId: string, sessionId: string): Promise<KernelChatRun[]>;
+  getRun?(
+    instanceId: string,
+    sessionId: string,
+    runId: string,
+  ): Promise<KernelChatRun | null>;
   patchSession?(input: KernelChatAdapterPatchSessionInput): Promise<KernelChatSession>;
   deleteSession?(instanceId: string, sessionId: string): Promise<void>;
   startRun?(input: KernelChatAdapterStartRunInput): Promise<KernelChatRun>;
@@ -72,6 +86,13 @@ export interface CreateKernelChatAdapterCapabilitiesInput {
   supportsRuns?: boolean;
   supportsAgentProfiles?: boolean;
   supportsSessionMutation?: boolean;
+  supportsRunAbort?: boolean;
+  supportsModelSelection?: boolean;
+  supportsReasoningControl?: boolean;
+  supportsThinkingLevel?: boolean;
+  supportsFastMode?: boolean;
+  supportsVerboseLevel?: boolean;
+  supportsAttachments?: boolean;
   reason?: string | null;
 }
 
@@ -88,6 +109,19 @@ export function createKernelChatAdapterCapabilities(
   input: CreateKernelChatAdapterCapabilitiesInput,
 ): KernelChatAdapterCapabilities {
   const isProjectionAuthority = input.authorityKind === 'localProjection';
+  const capabilitySet = createKernelChatCapabilitySet({
+    supportsAgentProfiles: input.supportsAgentProfiles ?? true,
+    supportsSessionMutation: input.supportsSessionMutation ?? true,
+    supportsStreaming: input.supportsStreaming ?? true,
+    supportsRuns: input.supportsRuns ?? true,
+    supportsRunAbort: input.supportsRunAbort ?? false,
+    supportsModelSelection: input.supportsModelSelection ?? false,
+    supportsReasoningControl: input.supportsReasoningControl ?? false,
+    supportsThinkingLevel: input.supportsThinkingLevel ?? false,
+    supportsFastMode: input.supportsFastMode ?? false,
+    supportsVerboseLevel: input.supportsVerboseLevel ?? false,
+    supportsAttachments: input.supportsAttachments ?? false,
+  });
 
   return {
     adapterId: input.adapterId,
@@ -95,10 +129,11 @@ export function createKernelChatAdapterCapabilities(
     supported: input.supported ?? true,
     durable: input.durable ?? !isProjectionAuthority,
     writable: input.writable ?? true,
-    supportsStreaming: input.supportsStreaming ?? true,
-    supportsRuns: input.supportsRuns ?? true,
-    supportsAgentProfiles: input.supportsAgentProfiles ?? true,
-    supportsSessionMutation: input.supportsSessionMutation ?? true,
+    supportsStreaming: capabilitySet.supportsStreaming,
+    supportsRuns: capabilitySet.supportsRuns,
+    supportsAgentProfiles: capabilitySet.supportsAgentProfiles,
+    supportsSessionMutation: capabilitySet.supportsSessionMutation,
+    capabilitySet,
     reason: normalizeOptionalString(input.reason),
   };
 }

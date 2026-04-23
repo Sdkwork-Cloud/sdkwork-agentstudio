@@ -139,12 +139,14 @@ test('desktop release build all-phase plan forwards bundle customization flags i
     targetTriple: 'aarch64-pc-windows-msvc',
     platform: 'win32',
     hostArch: 'x64',
+    env: {},
   });
 
-  assert.equal(plan.command, 'pnpm.cmd');
+  assert.equal(plan.command, process.execPath);
   assert.deepEqual(
     plan.args,
     [
+      path.join(path.dirname(process.execPath), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
       '--filter',
       '@sdkwork/claw-desktop',
       'run',
@@ -194,13 +196,26 @@ test('desktop release build sync-phase plan forwards explicit package profile se
   assert.equal(plan.env.SDKWORK_KERNEL_PACKAGE_PROFILE_ID, 'hermes-only');
 });
 
-test('desktop release build helper resolves Windows pnpm invocations without cmd shell wrapping', async () => {
+test('desktop release build helper resolves Windows pnpm invocations through node plus pnpm.cjs', async () => {
   const modulePath = path.join(rootDir, 'scripts', 'run-desktop-release-build.mjs');
   const helper = await import(pathToFileURL(modulePath).href);
 
   assert.equal(typeof helper.resolveSpawnCommand, 'function');
   assert.equal(helper.resolveSpawnCommand('pnpm', 'win32'), 'pnpm.cmd');
   assert.equal(helper.resolveSpawnCommand('pnpm', 'linux'), 'pnpm');
+  assert.equal(typeof helper.resolvePnpmExecutionPlan, 'function');
+
+  const windowsPnpmPlan = helper.resolvePnpmExecutionPlan({
+    platform: 'win32',
+    env: {},
+    nodeExecutable: process.execPath,
+  });
+
+  assert.equal(windowsPnpmPlan.command, process.execPath);
+  assert.deepEqual(windowsPnpmPlan.argsPrefix, [
+    path.join(path.dirname(process.execPath), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
+  ]);
+  assert.equal(windowsPnpmPlan.shell, false);
 
   const windowsPlan = helper.createDesktopReleaseBuildPlan({
     phase: 'all',
@@ -209,7 +224,11 @@ test('desktop release build helper resolves Windows pnpm invocations without cmd
     env: {},
   });
 
-  assert.equal(windowsPlan.command, 'pnpm.cmd');
+  assert.equal(windowsPlan.command, process.execPath);
+  assert.deepEqual(
+    windowsPlan.args.slice(0, 1),
+    [path.join(path.dirname(process.execPath), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs')],
+  );
   assert.equal(windowsPlan.shell, false);
 });
 

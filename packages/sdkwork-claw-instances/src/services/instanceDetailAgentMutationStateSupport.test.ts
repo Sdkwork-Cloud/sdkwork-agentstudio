@@ -32,6 +32,9 @@ await runTest(
     const calls: string[] = [];
 
     const bindings = createInstanceDetailAgentMutationStateBindings({
+      setIsAgentCreationWorkflowOpen: (value) => {
+        calls.push(`workflow:${value}`);
+      },
       setIsAgentDialogOpen: (value) => {
         calls.push(`dialog:${value}`);
       },
@@ -46,6 +49,6 @@ await runTest(
     bindings.dismissAgentDialog();
     bindings.clearAgentDeleteId();
 
-    assert.deepEqual(calls, ['dialog:false', 'editing:null', 'delete:null']);
+    assert.deepEqual(calls, ['workflow:false', 'dialog:false', 'editing:null', 'delete:null']);
   },
 );

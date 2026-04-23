@@ -37,6 +37,9 @@ function mapToolCardPart(toolCard: OpenClawToolCard): KernelChatMessagePart {
     return {
       kind: 'toolCall',
       toolName: toolCard.name.trim() || 'Tool',
+      toolCallId: trimOptionalString(toolCard.toolCallId),
+      argumentsText:
+        trimToolDetail(toolCard.argumentsText) ?? trimToolDetail(toolCard.detail) ?? null,
       detail: trimToolDetail(toolCard.detail) ?? null,
     };
   }
@@ -44,6 +47,9 @@ function mapToolCardPart(toolCard: OpenClawToolCard): KernelChatMessagePart {
   return {
     kind: 'toolResult',
     toolName: toolCard.name.trim() || 'Tool',
+    toolCallId: trimOptionalString(toolCard.toolCallId),
+    text: trimToolDetail(toolCard.text) ?? trimToolDetail(toolCard.preview) ?? null,
+    isError: typeof toolCard.isError === 'boolean' ? toolCard.isError : null,
     preview: trimToolDetail(toolCard.preview) ?? null,
   };
 }

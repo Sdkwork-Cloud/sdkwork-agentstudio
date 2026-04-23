@@ -7,6 +7,8 @@ import {
   sanitizeBrowserWorkbenchProviderRecord,
 } from './browserPersistencePolicy.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 async function runTest(name: string, fn: () => Promise<void> | void) {
   try {
     await fn();
@@ -28,7 +30,7 @@ await runTest('browser persistence policy rejects trusted and secret-bearing fie
 
 await runTest('browser persistence policy strips trusted instance config state', () => {
   const sanitized = sanitizeBrowserInstanceRecord({
-    id: 'local-built-in',
+    id: BUILT_IN_INSTANCE_ID,
     name: 'Local Built-In',
     runtimeKind: 'openclaw',
     deploymentMode: 'local-managed',

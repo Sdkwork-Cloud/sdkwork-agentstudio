@@ -6,8 +6,8 @@ interface NavigableInstance {
 
 export interface BuildInstanceDetailNavigationHandlersArgs {
   instance: NavigableInstance | null | undefined;
-  instanceId: string | null | undefined;
   navigate: (href: string) => void;
+  openAgentMarketModal: () => void;
   setActiveInstanceId: (instanceId: string | null) => void;
 }
 
@@ -26,10 +26,7 @@ export function buildInstanceDetailNavigationHandlers(
       args.navigate('/settings?tab=api');
     },
     onOpenAgentMarket: () => {
-      const search = args.instanceId
-        ? `?instanceId=${encodeURIComponent(args.instanceId)}`
-        : '';
-      args.navigate(`/agents${search}`);
+      args.openAgentMarketModal();
     },
     onSetActive: () => {
       if (!args.instance?.id) {

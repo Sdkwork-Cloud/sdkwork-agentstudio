@@ -16,6 +16,8 @@ import {
   shouldLazyLoadInstanceWorkbenchMemory,
 } from './instanceWorkbenchHydration.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 function runTest(name: string, fn: () => void) {
   try {
     fn();
@@ -58,7 +60,7 @@ function createDeferred<T>() {
 function createDetail(overrides: Partial<StudioInstanceDetailRecord> = {}): StudioInstanceDetailRecord {
   return {
     instance: {
-      id: 'local-built-in',
+      id: BUILT_IN_INSTANCE_ID,
       name: 'Local Built-in',
       description: 'Built-in OpenClaw runtime.',
       runtimeKind: 'openclaw',
@@ -113,7 +115,7 @@ function createDetail(overrides: Partial<StudioInstanceDetailRecord> = {}): Stud
     storage: {
       status: 'ready',
       provider: 'localFile',
-      namespace: 'local-built-in',
+      namespace: BUILT_IN_INSTANCE_ID,
       durable: true,
       queryable: false,
       transactional: false,
@@ -145,7 +147,7 @@ function createWorkbench(
 ): InstanceWorkbenchSnapshot {
   return {
     instance: {
-      id: 'local-built-in',
+      id: BUILT_IN_INSTANCE_ID,
       name: 'Local Built-in',
       type: 'OpenClaw Gateway',
       iconType: 'server',
@@ -164,7 +166,7 @@ function createWorkbench(
       websocketUrl: 'ws://127.0.0.1:18797',
       storage: {
         provider: 'localFile',
-        namespace: 'local-built-in',
+        namespace: BUILT_IN_INSTANCE_ID,
       },
     },
     config: {

@@ -28,8 +28,10 @@ await runTest('resolveKernelChatSessionState prefers kernel session bindings ove
           kernelId: 'openclaw',
           instanceId: 'instance-a',
           sessionId: 'agent:research:main',
+          nativeSessionId: 'native-research-main',
           agentId: 'research',
           routingKey: 'agent:research:main',
+          lineageParentSessionId: 'agent:main:main',
         },
         authority: {
           kind: 'gateway',
@@ -43,6 +45,10 @@ await runTest('resolveKernelChatSessionState prefers kernel session bindings ove
         updatedAt: 2,
         messageCount: 0,
         sessionKind: 'global',
+        nativeMetadata: {
+          routingKind: 'agent',
+          nativeSessionKey: 'research-main',
+        },
         modelBinding: {
           model: 'kernel-model',
           defaultModel: 'kernel-default',
@@ -58,14 +64,20 @@ await runTest('resolveKernelChatSessionState prefers kernel session bindings ove
       kernelId: 'openclaw',
       instanceId: 'instance-a',
       sessionId: 'agent:research:main',
+      nativeSessionId: 'native-research-main',
       agentId: 'research',
       routingKey: 'agent:research:main',
+      lineageParentSessionId: 'agent:main:main',
       authorityKind: 'gateway',
       authoritySource: 'kernel',
       authorityDurable: true,
       authorityWritable: true,
       lifecycle: 'running',
       sessionKind: 'global',
+      nativeMetadata: {
+        routingKind: 'agent',
+        nativeSessionKey: 'research-main',
+      },
       activeRunId: 'kernel-run',
       model: 'kernel-model',
       defaultModel: 'kernel-default',
@@ -94,14 +106,17 @@ await runTest('resolveKernelChatSessionState falls back to legacy chat session f
       kernelId: null,
       instanceId: null,
       sessionId: null,
+      nativeSessionId: null,
       agentId: null,
       routingKey: null,
+      lineageParentSessionId: null,
       authorityKind: null,
       authoritySource: null,
       authorityDurable: null,
       authorityWritable: null,
       lifecycle: null,
       sessionKind: 'direct',
+      nativeMetadata: null,
       activeRunId: 'legacy-run',
       model: 'legacy-model',
       defaultModel: 'legacy-default',
@@ -129,4 +144,5 @@ await runTest('resolveKernelChatSessionState drops unknown authority kinds inste
   assert.equal(state.authoritySource, 'kernel');
   assert.equal(state.authorityDurable, false);
   assert.equal(state.authorityWritable, false);
+  assert.equal(state.nativeMetadata, null);
 });

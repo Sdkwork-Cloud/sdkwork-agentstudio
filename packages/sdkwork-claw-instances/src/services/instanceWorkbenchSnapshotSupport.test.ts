@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID } from '@sdkwork/claw-types';
 import { createEmptyOpenClawConfigSnapshot } from './openClawConfigWorkbenchSupport.ts';
 
 function runTest(name: string, fn: () => void | Promise<void>) {
@@ -250,18 +251,21 @@ await runTest(
       configSnapshot,
     );
 
-    assert.deepEqual(snapshot?.kernelConfig, {
-      configFile: 'D:/OpenClaw/.openclaw/openclaw.json',
-      configRoot: 'D:/OpenClaw/.openclaw',
-      userRoot: 'D:/OpenClaw',
-      format: 'json',
-      access: 'localFs',
-      provenance: 'standardUserRoot',
-      writable: true,
-      resolved: true,
-      schemaVersion: null,
-    });
+    assert.equal(snapshot?.kernelConfig?.kernelId, 'openclaw');
+    assert.equal(snapshot?.kernelConfig?.runtimeKind, 'openclaw');
     assert.equal(snapshot?.kernelConfig?.configFile, 'D:/OpenClaw/.openclaw/openclaw.json');
+    assert.equal(snapshot?.kernelConfig?.configRoot, 'D:/OpenClaw/.openclaw');
+    assert.equal(snapshot?.kernelConfig?.stateRoot, 'D:/OpenClaw/.openclaw');
+    assert.equal(snapshot?.kernelConfig?.userRoot, 'D:/OpenClaw');
+    assert.equal(snapshot?.kernelConfig?.standardStateRoot, 'D:/OpenClaw/.openclaw');
+    assert.equal(snapshot?.kernelConfig?.standardConfigFile, 'D:/OpenClaw/.openclaw/openclaw.json');
+    assert.equal(snapshot?.kernelConfig?.format, 'json');
+    assert.equal(snapshot?.kernelConfig?.access, 'localFs');
+    assert.equal(snapshot?.kernelConfig?.provenance, 'standardUserRoot');
+    assert.equal(snapshot?.kernelConfig?.writable, true);
+    assert.equal(snapshot?.kernelConfig?.resolved, true);
+    assert.equal(snapshot?.kernelConfig?.schemaVersion, null);
+    assert.equal(snapshot?.kernelConfig?.isStandardUserRootLayout, true);
     assert.equal('managedConfigPath' in (snapshot || {}), false);
     assert.equal(snapshot?.sectionCounts.overview, 8);
     assert.equal(snapshot?.sectionCounts.config, 1);
@@ -274,9 +278,9 @@ await runTest(
 await runTest(
   'buildDetailOnlyWorkbenchSnapshot preserves built-in and transport metadata needed by the instance detail action model',
   () => {
-    const detail = createOpenClawDetail('local-built-in', {
+    const detail = createOpenClawDetail(STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID, {
       instance: {
-        ...createOpenClawDetail('local-built-in').instance,
+        ...createOpenClawDetail(STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID).instance,
         deploymentMode: 'local-managed',
         transportKind: 'openclawGatewayWs',
         isBuiltIn: true,
@@ -284,7 +288,7 @@ await runTest(
         websocketUrl: 'ws://127.0.0.1:18789',
         storage: {
           provider: 'localFile',
-          namespace: 'local-built-in',
+          namespace: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
         },
       },
     });
@@ -297,7 +301,7 @@ await runTest(
     assert.equal(snapshot?.instance.transportKind, 'openclawGatewayWs');
     assert.equal(snapshot?.instance.baseUrl, 'http://127.0.0.1:18789');
     assert.equal(snapshot?.instance.websocketUrl, 'ws://127.0.0.1:18789');
-    assert.equal(snapshot?.instance.storage?.namespace, 'local-built-in');
+    assert.equal(snapshot?.instance.storage?.namespace, STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID);
   },
 );
 
@@ -545,18 +549,21 @@ await runTest(
       ],
     );
 
-    assert.deepEqual(finalized?.kernelConfig, {
-      configFile: 'D:/OpenClaw/.openclaw/openclaw.json',
-      configRoot: 'D:/OpenClaw/.openclaw',
-      userRoot: 'D:/OpenClaw',
-      format: 'json',
-      access: 'localFs',
-      provenance: 'standardUserRoot',
-      writable: true,
-      resolved: true,
-      schemaVersion: null,
-    });
+    assert.equal(finalized?.kernelConfig?.kernelId, 'openclaw');
+    assert.equal(finalized?.kernelConfig?.runtimeKind, 'openclaw');
     assert.equal(finalized?.kernelConfig?.configFile, 'D:/OpenClaw/.openclaw/openclaw.json');
+    assert.equal(finalized?.kernelConfig?.configRoot, 'D:/OpenClaw/.openclaw');
+    assert.equal(finalized?.kernelConfig?.stateRoot, 'D:/OpenClaw/.openclaw');
+    assert.equal(finalized?.kernelConfig?.userRoot, 'D:/OpenClaw');
+    assert.equal(finalized?.kernelConfig?.standardStateRoot, 'D:/OpenClaw/.openclaw');
+    assert.equal(finalized?.kernelConfig?.standardConfigFile, 'D:/OpenClaw/.openclaw/openclaw.json');
+    assert.equal(finalized?.kernelConfig?.format, 'json');
+    assert.equal(finalized?.kernelConfig?.access, 'localFs');
+    assert.equal(finalized?.kernelConfig?.provenance, 'standardUserRoot');
+    assert.equal(finalized?.kernelConfig?.writable, true);
+    assert.equal(finalized?.kernelConfig?.resolved, true);
+    assert.equal(finalized?.kernelConfig?.schemaVersion, null);
+    assert.equal(finalized?.kernelConfig?.isStandardUserRootLayout, true);
     assert.equal('managedConfigPath' in (finalized || {}), false);
     assert.equal(finalized?.sectionCounts.config, 1);
     assert.equal(finalized?.sectionAvailability.config.status, 'ready');

@@ -31,7 +31,8 @@ cargo run --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml -- se
 
 Current command notes:
 
-- the packaged binary shape is `claw-server run`, `claw-server print-config`, `claw-server service print-manifest --platform <linux|macos|windows>`, and `claw-server service <install|start|stop|restart|status>`
+- the CLI contract is `claw-server run`, `claw-server print-config`, `claw-server service print-manifest --platform <linux|macos|windows>`, and `claw-server service <install|start|stop|restart|status>`
+- current packaged release bundles expose that same command surface through the shipped native binary under `bin/claw-server` on Linux or macOS and `bin/claw-server.exe` on Windows; this native binary is the canonical packaged launcher, it auto-resolves bundled defaults for `CLAW_SERVER_WEB_DIST` and `CLAW_SERVER_DATA_DIR` when the expected bundle layout is present, and `start-claw-server.sh` plus `start-claw-server.cmd` remain optional convenience wrappers around the same binary
 - `run` is the default command
 - `print-config` resolves the effective runtime configuration after CLI overrides, config file values, environment variables, and built-in defaults
 - `service print-manifest` prints portable service metadata and the platform-specific unit content for `systemd`, `launchd`, or `windowsService`
@@ -151,6 +152,7 @@ Representative endpoints:
 - `GET /claw/api/v1/discovery`
 - `GET /claw/internal/v1/host-platform`
 - `GET /claw/manage/v1/rollouts`
+- `POST /claw/manage/v1/service:start`
 - `GET /claw/manage/v1/openclaw/runtime`
 - `GET /claw/manage/v1/openclaw/gateway`
 - `POST /claw/manage/v1/openclaw/gateway/invoke`

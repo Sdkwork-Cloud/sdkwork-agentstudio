@@ -5,9 +5,8 @@ use super::{
         ProxyRouteOutcome,
     },
     response_translation, streaming,
-    support::proxy_error,
     types::{LocalAiProxyAppState, LocalAiProxyTokenUsage, ProxyHttpResult},
-    upstream, LocalAiProxyRouteSnapshot, ANTHROPIC_VERSION_HEADER, DEFAULT_ANTHROPIC_VERSION,
+    LocalAiProxyRouteSnapshot, ANTHROPIC_VERSION_HEADER, DEFAULT_ANTHROPIC_VERSION,
     LOCAL_AI_PROXY_DEFAULT_CLIENT_PROTOCOL, OLLAMA_UPSTREAM_PROTOCOL, X_API_KEY_HEADER,
     X_GOOG_API_KEY_HEADER,
 };
@@ -18,10 +17,15 @@ use axum::{
     response::Response,
     Json,
 };
-use serde_json::{json, Value};
 pub(super) use sdkwork_local_api_proxy_native::response::extract_token_usage;
 use sdkwork_local_api_proxy_native::streaming::openai_stream_endpoint_for_suffix as resolve_shared_openai_stream_endpoint;
+use sdkwork_local_api_proxy_native::support::proxy_error;
 use sdkwork_local_api_proxy_native::translation::resolve_request_model_id as resolve_shared_request_model_id;
+use sdkwork_local_api_proxy_native::upstream::{
+    build_gemini_upstream_request_url, build_ollama_upstream_request_url,
+    build_openai_compatible_upstream_request, infer_gemini_default_api_version,
+};
+use serde_json::{json, Value};
 use std::time::Instant;
 
 pub(super) async fn models_handler(
@@ -107,7 +111,7 @@ async fn openai_compatible_passthrough_handler(
     let audit_context =
         observability::build_request_audit_context(route, &format!("/v1/{endpoint_suffix}"), &body);
     let result = async {
-        let response = upstream::build_openai_compatible_upstream_request(
+        let response = build_openai_compatible_upstream_request(
             &state.client,
             route,
             endpoint_suffix,
@@ -181,10 +185,7 @@ async fn ollama_openai_compatible_handler(
                 request_translation::build_ollama_request_from_openai_chat(route, &payload)?;
             let response = state
                 .client
-                .post(upstream::build_ollama_upstream_request_url(
-                    route,
-                    "/api/chat",
-                ))
+                .post(build_ollama_upstream_request_url(route, "/api/chat"))
                 .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
                 .body(request_body.to_string())
                 .send()
@@ -262,10 +263,7 @@ async fn ollama_openai_compatible_handler(
                 request_translation::build_ollama_request_from_openai_response(route, &payload)?;
             let response = state
                 .client
-                .post(upstream::build_ollama_upstream_request_url(
-                    route,
-                    "/api/chat",
-                ))
+                .post(build_ollama_upstream_request_url(route, "/api/chat"))
                 .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
                 .body(request_body.to_string())
                 .send()
@@ -340,10 +338,7 @@ async fn ollama_openai_compatible_handler(
                 request_translation::build_ollama_request_from_openai_embeddings(route, &payload)?;
             let response = state
                 .client
-                .post(upstream::build_ollama_upstream_request_url(
-                    route,
-                    "/api/embed",
-                ))
+                .post(build_ollama_upstream_request_url(route, "/api/embed"))
                 .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
                 .body(request_body.to_string())
                 .send()
@@ -586,10 +581,10 @@ async fn gemini_openai_compatible_handler(
             let requested_model_id = resolve_request_model_id(route, &payload)?;
             let request_body =
                 request_translation::build_gemini_request_from_openai_chat(route, &payload)?;
-            let api_version = upstream::infer_gemini_default_api_version(&route.upstream_base_url);
+            let api_version = infer_gemini_default_api_version(&route.upstream_base_url);
             let response = state
                 .client
-                .post(upstream::build_gemini_upstream_request_url(
+                .post(build_gemini_upstream_request_url(
                     route,
                     api_version,
                     &format!(
@@ -679,10 +674,10 @@ async fn gemini_openai_compatible_handler(
             let requested_model_id = resolve_request_model_id(route, &payload)?;
             let request_body =
                 request_translation::build_gemini_request_from_openai_response(route, &payload)?;
-            let api_version = upstream::infer_gemini_default_api_version(&route.upstream_base_url);
+            let api_version = infer_gemini_default_api_version(&route.upstream_base_url);
             let response = state
                 .client
-                .post(upstream::build_gemini_upstream_request_url(
+                .post(build_gemini_upstream_request_url(
                     route,
                     api_version,
                     &format!(
@@ -770,10 +765,10 @@ async fn gemini_openai_compatible_handler(
             let model_id = resolve_request_model_id(route, &payload)?;
             let request_body =
                 request_translation::build_gemini_request_from_openai_embeddings(&payload)?;
-            let api_version = upstream::infer_gemini_default_api_version(&route.upstream_base_url);
+            let api_version = infer_gemini_default_api_version(&route.upstream_base_url);
             let response = state
                 .client
-                .post(upstream::build_gemini_upstream_request_url(
+                .post(build_gemini_upstream_request_url(
                     route,
                     api_version,
                     &format!("{model_id}:embedContent"),

@@ -4,6 +4,7 @@ import {
   KERNEL_CHAT_MESSAGE_PART_KINDS,
   KERNEL_CHAT_MESSAGE_ROLES,
   KERNEL_CHAT_RUN_STATUSES,
+  createKernelChatCapabilitySet,
   createKernelChatAuthority,
   createKernelChatSessionRef,
 } from './kernelChatModel.ts';
@@ -58,9 +59,16 @@ runTest('kernel chat model normalizes session refs and authority defaults', () =
     nativeSessionId: '  ses-123  ',
     routingKey: '  agent:research:main  ',
     agentId: '  research  ',
+    lineageParentSessionId: '  root-session  ',
   });
   const authority = createKernelChatAuthority({
     kind: 'gateway',
+  });
+  const capabilitySet = createKernelChatCapabilitySet({
+    supportsStreaming: true,
+    supportsRuns: true,
+    supportsAgentProfiles: true,
+    supportsSessionMutation: true,
   });
 
   assert.deepEqual(ref, {
@@ -70,11 +78,25 @@ runTest('kernel chat model normalizes session refs and authority defaults', () =
     nativeSessionId: 'ses-123',
     routingKey: 'agent:research:main',
     agentId: 'research',
+    lineageParentSessionId: 'root-session',
   });
   assert.deepEqual(authority, {
     kind: 'gateway',
     source: 'kernel',
     durable: true,
     writable: true,
+  });
+  assert.deepEqual(capabilitySet, {
+    supportsAgentProfiles: true,
+    supportsSessionMutation: true,
+    supportsStreaming: true,
+    supportsRuns: true,
+    supportsRunAbort: false,
+    supportsModelSelection: false,
+    supportsReasoningControl: false,
+    supportsThinkingLevel: false,
+    supportsFastMode: false,
+    supportsVerboseLevel: false,
+    supportsAttachments: false,
   });
 });

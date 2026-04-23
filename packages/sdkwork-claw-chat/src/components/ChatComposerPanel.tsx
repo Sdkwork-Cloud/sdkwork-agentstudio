@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import { ArrowDown } from 'lucide-react';
 import { ChatInput } from './ChatInput';
+import { CHAT_CHROME_JUMP_BUTTON_CLASS } from './chatChromeSurface';
 
 export interface ChatComposerPanelProps {
   showJumpToLatest: boolean;
@@ -24,7 +25,7 @@ export function ChatComposerPanel({
           <button
             type="button"
             onClick={onJumpToLatest}
-            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/95 px-3 py-1.5 text-xs font-semibold text-zinc-700 shadow-sm shadow-zinc-950/5 transition-colors hover:border-primary-400 hover:text-primary-600 dark:border-zinc-700 dark:bg-zinc-900/95 dark:text-zinc-200 dark:hover:border-primary-500 dark:hover:text-primary-300"
+            className={CHAT_CHROME_JUMP_BUTTON_CLASS}
           >
             <ArrowDown className="h-3.5 w-3.5" />
             <span>{jumpToLatestLabel}</span>

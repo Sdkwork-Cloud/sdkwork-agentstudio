@@ -279,6 +279,14 @@ function buildPreferencesFromNotificationSettings(
   };
 }
 
+function buildOverlayBackedPreferences(
+  overlay = readSettingsOverlay(),
+): UserPreferences {
+  return buildPreferencesFromNotificationSettings({}, overlay, {
+    preferOverlayNotifications: true,
+  });
+}
+
 function isAuthenticationFailure(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;
@@ -486,9 +494,7 @@ class SettingsService implements ISettingsService {
     try {
       const response = await client.notification.getNotificationSettings();
       if (isAuthenticationFailure(response)) {
-        return buildPreferencesFromNotificationSettings({}, readSettingsOverlay(), {
-          preferOverlayNotifications: true,
-        });
+        return buildOverlayBackedPreferences();
       }
 
       const settings = unwrapAppSdkResponse<RemoteNotificationSettings>(
@@ -499,9 +505,7 @@ class SettingsService implements ISettingsService {
       return buildPreferencesFromNotificationSettings(settings);
     } catch (error) {
       if (isAuthenticationFailure(error)) {
-        return buildPreferencesFromNotificationSettings({}, readSettingsOverlay(), {
-          preferOverlayNotifications: true,
-        });
+        return buildOverlayBackedPreferences();
       }
 
       throw error;
@@ -518,15 +522,15 @@ class SettingsService implements ISettingsService {
     };
     writeSettingsOverlay(nextOverlay);
 
+    if (!prefs.notifications) {
+      return buildOverlayBackedPreferences(nextOverlay);
+    }
+
     const client = await this.getClient();
     const currentSettings = unwrapAppSdkResponse<RemoteNotificationSettings>(
       await client.notification.getNotificationSettings(),
       'Failed to load notification settings.',
     );
-
-    if (!prefs.notifications) {
-      return buildPreferencesFromNotificationSettings(currentSettings, nextOverlay);
-    }
 
     const updatedSettings = unwrapAppSdkResponse<RemoteNotificationSettings>(
       await client.notification.updateNotificationSettings(

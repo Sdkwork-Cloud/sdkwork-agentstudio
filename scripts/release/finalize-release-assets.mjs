@@ -353,7 +353,17 @@ function buildDeploymentSmokeMetadata({
   smokeReportPath,
   smokeReport,
 }) {
+  const launcherRelativePath = String(smokeReport?.launcherRelativePath ?? '').trim();
   const runtimeBaseUrl = String(smokeReport?.runtimeBaseUrl ?? '').trim();
+  const skippedReason = String(smokeReport?.skippedReason ?? '').trim();
+  const rawCapabilities = smokeReport?.capabilities;
+  const capabilities = rawCapabilities && typeof rawCapabilities === 'object'
+    ? Object.fromEntries(
+        Object.entries(rawCapabilities)
+          .filter(([key]) => String(key ?? '').trim().length > 0)
+          .map(([key, value]) => [String(key).trim(), Boolean(value)]),
+      )
+    : null;
 
   return {
     reportRelativePath: path.relative(releaseAssetsDir, smokeReportPath).replaceAll('\\', '/'),
@@ -362,10 +372,12 @@ function buildDeploymentSmokeMetadata({
     target: String(smokeReport?.target ?? '').trim(),
     smokeKind: String(smokeReport?.smokeKind ?? '').trim(),
     status: String(smokeReport?.status ?? '').trim(),
-    launcherRelativePath: String(smokeReport?.launcherRelativePath ?? '').trim(),
+    ...(launcherRelativePath.length > 0 ? { launcherRelativePath } : {}),
     ...(runtimeBaseUrl.length > 0 ? { runtimeBaseUrl } : {}),
     artifactRelativePaths: normalizeStringArray(smokeReport?.artifactRelativePaths),
     checks: normalizeServerBundleSmokeMetadataChecks(smokeReport?.checks),
+    ...(skippedReason.length > 0 ? { skippedReason } : {}),
+    ...(capabilities && Object.keys(capabilities).length > 0 ? { capabilities } : {}),
   };
 }
 
@@ -985,9 +997,10 @@ function requireDeploymentSmokeReports({
         `${familyLabel} deployment smoke report accelerator mismatch at ${smokeReportPath}: expected ${expectedAccelerator}, received ${smokeReport?.accelerator ?? 'unknown'}`,
       );
     }
-    if (String(smokeReport?.status ?? '').trim() !== 'passed') {
+    const smokeStatus = String(smokeReport?.status ?? '').trim();
+    if (smokeStatus !== 'passed' && smokeStatus !== 'skipped') {
       throw new Error(
-        `${familyLabel} deployment smoke report must pass before finalization: ${smokeReportPath}`,
+        `${familyLabel} deployment smoke report must be passed or skipped before finalization: ${smokeReportPath}`,
       );
     }
 
@@ -1019,33 +1032,39 @@ function requireDeploymentSmokeReports({
         `${familyLabel} deployment smoke report does not match the current artifact set: ${smokeReportPath}`,
       );
     }
-    if (String(smokeReport?.launcherRelativePath ?? '').trim().length === 0) {
-      throw new Error(
-        `${familyLabel} deployment smoke report is missing launcherRelativePath: ${smokeReportPath}`,
-      );
-    }
-    if (
-      family === 'container'
-      && String(smokeReport?.runtimeBaseUrl ?? '').trim().length === 0
-    ) {
-      throw new Error(
-        `${familyLabel} deployment smoke report is missing runtimeBaseUrl: ${smokeReportPath}`,
-      );
-    }
-
-    const checks = normalizeReleaseSmokeChecks(smokeReport?.checks);
-    const passedChecks = new Map(
-      checks.map((check) => [check.id, check.status]),
-    );
-    const requiredCheckIds = family === 'container'
-      ? ['deployment-identity', 'runtime-profile', 'manage-credentials', 'persistent-storage', 'docker-compose-up', 'docker-compose-healthy', 'health-ready', 'host-endpoints', 'browser-shell']
-      : ['helm-template', 'deployment-identity', 'image-reference', 'configmap-runtime-identity', 'readiness-probe', 'secret-ref', 'persistent-storage'];
-    for (const requiredCheckId of requiredCheckIds) {
-      if (passedChecks.get(requiredCheckId) !== 'passed') {
+    if (smokeStatus === 'passed') {
+      if (String(smokeReport?.launcherRelativePath ?? '').trim().length === 0) {
         throw new Error(
-          `${familyLabel} deployment smoke report is missing a passing ${requiredCheckId} check: ${smokeReportPath}`,
+          `${familyLabel} deployment smoke report is missing launcherRelativePath: ${smokeReportPath}`,
         );
       }
+      if (
+        family === 'container'
+        && String(smokeReport?.runtimeBaseUrl ?? '').trim().length === 0
+      ) {
+        throw new Error(
+          `${familyLabel} deployment smoke report is missing runtimeBaseUrl: ${smokeReportPath}`,
+        );
+      }
+
+      const checks = normalizeReleaseSmokeChecks(smokeReport?.checks);
+      const passedChecks = new Map(
+        checks.map((check) => [check.id, check.status]),
+      );
+      const requiredCheckIds = family === 'container'
+        ? ['deployment-identity', 'runtime-profile', 'manage-credentials', 'persistent-storage', 'docker-compose-up', 'docker-compose-healthy', 'health-ready', 'host-endpoints', 'browser-shell']
+        : ['helm-template', 'deployment-identity', 'image-reference', 'configmap-runtime-identity', 'readiness-probe', 'secret-ref', 'persistent-storage'];
+      for (const requiredCheckId of requiredCheckIds) {
+        if (passedChecks.get(requiredCheckId) !== 'passed') {
+          throw new Error(
+            `${familyLabel} deployment smoke report is missing a passing ${requiredCheckId} check: ${smokeReportPath}`,
+          );
+        }
+      }
+    } else if (String(smokeReport?.skippedReason ?? '').trim().length === 0) {
+      throw new Error(
+        `${familyLabel} deployment smoke report must include skippedReason when status=skipped: ${smokeReportPath}`,
+      );
     }
 
     deploymentSmokeMetadataByManifestPath.set(

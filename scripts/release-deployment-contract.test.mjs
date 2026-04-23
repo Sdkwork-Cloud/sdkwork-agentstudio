@@ -37,6 +37,11 @@ test('docker deployment templates keep compose commands and overlay profiles ali
     /pnpm release:package:container/,
     'docker deployment docs must explain how to render the packaged bundle layout locally from the source tree',
   );
+  assert.match(
+    dockerReadme,
+    /refreshes a matching Linux server binary through an incremental build/i,
+    'docker deployment docs must describe the local container packaging wrapper as an incremental refresh of the matching Linux server binary',
+  );
   assert.match(dockerCompose, /context:\s+\.\./);
   assert.match(
     dockerCompose,
@@ -183,6 +188,21 @@ test('docker image, kubernetes chart, and server readiness routes share the same
     dockerfile,
     /apt-get[\s\S]*install[\s\S]*curl/i,
     'docker image must install curl or an equivalent HTTP client for image-native readiness checks',
+  );
+  assert.match(
+    dockerfile,
+    /chmod \+x \/opt\/claw\/app\/bin\/claw-server/,
+    'docker image must chmod the packaged claw-server binary rather than a stale legacy binary path',
+  );
+  assert.match(
+    dockerfile,
+    /CMD\s+\["\/opt\/claw\/app\/bin\/claw-server"\]/,
+    'docker image must launch the canonical packaged claw-server binary directly',
+  );
+  assert.doesNotMatch(
+    dockerfile,
+    /CMD\s+\["\/bin\/sh",\s*"\/opt\/claw\/app\/start-claw-server\.sh"\]/,
+    'docker image must not route container startup through the optional wrapper script',
   );
   assert.match(
     dockerfile,

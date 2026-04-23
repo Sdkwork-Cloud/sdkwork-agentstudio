@@ -15,7 +15,7 @@ function runTest(name: string, fn: () => void | Promise<void>) {
 const DRIFTED_CONFIG_FILE_PATH =
   'C:/ProgramData/SdkWork/CrawStudio/state/kernels/hermes/config/hermes.json';
 const STANDARD_WORKSPACE_PATH = 'C:/Users/admin/.hermes/workspace';
-const STANDARD_CONFIG_FILE_PATH = 'C:/Users/admin/.hermes/hermes.json';
+const STANDARD_CONFIG_FILE_PATH = 'C:/Users/admin/.hermes/config.yaml';
 
 let hermesKernelConfigPathServiceModule:
   | typeof import('./hermesKernelConfigPathService.ts')
@@ -43,6 +43,18 @@ await runTest(
       'function',
     );
     assert.equal(
+      typeof hermesKernelConfigPathServiceModule?.buildStandardHermesStateDatabasePath,
+      'function',
+    );
+    assert.equal(
+      typeof hermesKernelConfigPathServiceModule?.buildStandardHermesSessionsRootPath,
+      'function',
+    );
+    assert.equal(
+      typeof hermesKernelConfigPathServiceModule?.buildStandardHermesLogsRootPath,
+      'function',
+    );
+    assert.equal(
       typeof hermesKernelConfigPathServiceModule?.normalizeHermesKernelConfigFilePath,
       'function',
     );
@@ -65,6 +77,24 @@ await runTest(
     assert.equal(
       hermesKernelConfigPathServiceModule?.buildStandardHermesWorkspacePath('C:/Users/admin'),
       STANDARD_WORKSPACE_PATH,
+    );
+    assert.equal(
+      hermesKernelConfigPathServiceModule?.buildStandardHermesStateDatabasePath(
+        'C:/Users/admin',
+      ),
+      'C:/Users/admin/.hermes/state.db',
+    );
+    assert.equal(
+      hermesKernelConfigPathServiceModule?.buildStandardHermesSessionsRootPath(
+        'C:/Users/admin',
+      ),
+      'C:/Users/admin/.hermes/sessions',
+    );
+    assert.equal(
+      hermesKernelConfigPathServiceModule?.buildStandardHermesLogsRootPath(
+        'C:/Users/admin',
+      ),
+      'C:/Users/admin/.hermes/logs',
     );
     assert.equal(
       hermesKernelConfigPathServiceModule?.buildStandardHermesConfigFilePath(

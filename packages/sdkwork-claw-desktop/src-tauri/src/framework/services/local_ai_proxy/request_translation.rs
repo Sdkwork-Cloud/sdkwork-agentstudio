@@ -1,9 +1,8 @@
 use super::{
-    openai_compatible::resolve_request_model_id, support::proxy_error, types::ProxyHttpResult,
-    LocalAiProxyRouteSnapshot,
+    openai_compatible::resolve_request_model_id, types::ProxyHttpResult, LocalAiProxyRouteSnapshot,
 };
 use axum::http::StatusCode;
-use serde_json::Value;
+use sdkwork_local_api_proxy_native::support::proxy_error;
 use sdkwork_local_api_proxy_native::translation::{
     build_anthropic_request_from_openai_chat as build_shared_anthropic_request_from_openai_chat,
     build_anthropic_request_from_openai_response as build_shared_anthropic_request_from_openai_response,
@@ -14,6 +13,7 @@ use sdkwork_local_api_proxy_native::translation::{
     build_ollama_request_from_openai_embeddings as build_shared_ollama_request_from_openai_embeddings,
     build_ollama_request_from_openai_response as build_shared_ollama_request_from_openai_response,
 };
+use serde_json::Value;
 
 pub(super) fn build_anthropic_request_from_openai_chat(
     route: &LocalAiProxyRouteSnapshot,

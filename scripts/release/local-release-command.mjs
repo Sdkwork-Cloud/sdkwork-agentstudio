@@ -86,6 +86,7 @@ const RELEASE_IMAGE_DIGEST_ENV_VAR = 'SDKWORK_RELEASE_IMAGE_DIGEST';
 const RELEASE_REPOSITORY_ENV_VAR = 'SDKWORK_RELEASE_REPOSITORY';
 const RELEASE_DESKTOP_STARTUP_EVIDENCE_PATH_ENV_VAR =
   'SDKWORK_RELEASE_DESKTOP_STARTUP_EVIDENCE_PATH';
+const GIT_REMOTE_REPOSITORY_TIMEOUT_MS = 10000;
 
 function readOptionValue(argv, index, flag) {
   const next = argv[index + 1];
@@ -108,10 +109,63 @@ function firstNonEmpty(...values) {
   return '';
 }
 
+export function normalizeGitRemoteRepository(remoteUrl = '') {
+  const normalizedRemoteUrl = String(remoteUrl ?? '').trim();
+  if (!normalizedRemoteUrl) {
+    return '';
+  }
+
+  const sshLikeMatch = normalizedRemoteUrl.match(/^[^@]+@[^:]+:([^/]+\/[^/]+?)(?:\.git)?$/i);
+  if (sshLikeMatch) {
+    return String(sshLikeMatch[1] ?? '').trim();
+  }
+
+  const canonicalUrl = normalizedRemoteUrl.replace(/^git\+/, '');
+
+  try {
+    const parsedUrl = new URL(canonicalUrl);
+    const pathSegments = parsedUrl.pathname
+      .split('/')
+      .map((segment) => segment.trim())
+      .filter(Boolean);
+    if (pathSegments.length >= 2) {
+      const owner = pathSegments[pathSegments.length - 2];
+      const repo = pathSegments[pathSegments.length - 1].replace(/\.git$/i, '');
+      if (owner && repo) {
+        return `${owner}/${repo}`;
+      }
+    }
+  } catch {
+    // Ignore parse failures and fall back to an empty repository slug.
+  }
+
+  return '';
+}
+
+export function resolveGitRepositoryFromRemote({
+  cwd = rootDir,
+  env = process.env,
+  spawnSyncImpl = spawnSync,
+} = {}) {
+  const result = spawnSyncImpl('git', ['config', '--get', 'remote.origin.url'], {
+    cwd,
+    env,
+    encoding: 'utf8',
+    timeout: GIT_REMOTE_REPOSITORY_TIMEOUT_MS,
+    shell: false,
+  });
+
+  if (result?.error || (result?.status ?? 1) !== 0) {
+    return '';
+  }
+
+  return normalizeGitRemoteRepository(result?.stdout);
+}
+
 function resolveServerBinaryFileName(platform = '') {
   return normalizeDesktopPlatform(platform) === 'windows'
-    ? 'sdkwork-claw-server.exe'
-    : 'sdkwork-claw-server';
+    ? 'claw-server.exe'
+    : 'claw-server';
 }
 
 export function resolveLocalServerBinaryPath({
@@ -143,16 +197,14 @@ export function ensureLocalServerBuildPrerequisite({
     target: context?.target,
     platform: context?.platform,
   });
-  if (typeof binaryPath === 'string' && binaryPath.length > 0 && fileExists(binaryPath)) {
-    return {
-      binaryPath,
-      built: false,
-    };
-  }
-
   runServerBuildFn({
     targetTriple: String(context?.target ?? '').trim(),
   });
+  if (!(typeof binaryPath === 'string' && binaryPath.length > 0 && fileExists(binaryPath))) {
+    throw new Error(
+      `Server build completed without producing the canonical binary at ${binaryPath}.`,
+    );
+  }
   return {
     binaryPath,
     built: true,
@@ -234,6 +286,11 @@ export function ensureLocalDesktopBuildPrerequisite({
     profileId: context?.profileId,
     targetTriple: context?.target,
   });
+  if (!(typeof bundleRoot === 'string' && bundleRoot.length > 0 && fileExists(bundleRoot))) {
+    throw new Error(
+      `Desktop release build completed without producing the canonical bundle root at ${bundleRoot}.`,
+    );
+  }
 
   return {
     bundleRoot,
@@ -407,6 +464,7 @@ export function resolveLocalReleaseContext({
   arch = process.arch,
   cwd = rootDir,
   cliOverrides = {},
+  resolveGitRepositoryFn = resolveGitRepositoryFromRemote,
 } = {}) {
   const normalizedMode = String(mode ?? '').trim().toLowerCase();
   const hostPlatform = firstNonEmpty(platform, process.platform);
@@ -454,6 +512,10 @@ export function resolveLocalReleaseContext({
     cliOverrides.repository,
     env?.[RELEASE_REPOSITORY_ENV_VAR],
     env?.GITHUB_REPOSITORY,
+    resolveGitRepositoryFn({
+      cwd,
+      env,
+    }),
   );
   const accelerator = firstNonEmpty(
     cliOverrides.accelerator,

@@ -18,6 +18,7 @@
     "chatComposer": "对话输入",
     "compactModelSelector": "紧凑模型选择器",
     "compactModelSelectorDescription": "当模型选择器只有一个 channel 时，隐藏左侧 channel 区域。",
+    "loadPreferenceFailed": "加载偏好设置失败",
     "updatePreferenceFailed": "更新偏好设置失败",
     "themeModes": {
       "light": "浅色",
@@ -756,6 +757,7 @@
     },
     "toasts": {
       "fillAllFields": "请填写所有密码字段",
+      "loadPreferenceFailed": "加载偏好设置失败",
       "passwordMismatch": "两次输入的新密码不一致",
       "passwordUpdated": "密码更新成功",
       "passwordUpdateFailed": "更新密码失败",

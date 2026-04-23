@@ -1,18 +1,17 @@
-import { getChatSessionDisplayTitle } from './chatSessionTitlePresentation.ts';
-import { resolveKernelChatSessionState } from './kernelChatSessionState.ts';
+import {
+  getChatSessionDisplayTitle,
+  isReadableChatSessionTitle,
+} from './chatSessionTitlePresentation.ts';
+import { resolveChatRunBinding, type ChatRunBindingSource } from './chatRunBinding.ts';
 
 const CRON_SESSION_ID_PATTERN = /(^cron:|:cron:)/i;
 const CRON_TITLE_PREFIX_PATTERN = /^cron(?:\s+job)?\s*:/i;
 
-type ChatCronActivityNotificationSessionLike = {
+type ChatCronActivityNotificationSessionLike = ChatRunBindingSource & {
   id: string;
   title?: string;
   titleSource?: 'default' | 'preview' | 'explicit' | 'firstUser';
   lastMessagePreview?: string;
-  runId?: string | null;
-  kernelSession?: {
-    activeRunId?: string | null;
-  } | null;
   messages?: Array<{
     role?: string;
     content?: string;
@@ -24,11 +23,6 @@ export interface ChatCronActivityNotification {
   title: string;
   body: string;
   sessionId: string;
-}
-
-function normalizeRunId(value: string | null | undefined) {
-  const normalized = value?.trim();
-  return normalized || null;
 }
 
 function isCronSession(sessionId: string | null | undefined) {
@@ -47,7 +41,7 @@ function resolveCronNotificationBody(
   kind: ChatCronActivityNotification['kind'],
 ) {
   const preview = session.lastMessagePreview?.trim();
-  if (preview) {
+  if (preview && isReadableChatSessionTitle(preview)) {
     return preview;
   }
 
@@ -68,8 +62,8 @@ export function detectChatCronActivityNotification(params: {
     return null;
   }
 
-  const previousRunId = normalizeRunId(resolveKernelChatSessionState(previousSession).activeRunId);
-  const nextRunId = normalizeRunId(resolveKernelChatSessionState(nextSession).activeRunId);
+  const previousRunId = resolveChatRunBinding(previousSession).runId;
+  const nextRunId = resolveChatRunBinding(nextSession).runId;
   if (!previousRunId && nextRunId) {
     return {
       kind: 'started',

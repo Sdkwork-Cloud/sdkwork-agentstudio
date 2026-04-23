@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BriefcaseBusiness, Copy, Edit2, Package, Plus, Trash2, Wrench } from 'lucide-react';
+import { Copy, Edit2, Package, Plus, Trash2, Wrench } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input } from '@sdkwork/claw-ui';
 import {
@@ -15,8 +15,7 @@ interface AgentWorkbenchPanelProps {
   errorMessage?: string | null;
   selectedAgentId: string | null;
   onSelectedAgentIdChange: (agentId: string) => void;
-  onOpenAgentMarket: () => void;
-  onCreateAgent: () => void;
+  onOpenAgentCreationWorkflow: () => void;
   onEditAgent: (agent: InstanceWorkbenchSnapshot['agents'][number]) => void;
   onDeleteAgent: (agentId: string) => void;
   onInstallSkill: (slug: string) => void;
@@ -166,8 +165,7 @@ export function AgentWorkbenchPanel({
   errorMessage,
   selectedAgentId,
   onSelectedAgentIdChange,
-  onOpenAgentMarket,
-  onCreateAgent,
+  onOpenAgentCreationWorkflow,
   onEditAgent,
   onDeleteAgent,
   onInstallSkill,
@@ -815,11 +813,11 @@ export function AgentWorkbenchPanel({
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline" onClick={onOpenAgentMarket} disabled={isReadonly} className="rounded-2xl px-4 py-3">
-              <BriefcaseBusiness className="h-4 w-4" />
-              {t('sidebar.agentMarket')}
-            </Button>
-            <Button onClick={onCreateAgent} disabled={isReadonly} className="rounded-2xl px-4 py-3">
+            <Button
+              onClick={onOpenAgentCreationWorkflow}
+              disabled={isReadonly}
+              className="rounded-2xl px-4 py-3"
+            >
               <Plus className="h-4 w-4" />
               {t('instances.detail.instanceWorkbench.agents.panel.newAgent')}
             </Button>

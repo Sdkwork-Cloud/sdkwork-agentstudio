@@ -42,11 +42,11 @@ runTest('sdkwork-claw-shell keeps retained secondary routes addressable while th
   assert.match(routesSource, /path="\/kernel"/);
   assert.match(routesSource, /path="\/nodes"/);
   assert.match(routesSource, /path="\/usage"/);
-  assert.match(routePrefetchSource, /\['\/agents', \(\) => import\('@sdkwork\/claw-agent'\)\]/);
   assert.match(routePrefetchSource, /\['\/kernel', \(\) => import\('@sdkwork\/claw-settings'\)\]/);
   assert.match(routePrefetchSource, /\['\/nodes', \(\) => import\('@sdkwork\/claw-instances'\)\]/);
-  assert.match(sidebarSource, /id: 'agents'/);
-  assert.match(settingsSource, /id: 'agents', label: t\('sidebar\.agentMarket'\)/);
+  assert.doesNotMatch(routePrefetchSource, /\['\/agents', \(\) => import\('@sdkwork\/claw-agent'\)\]/);
+  assert.doesNotMatch(sidebarSource, /id: 'agents'/);
+  assert.doesNotMatch(settingsSource, /id: 'agents', label: t\('sidebar\.agentMarket'\)/);
   assert.match(sidebarSource, /id: 'instances'/);
   assert.match(sidebarSource, /id: 'docs'/);
   assert.doesNotMatch(sidebarSource, /id: 'kernel'/);
@@ -56,7 +56,7 @@ runTest('sdkwork-claw-shell keeps retained secondary routes addressable while th
   assert.doesNotMatch(settingsSource, /id: 'kernel', label: t\('sidebar\.kernelCenter'\)/);
   assert.doesNotMatch(settingsSource, /id: 'nodes', label: t\('sidebar\.nodes'\)/);
   assert.doesNotMatch(settingsSource, /id: 'usage', label: t\('sidebar\.usage'\)/);
-  assert.match(commandPaletteSource, /id: 'nav-agents'/);
+  assert.doesNotMatch(commandPaletteSource, /id: 'nav-agents'/);
   assert.match(commandPaletteSource, /id: 'nav-kernel'/);
   assert.match(commandPaletteSource, /id: 'nav-nodes'/);
   assert.match(commandPaletteSource, /id: 'nav-usage'/);
@@ -113,14 +113,15 @@ runTest('sdkwork-claw-shell migrates persisted sidebar visibility away from remo
   assert.match(appStoreSource, /item !== 'points'/);
 });
 
-runTest('sdkwork-claw-shell keeps header chrome focused on mobile guide, instance switching, and account controls', () => {
+runTest('sdkwork-claw-shell keeps header chrome focused on search, mobile guide, and account controls', () => {
   const headerSource = read('packages/sdkwork-claw-shell/src/components/AppHeader.tsx');
 
   assert.match(headerSource, /MobileAppDownloadDialog|install\.mobileGuide\.headerAction/);
-  assert.match(headerSource, /InstanceSwitcher/);
+  assert.match(headerSource, /OPEN_COMMAND_PALETTE_EVENT|commandPalette\.searchPlaceholder/);
   assert.match(headerSource, /sidebar\.userMenu\.profileSettings/);
   assert.match(headerSource, /sidebar\.userMenu\.logout/);
   assert.match(headerSource, /DesktopWindowControls variant="header"/);
+  assert.doesNotMatch(headerSource, /InstanceSwitcher/);
   assert.doesNotMatch(headerSource, /@sdkwork\/claw-points/);
 });
 
@@ -137,4 +138,33 @@ runTest('sdkwork-claw-shell keeps auth routes isolated while workspace chrome ow
   assert.match(sidebarSource, /data-slot="sidebar-user-control"/);
   assert.match(sidebarSource, /data-slot="sidebar-edge-control"/);
   assert.match(sidebarSource, /data-slot="sidebar-resize-handle"/);
+});
+
+runTest('sdkwork-claw-shell keeps sidebar labels color-aligned with sidebar icons across expanded and collapsed navigation items', () => {
+  const sidebarSource = read('packages/sdkwork-claw-shell/src/components/Sidebar.tsx');
+
+  assert.match(sidebarSource, /function getSidebarNavToneClasses\(isActive: boolean\)/);
+  assert.match(sidebarSource, /labelClassName=\{tone\.label\}/);
+  assert.match(sidebarSource, /className=\{`h-5 w-5 shrink-0 transition-colors \$\{tone\.icon\}`\}/);
+  assert.match(sidebarSource, /className=\{`text-\[14px\] tracking-tight \$\{tone\.label\}`\}/);
+  assert.match(sidebarSource, /text-primary-400/);
+  assert.match(sidebarSource, /text-zinc-500 group-hover:text-zinc-300/);
+  assert.doesNotMatch(sidebarSource, /labelClassName=\{isActive \? 'text-primary-200' : undefined\}/);
+});
+
+runTest('sdkwork-claw-shell binds dark variants to the theme manager dark class and exposes the full theme color catalog', () => {
+  const themeManagerSource = read('packages/sdkwork-claw-shell/src/application/providers/ThemeManager.tsx');
+  const shellStylesSource = read('packages/sdkwork-claw-shell/src/styles/index.css');
+  const generalSettingsSource = read('packages/sdkwork-claw-settings/src/GeneralSettings.tsx');
+
+  assert.match(themeManagerSource, /root\.classList\.add\('dark'\)/);
+  assert.match(themeManagerSource, /root\.classList\.remove\('dark'\)/);
+  assert.match(shellStylesSource, /@custom-variant dark\s*\(&:where\(\.dark,\s*\.dark \*\)\);/);
+  assert.match(shellStylesSource, /\[data-theme="tech-blue"\]/);
+  assert.match(shellStylesSource, /\[data-theme="lobster"\]/);
+  assert.match(shellStylesSource, /\[data-theme="green-tech"\]/);
+  assert.match(shellStylesSource, /\[data-theme="zinc"\]/);
+  assert.match(shellStylesSource, /\[data-theme="violet"\]/);
+  assert.match(shellStylesSource, /\[data-theme="rose"\]/);
+  assert.match(generalSettingsSource, /id: 'tech-blue'/);
 });

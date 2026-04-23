@@ -6,5 +6,8 @@ data:
   CLAW_SERVER_HOST: {{ .Values.server.host | quote }}
   CLAW_SERVER_PORT: {{ .Values.server.port | quote }}
   CLAW_SERVER_DATA_DIR: {{ .Values.server.dataDir | quote }}
+  CLAW_STUDIO_USER_CENTER_MODE: {{ .Values.userCenter.mode | quote }}
+  CLAW_STUDIO_USER_CENTER_APP_API_BASE_URL: {{ .Values.userCenter.appApiBaseUrl | quote }}
+  CLAW_STUDIO_USER_CENTER_EXTERNAL_BASE_URL: {{ .Values.userCenter.externalBaseUrl | quote }}
   CLAW_DEPLOYMENT_FAMILY: "kubernetes"
   CLAW_ACCELERATOR_PROFILE: {{ .Values.acceleratorProfile | quote }}

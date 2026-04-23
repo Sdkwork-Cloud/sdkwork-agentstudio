@@ -410,6 +410,10 @@ await runTest(
           message.toolCards?.map((toolCard) => ({
             kind: toolCard.kind,
             name: toolCard.name,
+            toolCallId: toolCard.toolCallId ?? null,
+            argumentsText: toolCard.argumentsText ?? null,
+            text: toolCard.text ?? null,
+            isError: toolCard.isError ?? null,
             detail: toolCard.detail ?? null,
             preview: toolCard.preview ?? null,
           })) ?? [],
@@ -429,6 +433,10 @@ await runTest(
             {
               kind: 'call',
               name: 'web_search',
+              toolCallId: 'tool-web-search',
+              argumentsText: '{"query":"openclaw gateway docs"}',
+              text: null,
+              isError: null,
               detail: 'openclaw gateway docs',
               preview: null,
             },
@@ -455,6 +463,10 @@ await runTest(
       session?.messages.at(-1)?.toolCards?.map((toolCard) => ({
         kind: toolCard.kind,
         name: toolCard.name,
+        toolCallId: toolCard.toolCallId ?? null,
+        argumentsText: toolCard.argumentsText ?? null,
+        text: toolCard.text ?? null,
+        isError: toolCard.isError ?? null,
         detail: toolCard.detail ?? null,
         preview: toolCard.preview ?? null,
       })),
@@ -462,12 +474,20 @@ await runTest(
         {
           kind: 'call',
           name: 'web_search',
+          toolCallId: 'tool-web-search',
+          argumentsText: '{"query":"openclaw gateway docs"}',
+          text: null,
+          isError: null,
           detail: 'openclaw gateway docs',
           preview: null,
         },
         {
           kind: 'result',
           name: 'web_search',
+          toolCallId: 'tool-web-search',
+          argumentsText: null,
+          text: 'docs.openclaw.ai/tools/web',
+          isError: false,
           detail: null,
           preview: 'docs.openclaw.ai/tools/web',
         },
@@ -3561,6 +3581,247 @@ await runTest(
 );
 
 await runTest(
+  'openclaw gateway session store leaves inactive transcript updates unread until the session is selected',
+  async () => {
+    const sessionA = 'claw-studio:instance-a:session-active';
+    const sessionB = 'claw-studio:instance-a:session-inactive';
+    let now = 420;
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-a.json',
+        count: 2,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: sessionA,
+            label: 'Active',
+            updatedAt: 210,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+          {
+            key: sessionB,
+            label: 'Inactive',
+            updatedAt: 205,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+        ],
+      },
+      {
+        [sessionA]: {
+          messages: [
+            {
+              role: 'user',
+              content: [{ type: 'text', text: 'hello active' }],
+              timestamp: 210,
+            },
+          ],
+        },
+        [sessionB]: {
+          messages: [
+            {
+              role: 'user',
+              content: [{ type: 'text', text: 'hello inactive' }],
+              timestamp: 205,
+            },
+          ],
+        },
+      },
+    );
+    client.setConnectHello({
+      type: 'hello-ok',
+      protocol: 3,
+      features: {
+        methods: [
+          'sessions.subscribe',
+          'sessions.list',
+          'chat.history',
+          'chat.send',
+          'sessions.messages.subscribe',
+          'sessions.messages.unsubscribe',
+        ],
+        events: ['chat', 'sessions.changed', 'session.message'],
+      },
+    });
+
+    const store = new OpenClawGatewaySessionStore({
+      getClient() {
+        return client;
+      },
+      now: () => now,
+    });
+
+    await store.hydrateInstance('instance-a');
+
+    let snapshot = store.getSnapshot('instance-a');
+    assert.equal(snapshot.activeSessionId, sessionA);
+    assert.equal(
+      snapshot.sessions.find((session) => session.id === sessionA)?.lastSeenAt,
+      210,
+    );
+    assert.equal(
+      snapshot.sessions.find((session) => session.id === sessionB)?.lastSeenAt ?? null,
+      null,
+    );
+
+    now = 430;
+    client.emitSessionMessage({
+      sessionKey: sessionB,
+      messageId: 'msg-session-b-1',
+      messageSeq: 1,
+      message: {
+        role: 'assistant',
+        content: [{ type: 'text', text: 'inactive unread update' }],
+      },
+    });
+
+    snapshot = store.getSnapshot('instance-a');
+    assert.equal(
+      snapshot.sessions.find((session) => session.id === sessionB)?.updatedAt,
+      430,
+    );
+    assert.equal(
+      snapshot.sessions.find((session) => session.id === sessionB)?.lastSeenAt ?? null,
+      null,
+    );
+
+    now = 450;
+    await store.setActiveSession({
+      instanceId: 'instance-a',
+      sessionId: sessionB,
+    });
+
+    snapshot = store.getSnapshot('instance-a');
+    assert.equal(snapshot.activeSessionId, sessionB);
+    assert.equal(
+      snapshot.sessions.find((session) => session.id === sessionB)?.lastSeenAt,
+      430,
+    );
+  },
+);
+
+await runTest(
+  'openclaw gateway session store orders out-of-order transcript updates by authoritative sequence while seen state follows the newest timestamp',
+  async () => {
+    const sessionId = 'claw-studio:instance-a:session-seq-order';
+    let now = 500;
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-a.json',
+        count: 1,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: sessionId,
+            label: 'Seq Order',
+            updatedAt: 210,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+        ],
+      },
+      {
+        [sessionId]: {
+          messages: [],
+        },
+      },
+    );
+    client.setConnectHello({
+      type: 'hello-ok',
+      protocol: 3,
+      features: {
+        methods: [
+          'sessions.subscribe',
+          'sessions.list',
+          'chat.history',
+          'chat.send',
+          'sessions.messages.subscribe',
+          'sessions.messages.unsubscribe',
+        ],
+        events: ['chat', 'sessions.changed', 'session.message'],
+      },
+    });
+
+    const store = new OpenClawGatewaySessionStore({
+      getClient() {
+        return client;
+      },
+      now: () => now,
+    });
+
+    await store.hydrateInstance('instance-a');
+    await waitFor(() => client.subscribeSessionMessagesCalls.includes(sessionId));
+
+    client.emitSessionMessage({
+      sessionKey: sessionId,
+      messageId: 'msg-2',
+      messageSeq: 2,
+      message: {
+        id: 'msg-2',
+        role: 'assistant',
+        content: [{ type: 'text', text: 'assistant second' }],
+        timestamp: 300,
+      },
+    });
+
+    now = 650;
+    client.emitSessionMessage({
+      sessionKey: sessionId,
+      messageId: 'msg-1',
+      messageSeq: 1,
+      message: {
+        id: 'msg-1',
+        role: 'user',
+        content: [{ type: 'text', text: 'user first newer timestamp' }],
+        timestamp: 650,
+      },
+    });
+
+    const session = store.getSnapshot('instance-a').sessions.find((entry) => entry.id === sessionId);
+    assert.ok(session);
+    assert.deepEqual(
+      session?.messages.map((message) => ({
+        id: message.id,
+        seq: message.seq ?? null,
+        role: message.role,
+        content: message.content,
+        timestamp: message.timestamp,
+      })),
+      [
+        {
+          id: 'msg-1',
+          seq: 1,
+          role: 'user',
+          content: 'user first newer timestamp',
+          timestamp: 650,
+        },
+        {
+          id: 'msg-2',
+          seq: 2,
+          role: 'assistant',
+          content: 'assistant second',
+          timestamp: 300,
+        },
+      ],
+    );
+    assert.equal(session?.lastMessagePreview, 'assistant second');
+    assert.equal(session?.updatedAt, 650);
+    assert.equal(session?.lastSeenAt, 650);
+  },
+);
+
+await runTest(
   'openclaw gateway session store derives readable titles for externally updated inactive sessions from transcript user turns',
   async () => {
     const sessionA = 'agent:research:main';
@@ -3949,7 +4210,7 @@ await runTest(
         },
         {
           id: 'msg-final-1',
-          seq: null,
+          seq: 1,
           role: 'assistant',
           content: 'final draft reply completed',
         },
@@ -5158,7 +5419,7 @@ await runTest(
 );
 
 await runTest(
-  'openclaw gateway session store clears transient assistant output when a run ends in error',
+  'openclaw gateway session store preserves partial assistant output and appends an error when a run ends in error',
   async () => {
     const client = new MockGatewayClient(
       {
@@ -5235,7 +5496,13 @@ await runTest(
         role: message.role,
         content: message.content,
       })),
-      [{ role: 'user', content: 'user message' }],
+      [
+        { role: 'user', content: 'user message' },
+        {
+          role: 'assistant',
+          content: 'partial reply before error\n\nError: gateway exploded',
+        },
+      ],
     );
     assert.equal(snapshot.lastError, 'gateway exploded');
   },

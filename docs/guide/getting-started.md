@@ -73,7 +73,7 @@ pnpm release:plan
 pnpm release:finalize
 ```
 
-Use `pnpm check:automation` to validate release and CI workflow contracts before changing packaging automation, `pnpm release:plan` to inspect the current multi-family release matrices before packaging or CI changes, and `pnpm release:finalize` after aggregating packaged artifacts into the active release asset directory. The local wrapper defaults that directory to `artifacts/release`, while GitHub workflows use `release-assets/`.
+Use `pnpm check:automation` to validate release and CI workflow contracts before changing packaging automation, `pnpm release:plan` to inspect the current multi-family release matrices before packaging or CI changes, and `pnpm release:finalize` after aggregating packaged artifacts into the active release asset directory. The local wrapper defaults that directory to `artifacts/release`, while GitHub workflows use `release-assets/`. During local finalization the wrapper now auto-infers `release-manifest.json.repository` from `SDKWORK_RELEASE_REPOSITORY`, `GITHUB_REPOSITORY`, or `git remote origin`, and it preserves structured `status=skipped` deployment smoke evidence for `container` and `kubernetes` targets instead of treating those host-capability gaps as false passes.
 
 ## Environment Setup
 

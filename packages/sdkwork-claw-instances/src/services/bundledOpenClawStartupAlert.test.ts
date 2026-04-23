@@ -5,6 +5,8 @@ import {
 } from '@sdkwork/claw-types';
 import { buildBundledOpenClawStartupAlert } from './bundledOpenClawStartupAlert.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 function runTest(name: string, callback: () => void | Promise<void>) {
   return Promise.resolve()
     .then(callback)
@@ -22,7 +24,7 @@ function createDetail(
 ): StudioInstanceDetailRecord {
   return {
     instance: {
-      id: 'local-built-in',
+      id: BUILT_IN_INSTANCE_ID,
       name: 'Built-In OpenClaw',
       runtimeKind: 'openclaw',
       deploymentMode: 'local-managed',
@@ -44,7 +46,7 @@ function createDetail(
       capabilities: [],
       storage: {
         provider: 'localFile',
-        namespace: 'local-built-in',
+        namespace: BUILT_IN_INSTANCE_ID,
       },
       config: {
         port: '18871',
@@ -88,7 +90,7 @@ function createDetail(
     storage: {
       status: 'ready',
       provider: 'localFile',
-      namespace: 'local-built-in',
+      namespace: BUILT_IN_INSTANCE_ID,
       durable: true,
       queryable: false,
       transactional: false,

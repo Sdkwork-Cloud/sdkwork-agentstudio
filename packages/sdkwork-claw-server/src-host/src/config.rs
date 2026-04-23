@@ -1,4 +1,8 @@
-use std::{collections::BTreeMap, fs, path::PathBuf};
+use std::{
+    collections::BTreeMap,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -52,6 +56,7 @@ impl ServerAcceleratorProfile {
 pub struct ServerRuntimeConfigResolutionRequest {
     pub command: ClawServerCliCommand,
     pub env: BTreeMap<String, String>,
+    pub executable_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -129,6 +134,8 @@ struct ServerAuthConfigFile {
 pub fn resolve_server_runtime_config(
     request: ServerRuntimeConfigResolutionRequest,
 ) -> Result<ResolvedServerRuntimeConfig, String> {
+    let packaged_bundle_paths =
+        resolve_packaged_server_bundle_paths(request.executable_path.as_deref());
     let allow_missing_config_file = matches!(&request.command, ClawServerCliCommand::Service(_));
     let config_path = request
         .command
@@ -212,11 +219,21 @@ pub fn resolve_server_runtime_config(
         data_dir: file
             .data_dir
             .or_else(|| env_path(&request.env, "CLAW_SERVER_DATA_DIR"))
-            .unwrap_or_else(|| PathBuf::from(CLAW_SERVER_DEFAULT_DATA_DIR)),
+            .unwrap_or_else(|| {
+                packaged_bundle_paths
+                    .as_ref()
+                    .map(|paths| paths.data_dir.clone())
+                    .unwrap_or_else(|| PathBuf::from(CLAW_SERVER_DEFAULT_DATA_DIR))
+            }),
         web_dist_dir: file
             .web_dist_dir
             .or_else(|| env_path(&request.env, "CLAW_SERVER_WEB_DIST"))
-            .unwrap_or_else(|| PathBuf::from(CLAW_SERVER_DEFAULT_WEB_DIST_DIR)),
+            .unwrap_or_else(|| {
+                packaged_bundle_paths
+                    .as_ref()
+                    .map(|paths| paths.web_dist_dir.clone())
+                    .unwrap_or_else(|| PathBuf::from(CLAW_SERVER_DEFAULT_WEB_DIST_DIR))
+            }),
         deployment_family,
         accelerator_profile,
         state_store: ResolvedServerStateStoreConfig {
@@ -245,6 +262,42 @@ pub fn resolve_server_runtime_config(
             internal_password,
         },
         allow_insecure_public_bind,
+    })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PackagedServerBundlePaths {
+    data_dir: PathBuf,
+    web_dist_dir: PathBuf,
+}
+
+fn resolve_packaged_server_bundle_paths(
+    executable_path: Option<&Path>,
+) -> Option<PackagedServerBundlePaths> {
+    let executable_path = executable_path?;
+    let executable_name = executable_path
+        .file_name()?
+        .to_str()?
+        .trim()
+        .to_ascii_lowercase();
+    if executable_name != "claw-server" && executable_name != "claw-server.exe" {
+        return None;
+    }
+
+    let bin_dir = executable_path.parent()?;
+    if bin_dir.file_name()?.to_str()? != "bin" {
+        return None;
+    }
+
+    let bundle_root = bin_dir.parent()?.to_path_buf();
+    let web_dist_dir = bundle_root.join("web").join("dist");
+    if !web_dist_dir.is_dir() {
+        return None;
+    }
+
+    Some(PackagedServerBundlePaths {
+        data_dir: bundle_root.join(CLAW_SERVER_DEFAULT_DATA_DIR),
+        web_dist_dir,
     })
 }
 
@@ -380,7 +433,7 @@ fn normalize_string(value: String) -> Option<String> {
 mod tests {
     use std::{
         collections::BTreeMap,
-        env,
+        env, fs,
         path::PathBuf,
         time::{SystemTime, UNIX_EPOCH},
     };
@@ -403,6 +456,7 @@ mod tests {
                 port: None,
             }),
             env: BTreeMap::new(),
+            executable_path: None,
         })
         .expect("server runtime config should resolve default values");
 
@@ -426,6 +480,7 @@ mod tests {
                 port: None,
             }),
             env,
+            executable_path: None,
         })
         .expect("runtime config resolution should preserve the requested driver value");
 
@@ -447,6 +502,7 @@ mod tests {
                 port: None,
             }),
             env,
+            executable_path: None,
         })
         .expect("runtime config should preserve the explicit insecure public bind opt-in");
 
@@ -456,8 +512,14 @@ mod tests {
     #[test]
     fn runtime_config_projects_deployment_family_and_accelerator_profile_from_env() {
         let mut env = BTreeMap::new();
-        env.insert("CLAW_DEPLOYMENT_FAMILY".to_string(), "kubernetes".to_string());
-        env.insert("CLAW_ACCELERATOR_PROFILE".to_string(), "amd-rocm".to_string());
+        env.insert(
+            "CLAW_DEPLOYMENT_FAMILY".to_string(),
+            "kubernetes".to_string(),
+        );
+        env.insert(
+            "CLAW_ACCELERATOR_PROFILE".to_string(),
+            "amd-rocm".to_string(),
+        );
 
         let resolved = resolve_server_runtime_config(ServerRuntimeConfigResolutionRequest {
             command: ClawServerCliCommand::Run(crate::cli::ClawServerRunArgs {
@@ -466,10 +528,14 @@ mod tests {
                 port: None,
             }),
             env,
+            executable_path: None,
         })
         .expect("runtime config should project deployment metadata from env");
 
-        assert_eq!(resolved.deployment_family, super::ServerDeploymentFamily::Kubernetes);
+        assert_eq!(
+            resolved.deployment_family,
+            super::ServerDeploymentFamily::Kubernetes
+        );
         assert_eq!(
             resolved.accelerator_profile,
             Some(super::ServerAcceleratorProfile::AmdRocm)
@@ -508,6 +574,7 @@ mod tests {
         let resolved = resolve_server_runtime_config(ServerRuntimeConfigResolutionRequest {
             command: command.clone(),
             env: env.clone(),
+            executable_path: None,
         })
         .expect("service install should allow a missing config target path");
 
@@ -555,6 +622,7 @@ mod tests {
         let resolved = resolve_server_runtime_config(ServerRuntimeConfigResolutionRequest {
             command: command.clone(),
             env: env.clone(),
+            executable_path: None,
         })
         .expect("service status should allow a missing env config target path");
 
@@ -567,6 +635,61 @@ mod tests {
         );
     }
 
+    #[test]
+    fn runtime_config_uses_packaged_bundle_defaults_when_running_bundled_binary() {
+        let bundle_root = unique_bundle_root("packaged-bundle-defaults");
+        let executable_path = bundle_root.join("bin").join("claw-server");
+        let web_dist_dir = bundle_root.join("web").join("dist");
+        fs::create_dir_all(&web_dist_dir).expect("bundle web dist should be created");
+
+        let resolved = resolve_server_runtime_config(ServerRuntimeConfigResolutionRequest {
+            command: ClawServerCliCommand::Run(crate::cli::ClawServerRunArgs {
+                config_path: None,
+                host: None,
+                port: None,
+            }),
+            env: BTreeMap::new(),
+            executable_path: Some(executable_path),
+        })
+        .expect("runtime config should project packaged bundle defaults");
+
+        assert_eq!(resolved.data_dir, bundle_root.join(".claw-server"));
+        assert_eq!(resolved.web_dist_dir, web_dist_dir);
+
+        let _ = fs::remove_dir_all(bundle_root);
+    }
+
+    #[test]
+    fn runtime_config_ignores_packaged_shape_without_bundled_web_dist() {
+        let bundle_root = unique_bundle_root("packaged-bundle-missing-web");
+        let executable_path = bundle_root.join("bin").join("claw-server");
+        fs::create_dir_all(
+            executable_path
+                .parent()
+                .expect("bundle bin dir should exist"),
+        )
+        .expect("bundle bin dir should be created");
+
+        let resolved = resolve_server_runtime_config(ServerRuntimeConfigResolutionRequest {
+            command: ClawServerCliCommand::Run(crate::cli::ClawServerRunArgs {
+                config_path: None,
+                host: None,
+                port: None,
+            }),
+            env: BTreeMap::new(),
+            executable_path: Some(executable_path),
+        })
+        .expect("runtime config should fall back when bundle web dist is missing");
+
+        assert_eq!(resolved.data_dir, PathBuf::from(".claw-server"));
+        assert_eq!(
+            resolved.web_dist_dir,
+            PathBuf::from("../sdkwork-claw-web/dist")
+        );
+
+        let _ = fs::remove_dir_all(bundle_root);
+    }
+
     fn unique_missing_config_path(label: &str) -> PathBuf {
         let unique_suffix = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -574,6 +697,17 @@ mod tests {
             .as_nanos();
         env::temp_dir().join(format!(
             "sdkwork-claw-server-{label}-{}-{unique_suffix}.json",
+            std::process::id()
+        ))
+    }
+
+    fn unique_bundle_root(label: &str) -> PathBuf {
+        let unique_suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time should be after unix epoch")
+            .as_nanos();
+        env::temp_dir().join(format!(
+            "sdkwork-claw-server-bundle-{label}-{}-{unique_suffix}",
             std::process::id()
         ))
     }

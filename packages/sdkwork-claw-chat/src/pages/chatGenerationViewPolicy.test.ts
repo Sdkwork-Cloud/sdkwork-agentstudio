@@ -18,13 +18,17 @@ await runTest(
       resolveChatGenerationViewState({
         effectiveActiveSessionId: 'session-b',
         pendingSendSessionId: 'session-a',
-        activeSessionRunId: null,
-        runningSessionId: null,
+        activeRunBinding: null,
+        runningRunBinding: null,
       }),
       {
         isComposerLocked: true,
         isActiveSessionGenerating: false,
-        stopSessionId: 'session-a',
+        stopRunBinding: {
+          sessionId: 'session-a',
+          runId: null,
+          isActive: false,
+        },
       },
     );
   },
@@ -37,32 +41,48 @@ await runTest(
       resolveChatGenerationViewState({
         effectiveActiveSessionId: 'session-a',
         pendingSendSessionId: 'session-a',
-        activeSessionRunId: null,
-        runningSessionId: null,
+        activeRunBinding: null,
+        runningRunBinding: null,
       }),
       {
         isComposerLocked: true,
         isActiveSessionGenerating: true,
-        stopSessionId: 'session-a',
+        stopRunBinding: {
+          sessionId: 'session-a',
+          runId: null,
+          isActive: false,
+        },
       },
     );
   },
 );
 
 await runTest(
-  'resolveChatGenerationViewState marks the active session as generating for gateway run ids',
+  'resolveChatGenerationViewState marks the active session as generating from the active run binding',
   () => {
     assert.deepEqual(
       resolveChatGenerationViewState({
         effectiveActiveSessionId: 'session-a',
         pendingSendSessionId: null,
-        activeSessionRunId: 'run-1',
-        runningSessionId: 'session-a',
+        activeRunBinding: {
+          sessionId: 'session-a',
+          runId: 'run-1',
+          isActive: true,
+        },
+        runningRunBinding: {
+          sessionId: 'session-a',
+          runId: 'run-1',
+          isActive: true,
+        },
       }),
       {
         isComposerLocked: true,
         isActiveSessionGenerating: true,
-        stopSessionId: 'session-a',
+        stopRunBinding: {
+          sessionId: 'session-a',
+          runId: 'run-1',
+          isActive: true,
+        },
       },
     );
   },
@@ -75,13 +95,13 @@ await runTest(
       resolveChatGenerationViewState({
         effectiveActiveSessionId: 'session-a',
         pendingSendSessionId: null,
-        activeSessionRunId: null,
-        runningSessionId: null,
+        activeRunBinding: null,
+        runningRunBinding: null,
       }),
       {
         isComposerLocked: false,
         isActiveSessionGenerating: false,
-        stopSessionId: null,
+        stopRunBinding: null,
       },
     );
   },
@@ -94,13 +114,25 @@ await runTest(
       resolveChatGenerationViewState({
         effectiveActiveSessionId: 'session-b',
         pendingSendSessionId: null,
-        activeSessionRunId: null,
-        runningSessionId: 'session-a',
+        activeRunBinding: {
+          sessionId: 'session-b',
+          runId: null,
+          isActive: false,
+        },
+        runningRunBinding: {
+          sessionId: 'session-a',
+          runId: 'run-background',
+          isActive: true,
+        },
       }),
       {
         isComposerLocked: true,
         isActiveSessionGenerating: false,
-        stopSessionId: 'session-a',
+        stopRunBinding: {
+          sessionId: 'session-a',
+          runId: 'run-background',
+          isActive: true,
+        },
       },
     );
   },
@@ -113,13 +145,56 @@ await runTest(
       resolveChatGenerationViewState({
         effectiveActiveSessionId: 'session-b',
         pendingSendSessionId: null,
-        activeSessionRunId: 'run-visible',
-        runningSessionId: 'session-a',
+        activeRunBinding: {
+          sessionId: 'session-b',
+          runId: 'run-visible',
+          isActive: true,
+        },
+        runningRunBinding: {
+          sessionId: 'session-a',
+          runId: 'run-background',
+          isActive: true,
+        },
       }),
       {
         isComposerLocked: true,
         isActiveSessionGenerating: true,
-        stopSessionId: 'session-b',
+        stopRunBinding: {
+          sessionId: 'session-b',
+          runId: 'run-visible',
+          isActive: true,
+        },
+      },
+    );
+  },
+);
+
+await runTest(
+  'resolveChatGenerationViewState does not mark the active session as generating when only another visible session is running',
+  () => {
+    assert.deepEqual(
+      resolveChatGenerationViewState({
+        effectiveActiveSessionId: 'session-b',
+        pendingSendSessionId: null,
+        activeRunBinding: {
+          sessionId: 'session-b',
+          runId: null,
+          isActive: false,
+        },
+        runningRunBinding: {
+          sessionId: 'session-a',
+          runId: 'run-background',
+          isActive: true,
+        },
+      }),
+      {
+        isComposerLocked: true,
+        isActiveSessionGenerating: false,
+        stopRunBinding: {
+          sessionId: 'session-a',
+          runId: 'run-background',
+          isActive: true,
+        },
       },
     );
   },

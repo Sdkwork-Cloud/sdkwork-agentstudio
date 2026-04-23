@@ -1,9 +1,18 @@
 import { llmStore } from '@sdkwork/claw-core';
 import { instanceStore } from '@sdkwork/claw-core';
 import type { Agent, Skill, StudioInstanceRecord } from '@sdkwork/claw-types';
+import type { StudioConversationAttachment } from '@sdkwork/claw-types';
 import type { KernelChatAdapterResolution } from './kernelChatAdapterRegistry.ts';
 import type { InstanceChatRoute } from './instanceChatRouteService.ts';
 import { resolveAuthoritativeInstanceKernelChatAdapter } from './authoritativeKernelChatAdapter.ts';
+import { buildChatHttpRequestMessages } from './chatHttpMessagePayload.ts';
+import {
+  extractChatHttpPayloadTextFragments,
+  extractChatHttpStreamTextDeltas,
+  isLikelyChatHttpProtocolFrame,
+} from './chatHttpStreamProtocol.ts';
+import { resolveKernelOwnedSessionId } from './chatSessionBinding.ts';
+import { resolveGatewayAuthoritativeKernelChat } from './kernelChatAuthorityPolicy.ts';
 import { resolveAuthoritativeInstanceChatRoute } from './store/index.ts';
 import type { ChatModel } from '../types/index.ts';
 
@@ -25,6 +34,7 @@ export interface IChatService {
     skill?: Skill,
     agent?: Agent,
     abortSignal?: AbortSignal,
+    attachments?: StudioConversationAttachment[],
   ): AsyncGenerator<string, void, unknown>;
 }
 
@@ -79,52 +89,6 @@ export function buildContextualMessage(message: string, skill?: Skill, agent?: A
   return contextPrefix ? `${contextPrefix}\nUser: ${message}` : message;
 }
 
-function extractTextFragments(payload: unknown): string[] {
-  if (typeof payload === 'string') {
-    return payload ? [payload] : [];
-  }
-
-  if (!payload || typeof payload !== 'object') {
-    return [];
-  }
-
-  if (Array.isArray(payload)) {
-    return payload.flatMap((entry) => extractTextFragments(entry));
-  }
-
-  const record = payload as Record<string, unknown>;
-
-  if (record.choices) {
-    return extractTextFragments(record.choices);
-  }
-
-  if (record.delta) {
-    return extractTextFragments(record.delta);
-  }
-
-  if (record.message) {
-    return extractTextFragments(record.message);
-  }
-
-  if (record.data) {
-    return extractTextFragments(record.data);
-  }
-
-  if (Array.isArray(record.content)) {
-    return record.content.flatMap((entry) => extractTextFragments(entry));
-  }
-
-  if (typeof record.content === 'string') {
-    return record.content ? [record.content] : [];
-  }
-
-  if (typeof record.text === 'string') {
-    return record.text ? [record.text] : [];
-  }
-
-  return [];
-}
-
 function extractFramePayloads(frame: string) {
   const lines = frame
     .split(/\r?\n/)
@@ -142,7 +106,7 @@ async function* streamHttpResponse(response: Response): AsyncGenerator<string, v
 
   if (contentType.includes('application/json')) {
     const payload = await response.json();
-    const fragments = extractTextFragments(payload);
+    const fragments = extractChatHttpPayloadTextFragments(payload);
     if (fragments.length > 0) {
       for (const fragment of fragments) {
         yield fragment;
@@ -173,6 +137,14 @@ async function* streamHttpResponse(response: Response): AsyncGenerator<string, v
     buffer = frames.pop() || '';
 
     for (const frame of frames) {
+      const fragments = extractChatHttpStreamTextDeltas(frame);
+      if (fragments.length > 0) {
+        for (const fragment of fragments) {
+          yield fragment;
+        }
+        continue;
+      }
+
       for (const payloadText of extractFramePayloads(frame)) {
         if (!payloadText || payloadText === '[DONE]') {
           if (payloadText === '[DONE]') {
@@ -181,16 +153,8 @@ async function* streamHttpResponse(response: Response): AsyncGenerator<string, v
           continue;
         }
 
-        try {
-          const fragments = extractTextFragments(JSON.parse(payloadText));
-          if (fragments.length > 0) {
-            for (const fragment of fragments) {
-              yield fragment;
-            }
-            continue;
-          }
-        } catch {
-          // Fall back to yielding raw text when the stream frame is not JSON.
+        if (payloadText.startsWith('event:') || payloadText.startsWith('data:')) {
+          continue;
         }
 
         yield payloadText;
@@ -212,16 +176,12 @@ async function* streamHttpResponse(response: Response): AsyncGenerator<string, v
       continue;
     }
 
-    try {
-      const fragments = extractTextFragments(JSON.parse(payloadText));
-      if (fragments.length > 0) {
-        for (const fragment of fragments) {
-          yield fragment;
-        }
-        continue;
+    const fragments = extractChatHttpStreamTextDeltas(payloadText);
+    if (fragments.length > 0) {
+      for (const fragment of fragments) {
+        yield fragment;
       }
-    } catch {
-      // Keep the trailing raw text when it is not JSON.
+      continue;
     }
 
     yield payloadText;
@@ -261,6 +221,21 @@ function buildInstanceHeaders(instance: StudioInstanceRecord) {
   return headers;
 }
 
+function resolveHermesSessionId(chatSession: any): string | null {
+  return resolveKernelOwnedSessionId(chatSession);
+}
+
+function shouldForwardHermesSessionId(context: {
+  activeInstance: StudioInstanceRecord;
+  chatSession: any;
+}) {
+  if (context.activeInstance.runtimeKind !== 'hermes') {
+    return false;
+  }
+
+  return Boolean(resolveHermesSessionId(context.chatSession));
+}
+
 async function resolveDefaultActiveInstanceContext(): Promise<ActiveInstanceChatContext> {
   const { activeInstanceId } = instanceStore.getState();
   if (!activeInstanceId) {
@@ -289,6 +264,22 @@ function resolveNotReadyReason(context: ActiveInstanceChatContext) {
   );
 }
 
+async function* normalizeChatTransportStream(
+  source: AsyncGenerator<string, void, unknown>,
+): AsyncGenerator<string, void, unknown> {
+  for await (const chunk of source) {
+    if (!isLikelyChatHttpProtocolFrame(chunk)) {
+      yield chunk;
+      continue;
+    }
+
+    const deltas = extractChatHttpStreamTextDeltas(chunk);
+    for (const delta of deltas) {
+      yield delta;
+    }
+  }
+}
+
 class ChatService implements IChatService {
   private readonly dependencies: ChatServiceDependencies;
 
@@ -301,12 +292,13 @@ class ChatService implements IChatService {
   }
 
   async *sendMessageStream(
-    _chatSession: any,
+    chatSession: any,
     message: string,
     model: ChatModel,
     skill?: Skill,
     agent?: Agent,
     abortSignal?: AbortSignal,
+    attachments: StudioConversationAttachment[] = [],
   ): AsyncGenerator<string, void, unknown> {
     const activeInstanceId = this.dependencies.getActiveInstanceId();
     const instanceConfig = activeInstanceId
@@ -332,27 +324,31 @@ class ChatService implements IChatService {
       return;
     }
 
-    if (adapterResolution?.adapterId === 'openclawGateway') {
+    if (
+      resolveGatewayAuthoritativeKernelChat({
+        adapterCapabilities: adapterResolution?.capabilities ?? null,
+      })
+    ) {
       yield `\n\n**${activeInstance.name}** uses the native gateway WebSocket flow. Claw Studio now drives that route through the chat session store instead of the generic HTTP stream service.`;
       return;
     }
 
     if (route.endpoint) {
       try {
-        yield* this.dependencies.streamRequest(
+        const headers = buildInstanceHeaders(activeInstance);
+        if (shouldForwardHermesSessionId({ activeInstance, chatSession })) {
+          headers['X-Hermes-Session-Id'] = resolveHermesSessionId(chatSession)!;
+        }
+
+        const stream = this.dependencies.streamRequest(
           route.endpoint,
           {
             model: model.id,
-            messages: [
-              {
-                role: 'system',
-                content: buildSystemInstruction(skill, agent),
-              },
-              {
-                role: 'user',
-                content: finalMessage,
-              },
-            ],
+            messages: buildChatHttpRequestMessages({
+              systemInstruction: buildSystemInstruction(skill, agent),
+              userText: finalMessage,
+              attachments,
+            }),
             temperature: config.temperature,
             max_tokens: config.maxTokens,
             top_p: config.topP,
@@ -364,9 +360,10 @@ class ChatService implements IChatService {
               transportKind: activeInstance.transportKind,
             },
           },
-          buildInstanceHeaders(activeInstance),
+          headers,
           abortSignal,
         );
+        yield* normalizeChatTransportStream(stream);
         return;
       } catch (error: any) {
         if (error?.name === 'AbortError') {

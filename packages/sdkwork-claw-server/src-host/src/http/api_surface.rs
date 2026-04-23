@@ -108,7 +108,11 @@ pub fn build_api_surface_catalog(state: &ServerState) -> ApiSurfaceCatalog {
             generated_at,
         });
         gateway_endpoints.push(OPENCLAW_GATEWAY_DOCUMENT_URL.to_string());
-        gateway_endpoints.extend(OPENCLAW_GATEWAY_PATHS.iter().map(|path| (*path).to_string()));
+        gateway_endpoints.extend(
+            OPENCLAW_GATEWAY_PATHS
+                .iter()
+                .map(|path| (*path).to_string()),
+        );
     }
 
     ApiSurfaceCatalog {
@@ -145,7 +149,11 @@ pub fn write_runtime_openapi_snapshots(
     state: &ServerState,
     _base_url: &str,
 ) -> io::Result<Vec<PathBuf>> {
-    let output_dir = state.runtime_contract.runtime_config.data_dir.join("openapi");
+    let output_dir = state
+        .runtime_contract
+        .runtime_config
+        .data_dir
+        .join("openapi");
     fs::create_dir_all(&output_dir)?;
 
     let mut written_paths = Vec::new();
@@ -194,10 +202,7 @@ fn write_json_atomic(path: &Path, value: &Value) -> io::Result<()> {
         )
     })?;
     fs::create_dir_all(parent)?;
-    let temp_path = path.with_extension(format!(
-        "{}.tmp",
-        std::process::id()
-    ));
+    let temp_path = path.with_extension(format!("{}.tmp", std::process::id()));
     fs::write(
         &temp_path,
         serde_json::to_vec_pretty(value).map_err(io::Error::other)?,
@@ -220,8 +225,8 @@ mod tests {
     use sdkwork_claw_host_core::openclaw_control_plane::OpenClawControlPlane;
 
     use super::{
-        build_api_surface_catalog, write_runtime_openapi_snapshots, CLAW_NATIVE_DOCUMENT_ID,
-        LOCAL_AI_COMPAT_DOCUMENT_ID, OPENCLAW_GATEWAY_DOCUMENT_ID, PublishedProxyTarget,
+        build_api_surface_catalog, write_runtime_openapi_snapshots, PublishedProxyTarget,
+        CLAW_NATIVE_DOCUMENT_ID, LOCAL_AI_COMPAT_DOCUMENT_ID, OPENCLAW_GATEWAY_DOCUMENT_ID,
     };
     use crate::bootstrap::{
         build_control_plane_manage_openclaw_provider, build_server_state_with_overrides,
@@ -338,6 +343,8 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time")
             .as_millis();
-        std::env::temp_dir().join(format!("sdkwork-claw-server-api-surface-{label}-{timestamp}"))
+        std::env::temp_dir().join(format!(
+            "sdkwork-claw-server-api-surface-{label}-{timestamp}"
+        ))
     }
 }

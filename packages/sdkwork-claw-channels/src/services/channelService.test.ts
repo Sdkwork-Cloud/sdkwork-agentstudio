@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
 import { openClawConfigService } from '@sdkwork/claw-core';
 import { configurePlatformBridge, getPlatformBridge } from '@sdkwork/claw-infrastructure';
-import type { StudioInstanceDetailRecord } from '@sdkwork/claw-types';
+import {
+  STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+  type StudioInstanceDetailRecord,
+} from '@sdkwork/claw-types';
 import { channelService } from './channelService.ts';
+
+const BUILT_IN_INSTANCE_ID = STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID;
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
   try {
@@ -75,7 +80,7 @@ function createConfigBackedWorkbenchDetail(
 
   return {
     instance: {
-      id: 'managed-openclaw',
+      id: BUILT_IN_INSTANCE_ID,
       name: 'Built-In OpenClaw',
       description: 'Built-In OpenClaw instance for channels fallback tests.',
       runtimeKind: 'openclaw',
@@ -199,7 +204,7 @@ function createMissingConfigError() {
 
 await runTest('getList exposes the seeded channel catalog', async () => {
   await withMockedWindowStorage(async () => {
-    const result = await channelService.getList('local-built-in', { page: 1, pageSize: 20 });
+    const result = await channelService.getList(BUILT_IN_INSTANCE_ID, { page: 1, pageSize: 20 });
 
     assert.equal(result.items[0]?.id, 'sdkworkchat');
     assert.equal(result.items.some((channel) => channel.id === 'wehcat'), true);
@@ -211,13 +216,13 @@ await runTest('getList exposes the seeded channel catalog', async () => {
 
 await runTest('saveChannelConfig and deleteChannelConfig keep state in sync with v3 behavior', async () => {
   await withMockedWindowStorage(async () => {
-    await channelService.saveChannelConfig('local-built-in', 'wehcat', {
+    await channelService.saveChannelConfig(BUILT_IN_INSTANCE_ID, 'wehcat', {
       appId: 'wx1234567890abcdef',
       appSecret: 'secret',
       token: 'token',
     });
 
-    let wehcat = await channelService.getById('local-built-in', 'wehcat');
+    let wehcat = await channelService.getById(BUILT_IN_INSTANCE_ID, 'wehcat');
     assert.equal(wehcat?.enabled, true);
     assert.equal(wehcat?.status, 'connected');
     assert.equal(
@@ -225,9 +230,9 @@ await runTest('saveChannelConfig and deleteChannelConfig keep state in sync with
       'wx1234567890abcdef',
     );
 
-    await channelService.deleteChannelConfig('local-built-in', 'wehcat');
+    await channelService.deleteChannelConfig(BUILT_IN_INSTANCE_ID, 'wehcat');
 
-    wehcat = await channelService.getById('local-built-in', 'wehcat');
+    wehcat = await channelService.getById(BUILT_IN_INSTANCE_ID, 'wehcat');
     assert.equal(wehcat?.enabled, false);
     assert.equal(wehcat?.status, 'not_configured');
     assert.equal(
@@ -240,7 +245,7 @@ await runTest('saveChannelConfig and deleteChannelConfig keep state in sync with
 await runTest('create preserves the v3 unimplemented mutation contract', async () => {
   await assert.rejects(
     () =>
-      channelService.create('local-built-in', {
+      channelService.create(BUILT_IN_INSTANCE_ID, {
         name: 'Custom Channel',
         description: 'Custom integration',
         icon: 'Webhook',
@@ -273,7 +278,7 @@ await runTest(
     };
 
     try {
-      const channels = await channelService.getChannels('managed-openclaw');
+      const channels = await channelService.getChannels(BUILT_IN_INSTANCE_ID);
       const wehcat = channels.find((channel) => channel.id === 'wehcat');
 
       assert.equal(wehcat?.enabled, true);

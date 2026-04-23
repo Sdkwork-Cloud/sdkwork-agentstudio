@@ -6,6 +6,8 @@ import {
   loadInstanceActionCapabilities,
 } from './instanceActionCapabilities.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 function runTest(name: string, fn: () => Promise<void> | void) {
   return Promise.resolve()
     .then(fn)
@@ -136,13 +138,13 @@ function createDetail(
 await runTest('built-in instances are never deletable even if lifecycle control exists', () => {
   const capabilities = buildInstanceActionCapabilities(
     createInstance({
-      id: 'local-built-in',
+      id: BUILT_IN_INSTANCE_ID,
       status: 'online',
       isBuiltIn: true,
     }),
     createDetail({
       instance: {
-        id: 'local-built-in',
+        id: BUILT_IN_INSTANCE_ID,
         isBuiltIn: true,
         deploymentMode: 'local-managed',
         status: 'online',
@@ -256,7 +258,7 @@ await runTest('syncing instances keep lifecycle controls in stop/restart mode in
 await runTest('capability loading tolerates per-instance detail failures', async () => {
   const instances = [
     createInstance({
-      id: 'local-built-in',
+      id: BUILT_IN_INSTANCE_ID,
       status: 'online',
       isBuiltIn: true,
     }),
@@ -268,10 +270,10 @@ await runTest('capability loading tolerates per-instance detail failures', async
   ];
 
   const capabilitiesById = await loadInstanceActionCapabilities(instances, async (id) => {
-    if (id === 'local-built-in') {
+    if (id === BUILT_IN_INSTANCE_ID) {
       return createDetail({
         instance: {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           isBuiltIn: true,
           deploymentMode: 'local-managed',
           status: 'online',
@@ -287,7 +289,7 @@ await runTest('capability loading tolerates per-instance detail failures', async
     throw new Error('detail unavailable');
   });
 
-  assert.deepEqual(capabilitiesById['local-built-in'], {
+  assert.deepEqual(capabilitiesById[BUILT_IN_INSTANCE_ID], {
     canDelete: false,
     canSetActive: true,
     canControlLifecycle: true,

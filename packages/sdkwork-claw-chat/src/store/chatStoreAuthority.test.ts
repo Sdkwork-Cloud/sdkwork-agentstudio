@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import type {
   ChatSession,
   Message,
@@ -8,6 +9,7 @@ import {
   createKernelChatSessionRef,
 } from '@sdkwork/claw-types';
 import type {
+  KernelChatRun,
   StudioInstanceDetailRecord,
   StudioInstanceRecord,
 } from '@sdkwork/claw-types';
@@ -24,6 +26,23 @@ function runTest(name: string, fn: () => Promise<void> | void) {
       console.error(`not ok - ${name}`);
       throw error;
     });
+}
+
+async function withCapturedConsoleError<T>(
+  callback: (calls: unknown[][]) => Promise<T> | T,
+): Promise<T> {
+  const calls: unknown[][] = [];
+  const originalConsoleError = console.error;
+
+  console.error = ((...args: unknown[]) => {
+    calls.push(args);
+  }) as typeof console.error;
+
+  try {
+    return await callback(calls);
+  } finally {
+    console.error = originalConsoleError;
+  }
 }
 
 function createGatewaySnapshotInstance(instanceId: string): StudioInstanceRecord {
@@ -174,6 +193,97 @@ function createSupportedHttpInstance(instanceId: string): StudioInstanceRecord {
   };
 }
 
+function createSupportedHermesHttpInstance(instanceId: string): StudioInstanceRecord {
+  return {
+    ...createSupportedHttpInstance(instanceId),
+    name: 'Supported Hermes HTTP Instance',
+    runtimeKind: 'hermes',
+    typeLabel: 'Hermes Agent',
+  };
+}
+
+function createLocalManagedHermesInstance(instanceId: string): StudioInstanceRecord {
+  return {
+    ...createSupportedHermesHttpInstance(instanceId),
+    name: 'Local Managed Hermes Instance',
+    deploymentMode: 'local-managed',
+    baseUrl: 'http://127.0.0.1:19540',
+    config: {
+      ...createSupportedHermesHttpInstance(instanceId).config,
+      baseUrl: 'http://127.0.0.1:19540',
+    },
+  };
+}
+
+function createAuthoritativeHermesKernelSession(input: {
+  instanceId: string;
+  sessionId: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount: number;
+  lastMessagePreview?: string | null;
+}) {
+  return {
+    ref: createKernelChatSessionRef({
+      kernelId: 'hermes',
+      instanceId: input.instanceId,
+      sessionId: input.sessionId,
+    }),
+    authority: createKernelChatAuthority({
+      kind: 'sqlite',
+    }),
+    lifecycle: input.messageCount > 0 ? ('ready' as const) : ('draft' as const),
+    title: input.title,
+    createdAt: input.createdAt,
+    updatedAt: input.updatedAt,
+    messageCount: input.messageCount,
+    lastMessagePreview: input.lastMessagePreview ?? null,
+    sessionKind: 'authoritative',
+  };
+}
+
+function createAuthoritativeHermesKernelMessage(input: {
+  sessionRef: ReturnType<typeof createKernelChatSessionRef>;
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  timestamp: number;
+}) {
+  return {
+    id: input.id,
+    sessionRef: input.sessionRef,
+    role: input.role,
+    status: 'complete' as const,
+    createdAt: input.timestamp,
+    updatedAt: input.timestamp,
+    text: input.text,
+    parts: [
+      {
+        kind: 'text' as const,
+        text: input.text,
+      },
+    ],
+  };
+}
+
+function createAuthoritativeHermesKernelRun(input: {
+  sessionRef: ReturnType<typeof createKernelChatSessionRef>;
+  id: string;
+  status: KernelChatRun['status'];
+  createdAt: number;
+  updatedAt?: number;
+}) {
+  return {
+    id: input.id,
+    sessionRef: input.sessionRef,
+    status: input.status,
+    createdAt: input.createdAt,
+    updatedAt: input.updatedAt ?? input.createdAt,
+    abortable: input.status === 'running',
+  };
+}
+
 function createTransportBackedSession(input: {
   id: string;
   instanceId: string;
@@ -219,6 +329,82 @@ function createTransportBackedSession(input: {
     },
   };
 }
+
+await runTest(
+  'chatStore gateway authority branching does not depend on the openclawGateway adapter id literal',
+  () => {
+    const chatStoreSource = readFileSync(new URL('./chatStore.ts', import.meta.url), 'utf8');
+
+    assert.match(chatStoreSource, /shouldUseGatewayAuthoritativeSessionStore/);
+    assert.doesNotMatch(chatStoreSource, /adapterId === 'openclawGateway'/);
+  },
+);
+
+await runTest(
+  'chatStore clearSession re-resolves authoritative chat context and delegates gateway resets through authority semantics instead of raw route literals',
+  () => {
+    const chatStoreSource = readFileSync(new URL('./chatStore.ts', import.meta.url), 'utf8');
+
+    assert.match(
+      chatStoreSource,
+      /async clearSession\(id, instanceId\) \{[\s\S]*const resolvedContext = await resolveInstanceChatContext\(resolvedInstanceId\);/s,
+    );
+    assert.doesNotMatch(
+      chatStoreSource,
+      /async clearSession\(id, instanceId\) \{[\s\S]*const resolvedRoute = await resolveInstanceRouteMode\(resolvedInstanceId\);/s,
+    );
+    assert.doesNotMatch(
+      chatStoreSource,
+      /async clearSession\(id, instanceId\) \{[\s\S]*if \(routeMode === 'instanceOpenClawGatewayWs'\) \{/s,
+    );
+  },
+);
+
+await runTest(
+  'chatStore deleteSession delegates non-gateway session deletion through the shared authority helper instead of raw route inequality checks',
+  () => {
+    const chatStoreSource = readFileSync(new URL('./chatStore.ts', import.meta.url), 'utf8');
+
+    assert.doesNotMatch(
+      chatStoreSource,
+      /async deleteSession\(id, instanceId\) \{[\s\S]*if \(routeMode !== 'instanceOpenClawGatewayWs'\) \{/s,
+    );
+  },
+);
+
+await runTest(
+  'chatStore session mutation guards route gateway-authoritative sessions through a shared helper instead of direct transport string checks',
+  () => {
+    const chatStoreSource = readFileSync(new URL('./chatStore.ts', import.meta.url), 'utf8');
+
+    assert.match(chatStoreSource, /function isGatewayAuthoritativeStoredSession\(/);
+    assert.doesNotMatch(
+      chatStoreSource,
+      /addMessage\(sessionId, message\) \{[\s\S]*session\.transport === 'openclawGateway'/s,
+    );
+    assert.doesNotMatch(
+      chatStoreSource,
+      /updateMessage\(sessionId, messageId, content\) \{[\s\S]*session\.transport !== 'openclawGateway'/s,
+    );
+    assert.doesNotMatch(
+      chatStoreSource,
+      /async flushSession\(id\) \{[\s\S]*session\.transport === 'openclawGateway'/s,
+    );
+  },
+);
+
+await runTest(
+  'chatStore connectGatewayInstances derives gateway route state transitions through the shared route helper instead of embedding the gateway route literal',
+  () => {
+    const chatStoreSource = readFileSync(new URL('./chatStore.ts', import.meta.url), 'utf8');
+
+    assert.match(chatStoreSource, /isGatewayAuthoritativeRouteMode\(mode\)/);
+    assert.doesNotMatch(
+      chatStoreSource,
+      /setRouteMode\(instanceId, mode\) \{[\s\S]*mode === 'instanceOpenClawGatewayWs'/s,
+    );
+  },
+);
 
 function resetChatStore() {
   chatStore.setState((state) => ({
@@ -664,6 +850,47 @@ await runTest(
       assert.ok(session);
       assert.equal(session?.instanceId, instanceId);
       assert.equal(session?.transport, 'kernelAdapter');
+      assert.equal(session?.kernelSession?.authority.kind, 'http');
+      assert.equal(session?.kernelSession?.authority.durable, false);
+      assert.equal(state.instanceRouteModeById[instanceId], 'instanceOpenAiHttp');
+      assert.equal(state.activeSessionIdByInstance[instanceId], sessionId);
+      assert.equal(state.lastErrorByInstance[instanceId], undefined);
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore createSession keeps Hermes HTTP runtimes chat-usable by projecting them through the transport-backed kernel adapter',
+  async () => {
+    const instanceId = 'supported-hermes-http-create-instance';
+    const originalBridge = getPlatformBridge();
+    resetChatStore();
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createSupportedHermesHttpInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+      },
+    });
+
+    try {
+      const sessionId = await chatStore.getState().createSession('gpt-4.1', instanceId);
+      const state = chatStore.getState();
+      const session = state.sessions.find((entry) => entry.id === sessionId);
+
+      assert.ok(sessionId);
+      assert.ok(session);
+      assert.equal(session?.instanceId, instanceId);
+      assert.equal(session?.transport, 'kernelAdapter');
+      assert.equal(session?.kernelSession?.ref.kernelId, 'hermes');
       assert.equal(session?.kernelSession?.authority.kind, 'http');
       assert.equal(session?.kernelSession?.authority.durable, false);
       assert.equal(state.instanceRouteModeById[instanceId], 'instanceOpenAiHttp');
@@ -1416,6 +1643,2033 @@ await runTest(
       assert.equal(activeSession?.messages[0]?.kernelMessage?.text, 'final reply');
     } finally {
       resetChatStore();
+    }
+  },
+);
+
+await runTest(
+  'chatStore setActiveSession hydrates authoritative local Hermes messages from the kernel-backed session store',
+  async () => {
+    const instanceId = 'local-hermes-active-session-instance';
+    const sessionId = 'hermes-session-active';
+    const originalBridge = getPlatformBridge();
+    const kernelSession = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId,
+      title: 'Authoritative Hermes Session',
+      createdAt: 10,
+      updatedAt: 30,
+      messageCount: 2,
+      lastMessagePreview: 'authoritative assistant reply',
+    });
+    const kernelMessages = [
+      createAuthoritativeHermesKernelMessage({
+        sessionRef: kernelSession.ref,
+        id: 'hermes-message-1',
+        role: 'user',
+        text: 'authoritative user prompt',
+        timestamp: 20,
+      }),
+      createAuthoritativeHermesKernelMessage({
+        sessionRef: kernelSession.ref,
+        id: 'hermes-message-2',
+        role: 'assistant',
+        text: 'authoritative assistant reply',
+        timestamp: 30,
+      }),
+    ];
+    const kernelRuns = [
+      createAuthoritativeHermesKernelRun({
+        sessionRef: kernelSession.ref,
+        id: 'hermes-run-1',
+        status: 'completed',
+        createdAt: 30,
+      }),
+    ];
+    let loadMessagesCallCount = 0;
+    let listRunsCallCount = 0;
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: sessionId,
+          title: 'Stale Hermes Session',
+          createdAt: 10,
+          updatedAt: 11,
+          messages: [
+            {
+              id: 'stale-message-1',
+              role: 'assistant',
+              content: 'stale local reply',
+              timestamp: 11,
+            },
+          ],
+          model: 'gpt-4.1',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession,
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: null,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [kernelSession];
+        },
+        async getKernelChatSession(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          return kernelSession;
+        },
+        async createKernelChatSession() {
+          return kernelSession;
+        },
+        async patchKernelChatSession() {
+          return kernelSession;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun() {
+          return {
+            id: 'hermes-run-1',
+            sessionRef: kernelSession.ref,
+            status: 'completed' as const,
+            createdAt: 30,
+            updatedAt: 30,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          loadMessagesCallCount += 1;
+          return kernelMessages;
+        },
+        async listKernelChatRuns(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          listRunsCallCount += 1;
+          return kernelRuns;
+        },
+      },
+    });
+
+    try {
+      await chatStore.getState().setActiveSession(sessionId, instanceId);
+
+      const state = chatStore.getState();
+      const session = state.sessions.find((entry) => entry.id === sessionId);
+
+      assert.equal(loadMessagesCallCount, 1);
+      assert.equal(listRunsCallCount, 1);
+      assert.equal(state.activeSessionIdByInstance[instanceId], sessionId);
+      assert.equal(state.syncStateByInstance[instanceId], 'idle');
+      assert.equal(state.lastErrorByInstance[instanceId], undefined);
+      assert.equal(session?.kernelSession?.authority.kind, 'sqlite');
+      assert.deepEqual(session?.kernelRuns, kernelRuns);
+      assert.deepEqual(
+        session?.messages.map((message) => ({
+          id: message.id,
+          role: message.role,
+          content: message.content,
+        })),
+        [
+          {
+            id: 'hermes-message-1',
+            role: 'user',
+            content: 'authoritative user prompt',
+          },
+          {
+            id: 'hermes-message-2',
+            role: 'assistant',
+            content: 'authoritative assistant reply',
+          },
+        ],
+      );
+      assert.equal(session?.lastMessagePreview, 'authoritative assistant reply');
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore setActiveSession keeps the selected authoritative Hermes session active and marks its history as errored when hydration fails',
+  async () => {
+    const instanceId = 'local-hermes-active-session-error-instance';
+    const activeSessionId = 'hermes-session-active-error';
+    const previousSessionId = 'hermes-session-previous';
+    const expectedErrorMessage = 'Failed to load authoritative kernel history';
+    const originalBridge = getPlatformBridge();
+    const selectedKernelSession = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId: activeSessionId,
+      title: 'Selected Hermes Session',
+      createdAt: 10,
+      updatedAt: 20,
+      messageCount: 1,
+      lastMessagePreview: 'stale cached reply',
+    });
+    const previousKernelSession = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId: previousSessionId,
+      title: 'Previously Active Hermes Session',
+      createdAt: 5,
+      updatedAt: 15,
+      messageCount: 1,
+      lastMessagePreview: 'previous reply',
+    });
+    let rejectLoadMessages!: (error: Error) => void;
+    const loadMessagesPromise = new Promise<never>((_, reject) => {
+      rejectLoadMessages = reject;
+    });
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: previousSessionId,
+          title: 'Previously Active Hermes Session',
+          createdAt: 5,
+          updatedAt: 15,
+          messages: [
+            {
+              id: 'previous-message-1',
+              role: 'assistant',
+              content: 'previous reply',
+              timestamp: 15,
+            },
+          ],
+          model: 'gpt-4.1',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession: previousKernelSession,
+          historyState: 'ready',
+        },
+        {
+          id: activeSessionId,
+          title: 'Selected Hermes Session',
+          createdAt: 10,
+          updatedAt: 20,
+          messages: [
+            {
+              id: 'selected-message-stale-1',
+              role: 'assistant',
+              content: 'stale cached reply',
+              timestamp: 20,
+            },
+          ],
+          model: 'gpt-4.1',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession: selectedKernelSession,
+          historyState: 'ready',
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: previousSessionId,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [selectedKernelSession, previousKernelSession];
+        },
+        async getKernelChatSession(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, activeSessionId);
+          return selectedKernelSession;
+        },
+        async createKernelChatSession() {
+          return selectedKernelSession;
+        },
+        async patchKernelChatSession() {
+          return selectedKernelSession;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun() {
+          return {
+            id: 'hermes-run-error-1',
+            sessionRef: selectedKernelSession.ref,
+            status: 'completed' as const,
+            createdAt: 20,
+            updatedAt: 20,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, activeSessionId);
+          return loadMessagesPromise;
+        },
+        async listKernelChatRuns() {
+          return [];
+        },
+      },
+    });
+
+    try {
+      await withCapturedConsoleError(async (consoleErrorCalls) => {
+        const setActiveSessionPromise = chatStore
+          .getState()
+          .setActiveSession(activeSessionId, instanceId);
+
+        await flushAsyncTasks();
+
+        const loadingState = chatStore.getState();
+        const loadingSession = loadingState.sessions.find(
+          (session) => session.id === activeSessionId && session.instanceId === instanceId,
+        );
+
+        assert.equal(loadingState.activeSessionIdByInstance[instanceId], activeSessionId);
+        assert.equal(loadingState.syncStateByInstance[instanceId], 'loading');
+        assert.equal(loadingState.lastErrorByInstance[instanceId], undefined);
+        assert.equal(loadingSession?.historyState, 'loading');
+        assert.equal(loadingSession?.messages[0]?.content, 'stale cached reply');
+
+        const expectedError = new Error(expectedErrorMessage);
+        rejectLoadMessages(expectedError);
+        await setActiveSessionPromise;
+
+        const errorState = chatStore.getState();
+        const erroredSession = errorState.sessions.find(
+          (session) => session.id === activeSessionId && session.instanceId === instanceId,
+        );
+
+        assert.equal(errorState.activeSessionIdByInstance[instanceId], activeSessionId);
+        assert.equal(errorState.syncStateByInstance[instanceId], 'error');
+        assert.equal(errorState.lastErrorByInstance[instanceId], expectedErrorMessage);
+        assert.equal(erroredSession?.historyState, 'error');
+        assert.equal(erroredSession?.messages[0]?.content, 'stale cached reply');
+        assert.deepEqual(consoleErrorCalls, [
+          ['Failed to hydrate authoritative kernel chat session:', expectedError],
+        ]);
+      });
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore setActiveSession ignores stale authoritative hydration from an earlier session selection',
+  async () => {
+    const instanceId = 'local-hermes-active-session-race-instance';
+    const firstSessionId = 'hermes-session-race-a';
+    const secondSessionId = 'hermes-session-race-b';
+    const originalBridge = getPlatformBridge();
+    const firstKernelSession = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId: firstSessionId,
+      title: 'First Hermes Session',
+      createdAt: 10,
+      updatedAt: 20,
+      messageCount: 1,
+      lastMessagePreview: 'first authoritative reply',
+    });
+    const secondKernelSession = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId: secondSessionId,
+      title: 'Second Hermes Session',
+      createdAt: 11,
+      updatedAt: 21,
+      messageCount: 1,
+      lastMessagePreview: 'second authoritative reply',
+    });
+    const firstKernelMessages = [
+      createAuthoritativeHermesKernelMessage({
+        sessionRef: firstKernelSession.ref,
+        id: 'hermes-race-message-a-1',
+        role: 'assistant',
+        text: 'first authoritative reply',
+        timestamp: 20,
+      }),
+    ];
+    const secondKernelMessages = [
+      createAuthoritativeHermesKernelMessage({
+        sessionRef: secondKernelSession.ref,
+        id: 'hermes-race-message-b-1',
+        role: 'assistant',
+        text: 'second authoritative reply',
+        timestamp: 21,
+      }),
+    ];
+    let resolveFirstLoadMessages!: (messages: typeof firstKernelMessages) => void;
+    let resolveSecondLoadMessages!: (messages: typeof secondKernelMessages) => void;
+    const firstLoadMessagesPromise = new Promise<typeof firstKernelMessages>((resolve) => {
+      resolveFirstLoadMessages = resolve;
+    });
+    const secondLoadMessagesPromise = new Promise<typeof secondKernelMessages>((resolve) => {
+      resolveSecondLoadMessages = resolve;
+    });
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: firstSessionId,
+          title: 'First Hermes Session',
+          createdAt: 10,
+          updatedAt: 12,
+          messages: [
+            {
+              id: 'stale-race-message-a-1',
+              role: 'assistant',
+              content: 'stale first reply',
+              timestamp: 12,
+            },
+          ],
+          model: 'gpt-4.1',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession: firstKernelSession,
+          historyState: 'ready',
+        },
+        {
+          id: secondSessionId,
+          title: 'Second Hermes Session',
+          createdAt: 11,
+          updatedAt: 13,
+          messages: [
+            {
+              id: 'stale-race-message-b-1',
+              role: 'assistant',
+              content: 'stale second reply',
+              timestamp: 13,
+            },
+          ],
+          model: 'gpt-4.1',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession: secondKernelSession,
+          historyState: 'ready',
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: null,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [firstKernelSession, secondKernelSession];
+        },
+        async getKernelChatSession(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          if (requestedSessionId === firstSessionId) {
+            return firstKernelSession;
+          }
+
+          assert.equal(requestedSessionId, secondSessionId);
+          return secondKernelSession;
+        },
+        async createKernelChatSession() {
+          return firstKernelSession;
+        },
+        async patchKernelChatSession() {
+          return firstKernelSession;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun() {
+          return {
+            id: 'hermes-run-race-1',
+            sessionRef: firstKernelSession.ref,
+            status: 'completed' as const,
+            createdAt: 20,
+            updatedAt: 20,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          if (requestedSessionId === firstSessionId) {
+            return firstLoadMessagesPromise;
+          }
+
+          assert.equal(requestedSessionId, secondSessionId);
+          return secondLoadMessagesPromise;
+        },
+        async listKernelChatRuns() {
+          return [];
+        },
+      },
+    });
+
+    try {
+      const firstSelectionPromise = chatStore
+        .getState()
+        .setActiveSession(firstSessionId, instanceId);
+
+      await flushAsyncTasks();
+
+      const secondSelectionPromise = chatStore
+        .getState()
+        .setActiveSession(secondSessionId, instanceId);
+
+      await flushAsyncTasks();
+
+      const loadingState = chatStore.getState();
+      assert.equal(loadingState.activeSessionIdByInstance[instanceId], secondSessionId);
+      assert.equal(loadingState.syncStateByInstance[instanceId], 'loading');
+
+      resolveSecondLoadMessages(secondKernelMessages);
+      await secondSelectionPromise;
+
+      const selectedState = chatStore.getState();
+      const selectedSession = selectedState.sessions.find(
+        (session) => session.id === secondSessionId && session.instanceId === instanceId,
+      );
+      assert.equal(selectedState.activeSessionIdByInstance[instanceId], secondSessionId);
+      assert.equal(selectedState.syncStateByInstance[instanceId], 'idle');
+      assert.equal(selectedSession?.messages[0]?.content, 'second authoritative reply');
+
+      resolveFirstLoadMessages(firstKernelMessages);
+      await firstSelectionPromise;
+
+      const finalState = chatStore.getState();
+      const firstSession = finalState.sessions.find(
+        (session) => session.id === firstSessionId && session.instanceId === instanceId,
+      );
+      const secondSession = finalState.sessions.find(
+        (session) => session.id === secondSessionId && session.instanceId === instanceId,
+      );
+
+      assert.equal(finalState.activeSessionIdByInstance[instanceId], secondSessionId);
+      assert.equal(finalState.syncStateByInstance[instanceId], 'idle');
+      assert.equal(finalState.lastErrorByInstance[instanceId], undefined);
+      assert.equal(firstSession?.messages[0]?.content, 'first authoritative reply');
+      assert.equal(firstSession?.historyState, 'ready');
+      assert.equal(secondSession?.messages[0]?.content, 'second authoritative reply');
+      assert.equal(secondSession?.historyState, 'ready');
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore flushSession reloads authoritative local Hermes messages instead of keeping projected local assistant content',
+  async () => {
+    const instanceId = 'local-hermes-flush-session-instance';
+    const sessionId = 'hermes-session-flush';
+    const originalBridge = getPlatformBridge();
+    const kernelSession = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId,
+      title: 'Authoritative Hermes Flush Session',
+      createdAt: 10,
+      updatedAt: 40,
+      messageCount: 2,
+      lastMessagePreview: 'kernel authoritative completion',
+    });
+    const kernelMessages = [
+      createAuthoritativeHermesKernelMessage({
+        sessionRef: kernelSession.ref,
+        id: 'hermes-flush-message-1',
+        role: 'user',
+        text: 'hello from projected local send',
+        timestamp: 20,
+      }),
+      createAuthoritativeHermesKernelMessage({
+        sessionRef: kernelSession.ref,
+        id: 'hermes-flush-message-2',
+        role: 'assistant',
+        text: 'kernel authoritative completion',
+        timestamp: 40,
+      }),
+    ];
+    let loadMessagesCallCount = 0;
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: sessionId,
+          title: 'Projected Hermes Session',
+          createdAt: 10,
+          updatedAt: 25,
+          messages: [
+            {
+              id: 'projected-user-1',
+              role: 'user',
+              content: 'hello from projected local send',
+              timestamp: 20,
+            },
+            {
+              id: 'projected-assistant-1',
+              role: 'assistant',
+              content: 'partial projected completion',
+              timestamp: 25,
+            },
+          ],
+          model: 'gpt-4.1',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession,
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: sessionId,
+      },
+      syncStateByInstance: {
+        [instanceId]: 'loading',
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [kernelSession];
+        },
+        async getKernelChatSession(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          return kernelSession;
+        },
+        async createKernelChatSession() {
+          return kernelSession;
+        },
+        async patchKernelChatSession() {
+          return kernelSession;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun() {
+          return {
+            id: 'hermes-run-2',
+            sessionRef: kernelSession.ref,
+            status: 'completed' as const,
+            createdAt: 40,
+            updatedAt: 40,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          loadMessagesCallCount += 1;
+          return kernelMessages;
+        },
+      },
+    });
+
+    try {
+      await chatStore.getState().flushSession(sessionId);
+
+      const state = chatStore.getState();
+      const session = state.sessions.find((entry) => entry.id === sessionId);
+
+      assert.equal(loadMessagesCallCount, 1);
+      assert.equal(state.syncStateByInstance[instanceId], 'idle');
+      assert.equal(state.lastErrorByInstance[instanceId], undefined);
+      assert.equal(session?.messages[1]?.content, 'kernel authoritative completion');
+      assert.equal(session?.messages[1]?.kernelMessage?.text, 'kernel authoritative completion');
+      assert.equal(session?.lastMessagePreview, 'kernel authoritative completion');
+      assert.equal(session?.updatedAt, 40);
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore flushSession marks authoritative Hermes history as loading and error when hydration fails',
+  async () => {
+    const instanceId = 'local-hermes-flush-session-error-instance';
+    const sessionId = 'hermes-session-flush-error';
+    const expectedErrorMessage = 'Failed to reload authoritative kernel history';
+    const originalBridge = getPlatformBridge();
+    const kernelSession = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId,
+      title: 'Authoritative Hermes Flush Error Session',
+      createdAt: 10,
+      updatedAt: 20,
+      messageCount: 1,
+      lastMessagePreview: 'stale cached reply',
+    });
+    let rejectLoadMessages!: (error: Error) => void;
+    const loadMessagesPromise = new Promise<never>((_, reject) => {
+      rejectLoadMessages = reject;
+    });
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: sessionId,
+          title: 'Authoritative Hermes Flush Error Session',
+          createdAt: 10,
+          updatedAt: 20,
+          messages: [
+            {
+              id: 'selected-message-stale-1',
+              role: 'assistant',
+              content: 'stale cached reply',
+              timestamp: 20,
+            },
+          ],
+          model: 'gpt-4.1',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession,
+          historyState: 'ready',
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: sessionId,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [kernelSession];
+        },
+        async getKernelChatSession(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          return kernelSession;
+        },
+        async createKernelChatSession() {
+          return kernelSession;
+        },
+        async patchKernelChatSession() {
+          return kernelSession;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun() {
+          return {
+            id: 'hermes-run-flush-error-1',
+            sessionRef: kernelSession.ref,
+            status: 'completed' as const,
+            createdAt: 20,
+            updatedAt: 20,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          return loadMessagesPromise;
+        },
+      },
+    });
+
+    try {
+      await withCapturedConsoleError(async (consoleErrorCalls) => {
+        const flushSessionPromise = chatStore.getState().flushSession(sessionId);
+
+        await flushAsyncTasks();
+
+        const loadingState = chatStore.getState();
+        const loadingSession = loadingState.sessions.find(
+          (session) => session.id === sessionId && session.instanceId === instanceId,
+        );
+
+        assert.equal(loadingState.activeSessionIdByInstance[instanceId], sessionId);
+        assert.equal(loadingState.syncStateByInstance[instanceId], 'loading');
+        assert.equal(loadingState.lastErrorByInstance[instanceId], undefined);
+        assert.equal(loadingSession?.historyState, 'loading');
+        assert.equal(loadingSession?.messages[0]?.content, 'stale cached reply');
+
+        const expectedError = new Error(expectedErrorMessage);
+        rejectLoadMessages(expectedError);
+        await flushSessionPromise;
+
+        const errorState = chatStore.getState();
+        const erroredSession = errorState.sessions.find(
+          (session) => session.id === sessionId && session.instanceId === instanceId,
+        );
+
+        assert.equal(errorState.activeSessionIdByInstance[instanceId], sessionId);
+        assert.equal(errorState.syncStateByInstance[instanceId], 'error');
+        assert.equal(errorState.lastErrorByInstance[instanceId], expectedErrorMessage);
+        assert.equal(erroredSession?.historyState, 'error');
+        assert.equal(erroredSession?.messages[0]?.content, 'stale cached reply');
+        assert.deepEqual(consoleErrorCalls, [
+          ['Failed to flush conversation:', expectedError],
+        ]);
+      });
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore setKernelSessionModel ignores stale authoritative model projections from earlier mutations',
+  async () => {
+    const instanceId = 'local-hermes-model-race-instance';
+    const sessionId = 'hermes-session-model-race';
+    const originalBridge = getPlatformBridge();
+    const initialKernelSession = {
+      ...createAuthoritativeHermesKernelSession({
+        instanceId,
+        sessionId,
+        title: 'Hermes Model Race Session',
+        createdAt: 10,
+        updatedAt: 10,
+        messageCount: 0,
+      }),
+      modelBinding: {
+        model: 'hermes/model-initial',
+        defaultModel: 'hermes/model-initial',
+      },
+    };
+    const firstUpdatedKernelSession = {
+      ...initialKernelSession,
+      updatedAt: 30,
+      modelBinding: {
+        model: 'hermes/model-a',
+        defaultModel: 'hermes/model-a',
+      },
+    };
+    const secondUpdatedKernelSession = {
+      ...initialKernelSession,
+      updatedAt: 40,
+      modelBinding: {
+        model: 'hermes/model-b',
+        defaultModel: 'hermes/model-b',
+      },
+    };
+    let currentProjectionKernelSession = initialKernelSession;
+    let resolveFirstPatch!: () => void;
+    let resolveSecondPatch!: () => void;
+    const firstPatchPromise = new Promise<typeof firstUpdatedKernelSession>((resolve) => {
+      resolveFirstPatch = () => {
+        currentProjectionKernelSession = firstUpdatedKernelSession;
+        resolve(firstUpdatedKernelSession);
+      };
+    });
+    const secondPatchPromise = new Promise<typeof secondUpdatedKernelSession>((resolve) => {
+      resolveSecondPatch = () => {
+        currentProjectionKernelSession = secondUpdatedKernelSession;
+        resolve(secondUpdatedKernelSession);
+      };
+    });
+    const patchCalls: string[] = [];
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: sessionId,
+          title: 'Hermes Model Race Session',
+          createdAt: 10,
+          updatedAt: 10,
+          messages: [],
+          model: 'hermes/model-initial',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession: initialKernelSession,
+          historyState: 'ready',
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: sessionId,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [currentProjectionKernelSession];
+        },
+        async getKernelChatSession(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          return currentProjectionKernelSession;
+        },
+        async createKernelChatSession() {
+          return initialKernelSession;
+        },
+        async patchKernelChatSession(params) {
+          patchCalls.push(params.model ?? 'null');
+          if (params.model === 'hermes/model-a') {
+            return firstPatchPromise;
+          }
+
+          assert.equal(params.model, 'hermes/model-b');
+          return secondPatchPromise;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun() {
+          return {
+            id: 'hermes-model-race-run-1',
+            sessionRef: initialKernelSession.ref,
+            status: 'completed' as const,
+            createdAt: 10,
+            updatedAt: 10,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages() {
+          return [];
+        },
+        async listKernelChatRuns() {
+          return [];
+        },
+      },
+    });
+
+    try {
+      const firstMutationPromise = chatStore.getState().setKernelSessionModel({
+        instanceId,
+        sessionId,
+        model: 'hermes/model-a',
+      });
+
+      await flushAsyncTasks();
+
+      assert.deepEqual(patchCalls, ['hermes/model-a']);
+
+      const secondMutationPromise = chatStore.getState().setKernelSessionModel({
+        instanceId,
+        sessionId,
+        model: 'hermes/model-b',
+      });
+
+      await flushAsyncTasks();
+
+      const loadingState = chatStore.getState();
+      assert.equal(loadingState.syncStateByInstance[instanceId], 'loading');
+
+      resolveSecondPatch();
+      await secondMutationPromise;
+
+      const secondState = chatStore.getState();
+      const secondSession = secondState.sessions.find(
+        (session) => session.id === sessionId && session.instanceId === instanceId,
+      );
+      assert.deepEqual(patchCalls, ['hermes/model-a', 'hermes/model-b']);
+      assert.equal(secondState.syncStateByInstance[instanceId], 'idle');
+      assert.equal(secondSession?.model, 'hermes/model-b');
+      assert.equal(secondSession?.kernelSession?.modelBinding?.model, 'hermes/model-b');
+
+      resolveFirstPatch();
+      await firstMutationPromise;
+
+      const finalState = chatStore.getState();
+      const finalSession = finalState.sessions.find(
+        (session) => session.id === sessionId && session.instanceId === instanceId,
+      );
+      assert.equal(finalState.syncStateByInstance[instanceId], 'idle');
+      assert.equal(finalState.lastErrorByInstance[instanceId], undefined);
+      assert.equal(finalSession?.model, 'hermes/model-b');
+      assert.equal(finalSession?.kernelSession?.modelBinding?.model, 'hermes/model-b');
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore authoritative Hermes session controls patch session overrides through the kernel adapter and refresh projection truth',
+  async () => {
+    const instanceId = 'local-hermes-session-controls-instance';
+    const sessionId = 'hermes-session-controls';
+    const originalBridge = getPlatformBridge();
+    const initialKernelSession = {
+      ...createAuthoritativeHermesKernelSession({
+        instanceId,
+        sessionId,
+        title: 'Hermes Session Controls',
+        createdAt: 10,
+        updatedAt: 10,
+        messageCount: 0,
+      }),
+      modelBinding: {
+        model: 'hermes/model-initial',
+        defaultModel: 'hermes/model-initial',
+      },
+    };
+    let currentProjectionKernelSession = initialKernelSession;
+    const patchCalls: Array<{
+      thinkingLevel?: string | null;
+      fastMode?: boolean | null;
+      verboseLevel?: string | null;
+      reasoningLevel?: string | null;
+    }> = [];
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: sessionId,
+          title: 'Hermes Session Controls',
+          createdAt: 10,
+          updatedAt: 10,
+          messages: [],
+          model: 'hermes/model-initial',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession: initialKernelSession,
+          historyState: 'ready',
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: sessionId,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [currentProjectionKernelSession];
+        },
+        async getKernelChatSession(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          return currentProjectionKernelSession;
+        },
+        async createKernelChatSession() {
+          return initialKernelSession;
+        },
+        async patchKernelChatSession(input) {
+          const hasThinkingLevel = Object.prototype.hasOwnProperty.call(input, 'thinkingLevel');
+          const hasFastMode = Object.prototype.hasOwnProperty.call(input, 'fastMode');
+          const hasVerboseLevel = Object.prototype.hasOwnProperty.call(input, 'verboseLevel');
+          const hasReasoningLevel = Object.prototype.hasOwnProperty.call(input, 'reasoningLevel');
+
+          assert.equal(input.instanceId, instanceId);
+          assert.equal(input.sessionId, sessionId);
+          patchCalls.push({
+            ...(hasThinkingLevel ? { thinkingLevel: input.thinkingLevel ?? null } : {}),
+            ...(hasFastMode ? { fastMode: input.fastMode ?? null } : {}),
+            ...(hasVerboseLevel ? { verboseLevel: input.verboseLevel ?? null } : {}),
+            ...(hasReasoningLevel ? { reasoningLevel: input.reasoningLevel ?? null } : {}),
+          });
+
+          currentProjectionKernelSession = {
+            ...currentProjectionKernelSession,
+            updatedAt: currentProjectionKernelSession.updatedAt + 10,
+            modelBinding: {
+              ...(currentProjectionKernelSession.modelBinding ?? {}),
+              model:
+                currentProjectionKernelSession.modelBinding?.model ??
+                'hermes/model-initial',
+              defaultModel:
+                currentProjectionKernelSession.modelBinding?.defaultModel ??
+                'hermes/model-initial',
+              thinkingLevel: hasThinkingLevel
+                ? (input.thinkingLevel ?? null)
+                : currentProjectionKernelSession.modelBinding?.thinkingLevel,
+              fastMode: hasFastMode
+                ? (input.fastMode ?? null)
+                : currentProjectionKernelSession.modelBinding?.fastMode,
+              verboseLevel: hasVerboseLevel
+                ? (input.verboseLevel ?? null)
+                : currentProjectionKernelSession.modelBinding?.verboseLevel,
+              reasoningLevel: hasReasoningLevel
+                ? (input.reasoningLevel ?? null)
+                : currentProjectionKernelSession.modelBinding?.reasoningLevel,
+            },
+          };
+
+          return currentProjectionKernelSession;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun() {
+          return {
+            id: 'hermes-session-controls-run-1',
+            sessionRef: initialKernelSession.ref,
+            status: 'completed' as const,
+            createdAt: 10,
+            updatedAt: 10,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages() {
+          return [];
+        },
+        async listKernelChatRuns() {
+          return [];
+        },
+      },
+    });
+
+    try {
+      await chatStore.getState().setKernelSessionThinkingLevel({
+        instanceId,
+        sessionId,
+        thinkingLevel: 'deep',
+      });
+      await chatStore.getState().setKernelSessionFastMode({
+        instanceId,
+        sessionId,
+        fastMode: true,
+      });
+      await chatStore.getState().setKernelSessionVerboseLevel({
+        instanceId,
+        sessionId,
+        verboseLevel: 'full',
+      });
+      await chatStore.getState().setKernelSessionReasoningLevel({
+        instanceId,
+        sessionId,
+        reasoningLevel: 'stream',
+      });
+
+      const state = chatStore.getState();
+      const session = state.sessions.find(
+        (entry) => entry.id === sessionId && entry.instanceId === instanceId,
+      );
+
+      assert.deepEqual(patchCalls, [
+        {
+          thinkingLevel: 'deep',
+        },
+        {
+          fastMode: true,
+        },
+        {
+          verboseLevel: 'full',
+        },
+        {
+          reasoningLevel: 'stream',
+        },
+      ]);
+      assert.equal(state.syncStateByInstance[instanceId], 'idle');
+      assert.equal(state.lastErrorByInstance[instanceId], undefined);
+      assert.equal(session?.thinkingLevel, 'deep');
+      assert.equal(session?.fastMode, true);
+      assert.equal(session?.verboseLevel, 'full');
+      assert.equal(session?.reasoningLevel, 'stream');
+      assert.equal(session?.kernelSession?.modelBinding?.thinkingLevel, 'deep');
+      assert.equal(session?.kernelSession?.modelBinding?.fastMode, true);
+      assert.equal(session?.kernelSession?.modelBinding?.verboseLevel, 'full');
+      assert.equal(session?.kernelSession?.modelBinding?.reasoningLevel, 'stream');
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore flushSession ignores stale authoritative projections after a newer model mutation completes',
+  async () => {
+    const instanceId = 'local-hermes-flush-model-race-instance';
+    const sessionId = 'hermes-session-flush-model-race';
+    const originalBridge = getPlatformBridge();
+    const initialKernelSession = {
+      ...createAuthoritativeHermesKernelSession({
+        instanceId,
+        sessionId,
+        title: 'Hermes Flush Model Race Session',
+        createdAt: 10,
+        updatedAt: 10,
+        messageCount: 0,
+      }),
+      modelBinding: {
+        model: 'hermes/model-initial',
+        defaultModel: 'hermes/model-initial',
+      },
+    };
+    const flushedKernelSession = {
+      ...initialKernelSession,
+      updatedAt: 20,
+      modelBinding: {
+        model: 'hermes/model-initial',
+        defaultModel: 'hermes/model-initial',
+      },
+    };
+    const updatedKernelSession = {
+      ...initialKernelSession,
+      updatedAt: 40,
+      modelBinding: {
+        model: 'hermes/model-next',
+        defaultModel: 'hermes/model-next',
+      },
+    };
+    let currentProjectionKernelSession = initialKernelSession;
+    let resolveFlushLoadMessages!: (messages: KernelChatMessage[]) => void;
+    const flushLoadMessagesPromise = new Promise<KernelChatMessage[]>((resolve) => {
+      resolveFlushLoadMessages = resolve;
+    });
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: sessionId,
+          title: 'Hermes Flush Model Race Session',
+          createdAt: 10,
+          updatedAt: 10,
+          messages: [],
+          model: 'hermes/model-initial',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession: initialKernelSession,
+          historyState: 'ready',
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: sessionId,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [currentProjectionKernelSession];
+        },
+        async getKernelChatSession(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          return currentProjectionKernelSession;
+        },
+        async createKernelChatSession() {
+          return initialKernelSession;
+        },
+        async patchKernelChatSession(input) {
+          assert.equal(input.instanceId, instanceId);
+          assert.equal(input.sessionId, sessionId);
+          assert.equal(input.model, 'hermes/model-next');
+          currentProjectionKernelSession = updatedKernelSession;
+          return updatedKernelSession;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun() {
+          return {
+            id: 'hermes-flush-model-race-run-1',
+            sessionRef: initialKernelSession.ref,
+            status: 'completed' as const,
+            createdAt: 10,
+            updatedAt: 10,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          if (currentProjectionKernelSession === initialKernelSession) {
+            return flushLoadMessagesPromise;
+          }
+
+          return [];
+        },
+        async listKernelChatRuns() {
+          return [];
+        },
+      },
+    });
+
+    try {
+      const flushPromise = chatStore.getState().flushSession(sessionId);
+
+      await flushAsyncTasks();
+
+      currentProjectionKernelSession = flushedKernelSession;
+
+      const modelMutationPromise = chatStore.getState().setKernelSessionModel({
+        instanceId,
+        sessionId,
+        model: 'hermes/model-next',
+      });
+
+      await modelMutationPromise;
+
+      const updatedState = chatStore.getState();
+      const updatedSession = updatedState.sessions.find(
+        (session) => session.id === sessionId && session.instanceId === instanceId,
+      );
+      assert.equal(updatedState.syncStateByInstance[instanceId], 'idle');
+      assert.equal(updatedSession?.model, 'hermes/model-next');
+      assert.equal(updatedSession?.kernelSession?.modelBinding?.model, 'hermes/model-next');
+
+      resolveFlushLoadMessages([]);
+      await flushPromise;
+
+      const finalState = chatStore.getState();
+      const finalSession = finalState.sessions.find(
+        (session) => session.id === sessionId && session.instanceId === instanceId,
+      );
+      assert.equal(finalState.syncStateByInstance[instanceId], 'idle');
+      assert.equal(finalState.lastErrorByInstance[instanceId], undefined);
+      assert.equal(finalSession?.model, 'hermes/model-next');
+      assert.equal(finalSession?.kernelSession?.modelBinding?.model, 'hermes/model-next');
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore sendKernelMessage dispatches managed Hermes runs through the authoritative kernel adapter and refreshes session truth',
+  async () => {
+    const instanceId = 'local-hermes-send-session-instance';
+    const sessionId = 'hermes-session-send';
+    const originalBridge = getPlatformBridge();
+    const kernelSessionBefore = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId,
+      title: 'Authoritative Hermes Send Session',
+      createdAt: 10,
+      updatedAt: 10,
+      messageCount: 0,
+    });
+    const kernelSessionAfter = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId,
+      title: 'Authoritative Hermes Send Session',
+      createdAt: 10,
+      updatedAt: 50,
+      messageCount: 2,
+      lastMessagePreview: 'authoritative assistant completion',
+    });
+    const kernelMessages = [
+      createAuthoritativeHermesKernelMessage({
+        sessionRef: kernelSessionAfter.ref,
+        id: 'hermes-send-message-1',
+        role: 'user',
+        text: 'hello hermes',
+        timestamp: 20,
+      }),
+      createAuthoritativeHermesKernelMessage({
+        sessionRef: kernelSessionAfter.ref,
+        id: 'hermes-send-message-2',
+        role: 'assistant',
+        text: 'authoritative assistant completion',
+        timestamp: 50,
+      }),
+    ];
+    const kernelRuns = [
+      createAuthoritativeHermesKernelRun({
+        sessionRef: kernelSessionAfter.ref,
+        id: 'hermes-run-send-1',
+        status: 'completed',
+        createdAt: 50,
+      }),
+    ];
+    let startRunCallCount = 0;
+    let getSessionCallCount = 0;
+    let loadMessagesCallCount = 0;
+    let listRunsCallCount = 0;
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: sessionId,
+          title: 'Authoritative Hermes Send Session',
+          createdAt: 10,
+          updatedAt: 10,
+          messages: [],
+          model: 'Hermes Model',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession: kernelSessionBefore,
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: sessionId,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [kernelSessionAfter];
+        },
+        async getKernelChatSession(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          getSessionCallCount += 1;
+          return kernelSessionAfter;
+        },
+        async createKernelChatSession() {
+          return kernelSessionBefore;
+        },
+        async patchKernelChatSession() {
+          return kernelSessionAfter;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun(input) {
+          assert.equal(input.instanceId, instanceId);
+          assert.equal(input.sessionId, sessionId);
+          assert.equal(input.content, 'hello hermes');
+          assert.equal(input.model, 'hermes/model-a');
+          startRunCallCount += 1;
+          return {
+            id: 'hermes-run-send-1',
+            sessionRef: kernelSessionAfter.ref,
+            status: 'completed' as const,
+            createdAt: 50,
+            updatedAt: 50,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          loadMessagesCallCount += 1;
+          return kernelMessages;
+        },
+        async listKernelChatRuns(requestedInstanceId, requestedSessionId) {
+          assert.equal(requestedInstanceId, instanceId);
+          assert.equal(requestedSessionId, sessionId);
+          listRunsCallCount += 1;
+          return kernelRuns;
+        },
+      },
+    });
+
+    try {
+      const result = await chatStore.getState().sendKernelMessage({
+        instanceId,
+        sessionId,
+        content: 'hello hermes',
+        model: 'hermes/model-a',
+      });
+
+      const state = chatStore.getState();
+      const session = state.sessions.find((entry) => entry.id === sessionId);
+
+      assert.equal(result.runId, 'hermes-run-send-1');
+      assert.equal(startRunCallCount, 1);
+      assert.equal(getSessionCallCount, 1);
+      assert.equal(loadMessagesCallCount, 1);
+      assert.equal(listRunsCallCount, 1);
+      assert.equal(state.syncStateByInstance[instanceId] ?? 'idle', 'idle');
+      assert.equal(state.lastErrorByInstance[instanceId], undefined);
+      assert.equal(session?.kernelSession?.authority.kind, 'sqlite');
+      assert.deepEqual(session?.kernelRuns, kernelRuns);
+      assert.equal(session?.updatedAt, 50);
+      assert.equal(session?.lastMessagePreview, 'authoritative assistant completion');
+      assert.deepEqual(
+        session?.messages.map((message) => ({
+          id: message.id,
+          role: message.role,
+          content: message.content,
+        })),
+        [
+          {
+            id: 'hermes-send-message-1',
+            role: 'user',
+            content: 'hello hermes',
+          },
+          {
+            id: 'hermes-send-message-2',
+            role: 'assistant',
+            content: 'authoritative assistant completion',
+          },
+        ],
+      );
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore sendKernelMessage forwards requestText to authoritative kernel runs when the raw content is empty',
+  async () => {
+    const instanceId = 'local-hermes-request-text-instance';
+    const sessionId = 'hermes-session-request-text';
+    const requestText =
+      'The user sent attachments without additional text.\n\nAttachments:\n1. [file] report.pdf';
+    const originalBridge = getPlatformBridge();
+    const kernelSessionBefore = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId,
+      title: 'Hermes Request Text Session',
+      createdAt: 10,
+      updatedAt: 10,
+      messageCount: 0,
+    });
+    const kernelSessionAfter = {
+      ...kernelSessionBefore,
+      updatedAt: 60,
+      messageCount: 2,
+      lastMessagePreview: 'attachment-aware assistant completion',
+    };
+    const kernelMessages = [
+      createAuthoritativeHermesKernelMessage({
+        instanceId,
+        sessionId,
+        messageId: 'hermes-request-text-message-1',
+        role: 'user',
+        text: requestText,
+        createdAt: 50,
+        updatedAt: 50,
+        runId: 'hermes-run-request-text-1',
+      }),
+      createAuthoritativeHermesKernelMessage({
+        instanceId,
+        sessionId,
+        messageId: 'hermes-request-text-message-2',
+        role: 'assistant',
+        text: 'attachment-aware assistant completion',
+        createdAt: 60,
+        updatedAt: 60,
+        runId: 'hermes-run-request-text-1',
+      }),
+    ];
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: sessionId,
+          title: 'Hermes Request Text Session',
+          createdAt: 10,
+          updatedAt: 10,
+          messages: [],
+          model: 'Hermes Model',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession: kernelSessionBefore,
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: sessionId,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [kernelSessionAfter];
+        },
+        async getKernelChatSession() {
+          return kernelSessionAfter;
+        },
+        async createKernelChatSession() {
+          return kernelSessionBefore;
+        },
+        async patchKernelChatSession() {
+          return kernelSessionAfter;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun(input) {
+          assert.equal(input.instanceId, instanceId);
+          assert.equal(input.sessionId, sessionId);
+          assert.equal(input.content, requestText);
+          assert.equal(input.model, 'hermes/model-request-text');
+          return {
+            id: 'hermes-run-request-text-1',
+            sessionRef: kernelSessionAfter.ref,
+            status: 'completed' as const,
+            createdAt: 50,
+            updatedAt: 60,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages() {
+          return kernelMessages;
+        },
+        async listKernelChatRuns() {
+          return [];
+        },
+      },
+    });
+
+    try {
+      const result = await chatStore.getState().sendKernelMessage({
+        instanceId,
+        sessionId,
+        content: '',
+        requestText,
+        attachments: [
+          {
+            id: 'attachment-report',
+            kind: 'file',
+            name: 'report.pdf',
+          },
+        ],
+        model: 'hermes/model-request-text',
+      });
+
+      const session = chatStore
+        .getState()
+        .sessions.find((entry) => entry.id === sessionId && entry.instanceId === instanceId);
+
+      assert.equal(result.runId, 'hermes-run-request-text-1');
+      assert.equal(session?.lastMessagePreview, 'attachment-aware assistant completion');
+      assert.deepEqual(
+        session?.messages.map((message) => message.content),
+        [requestText, 'attachment-aware assistant completion'],
+      );
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore sendKernelMessage composes attachment-aware request text for authoritative kernel runs when requestText is omitted',
+  async () => {
+    const instanceId = 'local-hermes-attachment-only-instance';
+    const sessionId = 'hermes-session-attachment-only';
+    const requestText =
+      'The user sent attachments without additional text.\n\nAttachments:\n1. [file] report.pdf';
+    const originalBridge = getPlatformBridge();
+    const kernelSessionBefore = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId,
+      title: 'Hermes Attachment Session',
+      createdAt: 10,
+      updatedAt: 10,
+      messageCount: 0,
+    });
+    const kernelSessionAfter = {
+      ...kernelSessionBefore,
+      updatedAt: 60,
+      messageCount: 2,
+      lastMessagePreview: 'attachment-aware assistant completion',
+    };
+    const kernelMessages = [
+      createAuthoritativeHermesKernelMessage({
+        sessionRef: kernelSessionAfter.ref,
+        id: 'hermes-attachment-message-1',
+        role: 'user',
+        text: requestText,
+        timestamp: 50,
+      }),
+      createAuthoritativeHermesKernelMessage({
+        sessionRef: kernelSessionAfter.ref,
+        id: 'hermes-attachment-message-2',
+        role: 'assistant',
+        text: 'attachment-aware assistant completion',
+        timestamp: 60,
+      }),
+    ];
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: sessionId,
+          title: 'Hermes Attachment Session',
+          createdAt: 10,
+          updatedAt: 10,
+          messages: [],
+          model: 'Hermes Model',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession: kernelSessionBefore,
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: sessionId,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [kernelSessionAfter];
+        },
+        async getKernelChatSession() {
+          return kernelSessionAfter;
+        },
+        async createKernelChatSession() {
+          return kernelSessionBefore;
+        },
+        async patchKernelChatSession() {
+          return kernelSessionAfter;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun(input) {
+          assert.equal(input.instanceId, instanceId);
+          assert.equal(input.sessionId, sessionId);
+          assert.equal(input.content, requestText);
+          assert.equal(input.model, 'hermes/model-attachment-only');
+          return {
+            id: 'hermes-run-attachment-only-1',
+            sessionRef: kernelSessionAfter.ref,
+            status: 'completed' as const,
+            createdAt: 50,
+            updatedAt: 60,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages() {
+          return kernelMessages;
+        },
+        async listKernelChatRuns() {
+          return [];
+        },
+      },
+    });
+
+    try {
+      const result = await chatStore.getState().sendKernelMessage({
+        instanceId,
+        sessionId,
+        content: '',
+        attachments: [
+          {
+            id: 'attachment-report',
+            kind: 'file',
+            name: 'report.pdf',
+          },
+        ],
+        model: 'hermes/model-attachment-only',
+      });
+
+      const session = chatStore
+        .getState()
+        .sessions.find((entry) => entry.id === sessionId && entry.instanceId === instanceId);
+
+      assert.equal(result.runId, 'hermes-run-attachment-only-1');
+      assert.equal(session?.lastMessagePreview, 'attachment-aware assistant completion');
+      assert.deepEqual(
+        session?.messages.map((message) => message.content),
+        [requestText, 'attachment-aware assistant completion'],
+      );
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore sendKernelMessage rejects empty authoritative kernel sends before dispatch',
+  async () => {
+    const instanceId = 'local-hermes-empty-message-instance';
+    const sessionId = 'hermes-session-empty-message';
+    const originalBridge = getPlatformBridge();
+    const kernelSession = createAuthoritativeHermesKernelSession({
+      instanceId,
+      sessionId,
+      title: 'Hermes Empty Message Session',
+      createdAt: 10,
+      updatedAt: 10,
+      messageCount: 0,
+    });
+    let startRunCallCount = 0;
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: sessionId,
+          title: 'Hermes Empty Message Session',
+          createdAt: 10,
+          updatedAt: 10,
+          messages: [],
+          model: 'Hermes Model',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession,
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: sessionId,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [kernelSession];
+        },
+        async getKernelChatSession() {
+          return kernelSession;
+        },
+        async createKernelChatSession() {
+          return kernelSession;
+        },
+        async patchKernelChatSession() {
+          return kernelSession;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun() {
+          startRunCallCount += 1;
+          return {
+            id: 'hermes-run-empty-message-1',
+            sessionRef: kernelSession.ref,
+            status: 'completed' as const,
+            createdAt: 50,
+            updatedAt: 50,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun() {
+          return false;
+        },
+        async loadKernelChatMessages() {
+          return [];
+        },
+        async listKernelChatRuns() {
+          return [];
+        },
+      },
+    });
+
+    try {
+      await assert.rejects(
+        () =>
+          chatStore.getState().sendKernelMessage({
+            instanceId,
+            sessionId,
+            content: '   ',
+          }),
+        /Cannot send an empty chat message\./,
+      );
+      assert.equal(startRunCallCount, 0);
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore abortSession delegates managed Hermes aborts through the authoritative kernel adapter',
+  async () => {
+    const instanceId = 'local-hermes-abort-session-instance';
+    const sessionId = 'hermes-session-abort';
+    const originalBridge = getPlatformBridge();
+    const kernelSession = {
+      ...createAuthoritativeHermesKernelSession({
+        instanceId,
+        sessionId,
+        title: 'Authoritative Hermes Abort Session',
+        createdAt: 10,
+        updatedAt: 30,
+        messageCount: 2,
+      }),
+      activeRunId: 'hermes-run-abort-1',
+    };
+    const abortCalls: Array<{
+      instanceId: string;
+      sessionId: string;
+      runId: string | null | undefined;
+    }> = [];
+    resetChatStore();
+
+    chatStore.setState((state) => ({
+      ...state,
+      sessions: [
+        {
+          id: sessionId,
+          title: 'Authoritative Hermes Abort Session',
+          createdAt: 10,
+          updatedAt: 30,
+          messages: [],
+          model: 'Hermes Model',
+          instanceId,
+          transport: 'kernelAdapter',
+          kernelSession,
+        },
+      ],
+      activeSessionIdByInstance: {
+        [instanceId]: sessionId,
+      },
+    }));
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstance(requestedInstanceId) {
+          return createLocalManagedHermesInstance(requestedInstanceId);
+        },
+        async getInstanceDetail() {
+          return null;
+        },
+        async listKernelChatSessions() {
+          return [kernelSession];
+        },
+        async getKernelChatSession() {
+          return kernelSession;
+        },
+        async createKernelChatSession() {
+          return kernelSession;
+        },
+        async patchKernelChatSession() {
+          return kernelSession;
+        },
+        async deleteKernelChatSession() {},
+        async startKernelChatRun() {
+          return {
+            id: 'hermes-run-abort-1',
+            sessionRef: kernelSession.ref,
+            status: 'completed' as const,
+            createdAt: 30,
+            updatedAt: 30,
+            abortable: false,
+          };
+        },
+        async abortKernelChatRun(requestedInstanceId, requestedSessionId, requestedRunId) {
+          abortCalls.push({
+            instanceId: requestedInstanceId,
+            sessionId: requestedSessionId,
+            runId: requestedRunId,
+          });
+          return false;
+        },
+        async loadKernelChatMessages() {
+          return [];
+        },
+      },
+    });
+
+    try {
+      assert.equal(
+        await chatStore.getState().abortSession({
+          instanceId,
+          sessionId,
+        }),
+        false,
+      );
+      assert.deepEqual(abortCalls, [
+        {
+          instanceId,
+          sessionId,
+          runId: 'hermes-run-abort-1',
+        },
+      ]);
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
     }
   },
 );

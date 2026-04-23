@@ -98,7 +98,9 @@ impl From<sdkwork_local_api_proxy_native::error::LocalApiProxyNativeError> for F
         match value {
             LocalApiProxyNativeError::Io(error) => Self::Io(error),
             LocalApiProxyNativeError::Serde(error) => Self::Serde(error),
-            LocalApiProxyNativeError::Sqlite(error) => Self::Internal(format!("sqlite error: {error}")),
+            LocalApiProxyNativeError::Sqlite(error) => {
+                Self::Internal(format!("sqlite error: {error}"))
+            }
             LocalApiProxyNativeError::ValidationFailed(reason) => Self::ValidationFailed(reason),
             LocalApiProxyNativeError::InvalidOperation(reason) => Self::InvalidOperation(reason),
             LocalApiProxyNativeError::NotFound(resource) => Self::NotFound(resource),

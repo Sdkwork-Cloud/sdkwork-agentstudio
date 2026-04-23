@@ -423,13 +423,16 @@
   "channels": {
     "page": {
       "title": "聊天通道",
-      "subtitle": "将你的 OpenClaw 智能体连接到外部消息平台和 API。",
+      "subtitle": "将你的 OpenClaw 智能体连接到外部消息平台与 API。",
       "feedback": {
-        "loadFailed": "无法加载通道配置。",
+        "loadFailed": "暂时无法加载通道配置。",
         "loadFailedServiceUnavailable": "通道服务暂时不可用，请确认实例与 Kernel 已启动后重试。",
-        "saveFailed": "无法保存通道配置。",
-        "deleteFailed": "无法删除通道配置。",
-        "toggleFailed": "无法更新通道启用状态。"
+        "saveFailed": "暂时无法保存通道配置。",
+        "deleteFailed": "暂时无法删除通道配置。",
+        "toggleFailed": "暂时无法更新通道启用状态。"
+      },
+      "validation": {
+        "requiredField": "请填写{{field}}。"
       },
       "status": {
         "active": "已启用",
@@ -448,23 +451,319 @@
       },
       "panel": {
         "configuration": "通道配置",
-        "setupGuide": "配置指南",
-        "openOfficialSite": "前往官方配置页",
+        "setupGuide": "配置指引",
+        "openOfficialSite": "前往官方配置页面",
         "readFullDocumentation": "查看完整文档",
         "credentials": "凭证信息"
       },
       "catalog": {
         "tabs": {
           "domestic": "国内",
-          "global": "国外",
+          "global": "国际",
           "media": "媒体账号",
           "all": "全部"
         },
+        "descriptions": {
+          "domestic": "面向国内场景的消息与会话入口",
+          "global": "面向全球协作与聊天的接入通道",
+          "media": "面向公众号与广播触达的发送通道",
+          "all": "当前工作区可用的全部通道"
+        },
         "empty": {
           "domestic": "当前工作区暂无可配置的国内聊天通道。",
-          "global": "当前工作区暂无可配置的国外聊天通道。",
+          "global": "当前工作区暂无可配置的国际聊天通道。",
           "media": "当前工作区暂无可配置的媒体账号通道。",
           "all": "当前工作区暂无可配置的聊天通道。"
+        }
+      }
+    },
+    "definitions": {
+      "officialLinks": {
+        "sdkworkchat": "SDKWORK Chat 下载",
+        "wehcat": "微信公众号平台",
+        "feishu": "飞书开放平台",
+        "qq": "QQ 机器人平台",
+        "dingtalk": "钉钉开发者控制台",
+        "wecom": "企业微信管理后台",
+        "telegram": "Telegram Bot 平台",
+        "discord": "Discord 开发者后台",
+        "slack": "Slack API Apps",
+        "googlechat": "Google Chat 开发文档"
+      },
+      "sharedFields": {
+        "contextVisibility": {
+          "label": "上下文可见性",
+          "placeholder": "allowlist_quote",
+          "helpText": "可选的通道上下文可见策略，例如 quote、none 或 allowlist_quote。"
+        }
+      },
+      "channels": {
+        "sdkworkchat": {
+          "name": "SDKWORK 官方账号",
+          "description": "使用内置的 SDKWORK 官方账号投递链路，让 OpenClaw 无需额外配置凭证即可完成会话交接。",
+          "setupSteps": {
+            "0": "打开集成的 SDKWORK 官方账号体验；如果当前机器尚未登录，也可以先安装 SDKWORK 客户端。",
+            "1": "使用你的 SDKWORK 账号登录，使默认媒体通道立即可用。",
+            "2": "当当前运行时需要把会话交接到 SDKWORK 官方账号时，请保持此通道为启用状态。"
+          }
+        },
+        "wehcat": {
+          "name": "微信公众号",
+          "description": "接入微信公众号工作流，让 OpenClaw 能够覆盖面向国内的媒体消息场景。",
+          "setupSteps": {
+            "0": "在微信公众号平台中创建或管理目标公众号。",
+            "1": "在这里填写 App ID、App Secret、Token，以及可选的 AES Key。",
+            "2": "在微信侧配置回调地址后，再启用公众号通道。"
+          },
+          "fields": {
+            "appId": {
+              "label": "App ID",
+              "placeholder": "wx1234567890abcdef"
+            },
+            "appSecret": {
+              "label": "App Secret",
+              "placeholder": "微信公众号密钥"
+            },
+            "token": {
+              "label": "Token",
+              "placeholder": "校验 Token"
+            },
+            "encodingAesKey": {
+              "label": "Encoding AES Key",
+              "placeholder": "可选的 AES Key"
+            }
+          }
+        },
+        "qq": {
+          "name": "QQ",
+          "description": "接入 QQ 机器人，让 OpenClaw 可以把命令、告警和审批消息路由到 QQ 群。",
+          "setupSteps": {
+            "0": "在 QQ 机器人平台创建或管理目标机器人。",
+            "1": "在这里填写机器人密钥与目标群 ID。",
+            "2": "完成一次试投递后，再启用该通道。"
+          },
+          "fields": {
+            "botKey": {
+              "label": "机器人密钥",
+              "placeholder": "QQ 机器人密钥"
+            },
+            "groupId": {
+              "label": "群 ID",
+              "placeholder": "123456789",
+              "helpText": "接收 OpenClaw 更新消息的目标 QQ 群。"
+            }
+          }
+        },
+        "dingtalk": {
+          "name": "钉钉",
+          "description": "接入钉钉自定义机器人，让 OpenClaw 能将更新广播到钉钉工作空间。",
+          "setupSteps": {
+            "0": "在目标钉钉群中创建自定义机器人。",
+            "1": "把 Access Token 和签名 Secret 填写到此表单。",
+            "2": "首次连通性校验成功后，再启用该通道。"
+          },
+          "fields": {
+            "accessToken": {
+              "label": "Access Token",
+              "placeholder": "钉钉 Access Token"
+            },
+            "secret": {
+              "label": "Secret",
+              "placeholder": "机器人签名 Secret"
+            }
+          }
+        },
+        "wecom": {
+          "name": "企业微信",
+          "description": "接入企业微信应用，让 OpenClaw 能服务企业内部的企业微信会话。",
+          "setupSteps": {
+            "0": "创建具备机器人或客户联系权限的企业微信应用。",
+            "1": "在这里填写 Corp ID、Agent ID 和 Secret。",
+            "2": "保存配置后，验证消息投递是否成功。"
+          },
+          "fields": {
+            "corpId": {
+              "label": "Corp ID",
+              "placeholder": "ww1234567890abcdef"
+            },
+            "agentId": {
+              "label": "Agent ID",
+              "placeholder": "1000002"
+            },
+            "secret": {
+              "label": "Secret",
+              "placeholder": "企业微信应用密钥"
+            }
+          }
+        },
+        "feishu": {
+          "name": "飞书",
+          "description": "接入飞书机器人，让 OpenClaw 可以接收并回复团队消息。",
+          "setupSteps": {
+            "0": "在飞书开放平台创建应用。",
+            "1": "把 App ID 和 App Secret 填写到此表单。",
+            "2": "如果需要事件回调，请补充 OpenClaw 部署提供的回调地址。"
+          },
+          "fields": {
+            "appId": {
+              "label": "App ID",
+              "placeholder": "cli_xxxxxxxxxxxxx"
+            },
+            "appSecret": {
+              "label": "App Secret",
+              "placeholder": "应用密钥"
+            },
+            "encryptKey": {
+              "label": "Encrypt Key",
+              "placeholder": "可选的加密 Key"
+            },
+            "verificationToken": {
+              "label": "Verification Token",
+              "placeholder": "可选的验证 Token"
+            }
+          }
+        },
+        "telegram": {
+          "name": "Telegram",
+          "description": "使用 Telegram Bot Token，让 OpenClaw 能进入私聊与群聊会话。",
+          "setupSteps": {
+            "0": "通过 BotFather 创建机器人并复制 Bot Token。",
+            "1": "如需 Telegram 主动推送事件，可选配置 Webhook URL。",
+            "2": "填写完必要凭证后，再启用该通道。"
+          },
+          "fields": {
+            "botToken": {
+              "label": "Bot Token",
+              "placeholder": "123456:AA..."
+            },
+            "tokenFile": {
+              "label": "Token 文件",
+              "placeholder": "可选的 Token 文件路径"
+            },
+            "webhookUrl": {
+              "label": "Webhook URL",
+              "placeholder": "https://example.com/openclaw/telegram"
+            },
+            "webhookSecret": {
+              "label": "Webhook Secret",
+              "placeholder": "可选的 Webhook Secret"
+            },
+            "webhookPath": {
+              "label": "Webhook Path",
+              "placeholder": "/telegram/webhook"
+            },
+            "webhookHost": {
+              "label": "Webhook Host",
+              "placeholder": "0.0.0.0"
+            },
+            "webhookPort": {
+              "label": "Webhook Port",
+              "placeholder": "8443"
+            },
+            "errorPolicy": {
+              "label": "错误策略",
+              "placeholder": "retry",
+              "helpText": "可选的 Telegram 投递错误策略，例如 retry 或 disable。"
+            },
+            "errorCooldownMs": {
+              "label": "错误冷却时间（毫秒）",
+              "placeholder": "300000"
+            }
+          }
+        },
+        "whatsapp": {
+          "name": "WhatsApp",
+          "description": "管理可选的 WhatsApp 访问规则，用于控制私聊白名单与群组投递行为。",
+          "setupSteps": {
+            "0": "通过官方 CLI 或运行时登录流程完成 OpenClaw 的 WhatsApp 通道认证。",
+            "1": "可选地限制允许发送私聊的号码，或在这里定义群组级行为。",
+            "2": "保持该通道启用，以便复用运行时登录态并避免额外配置。"
+          },
+          "fields": {
+            "allowFrom": {
+              "label": "允许来源",
+              "placeholder": "+15555550123\n+15555550124",
+              "helpText": "可选的私聊发送方白名单。每行填写一个手机号，或直接提供 JSON 数组。"
+            },
+            "groups": {
+              "label": "群组规则",
+              "placeholder": "{\n  \"*\": {\n    \"requireMention\": true\n  }\n}",
+              "helpText": "可选的 WhatsApp 群组规则 JSON 对象。使用 \"*\" 可定义所有群组的默认规则。"
+            }
+          }
+        },
+        "discord": {
+          "name": "Discord",
+          "description": "将 OpenClaw 接入 Discord 机器人，用于服务器和私信会话。",
+          "setupSteps": {
+            "0": "在开发者后台创建 Discord 应用与机器人。",
+            "1": "在这里填写 Bot Token，并将机器人邀请到你的服务器。",
+            "2": "Token 验证通过后，再启用该通道。"
+          },
+          "fields": {
+            "token": {
+              "label": "Bot Token",
+              "placeholder": "Discord Bot Token"
+            }
+          }
+        },
+        "slack": {
+          "name": "Slack",
+          "description": "配置 Bot Token 与 App Token，让 OpenClaw 可在 Slack 工作区内运行。",
+          "setupSteps": {
+            "0": "创建或打开你的 Slack 应用，并安装到目标工作区。",
+            "1": "在下方填写 Bot Token 与 App Token。",
+            "2": "如果工作区使用 Slash Command 或 Events，再补充 Signing Secret。"
+          },
+          "fields": {
+            "botToken": {
+              "label": "Bot Token",
+              "placeholder": "xoxb-..."
+            },
+            "appToken": {
+              "label": "App Token",
+              "placeholder": "xapp-..."
+            },
+            "signingSecret": {
+              "label": "Signing Secret",
+              "placeholder": "可选的 Signing Secret"
+            }
+          }
+        },
+        "googlechat": {
+          "name": "Google Chat",
+          "description": "提供 Google Chat 服务账号或引用信息，用于企业工作区消息投递。",
+          "setupSteps": {
+            "0": "创建 Google Chat 应用和服务账号。",
+            "1": "填写内联服务账号 JSON，或提供服务账号引用地址。",
+            "2": "如部署要求，请继续补充 audience 或 webhook 信息。"
+          },
+          "fields": {
+            "serviceAccount": {
+              "label": "服务账号 JSON",
+              "placeholder": "{ \"type\": \"service_account\", ... }"
+            },
+            "serviceAccountRef": {
+              "label": "服务账号引用",
+              "placeholder": "secret://googlechat/service-account"
+            },
+            "audienceType": {
+              "label": "Audience 类型",
+              "placeholder": "SPACE 或 DM"
+            },
+            "audience": {
+              "label": "Audience",
+              "placeholder": "spaces/AAAA12345"
+            },
+            "webhookPath": {
+              "label": "Webhook Path",
+              "placeholder": "/googlechat/webhook"
+            },
+            "webhookUrl": {
+              "label": "Webhook URL",
+              "placeholder": "https://example.com/openclaw/googlechat"
+            }
+          }
         }
       }
     }
@@ -473,6 +772,8 @@
     "page": {
       "noInstanceTitle": "未选择实例",
       "noInstanceDescription": "请先在侧边栏选择一个实例后再开始对话。",
+      "noInstanceAgentTitle": "{{agent}}已就绪",
+      "noInstanceAgentDescription": "当前将以 {{agent}} 开启新对话。请先选择或启动一个可用实例，然后再发送消息。",
       "manageInstances": "管理实例",
       "selectModel": "选择模型",
       "selectAgent": "选择 Agent",
@@ -485,6 +786,7 @@
       "searchAgentsPlaceholder": "搜索 Agent...",
       "noneDefault": "无（默认）",
       "defaultAgentGatewayDescription": "使用实例默认的 Gateway Agent 处理当前会话。",
+      "defaultAgentKernelDescription": "使用当前内核默认的 Agent 处理当前会话。",
       "defaultAgentDirectDescription": "使用当前对话的默认助手能力。",
       "availableSkills": "可用技能",
       "searchSkillsPlaceholder": "搜索技能...",
@@ -652,13 +954,148 @@
       "fileSizeMb": "{{size}} MB"
     },
     "sidebar": {
+      "mainAgent": "主 Agent",
+      "mainAgentBadge": "主",
+      "previewYou": "你",
+      "previewTool": "工具",
+      "previewAttachment": "附件",
+      "previewAttachments": "附件",
+      "agentRailEmptyPreview": "暂无会话",
       "newChat": "新对话",
+      "newAgent": "新建 Agent",
+      "createButtonLabel": "新建",
+      "newAgentOptions": "新建 Agent 选项",
+      "agentSearchPlaceholder": "搜索当前 Agent...",
+      "createAgentCustom": "自定义创建",
+      "createAgentCustomDescription": "为当前实例从零创建一个新 Agent。",
+      "createAgentFromLibrary": "从 Agent 库选择",
+      "createAgentFromLibraryDescription": "浏览可复用的 Agent 模板，并将其加入当前工作区。",
+      "createAgentFromMarket": "从市场购买",
+      "createAgentFromMarketDescription": "打开 Agent 市场，选购可直接使用的成品 Agent。",
+      "createAgentFromMyAgents": "从我的 Agent 复制",
+      "createAgentFromMyAgentsDescription": "打开你已有的 Agent，从现有能力快速复制一份。",
+      "dismissCreateAgentMenu": "关闭新建 Agent 菜单",
+      "noMatchingAgents": "没有匹配的 Agent",
+      "noMatchingAgentsDescription": "可以尝试其他关键词，或清空搜索查看全部 Agent。",
+      "currentAgentTab": "当前 Agent（{{agentName}}）",
+      "allConversations": "全部会话",
+      "pinned": "置顶",
+      "favorites": "收藏",
       "today": "今天",
       "previous7Days": "最近 7 天",
       "older": "更早",
+      "moreActions": "更多操作",
+      "favoriteChat": "收藏",
+      "unfavoriteChat": "取消收藏",
+      "pinChat": "置顶",
+      "unpinChat": "取消置顶",
+      "publishAgentToMarket": "发布到市场",
+      "agentSettings": "设置",
+      "removeAgent": "从当前实例移除",
+      "relativeTimeYesterday": "昨天",
+      "relativeTimeDaysAgo": "{{count}}天前",
+      "agentActivationFailed": "{{agent}} 已创建完成，但 Claw Studio 未能自动切换到该 Agent。请在列表中手动选择。",
+      "selectAgentFailed": "切换到所选 Agent 失败。",
+      "selectSessionFailed": "打开所选会话失败。",
+      "removeAgentFailed": "无法从当前实例移除所选 Agent。",
+      "dismissSelectionError": "关闭提示",
+      "dismissAgentActionsMenu": "关闭 Agent 操作菜单",
+      "dismissSessionActionsMenu": "关闭会话操作菜单",
       "deleteChat": "删除对话",
       "noHistory": "暂无对话历史",
-      "noHistoryDescription": "开始一段新对话后，会在这里显示。"
+      "noHistoryDescription": "开始一段新对话后，会在这里显示。",
+      "myAgentsDialog": {
+        "title": "我的 Agent",
+        "description": "选择一个本地 kernel Agent 作为模板，用于新建当前 Agent。",
+        "searchPlaceholder": "搜索本地 Agent...",
+        "notSet": "未设置",
+        "badges": {
+          "default": "默认",
+          "builtIn": "内置"
+        },
+        "sections": {
+          "source": "来源",
+          "model": "模型",
+          "fallbackModels": "备选模型",
+          "parameters": "参数"
+        },
+        "status": {
+          "loading": "正在加载本地 kernel Agent...",
+          "loadFailed": "加载本地 Agent 失败。",
+          "emptyTitle": "暂无可用的本地 Agent",
+          "emptyDescription": "先在可写的 kernel 实例中创建或导入 Agent，之后就可以在这里快速复制。"
+        },
+        "actions": {
+          "retry": "重试",
+          "copy": "作为模板使用"
+        }
+      },
+      "newAgentDialog": {
+        "title": "新建 Agent",
+        "copyTitle": "复制 Agent",
+        "description": "为当前选中的实例创建新 Agent。如果有多个 kernel 支持 Agent 创建，请先选择目标 kernel。",
+        "copyDescription": "以本地 kernel Agent 作为起点，保留可迁移的配置，在当前实例中新建一个 Agent。",
+        "instance": "实例",
+        "labels": {
+          "kernel": "Kernel",
+          "sourceAgent": "来源 Agent",
+          "agentId": "Agent ID",
+          "displayName": "显示名称",
+          "avatar": "头像标识",
+          "primaryModel": "主模型",
+          "fallbackModels": "备选模型",
+          "workspace": "工作区",
+          "agentDir": "Agent 目录",
+          "temperature": "Temperature",
+          "topP": "Top P",
+          "maxTokens": "最大 Tokens",
+          "timeoutMs": "超时（ms）",
+          "defaultAgent": "默认 Agent",
+          "streaming": "流式输出"
+        },
+        "placeholders": {
+          "agentId": "coding-engineer",
+          "displayName": "Coding Engineer",
+          "avatar": "CE",
+          "fallbackModels": "openai/gpt-5.1\nanthropic/claude-sonnet-4",
+          "workspace": "/workspace/project",
+          "agentDir": ".agents/coding-engineer"
+        },
+        "actions": {
+          "backToTemplates": "返回模板列表",
+          "create": "创建 Agent",
+          "createCopy": "创建副本",
+          "created": "已创建"
+        },
+        "status": {
+          "loading": "正在加载可用 kernel 与模型选项...",
+          "available": "可用",
+          "unavailable": "不可用",
+          "kernelUnavailable": "该 kernel 暂不支持 Agent 创建。",
+          "creating": "创建中...",
+          "createFailed": "Agent 创建失败。",
+          "loadFailed": "加载 Agent 创建能力失败。"
+        },
+        "validation": {
+          "agentIdRequired": "Agent ID 不能为空。",
+          "displayNameRequired": "显示名称不能为空。",
+          "invalidNumber": "{{field}} 必须是有效数字。"
+        },
+        "modelInherit": "继承实例默认模型",
+        "modelHint": "当前实例 workbench 未发现可用模型选项，留空即使用运行时默认值。",
+        "defaultAgentDescription": "将该 Agent 设为所选 kernel 配置的默认 Agent。",
+        "streamingDescription": "仅针对该 Agent 覆盖运行时的流式输出行为。",
+        "streamingModes": {
+          "inherit": "继承运行时默认值",
+          "enabled": "开启",
+          "disabled": "关闭"
+        },
+        "reasons": {
+          "unsupportedKernel": "Kernel {{kernel}} 暂未实现 Agent 创建能力。",
+          "configUnavailable": "当前实例没有可写的 kernel 配置文件。",
+          "configNotWritable": "已附加的 kernel 配置为只读，无法写入新 Agent。"
+        }
+      }
     }
   },
   "clawCenter": {
@@ -3618,7 +4055,7 @@
       "modules": {
         "hermes": {
           "eyebrow": "Hermes 内核",
-          "description": "Hermes 以外部托管内核方式运行。该详情模块聚焦传输形态、外部运行时标准、数据访问面，以及在受支持的本地、WSL2 和远程 Linux 部署下保持稳定接入所需的运行证据。",
+          "description": "Hermes 运行在标准化的受支持宿主环境中。该详情模块聚焦传输形态、运行时标准、user-root 内核状态，以及在受支持的 local-managed、local-external、WSL2 和远程 Linux 部署下保持稳定接入所需的运行证据。",
           "metrics": {
             "runtime": "运行时",
             "deployment": "部署方式",
@@ -3644,8 +4081,8 @@
             "title": "就绪态势",
             "deploymentTarget": {
               "label": "部署目标",
-              "configured": "该实例已经呈现受支持的 Hermes 部署形态。Hermes 可以作为 Linux、macOS 或 Windows WSL2 上的 local-external 运行时接入，也可以连接远程 Linux 部署。",
-              "required": "Hermes 必须保持外置运行。请改用 Linux、macOS 或 Windows WSL2 上的 local-external 运行时，或连接远程 Linux 部署，而不是原生 Windows 或应用托管的本地目标。"
+              "configured": "该实例已经呈现受支持的 Hermes 部署形态。Hermes 可以作为 Linux、macOS 或 Windows WSL2 上的 local-managed 或 local-external 运行时接入，也可以连接远程 Linux 部署。",
+              "required": "请使用受支持的 Hermes 部署形态：Linux、macOS 或 Windows WSL2 上的 local-managed 或 local-external，或远程 Linux 部署。原生 Windows 本地运行仍不受支持。"
             },
             "endpointExposure": {
               "label": "连接端点",
@@ -3677,7 +4114,7 @@
           "title": "实例工作台",
           "description": "在这个 OpenClaw 实例提供的运行时能力之间切换。",
           "overview": "概览",
-          "channels": "渠道",
+          "channels": "聊天通道",
           "cronTasks": "Cron 任务",
           "llmProviders": "LLM 提供方",
           "agents": "智能体",
@@ -3705,7 +4142,7 @@
             "description": "查看当前实例的运行时契约、连接方式、存储绑定与能力状态。"
           },
           "channels": {
-            "title": "渠道",
+            "title": "聊天通道",
             "description": "检查此实例的交付就绪度、配置深度与连接状态。"
           },
           "cronTasks": {
@@ -4627,6 +5064,91 @@
               "agentDir": "留空则使用 .openclaw/agents/<agentId>/agent"
             }
           },
+          "creationWorkflow": {
+            "menu": {
+              "title": "新建 Agent",
+              "description": "在不离开当前工作台的前提下，选择最适合当前实例的 Agent 创建方式。",
+              "options": {
+                "custom": {
+                  "title": "从零创建",
+                  "description": "为当前可写内核实例手动定义一个全新的 Agent。"
+                },
+                "library": {
+                  "title": "从本地模板选择",
+                  "description": "浏览可复用的本地内核 Agent，并将其作为创建模板。"
+                },
+                "copy": {
+                  "title": "复制我的 Agent",
+                  "description": "复制当前实例中已有的 Agent，安全迭代出一个新版本。"
+                },
+                "market": {
+                  "title": "从市场安装",
+                  "description": "浏览精选 Agent 套件，并直接安装到当前实例。"
+                }
+              }
+            },
+            "library": {
+              "title": "从本地模板选择",
+              "description": "浏览可复用的本地内核 Agent，并将其作为创建模板。"
+            },
+            "copy": {
+              "title": "复制我的 Agent",
+              "description": "从当前实例已有 Agent 继续，快速创建一个新的副本。"
+            },
+            "form": {
+              "title": "创建 Agent",
+              "copyTitle": "复制 Agent",
+              "description": "为当前实例和内核创建一个新的 Agent。",
+              "copyDescription": "从现有本地内核 Agent 继承可移植配置，并在当前实例中创建新的 Agent。"
+            },
+            "market": {
+              "title": "从市场安装",
+              "description": "浏览打包好的 Agent 模板，并将所选模板直接安装到当前实例。",
+              "status": {
+                "loading": "正在加载可安装目标..."
+              }
+            },
+            "actions": {
+              "back": "返回",
+              "retry": "重试",
+              "useTemplate": "作为模板使用",
+              "create": "创建 Agent",
+              "createCopy": "创建副本"
+            },
+            "searchPlaceholder": "搜索本地 Agent...",
+            "notSet": "未设置",
+            "badges": {
+              "default": "默认"
+            },
+            "sections": {
+              "source": "来源",
+              "model": "模型",
+              "fallbackModels": "回退模型",
+              "parameters": "参数"
+            },
+            "labels": {
+              "sourceAgent": "源 Agent",
+              "instance": "实例",
+              "kernel": "内核",
+              "temperature": "温度",
+              "topP": "Top P",
+              "maxTokens": "Max Tokens",
+              "timeoutMs": "超时（毫秒）",
+              "streaming": "流式输出"
+            },
+            "status": {
+              "loading": "正在加载本地内核 Agent...",
+              "loadFailed": "加载本地 Agent 失败。",
+              "emptyTitle": "暂无可用本地 Agent",
+              "emptyDescription": "在可写的内核实例中创建或导入 Agent 后，这里会显示为可复用模板。"
+            },
+            "modelInherit": "继承实例默认值",
+            "streamingModes": {
+              "inherit": "继承运行时默认值",
+              "enabled": "已启用",
+              "disabled": "已禁用"
+            }
+          },
           "deleteDialog": {
             "title": "删除 OpenClaw 智能体",
             "description": "这会从 config-backed OpenClaw 配置中移除该智能体条目，但不会自动删除 workspace 和 agentDir 内的文件。"
@@ -4991,6 +5513,7 @@
       "chatComposer": "对话输入",
       "compactModelSelector": "紧凑模型选择器",
       "compactModelSelectorDescription": "当模型选择器只有一个 channel 时，隐藏左侧 channel 区域。",
+      "loadPreferenceFailed": "加载偏好设置失败",
       "updatePreferenceFailed": "更新偏好设置失败",
       "themeModes": {
         "light": "浅色",
@@ -5729,6 +6252,7 @@
       },
       "toasts": {
         "fillAllFields": "请填写所有密码字段",
+        "loadPreferenceFailed": "加载偏好设置失败",
         "passwordMismatch": "两次输入的新密码不一致",
         "passwordUpdated": "密码更新成功",
         "passwordUpdateFailed": "更新密码失败",

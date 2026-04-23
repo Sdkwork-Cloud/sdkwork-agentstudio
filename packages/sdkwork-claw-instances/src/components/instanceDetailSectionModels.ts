@@ -72,6 +72,8 @@ export interface BuildAgentSectionPropsInput
     | 'updatingSkillKeys'
     | 'removingSkillKeys'
     | 'onReload'
+    | 'onAgentCreationWorkflowOpenChange'
+    | 'onAgentCreationDraftReplace'
     | 'onAgentDialogOpenChange'
     | 'onAgentDialogFieldChange'
     | 'onAgentDialogDefaultChange'
@@ -88,6 +90,7 @@ export interface BuildAgentSectionPropsInput
     instanceId: string,
     options: { withSpinner?: boolean },
   ) => Promise<void> | void;
+  setIsAgentCreationWorkflowOpen: (open: boolean) => void;
   setIsAgentDialogOpen: (open: boolean) => void;
   setEditingAgentId: (agentId: string | null) => void;
   setAgentDialogDraft: AgentDialogDraftUpdater;
@@ -173,6 +176,7 @@ export function buildAgentSectionProps({
   removingAgentSkillKeys,
   instanceId,
   loadWorkbench,
+  setIsAgentCreationWorkflowOpen,
   setIsAgentDialogOpen,
   setEditingAgentId,
   setAgentDialogDraft,
@@ -193,9 +197,22 @@ export function buildAgentSectionProps({
     workbench,
     snapshot: selectedAgentWorkbench,
     errorMessage: agentWorkbenchError,
+    instanceId,
     updatingSkillKeys: updatingAgentSkillKeys,
     removingSkillKeys: removingAgentSkillKeys,
     onReload: reloadAgentWorkbenchSilently,
+    onAgentCreationWorkflowOpenChange: (open) => {
+      setIsAgentCreationWorkflowOpen(open);
+      if (!open) {
+        const dialogState = createOpenClawAgentCreateDialogState();
+        setEditingAgentId(dialogState.editingAgentId);
+        setAgentDialogDraft(() => dialogState.draft);
+      }
+    },
+    onAgentCreationDraftReplace: (draft) => {
+      setEditingAgentId(null);
+      setAgentDialogDraft(() => draft);
+    },
     onAgentDialogOpenChange: (open) => {
       setIsAgentDialogOpen(open);
       if (!open) {

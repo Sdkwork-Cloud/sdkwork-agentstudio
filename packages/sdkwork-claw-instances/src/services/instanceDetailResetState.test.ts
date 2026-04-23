@@ -86,6 +86,7 @@ await runTest(
       dreamingDraft: { goal: 'stale' } as typeof configResetState.dreaming.draft,
       dreamingError: 'stale-error' as string | null,
       isSavingDreaming: true,
+      isAgentCreationWorkflowOpen: true,
       isAgentDialogOpen: true,
       selectedAgentId: 'stale-agent' as string | null,
       selectedAgentWorkbench: null as typeof agentWorkspaceResetState.selectedAgentWorkbench,
@@ -191,6 +192,9 @@ await runTest(
       setIsSavingDreaming: (value) => {
         captured.isSavingDreaming = value;
       },
+      setIsAgentCreationWorkflowOpen: (value) => {
+        captured.isAgentCreationWorkflowOpen = value;
+      },
       setIsAgentDialogOpen: (value) => {
         captured.isAgentDialogOpen = value;
       },
@@ -257,6 +261,7 @@ await runTest(
       dreamingDraft: configResetState.dreaming.draft,
       dreamingError: configResetState.dreaming.error,
       isSavingDreaming: configResetState.dreaming.isSaving,
+      isAgentCreationWorkflowOpen: agentWorkspaceResetState.isCreationWorkflowOpen,
       isAgentDialogOpen: agentWorkspaceResetState.isDialogOpen,
       selectedAgentId: agentWorkspaceResetState.selectedAgentId,
       selectedAgentWorkbench: agentWorkspaceResetState.selectedAgentWorkbench,

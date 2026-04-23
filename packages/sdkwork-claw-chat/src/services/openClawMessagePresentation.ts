@@ -1,8 +1,14 @@
+import { normalizeUserVisibleChatSenderLabel } from './chatSenderLabelPolicy.ts';
+
 export type OpenClawMessagePresentationRole = 'user' | 'assistant' | 'system' | 'tool';
 
 export type OpenClawToolCard = {
   kind: 'call' | 'result';
   name: string;
+  toolCallId?: string;
+  argumentsText?: string;
+  text?: string;
+  isError?: boolean;
   detail?: string;
   preview?: string;
 };
@@ -324,6 +330,15 @@ function firstNonEmptyString(...values: unknown[]) {
   return null;
 }
 
+function normalizeOptionalString(value: unknown) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
 function extractInboundSenderLabel(text: string) {
   if (!text) {
     return null;
@@ -397,11 +412,11 @@ function extractSenderLabel(payload: unknown) {
     asRecord(record?.__openclaw)?.sender_label,
   );
   if (explicitSenderLabel) {
-    return explicitSenderLabel;
+    return normalizeUserVisibleChatSenderLabel(explicitSenderLabel);
   }
 
   if (typeof record?.content === 'string') {
-    return extractInboundSenderLabel(record.content);
+    return normalizeUserVisibleChatSenderLabel(extractInboundSenderLabel(record.content));
   }
 
   if (Array.isArray(record?.content)) {
@@ -417,12 +432,14 @@ function extractSenderLabel(payload: unknown) {
         typeof item.text === 'string' ? extractInboundSenderLabel(item.text) : null,
       );
       if (senderLabel) {
-        return senderLabel;
+        return normalizeUserVisibleChatSenderLabel(senderLabel);
       }
     }
   }
 
-  return typeof record?.text === 'string' ? extractInboundSenderLabel(record.text) : null;
+  return typeof record?.text === 'string'
+    ? normalizeUserVisibleChatSenderLabel(extractInboundSenderLabel(record.text))
+    : null;
 }
 
 function extractAssistantPhase(payload: unknown) {
@@ -466,6 +483,18 @@ function resolveToolArgs(block: Record<string, unknown>) {
   return block.args ?? block.arguments ?? block.input;
 }
 
+function resolveToolCallId(block: Record<string, unknown>) {
+  return firstNonEmptyString(
+    block.toolCallId,
+    block.tool_call_id,
+    block.callId,
+    block.call_id,
+    block.toolUseId,
+    block.tool_use_id,
+    block.id,
+  );
+}
+
 function resolveToolCardName(block: Record<string, unknown>) {
   const name = block.name ?? block.toolName ?? block.tool_name;
   return typeof name === 'string' && name.trim() ? name.trim() : 'Tool';
@@ -489,6 +518,23 @@ function isJsonLikeText(value: string) {
     return true;
   } catch {
     return false;
+  }
+}
+
+function serializeToolPayload(value: unknown) {
+  if (typeof value === 'string') {
+    return value.trim() ? value.trim() : undefined;
+  }
+
+  if (value == null) {
+    return undefined;
+  }
+
+  try {
+    const serialized = JSON.stringify(value);
+    return serialized && serialized !== 'null' ? serialized : undefined;
+  } catch {
+    return undefined;
   }
 }
 
@@ -518,19 +564,49 @@ function summarizeToolDetail(args: unknown): string | undefined {
   return truncatePreview(serialized, 120);
 }
 
+function extractToolResultText(block: Record<string, unknown>) {
+  const text =
+    normalizeOptionalString(block.text) ??
+    normalizeOptionalString(block.content) ??
+    serializeToolPayload(block.result) ??
+    serializeToolPayload(block.output);
+  if (text) {
+    return text;
+  }
+
+  if (Array.isArray(block.content)) {
+    const flattened = collectTextParts(block.content).join('\n').trim();
+    return flattened || undefined;
+  }
+
+  return undefined;
+}
+
+function extractToolIsError(block: Record<string, unknown>) {
+  if (typeof block.isError === 'boolean') {
+    return block.isError;
+  }
+
+  if (typeof block.is_error === 'boolean') {
+    return block.is_error;
+  }
+
+  return false;
+}
+
 function extractToolResultPreview(block: Record<string, unknown>) {
-  const raw =
-    typeof block.text === 'string'
-      ? block.text
-      : typeof block.content === 'string'
-        ? block.content
-        : '';
-  const normalized = normalizeInlineWhitespace(raw);
+  const rawText = extractToolResultText(block) ?? '';
+  const normalized = normalizeInlineWhitespace(rawText);
   if (!normalized || isJsonLikeText(normalized)) {
     return undefined;
   }
 
-  return truncatePreview(normalized, 160);
+  const preview = truncatePreview(normalized, 160);
+  if (!extractToolIsError(block) || preview.toLowerCase().startsWith('error')) {
+    return preview;
+  }
+
+  return `Error: ${preview}`;
 }
 
 function extractToolCards(payload: unknown): OpenClawToolCard[] {
@@ -554,6 +630,10 @@ function extractToolCards(payload: unknown): OpenClawToolCard[] {
     cards.push({
       kind: 'call',
       name: resolveToolCardName(block),
+      ...(resolveToolCallId(block) ? { toolCallId: resolveToolCallId(block)! } : {}),
+      ...(serializeToolPayload(resolveToolArgs(block))
+        ? { argumentsText: serializeToolPayload(resolveToolArgs(block))! }
+        : {}),
       detail: summarizeToolDetail(resolveToolArgs(block)),
     });
   }
@@ -567,6 +647,9 @@ function extractToolCards(payload: unknown): OpenClawToolCard[] {
     cards.push({
       kind: 'result',
       name: resolveToolCardName(block),
+      ...(resolveToolCallId(block) ? { toolCallId: resolveToolCallId(block)! } : {}),
+      ...(extractToolResultText(block) ? { text: extractToolResultText(block)! } : {}),
+      isError: extractToolIsError(block),
       preview: extractToolResultPreview(block),
     });
   }
@@ -578,6 +661,9 @@ function extractToolCards(payload: unknown): OpenClawToolCard[] {
     cards.push({
       kind: 'result',
       name: resolveToolCardName(record ?? {}),
+      ...(resolveToolCallId(record ?? {}) ? { toolCallId: resolveToolCallId(record ?? {})! } : {}),
+      ...(extractToolResultText(record ?? {}) ? { text: extractToolResultText(record ?? {})! } : {}),
+      isError: extractToolIsError(record ?? {}),
       preview: record ? extractToolResultPreview(record) : undefined,
     });
   }

@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   formatChatSessionRelativeTime,
   presentChatSessionListItem,
 } from './chatSessionListPresentation.ts';
+
+const ZH_RELATIVE_TIME_LABELS = {
+  yesterday: '昨天',
+  daysAgo: (count: number) => `${count}天前`,
+};
 
 function runTest(name: string, callback: () => void | Promise<void>) {
   return Promise.resolve()
@@ -42,13 +48,16 @@ await runTest(
         ],
       },
       now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
       isGatewayMainSession: true,
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
     });
 
     assert.deepEqual(presentation, {
       displayTitle: 'Drafting the final parity report',
       preview: 'Streaming assistant reply in progress',
-      relativeTimeLabel: '2m',
+      relativeTimeLabel: '10:58',
       isRunning: true,
       isPinned: true,
       showDeleteAction: false,
@@ -76,12 +85,15 @@ await runTest(
         ],
       },
       now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
       isGatewayMainSession: false,
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
     });
 
     assert.equal(presentation.displayTitle, 'Release checklist for the desktop build');
     assert.equal(presentation.preview, null);
-    assert.equal(presentation.relativeTimeLabel, '30m');
+    assert.equal(presentation.relativeTimeLabel, '10:30');
     assert.equal(presentation.isRunning, false);
     assert.equal(presentation.isPinned, false);
     assert.equal(presentation.showDeleteAction, true);
@@ -89,7 +101,83 @@ await runTest(
 );
 
 await runTest(
-  'formatChatSessionRelativeTime uses compact recency labels',
+  'presentChatSessionListItem hides opaque backend preview ids until readable transcript content exists',
+  () => {
+    const presentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:runtime-preview-id',
+        title: 'New Conversation',
+        updatedAt: Date.UTC(2026, 3, 3, 10, 31, 0),
+        lastMessagePreview: 'thread:claw-studio:instance-a:session-42',
+        messages: [],
+      },
+      now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    assert.equal(presentation.displayTitle, 'New Conversation');
+    assert.equal(presentation.preview, null);
+  },
+);
+
+await runTest(
+  'presentChatSessionListItem hides technical message preview ids until readable transcript content exists',
+  () => {
+    const presentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:runtime-message-id',
+        title: 'New Conversation',
+        updatedAt: Date.UTC(2026, 3, 3, 10, 32, 0),
+        lastMessagePreview: 'message-42',
+        messages: [],
+      },
+      now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    assert.equal(presentation.displayTitle, 'New Conversation');
+    assert.equal(presentation.preview, null);
+  },
+);
+
+await runTest(
+  'presentChatSessionListItem prefixes user previews but still suppresses them when the semantic text only repeats the title',
+  () => {
+    const presentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:user-echo',
+        title: 'Release checklist for the desktop build',
+        updatedAt: Date.UTC(2026, 3, 3, 10, 30, 0),
+        messages: [
+          {
+            role: 'user',
+            content: 'Release checklist for the desktop build',
+            timestamp: Date.UTC(2026, 3, 3, 10, 30, 0),
+          },
+        ],
+      },
+      now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      previewLabels: {
+        you: 'You',
+        tool: 'Tool',
+        attachment: 'Attachment',
+        attachments: 'Attachments',
+      },
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    assert.equal(presentation.preview, null);
+  },
+);
+
+await runTest(
+  'formatChatSessionRelativeTime uses IM-style recency labels for today, yesterday, recent days, and precise dates',
   () => {
     assert.equal(typeof formatChatSessionRelativeTime, 'function');
 
@@ -97,29 +185,60 @@ await runTest(
       formatChatSessionRelativeTime({
         updatedAt: Date.UTC(2026, 3, 3, 10, 59, 40),
         now: Date.UTC(2026, 3, 3, 11, 0, 0),
+        locale: 'zh-CN',
+        timeZone: 'UTC',
+        relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
       }),
-      'now',
+      '10:59',
     );
     assert.equal(
       formatChatSessionRelativeTime({
-        updatedAt: Date.UTC(2026, 3, 3, 10, 55, 0),
+        updatedAt: Date.UTC(2026, 3, 2, 11, 0, 0),
         now: Date.UTC(2026, 3, 3, 11, 0, 0),
+        locale: 'zh-CN',
+        timeZone: 'UTC',
+        relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
       }),
-      '5m',
+      '昨天',
     );
     assert.equal(
       formatChatSessionRelativeTime({
-        updatedAt: Date.UTC(2026, 3, 3, 8, 0, 0),
+        updatedAt: Date.UTC(2026, 2, 31, 11, 0, 0),
         now: Date.UTC(2026, 3, 3, 11, 0, 0),
+        locale: 'zh-CN',
+        timeZone: 'UTC',
+        relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
       }),
-      '3h',
+      '3天前',
     );
     assert.equal(
       formatChatSessionRelativeTime({
-        updatedAt: Date.UTC(2026, 3, 1, 11, 0, 0),
+        updatedAt: Date.UTC(2026, 2, 12, 11, 0, 0),
         now: Date.UTC(2026, 3, 3, 11, 0, 0),
+        locale: 'zh-CN',
+        timeZone: 'UTC',
+        relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
       }),
-      '2d',
+      '03-12',
+    );
+    assert.equal(
+      formatChatSessionRelativeTime({
+        updatedAt: Date.UTC(2025, 11, 12, 11, 0, 0),
+        now: Date.UTC(2026, 3, 3, 11, 0, 0),
+        locale: 'zh-CN',
+        timeZone: 'UTC',
+        relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+      }),
+      '2025-12-12',
+    );
+    assert.equal(
+      formatChatSessionRelativeTime({
+        updatedAt: Date.UTC(2026, 3, 2, 11, 0, 0),
+        now: Date.UTC(2026, 3, 3, 11, 0, 0),
+        locale: 'en-US',
+        timeZone: 'UTC',
+      }),
+      'Yesterday',
     );
   },
 );
@@ -205,16 +324,178 @@ await runTest(
         ],
       },
       now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
       isGatewayMainSession: true,
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
     });
 
     assert.deepEqual(presentation, {
       displayTitle: 'Kernel title',
       preview: 'Kernel preview',
-      relativeTimeLabel: '2m',
+      relativeTimeLabel: '10:58',
       isRunning: true,
       isPinned: true,
       showDeleteAction: false,
     });
+  },
+);
+
+await runTest(
+  'presentChatSessionListItem orders preview candidates by authoritative sequence instead of raw message array order',
+  () => {
+    const presentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:seq-preview',
+        title: 'Architecture review',
+        updatedAt: Date.UTC(2026, 3, 3, 11, 0, 0),
+        lastMessagePreview: 'Stale preview',
+        messages: [
+          {
+            role: 'assistant',
+            content: 'Legacy assistant preview',
+            kernelMessage: {
+              id: 'message-2',
+              sessionRef: {
+                kernelId: 'openclaw',
+                instanceId: 'instance-1',
+                sessionId: 'thread:seq-preview',
+              },
+              role: 'assistant',
+              status: 'complete',
+              createdAt: Date.UTC(2026, 3, 3, 10, 58, 0),
+              updatedAt: Date.UTC(2026, 3, 3, 10, 58, 0),
+              text: 'Assistant should win by seq',
+              nativeMetadata: {
+                seq: 2,
+              },
+              parts: [
+                {
+                  kind: 'text',
+                  text: 'Assistant should win by seq',
+                },
+              ],
+            },
+          },
+          {
+            role: 'user',
+            content: 'Legacy user preview',
+            kernelMessage: {
+              id: 'message-1',
+              sessionRef: {
+                kernelId: 'openclaw',
+                instanceId: 'instance-1',
+                sessionId: 'thread:seq-preview',
+              },
+              role: 'user',
+              status: 'complete',
+              createdAt: Date.UTC(2026, 3, 3, 10, 59, 0),
+              updatedAt: Date.UTC(2026, 3, 3, 10, 59, 0),
+              text: 'User arrived later in the raw array',
+              nativeMetadata: {
+                seq: 1,
+              },
+              parts: [
+                {
+                  kind: 'text',
+                  text: 'User arrived later in the raw array',
+                },
+              ],
+            },
+          },
+        ],
+      },
+      now: Date.UTC(2026, 3, 3, 11, 1, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    assert.equal(presentation.displayTitle, 'Architecture review');
+    assert.equal(presentation.preview, 'Assistant should win by seq');
+  },
+);
+
+await runTest(
+  'presentChatSessionListItem formats tool and attachment summaries with localized preview labels',
+  () => {
+    const toolPresentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:tool-session',
+        title: 'Repo sync',
+        updatedAt: Date.UTC(2026, 3, 3, 10, 58, 0),
+        messages: [
+          {
+            role: 'tool',
+            content: '',
+            toolCards: [
+              {
+                kind: 'result',
+                name: 'repo_sync',
+                preview: 'Synced 18 files',
+              },
+            ],
+            timestamp: Date.UTC(2026, 3, 3, 10, 58, 0),
+          },
+        ],
+      },
+      now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      previewLabels: {
+        you: 'You',
+        tool: 'Tool',
+        attachment: 'Attachment',
+        attachments: 'Attachments',
+      },
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    const attachmentPresentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:attachment-session',
+        title: 'Asset review',
+        updatedAt: Date.UTC(2026, 3, 3, 10, 59, 0),
+        messages: [
+          {
+            role: 'user',
+            content: '',
+            attachments: [
+              {
+                id: 'asset-1',
+                kind: 'file',
+                name: 'report.pdf',
+              },
+            ],
+            timestamp: Date.UTC(2026, 3, 3, 10, 59, 0),
+          },
+        ],
+      },
+      now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      previewLabels: {
+        you: 'You',
+        tool: 'Tool',
+        attachment: 'Attachment',
+        attachments: 'Attachments',
+      },
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    assert.equal(toolPresentation.preview, 'Tool: Synced 18 files');
+    assert.equal(attachmentPresentation.preview, 'Attachment: report.pdf');
+  },
+);
+
+await runTest(
+  'chatSessionListPresentation reuses the shared run binding source instead of duplicating legacy run fields',
+  () => {
+    const source = readFileSync(new URL('./chatSessionListPresentation.ts', import.meta.url), 'utf8');
+    assert.match(
+      source,
+      /import\s*\{\s*resolveChatRunBinding,\s*type ChatRunBindingSource\s*\}\s*from '\.\/chatRunBinding\.ts';/,
+    );
+    assert.doesNotMatch(source, /runId\?: string \| null;/);
   },
 );

@@ -44,7 +44,7 @@ function collectTextFiles(directory: string, results: string[] = []) {
     const nextPath = path.join(directory, entry.name);
 
     if (entry.isDirectory()) {
-      if (entry.name === 'node_modules' || entry.name === 'dist') {
+      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'target') {
         continue;
       }
 
@@ -323,6 +323,31 @@ runTest('foundation composes local api proxy from shared sdkwork-local-api-proxy
   assert.equal(exists('packages/sdkwork-claw-core/src/services/localAiProxyRouteService.ts'), false);
 });
 
+runTest('foundation sources Hermes kernel-config path semantics from the shared local-api-proxy package boundary', () => {
+  const hermesKernelConfigPathServiceSource = read(
+    'packages/sdkwork-claw-core/src/services/hermesKernelConfigPathService.ts',
+  );
+  const hermesPathResolutionServiceSource = read(
+    'packages/sdkwork-claw-core/src/services/hermesPathResolutionService.ts',
+  );
+  const sharedHermesKernelConfigSource = read(
+    '../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy/src/kernel/hermesKernelConfig.ts',
+  );
+
+  assert.match(hermesKernelConfigPathServiceSource, /from '@sdkwork\/local-api-proxy'/);
+  assert.match(hermesKernelConfigPathServiceSource, /buildStandardHermesConfigFilePath/);
+  assert.match(hermesKernelConfigPathServiceSource, /resolveHermesStateDatabasePathFromConfigFile/);
+  assert.doesNotMatch(hermesKernelConfigPathServiceSource, /createUserRootKernelConfigDefinition\(/);
+  assert.doesNotMatch(hermesKernelConfigPathServiceSource, /const hermesKernelConfigDefinition =/);
+
+  assert.match(hermesPathResolutionServiceSource, /from '@sdkwork\/local-api-proxy'/);
+  assert.match(hermesPathResolutionServiceSource, /resolveHermesLogsRootFromConfigFile/);
+  assert.doesNotMatch(hermesPathResolutionServiceSource, /from '\.\/hermesKernelConfigPathService\.ts'/);
+
+  assert.match(sharedHermesKernelConfigSource, /configFileName: "config\.yaml"/);
+  assert.match(sharedHermesKernelConfigSource, /format: "yaml"/);
+});
+
 runTest('foundation sources local ai proxy runtime status models from the shared native package boundary', () => {
   const localAiProxyTypesSource = read(
     'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/types.rs',
@@ -542,6 +567,95 @@ runTest('foundation sources local ai proxy response semantics from the shared na
   assert.doesNotMatch(streamingSource, /fn is_openai_stream_request\(/);
   assert.doesNotMatch(streamingSource, /fn map_gemini_finish_reason\(/);
   assert.doesNotMatch(streamingSource, /fn merge_usage_from_payload\(/);
+});
+
+runTest('foundation sources local ai proxy generic support, upstream, and probe helpers from the shared native package boundary', () => {
+  const localAiProxyServiceSource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
+  );
+  const anthropicNativeSource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs',
+  );
+  const geminiNativeSource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs',
+  );
+  const openaiCompatibleSource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',
+  );
+  const observabilitySource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs',
+  );
+  const healthSource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs',
+  );
+  const requestContextSource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs',
+  );
+  const requestTranslationSource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs',
+  );
+  const responseIoSource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs',
+  );
+  const streamingSource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs',
+  );
+
+  assert.match(localAiProxyServiceSource, /sdkwork_local_api_proxy_native::probe::probe_route/);
+  assert.match(
+    localAiProxyServiceSource,
+    /sdkwork_local_api_proxy_native::support::current_time_ms/,
+  );
+
+  assert.match(anthropicNativeSource, /sdkwork_local_api_proxy_native::support::proxy_error/);
+  assert.match(geminiNativeSource, /sdkwork_local_api_proxy_native::support::proxy_error/);
+  assert.match(geminiNativeSource, /sdkwork_local_api_proxy_native::upstream::/);
+  assert.match(openaiCompatibleSource, /sdkwork_local_api_proxy_native::support::proxy_error/);
+  assert.match(openaiCompatibleSource, /sdkwork_local_api_proxy_native::upstream::/);
+  assert.match(observabilitySource, /sdkwork_local_api_proxy_native::support::\{/);
+  assert.match(healthSource, /sdkwork_local_api_proxy_native::support::proxy_error/);
+  assert.match(requestContextSource, /sdkwork_local_api_proxy_native::support::proxy_error/);
+  assert.match(requestTranslationSource, /sdkwork_local_api_proxy_native::support::proxy_error/);
+  assert.match(responseIoSource, /sdkwork_local_api_proxy_native::support::proxy_error/);
+  assert.match(streamingSource, /sdkwork_local_api_proxy_native::support::\{/);
+
+  assert.equal(
+    exists('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/support.rs'),
+    false,
+  );
+  assert.equal(
+    exists('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs'),
+    false,
+  );
+  assert.equal(
+    exists('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs'),
+    false,
+  );
+});
+
+runTest('foundation sources local ai proxy generic server launch from the shared native runtime boundary', () => {
+  const localAiProxyServiceSource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
+  );
+  const sharedRuntimeSource = read(
+    '../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy/native/tauri-rust/src/runtime/mod.rs',
+  );
+
+  assert.match(
+    localAiProxyServiceSource,
+    /sdkwork_local_api_proxy_native::runtime::start_local_api_proxy_server/,
+  );
+  assert.match(
+    localAiProxyServiceSource,
+    /sdkwork_local_api_proxy_native::runtime::LocalApiProxyServerHandle/,
+  );
+  assert.doesNotMatch(localAiProxyServiceSource, /tokio::net::TcpListener::bind/);
+  assert.doesNotMatch(localAiProxyServiceSource, /axum::serve\(/);
+  assert.doesNotMatch(localAiProxyServiceSource, /oneshot::channel\(/);
+  assert.doesNotMatch(localAiProxyServiceSource, /thread::spawn\(/);
+
+  assert.match(sharedRuntimeSource, /pub struct LocalApiProxyServerHandle/);
+  assert.match(sharedRuntimeSource, /pub fn start_local_api_proxy_server/);
 });
 
 runTest('foundation removes obsolete api-router docs and implementation plans from the workspace docs surface', () => {

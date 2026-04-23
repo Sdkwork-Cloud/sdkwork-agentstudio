@@ -211,7 +211,7 @@ function buildServerSmokeReport({
     verifiedAt: '2026-04-06T09:08:07.000Z',
     manifestPath,
     artifactRelativePaths,
-    launcherRelativePath: 'start-claw-server.sh',
+    launcherRelativePath: platform === 'windows' ? 'bin/claw-server.exe' : 'bin/claw-server',
     runtimeBaseUrl: 'http://127.0.0.1:19797',
     checks: [
       {
@@ -343,10 +343,13 @@ function buildDeploymentSmokeReport({
   accelerator = 'cpu',
   target = 'x86_64-unknown-linux-gnu',
   smokeKind = family === 'container' ? 'live-deployment' : 'chart-render',
+  status = 'passed',
   artifactRelativePaths = [],
-  launcherRelativePath = family === 'container' ? 'deploy/docker-compose.yml' : 'chart/Chart.yaml',
+  launcherRelativePath = family === 'container' ? 'deploy/docker/docker-compose.yml' : 'chart/Chart.yaml',
   runtimeBaseUrl = family === 'container' ? 'http://127.0.0.1:18797' : '',
   checks = buildDefaultDeploymentChecks(family),
+  skippedReason = '',
+  capabilities,
 } = {}) {
   return {
     family,
@@ -355,13 +358,17 @@ function buildDeploymentSmokeReport({
     accelerator,
     target,
     smokeKind,
-    status: 'passed',
+    status,
     verifiedAt: '2026-04-06T10:11:12.000Z',
     manifestPath,
     artifactRelativePaths,
     launcherRelativePath,
     runtimeBaseUrl,
     checks,
+    ...(String(skippedReason ?? '').trim()
+      ? { skippedReason: String(skippedReason ?? '').trim() }
+      : {}),
+    ...(capabilities ? { capabilities } : {}),
   };
 }
 
@@ -1954,7 +1961,7 @@ test('release asset finalizer lifts server bundle smoke metadata onto server art
         target: 'x86_64-unknown-linux-gnu',
         smokeKind: 'bundle-runtime',
         status: 'passed',
-        launcherRelativePath: 'start-claw-server.sh',
+        launcherRelativePath: 'bin/claw-server',
         runtimeBaseUrl: 'http://127.0.0.1:19797',
         artifactRelativePaths: [
           'server/linux/x64/claw-studio-server-release-2026-04-03-08-linux-x64.tar.gz',
@@ -2165,7 +2172,7 @@ test('release asset finalizer lifts deployment smoke metadata onto container and
         target: 'x86_64-unknown-linux-gnu',
         smokeKind: 'live-deployment',
         status: 'passed',
-        launcherRelativePath: 'deploy/docker-compose.yml',
+        launcherRelativePath: 'deploy/docker/docker-compose.yml',
         runtimeBaseUrl: 'http://127.0.0.1:18797',
         artifactRelativePaths: [containerArchiveRelativePath],
         checks: [
@@ -2265,6 +2272,164 @@ test('release asset finalizer lifts deployment smoke metadata onto container and
             detail: 'rendered manifests mount /var/lib/claw-server through a PersistentVolumeClaim',
           },
         ],
+      },
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('release asset finalizer accepts structured skipped deployment smoke evidence and preserves it in the release manifest', async () => {
+  const finalizerPath = path.join(rootDir, 'scripts', 'release', 'finalize-release-assets.mjs');
+  const finalizer = await import(pathToFileURL(finalizerPath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-finalize-deployment-smoke-skipped-'));
+  const releaseAssetsDir = path.join(tempRoot, 'release-assets');
+  const containerDir = path.join(releaseAssetsDir, 'container', 'linux', 'x64', 'cpu');
+  const kubernetesDir = path.join(releaseAssetsDir, 'kubernetes', 'linux', 'x64', 'cpu');
+  const containerArchiveRelativePath = 'container/linux/x64/cpu/claw-studio-container-bundle-release-2026-04-06-07-linux-x64-cpu.tar.gz';
+  const kubernetesArchiveRelativePath = 'kubernetes/linux/x64/cpu/claw-studio-kubernetes-bundle-release-2026-04-06-07-linux-x64-cpu.tar.gz';
+  const containerManifestPath = path.join(containerDir, 'release-asset-manifest.json');
+  const kubernetesManifestPath = path.join(kubernetesDir, 'release-asset-manifest.json');
+
+  try {
+    mkdirSync(containerDir, { recursive: true });
+    mkdirSync(kubernetesDir, { recursive: true });
+    writeFileSync(path.join(releaseAssetsDir, containerArchiveRelativePath), 'container-archive', 'utf8');
+    writeFileSync(path.join(releaseAssetsDir, kubernetesArchiveRelativePath), 'kubernetes-archive', 'utf8');
+    writeFileSync(
+      containerManifestPath,
+      `${JSON.stringify({
+        profileId: 'claw-studio',
+        releaseTag: 'release-2026-04-06-07',
+        platform: 'linux',
+        arch: 'x64',
+        artifacts: [
+          {
+            name: path.basename(containerArchiveRelativePath),
+            relativePath: containerArchiveRelativePath,
+            family: 'container',
+            platform: 'linux',
+            arch: 'x64',
+            accelerator: 'cpu',
+            kind: 'archive',
+            sha256: 'placeholder',
+            size: 17,
+          },
+        ],
+      }, null, 2)}\n`,
+      'utf8',
+    );
+    writeFileSync(
+      kubernetesManifestPath,
+      `${JSON.stringify({
+        profileId: 'claw-studio',
+        releaseTag: 'release-2026-04-06-07',
+        platform: 'linux',
+        arch: 'x64',
+        artifacts: [
+          {
+            name: path.basename(kubernetesArchiveRelativePath),
+            relativePath: kubernetesArchiveRelativePath,
+            family: 'kubernetes',
+            platform: 'linux',
+            arch: 'x64',
+            accelerator: 'cpu',
+            kind: 'archive',
+            sha256: 'placeholder',
+            size: 18,
+          },
+        ],
+      }, null, 2)}\n`,
+      'utf8',
+    );
+    writeFileSync(
+      path.join(containerDir, 'release-smoke-report.json'),
+      `${JSON.stringify(buildDeploymentSmokeReport({
+        family: 'container',
+        manifestPath: containerManifestPath,
+        artifactRelativePaths: [containerArchiveRelativePath],
+        status: 'skipped',
+        launcherRelativePath: '',
+        runtimeBaseUrl: '',
+        checks: [],
+        skippedReason: 'docker and/or docker compose are unavailable on this host',
+        capabilities: {
+          docker: false,
+          dockerCompose: true,
+        },
+      }), null, 2)}\n`,
+      'utf8',
+    );
+    writeFileSync(
+      path.join(kubernetesDir, 'release-smoke-report.json'),
+      `${JSON.stringify(buildDeploymentSmokeReport({
+        family: 'kubernetes',
+        manifestPath: kubernetesManifestPath,
+        artifactRelativePaths: [kubernetesArchiveRelativePath],
+        status: 'skipped',
+        launcherRelativePath: '',
+        checks: [],
+        skippedReason: 'helm is unavailable on this host',
+        capabilities: {
+          helm: false,
+          kubectl: true,
+        },
+      }), null, 2)}\n`,
+      'utf8',
+    );
+
+    finalizer.finalizeReleaseAssets({
+      profileId: 'claw-studio',
+      releaseTag: 'release-2026-04-06-07',
+      repository: 'Sdkwork-Cloud/claw-studio',
+      releaseAssetsDir,
+    });
+
+    const manifest = JSON.parse(
+      readFileSync(path.join(releaseAssetsDir, 'release-manifest.json'), 'utf8'),
+    );
+    const containerArtifact = manifest.artifacts.find(
+      (artifact) => artifact.relativePath === containerArchiveRelativePath,
+    );
+    const kubernetesArtifact = manifest.artifacts.find(
+      (artifact) => artifact.relativePath === kubernetesArchiveRelativePath,
+    );
+
+    assert.deepEqual(
+      containerArtifact?.deploymentSmoke,
+      {
+        reportRelativePath: 'container/linux/x64/cpu/release-smoke-report.json',
+        manifestRelativePath: 'container/linux/x64/cpu/release-asset-manifest.json',
+        verifiedAt: '2026-04-06T10:11:12.000Z',
+        target: 'x86_64-unknown-linux-gnu',
+        smokeKind: 'live-deployment',
+        status: 'skipped',
+        artifactRelativePaths: [containerArchiveRelativePath],
+        checks: [],
+        skippedReason: 'docker and/or docker compose are unavailable on this host',
+        capabilities: {
+          docker: false,
+          dockerCompose: true,
+        },
+      },
+    );
+    assert.deepEqual(
+      kubernetesArtifact?.deploymentSmoke,
+      {
+        reportRelativePath: 'kubernetes/linux/x64/cpu/release-smoke-report.json',
+        manifestRelativePath: 'kubernetes/linux/x64/cpu/release-asset-manifest.json',
+        verifiedAt: '2026-04-06T10:11:12.000Z',
+        target: 'x86_64-unknown-linux-gnu',
+        smokeKind: 'chart-render',
+        status: 'skipped',
+        artifactRelativePaths: [kubernetesArchiveRelativePath],
+        checks: [],
+        skippedReason: 'helm is unavailable on this host',
+        capabilities: {
+          helm: false,
+          kubectl: true,
+        },
       },
     );
   } finally {

@@ -39,6 +39,19 @@ await runTest('kernel chat adapter capabilities default projection metadata from
     supportsRuns: true,
     supportsAgentProfiles: true,
     supportsSessionMutation: true,
+    capabilitySet: {
+      supportsAgentProfiles: true,
+      supportsSessionMutation: true,
+      supportsStreaming: true,
+      supportsRuns: true,
+      supportsRunAbort: false,
+      supportsModelSelection: false,
+      supportsReasoningControl: false,
+      supportsThinkingLevel: false,
+      supportsFastMode: false,
+      supportsVerboseLevel: false,
+      supportsAttachments: false,
+    },
     reason: null,
   });
   assert.deepEqual(http, {
@@ -51,6 +64,19 @@ await runTest('kernel chat adapter capabilities default projection metadata from
     supportsRuns: true,
     supportsAgentProfiles: false,
     supportsSessionMutation: true,
+    capabilitySet: {
+      supportsAgentProfiles: false,
+      supportsSessionMutation: true,
+      supportsStreaming: true,
+      supportsRuns: true,
+      supportsRunAbort: false,
+      supportsModelSelection: false,
+      supportsReasoningControl: false,
+      supportsThinkingLevel: false,
+      supportsFastMode: false,
+      supportsVerboseLevel: false,
+      supportsAttachments: false,
+    },
     reason: null,
   });
 });
@@ -78,6 +104,19 @@ await runTest('kernel chat adapter contract can expose capability envelopes with
     supportsRuns: true,
     supportsAgentProfiles: true,
     supportsSessionMutation: true,
+    capabilitySet: {
+      supportsAgentProfiles: true,
+      supportsSessionMutation: true,
+      supportsStreaming: true,
+      supportsRuns: true,
+      supportsRunAbort: false,
+      supportsModelSelection: false,
+      supportsReasoningControl: false,
+      supportsThinkingLevel: false,
+      supportsFastMode: false,
+      supportsVerboseLevel: false,
+      supportsAttachments: false,
+    },
     reason: 'Hermes chat transport is not wired yet.',
   });
 });

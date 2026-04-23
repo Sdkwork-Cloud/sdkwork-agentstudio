@@ -5,9 +5,6 @@ interface StudioCreateInstanceKernelPolicyInput {
   deploymentMode: StudioInstanceDeploymentMode;
 }
 
-const HERMES_UNSUPPORTED_LOCAL_MANAGED_MESSAGE =
-  'Hermes instances must use local-external or remote deployment. local-managed Hermes is not supported because Hermes remains externally managed and Windows support is limited to WSL2 or remote Linux.';
-
 function normalizeRuntimeKind(runtimeKind: StudioRuntimeKind) {
   return String(runtimeKind ?? '').trim().toLowerCase();
 }
@@ -15,12 +12,8 @@ function normalizeRuntimeKind(runtimeKind: StudioRuntimeKind) {
 export function getStudioCreateInstanceKernelPolicyError(
   input: StudioCreateInstanceKernelPolicyInput,
 ): string | null {
-  if (
-    normalizeRuntimeKind(input.runtimeKind) === 'hermes'
-    && input.deploymentMode === 'local-managed'
-  ) {
-    return HERMES_UNSUPPORTED_LOCAL_MANAGED_MESSAGE;
-  }
+  void normalizeRuntimeKind(input.runtimeKind);
+  void input.deploymentMode;
 
   return null;
 }

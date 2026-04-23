@@ -19,6 +19,7 @@
     "chatComposer": "Chat composer",
     "compactModelSelector": "Compact model selector",
     "compactModelSelectorDescription": "Hide the channel column in the model selector when only one channel is available.",
+    "loadPreferenceFailed": "Failed to load preferences",
     "updatePreferenceFailed": "Failed to update preference",
     "themeModes": {
       "light": "Light",
@@ -757,6 +758,7 @@
     },
     "toasts": {
       "fillAllFields": "Please fill in all password fields",
+      "loadPreferenceFailed": "Failed to load preferences",
       "passwordMismatch": "New passwords do not match",
       "passwordUpdated": "Password updated successfully",
       "passwordUpdateFailed": "Failed to update password",

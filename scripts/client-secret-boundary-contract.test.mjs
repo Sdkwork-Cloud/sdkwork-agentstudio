@@ -56,6 +56,6 @@ runTest('tracked env examples stay secret-free for browser and desktop hosts', (
 runTest('automation gate freezes the client secret boundary contract', () => {
   assert.match(
     packageJson.scripts['check:automation'] ?? '',
-    /node scripts\/client-secret-boundary-contract\.test\.mjs/,
+    /sdkwork-run-node scripts\/client-secret-boundary-contract\.test\.mjs/,
   );
 });

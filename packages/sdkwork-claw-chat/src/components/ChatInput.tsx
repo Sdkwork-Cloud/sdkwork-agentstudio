@@ -44,6 +44,10 @@ import {
   shouldSendChatComposerMessageOnEnter,
   startNativeScreenshotSupportProbe,
 } from '../services/index.ts';
+import {
+  CHAT_SURFACE_INPUT_CLASS,
+  CHAT_SURFACE_PANEL_CLASS,
+} from './chatChromeSurface';
 
 type ComposerDraftStatus = 'uploading' | 'ready' | 'error';
 type BrowserFilePickerMode = 'all' | 'image';
@@ -86,8 +90,9 @@ interface ActiveRecorder {
 }
 
 interface ChatInputProps {
-  onSend: (payload: ChatComposerSubmitPayload) => Promise<void> | void;
+  onSend: (payload: ChatComposerSubmitPayload) => Promise<unknown> | void;
   isLoading?: boolean;
+  canStop?: boolean;
   onStop?: () => void;
   channels: LLMChannel[];
   activeChannel?: LLMChannel;
@@ -418,6 +423,7 @@ async function buildBlobSource(
 export function ChatInput({
   onSend,
   isLoading,
+  canStop = false,
   onStop,
   channels,
   activeChannel,
@@ -457,19 +463,20 @@ export function ChatInput({
   const draftsRef = useRef<ComposerDraftAttachment[]>([]);
   const activeRecorderRef = useRef<ActiveRecorder | null>(null);
   const isUnmountingRef = useRef(false);
+  const sendInvocationLockRef = useRef(false);
   const modelDropdownId = useId();
   const { t } = useTranslation();
   const modelTriggerLabel = activeModel?.name || t('chat.page.selectModel');
   const modelTriggerClassName = cn(
     'inline-flex h-8 max-w-[11.5rem] items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition-colors sm:h-9 sm:max-w-[13.5rem] lg:max-w-[15.5rem]',
     showModelDropdown
-      ? 'bg-zinc-100/95 text-zinc-900 shadow-sm dark:bg-white/[0.12] dark:text-zinc-50'
-      : 'bg-zinc-100/72 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 dark:bg-white/[0.05] dark:text-zinc-100 dark:hover:bg-white/[0.09] dark:hover:text-white',
+      ? 'bg-zinc-100/90 text-zinc-900 shadow-sm dark:bg-zinc-800/90 dark:text-zinc-50'
+      : 'bg-zinc-100/78 text-zinc-700 hover:bg-zinc-100/95 hover:text-zinc-900 dark:bg-zinc-800/72 dark:text-zinc-100 dark:hover:bg-zinc-800/92 dark:hover:text-white',
   );
   const actionButtonClassName =
-    'flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900 dark:bg-white/[0.045] dark:text-zinc-200 dark:hover:bg-white/[0.09] dark:hover:text-zinc-50 sm:h-9 sm:w-9';
+    'flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900 dark:bg-zinc-800/55 dark:text-zinc-200 dark:hover:bg-zinc-800/90 dark:hover:text-zinc-50 sm:h-9 sm:w-9';
   const sendSideActionButtonClassName =
-    'flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900 dark:bg-white/[0.045] dark:text-zinc-200 dark:hover:bg-white/[0.09] dark:hover:text-zinc-50';
+    'flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900 dark:bg-zinc-800/55 dark:text-zinc-200 dark:hover:bg-zinc-800/90 dark:hover:text-zinc-50';
   const isDesktopPlatform = platform.getPlatform() === 'desktop';
   const supportsScreenRecording =
     typeof navigator !== 'undefined' &&
@@ -755,16 +762,21 @@ export function ChatInput({
       return;
     }
 
-    if (!canSend) {
+    if (!canSend || sendInvocationLockRef.current) {
       return;
     }
 
+    sendInvocationLockRef.current = true;
     setIsSendingMessage(true);
     try {
-      await onSend({
+      const handled = await onSend({
         text: message.trim(),
         attachments: readyAttachments.map((attachment) => ({ ...attachment })),
       });
+      if (handled === false) {
+        restoreTextareaFocus();
+        return;
+      }
       clearDrafts();
       setMessage('');
       setRemoteUrl('');
@@ -782,6 +794,7 @@ export function ChatInput({
           : t('chat.input.uploadFailedGeneric'),
       );
     } finally {
+      sendInvocationLockRef.current = false;
       if (!isUnmountingRef.current) {
         setIsSendingMessage(false);
       }
@@ -1449,11 +1462,12 @@ export function ChatInput({
           void handleDrop(event);
         }}
         className={cn(
-          'relative flex w-full flex-col overflow-visible rounded-[18px] bg-white/90 px-2 py-1.5 shadow-[0_-10px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-300 dark:bg-[#161b24]/76 dark:shadow-[0_-14px_34px_rgba(0,0,0,0.28)] sm:rounded-[20px] sm:px-2.5 sm:py-2',
+          CHAT_SURFACE_INPUT_CLASS,
+          'relative flex w-full flex-col overflow-visible rounded-[18px] px-2 py-1.5 shadow-[0_-10px_24px_rgba(15,23,42,0.06)] backdrop-blur-xl transition-all duration-300 dark:shadow-[0_-14px_34px_rgba(0,0,0,0.24)] sm:rounded-[20px] sm:px-2.5 sm:py-2',
           isDragging
-            ? 'overflow-hidden bg-white/95 shadow-[0_22px_60px_rgba(59,130,246,0.18)] ring-2 ring-primary-500/20 dark:bg-[#1b2230]/86 dark:ring-primary-400/25 dark:shadow-[0_22px_60px_rgba(15,23,42,0.45)]'
+            ? 'overflow-hidden border-primary-300/70 bg-zinc-50/96 shadow-[0_22px_60px_rgba(59,130,246,0.14)] ring-2 ring-primary-500/16 dark:border-primary-500/30 dark:bg-zinc-900/84 dark:ring-primary-400/20 dark:shadow-[0_22px_60px_rgba(15,23,42,0.38)]'
             : showElevatedSurface
-              ? 'bg-white/96 shadow-[0_-14px_32px_rgba(15,23,42,0.10)] dark:bg-[#1a202b]/80 dark:shadow-[0_-16px_36px_rgba(0,0,0,0.32)]'
+              ? 'bg-zinc-50/94 shadow-[0_-14px_32px_rgba(15,23,42,0.08)] dark:bg-zinc-900/76 dark:shadow-[0_-16px_36px_rgba(0,0,0,0.28)]'
               : null,
         )}
       >
@@ -1465,7 +1479,7 @@ export function ChatInput({
               exit={{ opacity: 0 }}
               className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-primary-500/8 backdrop-blur-sm"
             >
-              <div className="rounded-3xl border border-primary-500/30 bg-white/95 px-6 py-5 text-center shadow-lg dark:bg-zinc-900/95">
+              <div className="rounded-3xl border border-primary-500/30 bg-zinc-50/95 px-6 py-5 text-center shadow-lg dark:bg-zinc-900/95">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-500/10 text-primary-600 dark:bg-primary-400/10 dark:text-primary-300">
                   <Paperclip className="h-6 w-6" />
                 </div>
@@ -1499,7 +1513,10 @@ export function ChatInput({
                 return (
                   <div
                     key={draft.id}
-                    className="overflow-hidden rounded-[22px] border border-zinc-200/80 bg-zinc-50/80 p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/70"
+                    className={cn(
+                      CHAT_SURFACE_PANEL_CLASS,
+                      'overflow-hidden rounded-[18px] p-3 shadow-sm',
+                    )}
                   >
                     {renderDraftPreview(draft)}
                     <div className="mt-3 flex items-start justify-between gap-3">
@@ -1583,7 +1600,10 @@ export function ChatInput({
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                className="rounded-[22px] border border-zinc-200 bg-zinc-50/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/70"
+                className={cn(
+                  CHAT_SURFACE_PANEL_CLASS,
+                  'rounded-[18px] p-4',
+                )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -1621,7 +1641,7 @@ export function ChatInput({
                     onChange={(event) => setRemoteUrl(event.target.value)}
                     onKeyDown={handleUrlImportKeyDown}
                     placeholder={t('chat.input.urlPlaceholder')}
-                    className="h-11 rounded-2xl border-zinc-200 bg-white px-4 dark:border-zinc-800 dark:bg-zinc-900"
+                    className={cn(CHAT_SURFACE_INPUT_CLASS, 'h-11 rounded-2xl px-4')}
                   />
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <Input
@@ -1631,7 +1651,10 @@ export function ChatInput({
                       onChange={(event) => setRemoteUrlFileName(event.target.value)}
                       onKeyDown={handleUrlImportKeyDown}
                       placeholder={t('chat.input.urlFileNamePlaceholder')}
-                      className="h-11 flex-1 rounded-2xl border-zinc-200 bg-white px-4 dark:border-zinc-800 dark:bg-zinc-900"
+                      className={cn(
+                        CHAT_SURFACE_INPUT_CLASS,
+                        'h-11 flex-1 rounded-2xl px-4',
+                      )}
                     />
                     <button
                       type="button"
@@ -1813,7 +1836,7 @@ export function ChatInput({
               ) : null}
 
               <AnimatePresence mode="wait">
-                {isLoading ? (
+                {isLoading && canStop ? (
                   <motion.button
                     key="stop"
                     type="button"
@@ -1825,6 +1848,20 @@ export function ChatInput({
                     title={t('chat.input.stopGenerating')}
                   >
                     <StopCircle className="h-[18px] w-[18px] transition-colors group-hover:text-red-400" />
+                  </motion.button>
+                ) : isLoading ? (
+                  <motion.button
+                    key="loading"
+                    type="button"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    disabled
+                    aria-disabled
+                    title={t('common.loading')}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                  >
+                    <LoaderCircle className="h-[18px] w-[18px] animate-spin" />
                   </motion.button>
                 ) : (
                   <motion.button

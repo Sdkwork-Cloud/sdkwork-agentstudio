@@ -318,7 +318,7 @@ await runTest(
 );
 
 await runTest(
-  'createHermesInstanceDetailModulePayload still flags unsupported Hermes deployment modes as requiring a supported target posture',
+  'createHermesInstanceDetailModulePayload treats local-managed Hermes deployment as a supported target posture when the kernel is app-managed under the user-root layout',
   async () => {
     assert.ok(instanceDetailModulePayloadModule, 'Expected instanceDetailModulePayload.ts to exist');
 
@@ -390,10 +390,14 @@ await runTest(
       (check) => check.id === 'deploymentTarget',
     );
 
-    assert.equal(deploymentTarget?.status, 'required');
+    assert.equal(deploymentTarget?.status, 'configured');
+    assert.equal(
+      deploymentTarget?.detailKey,
+      'instances.detail.modules.hermes.readiness.deploymentTarget.configured',
+    );
     assert.equal(
       hermesPayload?.diagnostics.some((diagnostic) => diagnostic.id === 'hermes-deploymentTarget'),
-      true,
+      false,
     );
   },
 );

@@ -12,12 +12,12 @@ async function runTest(name: string, callback: () => Promise<void> | void) {
 }
 
 await runTest(
-  'resolveChatConversationBodyState shows a loading state when gateway history is still being fetched for an empty session',
+  'resolveChatConversationBodyState shows a loading state when history is still being fetched for an empty session',
   () => {
     assert.deepEqual(
       resolveChatConversationBodyState({
         messageCount: 0,
-        isGatewayHistoryLoading: true,
+        isHistoryLoading: true,
       }),
       {
         mode: 'loading',
@@ -27,12 +27,12 @@ await runTest(
 );
 
 await runTest(
-  'resolveChatConversationBodyState shows the empty state when there are no messages and no gateway history request in flight',
+  'resolveChatConversationBodyState shows the empty state when there are no messages and no history request in flight',
   () => {
     assert.deepEqual(
       resolveChatConversationBodyState({
         messageCount: 0,
-        isGatewayHistoryLoading: false,
+        isHistoryLoading: false,
       }),
       {
         mode: 'empty',
@@ -47,7 +47,7 @@ await runTest(
     assert.deepEqual(
       resolveChatConversationBodyState({
         messageCount: 2,
-        isGatewayHistoryLoading: true,
+        isHistoryLoading: true,
       }),
       {
         mode: 'messages',

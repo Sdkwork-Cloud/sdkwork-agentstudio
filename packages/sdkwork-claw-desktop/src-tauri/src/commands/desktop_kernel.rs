@@ -472,7 +472,7 @@ mod tests {
     "browserBaseUrl": "http://127.0.0.1:18797"
   },
   "builtInInstance": {
-    "id": "local-built-in",
+    "id": "managed-openclaw-primary",
     "name": "Local Built-In",
     "version": "2026.4.2",
     "runtimeKind": "openclaw",
@@ -577,7 +577,7 @@ mod tests {
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["builtInInstanceId"],
-            "local-built-in"
+            "managed-openclaw-primary"
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["builtInInstanceName"],

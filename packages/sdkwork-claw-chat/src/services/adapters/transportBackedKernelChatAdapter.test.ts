@@ -69,6 +69,7 @@ await runTest('transport-backed kernel chat adapter creates non-durable http aut
     instanceId: 'instance-http',
     model: 'gpt-4.1',
     title: 'HTTP session',
+    agentId: 'ops',
   });
   const sessions = await adapter.listSessions?.('instance-http');
   const capabilities = adapter.getCapabilities();
@@ -76,11 +77,22 @@ await runTest('transport-backed kernel chat adapter creates non-durable http aut
   assert.ok(created);
   assert.equal(capabilities.authorityKind, 'http');
   assert.equal(capabilities.durable, false);
+  assert.equal(capabilities.supportsStreaming, false);
+  assert.equal(capabilities.supportsRuns, false);
   assert.equal(capabilities.supportsAgentProfiles, false);
+  assert.equal(capabilities.capabilitySet.supportsStreaming, false);
+  assert.equal(capabilities.capabilitySet.supportsRuns, false);
   assert.equal(created?.ref.kernelId, 'zeroclaw');
   assert.equal(created?.ref.instanceId, 'instance-http');
+  assert.equal(created?.ref.agentId, 'ops');
   assert.equal(created?.authority.kind, 'http');
   assert.equal(created?.authority.durable, false);
+  assert.equal(created?.actorBinding?.agentId, 'ops');
+  assert.deepEqual(created?.nativeMetadata, {
+    runtimeKind: 'zeroclaw',
+    transportKind: 'openaiHttp',
+    authoritySource: 'transportBacked',
+  });
   assert.deepEqual(
     sessions?.map((session) => session.ref.sessionId),
     ['transport-session-1'],

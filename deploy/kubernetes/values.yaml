@@ -27,6 +27,13 @@ server:
   port: 18797
   dataDir: /var/lib/claw-server
 
+userCenter:
+  mode: builtin-local
+  appApiBaseUrl: ""
+  externalBaseUrl: ""
+  secretId: ""
+  sharedSecret: ""
+
 auth:
   existingSecret: ""
   manageUsername: ""

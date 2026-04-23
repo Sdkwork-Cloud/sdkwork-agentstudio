@@ -4,9 +4,13 @@ import test from 'node:test';
 import {
   buildDesktopStartupEvidenceDocument,
   DESKTOP_STARTUP_EVIDENCE_RELATIVE_PATH,
+  resolvePassingDesktopStartupEvidencePhase,
   sanitizeDesktopStartupDescriptor,
+  shouldPersistShellMountedDesktopStartupEvidence,
   serializeDesktopStartupEvidence,
 } from './desktopStartupEvidence.ts';
+
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
 
 test('desktop startup evidence sanitizes the embedded host descriptor and excludes the browser session token', () => {
   const descriptor = sanitizeDesktopStartupDescriptor({
@@ -50,6 +54,63 @@ test('desktop startup evidence sanitizes the embedded host descriptor and exclud
   assert.equal(
     Object.prototype.hasOwnProperty.call(descriptor ?? {}, 'browserSessionToken'),
     false,
+  );
+});
+
+test('desktop startup evidence resolves the passing phase to shell-mounted once the shell is already mounted', () => {
+  assert.equal(resolvePassingDesktopStartupEvidencePhase(false), 'runtime-ready');
+  assert.equal(resolvePassingDesktopStartupEvidencePhase(true), 'shell-mounted');
+});
+
+test('desktop startup evidence can capture an in-progress bootstrap marker before runtime metadata is available', () => {
+  const document = buildDesktopStartupEvidenceDocument({
+    status: 'running',
+    phase: 'bootstrap-started',
+    runId: 3,
+    durationMs: 42,
+    recordedAt: '2026-04-20T00:00:00.000Z',
+  });
+
+  assert.equal(document.status, 'running');
+  assert.equal(document.phase, 'bootstrap-started');
+  assert.equal(document.app, null);
+  assert.equal(document.paths, null);
+  assert.equal(document.descriptor, null);
+  assert.equal(document.readinessEvidence, null);
+  assert.equal(document.error, null);
+});
+
+test('desktop startup evidence only persists shell-mounted success once readiness evidence is available', () => {
+  assert.equal(
+    shouldPersistShellMountedDesktopStartupEvidence({
+      runtimeReadinessFailed: false,
+      readinessSnapshot: null,
+    }),
+    false,
+  );
+
+  assert.equal(
+    shouldPersistShellMountedDesktopStartupEvidence({
+      runtimeReadinessFailed: true,
+      readinessSnapshot: {
+        evidence: {
+          ready: true,
+        },
+      } as never,
+    }),
+    false,
+  );
+
+  assert.equal(
+    shouldPersistShellMountedDesktopStartupEvidence({
+      runtimeReadinessFailed: false,
+      readinessSnapshot: {
+        evidence: {
+          ready: true,
+        },
+      } as never,
+    }),
+    true,
   );
 });
 
@@ -128,7 +189,7 @@ test('desktop startup evidence builds a passed launch document with a sanitized 
       },
       instances: [
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           version: '2026.4.2',
           runtimeKind: 'openclaw',
@@ -182,7 +243,7 @@ test('desktop startup evidence builds a passed launch document with a sanitized 
         gatewayWebsocketReady: true,
         gatewayWebsocketProbeSupported: true,
         gatewayWebsocketDialable: true,
-        builtInInstanceId: 'local-built-in',
+        builtInInstanceId: BUILT_IN_INSTANCE_ID,
         builtInInstanceRuntimeKind: 'openclaw',
         builtInInstanceDeploymentMode: 'local-managed',
         builtInInstanceTransportKind: 'openclawGatewayWs',
@@ -229,7 +290,7 @@ test('desktop startup evidence builds a passed launch document with a sanitized 
     Object.prototype.hasOwnProperty.call(document.descriptor ?? {}, 'browserSessionToken'),
     false,
   );
-  assert.equal(document.builtInInstance?.id, 'local-built-in');
+  assert.equal(document.builtInInstance?.id, BUILT_IN_INSTANCE_ID);
   assert.equal(document.builtInInstance?.status, 'online');
   assert.equal(document.localAiProxy?.lifecycle, 'running');
   assert.equal(document.localAiProxy?.messageCaptureEnabled, true);
@@ -263,7 +324,7 @@ test('desktop startup evidence builds a passed launch document with a sanitized 
   );
 });
 
-test('desktop startup evidence resolves the built-in instance from readiness evidence instead of assuming local-built-in', () => {
+test('desktop startup evidence resolves the built-in instance from readiness evidence instead of assuming a legacy built-in id', () => {
   const document = buildDesktopStartupEvidenceDocument({
     status: 'passed',
     phase: 'runtime-ready',
@@ -294,7 +355,7 @@ test('desktop startup evidence resolves the built-in instance from readiness evi
       },
       instances: [
         {
-          id: 'managed-openclaw-primary',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Built-In OpenClaw Primary',
           version: '2026.4.11',
           runtimeKind: 'openclaw',
@@ -311,12 +372,12 @@ test('desktop startup evidence resolves the built-in instance from readiness evi
         },
       ],
       evidence: {
-        builtInInstanceId: 'managed-openclaw-primary',
+        builtInInstanceId: BUILT_IN_INSTANCE_ID,
       },
     } as never,
   });
 
-  assert.equal(document.builtInInstance?.id, 'managed-openclaw-primary');
+  assert.equal(document.builtInInstance?.id, BUILT_IN_INSTANCE_ID);
   assert.equal(document.builtInInstance?.runtimeKind, 'openclaw');
 });
 

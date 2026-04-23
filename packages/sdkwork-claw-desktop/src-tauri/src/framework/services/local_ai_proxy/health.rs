@@ -2,7 +2,6 @@ use super::{
     is_loopback_host,
     observability_store::{lock_observability, LocalAiProxyObservabilityStore},
     request_context,
-    support::proxy_error,
     types::{
         LocalAiProxyAppState, LocalAiProxyRouteRuntimeMetrics, LocalAiProxyRouteTestRecord,
         LocalAiProxyServiceHealth, ProxyHttpResult,
@@ -11,15 +10,14 @@ use super::{
 };
 use crate::framework::{paths::AppPaths, Result};
 use axum::{extract::State, http::StatusCode, Json};
-use serde_json::{json, Value};
 pub(super) use sdkwork_local_api_proxy_native::runtime::reconcile_observability_store;
 use sdkwork_local_api_proxy_native::runtime::{
     build_route_metrics as project_route_metrics, collect_default_route_health,
     collect_route_tests as project_route_tests,
 };
-use std::{
-    sync::{Arc, Mutex},
-};
+use sdkwork_local_api_proxy_native::support::proxy_error;
+use serde_json::{json, Value};
+use std::sync::{Arc, Mutex};
 
 pub(super) fn build_route_metrics(
     snapshot: &super::LocalAiProxySnapshot,

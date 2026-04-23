@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { createInstanceDirectoryService } from './instanceDirectoryService.ts';
+import {
+  createInstanceDirectoryService,
+  resolvePreferredActiveInstanceId,
+} from './instanceDirectoryService.ts';
 
 async function runTest(name: string, fn: () => Promise<void>) {
   try {
@@ -43,3 +46,109 @@ await runTest('instanceDirectoryService deduplicates rapid listInstances calls',
 
   assert.equal(loadCount, 2);
 });
+
+await runTest(
+  'instanceDirectoryService refresh publishes the latest directory snapshot to subscribers',
+  async () => {
+    let version = 0;
+    const snapshots: string[][] = [];
+    const service = createInstanceDirectoryService({
+      loadInstances: async () => {
+        version += 1;
+        return [
+          {
+            id: `instance-${version}`,
+            name: `Instance ${version}`,
+            host: `127.0.0.${version}`,
+            status: 'online',
+            iconType: 'server',
+          },
+        ];
+      },
+    });
+
+    const unsubscribe = service.subscribe((instances) => {
+      snapshots.push(instances.map((instance) => instance.id));
+    });
+
+    await service.listInstances();
+    await service.refresh();
+    unsubscribe();
+
+    assert.deepEqual(snapshots, [['instance-1'], ['instance-2']]);
+  },
+);
+
+await runTest(
+  'resolvePreferredActiveInstanceId keeps the current selection, prefers an explicit target, then falls back to online and starting instances',
+  async () => {
+    const instances = [
+      {
+        id: 'instance-offline',
+        status: 'offline',
+      },
+      {
+        id: 'instance-online',
+        status: 'online',
+      },
+      {
+        id: 'instance-syncing',
+        status: 'syncing',
+      },
+    ];
+
+    assert.equal(
+      resolvePreferredActiveInstanceId({
+        instances,
+        activeInstanceId: 'instance-online',
+        preferredInstanceId: 'instance-syncing',
+      }),
+      'instance-syncing',
+    );
+    assert.equal(
+      resolvePreferredActiveInstanceId({
+        instances,
+        activeInstanceId: 'instance-online',
+      }),
+      'instance-online',
+    );
+    assert.equal(
+      resolvePreferredActiveInstanceId({
+        instances,
+        activeInstanceId: 'instance-missing',
+        preferredInstanceId: 'instance-syncing',
+      }),
+      'instance-syncing',
+    );
+    assert.equal(
+      resolvePreferredActiveInstanceId({
+        instances,
+        activeInstanceId: null,
+      }),
+      'instance-online',
+    );
+    assert.equal(
+      resolvePreferredActiveInstanceId({
+        instances: [
+          {
+            id: 'instance-starting',
+            status: 'starting',
+          },
+          {
+            id: 'instance-offline',
+            status: 'offline',
+          },
+        ],
+        activeInstanceId: null,
+      }),
+      'instance-starting',
+    );
+    assert.equal(
+      resolvePreferredActiveInstanceId({
+        instances: [],
+        activeInstanceId: null,
+      }),
+      null,
+    );
+  },
+);

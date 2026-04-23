@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -21,6 +21,7 @@ export interface OverlaySurfaceProps {
   modalAlignment?: OverlayModalAlignment;
   drawerSide?: OverlayDrawerSide;
   closeOnBackdrop?: boolean;
+  closeOnEscape?: boolean;
   className?: string;
   backdropClassName?: string;
 }
@@ -50,10 +51,28 @@ export function OverlaySurface({
   modalAlignment = 'center',
   drawerSide = 'right',
   closeOnBackdrop = true,
+  closeOnEscape = true,
   className,
   backdropClassName,
 }: OverlaySurfaceProps) {
   const surfaceMotion = getSurfaceMotion(variant, drawerSide);
+
+  React.useEffect(() => {
+    if (!isOpen || !closeOnEscape || typeof window === 'undefined') {
+      return;
+    }
+
+    const handleWindowKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleWindowKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleWindowKeyDown);
+    };
+  }, [closeOnEscape, isOpen, onClose]);
 
   if (typeof document === 'undefined') {
     return null;

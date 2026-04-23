@@ -8,6 +8,10 @@ use crate::framework::{
     },
     FrameworkError, Result,
 };
+use sdkwork_local_api_proxy_native::snapshot::{
+    create_local_ai_proxy_provider_center_catalog, materialize_local_ai_proxy_snapshot_from_routes,
+    parse_local_ai_proxy_route_snapshot, validate_local_ai_proxy_provider_center_catalog,
+};
 #[allow(unused_imports)]
 pub use sdkwork_local_api_proxy_native::snapshot::{
     create_system_default_local_ai_proxy_snapshot, load_local_ai_proxy_snapshot,
@@ -20,11 +24,6 @@ pub use sdkwork_local_api_proxy_native::snapshot::{
     LOCAL_AI_PROXY_DEFAULT_ROUTE_ID, LOCAL_AI_PROXY_DEFAULT_UPSTREAM_BASE_URL,
     LOCAL_AI_PROXY_PROVIDER_CENTER_CATALOG_SCHEMA_VERSION,
     LOCAL_AI_PROXY_PROVIDER_CENTER_NAMESPACE, LOCAL_AI_PROXY_SCHEMA_VERSION,
-};
-use sdkwork_local_api_proxy_native::snapshot::{
-    create_local_ai_proxy_provider_center_catalog,
-    materialize_local_ai_proxy_snapshot_from_routes, parse_local_ai_proxy_route_snapshot,
-    validate_local_ai_proxy_provider_center_catalog,
 };
 
 pub fn materialize_local_ai_proxy_snapshot(
@@ -47,7 +46,10 @@ pub fn export_provider_center_catalog(
     storage: &StorageService,
 ) -> Result<LocalAiProxyProviderCenterCatalogSnapshot> {
     let Some(profile_id) = resolve_provider_center_profile_id(config) else {
-        return Ok(create_local_ai_proxy_provider_center_catalog(None, Vec::new()));
+        return Ok(create_local_ai_proxy_provider_center_catalog(
+            None,
+            Vec::new(),
+        ));
     };
 
     let listed = storage.list_keys(

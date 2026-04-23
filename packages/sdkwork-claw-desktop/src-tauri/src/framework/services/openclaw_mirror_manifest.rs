@@ -146,11 +146,7 @@ pub fn build_phase1_full_private_components(
 ) -> Result<Vec<OpenClawMirrorComponentRecord>> {
     validate_existing_path(&runtime.config_path, "OpenClaw config file path", false)?;
     validate_existing_path(&runtime.state_dir, "OpenClaw state path", true)?;
-    validate_existing_path(
-        &runtime.workspace_dir,
-        "OpenClaw workspace path",
-        true,
-    )?;
+    validate_existing_path(&runtime.workspace_dir, "OpenClaw workspace path", true)?;
 
     Ok(vec![
         build_component_record(

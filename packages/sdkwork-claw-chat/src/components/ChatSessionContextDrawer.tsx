@@ -11,6 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@sdkwork/claw-ui';
+import {
+  CHAT_SURFACE_CONTROL_CLASS,
+  CHAT_SURFACE_DASHED_PANEL_CLASS,
+  CHAT_SURFACE_ELEVATED_PANEL_CLASS,
+  CHAT_SURFACE_INPUT_CLASS,
+  CHAT_SURFACE_INSET_PANEL_CLASS,
+  CHAT_SURFACE_PANEL_CLASS,
+} from './chatChromeSurface';
 
 export type ChatSessionContextStatusTone =
   | 'ready'
@@ -72,10 +80,10 @@ export interface ChatSessionContextDrawerProps {
   reasoningLevelOptions?: ChatSessionContextDrawerSelectOption[];
   onSelectReasoningLevel?: (reasoningLevel: string | null) => void;
   agentOptions: ChatSessionContextDrawerOption[];
-  selectedAgentId: string | null;
+  selectedAgentId: string | null | undefined;
   isAgentLoading?: boolean;
   showAgentSection?: boolean;
-  onSelectAgent: (agentId: string | null) => void;
+  onSelectAgent: (agentId: string | null | undefined) => void;
   skillOptions: ChatSessionContextDrawerOption[];
   selectedSkillId: string | null;
   isSkillLoading?: boolean;
@@ -114,7 +122,8 @@ function resolveStatusClasses(statusTone: ChatSessionContextStatusTone) {
       };
     default:
       return {
-        badge: 'border-zinc-200 bg-white/90 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+        badge:
+          'border-zinc-200/80 bg-zinc-50/92 text-zinc-600 dark:border-zinc-700/80 dark:bg-zinc-900/82 dark:text-zinc-300',
         dot: 'bg-zinc-400 dark:bg-zinc-500',
       };
   }
@@ -364,7 +373,7 @@ export function ChatSessionContextDrawer({
           </div>
         ) : null}
 
-        <section className="rounded-[26px] border border-zinc-200/80 bg-white/90 p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/90">
+        <section className={cn(CHAT_SURFACE_ELEVATED_PANEL_CLASS, 'p-5')}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-500/10 text-primary-600 dark:bg-primary-400/10 dark:text-primary-300">
@@ -399,7 +408,7 @@ export function ChatSessionContextDrawer({
           ) : null}
 
           <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/90 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/80">
+            <div className={cn(CHAT_SURFACE_INSET_PANEL_CLASS, 'px-4 py-3')}>
               <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
                 {t('chat.page.currentModel')}
               </dt>
@@ -407,7 +416,7 @@ export function ChatSessionContextDrawer({
                 {currentModelName || t('chat.page.noneSelected')}
               </dd>
             </div>
-            <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/90 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/80">
+            <div className={cn(CHAT_SURFACE_INSET_PANEL_CLASS, 'px-4 py-3')}>
               <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
                 {t('chat.page.currentChannel')}
               </dt>
@@ -415,7 +424,7 @@ export function ChatSessionContextDrawer({
                 {currentChannelName || t('chat.page.noneSelected')}
               </dd>
             </div>
-            <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/90 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/80 sm:col-span-2">
+            <div className={cn(CHAT_SURFACE_INSET_PANEL_CLASS, 'px-4 py-3 sm:col-span-2')}>
               <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
                 {t('chat.page.routeMode')}
               </dt>
@@ -429,7 +438,10 @@ export function ChatSessionContextDrawer({
             <button
               type="button"
               onClick={onOpenSettings}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-zinc-200/80 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-primary-400 hover:text-primary-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-primary-500 dark:hover:text-primary-300"
+              className={cn(
+                CHAT_SURFACE_CONTROL_CLASS,
+                'mt-4 inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors hover:border-primary-400 hover:text-primary-600 dark:hover:border-primary-500 dark:hover:text-primary-300',
+              )}
             >
               <Settings2 className="h-4 w-4" />
               <span>{t('chat.page.configureModels')}</span>
@@ -455,7 +467,7 @@ export function ChatSessionContextDrawer({
                   section.onSelect(value === defaultValue ? null : value)
                 }
               >
-                <SelectTrigger className="h-11 rounded-2xl border-zinc-200/80 bg-white shadow-none dark:border-zinc-800 dark:bg-zinc-900">
+                <SelectTrigger className={cn(CHAT_SURFACE_INPUT_CLASS, 'h-11 rounded-2xl')}>
                   <SelectValue placeholder={section.placeholder} />
                 </SelectTrigger>
                 <SelectContent>
@@ -490,12 +502,15 @@ export function ChatSessionContextDrawer({
                 value={agentSearchQuery}
                 onChange={(event) => setAgentSearchQuery(event.target.value)}
                 placeholder={t('chat.page.searchAgentsPlaceholder')}
-                className="h-11 rounded-2xl border-zinc-200/80 bg-white pl-10 shadow-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-zinc-800 dark:bg-zinc-900"
+                className={cn(
+                  CHAT_SURFACE_INPUT_CLASS,
+                  'h-11 rounded-2xl pl-10 focus-visible:ring-2 focus-visible:ring-primary-500',
+                )}
               />
             </div>
             <div className="mt-3 space-y-2">
               {isAgentLoading ? (
-                <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+                <div className={cn(CHAT_SURFACE_DASHED_PANEL_CLASS, 'px-4 py-5 text-sm')}>
                   {t('common.loading')}
                 </div>
               ) : filteredAgentOptions.length > 0 ? (
@@ -507,10 +522,13 @@ export function ChatSessionContextDrawer({
                       type="button"
                       onClick={() => onSelectAgent(option.id)}
                       className={cn(
-                        'flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors',
+                        'flex w-full items-center gap-3 px-4 py-3 text-left transition-colors',
                         isSelected
                           ? 'border-primary-500/35 bg-primary-500/8 text-primary-700 dark:border-primary-500/40 dark:bg-primary-500/10 dark:text-primary-300'
-                          : 'border-zinc-200/80 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/80',
+                          : cn(
+                              CHAT_SURFACE_PANEL_CLASS,
+                              'text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50/96 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/88',
+                            ),
                       )}
                     >
                       <div
@@ -536,13 +554,16 @@ export function ChatSessionContextDrawer({
                   );
                 })
               ) : (
-                <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+                <div className={cn(CHAT_SURFACE_DASHED_PANEL_CLASS, 'px-4 py-5 text-sm')}>
                   <div>{t('chat.page.noMatchingAgents')}</div>
                   {hasAgentSearchQuery ? (
                     <button
                       type="button"
                       onClick={() => setAgentSearchQuery('')}
-                      className="mt-3 inline-flex items-center rounded-lg border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:text-zinc-50"
+                      className={cn(
+                        CHAT_SURFACE_CONTROL_CLASS,
+                        'mt-3 inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:hover:border-zinc-600 dark:hover:text-zinc-50',
+                      )}
                     >
                       {t('common.reset')}
                     </button>
@@ -570,12 +591,15 @@ export function ChatSessionContextDrawer({
                 value={skillSearchQuery}
                 onChange={(event) => setSkillSearchQuery(event.target.value)}
                 placeholder={t('chat.page.searchSkillsPlaceholder')}
-                className="h-11 rounded-2xl border-zinc-200/80 bg-white pl-10 shadow-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-zinc-800 dark:bg-zinc-900"
+                className={cn(
+                  CHAT_SURFACE_INPUT_CLASS,
+                  'h-11 rounded-2xl pl-10 focus-visible:ring-2 focus-visible:ring-primary-500',
+                )}
               />
             </div>
             <div className="mt-3 space-y-2">
               {isSkillLoading ? (
-                <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+                <div className={cn(CHAT_SURFACE_DASHED_PANEL_CLASS, 'px-4 py-5 text-sm')}>
                   {t('common.loading')}
                 </div>
               ) : filteredSkillOptions.length > 0 ? (
@@ -587,10 +611,13 @@ export function ChatSessionContextDrawer({
                       type="button"
                       onClick={() => onSelectSkill(option.id)}
                       className={cn(
-                        'flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors',
+                        'flex w-full items-center gap-3 px-4 py-3 text-left transition-colors',
                         isSelected
                           ? 'border-primary-500/35 bg-primary-500/8 text-primary-700 dark:border-primary-500/40 dark:bg-primary-500/10 dark:text-primary-300'
-                          : 'border-zinc-200/80 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/80',
+                          : cn(
+                              CHAT_SURFACE_PANEL_CLASS,
+                              'text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50/96 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/88',
+                            ),
                       )}
                     >
                       <div
@@ -616,13 +643,16 @@ export function ChatSessionContextDrawer({
                   );
                 })
               ) : (
-                <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+                <div className={cn(CHAT_SURFACE_DASHED_PANEL_CLASS, 'px-4 py-5 text-sm')}>
                   <div>{t('chat.page.noMatchingSkills')}</div>
                   {hasSkillSearchQuery ? (
                     <button
                       type="button"
                       onClick={() => setSkillSearchQuery('')}
-                      className="mt-3 inline-flex items-center rounded-lg border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:text-zinc-50"
+                      className={cn(
+                        CHAT_SURFACE_CONTROL_CLASS,
+                        'mt-3 inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:hover:border-zinc-600 dark:hover:text-zinc-50',
+                      )}
                     >
                       {t('common.reset')}
                     </button>

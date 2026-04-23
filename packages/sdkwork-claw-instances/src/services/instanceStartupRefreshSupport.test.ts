@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_BUNDLED_OPENCLAW_VERSION } from '@sdkwork/claw-types';
+import {
+  buildBuiltInKernelPrimaryInstanceId,
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+} from '@sdkwork/claw-types';
 import {
   BUILT_IN_OPENCLAW_STARTUP_REFRESH_INTERVAL_MS,
   hasPendingBuiltInOpenClawStartup,
@@ -7,6 +11,9 @@ import {
   shouldRefreshInstancesForBuiltInOpenClawStatusChange,
   shouldRefreshWorkbenchForBuiltInOpenClawStatusChange,
 } from './instanceStartupRefreshSupport.ts';
+
+const BUILT_IN_PHOENIXCLAW_INSTANCE_ID =
+  buildBuiltInKernelPrimaryInstanceId('phoenixclaw') ?? 'managed-phoenixclaw-primary';
 
 function runTest(name: string, callback: () => void | Promise<void>) {
   return Promise.resolve()
@@ -22,7 +29,7 @@ function runTest(name: string, callback: () => void | Promise<void>) {
 
 function createInstance(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'local-built-in',
+    id: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
     name: 'Built-In OpenClaw',
     type: 'OpenClaw',
     iconType: 'server',
@@ -57,7 +64,7 @@ function createWorkbench(overrides: Record<string, unknown> = {}) {
 
 function createManagedFutureKernelLikeInstance(overrides: Record<string, unknown> = {}) {
   return createInstance({
-    id: 'local-built-in-phoenixclaw',
+    id: BUILT_IN_PHOENIXCLAW_INSTANCE_ID,
     name: 'Managed PhoenixClaw',
     type: 'PhoenixClaw',
     runtimeKind: 'phoenixclaw',
@@ -104,9 +111,9 @@ await runTest('instance startup refresh support ignores non-built-in or settled 
   assert.equal(
     hasPendingBuiltInOpenClawStartup([
       createInstance({ isBuiltIn: false }),
-      createInstance({ id: 'local-built-in', status: 'online' }),
-      createInstance({ id: 'local-built-in-syncing', status: 'syncing' }),
-      createInstance({ id: 'local-built-in-error', status: 'error' }),
+      createInstance({ id: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID, status: 'online' }),
+      createInstance({ id: 'managed-syncing-primary', status: 'syncing' }),
+      createInstance({ id: 'managed-error-primary', status: 'error' }),
     ] as any),
     false,
   );
@@ -172,7 +179,7 @@ await runTest('instance startup refresh support refreshes the list when the buil
         }),
       ] as any,
       {
-        instanceId: 'local-built-in',
+        instanceId: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
         status: 'online',
       } as any,
     ),
@@ -186,7 +193,7 @@ await runTest('instance startup refresh support refreshes the list when the buil
         }),
       ] as any,
       {
-        instanceId: 'local-built-in',
+        instanceId: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
         status: 'online',
       } as any,
     ),
@@ -201,7 +208,7 @@ await runTest('instance startup refresh support also refreshes the list for futu
         createManagedFutureKernelLikeInstance(),
       ] as any,
       {
-        instanceId: 'local-built-in-phoenixclaw',
+        instanceId: BUILT_IN_PHOENIXCLAW_INSTANCE_ID,
         status: 'online',
       } as any,
     ),
@@ -212,10 +219,10 @@ await runTest('instance startup refresh support also refreshes the list for futu
 await runTest('instance startup refresh support only refreshes the active workbench for the matching built-in OpenClaw event', () => {
   assert.equal(
     shouldRefreshWorkbenchForBuiltInOpenClawStatusChange(
-      'local-built-in',
+      STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
       createWorkbench() as any,
       {
-        instanceId: 'local-built-in',
+        instanceId: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
         status: 'error',
       } as any,
     ),
@@ -223,7 +230,7 @@ await runTest('instance startup refresh support only refreshes the active workbe
   );
   assert.equal(
     shouldRefreshWorkbenchForBuiltInOpenClawStatusChange(
-      'local-built-in',
+      STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
       createWorkbench() as any,
       {
         instanceId: 'another-instance',
@@ -256,14 +263,14 @@ await runTest('instance startup refresh support only refreshes the active workbe
 await runTest('instance startup refresh support also refreshes the active workbench for future built-in local-managed kernel events', () => {
   assert.equal(
     shouldRefreshWorkbenchForBuiltInOpenClawStatusChange(
-      'local-built-in-phoenixclaw',
+      BUILT_IN_PHOENIXCLAW_INSTANCE_ID,
       createWorkbench({
         detail: {
           instance: createManagedFutureKernelLikeInstance(),
         },
       }) as any,
       {
-        instanceId: 'local-built-in-phoenixclaw',
+        instanceId: BUILT_IN_PHOENIXCLAW_INSTANCE_ID,
         status: 'online',
       } as any,
     ),
@@ -274,7 +281,7 @@ await runTest('instance startup refresh support also refreshes the active workbe
 await runTest('instance startup refresh support refreshes the active workbench when the normalized snapshot remains in startup even if raw detail still says syncing', () => {
   assert.equal(
     shouldRefreshWorkbenchForBuiltInOpenClawStatusChange(
-      'local-built-in',
+      STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
       createWorkbench({
         instance: createInstance({
           status: 'starting',
@@ -286,7 +293,7 @@ await runTest('instance startup refresh support refreshes the active workbench w
         },
       }) as any,
       {
-        instanceId: 'local-built-in',
+        instanceId: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
         status: 'online',
       } as any,
     ),

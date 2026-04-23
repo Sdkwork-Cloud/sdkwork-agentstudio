@@ -22,6 +22,9 @@ import {
   resolveDesktopReleaseTarget,
 } from './desktop-targets.mjs';
 import {
+  resolveExistingDesktopBundleRoot,
+} from './package-release-assets.mjs';
+import {
   readDesktopReleaseAssetManifest,
 } from './smoke-desktop-installers.mjs';
 import {
@@ -35,7 +38,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..', '..');
 const DEFAULT_RELEASE_ASSETS_DIR = path.join(rootDir, 'artifacts', 'release');
-const DEFAULT_WAIT_TIMEOUT_MS = 90000;
+// Fresh packaged first launch can spend well over 90s converging runtime readiness.
+const DEFAULT_WAIT_TIMEOUT_MS = 150_000;
 const DEFAULT_WAIT_INTERVAL_MS = 250;
 const DEFAULT_CLEANUP_RETRY_COUNT = 10;
 const DEFAULT_CLEANUP_RETRY_DELAY_MS = 250;
@@ -105,6 +109,91 @@ function resolveArtifactAbsolutePath(releaseAssetsDir, artifact) {
   }
 
   return absolutePath;
+}
+
+function stripDesktopArtifactPrefix(relativePath, {
+  platform,
+  arch,
+} = {}) {
+  const normalizedRelativePath = normalizeArtifactRelativePath(relativePath);
+  const expectedPrefix = normalizeArtifactRelativePath(path.join(
+    'desktop',
+    normalizeDesktopPlatform(platform),
+    normalizeDesktopArch(arch),
+  ));
+
+  if (!normalizedRelativePath.startsWith(`${expectedPrefix}/`)) {
+    return null;
+  }
+
+  return normalizedRelativePath.slice(expectedPrefix.length + 1);
+}
+
+export function resolveLocalDesktopBundleArtifactPath({
+  artifact,
+  platform,
+  arch,
+  target = '',
+  workspaceRootDir = rootDir,
+  resolveExistingDesktopBundleRootFn = resolveExistingDesktopBundleRoot,
+} = {}) {
+  const bundleRoot = resolveExistingDesktopBundleRootFn({
+    targetTriple: String(target ?? '').trim(),
+    workspaceRootDir,
+  });
+  if (!bundleRoot || !existsSync(bundleRoot)) {
+    return null;
+  }
+
+  const bundleRelativePath = stripDesktopArtifactPrefix(artifact?.relativePath, {
+    platform,
+    arch,
+  });
+  if (!bundleRelativePath) {
+    return null;
+  }
+
+  return path.join(bundleRoot, bundleRelativePath);
+}
+
+export function assertPackagedDesktopLaunchArtifactFreshness({
+  artifact,
+  artifactPath,
+  platform,
+  arch,
+  target = '',
+  workspaceRootDir = rootDir,
+  resolveExistingDesktopBundleRootFn = resolveExistingDesktopBundleRoot,
+  fileExistsFn = existsSync,
+  statSyncFn = statSync,
+} = {}) {
+  const packagedArtifactPath = path.resolve(String(artifactPath ?? '').trim());
+  if (!packagedArtifactPath || !fileExistsFn(packagedArtifactPath)) {
+    return;
+  }
+
+  const localBundleArtifactPath = resolveLocalDesktopBundleArtifactPath({
+    artifact,
+    platform,
+    arch,
+    target,
+    workspaceRootDir,
+    resolveExistingDesktopBundleRootFn,
+  });
+  if (!localBundleArtifactPath || !fileExistsFn(localBundleArtifactPath)) {
+    return;
+  }
+
+  const packagedArtifactStat = statSyncFn(packagedArtifactPath);
+  const localBundleArtifactStat = statSyncFn(localBundleArtifactPath);
+  if (localBundleArtifactStat.mtimeMs <= packagedArtifactStat.mtimeMs) {
+    return;
+  }
+
+  throw new Error(
+    `Packaged desktop launch artifact is stale because a newer local desktop bundle artifact exists at ${localBundleArtifactPath}. ` +
+    `Packaged asset: ${packagedArtifactPath}. Refresh release assets with "pnpm release:package:desktop" before running packaged desktop launch smoke.`,
+  );
 }
 
 function selectFirstArtifact(artifacts, predicate) {
@@ -889,6 +978,13 @@ export async function smokeDesktopPackagedLaunch({
   }
 
   const artifactPath = resolveArtifactAbsolutePath(releaseAssetsDir, artifact);
+  assertPackagedDesktopLaunchArtifactFreshness({
+    artifact,
+    artifactPath,
+    platform: releasePlatform,
+    arch: releaseArch,
+    target: targetSpec.targetTriple,
+  });
   const smokeRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-desktop-packaged-launch-'));
   let processRecord = null;
   let preparedLaunch = null;

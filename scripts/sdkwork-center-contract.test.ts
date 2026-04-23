@@ -45,7 +45,7 @@ runTest('sdkwork-claw-center is implemented locally instead of re-exporting claw
   assert.ok(pkg.dependencies?.['@sdkwork/claw-infrastructure']);
   assert.match(
     workspacePackage.scripts?.['check:sdkwork-center'] ?? '',
-    /node scripts\/run-sdkwork-center-check\.mjs && node --experimental-strip-types scripts\/sdkwork-center-contract\.test\.ts/,
+    /sdkwork-run-node scripts\/run-sdkwork-center-check\.mjs && sdkwork-run-node --experimental-strip-types scripts\/sdkwork-center-contract\.test\.ts/,
   );
   assert.match(
     centerCheckRunnerSource,

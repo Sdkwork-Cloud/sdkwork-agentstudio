@@ -333,7 +333,7 @@ mod tests {
         assert!(sessions.iter().all(|session| session.last_seen_at == 1234));
         assert!(sessions
             .iter()
-            .any(|session| session.node_id == "local-built-in"));
+            .any(|session| session.node_id == "managed-openclaw-primary"));
         assert!(sessions
             .iter()
             .any(|session| session.node_id == "managed-remote"));
@@ -376,7 +376,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -407,7 +407,7 @@ mod tests {
             NodeSessionHelloResponseAction::CallAdmit
         );
         assert_eq!(sessions.len(), 1);
-        assert_eq!(sessions[0].node_id, "local-built-in");
+        assert_eq!(sessions[0].node_id, "managed-openclaw-primary");
         assert_eq!(sessions[0].state, NodeSessionState::Pending);
         assert_eq!(
             sessions[0].compatibility_state,
@@ -426,7 +426,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -478,7 +478,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -543,7 +543,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -575,9 +575,9 @@ mod tests {
             )
             .expect("admit should transition the session");
         let desired_state = control_plane
-            .resolve_node_desired_state("rollout-a", "local-built-in")
+            .resolve_node_desired_state("rollout-a", "managed-openclaw-primary")
             .expect("desired state lookup should succeed")
-            .expect("seeded rollout should target local-built-in");
+            .expect("seeded rollout should target managed-openclaw-primary");
 
         let first_pull = registry
             .pull_desired_state(
@@ -608,7 +608,7 @@ mod tests {
             panic!("first pull should return projection mode");
         };
 
-        assert_eq!(projection.node_id, "local-built-in");
+        assert_eq!(projection.node_id, "managed-openclaw-primary");
         assert_eq!(projection.desired_state_revision, desired_state_revision);
         assert_eq!(projection.desired_state_hash, desired_state_hash);
         assert_eq!(apply_policy.mandatory, true);
@@ -650,7 +650,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -682,9 +682,9 @@ mod tests {
             )
             .expect("admit should transition the session");
         let desired_state = control_plane
-            .resolve_node_desired_state("rollout-a", "local-built-in")
+            .resolve_node_desired_state("rollout-a", "managed-openclaw-primary")
             .expect("desired state lookup should succeed")
-            .expect("seeded rollout should target local-built-in");
+            .expect("seeded rollout should target managed-openclaw-primary");
         let pulled = registry
             .pull_desired_state(
                 &hello.session_id,
@@ -794,7 +794,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -826,9 +826,9 @@ mod tests {
             )
             .expect("admit should transition the session");
         let desired_state = control_plane
-            .resolve_node_desired_state("rollout-a", "local-built-in")
+            .resolve_node_desired_state("rollout-a", "managed-openclaw-primary")
             .expect("desired state lookup should succeed")
-            .expect("seeded rollout should target local-built-in");
+            .expect("seeded rollout should target managed-openclaw-primary");
         registry
             .pull_desired_state(
                 &hello.session_id,
@@ -888,7 +888,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -926,7 +926,7 @@ mod tests {
                 "runtime.apply".to_string(),
             ],
             projection: compiler.compile(&DesiredStateInput {
-                node_id: "local-built-in".to_string(),
+                node_id: "managed-openclaw-primary".to_string(),
                 config_projection_version: "v1".to_string(),
                 semantic_payload: "service=openclaw;mode=combined".to_string(),
             }),
@@ -962,7 +962,7 @@ mod tests {
                 "runtime.apply".to_string(),
             ],
             projection: compiler.compile(&DesiredStateInput {
-                node_id: "local-built-in".to_string(),
+                node_id: "managed-openclaw-primary".to_string(),
                 config_projection_version: "v1".to_string(),
                 semantic_payload: "service=openclaw;mode=combined;generation=2".to_string(),
             }),
@@ -1060,7 +1060,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -1092,9 +1092,9 @@ mod tests {
             )
             .expect("admit should transition the session");
         let desired_state = control_plane
-            .resolve_node_desired_state("rollout-a", "local-built-in")
+            .resolve_node_desired_state("rollout-a", "managed-openclaw-primary")
             .expect("desired state lookup should succeed")
-            .expect("seeded rollout should target local-built-in");
+            .expect("seeded rollout should target managed-openclaw-primary");
         let expired_at = 40_000;
 
         let heartbeat_error = registry
@@ -1173,7 +1173,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -1249,7 +1249,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -1280,7 +1280,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-2".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -1361,7 +1361,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -1392,7 +1392,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-2".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -1464,7 +1464,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -1495,7 +1495,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-local-2".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -1584,7 +1584,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-storage-spi".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -1625,7 +1625,7 @@ mod tests {
             .expect("reopened registry should load persisted sessions");
 
         assert_eq!(sessions.len(), 1);
-        assert_eq!(sessions[0].node_id, "local-built-in");
+        assert_eq!(sessions[0].node_id, "managed-openclaw-primary");
         assert_eq!(sessions[0].state, NodeSessionState::Admitted);
         assert_eq!(sessions[0].last_seen_at, 2_000);
     }
@@ -1686,7 +1686,7 @@ mod tests {
                 NodeSessionHelloInput {
                     boot_id: "boot-sqlite".to_string(),
                     node_claim: NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -1726,7 +1726,7 @@ mod tests {
             .expect("reopened sqlite-backed node session registry should read sessions");
 
         assert_eq!(sessions.len(), 1);
-        assert_eq!(sessions[0].node_id, "local-built-in");
+        assert_eq!(sessions[0].node_id, "managed-openclaw-primary");
         assert_eq!(sessions[0].state, NodeSessionState::Admitted);
         assert_eq!(sessions[0].last_seen_at, 2_000);
     }
@@ -1803,3 +1803,4 @@ mod tests {
         }
     }
 }
+

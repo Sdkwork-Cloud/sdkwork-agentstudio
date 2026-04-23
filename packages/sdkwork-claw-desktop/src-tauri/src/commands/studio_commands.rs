@@ -3,11 +3,16 @@ use crate::{
         context::BuiltInOpenClawStatusChangedPayload,
         runtime,
         services::studio::{
-            HostPlatformStatusRecord, InternalNodeSessionRecord, ManageRolloutListResult,
-            ManageRolloutPreview, ManageRolloutRecord, PreviewRolloutInput,
-            StudioConversationRecord, StudioCreateInstanceInput, StudioInstanceConfig,
-            StudioInstanceDetailRecord, StudioInstanceRecord, StudioInstanceStatus,
+            HostPlatformStatusRecord, InternalNodeSessionRecord, KernelChatAgentProfile,
+            KernelChatMessage, KernelChatRun, KernelChatSession, ManageRolloutListResult,
+            ManageRolloutPreview, ManageRolloutRecord, PersistedKernelChatAgentRecord,
+            PreviewRolloutInput,
+            StudioConversationRecord, StudioCreateInstanceInput,
+            StudioCreateKernelAgentInput, StudioCreatedKernelAgentRecord,
+            StudioCreateKernelChatSessionInput, StudioInstanceConfig, StudioInstanceDetailRecord,
+            StudioInstanceRecord, StudioInstanceStatus, StudioKernelAgentCreationCapability,
             StudioOpenClawGatewayInvokeOptions, StudioOpenClawGatewayInvokeRequest,
+            StudioPatchKernelChatSessionInput, StudioStartKernelChatRunInput,
             StudioUpdateInstanceInput, StudioUpdateInstanceLlmProviderConfigInput,
             StudioWorkbenchTaskExecutionRecord,
         },
@@ -22,7 +27,7 @@ use sdkwork_claw_host_core::{
 use serde::Serialize;
 use serde_json::Value;
 
-const BUILT_IN_OPENCLAW_INSTANCE_ID: &str = "local-built-in";
+const BUILT_IN_OPENCLAW_INSTANCE_ID: &str = "managed-openclaw-primary";
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -160,6 +165,325 @@ pub async fn studio_get_instance_detail(
                 &state.context.services.supervisor,
                 id.as_str(),
             )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_get_kernel_agent_creation_capability(
+    state: tauri::State<'_, AppState>,
+    instance_id: String,
+) -> Result<StudioKernelAgentCreationCapability, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.get_kernel_agent_creation_capability", move || {
+        let config = state.config_snapshot();
+        state
+            .context
+            .services
+            .studio
+            .get_kernel_agent_creation_capability(
+                &state.paths,
+                &config,
+                &state.context.services.storage,
+                instance_id.as_str(),
+            )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_create_kernel_agent(
+    state: tauri::State<'_, AppState>,
+    input: StudioCreateKernelAgentInput,
+) -> Result<StudioCreatedKernelAgentRecord, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.create_kernel_agent", move || {
+        let config = state.config_snapshot();
+        state.context.services.studio.create_kernel_agent(
+            &state.paths,
+            &config,
+            &state.context.services.storage,
+            input,
+        )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_list_kernel_chat_agent_profiles(
+    state: tauri::State<'_, AppState>,
+    instance_id: String,
+) -> Result<Vec<KernelChatAgentProfile>, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.list_kernel_chat_agent_profiles", move || {
+        let config = state.config_snapshot();
+        state
+            .context
+            .services
+            .studio
+            .list_kernel_chat_agent_profiles(
+                &state.paths,
+                &config,
+                &state.context.services.storage,
+                instance_id.as_str(),
+            )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_list_persisted_kernel_chat_agents(
+    state: tauri::State<'_, AppState>,
+    instance_id: String,
+) -> Result<Vec<PersistedKernelChatAgentRecord>, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.list_persisted_kernel_chat_agents", move || {
+        let config = state.config_snapshot();
+        state
+            .context
+            .services
+            .studio
+            .list_persisted_kernel_chat_agents(
+                &state.paths,
+                &config,
+                &state.context.services.storage,
+                instance_id.as_str(),
+            )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_replace_persisted_kernel_chat_agents(
+    state: tauri::State<'_, AppState>,
+    instance_id: String,
+    records: Vec<PersistedKernelChatAgentRecord>,
+) -> Result<Vec<PersistedKernelChatAgentRecord>, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.replace_persisted_kernel_chat_agents", move || {
+        let config = state.config_snapshot();
+        state
+            .context
+            .services
+            .studio
+            .replace_persisted_kernel_chat_agents(
+                &state.paths,
+                &config,
+                &state.context.services.storage,
+                instance_id.as_str(),
+                records,
+            )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_list_kernel_chat_sessions(
+    state: tauri::State<'_, AppState>,
+    instance_id: String,
+) -> Result<Vec<KernelChatSession>, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.list_kernel_chat_sessions", move || {
+        let config = state.config_snapshot();
+        state.context.services.studio.list_kernel_chat_sessions(
+            &state.paths,
+            &config,
+            &state.context.services.storage,
+            instance_id.as_str(),
+        )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_get_kernel_chat_session(
+    state: tauri::State<'_, AppState>,
+    instance_id: String,
+    session_id: String,
+) -> Result<Option<KernelChatSession>, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.get_kernel_chat_session", move || {
+        let config = state.config_snapshot();
+        state.context.services.studio.get_kernel_chat_session(
+            &state.paths,
+            &config,
+            &state.context.services.storage,
+            instance_id.as_str(),
+            session_id.as_str(),
+        )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_create_kernel_chat_session(
+    state: tauri::State<'_, AppState>,
+    input: StudioCreateKernelChatSessionInput,
+) -> Result<KernelChatSession, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.create_kernel_chat_session", move || {
+        let config = state.config_snapshot();
+        state.context.services.studio.create_kernel_chat_session(
+            &state.paths,
+            &config,
+            &state.context.services.storage,
+            input,
+        )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_list_kernel_chat_runs(
+    state: tauri::State<'_, AppState>,
+    instance_id: String,
+    session_id: String,
+) -> Result<Vec<KernelChatRun>, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.list_kernel_chat_runs", move || {
+        let config = state.config_snapshot();
+        state.context.services.studio.list_kernel_chat_runs(
+            &state.paths,
+            &config,
+            &state.context.services.storage,
+            instance_id.as_str(),
+            session_id.as_str(),
+        )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_get_kernel_chat_run(
+    state: tauri::State<'_, AppState>,
+    instance_id: String,
+    session_id: String,
+    run_id: String,
+) -> Result<Option<KernelChatRun>, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.get_kernel_chat_run", move || {
+        let config = state.config_snapshot();
+        state.context.services.studio.get_kernel_chat_run(
+            &state.paths,
+            &config,
+            &state.context.services.storage,
+            instance_id.as_str(),
+            session_id.as_str(),
+            run_id.as_str(),
+        )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_patch_kernel_chat_session(
+    state: tauri::State<'_, AppState>,
+    input: StudioPatchKernelChatSessionInput,
+) -> Result<KernelChatSession, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.patch_kernel_chat_session", move || {
+        let config = state.config_snapshot();
+        state.context.services.studio.patch_kernel_chat_session(
+            &state.paths,
+            &config,
+            &state.context.services.storage,
+            input,
+        )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_delete_kernel_chat_session(
+    state: tauri::State<'_, AppState>,
+    instance_id: String,
+    session_id: String,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.delete_kernel_chat_session", move || {
+        let config = state.config_snapshot();
+        state.context.services.studio.delete_kernel_chat_session(
+            &state.paths,
+            &config,
+            &state.context.services.storage,
+            instance_id.as_str(),
+            session_id.as_str(),
+        )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_start_kernel_chat_run(
+    state: tauri::State<'_, AppState>,
+    input: StudioStartKernelChatRunInput,
+) -> Result<KernelChatRun, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.start_kernel_chat_run", move || {
+        let config = state.config_snapshot();
+        state.context.services.studio.start_kernel_chat_run(
+            &state.paths,
+            &config,
+            &state.context.services.storage,
+            input,
+        )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_abort_kernel_chat_run(
+    state: tauri::State<'_, AppState>,
+    instance_id: String,
+    session_id: String,
+    run_id: Option<String>,
+) -> Result<bool, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.abort_kernel_chat_run", move || {
+        let config = state.config_snapshot();
+        state.context.services.studio.abort_kernel_chat_run(
+            &state.paths,
+            &config,
+            &state.context.services.storage,
+            instance_id.as_str(),
+            session_id.as_str(),
+            run_id.as_deref(),
+        )
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn studio_load_kernel_chat_messages(
+    state: tauri::State<'_, AppState>,
+    instance_id: String,
+    session_id: String,
+) -> Result<Vec<KernelChatMessage>, String> {
+    let state = state.inner().clone();
+    runtime::run_blocking_async("studio.load_kernel_chat_messages", move || {
+        let config = state.config_snapshot();
+        state.context.services.studio.load_kernel_chat_messages(
+            &state.paths,
+            &config,
+            &state.context.services.storage,
+            instance_id.as_str(),
+            session_id.as_str(),
+        )
     })
     .await
     .map_err(|error| error.to_string())

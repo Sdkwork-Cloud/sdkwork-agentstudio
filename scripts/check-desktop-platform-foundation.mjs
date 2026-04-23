@@ -114,12 +114,9 @@ const requiredPaths = [
   ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs', 'desktop local ai proxy runtime service module'],
   ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/config.rs', 'desktop local ai proxy config module'],
   ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/projection.rs', 'desktop local ai proxy managed provider projection module'],
-  ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs', 'desktop local ai proxy route probe module'],
-  ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs', 'desktop local ai proxy upstream request builder module'],
   ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs', 'desktop local ai proxy health and status projection module'],
   ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs', 'desktop local ai proxy openai-compatible request-serving module'],
   ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/observability_store.rs', 'desktop local ai proxy observability-store module'],
-  ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/support.rs', 'desktop local ai proxy shared support module'],
   ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs', 'desktop local ai proxy request-context module'],
   ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/types.rs', 'desktop local ai proxy shared types module'],
   ['packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs', 'desktop local ai proxy shared response/error module'],
@@ -212,7 +209,7 @@ assertScript(rootPackage, rootPackagePath, 'sync:bundled-components');
 
 if (
   rootPackage?.scripts?.['check:desktop']
-  && !rootPackage.scripts['check:desktop'].includes('node scripts/run-cargo.mjs test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml')
+  && !rootPackage.scripts['check:desktop'].includes('sdkwork-run-node scripts/run-cargo.mjs test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml')
 ) {
   failures.push('Root package check:desktop script must execute cargo through the shared Rust toolchain launcher.');
 }
@@ -240,18 +237,8 @@ assertIncludes(
 );
 assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
-  'mod probe;',
-  'desktop local ai proxy probe submodule declaration',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
   'probe::probe_route',
   'desktop local ai proxy probe module usage',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
-  'mod upstream;',
-  'desktop local ai proxy upstream submodule declaration',
 );
 assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
@@ -272,11 +259,6 @@ assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
   'mod observability_store;',
   'desktop local ai proxy observability-store submodule declaration',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
-  'mod support;',
-  'desktop local ai proxy shared support submodule declaration',
 );
 assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
@@ -580,18 +562,8 @@ assertIncludes(
 );
 assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs',
-  'support::{proxy_error, trim_optional_text}',
-  'desktop local ai proxy response-io shared support usage',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs',
   'types::{LocalAiProxyTokenUsage, ProxyHttpResult}',
   'desktop local ai proxy response-io shared types usage',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs',
-  'support::{current_time_ms, duration_to_ms, trim_optional_text}',
-  'desktop local ai proxy observability shared support usage',
 );
 assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs',
@@ -607,21 +579,6 @@ assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs',
   'types::LocalAiProxyTokenUsage',
   'desktop local ai proxy streaming shared token-usage type usage',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs',
-  'support::current_time_ms',
-  'desktop local ai proxy probe shared support usage',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs',
-  'types::LocalAiProxyRouteTestRecord',
-  'desktop local ai proxy probe shared route-test type usage',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/observability_store.rs',
-  'types::LocalAiProxyRouteTestRecord',
-  'desktop local ai proxy observability-store shared route-test type usage',
 );
 assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',
@@ -763,26 +720,6 @@ assertNotIncludes(
   'fn current_time_ms(',
   'desktop local ai proxy in-file current-time helper',
 );
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',
-  'upstream::build_openai_compatible_upstream_request',
-  'desktop local ai proxy upstream openai request builder usage',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',
-  'upstream::build_gemini_upstream_request_url',
-  'desktop local ai proxy upstream gemini request builder usage',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',
-  'upstream::build_ollama_upstream_request_url',
-  'desktop local ai proxy upstream ollama request builder usage',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs',
-  'types::ProxyHttpResult',
-  'desktop local ai proxy upstream shared types usage',
-);
 assertPath(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs',
   'desktop local ai proxy streaming submodule',
@@ -921,16 +858,6 @@ assertIncludes(
   'desktop local ai proxy json response parsing owner usage',
 );
 assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs',
-  'response_io::{extract_proxy_error_message, resolve_error_message}',
-  'desktop local ai proxy probe error extraction owner usage',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs',
-  'response_io::{extract_proxy_error_message, resolve_error_message}',
-  'desktop local ai proxy probe error resolution owner usage',
-);
-assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs',
   'response_io::{extract_proxy_error_message, ProxyRouteOutcome}',
   'desktop local ai proxy observability error extraction owner usage',
@@ -988,11 +915,6 @@ assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
   'mod observability;',
   'desktop local ai proxy observability submodule declaration',
-);
-assertIncludes(
-  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs',
-  'observability::extract_response_preview_from_value',
-  'desktop local ai proxy response preview extraction owner usage',
 );
 assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',

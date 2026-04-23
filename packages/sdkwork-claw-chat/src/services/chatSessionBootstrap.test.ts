@@ -41,6 +41,7 @@ await runTest('chat bootstrap auto-creates only for ready non-gateway instance r
     resolveChatBootstrapAction({
       activeInstanceId: 'instance-http',
       routeMode: 'instanceOpenAiHttp',
+      sendMode: 'local',
       syncState: 'idle',
       hasActiveModel: true,
       activeSessionId: null,
@@ -53,6 +54,7 @@ await runTest('chat bootstrap auto-creates only for ready non-gateway instance r
     resolveChatBootstrapAction({
       activeInstanceId: 'instance-openclaw',
       routeMode: 'instanceOpenClawGatewayWs',
+      sendMode: 'gateway',
       syncState: 'idle',
       hasActiveModel: true,
       activeSessionId: null,
@@ -67,6 +69,7 @@ await runTest('chat bootstrap selects the first session when the active session 
     resolveChatBootstrapAction({
       activeInstanceId: 'instance-http',
       routeMode: 'instanceOpenAiHttp',
+      sendMode: 'local',
       syncState: 'idle',
       hasActiveModel: true,
       activeSessionId: 'missing-session',
@@ -79,6 +82,7 @@ await runTest('chat bootstrap selects the first session when the active session 
     resolveChatBootstrapAction({
       activeInstanceId: 'instance-openclaw',
       routeMode: 'instanceOpenClawGatewayWs',
+      sendMode: 'gateway',
       syncState: 'idle',
       hasActiveModel: true,
       activeSessionId: 'missing-session',
@@ -91,6 +95,7 @@ await runTest('chat bootstrap selects the first session when the active session 
     resolveChatBootstrapAction({
       activeInstanceId: 'instance-openclaw',
       routeMode: 'instanceOpenClawGatewayWs',
+      sendMode: 'gateway',
       syncState: 'idle',
       hasActiveModel: true,
       activeSessionId: null,
@@ -105,6 +110,7 @@ await runTest('chat bootstrap stays idle for unsupported instance routes even wh
     resolveChatBootstrapAction({
       activeInstanceId: 'instance-unsupported',
       routeMode: 'unsupported',
+      sendMode: 'local',
       syncState: 'idle',
       hasActiveModel: true,
       activeSessionId: null,
@@ -117,6 +123,7 @@ await runTest('chat bootstrap stays idle for unsupported instance routes even wh
     resolveChatBootstrapAction({
       activeInstanceId: 'instance-unsupported',
       routeMode: 'unsupported',
+      sendMode: 'local',
       syncState: 'idle',
       hasActiveModel: true,
       activeSessionId: 'missing-session',
@@ -133,6 +140,7 @@ await runTest(
       resolveChatBootstrapAction({
         activeInstanceId: 'instance-http',
         routeMode: 'instanceOpenAiHttp',
+        sendMode: 'local',
         syncState: 'error',
         hasActiveModel: true,
         activeSessionId: null,
@@ -145,6 +153,7 @@ await runTest(
       resolveChatBootstrapAction({
         activeInstanceId: 'instance-http',
         routeMode: 'instanceOpenAiHttp',
+        sendMode: 'local',
         syncState: 'error',
         hasActiveModel: true,
         activeSessionId: 'missing-session',
@@ -154,6 +163,60 @@ await runTest(
     );
   },
 );
+
+await runTest('chat bootstrap follows standardized sendMode when route literals are not the source of truth', () => {
+  assert.deepEqual(
+    resolveChatBootstrapAction({
+      activeInstanceId: 'instance-hermes-http',
+      routeMode: 'instanceOpenClawGatewayWs',
+      sendMode: 'local',
+      syncState: 'idle',
+      hasActiveModel: true,
+      activeSessionId: null,
+      sessionIds: [],
+    }),
+    { type: 'create' },
+  );
+
+  assert.deepEqual(
+    resolveChatBootstrapAction({
+      activeInstanceId: 'instance-gateway-authority',
+      routeMode: 'instanceOpenAiHttp',
+      sendMode: 'gateway',
+      syncState: 'idle',
+      hasActiveModel: true,
+      activeSessionId: null,
+      sessionIds: ['session-a'],
+    }),
+    { type: 'idle' },
+  );
+});
+
+await runTest('chat bootstrap does not infer gateway or local send semantics from route literals when sendMode is missing', () => {
+  assert.deepEqual(
+    resolveChatBootstrapAction({
+      activeInstanceId: 'instance-route-only-gateway',
+      routeMode: 'instanceOpenClawGatewayWs',
+      syncState: 'idle',
+      hasActiveModel: true,
+      activeSessionId: null,
+      sessionIds: [],
+    }),
+    { type: 'idle' },
+  );
+
+  assert.deepEqual(
+    resolveChatBootstrapAction({
+      activeInstanceId: 'instance-route-only-http',
+      routeMode: 'instanceOpenAiHttp',
+      syncState: 'idle',
+      hasActiveModel: true,
+      activeSessionId: 'missing-session',
+      sessionIds: ['session-a'],
+    }),
+    { type: 'idle' },
+  );
+});
 
 await runTest('openclaw chat bootstrap resolves upstream agent main session keys', () => {
   assert.equal(buildOpenClawMainSessionKey('research'), 'agent:research:main');

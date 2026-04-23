@@ -1,5 +1,4 @@
 use super::{
-    support::proxy_error,
     types::{LocalAiProxyAppState, ProxyHttpResult},
     LocalAiProxyRouteSnapshot, LocalAiProxySnapshot, X_API_KEY_HEADER, X_GOOG_API_KEY_HEADER,
 };
@@ -7,6 +6,7 @@ use axum::{
     body::Bytes,
     http::{header::AUTHORIZATION, HeaderMap, StatusCode},
 };
+use sdkwork_local_api_proxy_native::support::proxy_error;
 use serde_json::Value;
 
 pub(super) fn current_snapshot(

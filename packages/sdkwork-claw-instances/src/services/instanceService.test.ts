@@ -12,6 +12,8 @@ import {
   createInstanceService,
 } from './instanceServiceCore.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 function runTest(name: string, fn: () => Promise<void> | void) {
   return Promise.resolve()
     .then(fn)
@@ -320,16 +322,16 @@ await runTest('lifecycle operations reject unsupported instances before calling 
 
 await runTest('lifecycle operations delegate to the studio bridge when the instance is controllable', async () => {
   const calls: string[] = [];
-  const detail = createOpenClawDetail('local-built-in', {
+  const detail = createOpenClawDetail(BUILT_IN_INSTANCE_ID, {
     instance: {
-      ...createOpenClawDetail('local-built-in').instance,
+      ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
       isBuiltIn: true,
       isDefault: true,
       deploymentMode: 'local-managed',
       host: '127.0.0.1',
     },
     lifecycle: {
-      ...createOpenClawDetail('local-built-in').lifecycle,
+      ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).lifecycle,
       owner: 'appManaged',
       startStopSupported: true,
       configWritable: true,
@@ -353,24 +355,24 @@ await runTest('lifecycle operations delegate to the studio bridge when the insta
     },
   });
 
-  await service.startInstance('local-built-in');
-  await service.stopInstance('local-built-in');
-  await service.restartInstance('local-built-in');
+  await service.startInstance(BUILT_IN_INSTANCE_ID);
+  await service.stopInstance(BUILT_IN_INSTANCE_ID);
+  await service.restartInstance(BUILT_IN_INSTANCE_ID);
   assert.deepEqual(calls, ['start', 'stop', 'restart']);
 });
 
 await runTest('deleteInstance rejects built-in managed instances before calling the studio bridge', async () => {
   let deleteCalls = 0;
-  const detail = createOpenClawDetail('local-built-in', {
+  const detail = createOpenClawDetail(BUILT_IN_INSTANCE_ID, {
     instance: {
-      ...createOpenClawDetail('local-built-in').instance,
+      ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
       isBuiltIn: true,
       isDefault: true,
       deploymentMode: 'local-managed',
       host: '127.0.0.1',
     },
     lifecycle: {
-      ...createOpenClawDetail('local-built-in').lifecycle,
+      ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).lifecycle,
       owner: 'appManaged',
       startStopSupported: true,
       configWritable: true,
@@ -389,40 +391,66 @@ await runTest('deleteInstance rejects built-in managed instances before calling 
   });
 
   await assert.rejects(
-    () => service.deleteInstance('local-built-in'),
+    () => service.deleteInstance(BUILT_IN_INSTANCE_ID),
     /built-in|uninstall|delete/i,
   );
   assert.equal(deleteCalls, 0);
 });
 
 await runTest(
-  'instance service rejects local-managed Hermes instances before calling the studio bridge',
+  'instance service allows local-managed Hermes instances and forwards them to the studio bridge',
   async () => {
     let createCalls = 0;
     const service = createInstanceService({
       studioApi: {
-        createInstance: async () => {
+        createInstance: async (input) => {
           createCalls += 1;
-          throw new Error('studio bridge should not be called');
+          return createOpenClawDetail('hermes-local-managed', {
+            instance: {
+              ...createOpenClawDetail('hermes-local-managed').instance,
+              name: input.name,
+              description: input.description ?? 'Managed Hermes runtime.',
+              runtimeKind: 'hermes',
+              deploymentMode: 'local-managed',
+              transportKind: 'customHttp',
+              typeLabel: input.typeLabel ?? 'Hermes Agent',
+              host: input.host ?? '127.0.0.1',
+              port: input.port ?? 19540,
+              baseUrl: input.baseUrl ?? 'http://127.0.0.1:19540',
+              websocketUrl: input.websocketUrl ?? null,
+              isBuiltIn: false,
+              isDefault: false,
+              capabilities: ['chat', 'health', 'files', 'memory', 'tools', 'models'],
+              config: {
+                port: String(input.port ?? 19540),
+                sandbox: true,
+                autoUpdate: false,
+                logLevel: 'info',
+                corsOrigins: '*',
+                baseUrl: input.baseUrl ?? 'http://127.0.0.1:19540',
+                websocketUrl: input.websocketUrl ?? null,
+              },
+            },
+          }).instance;
         },
       },
     });
 
-    await assert.rejects(
-      () =>
-        service.create({
-          name: 'Hermes Local Managed',
-          type: 'Hermes Agent',
-          runtimeKind: 'hermes',
-          deploymentMode: 'local-managed',
-          transportKind: 'customHttp',
-          host: '127.0.0.1',
-          port: 19540,
-          baseUrl: 'http://127.0.0.1:19540',
-        }),
-      /local-external or remote deployment/i,
-    );
-    assert.equal(createCalls, 0);
+    const created = await service.create({
+      name: 'Hermes Local Managed',
+      type: 'Hermes Agent',
+      runtimeKind: 'hermes',
+      deploymentMode: 'local-managed',
+      transportKind: 'customHttp',
+      host: '127.0.0.1',
+      port: 19540,
+      baseUrl: 'http://127.0.0.1:19540',
+    });
+
+    assert.equal(created.runtimeKind, 'hermes');
+    assert.equal(created.deploymentMode, 'local-managed');
+    assert.equal(created.type, 'Hermes Agent');
+    assert.equal(createCalls, 1);
   },
 );
 
@@ -431,9 +459,9 @@ await runTest('updateInstanceFileContent routes built-in OpenClaw writes through
   const service = createInstanceService({
     studioApi: {
       getInstanceDetail: async () =>
-        createOpenClawDetail('local-built-in', {
+        createOpenClawDetail(BUILT_IN_INSTANCE_ID, {
           instance: {
-            ...createOpenClawDetail('local-built-in').instance,
+            ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
             isBuiltIn: true,
             isDefault: true,
             deploymentMode: 'local-managed',
@@ -452,9 +480,9 @@ await runTest('updateInstanceFileContent routes built-in OpenClaw writes through
     },
   });
 
-  await service.updateInstanceFileContent('local-built-in', '/workspace/main/AGENTS.md', '# updated');
+  await service.updateInstanceFileContent(BUILT_IN_INSTANCE_ID, '/workspace/main/AGENTS.md', '# updated');
 
-  assert.deepEqual(calls, [['local-built-in', '/workspace/main/AGENTS.md', '# updated']]);
+  assert.deepEqual(calls, [[BUILT_IN_INSTANCE_ID, '/workspace/main/AGENTS.md', '# updated']]);
 });
 
 await runTest(
@@ -664,9 +692,9 @@ await runTest('getInstanceFileContent returns built-in workbench file content wi
   const service = createInstanceService({
     studioApi: {
       getInstanceDetail: async () =>
-        createOpenClawDetail('local-built-in', {
+        createOpenClawDetail(BUILT_IN_INSTANCE_ID, {
           instance: {
-            ...createOpenClawDetail('local-built-in').instance,
+            ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
             isBuiltIn: true,
             isDefault: true,
             deploymentMode: 'local-managed',
@@ -709,7 +737,7 @@ await runTest('getInstanceFileContent returns built-in workbench file content wi
   });
 
   const content = await service.getInstanceFileContent(
-    'local-built-in',
+    BUILT_IN_INSTANCE_ID,
     '/workspace/main/AGENTS.md',
   );
 
@@ -760,11 +788,11 @@ await runTest(
     const calls: string[] = [];
     const service = createInstanceService({
       studioApi: {
-        getInstanceDetail: async () =>
-          createOpenClawDetail('local-built-in', {
-            instance: {
-              ...createOpenClawDetail('local-built-in').instance,
-              status: 'offline',
+      getInstanceDetail: async () =>
+        createOpenClawDetail(BUILT_IN_INSTANCE_ID, {
+          instance: {
+            ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
+            status: 'offline',
               isBuiltIn: true,
               isDefault: true,
               deploymentMode: 'local-managed',
@@ -815,9 +843,9 @@ await runTest(
       },
     });
 
-    const raw = await service.getOpenClawConfigDocument('local-built-in');
+    const raw = await service.getOpenClawConfigDocument(BUILT_IN_INSTANCE_ID);
 
-    assert.deepEqual(calls, ['local-built-in']);
+    assert.deepEqual(calls, [BUILT_IN_INSTANCE_ID]);
     assert.deepEqual(requireParsedOpenClawConfig(raw), {
       agents: {
         defaults: {
@@ -2467,9 +2495,9 @@ await runTest('updateInstanceLlmProviderConfig rejects built-in OpenClaw provide
   const service = createInstanceService({
     studioApi: {
       getInstanceDetail: async () =>
-        createOpenClawDetail('local-built-in', {
+        createOpenClawDetail(BUILT_IN_INSTANCE_ID, {
           instance: {
-            ...createOpenClawDetail('local-built-in').instance,
+            ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
             isBuiltIn: true,
             isDefault: true,
             deploymentMode: 'local-managed',
@@ -2493,7 +2521,7 @@ await runTest('updateInstanceLlmProviderConfig rejects built-in OpenClaw provide
 
   await assert.rejects(
     () =>
-      service.updateInstanceLlmProviderConfig('local-built-in', 'openai', {
+      service.updateInstanceLlmProviderConfig(BUILT_IN_INSTANCE_ID, 'openai', {
         endpoint: 'https://api.openai.com/v1',
         apiKeySource: '${OPENAI_API_KEY}',
         defaultModelId: 'gpt-5.4',
@@ -3224,9 +3252,9 @@ await runTest('createInstanceLlmProvider rejects built-in OpenClaw provider crea
   const service = createInstanceService({
     studioApi: {
       getInstanceDetail: async () =>
-        createOpenClawDetail('local-built-in', {
+        createOpenClawDetail(BUILT_IN_INSTANCE_ID, {
           instance: {
-            ...createOpenClawDetail('local-built-in').instance,
+            ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
             isBuiltIn: true,
             isDefault: true,
             deploymentMode: 'local-managed',
@@ -3239,7 +3267,7 @@ await runTest('createInstanceLlmProvider rejects built-in OpenClaw provider crea
   await assert.rejects(
     () =>
       service.createInstanceLlmProvider(
-        'local-built-in',
+        BUILT_IN_INSTANCE_ID,
         {
           id: 'openai',
           channelId: 'openai',
@@ -3274,9 +3302,9 @@ await runTest('deleteInstanceLlmProvider rejects built-in OpenClaw provider dele
   const service = createInstanceService({
     studioApi: {
       getInstanceDetail: async () =>
-        createOpenClawDetail('local-built-in', {
+        createOpenClawDetail(BUILT_IN_INSTANCE_ID, {
           instance: {
-            ...createOpenClawDetail('local-built-in').instance,
+            ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
             isBuiltIn: true,
             isDefault: true,
             deploymentMode: 'local-managed',
@@ -3287,7 +3315,7 @@ await runTest('deleteInstanceLlmProvider rejects built-in OpenClaw provider dele
   });
 
   await assert.rejects(
-    () => service.deleteInstanceLlmProvider('local-built-in', 'sdkwork-local-proxy'),
+    () => service.deleteInstanceLlmProvider(BUILT_IN_INSTANCE_ID, 'sdkwork-local-proxy'),
     /provider center/i,
   );
 });
@@ -3296,9 +3324,9 @@ await runTest('createInstanceLlmProviderModel rejects built-in OpenClaw provider
   const service = createInstanceService({
     studioApi: {
       getInstanceDetail: async () =>
-        createOpenClawDetail('local-built-in', {
+        createOpenClawDetail(BUILT_IN_INSTANCE_ID, {
           instance: {
-            ...createOpenClawDetail('local-built-in').instance,
+            ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
             isBuiltIn: true,
             isDefault: true,
             deploymentMode: 'local-managed',
@@ -3310,7 +3338,7 @@ await runTest('createInstanceLlmProviderModel rejects built-in OpenClaw provider
 
   await assert.rejects(
     () =>
-      service.createInstanceLlmProviderModel('local-built-in', 'sdkwork-local-proxy', {
+      service.createInstanceLlmProviderModel(BUILT_IN_INSTANCE_ID, 'sdkwork-local-proxy', {
         id: 'gpt-5.4',
         name: 'GPT-5.4',
       }),
@@ -3322,9 +3350,9 @@ await runTest('updateInstanceLlmProviderModel rejects built-in OpenClaw provider
   const service = createInstanceService({
     studioApi: {
       getInstanceDetail: async () =>
-        createOpenClawDetail('local-built-in', {
+        createOpenClawDetail(BUILT_IN_INSTANCE_ID, {
           instance: {
-            ...createOpenClawDetail('local-built-in').instance,
+            ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
             isBuiltIn: true,
             isDefault: true,
             deploymentMode: 'local-managed',
@@ -3337,7 +3365,7 @@ await runTest('updateInstanceLlmProviderModel rejects built-in OpenClaw provider
   await assert.rejects(
     () =>
       service.updateInstanceLlmProviderModel(
-        'local-built-in',
+        BUILT_IN_INSTANCE_ID,
         'sdkwork-local-proxy',
         'gpt-5.4',
         {
@@ -3353,9 +3381,9 @@ await runTest('deleteInstanceLlmProviderModel rejects built-in OpenClaw provider
   const service = createInstanceService({
     studioApi: {
       getInstanceDetail: async () =>
-        createOpenClawDetail('local-built-in', {
+        createOpenClawDetail(BUILT_IN_INSTANCE_ID, {
           instance: {
-            ...createOpenClawDetail('local-built-in').instance,
+            ...createOpenClawDetail(BUILT_IN_INSTANCE_ID).instance,
             isBuiltIn: true,
             isDefault: true,
             deploymentMode: 'local-managed',
@@ -3368,7 +3396,7 @@ await runTest('deleteInstanceLlmProviderModel rejects built-in OpenClaw provider
   await assert.rejects(
     () =>
       service.deleteInstanceLlmProviderModel(
-        'local-built-in',
+        BUILT_IN_INSTANCE_ID,
         'sdkwork-local-proxy',
         'gpt-5.4',
       ),

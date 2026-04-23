@@ -15,6 +15,10 @@ function runTest(name: string, callback: () => void | Promise<void>) {
 
 const source = readFileSync(new URL('./ChatMessage.tsx', import.meta.url), 'utf8');
 const pageSource = readFileSync(new URL('../pages/Chat.tsx', import.meta.url), 'utf8');
+const conversationPaneSource = readFileSync(
+  new URL('./ChatConversationPane.tsx', import.meta.url),
+  'utf8',
+);
 let drawerSource = '';
 try {
   drawerSource = readFileSync(new URL('./ChatSessionContextDrawer.tsx', import.meta.url), 'utf8');
@@ -96,6 +100,8 @@ await runTest(
       /prose-code:before:content-none prose-code:after:content-none prose-p:my-2 prose-p:leading-6 prose-pre:my-3 prose-pre:bg-transparent prose-pre:p-0 prose-ul:my-2 prose-ol:my-2/,
     );
     assert.match(source, /attachments\.length > 0 \? \(\s*<div className="mb-2\.5 grid gap-3 sm:grid-cols-2">/);
+    assert.match(source, /const NoticeList = memo\(function NoticeList/);
+    assert.match(source, /notices\.length > 0 \? \(\s*<NoticeList notices=\{notices\} \/>\s*\) : null/);
     assert.match(source, /reasoning \? \(\s*<details className="mb-2\.5 overflow-hidden rounded-2xl border/);
     assert.match(
       source,
@@ -133,15 +139,15 @@ await runTest(
     assert.doesNotMatch(pageSource, /showAvatar=\{isFirstInGroup\}/);
     assert.doesNotMatch(pageSource, /reserveAvatarSpace=\{!isFirstInGroup\}/);
     assert.match(
-      pageSource,
+      conversationPaneSource,
       /mx-auto flex w-full max-w-6xl text-\[10px\] tracking-normal text-zinc-400 dark:text-zinc-500/,
     );
     assert.match(
-      pageSource,
+      conversationPaneSource,
       /group\.role === 'user'\s*\?\s*'justify-end pl-4 pr-2 sm:pl-6 sm:pr-3 lg:pl-8 lg:pr-4'\s*:\s*'justify-start px-4 sm:px-6 lg:px-8'/,
     );
     assert.match(
-      pageSource,
+      conversationPaneSource,
       /<div key=\{groupKey\} className="space-y-1\.5 sm:space-y-2">/,
     );
     assert.doesNotMatch(pageSource, /ml-11 sm:ml-14/);
@@ -158,11 +164,11 @@ await runTest(
     assert.doesNotMatch(pageSource, /ResizeObserver/);
     assert.doesNotMatch(pageSource, /absolute bottom-0 left-0 right-0/);
     assert.match(
-      pageSource,
+      conversationPaneSource,
       /className="min-h-0 flex-1 overflow-y-auto scrollbar-hide"/,
     );
     assert.match(
-      pageSource,
+      conversationPaneSource,
       /className="flex-shrink-0 bg-gradient-to-t from-zinc-50 via-zinc-50\/78 to-transparent px-3 pb-3 pt-1\.5 sm:px-4 sm:pb-4 sm:pt-2 lg:px-6 dark:from-zinc-950 dark:via-zinc-950\/38 dark:to-transparent"/,
     );
   },
@@ -172,11 +178,11 @@ await runTest(
   'Chat page keeps the message rail on a tighter desktop rhythm with floating controls and no chat-local top header band',
   () => {
     assert.match(
-      pageSource,
+      conversationPaneSource,
       /className="flex-1 space-y-3 px-3 py-4 sm:space-y-4 sm:px-4 sm:py-5"/,
     );
     assert.doesNotMatch(pageSource, /<header className="z-10 flex min-h-\[3\.75rem\]/);
-    assert.match(pageSource, /className="relative flex h-full min-w-0 flex-1 flex-col"/);
+    assert.match(conversationPaneSource, /className="relative flex h-full min-w-0 flex-1 flex-col"/);
     assert.doesNotMatch(pageSource, /className="relative flex h-full min-w-0 flex-1 flex-col pt-11 sm:pt-12"/);
     assert.doesNotMatch(
       pageSource,
@@ -194,15 +200,11 @@ await runTest(
     );
     assert.match(
       pageSource,
-      /const \[isSessionContextDrawerOpen, setIsSessionContextDrawerOpen\] = useState\(false\);/,
+      /import \{ useChatPageCompositionState \} from '\.\/useChatPageCompositionState';/,
     );
     assert.match(
       pageSource,
-      /<ChatSessionContextDrawer[\s\S]*isOpen=\{isSessionContextDrawerOpen\}/,
-    );
-    assert.match(
-      pageSource,
-      /onClick=\{\(\) => setIsSessionContextDrawerOpen\(true\)\}/,
+      /<ChatSessionContextDrawer \{\.\.\.sessionContextDrawerProps\} \/>/,
     );
     assert.match(drawerSource, /export function ChatSessionContextDrawer/);
     assert.match(drawerSource, /<OverlaySurface[\s\S]*variant="drawer"/);
@@ -224,19 +226,19 @@ await runTest(
   'Chat page renders footer metadata as subdued inline text instead of badge-heavy chrome',
   () => {
     assert.match(
-      pageSource,
+      conversationPaneSource,
       /flex min-w-0 max-w-full flex-wrap items-center gap-x-1\.5 gap-y-0\.5/,
     );
     assert.match(
-      pageSource,
+      conversationPaneSource,
       /<span className="truncate font-medium text-zinc-500 dark:text-zinc-400">/,
     );
     assert.match(
-      pageSource,
+      conversationPaneSource,
       /<span className="shrink-0 text-zinc-300 dark:text-zinc-600">\/<\/span>/,
     );
     assert.match(
-      pageSource,
+      conversationPaneSource,
       /<span className="truncate text-zinc-400 dark:text-zinc-500">\s*\{footerPresentation\.modelLabel\}\s*<\/span>/,
     );
     assert.doesNotMatch(

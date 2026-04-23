@@ -12,17 +12,23 @@ function runTest(name: string, callback: () => void) {
   }
 }
 
-runTest('ChannelRegionTabs renders with a tighter tab rail radius', () => {
+runTest('ChannelRegionTabs renders stacked commercial tab copy with category descriptions', () => {
   const source = readFileSync(resolve(import.meta.dirname, 'ChannelRegionTabs.tsx'), 'utf8');
 
+  assert.match(source, /descriptions\?: Partial<Record<ChannelCatalogRegion, string>>;/);
   assert.match(source, /data-slot="channel-region-tabs"/);
-  assert.match(source, /gap-1/);
-  assert.match(source, /rounded-\[0\.875rem\]/);
-  assert.match(source, /p-1/);
-  assert.match(source, /h-9 min-w-\[9rem\]/);
-  assert.match(source, /rounded-\[0\.75rem\] px-3 text-left text-\[13px\]/);
+  assert.match(source, /data-slot="channel-region-tab-label"/);
+  assert.match(source, /data-slot="channel-region-tab-description"/);
+  assert.match(source, /gap-1\.5/);
+  assert.match(source, /rounded-\[0\.95rem\]/);
+  assert.match(source, /p-1 /);
+  assert.match(source, /h-10 min-w-\[10rem\]/);
+  assert.match(source, /rounded-\[0\.8rem\] border border-transparent px-3 py-2 text-left/);
+  assert.match(source, /items-start justify-between gap-2\.5/);
+  assert.match(source, /bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-800/);
+  assert.match(source, /descriptions\?\.\[region\]/);
   assert.match(source, /rounded-full px-1\.5 py-0\.5 text-\[11px\]/);
-  assert.doesNotMatch(source, /rounded-\[1rem\]/);
-  assert.doesNotMatch(source, /inline-flex w-full/);
-  assert.doesNotMatch(source, /min-w-\[11rem\] flex-1 items-center/);
+  assert.doesNotMatch(source, /h-11 min-w-\[10\.5rem\]/);
+  assert.doesNotMatch(source, /rounded-\[0\.875rem\] px-3\.5 py-2 text-left/);
+  assert.doesNotMatch(source, /items-start justify-between gap-3/);
 });

@@ -51,7 +51,9 @@ impl StaticAssetMount {
                 get(get_browser_bootstrap_descriptor),
             )
             .fallback(get(
-                move |State(state): State<ServerState>, headers: axum::http::HeaderMap, uri: Uri| {
+                move |State(state): State<ServerState>,
+                      headers: axum::http::HeaderMap,
+                      uri: Uri| {
                     let dist_dir = dist_dir.clone();
                     let request_path = uri.path().to_string();
                     async move {
@@ -331,8 +333,8 @@ mod tests {
 
     use super::{
         inject_server_host_metadata, serve_browser_path, ServerBrowserHostMetadata,
-        BROWSER_SESSION_TOKEN_META_NAME,
-        DEFAULT_INTERNAL_BASE_PATH, DEFAULT_MANAGE_BASE_PATH, DEFAULT_STUDIO_API_BASE_PATH,
+        BROWSER_SESSION_TOKEN_META_NAME, DEFAULT_INTERNAL_BASE_PATH, DEFAULT_MANAGE_BASE_PATH,
+        DEFAULT_STUDIO_API_BASE_PATH,
     };
 
     #[test]
@@ -409,15 +411,12 @@ mod tests {
             },
         );
 
-        assert!(html.contains(
-            "<meta name=\"sdkwork-claw-host-mode\" content=\"server\" />"
-        ));
-        assert!(html.contains(
-            "<meta name=\"sdkwork-claw-distribution-family\" content=\"server\" />"
-        ));
-        assert!(html.contains(
-            "<meta name=\"sdkwork-claw-deployment-family\" content=\"kubernetes\" />"
-        ));
+        assert!(html.contains("<meta name=\"sdkwork-claw-host-mode\" content=\"server\" />"));
+        assert!(
+            html.contains("<meta name=\"sdkwork-claw-distribution-family\" content=\"server\" />")
+        );
+        assert!(html
+            .contains("<meta name=\"sdkwork-claw-deployment-family\" content=\"kubernetes\" />"));
         assert!(html.contains(
             "<meta name=\"sdkwork-claw-accelerator-profile\" content=\"nvidia-cuda\" />"
         ));
@@ -469,9 +468,9 @@ mod tests {
         assert!(!html.contains("sdkwork-claw-accelerator-profile"));
         assert!(!html.contains(BROWSER_SESSION_TOKEN_META_NAME));
         assert!(!html.contains("stale-token"));
-        assert!(html.contains(
-            "<meta name=\"sdkwork-claw-deployment-family\" content=\"container\" />"
-        ));
+        assert!(
+            html.contains("<meta name=\"sdkwork-claw-deployment-family\" content=\"container\" />")
+        );
     }
 
     #[test]

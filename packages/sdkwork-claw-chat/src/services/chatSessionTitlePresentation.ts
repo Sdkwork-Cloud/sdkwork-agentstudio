@@ -7,6 +7,8 @@ export const DEFAULT_CHAT_SESSION_TITLE = 'New Conversation';
 const DEFAULT_MAX_TITLE_LENGTH = 80;
 const GENERIC_CHAT_SESSION_TITLE_PATTERN =
   /^(?:assistant|cli|claw-studio|default|main|openclaw|openclaw[-_/ ](?:cli|gateway|studio|tui|web)|studio-web|system|tui)$/i;
+const TECHNICAL_CHAT_IDENTIFIER_PATTERN =
+  /^(?:msg|message|session|thread|conversation)((?:[-_:][a-z0-9]+)+)$/i;
 
 type ChatSessionTitleMessageLike = {
   role?: string;
@@ -43,6 +45,17 @@ function truncateChatSessionTitle(value: string, maxLength = DEFAULT_MAX_TITLE_L
 
 function isGenericChatSessionTitle(value: string) {
   return GENERIC_CHAT_SESSION_TITLE_PATTERN.test(value);
+}
+
+function isTechnicalChatIdentifier(value: string) {
+  const match = value.match(TECHNICAL_CHAT_IDENTIFIER_PATTERN);
+  if (!match) {
+    return false;
+  }
+
+  const suffix = match[1] ?? '';
+  const segmentCount = suffix.split(/[-_:]+/g).filter(Boolean).length;
+  return /\d/.test(value) || segmentCount >= 2;
 }
 
 function escapeChatSessionTitleRegex(value: string) {
@@ -115,6 +128,7 @@ export function isOpaqueChatSessionTitle(value: string | null | undefined) {
 
   return (
     isGenericChatSessionTitle(normalized) ||
+    isTechnicalChatIdentifier(normalized) ||
     /^claw-studio:/i.test(normalized) ||
     /^thread:/i.test(normalized) ||
     /^agent:[a-z0-9._-]+:[a-z0-9._-]+$/i.test(normalized) ||
@@ -227,7 +241,7 @@ export function getChatSessionDisplayTitle(session: ChatSessionTitleSessionLike)
   }
 
   const previewTitle = normalizeChatSessionTitle(session.lastMessagePreview);
-  if (previewTitle) {
+  if (isReadableChatSessionTitle(previewTitle)) {
     return previewTitle;
   }
 

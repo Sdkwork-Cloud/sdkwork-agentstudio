@@ -7,6 +7,8 @@ import {
   shouldProbeOpenClawGateway,
 } from './openClawManagementCapabilities.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 function runTest(name: string, fn: () => void | Promise<void>) {
   return Promise.resolve()
     .then(fn)
@@ -132,7 +134,7 @@ function createDetail(overrides: DetailOverrides = {}): StudioInstanceDetailReco
 await runTest('isProviderCenterControlledOpenClawDetail returns true for built-in workbench lifecycles', () => {
   const detail = createDetail({
     instance: {
-      id: 'local-built-in',
+      id: BUILT_IN_INSTANCE_ID,
       isBuiltIn: true,
       isDefault: true,
       deploymentMode: 'local-managed',
@@ -372,7 +374,7 @@ await runTest(
   () => {
     const builtInManagedDetail = createDetail({
       instance: {
-        id: 'local-built-in',
+        id: BUILT_IN_INSTANCE_ID,
         status: 'offline',
         isBuiltIn: true,
         isDefault: true,

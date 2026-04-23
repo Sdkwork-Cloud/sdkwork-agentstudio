@@ -1,7 +1,8 @@
-import { Suspense, lazy, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
+import type { CreateKernelAgentResult } from '@sdkwork/claw-core';
 
 const AuthPage = lazy(() =>
   import('@sdkwork/claw-auth').then((module) => ({
@@ -41,6 +42,11 @@ const Channels = lazy(() =>
 const Chat = lazy(() =>
   import('@sdkwork/claw-chat').then((module) => ({
     default: module.Chat,
+  })),
+);
+const ChatAgentMarketDialog = lazy(() =>
+  import('@sdkwork/claw-chat').then((module) => ({
+    default: module.ChatAgentMarketDialog,
   })),
 );
 const Community = lazy(() =>
@@ -144,14 +150,30 @@ function ComingSoonRoute({ message }: { message: string }) {
   );
 }
 
+type InstanceDetailAgentMarketRequest = {
+  instanceId: string | null;
+  onInstalled?: (
+    result: CreateKernelAgentResult,
+  ) => Promise<void> | void;
+};
+
 export function AppRoutes() {
   const location = useLocation();
   const { t } = useTranslation();
+  const [instanceDetailAgentMarketRequest, setInstanceDetailAgentMarketRequest] =
+    useState<InstanceDetailAgentMarketRequest | null>(null);
+
+  useEffect(() => {
+    if (!location.pathname.startsWith('/instances/')) {
+      setInstanceDetailAgentMarketRequest(null);
+    }
+  }, [location.pathname]);
 
   return (
-    <AnimatePresence initial={false}>
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Navigate to="/chat" replace />} />
+    <>
+      <AnimatePresence initial={false}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Navigate to="/chat" replace />} />
         <Route path="/auth" element={<Navigate to="/login" replace />} />
         <Route
           path="/login"
@@ -225,16 +247,23 @@ export function AppRoutes() {
             </PageWrapper>
           }
         />
-        <Route
-          path="/instances/:id"
-          element={
-            <PageWrapper>
-              <Suspense fallback={<RouteFallback />}>
-                <InstanceDetail />
-              </Suspense>
-            </PageWrapper>
-          }
-        />
+          <Route
+            path="/instances/:id"
+            element={
+              <PageWrapper>
+                <Suspense fallback={<RouteFallback />}>
+                  <InstanceDetail
+                    onOpenAgentMarketModal={(request) => {
+                      setInstanceDetailAgentMarketRequest({
+                        instanceId: request.instanceId,
+                        onInstalled: request.onInstalled,
+                      });
+                    }}
+                  />
+                </Suspense>
+              </PageWrapper>
+            }
+          />
         <Route
           path="/devices"
           element={
@@ -389,7 +418,24 @@ export function AppRoutes() {
           path="/codebox"
           element={<ComingSoonRoute message={t('routes.codeboxComingSoon')} />}
         />
-      </Routes>
-    </AnimatePresence>
+        </Routes>
+      </AnimatePresence>
+      {instanceDetailAgentMarketRequest ? (
+        <Suspense fallback={null}>
+          <ChatAgentMarketDialog
+            open
+            instanceId={instanceDetailAgentMarketRequest.instanceId}
+            onOpenChange={(nextOpen) => {
+              if (!nextOpen) {
+                setInstanceDetailAgentMarketRequest(null);
+              }
+            }}
+            onInstalled={async (result) => {
+              await instanceDetailAgentMarketRequest.onInstalled?.(result);
+            }}
+          />
+        </Suspense>
+      ) : null}
+    </>
   );
 }

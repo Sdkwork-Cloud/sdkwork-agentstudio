@@ -106,6 +106,21 @@ function listWindowsTauriDevSessionProcesses(packageDir) {
   );
 }
 
+function listWindowsProcessesForTargetDir(targetDir) {
+  const normalizedTargetDir = path.resolve(targetDir);
+  const escapedTargetDir = escapePowerShellSingleQuoted(normalizedTargetDir);
+  const command = [
+    `$targetDir = '${escapedTargetDir}'`,
+    `$items = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.ExecutablePath -and ([System.IO.Path]::GetFullPath($_.ExecutablePath)).StartsWith($targetDir, [System.StringComparison]::OrdinalIgnoreCase) } | Select-Object @{Name="Id";Expression={$_.ProcessId}}, @{Name="ProcessName";Expression={$_.Name}}, @{Name="Path";Expression={$_.ExecutablePath}}, ParentProcessId, CommandLine`,
+    `if ($null -eq $items) { '[]' } else { $items | ConvertTo-Json -Compress }`,
+  ].join('; ');
+
+  return runWindowsProcessQuery(
+    command,
+    `Tauri target processes for ${normalizedTargetDir}`,
+  );
+}
+
 function stopWindowsProcess(pid) {
   const result = spawnSync('taskkill', ['/PID', String(pid), '/T', '/F'], {
     encoding: 'utf8',
@@ -303,6 +318,7 @@ export function ensureTauriDevBinaryUnlocked(
     inspectProcessesForBinary = listWindowsProcessesForBinary,
     inspectProcessesByName = listWindowsProcessesByName,
     inspectDevSessionProcesses = listWindowsTauriDevSessionProcesses,
+    inspectTargetProcesses = listWindowsProcessesForTargetDir,
     stopProcess = stopWindowsProcess,
     stopManagedKernelService = stopWindowsKernelHostService,
     waitForExecutableUnlock = waitForExecutableUnlockSync,
@@ -310,6 +326,7 @@ export function ensureTauriDevBinaryUnlocked(
 ) {
   const executablePath = resolveTauriDevBinaryPath(srcTauriDir, binaryName, platform);
   const packageDir = path.resolve(srcTauriDir, '..');
+  const targetDir = path.resolve(srcTauriDir, 'target');
 
   if (platform !== 'win32') {
     return {
@@ -347,7 +364,12 @@ export function ensureTauriDevBinaryUnlocked(
   }
 
   const devSessionProcesses = dedupeProcessesById(inspectDevSessionProcesses(packageDir));
-  const processesToStop = dedupeProcessesById([...runningProcesses, ...devSessionProcesses]);
+  const targetProcesses = dedupeProcessesById(inspectTargetProcesses(targetDir));
+  const processesToStop = dedupeProcessesById([
+    ...runningProcesses,
+    ...devSessionProcesses,
+    ...targetProcesses,
+  ]);
   const terminatedProcesses = [];
   let kernelServiceStopResult = null;
   let kernelServiceStopError = null;
@@ -397,6 +419,7 @@ export function ensureTauriDevBinaryUnlocked(
     executablePath,
     runningProcesses,
     devSessionProcesses,
+    targetProcesses,
     terminatedProcesses,
     inspectionMode,
     kernelServiceStopResult,

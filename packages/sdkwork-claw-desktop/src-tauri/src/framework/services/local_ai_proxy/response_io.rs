@@ -1,19 +1,19 @@
 use super::{
     openai_compatible,
-    support::proxy_error,
     types::{LocalAiProxyTokenUsage, ProxyHttpResult},
 };
 use axum::{
     body::Body,
     http::{header::CONTENT_TYPE, HeaderValue, StatusCode},
     response::Response,
-    Json,
 };
-use serde_json::Value;
+pub(super) use sdkwork_local_api_proxy_native::response::extract_http_error_message as extract_proxy_error_message;
 pub(super) use sdkwork_local_api_proxy_native::response::resolve_error_message;
 use sdkwork_local_api_proxy_native::response::{
     format_json_response_body, normalize_response_text, resolve_response_preview,
 };
+use sdkwork_local_api_proxy_native::support::proxy_error;
+use serde_json::Value;
 
 pub(super) struct ProxyRouteOutcome {
     pub(super) response: Response,
@@ -83,10 +83,6 @@ pub(super) async fn build_buffered_upstream_response(
         response_preview,
         response_body: normalize_response_text(&text),
     })
-}
-
-pub(super) fn extract_proxy_error_message(error: &(StatusCode, Json<Value>)) -> String {
-    resolve_error_message(Some(&error.1 .0), "", error.0)
 }
 
 pub(super) async fn parse_json_response(response: reqwest::Response) -> ProxyHttpResult<Value> {

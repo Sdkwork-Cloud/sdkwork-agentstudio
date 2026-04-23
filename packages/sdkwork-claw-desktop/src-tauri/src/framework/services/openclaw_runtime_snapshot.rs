@@ -24,6 +24,7 @@ use crate::{
     },
     platform,
 };
+use sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_config_file_path;
 use serde_json::{Map, Value};
 use std::{
     fs,
@@ -495,11 +496,11 @@ fn active_openclaw_config_path(paths: &AppPaths) -> PathBuf {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
         .unwrap_or_else(|_| {
-                paths
-                    .kernel_paths("openclaw")
-                    .map(|kernel| kernel.config_file)
-                    .unwrap_or_else(|_| paths.openclaw_config_file.clone())
-            })
+            paths
+                .kernel_paths("openclaw")
+                .map(|kernel| kernel.config_file)
+                .unwrap_or_else(|_| build_standard_openclaw_config_file_path(&paths.user_root))
+        })
 }
 
 fn path_string(path: &Path) -> String {

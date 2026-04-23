@@ -62,7 +62,7 @@ test('release smoke contract resolves report paths and persists normalized smoke
       artifactRelativePaths: [
         'server/linux/x64/claw-studio-server-release-local-linux-x64.tar.gz',
       ],
-      launcherRelativePath: 'start-claw-server.sh',
+      launcherRelativePath: 'bin/claw-server',
       runtimeBaseUrl: 'http://127.0.0.1:19797',
       checks: [
         {

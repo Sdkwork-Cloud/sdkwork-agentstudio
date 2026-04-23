@@ -18,7 +18,10 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { instanceDirectoryService } from '../services/index.ts';
+import {
+  instanceDirectoryService,
+  resolvePreferredActiveInstanceId,
+} from '../services/index.ts';
 import { useAppStore } from '../stores/useAppStore.ts';
 import { useInstanceStore } from '../stores/useInstanceStore.ts';
 
@@ -51,24 +54,40 @@ export function Sidebar() {
   const { t } = useTranslation();
 
   useEffect(() => {
+    let disposed = false;
+
+    const syncInstances = (nextInstances: InstanceSummary[]) => {
+      if (disposed) {
+        return;
+      }
+
+      setInstances(nextInstances);
+    };
+
     async function fetchInstances() {
-      const data = await instanceDirectoryService.listInstances();
-      setInstances(data);
+      try {
+        syncInstances(await instanceDirectoryService.listInstances());
+      } catch (error) {
+        console.error('Failed to fetch instances for sidebar:', error);
+      }
     }
 
+    const unsubscribe = instanceDirectoryService.subscribe(syncInstances);
     void fetchInstances();
+
+    return () => {
+      disposed = true;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
-    if (instances.length === 0) {
-      if (activeInstanceId) {
-        setActiveInstanceId(null);
-      }
-      return;
-    }
-
-    if (!activeInstanceId || !instances.some((instance) => instance.id === activeInstanceId)) {
-      setActiveInstanceId(instances[0].id);
+    const nextActiveInstanceId = resolvePreferredActiveInstanceId({
+      instances,
+      activeInstanceId,
+    });
+    if (nextActiveInstanceId !== activeInstanceId) {
+      setActiveInstanceId(nextActiveInstanceId);
     }
   }, [activeInstanceId, instances, setActiveInstanceId]);
 

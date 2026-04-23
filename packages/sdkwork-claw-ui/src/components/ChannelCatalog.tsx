@@ -5,10 +5,15 @@ import { cn } from '../lib/utils';
 import { Button } from './Button';
 import { Switch } from './Switch';
 import { ChannelRegionTabs } from './ChannelRegionTabs';
+import { ChannelEmptyStateSurface, ChannelIdentityBadge } from './channelCatalogShared';
 import {
+  buildChannelCatalogRegionDescriptions,
+  buildChannelCatalogRegionLabels,
+  getChannelCatalogRegionEmptyText,
+} from './channelCatalogRegionContent';
+import {
+  getChannelCatalogRegions,
   isChannelDownloadAppAction,
-  getChannelCatalogMonogram,
-  getChannelCatalogTone,
   getChannelOfficialLink,
   partitionChannelCatalogItemsByRegion,
   resolveDefaultChannelCatalogRegion,
@@ -16,7 +21,6 @@ import {
   sortChannelCatalogItems,
   type ChannelOfficialLink,
 } from './channelCatalogMeta';
-import { getChannelCatalogIcon } from './channelCatalogIcons';
 
 export type ChannelCatalogVariant = 'management' | 'summary';
 
@@ -129,7 +133,10 @@ function SummaryMetric({
   value: React.ReactNode;
 }) {
   return (
-    <div className="min-w-[7rem]">
+    <div
+      data-slot="channel-catalog-summary-metric"
+      className="min-w-[7rem] rounded-[18px] border border-zinc-200/80 bg-white/78 px-3.5 py-3 shadow-[0_16px_36px_-32px_rgba(15,23,42,0.34)] dark:border-zinc-800 dark:bg-zinc-900/72"
+    >
       <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
         {label}
       </div>
@@ -189,45 +196,6 @@ function OfficialLinkButton({
   );
 }
 
-function ChannelIdentity({
-  channel,
-}: {
-  channel: ChannelCatalogItem;
-}) {
-  const builtInIcon = getChannelCatalogIcon(channel.id);
-
-  return (
-    <div
-      className={cn(
-        'flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border shadow-sm transition-transform duration-300 group-hover:scale-105',
-        getChannelCatalogTone(channel.id),
-      )}
-    >
-      {builtInIcon ? (
-        builtInIcon
-      ) : channel.icon ? (
-        channel.icon
-      ) : (
-        <span className="text-sm font-bold uppercase tracking-[0.18em]">
-          {getChannelCatalogMonogram(channel.id, channel.name)}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function RegionEmptyState({
-  title,
-}: {
-  title: string;
-}) {
-  return (
-    <div className="rounded-[18px] border border-dashed border-zinc-300 bg-white/75 p-6 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/35 dark:text-zinc-400">
-      {title}
-    </div>
-  );
-}
-
 export function ChannelCatalog({
   items,
   texts,
@@ -254,26 +222,16 @@ export function ChannelCatalog({
   }, [activeRegion, regionGroups]);
 
   const visibleItems = showRegionTabs ? regionGroups[activeRegion] : sortedItems;
-  const regionLabels: Record<ChannelCatalogRegion, string> = {
-    domestic: t('channels.page.catalog.tabs.domestic'),
-    global: t('channels.page.catalog.tabs.global'),
-    media: t('channels.page.catalog.tabs.media'),
-    all: t('channels.page.catalog.tabs.all'),
-  };
+  const regionLabels: Record<ChannelCatalogRegion, string> = buildChannelCatalogRegionLabels(t);
+  const regionDescriptions: Partial<Record<ChannelCatalogRegion, string>> =
+    buildChannelCatalogRegionDescriptions(t);
   const regionCounts: Record<ChannelCatalogRegion, number> = {
     domestic: regionGroups.domestic.length,
     global: regionGroups.global.length,
     media: regionGroups.media.length,
     all: regionGroups.all.length,
   };
-  const regionEmptyText =
-    activeRegion === 'domestic'
-      ? t('channels.page.catalog.empty.domestic')
-      : activeRegion === 'global'
-        ? t('channels.page.catalog.empty.global')
-        : activeRegion === 'media'
-          ? t('channels.page.catalog.empty.media')
-        : t('channels.page.catalog.empty.all');
+  const regionEmptyText = getChannelCatalogRegionEmptyText(t, activeRegion);
 
   if (items.length === 0) {
     return <>{emptyState}</>;
@@ -287,10 +245,15 @@ export function ChannelCatalog({
             activeRegion={activeRegion}
             labels={regionLabels}
             counts={regionCounts}
+            descriptions={regionDescriptions}
             onChange={setActiveRegion}
           />
         ) : null}
-        <RegionEmptyState title={regionEmptyText} />
+        <ChannelEmptyStateSurface
+          dataSlot="channel-catalog-empty-state"
+          title={regionEmptyText}
+          className="rounded-[24px] border border-dashed border-zinc-300/80 bg-gradient-to-br from-white via-white to-zinc-50/90 p-6 text-sm text-zinc-500 shadow-[0_18px_46px_-40px_rgba(15,23,42,0.35)] dark:border-zinc-700 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950/90 dark:text-zinc-400"
+        />
       </div>
     );
   }
@@ -303,16 +266,18 @@ export function ChannelCatalog({
             activeRegion={activeRegion}
             labels={regionLabels}
             counts={regionCounts}
+            descriptions={regionDescriptions}
             onChange={setActiveRegion}
           />
         ) : null}
         <div
           data-slot="channel-catalog-summary"
-          className="overflow-hidden rounded-[18px] border border-zinc-200/70 bg-white/75 dark:border-zinc-800 dark:bg-zinc-950/35"
+          className="overflow-hidden rounded-[24px] border border-zinc-200/70 bg-white/85 shadow-[0_22px_60px_-42px_rgba(15,23,42,0.4)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/45"
         >
           {visibleItems.map((channel, index) => {
             const badge = getStatusBadge(channel, texts, variant);
             const officialLink = resolveOfficialLink(channel);
+            const channelRegions = getChannelCatalogRegions(channel.id);
             const shouldShowConfiguredFieldMetric =
               typeof channel.configuredFieldCount === 'number' &&
               typeof channel.fieldCount === 'number' &&
@@ -345,6 +310,20 @@ export function ChannelCatalog({
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500 dark:text-zinc-400">
                     {channel.description}
                   </p>
+                  <div
+                    data-slot="channel-catalog-summary-meta"
+                    className="mt-4 flex flex-wrap items-center gap-2.5"
+                  >
+                    {channelRegions.map((region) => (
+                      <span
+                        key={`${channel.id}-${region}`}
+                        data-slot="channel-catalog-summary-region"
+                        className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-300"
+                      >
+                        {regionLabels[region]}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-5">
@@ -365,7 +344,10 @@ export function ChannelCatalog({
                 </div>
 
                 <div className="xl:max-w-sm">
-                  <div className="rounded-2xl bg-zinc-950/[0.04] px-4 py-3 text-sm text-zinc-600 dark:bg-white/[0.05] dark:text-zinc-300">
+                  <div
+                    data-slot="channel-catalog-summary-guide"
+                    className="rounded-[20px] border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800/80 dark:text-zinc-300"
+                  >
                     {channel.setupSteps?.[0] || texts.summaryFallback}
                   </div>
                   {officialLink ? (
@@ -393,26 +375,39 @@ export function ChannelCatalog({
           activeRegion={activeRegion}
           labels={regionLabels}
           counts={regionCounts}
+          descriptions={regionDescriptions}
           onChange={setActiveRegion}
         />
       ) : null}
       <div
         data-slot="channel-catalog-management"
-        className="overflow-hidden rounded-[20px] border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+        className="overflow-hidden rounded-[24px] border border-zinc-200/80 bg-white/92 shadow-[0_22px_60px_-42px_rgba(15,23,42,0.42)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/92"
       >
         <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
           {visibleItems.map((channel) => {
             const badge = getStatusBadge(channel, texts, variant);
             const officialLink = resolveOfficialLink(channel);
             const isDownloadAppChannel = isChannelDownloadAppAction(channel.id);
+            const channelRegions = getChannelCatalogRegions(channel.id);
+            const shouldShowConfiguredFieldMetric =
+              typeof channel.configuredFieldCount === 'number' &&
+              typeof channel.fieldCount === 'number' &&
+              channel.fieldCount > 0;
+            const setupStepCount = channel.setupSteps?.length || 0;
 
             return (
               <div
                 key={channel.id}
-                className="group flex flex-col justify-between gap-6 p-6 transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 sm:flex-row sm:items-center"
+                className="group flex flex-col justify-between gap-6 p-6 transition-colors hover:bg-gradient-to-r hover:from-zinc-50/95 hover:via-white hover:to-white dark:hover:from-zinc-900/80 dark:hover:via-zinc-900/60 dark:hover:to-zinc-900/40 sm:flex-row sm:items-center"
               >
                 <div className="flex flex-1 items-start gap-5">
-                  <ChannelIdentity channel={channel} />
+                  <ChannelIdentityBadge
+                    channelId={channel.id}
+                    channelName={channel.name}
+                    icon={channel.icon}
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border shadow-sm transition-transform duration-300 group-hover:scale-105"
+                    monogramClassName="text-sm font-bold uppercase tracking-[0.18em]"
+                  />
                   <div className="min-w-0 flex-1">
                     <div
                       data-slot="channel-catalog-management-heading"
@@ -442,9 +437,9 @@ export function ChannelCatalog({
                             channel={channel}
                             link={officialLink}
                             label={getOfficialActionLabel(channel, texts)}
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            className="h-8 rounded-lg px-2.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                            className="h-8 rounded-lg border-zinc-200/80 bg-white/85 px-2.5 text-xs font-semibold text-zinc-600 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.45)] hover:border-zinc-300 hover:bg-white hover:text-zinc-950 dark:border-zinc-700 dark:bg-zinc-900/70 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
                             onOpenOfficialLink={onOpenOfficialLink}
                           />
                         </div>
@@ -453,42 +448,78 @@ export function ChannelCatalog({
                     <p className="max-w-2xl text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
                       {channel.description}
                     </p>
+                    <div
+                      data-slot="channel-catalog-management-meta"
+                      className="mt-4 flex flex-wrap items-center gap-2.5"
+                    >
+                      {channelRegions.map((region) => (
+                        <span
+                          key={`${channel.id}-${region}`}
+                          data-slot="channel-catalog-management-region"
+                          className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-300"
+                        >
+                          {regionLabels[region]}
+                        </span>
+                      ))}
+                      <span className="inline-flex items-center rounded-full bg-zinc-950/[0.045] px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:bg-white/[0.07] dark:text-zinc-300">
+                        {texts.metricSetupSteps}
+                        <span className="mx-1.5 h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+                        {setupStepCount}
+                      </span>
+                      {shouldShowConfiguredFieldMetric ? (
+                        <span className="inline-flex items-center rounded-full bg-zinc-950/[0.045] px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:bg-white/[0.07] dark:text-zinc-300">
+                          {texts.metricConfiguredFields}
+                          <span className="mx-1.5 h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+                          {channel.configuredFieldCount}/{channel.fieldCount}
+                        </span>
+                      ) : null}
+                      <span className="inline-flex items-center rounded-full bg-zinc-950/[0.045] px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:bg-white/[0.07] dark:text-zinc-300">
+                        {texts.metricDeliveryState}
+                        <span className="mx-1.5 h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+                        {channel.enabled ? texts.stateEnabled : texts.statePending}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 <div
                   data-slot="channel-catalog-management-actions"
-                  className="flex flex-wrap items-center gap-3 sm:border-l sm:border-zinc-100 sm:pl-6 dark:sm:border-zinc-800"
+                  className="sm:border-l sm:border-zinc-100 sm:pl-6 dark:sm:border-zinc-800"
                 >
-                  {isDownloadAppChannel ? (
-                    onToggleEnabled ? (
-                      <Switch
-                        checked={channel.enabled}
-                        onCheckedChange={(checked) => onToggleEnabled(channel, checked === true)}
-                        aria-label={texts.actionEnableChannel(channel.name)}
-                      />
-                    ) : null
-                  ) : channel.status === 'not_configured' ? (
-                    onConfigure ? (
-                      <Button onClick={() => onConfigure(channel)}>{texts.actionConnect}</Button>
-                    ) : null
-                  ) : (
-                    <>
-                      {onConfigure ? (
-                        <Button variant="ghost" onClick={() => onConfigure(channel)}>
-                          <Settings className="h-4 w-4" />
-                          {texts.actionConfigure}
-                        </Button>
-                      ) : null}
-                      {onToggleEnabled ? (
+                  <div
+                    data-slot="channel-catalog-management-action-panel"
+                    className="flex flex-wrap items-center gap-3 rounded-[20px] border border-zinc-200/80 bg-zinc-50/80 px-3 py-3 transition-colors group-hover:border-zinc-300/80 group-hover:bg-white dark:border-zinc-800 dark:bg-zinc-900/78 dark:group-hover:border-zinc-700 dark:group-hover:bg-zinc-900"
+                  >
+                    {isDownloadAppChannel ? (
+                      onToggleEnabled ? (
                         <Switch
                           checked={channel.enabled}
                           onCheckedChange={(checked) => onToggleEnabled(channel, checked === true)}
                           aria-label={texts.actionEnableChannel(channel.name)}
                         />
-                      ) : null}
-                    </>
-                  )}
+                      ) : null
+                    ) : channel.status === 'not_configured' ? (
+                      onConfigure ? (
+                        <Button onClick={() => onConfigure(channel)}>{texts.actionConnect}</Button>
+                      ) : null
+                    ) : (
+                      <>
+                        {onConfigure ? (
+                          <Button variant="ghost" onClick={() => onConfigure(channel)}>
+                            <Settings className="h-4 w-4" />
+                            {texts.actionConfigure}
+                          </Button>
+                        ) : null}
+                        {onToggleEnabled ? (
+                          <Switch
+                            checked={channel.enabled}
+                            onCheckedChange={(checked) => onToggleEnabled(channel, checked === true)}
+                            aria-label={texts.actionEnableChannel(channel.name)}
+                          />
+                        ) : null}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             );

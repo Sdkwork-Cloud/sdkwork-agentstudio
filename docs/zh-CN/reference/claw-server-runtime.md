@@ -31,7 +31,8 @@ cargo run --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml -- se
 
 当前命令说明：
 
-- 打包后的命令形态是 `claw-server run`、`claw-server print-config`、`claw-server service print-manifest --platform <linux|macos|windows>` 与 `claw-server service <install|start|stop|restart|status>`
+- CLI 逻辑命令面是 `claw-server run`、`claw-server print-config`、`claw-server service print-manifest --platform <linux|macos|windows>` 与 `claw-server service <install|start|stop|restart|status>`
+- 当前打包后的 release bundle 会把同一套命令面暴露在原生二进制 `bin/claw-server` 或 `bin/claw-server.exe` 上；这个原生二进制就是打包后的规范启动入口，在 bundle 布局完整时会自动解析 `CLAW_SERVER_WEB_DIST` 与 `CLAW_SERVER_DATA_DIR` 的包内默认值，而 `start-claw-server.sh`、`start-claw-server.cmd` 继续作为围绕同一原生二进制的可选便捷包装层
 - `run` 是默认命令
 - `print-config` 会输出当前生效的运行时配置
 - `service print-manifest` 会输出跨平台服务清单元数据，以及对应平台的单元内容
@@ -151,6 +152,7 @@ Server 入口位于 `packages/sdkwork-claw-server/src-host/src/main.rs`。
 - `GET /claw/api/v1/discovery`
 - `GET /claw/internal/v1/host-platform`
 - `GET /claw/manage/v1/rollouts`
+- `POST /claw/manage/v1/service:start`
 - `GET /claw/manage/v1/openclaw/runtime`
 - `GET /claw/manage/v1/openclaw/gateway`
 - `POST /claw/manage/v1/openclaw/gateway/invoke`

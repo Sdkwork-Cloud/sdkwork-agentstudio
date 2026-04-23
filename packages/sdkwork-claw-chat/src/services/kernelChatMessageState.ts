@@ -1,17 +1,26 @@
 import type { KernelChatMessage, StudioConversationAttachment } from '@sdkwork/claw-types';
 import type { OpenClawToolCard } from './openClawMessagePresentation.ts';
+import { resolveChatMessageBinding } from './chatMessageBinding.ts';
+import {
+  resolveChatMessageSequence,
+  resolveChatMessageSequenceFromNativeMetadata,
+} from './chatMessageSequence.ts';
+import { presentKernelChatMessageParts } from './kernelChatMessagePartsPresentation.ts';
+import type { KernelChatNoticePresentation } from './kernelChatMessagePartsPresentation.ts';
 
 type KernelChatMessageStateSource = {
   id?: string;
   role?: string | null;
   content?: string;
   timestamp?: number;
+  seq?: number;
   senderLabel?: string | null;
   model?: string | null;
   runId?: string | null;
   attachments?: StudioConversationAttachment[];
   reasoning?: string | null;
   toolCards?: OpenClawToolCard[];
+  nativeMetadata?: Record<string, unknown> | null;
   kernelMessage?: KernelChatMessage | null;
 };
 
@@ -21,6 +30,7 @@ export type KernelChatMessageState = {
   status: 'complete' | 'streaming' | 'error';
   content: string;
   timestamp: number;
+  seq?: number;
   senderLabel: string | null;
   model?: string;
   runId?: string;
@@ -30,9 +40,12 @@ export type KernelChatMessageState = {
   nativeSessionId?: string;
   routingKey?: string;
   agentId?: string;
+  lineageParentSessionId?: string;
+  nativeMetadata: Record<string, unknown> | null;
   attachments: StudioConversationAttachment[];
   reasoning: string | null;
   toolCards: OpenClawToolCard[];
+  notices: KernelChatNoticePresentation[];
 };
 
 function trimNullableString(value: string | null | undefined) {
@@ -80,100 +93,67 @@ function cloneToolCards(toolCards: OpenClawToolCard[] | undefined) {
   return toolCards?.map((toolCard) => ({ ...toolCard })) ?? [];
 }
 
-function resolveKernelContent(kernelMessage: KernelChatMessage) {
-  const textParts = kernelMessage.parts
-    .filter((part) => part.kind === 'text')
-    .map((part) => part.text);
-  if (textParts.length > 0) {
-    return textParts.join('\n\n');
-  }
-
-  return kernelMessage.text;
-}
-
-function resolveKernelReasoning(kernelMessage: KernelChatMessage) {
-  const reasoningParts = kernelMessage.parts
-    .filter((part) => part.kind === 'reasoning')
-    .map((part) => trimNullableString(part.text))
-    .filter((value): value is string => Boolean(value));
-  return reasoningParts.length > 0 ? reasoningParts.join('\n\n') : null;
-}
-
-function resolveKernelAttachments(kernelMessage: KernelChatMessage) {
-  return kernelMessage.parts
-    .filter((part) => part.kind === 'attachment')
-    .map((part) => ({ ...part.attachment }));
-}
-
-function resolveKernelToolCards(kernelMessage: KernelChatMessage): OpenClawToolCard[] {
-  const toolCards: OpenClawToolCard[] = [];
-
-  for (const part of kernelMessage.parts) {
-    if (part.kind === 'toolCall') {
-      toolCards.push({
-        kind: 'call',
-        name: part.toolName,
-        ...(trimNullableString(part.detail) ? { detail: trimNullableString(part.detail) ?? undefined } : {}),
-      });
-      continue;
-    }
-
-    if (part.kind === 'toolResult') {
-      toolCards.push({
-        kind: 'result',
-        name: part.toolName,
-        ...(trimNullableString(part.preview) ? { preview: trimNullableString(part.preview) ?? undefined } : {}),
-      });
-    }
-  }
-
-  return toolCards;
+function cloneNativeMetadata(value: Record<string, unknown> | null | undefined) {
+  return value ? { ...value } : null;
 }
 
 export function resolveKernelChatMessageState(
   message: KernelChatMessageStateSource | null | undefined,
 ): KernelChatMessageState {
   const kernelMessage = message?.kernelMessage ?? null;
+  const messageBinding = resolveChatMessageBinding(message);
+  const partsPresentation = kernelMessage
+    ? presentKernelChatMessageParts(kernelMessage)
+    : null;
   const kernelTimestamp =
     typeof kernelMessage?.updatedAt === 'number'
       ? kernelMessage.updatedAt
       : typeof kernelMessage?.createdAt === 'number'
-        ? kernelMessage.createdAt
-        : null;
+      ? kernelMessage.createdAt
+      : null;
+  const resolvedSequence =
+    resolveChatMessageSequenceFromNativeMetadata(
+      kernelMessage?.nativeMetadata as Record<string, unknown> | null | undefined,
+    ) ??
+    resolveChatMessageSequence({
+      seq: message?.seq,
+      nativeMetadata: message?.nativeMetadata,
+    });
 
   return {
-    id: trimNullableString(kernelMessage?.id) ?? trimNullableString(message?.id) ?? undefined,
+    id: messageBinding.id ?? undefined,
     role: normalizeRole(kernelMessage?.role ?? message?.role),
     status: normalizeStatus(kernelMessage?.status),
-    content: kernelMessage ? resolveKernelContent(kernelMessage) : message?.content ?? '',
+    content: kernelMessage
+      ? partsPresentation?.content ?? kernelMessage.text
+      : message?.content ?? '',
     timestamp:
       kernelTimestamp ??
       (typeof message?.timestamp === 'number' ? message.timestamp : 0),
+    ...(typeof resolvedSequence === 'number' ? { seq: resolvedSequence } : {}),
     senderLabel:
-      trimNullableString(kernelMessage?.senderLabel) ?? trimNullableString(message?.senderLabel),
-    model:
-      trimNullableString(kernelMessage?.model) ??
-      trimNullableString(message?.model) ??
-      undefined,
-    runId:
-      trimNullableString(kernelMessage?.runId) ??
-      trimNullableString(message?.runId) ??
-      undefined,
-    kernelId: trimNullableString(kernelMessage?.sessionRef.kernelId) ?? undefined,
-    instanceId: trimNullableString(kernelMessage?.sessionRef.instanceId) ?? undefined,
-    sessionId: trimNullableString(kernelMessage?.sessionRef.sessionId) ?? undefined,
-    nativeSessionId:
-      trimNullableString(kernelMessage?.sessionRef.nativeSessionId) ?? undefined,
-    routingKey: trimNullableString(kernelMessage?.sessionRef.routingKey) ?? undefined,
-    agentId: trimNullableString(kernelMessage?.sessionRef.agentId) ?? undefined,
+      messageBinding.senderLabel,
+    model: messageBinding.model ?? undefined,
+    runId: messageBinding.runId ?? undefined,
+    kernelId: messageBinding.kernelId ?? undefined,
+    instanceId: messageBinding.instanceId ?? undefined,
+    sessionId: messageBinding.sessionId ?? undefined,
+    nativeSessionId: messageBinding.nativeSessionId ?? undefined,
+    routingKey: messageBinding.routingKey ?? undefined,
+    agentId: messageBinding.agentId ?? undefined,
+    lineageParentSessionId: messageBinding.lineageParentSessionId ?? undefined,
+    nativeMetadata: cloneNativeMetadata(messageBinding.nativeMetadata),
     attachments: kernelMessage
-      ? resolveKernelAttachments(kernelMessage)
+      ? partsPresentation?.attachments ?? []
       : cloneAttachments(message?.attachments),
     reasoning: kernelMessage
-      ? resolveKernelReasoning(kernelMessage)
+      ? partsPresentation?.reasoning ?? null
       : trimNullableString(message?.reasoning),
     toolCards: kernelMessage
-      ? resolveKernelToolCards(kernelMessage)
+      ? partsPresentation?.toolCards ?? []
       : cloneToolCards(message?.toolCards),
+    notices: kernelMessage
+      ? partsPresentation?.notices ?? []
+      : [],
   };
 }

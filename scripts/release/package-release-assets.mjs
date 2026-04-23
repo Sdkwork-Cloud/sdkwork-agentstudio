@@ -69,7 +69,7 @@ const desktopTauriConfigPath = path.join(
 );
 const dockerDeploymentDir = path.join(rootDir, 'deploy', 'docker');
 const kubernetesDeploymentDir = path.join(rootDir, 'deploy', 'kubernetes');
-const DEFAULT_SERVER_BINARY_NAME = 'sdkwork-claw-server';
+const DEFAULT_SERVER_BINARY_NAME = 'claw-server';
 const DEFAULT_DEPLOYMENT_ACCELERATOR = 'cpu';
 const DEFAULT_KUBERNETES_IMAGE_REPOSITORY = 'claw-studio-server';
 const SUPPORTED_DEPLOYMENT_ACCELERATORS = new Set([
@@ -223,14 +223,11 @@ function buildServerBinaryCandidates({
 } = {}) {
   const binaryFileName = resolveServerBinaryFileName(platform);
   const normalizedTargetTriple = String(targetTriple ?? '').trim();
-  const candidates = [];
-
   if (normalizedTargetTriple) {
-    candidates.push(path.join(targetDir, normalizedTargetTriple, 'release', binaryFileName));
+    return [path.join(targetDir, normalizedTargetTriple, 'release', binaryFileName)];
   }
 
-  candidates.push(path.join(targetDir, 'release', binaryFileName));
-  return [...new Set(candidates)];
+  return [path.join(targetDir, 'release', binaryFileName)];
 }
 
 function resolveExistingServerBinaryPath({
@@ -354,9 +351,9 @@ function writeServerRuntimeReadme({
   platformId,
   archId,
 }) {
-  const launcherCommand = platformId === 'windows'
-    ? '.\\start-claw-server.cmd'
-    : './start-claw-server.sh';
+  const canonicalBinaryCommand = platformId === 'windows'
+    ? '.\\bin\\claw-server.exe'
+    : './bin/claw-server';
   writeFileSync(
     path.join(bundleRoot, 'README.md'),
     [
@@ -368,14 +365,17 @@ function writeServerRuntimeReadme({
       '',
       '## Start',
       '',
-      'Run the bundled launcher from the extracted directory root:',
+      'Run the canonical bundled server binary from the extracted directory root:',
       '',
       '```bash',
-      launcherCommand,
+      canonicalBinaryCommand,
       '```',
       '',
-      'The launcher sets `CLAW_SERVER_WEB_DIST` to the bundled `web/dist` folder and',
-      'defaults `CLAW_SERVER_DATA_DIR` to `.claw-server` inside the extracted bundle.',
+      'When launched from a packaged bundle, the native binary automatically defaults',
+      '`CLAW_SERVER_WEB_DIST` to the bundled `web/dist` folder and',
+      '`CLAW_SERVER_DATA_DIR` to `.claw-server` inside the extracted bundle.',
+      '`start-claw-server.sh` and `start-claw-server.cmd` remain optional convenience wrappers',
+      'around the same native binary.',
       '',
       '## Environment',
       '',

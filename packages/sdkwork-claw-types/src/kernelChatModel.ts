@@ -58,6 +58,36 @@ export type KernelChatRunStatus = (typeof KERNEL_CHAT_RUN_STATUSES)[number];
 
 export type KernelChatAuthoritySource = 'kernel' | 'studioProjection';
 
+export interface KernelChatCapabilitySet {
+  supportsAgentProfiles: boolean;
+  supportsSessionMutation: boolean;
+  supportsStreaming: boolean;
+  supportsRuns: boolean;
+  supportsRunAbort: boolean;
+  supportsModelSelection: boolean;
+  supportsReasoningControl: boolean;
+  supportsThinkingLevel: boolean;
+  supportsFastMode: boolean;
+  supportsVerboseLevel: boolean;
+  supportsAttachments: boolean;
+}
+
+export interface CreateKernelChatCapabilitySetInput {
+  supportsAgentProfiles?: boolean;
+  supportsSessionMutation?: boolean;
+  supportsStreaming?: boolean;
+  supportsRuns?: boolean;
+  supportsRunAbort?: boolean;
+  supportsModelSelection?: boolean;
+  supportsReasoningControl?: boolean;
+  supportsThinkingLevel?: boolean;
+  supportsFastMode?: boolean;
+  supportsVerboseLevel?: boolean;
+  supportsAttachments?: boolean;
+}
+
+export type KernelChatNativeMetadata = Record<string, unknown>;
+
 export interface KernelChatAttachment {
   id: string;
   kind: 'file' | 'image' | 'audio' | 'video' | 'screenshot' | 'screen-recording' | 'link';
@@ -86,6 +116,23 @@ export interface KernelChatAgentProfile {
   creator?: string | null;
 }
 
+export interface PersistedKernelChatAgentRecord {
+  id: string;
+  instanceId: string;
+  kernelId: string;
+  agentId: string;
+  label: string;
+  description?: string | null;
+  source: 'kernelCatalog' | 'workbenchProjection' | 'sessionBinding';
+  systemPrompt?: string | null;
+  avatar?: string | null;
+  creator?: string | null;
+  isDefault: boolean;
+  sortOrder: number;
+  syncedAt: number;
+  nativeMetadata?: KernelChatNativeMetadata | null;
+}
+
 export interface KernelChatSessionRef {
   kernelId: string;
   instanceId: string;
@@ -93,6 +140,7 @@ export interface KernelChatSessionRef {
   nativeSessionId?: string | null;
   routingKey?: string | null;
   agentId?: string | null;
+  lineageParentSessionId?: string | null;
 }
 
 export interface KernelChatAuthority {
@@ -129,11 +177,16 @@ export type KernelChatMessagePart =
   | {
       kind: 'toolCall';
       toolName: string;
+      toolCallId?: string | null;
+      argumentsText?: string | null;
       detail?: string | null;
     }
   | {
       kind: 'toolResult';
       toolName: string;
+      toolCallId?: string | null;
+      text?: string | null;
+      isError?: boolean | null;
       preview?: string | null;
     }
   | {
@@ -144,6 +197,7 @@ export type KernelChatMessagePart =
       kind: 'notice';
       code: string;
       text: string;
+      level?: 'info' | 'warning' | 'error' | null;
     };
 
 export interface KernelChatSession {
@@ -160,6 +214,7 @@ export interface KernelChatSession {
   modelBinding?: KernelChatModelBinding | null;
   capabilities?: string[];
   activeRunId?: string | null;
+  nativeMetadata?: KernelChatNativeMetadata | null;
 }
 
 export interface KernelChatRun {
@@ -169,6 +224,7 @@ export interface KernelChatRun {
   createdAt: number;
   updatedAt: number;
   abortable: boolean;
+  nativeMetadata?: KernelChatNativeMetadata | null;
 }
 
 export interface KernelChatMessage {
@@ -183,6 +239,25 @@ export interface KernelChatMessage {
   runId?: string | null;
   model?: string | null;
   senderLabel?: string | null;
+  nativeMetadata?: KernelChatNativeMetadata | null;
+}
+
+export function createKernelChatCapabilitySet(
+  input: CreateKernelChatCapabilitySetInput = {},
+): KernelChatCapabilitySet {
+  return {
+    supportsAgentProfiles: input.supportsAgentProfiles ?? false,
+    supportsSessionMutation: input.supportsSessionMutation ?? false,
+    supportsStreaming: input.supportsStreaming ?? false,
+    supportsRuns: input.supportsRuns ?? false,
+    supportsRunAbort: input.supportsRunAbort ?? false,
+    supportsModelSelection: input.supportsModelSelection ?? false,
+    supportsReasoningControl: input.supportsReasoningControl ?? false,
+    supportsThinkingLevel: input.supportsThinkingLevel ?? false,
+    supportsFastMode: input.supportsFastMode ?? false,
+    supportsVerboseLevel: input.supportsVerboseLevel ?? false,
+    supportsAttachments: input.supportsAttachments ?? false,
+  };
 }
 
 export function createKernelChatSessionRef(input: KernelChatSessionRef): KernelChatSessionRef {
@@ -193,6 +268,7 @@ export function createKernelChatSessionRef(input: KernelChatSessionRef): KernelC
     nativeSessionId: trimOptionalString(input.nativeSessionId),
     routingKey: trimOptionalString(input.routingKey),
     agentId: trimOptionalString(input.agentId),
+    lineageParentSessionId: trimOptionalString(input.lineageParentSessionId),
   };
 }
 

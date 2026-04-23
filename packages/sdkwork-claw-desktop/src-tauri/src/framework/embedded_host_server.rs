@@ -486,9 +486,8 @@ fn build_embedded_host_server_state(
     );
     server_state.auth.browser_session_token = Some(Uuid::new_v4().simple().to_string());
     server_state.set_mode(DESKTOP_EMBEDDED_HOST_MODE);
-    server_state.local_ai_proxy_target_provider = Some(build_desktop_local_ai_proxy_target_provider(
-        local_ai_proxy,
-    ));
+    server_state.local_ai_proxy_target_provider =
+        Some(build_desktop_local_ai_proxy_target_provider(local_ai_proxy));
 
     let endpoint = server_state
         .openclaw_control_plane
@@ -1070,7 +1069,11 @@ impl ManageOpenClawProvider for DesktopManageOpenClawProvider {
             return None;
         }
 
-        let runtime = self.supervisor.configured_openclaw_runtime().ok().flatten()?;
+        let runtime = self
+            .supervisor
+            .configured_openclaw_runtime()
+            .ok()
+            .flatten()?;
         Some(PublishedProxyTarget {
             id: "openclaw-gateway",
             base_url: gateway.base_url?,
@@ -1736,7 +1739,7 @@ mod tests {
         let (_root, backend) = desktop_backend_fixture();
 
         let detail = backend
-            .get_instance_detail("local-built-in")
+            .get_instance_detail("managed-openclaw-primary")
             .expect("instance detail")
             .expect("built-in detail");
 

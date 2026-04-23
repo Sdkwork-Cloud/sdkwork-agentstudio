@@ -520,6 +520,76 @@ await (async () => {
       'guard should tolerate already-exited child processes that disappear while the dev session tree is being torn down',
     );
   });
+
+  withTempDir((tempDir) => {
+    const srcTauriDir = path.join(tempDir, 'src-tauri');
+    const binaryName = 'tauri-dev-lock-test';
+    const executablePath = resolveTauriDevBinaryPath(srcTauriDir, binaryName);
+    const targetDir = path.join(srcTauriDir, 'target');
+
+    mkdirSync(path.dirname(executablePath), { recursive: true });
+    copyFileSync(process.execPath, executablePath);
+
+    const stopCalls = [];
+    const result = ensureTauriDevBinaryUnlocked(
+      srcTauriDir,
+      binaryName,
+      process.platform,
+      {
+        inspectProcessesForBinary() {
+          return [];
+        },
+        inspectProcessesByName() {
+          return [];
+        },
+        inspectDevSessionProcesses() {
+          return [];
+        },
+        inspectTargetProcesses(requestedTargetDir) {
+          assert.equal(
+            requestedTargetDir,
+            path.resolve(targetDir),
+            'target-process inspector should receive the resolved src-tauri target directory',
+          );
+          return [
+            {
+              Id: 8765,
+              ProcessName: 'build-script-build',
+              Path: path.join(
+                targetDir,
+                'debug',
+                'build',
+                'sdkwork-claw-desktop-test',
+                'build-script-build.exe',
+              ),
+            },
+          ];
+        },
+        stopManagedKernelService() {},
+        stopProcess(pid) {
+          stopCalls.push(pid);
+        },
+        waitForExecutableUnlock(requestedExecutablePath) {
+          assert.equal(
+            requestedExecutablePath,
+            executablePath,
+            'target-process cleanup should still wait on the resolved desktop binary path',
+          );
+        },
+      },
+    );
+
+    assert.deepEqual(
+      stopCalls,
+      [8765],
+      'guard should terminate orphaned target-directory processes that keep the src-tauri target locked',
+    );
+    assert.equal(
+      result.terminatedProcesses.length,
+      1,
+      'guard should report target-directory cleanup work even when no matching binary or dev-session process is found',
+    );
+  });
 })();
 
 console.log('ok - tauri dev binary unlock guard terminates only the matching debug executable');

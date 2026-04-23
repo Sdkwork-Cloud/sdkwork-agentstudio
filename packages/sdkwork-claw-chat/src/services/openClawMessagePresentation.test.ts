@@ -56,6 +56,7 @@ await runTest(
         content: [
           {
             type: 'tool_use',
+            id: 'tool-call-bash-1',
             name: 'Bash',
             input: {
               command: 'ls -la',
@@ -63,8 +64,10 @@ await runTest(
           },
           {
             type: 'tool_result',
+            tool_call_id: 'tool-call-bash-1',
             name: 'Bash',
-            text: '{"files":["a.txt","b.txt"]}',
+            text: 'Command failed',
+            is_error: true,
           },
         ],
       }),
@@ -77,12 +80,17 @@ await runTest(
           {
             kind: 'call',
             name: 'Bash',
+            toolCallId: 'tool-call-bash-1',
+            argumentsText: '{"command":"ls -la"}',
             detail: 'ls -la',
           },
           {
             kind: 'result',
             name: 'Bash',
-            preview: undefined,
+            toolCallId: 'tool-call-bash-1',
+            text: 'Command failed',
+            isError: true,
+            preview: 'Error: Command failed',
           },
         ],
       },

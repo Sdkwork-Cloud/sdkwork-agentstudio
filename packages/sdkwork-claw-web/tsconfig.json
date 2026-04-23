@@ -10,5 +10,5 @@
       "@sdkwork/claw-*": ["../../packages/sdkwork-claw-*/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../../types/**/*.d.ts"]
 }

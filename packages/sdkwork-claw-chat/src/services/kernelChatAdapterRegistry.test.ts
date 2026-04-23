@@ -97,7 +97,7 @@ await runTest('kernel chat adapter registry resolves OpenClaw gateway runtimes t
   assert.equal(resolution.capabilities.durable, true);
 });
 
-await runTest('kernel chat adapter registry resolves transport-backed and hermes runtimes without route-first fallbacks', async () => {
+await runTest('kernel chat adapter registry resolves Hermes HTTP runtimes through the transport-backed adapter so supported endpoints stay chat-usable', async () => {
   const registry = createKernelChatAdapterRegistry({
     async resolveInstance(instanceId) {
       if (instanceId === 'instance-http') {
@@ -133,17 +133,7 @@ await runTest('kernel chat adapter registry resolves transport-backed and hermes
       };
     },
     createHermesAdapter() {
-      return {
-        adapterId: 'hermes',
-        getCapabilities() {
-          return createKernelChatAdapterCapabilities({
-            adapterId: 'hermes',
-            authorityKind: 'sqlite',
-            supported: false,
-            reason: 'Hermes chat transport is not wired yet.',
-          });
-        },
-      };
+      throw new Error('hermes adapter should not be resolved for Hermes HTTP routes');
     },
     createUnsupportedAdapter() {
       throw new Error('unsupported adapter should not be resolved in this test');
@@ -156,7 +146,96 @@ await runTest('kernel chat adapter registry resolves transport-backed and hermes
   assert.equal(httpResolution.adapterId, 'transportBacked');
   assert.equal(httpResolution.capabilities.authorityKind, 'http');
   assert.equal(httpResolution.capabilities.durable, false);
-  assert.equal(hermesResolution.adapterId, 'hermes');
-  assert.equal(hermesResolution.capabilities.authorityKind, 'sqlite');
-  assert.equal(hermesResolution.capabilities.supported, false);
+  assert.equal(hermesResolution.adapterId, 'transportBacked');
+  assert.equal(hermesResolution.capabilities.authorityKind, 'http');
+  assert.equal(hermesResolution.capabilities.supported, true);
+  assert.equal(hermesResolution.instance?.runtimeKind, 'hermes');
+});
+
+await runTest('kernel chat adapter registry resolves local Hermes runtimes through the authoritative Hermes adapter before generic HTTP transport fallback', async () => {
+  const registry = createKernelChatAdapterRegistry({
+    async resolveInstance(instanceId) {
+      assert.equal(instanceId, 'instance-hermes-local');
+      return createInstance({
+        id: instanceId,
+        runtimeKind: 'hermes',
+        deploymentMode: 'local-managed',
+        transportKind: 'customHttp',
+        baseUrl: 'http://127.0.0.1:19540',
+      });
+    },
+    createOpenClawGatewayAdapter() {
+      throw new Error('openclaw adapter should not be resolved for local Hermes');
+    },
+    createTransportBackedAdapter() {
+      throw new Error('transport-backed adapter should not win for local Hermes');
+    },
+    createHermesAdapter() {
+      return {
+        adapterId: 'hermes',
+        getCapabilities() {
+          return createKernelChatAdapterCapabilities({
+            adapterId: 'hermes',
+            authorityKind: 'http',
+            supportsStreaming: true,
+            supportsRuns: true,
+            supportsAgentProfiles: false,
+            supportsSessionMutation: true,
+          });
+        },
+      };
+    },
+    createUnsupportedAdapter() {
+      throw new Error('unsupported adapter should not be resolved for local Hermes');
+    },
+  });
+
+  const resolution = await registry.resolveForInstance('instance-hermes-local');
+
+  assert.equal(resolution.adapterId, 'hermes');
+  assert.equal(resolution.capabilities.authorityKind, 'http');
+  assert.equal(resolution.instance?.deploymentMode, 'local-managed');
+});
+
+await runTest('kernel chat adapter registry routes local-external Hermes through the transport-backed adapter instead of the authoritative Hermes adapter', async () => {
+  const registry = createKernelChatAdapterRegistry({
+    async resolveInstance(instanceId) {
+      assert.equal(instanceId, 'instance-hermes-external');
+      return createInstance({
+        id: instanceId,
+        runtimeKind: 'hermes',
+        deploymentMode: 'local-external',
+        transportKind: 'customHttp',
+        baseUrl: 'http://127.0.0.1:29540',
+      });
+    },
+    createOpenClawGatewayAdapter() {
+      throw new Error('openclaw adapter should not be resolved for local-external Hermes');
+    },
+    createTransportBackedAdapter() {
+      return {
+        adapterId: 'transportBacked',
+        getCapabilities() {
+          return createKernelChatAdapterCapabilities({
+            adapterId: 'transportBacked',
+            authorityKind: 'http',
+            durable: false,
+            supportsAgentProfiles: false,
+          });
+        },
+      };
+    },
+    createHermesAdapter() {
+      throw new Error('authoritative Hermes adapter should not be resolved for local-external Hermes');
+    },
+    createUnsupportedAdapter() {
+      throw new Error('unsupported adapter should not be resolved for local-external Hermes');
+    },
+  });
+
+  const resolution = await registry.resolveForInstance('instance-hermes-external');
+
+  assert.equal(resolution.adapterId, 'transportBacked');
+  assert.equal(resolution.capabilities.authorityKind, 'http');
+  assert.equal(resolution.instance?.deploymentMode, 'local-external');
 });

@@ -220,6 +220,64 @@ await runTest('settingsService keeps security and privacy overlays when notifica
   assert.equal(reloaded.security.loginAlerts, false);
 });
 
+await runTest('settingsService still updates local-only preferences when notification settings authentication expires', async () => {
+  const settingsService = createTestSettingsService();
+
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? 'GET';
+
+    if (url.endsWith('/app/v3/api/notification/settings') && method === 'GET') {
+      return jsonResponse(
+        {
+          code: '4010',
+          msg: 'token expired',
+        },
+        401,
+      );
+    }
+
+    return jsonResponse({ code: 404, message: 'Not found' }, 404);
+  }) as typeof fetch;
+
+  const updated = await settingsService.updatePreferences({
+    general: {
+      launchOnStartup: true,
+      startMinimized: true,
+      compactModelSelector: false,
+    },
+    privacy: {
+      shareUsageData: true,
+      personalizedRecommendations: true,
+    },
+    security: {
+      twoFactorAuth: true,
+      loginAlerts: false,
+    },
+  });
+
+  assert.deepEqual(updated.general, {
+    launchOnStartup: true,
+    startMinimized: true,
+    compactModelSelector: false,
+  });
+  assert.deepEqual(updated.privacy, {
+    shareUsageData: true,
+    personalizedRecommendations: true,
+  });
+  assert.deepEqual(updated.security, {
+    twoFactorAuth: true,
+    loginAlerts: false,
+  });
+  assert.deepEqual(updated.notifications, {
+    systemUpdates: true,
+    taskFailures: true,
+    securityAlerts: true,
+    taskCompletions: true,
+    newMessages: true,
+  });
+});
+
 await runTest('settingsService updates notification globals and per-type switches through app sdk routes', async () => {
   const settingsService = createTestSettingsService();
   const updated = await settingsService.updatePreferences({

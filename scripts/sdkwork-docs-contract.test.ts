@@ -42,33 +42,71 @@ await runTest('sdkwork-claw-docs keeps the V5 docs package surface locally', () 
 
 await runTest('workspace docs document server verification and release planning entrypoints', () => {
   const gettingStarted = read('docs/guide/getting-started.md');
+  const gettingStartedZh = read('docs/zh-CN/guide/getting-started.md');
   const commandsReference = read('docs/reference/commands.md');
+  const commandsReferenceZh = read('docs/zh-CN/reference/commands.md');
   const readme = read('README.md');
   const contributing = read('docs/contributing/index.md');
   const releaseAndDeployment = read('docs/core/release-and-deployment.md');
+  const releaseAndDeploymentZh = read('docs/zh-CN/core/release-and-deployment.md');
   const rootPackage = readJson<{ scripts?: Record<string, string> }>('package.json');
 
   assert.match(gettingStarted, /pnpm check:multi-mode/);
+  assert.match(gettingStartedZh, /pnpm check:multi-mode/);
   assert.match(gettingStarted, /pnpm check:server/);
   assert.match(gettingStarted, /pnpm release:plan/);
   assert.match(commandsReference, /pnpm check:multi-mode/);
+  assert.match(commandsReferenceZh, /pnpm check:multi-mode/);
   assert.match(commandsReference, /pnpm check:server/);
+  assert.match(commandsReferenceZh, /pnpm check:server/);
+  assert.match(commandsReference, /pnpm check:desktop-openclaw-runtime/);
+  assert.match(commandsReferenceZh, /pnpm check:desktop-openclaw-runtime/);
+  assert.match(commandsReference, /pnpm check:sdkwork-host-runtime/);
+  assert.match(commandsReferenceZh, /pnpm check:sdkwork-host-runtime/);
   assert.match(commandsReference, /pnpm check:automation/);
   assert.match(commandsReference, /pnpm check:release-flow/);
   assert.match(commandsReference, /pnpm check:ci-flow/);
   assert.match(commandsReference, /pnpm release:plan/);
+  assert.match(commandsReferenceZh, /pnpm release:plan/);
+  assert.match(commandsReference, /pnpm release:smoke:desktop/);
+  assert.match(commandsReferenceZh, /pnpm release:smoke:desktop/);
+  assert.match(commandsReference, /pnpm release:smoke:desktop-packaged-launch/);
+  assert.match(commandsReferenceZh, /pnpm release:smoke:desktop-packaged-launch/);
+  assert.match(commandsReference, /pnpm release:smoke:desktop-startup/);
+  assert.match(commandsReferenceZh, /pnpm release:smoke:desktop-startup/);
+  assert.match(commandsReference, /pnpm release:smoke:server/);
+  assert.match(commandsReferenceZh, /pnpm release:smoke:server/);
+  assert.match(commandsReference, /pnpm release:smoke:container/);
+  assert.match(commandsReferenceZh, /pnpm release:smoke:container/);
+  assert.match(commandsReference, /pnpm release:smoke:kubernetes/);
+  assert.match(commandsReferenceZh, /pnpm release:smoke:kubernetes/);
+  assert.match(commandsReference, /SDKWORK_RELEASE_REPOSITORY[\s\S]*GITHUB_REPOSITORY[\s\S]*git remote origin/);
+  assert.match(commandsReferenceZh, /SDKWORK_RELEASE_REPOSITORY[\s\S]*GITHUB_REPOSITORY[\s\S]*git remote origin/);
   assert.match(releaseAndDeployment, /pnpm check:multi-mode/);
+  assert.match(releaseAndDeploymentZh, /pnpm check:multi-mode/);
   assert.match(releaseAndDeployment, /versionSourcesAligned/);
   assert.match(readme, /pnpm check:multi-mode\s+# validate desktop, server, OpenClaw runtime, and release packaging together/i);
   assert.match(releaseAndDeployment, /pnpm check:desktop/);
+  assert.match(releaseAndDeploymentZh, /pnpm check:desktop/);
   assert.match(releaseAndDeployment, /pnpm check:server/);
+  assert.match(releaseAndDeploymentZh, /pnpm check:server/);
   assert.match(releaseAndDeployment, /pnpm check:automation/);
   assert.match(releaseAndDeployment, /pnpm release:plan/);
+  assert.match(releaseAndDeploymentZh, /pnpm release:plan/);
   assert.match(releaseAndDeployment, /pnpm release:package:desktop/);
   assert.match(releaseAndDeployment, /pnpm release:package:server/);
   assert.match(releaseAndDeployment, /pnpm release:package:container/);
   assert.match(releaseAndDeployment, /pnpm release:package:kubernetes/);
   assert.match(releaseAndDeployment, /pnpm release:package:web/);
+  assert.match(releaseAndDeploymentZh, /pnpm release:package:desktop/);
+  assert.match(releaseAndDeploymentZh, /pnpm release:package:server/);
+  assert.match(releaseAndDeploymentZh, /pnpm release:package:container/);
+  assert.match(releaseAndDeploymentZh, /pnpm release:package:kubernetes/);
+  assert.match(releaseAndDeploymentZh, /pnpm release:package:web/);
+  assert.match(releaseAndDeploymentZh, /pnpm release:smoke:desktop/);
+  assert.match(releaseAndDeploymentZh, /pnpm release:smoke:server/);
+  assert.match(releaseAndDeploymentZh, /pnpm release:smoke:container/);
+  assert.match(releaseAndDeploymentZh, /pnpm release:smoke:kubernetes/);
   assert.match(readme, /pnpm check:server\s+# validate the native Rust server runtime/i);
   assert.match(readme, /pnpm check:automation\s+# validate release and CI automation contracts/i);
   assert.doesNotMatch(readme, /node scripts\/check-server-platform-foundation\.mjs/);
@@ -77,7 +115,7 @@ await runTest('workspace docs document server verification and release planning 
   assert.match(contributing, /pnpm check:automation/);
   assert.match(
     rootPackage.scripts?.['check:multi-mode'] ?? '',
-    /pnpm check:desktop && pnpm check:server && pnpm check:sdkwork-host-runtime && pnpm check:desktop-openclaw-runtime && pnpm check:release-flow/,
+    /sdkwork-run-pnpm check:desktop && sdkwork-run-pnpm check:server && sdkwork-run-pnpm check:sdkwork-host-runtime && sdkwork-run-pnpm check:desktop-openclaw-runtime && sdkwork-run-pnpm check:release-flow/,
   );
   assert.match(rootPackage.scripts?.['check:sdkwork-docs'] ?? '', /vitepress-command-contract\.test\.mjs/);
 });

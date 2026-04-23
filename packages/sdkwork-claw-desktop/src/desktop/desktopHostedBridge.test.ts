@@ -11,6 +11,10 @@ import {
   probeDesktopHostedControlPlane,
 } from './desktopHostedBridge.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+const BUILT_IN_INSTANCE_PATH =
+  `http://127.0.0.1:18797/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}`;
+
 function runTest(name: string, fn: () => Promise<void> | void) {
   return Promise.resolve()
     .then(fn)
@@ -278,7 +282,7 @@ await runTest('desktop hosted bridge readiness probe validates hosted internal, 
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -304,7 +308,7 @@ await runTest('desktop hosted bridge readiness probe validates hosted internal, 
   assert.equal(result.hostPlatformStatus.lifecycle, 'ready');
   assert.equal(result.descriptor.browserBaseUrl, 'http://127.0.0.1:18797');
   assert.equal(result.hostEndpoints[0]?.endpointId, 'claw-manage-http');
-  assert.equal(result.instances[0]?.id, 'local-built-in');
+  assert.equal(result.instances[0]?.id, BUILT_IN_INSTANCE_ID);
   assert.equal(result.evidence.gatewayWebsocketReady, true);
   assert.equal(result.evidence.gatewayWebsocketProbeSupported, true);
   assert.equal(result.evidence.gatewayWebsocketDialable, true);
@@ -417,7 +421,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the OpenClaw g
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -452,7 +456,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the OpenClaw g
   assert.deepEqual(webSocketProbe.urls, ['ws://127.0.0.1:18871']);
 });
 
-await runTest('desktop hosted bridge readiness evidence resolves the built-in OpenClaw instance even when it does not use the legacy local-built-in id', () => {
+await runTest('desktop hosted bridge readiness evidence resolves the built-in OpenClaw instance even when it does not use a legacy built-in id', () => {
   const evidence = buildDesktopHostedRuntimeReadinessEvidence(
     desktopHostedRuntime,
     {
@@ -496,7 +500,7 @@ await runTest('desktop hosted bridge readiness evidence resolves the built-in Op
     } as any,
     [
       {
-        id: 'managed-openclaw-primary',
+        id: BUILT_IN_INSTANCE_ID,
         name: 'Built-In OpenClaw Primary',
         runtimeKind: 'openclaw',
         deploymentMode: 'local-managed',
@@ -510,7 +514,7 @@ await runTest('desktop hosted bridge readiness evidence resolves the built-in Op
     ] as any,
   );
 
-  assert.equal(evidence.builtInInstanceId, 'managed-openclaw-primary');
+  assert.equal(evidence.builtInInstanceId, BUILT_IN_INSTANCE_ID);
   assert.equal(evidence.builtInInstanceReady, true);
 });
 
@@ -603,7 +607,7 @@ await runTest('desktop hosted bridge readiness probe requires gateway invoke cap
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -714,7 +718,7 @@ await runTest('desktop hosted bridge readiness probe selects the canonical manag
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -965,7 +969,7 @@ await runTest('desktop hosted bridge readiness evidence marks built-in instance 
     },
     [
       {
-        id: 'local-built-in',
+        id: BUILT_IN_INSTANCE_ID,
         name: 'Local Built-In',
         runtimeKind: 'openclaw',
         deploymentMode: 'local-managed',
@@ -1048,7 +1052,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -1140,7 +1144,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the manage hos
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -1232,7 +1236,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the published 
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -1324,7 +1328,7 @@ await runTest('desktop hosted bridge readiness probe preserves a structured read
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -1427,7 +1431,7 @@ await runTest('desktop hosted bridge readiness probe rejects when built-in OpenC
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -1519,7 +1523,7 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -1611,7 +1615,7 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -1703,7 +1707,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in O
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -1795,7 +1799,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'custom',
           deploymentMode: 'local-managed',
@@ -1887,7 +1891,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'remote',
@@ -1979,7 +1983,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
     if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
@@ -2011,7 +2015,7 @@ await runTest('desktop hosted studio bridge routes canonical instance lifecycle 
     status: 'offline',
   };
   const updatedInstance = {
-    id: 'local-built-in',
+    id: BUILT_IN_INSTANCE_ID,
     name: 'Updated instance',
     runtimeKind: 'openclaw',
     deploymentMode: 'local-managed',
@@ -2033,23 +2037,23 @@ await runTest('desktop hosted studio bridge routes canonical instance lifecycle 
       return createJsonResponse(createdInstance);
     }
 
-    if (inputText === 'http://127.0.0.1:18797/claw/api/v1/studio/instances/local-built-in' && method === 'PUT') {
+    if (inputText === BUILT_IN_INSTANCE_PATH && method === 'PUT') {
       return createJsonResponse(updatedInstance);
     }
 
-    if (inputText === 'http://127.0.0.1:18797/claw/api/v1/studio/instances/local-built-in' && method === 'DELETE') {
+    if (inputText === BUILT_IN_INSTANCE_PATH && method === 'DELETE') {
       return createJsonResponse(true);
     }
 
-    if (inputText === 'http://127.0.0.1:18797/claw/api/v1/studio/instances/local-built-in:start' && method === 'POST') {
+    if (inputText === `${BUILT_IN_INSTANCE_PATH}:start` && method === 'POST') {
       return createJsonResponse({ ...updatedInstance, status: 'online' });
     }
 
-    if (inputText === 'http://127.0.0.1:18797/claw/api/v1/studio/instances/local-built-in:stop' && method === 'POST') {
+    if (inputText === `${BUILT_IN_INSTANCE_PATH}:stop` && method === 'POST') {
       return createJsonResponse({ ...updatedInstance, status: 'offline' });
     }
 
-    if (inputText === 'http://127.0.0.1:18797/claw/api/v1/studio/instances/local-built-in:restart' && method === 'POST') {
+    if (inputText === `${BUILT_IN_INSTANCE_PATH}:restart` && method === 'POST') {
       return createJsonResponse({ ...updatedInstance, status: 'online' });
     }
 
@@ -2064,14 +2068,14 @@ await runTest('desktop hosted studio bridge routes canonical instance lifecycle 
     deploymentMode: 'local-managed',
     transportKind: 'openclawGatewayWs',
   });
-  const updated = await studio.updateInstance('local-built-in', {
+  const updated = await studio.updateInstance(BUILT_IN_INSTANCE_ID, {
     name: 'Updated instance',
     status: 'offline',
   });
-  const deleted = await studio.deleteInstance('local-built-in');
-  const started = await studio.startInstance('local-built-in');
-  const stopped = await studio.stopInstance('local-built-in');
-  const restarted = await studio.restartInstance('local-built-in');
+  const deleted = await studio.deleteInstance(BUILT_IN_INSTANCE_ID);
+  const started = await studio.startInstance(BUILT_IN_INSTANCE_ID);
+  const stopped = await studio.stopInstance(BUILT_IN_INSTANCE_ID);
+  const restarted = await studio.restartInstance(BUILT_IN_INSTANCE_ID);
 
   assert.equal(created.id, 'created-instance');
   assert.equal(updated.name, 'Updated instance');
@@ -2092,7 +2096,7 @@ await runTest('desktop hosted studio bridge routes canonical instance lifecycle 
       }),
     },
     {
-      input: 'http://127.0.0.1:18797/claw/api/v1/studio/instances/local-built-in',
+      input: BUILT_IN_INSTANCE_PATH,
       method: 'PUT',
       browserSessionToken: 'desktop-session-token',
       body: JSON.stringify({
@@ -2101,25 +2105,25 @@ await runTest('desktop hosted studio bridge routes canonical instance lifecycle 
       }),
     },
     {
-      input: 'http://127.0.0.1:18797/claw/api/v1/studio/instances/local-built-in',
+      input: BUILT_IN_INSTANCE_PATH,
       method: 'DELETE',
       browserSessionToken: 'desktop-session-token',
       body: null,
     },
     {
-      input: 'http://127.0.0.1:18797/claw/api/v1/studio/instances/local-built-in:start',
+      input: `${BUILT_IN_INSTANCE_PATH}:start`,
       method: 'POST',
       browserSessionToken: 'desktop-session-token',
       body: null,
     },
     {
-      input: 'http://127.0.0.1:18797/claw/api/v1/studio/instances/local-built-in:stop',
+      input: `${BUILT_IN_INSTANCE_PATH}:stop`,
       method: 'POST',
       browserSessionToken: 'desktop-session-token',
       body: null,
     },
     {
-      input: 'http://127.0.0.1:18797/claw/api/v1/studio/instances/local-built-in:restart',
+      input: `${BUILT_IN_INSTANCE_PATH}:restart`,
       method: 'POST',
       browserSessionToken: 'desktop-session-token',
       body: null,
@@ -2142,7 +2146,7 @@ await runTest('deferred desktop hosted studio platform refreshes browser base ur
 
     return createJsonResponse([
       {
-        id: 'local-built-in',
+        id: BUILT_IN_INSTANCE_ID,
         name: 'Local Built-In',
         runtimeKind: 'openclaw',
         deploymentMode: 'local-managed',
@@ -2180,3 +2184,4 @@ await runTest('deferred desktop hosted studio platform refreshes browser base ur
     },
   ]);
 });
+

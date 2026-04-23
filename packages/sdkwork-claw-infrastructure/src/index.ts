@@ -8,6 +8,7 @@ export {
   getRuntimePlatform,
   getStoragePlatform,
   getStudioPlatform,
+  invalidateStudioPlatformCaches,
   internal,
   installer,
   kernel,
@@ -54,3 +55,9 @@ export * from './services/openClawGatewayClient.ts';
 export * from './updates/contracts.ts';
 export * from './updates/updateClient.ts';
 export type * from './platform/index.ts';
+export {
+  STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+  canonicalizeBuiltInOpenClawInstanceId,
+  isBuiltInOpenClawInstanceId,
+  matchesBuiltInOpenClawInstanceId,
+} from './platform/index.ts';

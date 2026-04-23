@@ -1,7 +1,6 @@
 import type { ElementType } from 'react';
 import {
   Activity,
-  BriefcaseBusiness,
   Code,
   Cpu,
   LayoutDashboard,
@@ -66,14 +65,6 @@ export function buildCommandPaletteCommands({
       icon: Activity,
       category: t('commandPalette.categories.navigation'),
       action: () => navigate('/usage'),
-    },
-    {
-      id: 'nav-agents',
-      title: t('commandPalette.commands.agents.title'),
-      subtitle: t('commandPalette.commands.agents.subtitle'),
-      icon: BriefcaseBusiness,
-      category: t('commandPalette.categories.navigation'),
-      action: () => navigate('/agents'),
     },
     {
       id: 'nav-upload',

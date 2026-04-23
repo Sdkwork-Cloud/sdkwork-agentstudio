@@ -4,6 +4,7 @@ import type {
   ManageRolloutPreview,
   ManageRolloutRecord,
 } from '@sdkwork/claw-infrastructure';
+import { STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID } from '@sdkwork/claw-types';
 import { createRolloutStore } from './useRolloutStore.ts';
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
@@ -61,7 +62,7 @@ function createRolloutPreview(
     },
     targets: [
       {
-        nodeId: 'local-built-in',
+        nodeId: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
         preflightOutcome: 'admissible',
         desiredStateRevision: 10,
         desiredStateHash: 'rev-10',
@@ -125,3 +126,4 @@ await runTest(
     assert.equal(store.getState().lastStartedRolloutId, 'rollout-a');
   },
 );
+

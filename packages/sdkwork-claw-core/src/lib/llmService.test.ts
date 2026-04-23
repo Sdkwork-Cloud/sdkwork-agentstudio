@@ -7,6 +7,8 @@ import {
 } from '../services/providerRoutingCatalogService.ts';
 import { instanceStore } from '../stores/instanceStore.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 async function runTest(name: string, fn: () => void | Promise<void>) {
   try {
     await fn();
@@ -57,7 +59,7 @@ await runTest(
     try {
       instanceStore.setState({
         ...initialState,
-        activeInstanceId: 'local-built-in',
+        activeInstanceId: BUILT_IN_INSTANCE_ID,
       });
 
       storage.getStorageInfo = async () => null;
@@ -75,7 +77,7 @@ await runTest(
 
       studio.getInstance = async () =>
         ({
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',

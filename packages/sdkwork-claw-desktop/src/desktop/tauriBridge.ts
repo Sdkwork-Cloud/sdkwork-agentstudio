@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/core';
 import {
   WebManagePlatform,
   WebPlatform,
@@ -97,12 +96,31 @@ import {
   DesktopBridgeError,
   getDesktopWindow,
   invokeDesktopCommand,
+  invokeTauriRuntimeCommand,
   isTauriRuntime,
   listenDesktopEvent,
   runDesktopOnly,
   runDesktopOrFallback,
   waitForTauriRuntime,
 } from './runtime';
+import {
+  desktopLegacyStudioCompatApi,
+  studioAbortKernelChatRun,
+  studioCreateKernelAgent,
+  studioCreateKernelChatSession,
+  studioDeleteKernelChatSession,
+  studioGetKernelChatRun,
+  studioGetKernelAgentCreationCapability,
+  studioGetKernelChatSession,
+  studioListKernelChatAgentProfiles,
+  studioListPersistedKernelChatAgents,
+  studioListKernelChatRuns,
+  studioListKernelChatSessions,
+  studioLoadKernelChatMessages,
+  studioPatchKernelChatSession,
+  studioReplacePersistedKernelChatAgents,
+  studioStartKernelChatRun,
+} from './studioCommandCompat';
 
 export {
   controlDesktopComponent,
@@ -114,22 +132,37 @@ export {
 export {
   desktopLegacyStudioCompatApi,
   invokeOpenClawGateway,
+  studioCreateKernelAgent,
+  studioAbortKernelChatRun,
   studioCloneInstanceTask,
+  studioCreateKernelChatSession,
   studioCreateInstance,
   studioCreateInstanceTask,
   studioDeleteConversation,
+  studioDeleteKernelChatSession,
   studioDeleteInstance,
   studioDeleteInstanceTask,
   studioGetInstance,
   studioGetInstanceConfig,
   studioGetInstanceDetail,
+  studioGetKernelAgentCreationCapability,
+  studioGetKernelChatRun,
+  studioGetKernelChatSession,
   studioGetInstanceLogs,
+  studioListKernelChatAgentProfiles,
+  studioListPersistedKernelChatAgents,
+  studioListKernelChatRuns,
+  studioListKernelChatSessions,
   studioListConversations,
   studioListInstanceTaskExecutions,
+  studioLoadKernelChatMessages,
   studioListInstances,
+  studioPatchKernelChatSession,
   studioPutConversation,
+  studioReplacePersistedKernelChatAgents,
   studioRestartInstance,
   studioRunInstanceTaskNow,
+  studioStartKernelChatRun,
   studioStartInstance,
   studioStopInstance,
   studioUpdateInstance,
@@ -148,7 +181,9 @@ const webPlatform = new WebPlatform();
 const DESKTOP_API_BASE_PATH = '/claw/api/v1';
 const DESKTOP_MANAGE_BASE_PATH = '/claw/manage/v1';
 const DESKTOP_INTERNAL_BASE_PATH = '/claw/internal/v1';
-const DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_TIMEOUT_MS = 20000;
+// Packaged first-launch on Windows can spend tens of seconds extracting the
+// bundled runtime and then another ~26s cold-starting the OpenClaw gateway.
+const DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_TIMEOUT_MS = 120_000;
 const DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_POLL_MS = 80;
 const desktopHostRuntimeResolver = createDesktopHostRuntimeResolver({
   waitForRuntime: () => waitForTauriRuntime(),
@@ -903,11 +938,13 @@ export async function showDesktopNotification(
   await runDesktopOrFallback(
     'shell.showNotification',
     () =>
-      invoke('plugin:notification|notify', {
+      invokeTauriRuntimeCommand<void>('plugin:notification|notify', {
         options: {
           title: notification.title,
           body: notification.body,
         },
+      }, {
+        operation: 'shell.showNotification',
       }),
     () => webPlatform.showNotification(notification),
   );
@@ -1250,9 +1287,53 @@ function createDesktopHttpFirstInternalPlatform() {
 }
 
 function createDesktopHttpFirstStudioPlatform() {
-  return createStaticDeferredDesktopHostedStudioPlatform(() =>
+  const hostedPlatform = createStaticDeferredDesktopHostedStudioPlatform(() =>
     requireDesktopHostedRuntime('studio.requestHostedSurface')
   );
+
+  return Object.assign(hostedPlatform, {
+    getKernelAgentCreationCapability: (instanceId: string) =>
+      studioGetKernelAgentCreationCapability(instanceId),
+    createKernelAgent: (
+      input: Parameters<typeof studioCreateKernelAgent>[0],
+    ) => studioCreateKernelAgent(input),
+    listKernelChatAgentProfiles: (instanceId: string) =>
+      studioListKernelChatAgentProfiles(instanceId),
+    listPersistedKernelChatAgents: (instanceId: string) =>
+      studioListPersistedKernelChatAgents(instanceId),
+    replacePersistedKernelChatAgents: (
+      instanceId: string,
+      records: Parameters<typeof studioReplacePersistedKernelChatAgents>[1],
+    ) => studioReplacePersistedKernelChatAgents(instanceId, records),
+    listKernelChatSessions: (instanceId: string) =>
+      studioListKernelChatSessions(instanceId),
+    getKernelChatSession: (instanceId: string, sessionId: string) =>
+      studioGetKernelChatSession(instanceId, sessionId),
+    createKernelChatSession: (
+      input: Parameters<typeof studioCreateKernelChatSession>[0],
+    ) => studioCreateKernelChatSession(input),
+    listKernelChatRuns: (instanceId: string, sessionId: string) =>
+      studioListKernelChatRuns(instanceId, sessionId),
+    getKernelChatRun: (
+      instanceId: string,
+      sessionId: string,
+      runId: string,
+    ) => studioGetKernelChatRun(instanceId, sessionId, runId),
+    patchKernelChatSession: (
+      input: Parameters<typeof studioPatchKernelChatSession>[0],
+    ) => studioPatchKernelChatSession(input),
+    deleteKernelChatSession: (instanceId: string, sessionId: string) =>
+      studioDeleteKernelChatSession(instanceId, sessionId),
+    startKernelChatRun: (input: Parameters<typeof studioStartKernelChatRun>[0]) =>
+      studioStartKernelChatRun(input),
+    abortKernelChatRun: (
+      instanceId: string,
+      sessionId: string,
+      runId?: string | null,
+    ) => studioAbortKernelChatRun(instanceId, sessionId, runId),
+    loadKernelChatMessages: (instanceId: string, sessionId: string) =>
+      studioLoadKernelChatMessages(instanceId, sessionId),
+  });
 }
 
 export async function probeDesktopHostedControlPlane(): Promise<{

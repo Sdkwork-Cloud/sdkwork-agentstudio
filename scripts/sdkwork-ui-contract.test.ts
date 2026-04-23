@@ -59,6 +59,9 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   const channelWorkspaceSource = read('packages/sdkwork-claw-ui/src/components/ChannelWorkspace.tsx');
   const channelRegionTabsSource = read('packages/sdkwork-claw-ui/src/components/ChannelRegionTabs.tsx');
   const channelCatalogMetaSource = read('packages/sdkwork-claw-ui/src/components/channelCatalogMeta.ts');
+  const channelCatalogRegionContentSource = read(
+    'packages/sdkwork-claw-ui/src/components/channelCatalogRegionContent.ts',
+  );
   const overlaySurfaceSource = read('packages/sdkwork-claw-ui/src/components/OverlaySurface.tsx');
 
   assert.ok(exists('packages/sdkwork-claw-ui/src/components/Modal.tsx'));
@@ -77,6 +80,7 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.ok(exists('packages/sdkwork-claw-ui/src/components/TaskExecutionHistoryDrawer.tsx'));
   assert.ok(exists('packages/sdkwork-claw-ui/src/components/ChannelWorkspace.tsx'));
   assert.ok(exists('packages/sdkwork-claw-ui/src/components/ChannelRegionTabs.tsx'));
+  assert.ok(exists('packages/sdkwork-claw-ui/src/components/channelCatalogRegionContent.ts'));
   assert.ok(exists('packages/sdkwork-claw-ui/src/components/taskCatalogMeta.ts'));
   assert.ok(exists('packages/sdkwork-claw-ui/src/lib/utils.ts'));
 
@@ -113,9 +117,9 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.match(channelCatalogSource, /actionDownloadApp/);
   assert.match(channelCatalogSource, /showRegionTabs\?: boolean/);
   assert.match(channelCatalogSource, /ChannelRegionTabs/);
-  assert.match(channelCatalogSource, /channels\.page\.catalog\.tabs\.domestic/);
-  assert.match(channelCatalogSource, /channels\.page\.catalog\.tabs\.media/);
-  assert.match(channelCatalogSource, /channels\.page\.catalog\.tabs\.all/);
+  assert.match(channelCatalogSource, /buildChannelCatalogRegionLabels\(t\)/);
+  assert.match(channelCatalogSource, /buildChannelCatalogRegionDescriptions\(t\)/);
+  assert.match(channelCatalogSource, /getChannelCatalogRegionEmptyText\(t, activeRegion\)/);
   assert.match(channelCatalogSource, /regionGroups\.all\.length/);
   assert.match(channelCatalogSource, /sortChannelCatalogItems/);
   assert.match(channelWorkspaceSource, /export interface ChannelWorkspaceItem/);
@@ -123,13 +127,20 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.match(channelWorkspaceSource, /actionDownloadApp/);
   assert.match(channelWorkspaceSource, /ChannelRegionTabs/);
   assert.match(channelWorkspaceSource, /showRegionTabs=\{false\}/);
-  assert.match(channelWorkspaceSource, /channels\.page\.catalog\.tabs\.media/);
-  assert.match(channelWorkspaceSource, /channels\.page\.catalog\.tabs\.all/);
+  assert.match(channelWorkspaceSource, /buildChannelCatalogRegionLabels\(t\)/);
+  assert.doesNotMatch(channelWorkspaceSource, /buildChannelCatalogRegionDescriptions\(t\)/);
+  assert.match(channelWorkspaceSource, /getChannelCatalogRegionEmptyText\(t, activeRegion\)/);
   assert.match(channelWorkspaceSource, /regionGroups\.all\.length/);
   assert.match(channelWorkspaceSource, /activeRegion !== 'all'/);
   assert.match(channelWorkspaceSource, /OverlaySurface/);
   assert.match(channelWorkspaceSource, /setupSteps/);
-  assert.match(channelWorkspaceSource, /Delete configuration/);
+  assert.match(channelWorkspaceSource, /deleteConfigurationAction/);
+  assert.match(channelCatalogRegionContentSource, /channels\.page\.catalog\.tabs\.domestic/);
+  assert.match(channelCatalogRegionContentSource, /channels\.page\.catalog\.descriptions\.media/);
+  assert.match(channelCatalogRegionContentSource, /channels\.page\.catalog\.empty\.all/);
+  assert.match(channelCatalogRegionContentSource, /buildChannelCatalogRegionLabels/);
+  assert.match(channelCatalogRegionContentSource, /buildChannelCatalogRegionDescriptions/);
+  assert.match(channelCatalogRegionContentSource, /getChannelCatalogRegionEmptyText/);
   assert.match(channelRegionTabsSource, /data-slot="channel-region-tabs"/);
   assert.match(channelRegionTabsSource, /\['domestic', 'global', 'media', 'all'\]/);
   assert.match(channelCatalogMetaSource, /sdkworkchat/);

@@ -1,4 +1,5 @@
 import { DEFAULT_CHAT_SESSION_TITLE, getChatSessionDisplayTitle } from './chatSessionTitlePresentation.ts';
+import type { ChatRunStateBinding } from './chatRunBinding.ts';
 import { resolveKernelChatSessionState } from './kernelChatSessionState.ts';
 
 type ChatHeaderMessageLike = {
@@ -13,13 +14,11 @@ type ChatHeaderSessionLike = {
   lastMessagePreview?: string;
   model?: string;
   defaultModel?: string | null;
-  runId?: string | null;
   kernelSession?: {
     modelBinding?: {
       model?: string | null;
       defaultModel?: string | null;
     } | null;
-    activeRunId?: string | null;
   } | null;
 };
 
@@ -66,13 +65,13 @@ function appendUniqueDetailItem(detailItems: string[], value: string | null | un
 
 function resolveChatHeaderStatus(params: {
   isChatSupported: boolean;
-  isOpenClawGateway: boolean;
+  sendMode: 'local' | 'gateway';
   gatewayConnectionStatus: ChatHeaderGatewayConnectionStatus;
   syncState: ChatHeaderSyncState;
   isActiveSessionGenerating: boolean;
-  activeSessionRunId: string | null | undefined;
+  activeRunBinding: ChatRunStateBinding | null | undefined;
 }): ChatHeaderStatus {
-  if (params.isActiveSessionGenerating || normalizeLabel(params.activeSessionRunId)) {
+  if (params.isActiveSessionGenerating || params.activeRunBinding?.isActive) {
     return 'responding';
   }
 
@@ -80,7 +79,7 @@ function resolveChatHeaderStatus(params: {
     return 'unavailable';
   }
 
-  if (!params.isOpenClawGateway) {
+  if (params.sendMode !== 'gateway') {
     return 'ready';
   }
 
@@ -108,16 +107,18 @@ function resolveChatHeaderStatus(params: {
 export function presentChatHeader(params: {
   isChatSupported?: boolean;
   activeSession?: ChatHeaderSessionLike | null;
-  isOpenClawGateway: boolean;
+  activeRunBinding?: ChatRunStateBinding | null;
+  sendMode: 'local' | 'gateway';
   gatewayConnectionStatus?: ChatHeaderGatewayConnectionStatus;
   syncState?: ChatHeaderSyncState;
+  workspaceTitle?: string | null;
   activeAgentName?: string | null;
   activeModelName?: string | null;
   isActiveSessionGenerating?: boolean;
 }): ChatHeaderPresentation {
   const title = params.activeSession
     ? getChatSessionDisplayTitle(params.activeSession)
-    : DEFAULT_CHAT_SESSION_TITLE;
+    : normalizeLabel(params.workspaceTitle) || DEFAULT_CHAT_SESSION_TITLE;
   const detailItems: string[] = [];
   const activeSessionState = resolveKernelChatSessionState(params.activeSession);
   const activeSessionModel =
@@ -126,18 +127,20 @@ export function presentChatHeader(params: {
     null;
   const visibleModelName = activeSessionModel || normalizeLabel(params.activeModelName) || null;
 
-  appendUniqueDetailItem(detailItems, params.activeAgentName);
+  if (normalizeLabel(params.activeAgentName) !== title) {
+    appendUniqueDetailItem(detailItems, params.activeAgentName);
+  }
   appendUniqueDetailItem(detailItems, visibleModelName);
 
   return {
     title,
     status: resolveChatHeaderStatus({
       isChatSupported: params.isChatSupported !== false,
-      isOpenClawGateway: params.isOpenClawGateway,
+      sendMode: params.sendMode,
       gatewayConnectionStatus: params.gatewayConnectionStatus,
       syncState: params.syncState,
       isActiveSessionGenerating: Boolean(params.isActiveSessionGenerating),
-      activeSessionRunId: activeSessionState.activeRunId,
+      activeRunBinding: params.activeRunBinding,
     }),
     detailItems,
   };

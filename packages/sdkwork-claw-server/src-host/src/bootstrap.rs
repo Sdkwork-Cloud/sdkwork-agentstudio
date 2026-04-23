@@ -7,8 +7,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use sdkwork_claw_host_core::host_core_metadata;
 use sdkwork_claw_host_core::host_endpoints::{
-    HostEndpointRecord, HostEndpointRegistration, HostEndpointRegistry,
-    OpenClawGatewayProjection, OpenClawRuntimeProjection,
+    HostEndpointRecord, HostEndpointRegistration, HostEndpointRegistry, OpenClawGatewayProjection,
+    OpenClawRuntimeProjection,
 };
 use sdkwork_claw_host_core::internal::node_sessions::NodeSessionRegistry;
 use sdkwork_claw_host_core::openclaw_control_plane::{
@@ -162,7 +162,10 @@ impl ManageOpenClawProvider for ControlPlaneManageOpenClawProvider {
     }
 
     fn gateway_invoke_is_available(&self, updated_at: u64) -> bool {
-        self.openclaw_control_plane.get_gateway(updated_at).lifecycle == "ready"
+        self.openclaw_control_plane
+            .get_gateway(updated_at)
+            .lifecycle
+            == "ready"
     }
 
     fn gateway_proxy_target(&self, updated_at: u64) -> Option<PublishedProxyTarget> {
@@ -183,7 +186,8 @@ impl ManageOpenClawProvider for ControlPlaneManageOpenClawProvider {
         request: OpenClawGatewayInvokeRequest,
         updated_at: u64,
     ) -> Result<Value, String> {
-        self.openclaw_control_plane.invoke_gateway(request, updated_at)
+        self.openclaw_control_plane
+            .invoke_gateway(request, updated_at)
     }
 }
 
@@ -245,6 +249,7 @@ pub struct LocalAiProxyTargetProviderHandle {
 }
 
 impl LocalAiProxyTargetProviderHandle {
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn new(inner: Arc<dyn LocalAiProxyTargetProvider>) -> Self {
         Self { inner }
     }
@@ -579,7 +584,12 @@ fn try_build_server_state_with_overrides(
         allow_insecure_public_bind: overrides.allow_insecure_public_bind.unwrap_or_else(|| {
             env::var("CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND")
                 .ok()
-                .map(|value| matches!(value.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+                .map(|value| {
+                    matches!(
+                        value.trim().to_ascii_lowercase().as_str(),
+                        "1" | "true" | "yes" | "on"
+                    )
+                })
                 .unwrap_or(false)
         }),
     };
@@ -610,9 +620,13 @@ fn try_build_server_state_with_overrides(
             last_conflict_reason: None,
         },
     ));
-    let manage_openclaw_provider = overrides.manage_openclaw_provider.clone().unwrap_or_else(|| {
-        build_control_plane_manage_openclaw_provider(openclaw_control_plane.clone())
-    });
+    let manage_openclaw_provider =
+        overrides
+            .manage_openclaw_provider
+            .clone()
+            .unwrap_or_else(|| {
+                build_control_plane_manage_openclaw_provider(openclaw_control_plane.clone())
+            });
     let studio_public_api = build_default_studio_public_api_provider(
         rollout_data_dir.clone(),
         openclaw_control_plane.clone(),
@@ -740,9 +754,7 @@ fn basic_auth_credentials_from_pair(
     }
 }
 
-fn validate_public_bind_configuration(
-    config: &ResolvedServerRuntimeConfig,
-) -> Result<(), String> {
+fn validate_public_bind_configuration(config: &ResolvedServerRuntimeConfig) -> Result<(), String> {
     if config.allow_insecure_public_bind || host_is_loopback_or_local(&config.host) {
         return Ok(());
     }
@@ -1173,8 +1185,8 @@ mod tests {
     }
 
     #[test]
-    fn control_plane_manage_openclaw_provider_reports_gateway_invoke_available_when_gateway_is_ready()
-    {
+    fn control_plane_manage_openclaw_provider_reports_gateway_invoke_available_when_gateway_is_ready(
+    ) {
         let mut host_endpoints = HostEndpointRegistry::default();
         host_endpoints.register(HostEndpointRegistration {
             endpoint_id: "openclaw-gateway".to_string(),

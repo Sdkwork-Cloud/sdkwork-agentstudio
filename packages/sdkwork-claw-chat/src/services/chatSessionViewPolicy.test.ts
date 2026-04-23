@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
+  resolveChatRunningRunBinding,
   resolveChatRunningSessionId,
   resolveOpenClawDraftSessionId,
   resolveNewChatSessionModel,
@@ -32,8 +34,8 @@ await runTest(
       resolveChatSessionViewState({
         sessions,
         activeSessionId: 'agent:research:main:thread:claw-studio:session-1',
-        isOpenClawGateway: true,
-        openClawAgentId: 'research',
+        sessionScopeMode: 'agentBound',
+        sessionScopeAgentId: 'research',
       }),
       {
         visibleSessions: [
@@ -67,8 +69,8 @@ await runTest(
       resolveChatSessionViewState({
         sessions,
         activeSessionId: 'thread:claw-studio:legacy-session',
-        isOpenClawGateway: true,
-        openClawAgentId: 'research',
+        sessionScopeMode: 'agentBound',
+        sessionScopeAgentId: 'research',
       }),
       {
         visibleSessions: [
@@ -112,8 +114,8 @@ await runTest(
       resolveChatSessionViewState({
         sessions,
         activeSessionId: 'agent:research:main',
-        isOpenClawGateway: true,
-        openClawAgentId: 'research',
+        sessionScopeMode: 'agentBound',
+        sessionScopeAgentId: 'research',
       }),
       {
         visibleSessions: [
@@ -153,8 +155,8 @@ await runTest(
       resolveChatSessionViewState({
         sessions,
         activeSessionId: 'global:shared-session',
-        isOpenClawGateway: true,
-        openClawAgentId: 'research',
+        sessionScopeMode: 'agentBound',
+        sessionScopeAgentId: 'research',
       }),
       {
         visibleSessions: [
@@ -189,8 +191,8 @@ await runTest(
       resolveChatSessionViewState({
         sessions,
         activeSessionId: 'cron:nightly-roundup',
-        isOpenClawGateway: true,
-        openClawAgentId: 'research',
+        sessionScopeMode: 'agentBound',
+        sessionScopeAgentId: 'research',
       }),
       {
         visibleSessions: [
@@ -224,8 +226,8 @@ await runTest(
       resolveChatSessionViewState({
         sessions,
         activeSessionId: 'agent:research:main',
-        isOpenClawGateway: true,
-        openClawAgentId: 'research',
+        sessionScopeMode: 'agentBound',
+        sessionScopeAgentId: 'research',
       }),
       {
         visibleSessions: [
@@ -245,6 +247,39 @@ await runTest(
 );
 
 await runTest(
+  'resolveChatSessionViewState keeps gateway agent selection in draft mode when no concrete session is active',
+  () => {
+    const sessions = [
+      { id: 'agent:research:main' },
+      { id: 'agent:research:main:thread:claw-studio:session-1' },
+      { id: 'thread:claw-studio:legacy-session' },
+    ];
+
+    assert.deepEqual(
+      resolveChatSessionViewState({
+        sessions,
+        activeSessionId: null,
+        sessionScopeMode: 'agentBound',
+        sessionScopeAgentId: 'research',
+      }),
+      {
+        visibleSessions: [
+          { id: 'agent:research:main' },
+          { id: 'agent:research:main:thread:claw-studio:session-1' },
+          { id: 'thread:claw-studio:legacy-session' },
+        ],
+        selectableSessions: [
+          { id: 'agent:research:main' },
+          { id: 'agent:research:main:thread:claw-studio:session-1' },
+          { id: 'thread:claw-studio:legacy-session' },
+        ],
+        effectiveActiveSessionId: null,
+      },
+    );
+  },
+);
+
+await runTest(
   'resolveChatSessionViewState leaves direct chat sessions unchanged',
   () => {
     const sessions = [{ id: 'session-a' }, { id: 'session-b' }];
@@ -253,8 +288,8 @@ await runTest(
       resolveChatSessionViewState({
         sessions,
         activeSessionId: 'session-b',
-        isOpenClawGateway: false,
-        openClawAgentId: 'research',
+        sessionScopeMode: 'all',
+        sessionScopeAgentId: 'research',
       }),
       {
         visibleSessions: sessions,
@@ -275,8 +310,8 @@ await runTest(
         sessions,
         activeSessionId: 'session-b',
         isChatSupported: false,
-        isOpenClawGateway: false,
-        openClawAgentId: 'research',
+        sessionScopeMode: 'all',
+        sessionScopeAgentId: 'research',
       }),
       {
         visibleSessions: [],
@@ -287,43 +322,150 @@ await runTest(
   },
 );
 
-await runTest('resolveChatSendSessionId uses the effective visible session for openclaw gateway sends', () => {
+await runTest('resolveChatSendSessionId uses the selected session for gateway sends', () => {
   assert.equal(
     resolveChatSendSessionId({
-      activeSessionId: 'agent:research:main',
-      effectiveActiveSessionId: null,
-      isOpenClawGateway: true,
+      selectedSessionId: null,
+      displaySessionId: null,
+      sendMode: 'gateway',
     }),
     null,
   );
 
   assert.equal(
     resolveChatSendSessionId({
-      activeSessionId: 'agent:ops:main',
-      effectiveActiveSessionId: 'agent:research:main',
-      isOpenClawGateway: true,
+      selectedSessionId: 'agent:ops:main',
+      displaySessionId: 'agent:research:main',
+      sendMode: 'gateway',
     }),
-    'agent:research:main',
+    'agent:ops:main',
   );
 });
 
 await runTest('resolveChatSendSessionId keeps the raw active session for direct chat sends', () => {
   assert.equal(
     resolveChatSendSessionId({
-      activeSessionId: 'session-a',
-      effectiveActiveSessionId: null,
-      isOpenClawGateway: false,
+      selectedSessionId: 'session-a',
+      displaySessionId: null,
+      sendMode: 'local',
     }),
     'session-a',
   );
 });
 
 await runTest(
+  'resolveChatRunningRunBinding only exposes gateway runs from the current selectable session scope',
+  () => {
+    assert.equal(
+      resolveChatRunningRunBinding({
+        sendMode: 'gateway',
+        selectableSessions: [
+          { id: 'agent:research:main', runId: null },
+          { id: 'agent:research:main:thread:visible', runId: null },
+        ],
+      }),
+      null,
+    );
+  },
+);
+
+await runTest(
+  'resolveChatRunningRunBinding keeps direct chat idle and returns the visible gateway run binding when present',
+  () => {
+    assert.equal(
+      resolveChatRunningRunBinding({
+        sendMode: 'local',
+        selectableSessions: [{ id: 'session-a', runId: 'run-local' }],
+      }),
+      null,
+    );
+
+    assert.deepEqual(
+      resolveChatRunningRunBinding({
+        sendMode: 'gateway',
+        selectableSessions: [
+          { id: 'agent:research:main', runId: null },
+          { id: 'agent:research:main:thread:visible', runId: 'run-visible' },
+        ],
+      }),
+      {
+        scopeInstanceId: null,
+        sessionId: 'agent:research:main:thread:visible',
+        kernelOwnedSessionId: 'agent:research:main:thread:visible',
+        kernelId: null,
+        kernelInstanceId: null,
+        nativeSessionId: null,
+        routingKey: null,
+        agentId: 'research',
+        lineageParentSessionId: null,
+        authorityKind: null,
+        lifecycle: null,
+        runId: 'run-visible',
+        isActive: true,
+        isKernelAuthoritative: false,
+      },
+    );
+  },
+);
+
+await runTest(
+  'resolveChatRunningRunBinding prefers kernel activeRunId when the legacy gateway runId is absent',
+  () => {
+    assert.deepEqual(
+      resolveChatRunningRunBinding({
+        sendMode: 'gateway',
+        selectableSessions: [
+          {
+            id: 'agent:research:main',
+            runId: null,
+            kernelSession: {
+              activeRunId: null,
+            },
+          },
+          {
+            id: 'agent:research:main:thread:visible',
+            runId: null,
+            kernelSession: {
+              activeRunId: 'kernel-run-visible',
+              ref: {
+                kernelId: 'openclaw',
+                instanceId: 'instance-openclaw',
+                sessionId: 'agent:research:main:thread:visible',
+                nativeSessionId: 'native-visible',
+              },
+              authority: {
+                kind: 'gateway',
+              },
+            },
+          },
+        ],
+      }),
+      {
+        scopeInstanceId: null,
+        sessionId: 'agent:research:main:thread:visible',
+        kernelOwnedSessionId: 'native-visible',
+        kernelId: 'openclaw',
+        kernelInstanceId: 'instance-openclaw',
+        nativeSessionId: 'native-visible',
+        routingKey: null,
+        agentId: 'research',
+        lineageParentSessionId: null,
+        authorityKind: 'gateway',
+        lifecycle: null,
+        runId: 'kernel-run-visible',
+        isActive: true,
+        isKernelAuthoritative: true,
+      },
+    );
+  },
+);
+
+await runTest(
   'resolveChatRunningSessionId only exposes gateway runs from the current selectable session scope',
   () => {
     assert.equal(
       resolveChatRunningSessionId({
-        isOpenClawGateway: true,
+        sendMode: 'gateway',
         selectableSessions: [
           { id: 'agent:research:main', runId: null },
           { id: 'agent:research:main:thread:visible', runId: null },
@@ -339,7 +481,7 @@ await runTest(
   () => {
     assert.equal(
       resolveChatRunningSessionId({
-        isOpenClawGateway: false,
+        sendMode: 'local',
         selectableSessions: [{ id: 'session-a', runId: 'run-local' }],
       }),
       null,
@@ -347,7 +489,7 @@ await runTest(
 
     assert.equal(
       resolveChatRunningSessionId({
-        isOpenClawGateway: true,
+        sendMode: 'gateway',
         selectableSessions: [
           { id: 'agent:research:main', runId: null },
           { id: 'agent:research:main:thread:visible', runId: 'run-visible' },
@@ -363,7 +505,7 @@ await runTest(
   () => {
     assert.equal(
       resolveChatRunningSessionId({
-        isOpenClawGateway: true,
+        sendMode: 'gateway',
         selectableSessions: [
           {
             id: 'agent:research:main',
@@ -389,7 +531,7 @@ await runTest(
 await runTest('resolveNewChatSessionModel keeps the active gateway model id for new openclaw threads', () => {
   assert.equal(
     resolveNewChatSessionModel({
-      isOpenClawGateway: true,
+      newSessionModelMode: 'modelId',
       activeModelId: 'anthropic/claude-3-7-sonnet',
       activeModelName: 'Claude 3.7 Sonnet',
     }),
@@ -400,7 +542,7 @@ await runTest('resolveNewChatSessionModel keeps the active gateway model id for 
 await runTest('resolveNewChatSessionModel keeps the active local model name for direct chats', () => {
   assert.equal(
     resolveNewChatSessionModel({
-      isOpenClawGateway: false,
+      newSessionModelMode: 'modelName',
       activeModelId: 'google/gemini-2.5-pro',
       activeModelName: 'Gemini 2.5 Pro',
     }),
@@ -411,7 +553,7 @@ await runTest('resolveNewChatSessionModel keeps the active local model name for 
 await runTest('resolveNewChatSessionModel returns undefined when no active model is available', () => {
   assert.equal(
     resolveNewChatSessionModel({
-      isOpenClawGateway: true,
+      newSessionModelMode: 'modelId',
       activeModelId: '',
       activeModelName: '',
     }),
@@ -424,24 +566,24 @@ await runTest(
   () => {
     assert.equal(
       resolveOpenClawDraftSessionId({
-        isOpenClawGateway: true,
-        openClawAgentId: 'research',
+        sessionScopeMode: 'agentBound',
+        sessionScopeAgentId: 'research',
       }),
       'agent:research:main',
     );
 
     assert.equal(
       resolveOpenClawDraftSessionId({
-        isOpenClawGateway: true,
-        openClawAgentId: null,
+        sessionScopeMode: 'agentBound',
+        sessionScopeAgentId: null,
       }),
       'agent:main:main',
     );
 
     assert.equal(
       resolveOpenClawDraftSessionId({
-        isOpenClawGateway: false,
-        openClawAgentId: 'research',
+        sessionScopeMode: 'all',
+        sessionScopeAgentId: 'research',
       }),
       undefined,
     );
@@ -453,7 +595,7 @@ await runTest(
   () => {
     assert.equal(
       resolveGatewayVisibleSessionSyncTarget({
-        isOpenClawGateway: true,
+        supportsVisibleSessionSync: true,
         activeSessionId: 'agent:research:main:thread:claw-studio:session-1',
         effectiveActiveSessionId: 'agent:ops:main',
       }),
@@ -467,7 +609,7 @@ await runTest(
   () => {
     assert.equal(
       resolveGatewayVisibleSessionSyncTarget({
-        isOpenClawGateway: true,
+        supportsVisibleSessionSync: true,
         activeSessionId: 'agent:ops:main',
         effectiveActiveSessionId: 'agent:ops:main',
       }),
@@ -476,7 +618,7 @@ await runTest(
 
     assert.equal(
       resolveGatewayVisibleSessionSyncTarget({
-        isOpenClawGateway: false,
+        supportsVisibleSessionSync: false,
         activeSessionId: 'session-a',
         effectiveActiveSessionId: 'session-b',
       }),
@@ -485,11 +627,23 @@ await runTest(
 
     assert.equal(
       resolveGatewayVisibleSessionSyncTarget({
-        isOpenClawGateway: true,
+        supportsVisibleSessionSync: true,
         activeSessionId: null,
         effectiveActiveSessionId: null,
       }),
       null,
     );
+  },
+);
+
+await runTest(
+  'chatSessionViewPolicy reuses the shared run binding source instead of deriving a local run-session contract',
+  () => {
+    const source = readFileSync(new URL('./chatSessionViewPolicy.ts', import.meta.url), 'utf8');
+    assert.match(
+      source,
+      /import\s*\{\s*resolveChatRunBinding,\s*type ChatRunBindingSource\s*\}\s*from '\.\/chatRunBinding\.ts';/,
+    );
+    assert.doesNotMatch(source, /Parameters<typeof resolveChatRunBinding>/);
   },
 );

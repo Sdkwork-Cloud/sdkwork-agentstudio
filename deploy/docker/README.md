@@ -25,7 +25,7 @@ the extracted bundle root as the Docker build context for `app/`.
 
 Local packaging prerequisite:
 
-- `pnpm release:package:container` expects a matching Linux server binary to already exist. Build it first with `pnpm server:build -- --target <linux-target>` or use the Linux release workflow runner.
+- `pnpm release:package:container` refreshes a matching Linux server binary through an incremental build when you use the root local wrapper. On Windows, that build can automatically bridge through WSL when a Linux distro is installed. On other non-Linux hosts, you still need the corresponding Rust target and cross-build toolchain if the target binary cannot be produced locally.
 
 Base deployment from the extracted bundle root:
 
@@ -34,6 +34,20 @@ export CLAW_SERVER_MANAGE_USERNAME=claw-admin
 export CLAW_SERVER_MANAGE_PASSWORD='replace-with-a-strong-secret'
 docker compose -f deploy/docker/docker-compose.yml up -d
 ```
+
+Canonical user-center server integration modes:
+
+- `builtin-local`: private deployment with the Claw Studio server owning its local user-center data.
+- `sdkwork-cloud-app-api`: shared cloud identity backed by `sdkwork-cloud-app-api`.
+- `external-user-center`: third-party identity authority with the same token and handshake contract.
+
+Container entrypoint variables:
+
+- `CLAW_STUDIO_USER_CENTER_MODE`: one of `builtin-local`, `sdkwork-cloud-app-api`, or `external-user-center`.
+- `CLAW_STUDIO_USER_CENTER_APP_API_BASE_URL`: required when `CLAW_STUDIO_USER_CENTER_MODE=sdkwork-cloud-app-api`.
+- `CLAW_STUDIO_USER_CENTER_EXTERNAL_BASE_URL`: required when `CLAW_STUDIO_USER_CENTER_MODE=external-user-center`.
+- `CLAW_STUDIO_USER_CENTER_SECRET_ID`: required for upstream shared-secret handshakes.
+- `CLAW_STUDIO_USER_CENTER_SHARED_SECRET`: required for upstream shared-secret handshakes.
 
 NVIDIA CUDA overlay:
 
@@ -50,6 +64,10 @@ docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compo
 The server binary is identical across CPU and GPU-oriented bundles. GPU variants package
 deployment overlays and environment presets so operators can keep one release flow while
 switching runtime topology.
+
+The packaged Docker image starts `/opt/claw/app/bin/claw-server` directly. The optional
+`app/start-claw-server.sh` wrapper remains in the bundle for operator convenience outside the
+container entrypoint path, but container startup does not route through it.
 
 The base deployment template intentionally requires `CLAW_SERVER_MANAGE_USERNAME` and
 `CLAW_SERVER_MANAGE_PASSWORD` before Docker Compose will start the public control plane.

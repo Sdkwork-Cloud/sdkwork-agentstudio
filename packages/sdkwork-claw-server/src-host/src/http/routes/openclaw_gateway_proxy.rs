@@ -63,8 +63,14 @@ async fn forward_proxy_request(
         .path_and_query()
         .map(|value| value.as_str())
         .unwrap_or_else(|| uri.path());
-    let governed_path = path_and_query.strip_prefix("/claw/gateway/openclaw").unwrap_or("");
-    let upstream_url = format!("{}{}", upstream_base_url.trim_end_matches('/'), governed_path);
+    let governed_path = path_and_query
+        .strip_prefix("/claw/gateway/openclaw")
+        .unwrap_or("");
+    let upstream_url = format!(
+        "{}{}",
+        upstream_base_url.trim_end_matches('/'),
+        governed_path
+    );
     let mut request = client.request(method, upstream_url);
 
     for (name, value) in headers.iter() {
@@ -84,7 +90,9 @@ async fn forward_proxy_request(
             return categorized_error_response(
                 "openclaw_gateway_upstream_unreachable",
                 InternalErrorCategory::Dependency,
-                &format!("The built-in host could not reach the OpenClaw gateway upstream: {error}"),
+                &format!(
+                    "The built-in host could not reach the OpenClaw gateway upstream: {error}"
+                ),
                 StatusCode::BAD_GATEWAY,
                 true,
                 InternalErrorResolution::Retry,
@@ -333,7 +341,8 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time")
             .as_millis();
-        std::env::temp_dir()
-            .join(format!("sdkwork-claw-server-openclaw-routes-{label}-{timestamp}"))
+        std::env::temp_dir().join(format!(
+            "sdkwork-claw-server-openclaw-routes-{label}-{timestamp}"
+        ))
     }
 }

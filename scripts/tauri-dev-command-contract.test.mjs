@@ -30,19 +30,20 @@ const tauriWindowsConfig = readJson('packages/sdkwork-claw-desktop/src-tauri/tau
 const tauriLinuxConfig = readJson('packages/sdkwork-claw-desktop/src-tauri/tauri.linux.conf.json');
 const tauriMacosConfig = readJson('packages/sdkwork-claw-desktop/src-tauri/tauri.macos.conf.json');
 const windowsInstallerHooksPath = 'packages/sdkwork-claw-desktop/src-tauri/installer-hooks.nsh';
-const bundledSyncDevCommand = 'node ../../scripts/sync-bundled-components.mjs --dev --no-fetch';
-const bundledSyncBuildCommand = 'node ../../scripts/sync-bundled-components.mjs --no-fetch --release';
-const staleTargetGuardCommand = 'node ../../scripts/ensure-tauri-target-clean.mjs src-tauri';
-const rustToolchainGuardCommand = 'node ../../scripts/ensure-tauri-rust-toolchain.mjs';
+const nodeScriptRunner = 'sdkwork-run-node';
+const bundledSyncDevCommand = `${nodeScriptRunner} ../../scripts/sync-bundled-components.mjs --dev --no-fetch`;
+const bundledSyncBuildCommand = `${nodeScriptRunner} ../../scripts/sync-bundled-components.mjs --no-fetch --release`;
+const staleTargetGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-tauri-target-clean.mjs src-tauri`;
+const rustToolchainGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-tauri-rust-toolchain.mjs`;
 const devBinaryUnlockGuardCommand =
-  'node ../../scripts/ensure-tauri-dev-binary-unlocked.mjs src-tauri sdkwork-claw-desktop';
-const devPortGuardCommand = 'node ../../scripts/ensure-tauri-dev-port-free.mjs 127.0.0.1 1426';
-const bundledOpenClawPrepareCommand = 'node ../../scripts/prepare-openclaw-runtime.mjs';
-const desktopBuildVerifyCommand = 'node ../../scripts/verify-desktop-build-assets.mjs';
-const tauriDevRunnerCommand = 'node ../../scripts/run-tauri-cli.mjs dev';
-const tauriInfoRunnerCommand = 'node ../../scripts/run-tauri-cli.mjs info';
-const tauriIconRunnerCommand = 'node ../../scripts/run-tauri-cli.mjs icon src-tauri/app-icon.svg';
-const desktopBundleRunnerCommand = 'node ../../scripts/run-desktop-release-build.mjs --phase bundle --vite-mode production';
+  `${nodeScriptRunner} ../../scripts/ensure-tauri-dev-binary-unlocked.mjs src-tauri sdkwork-claw-desktop`;
+const devPortGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-tauri-dev-port-free.mjs 127.0.0.1 1426`;
+const bundledOpenClawPrepareCommand = `${nodeScriptRunner} ../../scripts/prepare-openclaw-runtime.mjs`;
+const desktopBuildVerifyCommand = `${nodeScriptRunner} ../../scripts/verify-desktop-build-assets.mjs`;
+const tauriDevRunnerCommand = `${nodeScriptRunner} ../../scripts/run-tauri-cli.mjs dev`;
+const tauriInfoRunnerCommand = `${nodeScriptRunner} ../../scripts/run-tauri-cli.mjs info`;
+const tauriIconRunnerCommand = `${nodeScriptRunner} ../../scripts/run-tauri-cli.mjs icon src-tauri/app-icon.svg`;
+const desktopBundleRunnerCommand = `${nodeScriptRunner} ../../scripts/run-desktop-release-build.mjs --phase bundle --vite-mode production`;
 
 function assertCommandsAppearInOrder(script, commands, label) {
   let lastIndex = -1;

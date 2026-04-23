@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -167,3 +167,4 @@ try {
 }
 
 console.log('ok - ts extension loader remaps shared SDK packages to source entries in source mode');
+

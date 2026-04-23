@@ -53,9 +53,11 @@ await runTest(
 
     const handlers = buildInstanceDetailNavigationHandlers({
       instance: { id: 'instance-01' },
-      instanceId: 'instance-01',
       navigate: (href) => {
         callLog.push(`navigate:${href}`);
+      },
+      openAgentMarketModal: () => {
+        callLog.push('modal:agent-market');
       },
       setActiveInstanceId: (instanceId) => {
         callLog.push(`active:${instanceId}`);
@@ -70,33 +72,20 @@ await runTest(
     assert.deepEqual(callLog, [
       'navigate:/instances',
       'navigate:/settings?tab=api',
-      'navigate:/agents?instanceId=instance-01',
+      'modal:agent-market',
       'active:instance-01',
     ]);
   },
 );
 
 await runTest(
-  'buildInstanceDetailNavigationHandlers falls back to the generic agent market route and skips set-active when no instance is loaded',
+  'buildInstanceDetailNavigationHandlers keeps agent-market access modal-only and never emits a route fallback',
   async () => {
-    const { buildInstanceDetailNavigationHandlers } =
-      await loadInstanceDetailNavigationSupportModule();
-    const callLog: string[] = [];
+    const source = (await loadInstanceDetailNavigationSupportModule()).buildInstanceDetailNavigationHandlers
+      .toString();
 
-    const handlers = buildInstanceDetailNavigationHandlers({
-      instance: null,
-      instanceId: null,
-      navigate: (href) => {
-        callLog.push(`navigate:${href}`);
-      },
-      setActiveInstanceId: (instanceId) => {
-        callLog.push(`active:${instanceId}`);
-      },
-    });
-
-    handlers.onOpenAgentMarket();
-    handlers.onSetActive();
-
-    assert.deepEqual(callLog, ['navigate:/agents']);
+    assert.doesNotMatch(source, /navigate\(`\/agents\$\{search\}`\)/);
+    assert.doesNotMatch(source, /encodeURIComponent\(args\.instanceId\)/);
+    assert.match(source, /args\.openAgentMarketModal\(\);/);
   },
 );

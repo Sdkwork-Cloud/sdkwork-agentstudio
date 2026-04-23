@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { resolveCanonicalWorkspaceRootDir } from './workspace-root.mjs';
@@ -84,7 +84,7 @@ runTest('sdkwork-claw-settings parity checks use the shared Node TypeScript runn
 
   assert.match(
     workspacePackageJson,
-    /"check:sdkwork-settings"\s*:\s*"node scripts\/run-sdkwork-settings-check\.mjs"/,
+    /"check:sdkwork-settings"\s*:\s*"sdkwork-run-node scripts\/run-sdkwork-settings-check\.mjs"/,
   );
   assert.match(settingsCheckRunner, /runNodeTypeScriptChecks/);
   assert.match(settingsCheckRunner, /kernelCenterView\.test\.ts/);
@@ -395,6 +395,26 @@ runTest('notification settings keep the workspace visible while preferences load
   assert.notEqual(getLocaleValue(zhLocale, 'settings.notifications.loadPreferenceFailed'), undefined);
 });
 
+runTest('general and security settings keep full controls available when preference loading fails', () => {
+  const generalSource = read('packages/sdkwork-claw-settings/src/GeneralSettings.tsx');
+  const securitySource = read('packages/sdkwork-claw-settings/src/SecuritySettings.tsx');
+  const enLocale = readLocale('en');
+  const zhLocale = readLocale('zh');
+
+  assert.match(generalSource, /const DEFAULT_GENERAL_PREFERENCES:/);
+  assert.match(generalSource, /useState<UserPreferences\['general'\]>\(DEFAULT_GENERAL_PREFERENCES\)/);
+  assert.match(generalSource, /settings\.general\.loadPreferenceFailed/);
+  assert.doesNotMatch(generalSource, /if \(!prefs\)\s*\{\s*return;\s*\}/s);
+  assert.match(securitySource, /const DEFAULT_SECURITY_PREFERENCES:/);
+  assert.match(securitySource, /useState<UserPreferences\['security'\]>\(DEFAULT_SECURITY_PREFERENCES\)/);
+  assert.match(securitySource, /settings\.security\.toasts\.loadPreferenceFailed/);
+  assert.doesNotMatch(securitySource, /if \(!prefs\)\s*\{\s*return;\s*\}/s);
+  assert.notEqual(getLocaleValue(enLocale, 'settings.general.loadPreferenceFailed'), undefined);
+  assert.notEqual(getLocaleValue(zhLocale, 'settings.general.loadPreferenceFailed'), undefined);
+  assert.notEqual(getLocaleValue(enLocale, 'settings.security.toasts.loadPreferenceFailed'), undefined);
+  assert.notEqual(getLocaleValue(zhLocale, 'settings.security.toasts.loadPreferenceFailed'), undefined);
+});
+
 runTest('sdkwork-claw-settings exports Kernel Center through package and service barrels with localized page copy', () => {
   const indexSource = read('packages/sdkwork-claw-settings/src/index.ts');
   const servicesIndexSource = read('packages/sdkwork-claw-settings/src/services/index.ts');
@@ -569,3 +589,4 @@ runTest('sdkwork-claw-settings exposes a feedback settings entry backed by claw-
   assert.match(enLocaleSource, /"feedback": "Feedback"/);
   assert.match(zhLocaleSource, /"feedback": "反馈"/);
 });
+

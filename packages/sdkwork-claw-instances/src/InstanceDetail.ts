@@ -1,4 +1,5 @@
 import { createElement, lazy } from 'react';
+import type { InstanceDetailPageEntryProps } from './pages/InstanceDetail.tsx';
 
 const InstanceDetailPage = lazy(() =>
   import('./pages/InstanceDetail').then((module) => ({
@@ -6,6 +7,10 @@ const InstanceDetailPage = lazy(() =>
   })),
 );
 
-export function InstanceDetail() {
-  return createElement(InstanceDetailPage);
+export function InstanceDetail({
+  onOpenAgentMarketModal,
+}: InstanceDetailPageEntryProps) {
+  return createElement(InstanceDetailPage, {
+    onOpenAgentMarketModal,
+  });
 }

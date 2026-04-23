@@ -1,6 +1,5 @@
 import {
   Component,
-  startTransition,
   useEffect,
   useEffectEvent,
   useMemo,
@@ -46,7 +45,9 @@ import { connectDesktopRuntimeDuringStartup } from './desktopRuntimeConnection';
 import {
   buildDesktopStartupEvidenceDocument,
   DESKTOP_STARTUP_EVIDENCE_RELATIVE_PATH,
+  resolvePassingDesktopStartupEvidencePhase,
   serializeDesktopStartupEvidence,
+  shouldPersistShellMountedDesktopStartupEvidence,
   type DesktopStartupEvidencePhase,
   type DesktopStartupEvidenceStatus,
 } from './desktopStartupEvidence';
@@ -140,6 +141,23 @@ function resolveErrorMessage(error: unknown, language: StartupAppearanceSnapshot
   return fallback;
 }
 
+function waitForNextPaint() {
+  if (typeof window === 'undefined') {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve) => {
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(() => {
+        resolve();
+      });
+      return;
+    }
+
+    window.setTimeout(resolve, 16);
+  });
+}
+
 function waitFor(ms: number) {
   if (ms <= 0) {
     return Promise.resolve();
@@ -147,16 +165,6 @@ function waitFor(ms: number) {
 
   return new Promise<void>((resolve) => {
     window.setTimeout(resolve, ms);
-  });
-}
-
-function waitForNextPaint() {
-  return new Promise<void>((resolve) => {
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        resolve();
-      });
-    });
   });
 }
 
@@ -282,6 +290,7 @@ export function DesktopBootstrapApp({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [backgroundRuntimeReadinessNotification, setBackgroundRuntimeReadinessNotification] =
     useState<BackgroundRuntimeReadinessNotification | null>(null);
+  const milestonesRef = useRef(milestones);
   const startedAtRef = useRef(Date.now());
   const bootRunIdRef = useRef(0);
   const splashHandoffRunIdRef = useRef(0);
@@ -307,6 +316,10 @@ export function DesktopBootstrapApp({
       }),
     [appearance.language, milestones],
   );
+
+  useEffect(() => {
+    milestonesRef.current = milestones;
+  }, [milestones]);
 
   const logStartup = useEffectEvent(
     (level: StartupLogLevel, message: string, details?: unknown, runId = bootRunIdRef.current) => {
@@ -488,32 +501,20 @@ export function DesktopBootstrapApp({
     }
 
     const runId = bootRunIdRef.current;
-    let cancelled = false;
-
-    void (async () => {
-      logStartup('info', 'Shell render requested. Waiting for first paints.', undefined, runId);
-      await waitForNextPaint();
-      await waitForNextPaint();
-      if (cancelled || bootRunIdRef.current !== runId) {
-        return;
-      }
-
-      logStartup('info', 'Shell first paint confirmed.', undefined, runId);
-      if (!runtimeReadinessFailureRef.current) {
-        void persistStartupEvidence({
-          status: 'passed',
-          phase: 'shell-mounted',
-          runId,
-        });
-      }
-      setMilestones((current) =>
-        current.hasShellMounted ? current : { ...current, hasShellMounted: true },
-      );
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+    logStartup('info', 'Shell render committed.', undefined, runId);
+    if (shouldPersistShellMountedDesktopStartupEvidence({
+      runtimeReadinessFailed: runtimeReadinessFailureRef.current,
+      readinessSnapshot: startupEvidenceContextRef.current?.readinessSnapshot ?? null,
+    })) {
+      void persistStartupEvidence({
+        status: 'passed',
+        phase: 'shell-mounted',
+        runId,
+      });
+    }
+    setMilestones((current) =>
+      current.hasShellMounted ? current : { ...current, hasShellMounted: true },
+    );
   }, [milestones.hasShellMounted, shouldRenderShell, status]);
 
   const openBackgroundRuntimeDetails = useEffectEvent(() => {
@@ -753,10 +754,41 @@ export function DesktopBootstrapApp({
       return desktopKernelInfoPromise;
     };
     const captureLocalAiProxyEvidence = async (captureRunId = runId) => {
+      if (!isTauriRuntime()) {
+        return null;
+      }
+
       try {
-        const kernelInfo = await captureDesktopKernelInfo(captureRunId);
-        return kernelInfo?.localAiProxy ?? null;
-      } catch {
+        const kernelInfo = await getDesktopKernelInfo();
+        const localAiProxy = kernelInfo?.localAiProxy ?? null;
+
+        if (localAiProxy) {
+          logStartup('info', 'Fresh desktop kernel info captured local ai proxy startup evidence.', {
+            lifecycle: localAiProxy.lifecycle,
+            messageCaptureEnabled: localAiProxy.messageCaptureEnabled,
+            observabilityDbPath: localAiProxy.observabilityDbPath ?? null,
+            snapshotPath: localAiProxy.snapshotPath ?? null,
+            logPath: localAiProxy.logPath ?? null,
+          }, captureRunId);
+        } else {
+          logStartup(
+            'warn',
+            'Fresh desktop kernel info did not expose local ai proxy startup evidence.',
+            undefined,
+            captureRunId,
+          );
+        }
+
+        return localAiProxy;
+      } catch (error) {
+        logStartup(
+          'warn',
+          'Fresh desktop kernel info probe failed while capturing local ai proxy startup evidence.',
+          {
+            error,
+          },
+          captureRunId,
+        );
         return null;
       }
     };
@@ -918,7 +950,9 @@ export function DesktopBootstrapApp({
         }, runId);
         await persistStartupEvidence({
           status: 'passed',
-          phase: 'runtime-ready',
+          phase: resolvePassingDesktopStartupEvidencePhase(
+            milestonesRef.current.hasShellMounted,
+          ),
           appInfo,
           appPaths,
           bundledComponents:
@@ -1088,6 +1122,11 @@ export function DesktopBootstrapApp({
       },
       runId,
     );
+    await persistStartupEvidence({
+      status: 'running',
+      phase: 'bootstrap-started',
+      runId,
+    });
 
     if (desktopWindow) {
       await desktopWindow.setFullscreen(false).catch(() => {
@@ -1128,12 +1167,16 @@ export function DesktopBootstrapApp({
       clearScheduledTask(handle) {
         window.clearTimeout(handle);
       },
-      startRenderTransition(callback) {
-        logStartup('info', 'Shell runtime bootstrapped. Requesting AppRoot render.', undefined, runId);
-        startTransition(callback);
-      },
       resolveErrorMessage(error) {
         return resolveErrorMessage(error, appearance.language);
+      },
+      onBootstrapFailed: async (error) => {
+        await persistStartupEvidence({
+          status: 'failed',
+          phase: 'bootstrap-failed',
+          error,
+          runId,
+        });
       },
       log(level, message, details) {
         logStartup(level, message, details, runId);

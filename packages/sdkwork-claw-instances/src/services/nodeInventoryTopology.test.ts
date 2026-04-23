@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import type { StudioInstanceRecord } from '@sdkwork/claw-types';
 import { isBuiltInLocalInstance, mapInstanceNode } from './nodeInventoryTopology.ts';
 
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
 function runTest(name: string, callback: () => void | Promise<void>) {
   return Promise.resolve()
     .then(callback)
@@ -16,7 +18,7 @@ function runTest(name: string, callback: () => void | Promise<void>) {
 
 function createInstance(overrides: Partial<StudioInstanceRecord> = {}): StudioInstanceRecord {
   return {
-    id: 'local-built-in',
+    id: BUILT_IN_INSTANCE_ID,
     name: 'Local Built-In',
     description: 'Packaged local OpenClaw kernel.',
     runtimeKind: 'openclaw',

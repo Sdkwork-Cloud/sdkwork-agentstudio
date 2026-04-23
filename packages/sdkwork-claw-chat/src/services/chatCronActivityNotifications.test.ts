@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { detectChatCronActivityNotification } from './chatCronActivityNotifications.ts';
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
@@ -61,6 +62,34 @@ await runTest(
         kind: 'completed',
         title: 'Cron: Daily Briefing',
         body: 'Sent the morning briefing to Slack.',
+        sessionId: 'agent:main:cron:daily-briefing',
+      },
+    );
+  },
+);
+
+await runTest(
+  'detectChatCronActivityNotification falls back to the generic body when the preview is only a technical message id',
+  () => {
+    assert.deepEqual(
+      detectChatCronActivityNotification({
+        previousSession: {
+          id: 'agent:main:cron:daily-briefing',
+          title: 'Daily Briefing',
+          lastMessagePreview: 'Running',
+          runId: 'run-1',
+        },
+        nextSession: {
+          id: 'agent:main:cron:daily-briefing',
+          title: 'Daily Briefing',
+          lastMessagePreview: 'message-42',
+          runId: null,
+        },
+      }),
+      {
+        kind: 'completed',
+        title: 'Cron: Daily Briefing',
+        body: 'Cron job completed.',
         sessionId: 'agent:main:cron:daily-briefing',
       },
     );
@@ -171,5 +200,18 @@ await runTest(
         sessionId: 'agent:main:cron:nightly-sync',
       },
     );
+  },
+);
+
+await runTest(
+  'chatCronActivityNotifications reuses the shared run binding source instead of duplicating run state fields',
+  () => {
+    const source = readFileSync(new URL('./chatCronActivityNotifications.ts', import.meta.url), 'utf8');
+    assert.match(
+      source,
+      /import\s*\{\s*resolveChatRunBinding,\s*type ChatRunBindingSource\s*\}\s*from '\.\/chatRunBinding\.ts';/,
+    );
+    assert.doesNotMatch(source, /runId\?: string \| null;/);
+    assert.doesNotMatch(source, /activeRunId\?: string \| null;/);
   },
 );

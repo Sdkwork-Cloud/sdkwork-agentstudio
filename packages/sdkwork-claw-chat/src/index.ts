@@ -1,4 +1,5 @@
 export * from './Chat';
+export * from './components/ChatAgentMarketDialog';
 export { chatService } from './services/chatService';
 export * from './chatSessionMapping';
 export * from './externalModules.d';

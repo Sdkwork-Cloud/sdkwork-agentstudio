@@ -31,6 +31,7 @@ await runTest(
     const { buildAgentSectionProps } = await loadSectionModelsModule();
     const loadWorkbenchCalls: Array<{ instanceId: string; options: { withSpinner: boolean } }> = [];
     let isAgentDialogOpen = true;
+    let isAgentCreationWorkflowOpen = true;
     let editingAgentId: string | null = 'agent-1';
     let agentDialogDraft = {
       id: 'agent-1',
@@ -57,8 +58,10 @@ await runTest(
       agentWorkbenchError: 'agent-workbench-error',
       selectedAgentId: 'agent-1',
       onSelectedAgentIdChange: () => undefined,
-      onOpenAgentMarket: () => undefined,
-      onCreateAgent: () => undefined,
+      instanceId: 'instance-1',
+      instanceName: 'Primary Instance',
+      instanceKernelId: 'openclaw',
+      onOpenAgentCreationWorkflow: () => undefined,
       onEditAgent: () => undefined,
       onRequestDeleteAgent: () => undefined,
       onInstallSkill: () => undefined,
@@ -70,9 +73,12 @@ await runTest(
       isInstallingSkill: true,
       updatingAgentSkillKeys: ['agent-1:skill-install'],
       removingAgentSkillKeys: ['agent-1:skill-remove'],
-      instanceId: 'instance-1',
       loadWorkbench: (instanceId: string, options: { withSpinner: boolean }) => {
         loadWorkbenchCalls.push({ instanceId, options });
+      },
+      isAgentCreationWorkflowOpen: true,
+      setIsAgentCreationWorkflowOpen: (open: boolean) => {
+        isAgentCreationWorkflowOpen = open;
       },
       isAgentDialogOpen: true,
       editingAgentId: 'agent-1',
@@ -88,6 +94,11 @@ await runTest(
       setAgentDialogDraft: (updater: (current: typeof agentDialogDraft) => typeof agentDialogDraft) => {
         agentDialogDraft = updater(agentDialogDraft);
       },
+      onAgentCreationDraftReplace: (draft: typeof agentDialogDraft) => {
+        agentDialogDraft = draft;
+      },
+      onAgentCreated: () => undefined,
+      onSaveAgentCreation: () => undefined,
       onSaveAgentDialog: () => undefined,
       agentDeleteId: 'agent-1',
       setAgentDeleteId: (value: string | null) => {
@@ -116,6 +127,13 @@ await runTest(
 
     props.onAgentDialogStreamingModeChange('enabled');
     assert.equal(agentDialogDraft.streamingMode, 'enabled');
+
+    props.onAgentCreationWorkflowOpenChange(false);
+    assert.equal(isAgentCreationWorkflowOpen, false);
+    assert.equal(editingAgentId, null);
+    assert.equal(agentDialogDraft.id, '');
+    assert.equal(agentDialogDraft.name, '');
+    assert.equal(agentDialogDraft.streamingMode, 'inherit');
 
     props.onAgentDialogOpenChange(false);
     assert.equal(isAgentDialogOpen, false);
@@ -890,8 +908,10 @@ await runTest(
       sectionProps: {
         selectedAgentId: 'agent-1',
         onSelectedAgentIdChange: () => undefined,
-        onOpenAgentMarket: () => undefined,
-        onCreateAgent: () => undefined,
+        instanceId: 'instance-1',
+        instanceName: 'Primary Instance',
+        instanceKernelId: 'openclaw',
+        onOpenAgentCreationWorkflow: () => undefined,
         onEditAgent: () => undefined,
         onRequestDeleteAgent: () => undefined,
         onInstallSkill: () => undefined,
@@ -901,6 +921,7 @@ await runTest(
         isLoading: false,
         isFilesLoading: false,
         isInstallingSkill: false,
+        isAgentCreationWorkflowOpen: false,
         isAgentDialogOpen: false,
         editingAgentId: null,
         agentDialogDraft: {
@@ -920,6 +941,10 @@ await runTest(
         },
         availableAgentModelOptions: [],
         isSavingAgentDialog: false,
+        onAgentCreationWorkflowOpenChange: () => undefined,
+        onAgentCreationDraftReplace: () => undefined,
+        onAgentCreated: () => undefined,
+        onSaveAgentCreation: () => undefined,
         onSaveAgentDialog: () => undefined,
         agentDeleteId: null,
         onDeleteAgentConfirm: () => undefined,

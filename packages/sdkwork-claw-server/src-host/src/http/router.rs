@@ -1,6 +1,6 @@
 use axum::{
-    extract::State,
     body::Body,
+    extract::State,
     http::{
         header::{self},
         Request, StatusCode,
@@ -22,8 +22,8 @@ use crate::http::routes::local_ai_compat::local_ai_compat_routes;
 use crate::http::routes::manage_openclaw::manage_openclaw_routes;
 use crate::http::routes::manage_rollouts::manage_rollout_routes;
 use crate::http::routes::manage_service::manage_service_routes;
-use crate::http::routes::openclaw_gateway_proxy::openclaw_gateway_proxy_routes;
 use crate::http::routes::openapi::openapi_routes;
+use crate::http::routes::openclaw_gateway_proxy::openclaw_gateway_proxy_routes;
 use crate::http::static_assets::StaticAssetMount;
 
 pub fn build_router(state: ServerState) -> Router {
@@ -50,7 +50,10 @@ pub fn build_router(state: ServerState) -> Router {
     assets
         .attach(router)
         .with_state(state.clone())
-        .layer(middleware::from_fn_with_state(state, host_control_plane_cors))
+        .layer(middleware::from_fn_with_state(
+            state,
+            host_control_plane_cors,
+        ))
 }
 
 async fn host_control_plane_cors(
@@ -61,7 +64,8 @@ async fn host_control_plane_cors(
     let path = request.uri().path().to_string();
     let origin = request.headers().get(header::ORIGIN).cloned();
     let allowed_origin = resolve_allowed_cors_origin(&state, &path, origin.as_ref());
-    let is_preflight = is_cors_preflight_request(request.method(), origin.as_ref(), request.headers());
+    let is_preflight =
+        is_cors_preflight_request(request.method(), origin.as_ref(), request.headers());
 
     if is_preflight {
         if let Some(origin) = allowed_origin.as_ref() {

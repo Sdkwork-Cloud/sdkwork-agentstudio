@@ -434,6 +434,95 @@ await runTest(
       derivedState.managementSummary?.entries.find((entry) => entry.id === 'kernelConfig')?.value,
       canonicalConfigFilePath,
     );
+    assert.equal(derivedState.workbench?.kernelConfig?.configFile, canonicalConfigFilePath);
+  },
+);
+
+await runTest(
+  'buildInstanceDetailDerivedState rewrites stale workbench kernelConfig paths from canonical detail projection',
+  () => {
+    const workbench = createWorkbench();
+    const driftedManagedConfigPath =
+      'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json';
+    const canonicalConfigFilePath =
+      'C:/Users/admin/.sdkwork/crawstudio/.openclaw/openclaw.json';
+    const canonicalWorkspacePath =
+      'C:/Users/admin/.sdkwork/crawstudio/.openclaw/workspace';
+
+    workbench.kernelConfig = {
+      ...workbench.kernelConfig,
+      configFile: driftedManagedConfigPath,
+      configRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config',
+      userRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw',
+      standardConfigFile: canonicalConfigFilePath,
+      standardStateRoot: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw',
+      isStandardUserRootLayout: false,
+    };
+    workbench.detail.dataAccess.routes = [
+      {
+        id: 'config-managed',
+        scope: 'config',
+        mode: 'managedFile',
+        readonly: false,
+        target: driftedManagedConfigPath,
+      },
+      {
+        id: 'workspace-root',
+        scope: 'files',
+        mode: 'managedDirectory',
+        readonly: false,
+        target: canonicalWorkspacePath,
+      },
+    ];
+    workbench.detail.artifacts = [
+      {
+        id: 'config-file',
+        kind: 'configFile',
+        location: driftedManagedConfigPath,
+      },
+      {
+        id: 'workspace-root',
+        kind: 'workspaceDirectory',
+        location: canonicalWorkspacePath,
+      },
+    ];
+
+    const derivedState = buildInstanceDetailDerivedState({
+      id: 'instance-1',
+      workbench,
+      selectedProviderId: null,
+      providerDeleteId: null,
+      providerModelDeleteId: null,
+      providerDrafts: {},
+      providerRequestDrafts: {},
+      selectedConfigChannelId: null,
+      configChannelDrafts: {},
+      selectedWebSearchProviderId: null,
+      webSearchProviderDrafts: {},
+      providerDialogDraft: {
+        id: '',
+        name: '',
+        endpoint: '',
+        apiKeySource: '',
+        defaultModelId: '',
+        reasoningModelId: '',
+        embeddingModelId: '',
+        modelsText: '',
+        requestOverridesText: '',
+      },
+      t: (key) => key,
+    });
+
+    assert.equal(derivedState.configFilePath, canonicalConfigFilePath);
+    assert.equal(derivedState.detail?.dataAccess.routes[0]?.target, canonicalConfigFilePath);
+    assert.equal(
+      derivedState.detail?.artifacts.find((artifact) => artifact.kind === 'configFile')?.location,
+      canonicalConfigFilePath,
+    );
+    assert.equal(
+      derivedState.managementSummary?.entries.find((entry) => entry.id === 'kernelConfig')?.value,
+      canonicalConfigFilePath,
+    );
   },
 );
 

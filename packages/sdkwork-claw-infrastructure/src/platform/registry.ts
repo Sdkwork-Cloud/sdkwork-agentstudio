@@ -214,6 +214,10 @@ function invalidateStudioCaches(instanceId?: string) {
   studioDetailCache.clear();
 }
 
+export function invalidateStudioPlatformCaches(instanceId?: string) {
+  invalidateStudioCaches(instanceId);
+}
+
 function invalidateKernelCaches() {
   kernelInfoCache.clear();
   kernelStatusCache.clear();
@@ -488,6 +492,158 @@ export const studio: StudioPlatformAPI = {
     withTimedPromiseCache(studioDetailCache, id, STUDIO_DETAIL_CACHE_TTL_MS, () =>
       getPlatformBridge().studio.getInstanceDetail(id),
     ),
+  getKernelAgentCreationCapability: async (instanceId) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.getKernelAgentCreationCapability;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel agent creation capability is not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, instanceId);
+  },
+  createKernelAgent: async (input) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.createKernelAgent;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel agent creation is not available for the active platform bridge.',
+      );
+    }
+    const result = await bridgeMethod.call(studioBridge, input);
+    invalidateStudioCaches(input.instanceId);
+    return result;
+  },
+  listKernelChatAgentProfiles: async (instanceId) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.listKernelChatAgentProfiles;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel chat agent profiles are not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, instanceId);
+  },
+  listPersistedKernelChatAgents: async (instanceId) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.listPersistedKernelChatAgents;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio persisted kernel chat agents are not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, instanceId);
+  },
+  replacePersistedKernelChatAgents: async (instanceId, records) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.replacePersistedKernelChatAgents;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio persisted kernel chat agent writes are not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, instanceId, records);
+  },
+  listKernelChatSessions: async (instanceId) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.listKernelChatSessions;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel chat sessions are not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, instanceId);
+  },
+  getKernelChatSession: async (instanceId, sessionId) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.getKernelChatSession;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel chat session lookup is not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, instanceId, sessionId);
+  },
+  createKernelChatSession: async (input) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.createKernelChatSession;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel chat session creation is not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, input);
+  },
+  listKernelChatRuns: async (instanceId, sessionId) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.listKernelChatRuns;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel chat run listing is not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, instanceId, sessionId);
+  },
+  getKernelChatRun: async (instanceId, sessionId, runId) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.getKernelChatRun;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel chat run lookup is not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, instanceId, sessionId, runId);
+  },
+  patchKernelChatSession: async (input) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.patchKernelChatSession;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel chat session mutation is not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, input);
+  },
+  deleteKernelChatSession: async (instanceId, sessionId) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.deleteKernelChatSession;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel chat session deletion is not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, instanceId, sessionId);
+  },
+  startKernelChatRun: async (input) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.startKernelChatRun;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel chat run start is not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, input);
+  },
+  abortKernelChatRun: async (instanceId, sessionId, runId) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.abortKernelChatRun;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel chat run abort is not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, instanceId, sessionId, runId);
+  },
+  loadKernelChatMessages: async (instanceId, sessionId) => {
+    const studioBridge = getPlatformBridge().studio;
+    const bridgeMethod = studioBridge.loadKernelChatMessages;
+    if (!bridgeMethod) {
+      throw new Error(
+        'Studio kernel chat message loading is not available for the active platform bridge.',
+      );
+    }
+    return bridgeMethod.call(studioBridge, instanceId, sessionId);
+  },
   invokeOpenClawGateway: async (instanceId, request, options) => {
     const studioBridge = getPlatformBridge().studio;
     if (!studioBridge.invokeOpenClawGateway) {

@@ -57,6 +57,41 @@ export function resolveSpawnCommand(command, platform = process.platform) {
   return command;
 }
 
+export function resolvePnpmExecutionPlan({
+  platform = process.platform,
+  env = process.env,
+  nodeExecutable = process.execPath,
+  pathExists = existsSync,
+} = {}) {
+  if (platform !== 'win32') {
+    return {
+      command: resolveSpawnCommand('pnpm', platform),
+      argsPrefix: [],
+      shell: false,
+    };
+  }
+
+  const candidatePaths = [
+    String(env?.npm_execpath ?? '').trim(),
+    path.join(path.dirname(nodeExecutable), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
+  ].filter(Boolean);
+
+  const pnpmCliPath = candidatePaths.find((candidate) => pathExists(candidate));
+  if (pnpmCliPath) {
+    return {
+      command: nodeExecutable,
+      argsPrefix: [pnpmCliPath],
+      shell: false,
+    };
+  }
+
+  return {
+    command: resolveSpawnCommand('pnpm', platform),
+    argsPrefix: [],
+    shell: false,
+  };
+}
+
 function shouldRunOpenClawBundlePreflight({
   phase,
   packageProfileId,
@@ -88,6 +123,7 @@ function resolveReleasePhasePlan({
   requestedTargetTriple,
   releaseMode,
   viteMode,
+  env,
   platform,
   hostArch,
   bundleTargets,
@@ -186,7 +222,12 @@ function resolveReleasePhasePlan({
         arch: normalizeDesktopArch(hostArch),
         bundleTargets,
       });
+      const pnpmExecutionPlan = resolvePnpmExecutionPlan({
+        platform,
+        env,
+      });
       const args = [
+        ...pnpmExecutionPlan.argsPrefix,
         '--filter',
         desktopPackageName,
         'run',
@@ -206,8 +247,9 @@ function resolveReleasePhasePlan({
         args.push('--target', requestedTargetTriple);
       }
       return {
-        command: 'pnpm',
+        command: pnpmExecutionPlan.command,
         args,
+        shell: pnpmExecutionPlan.shell,
       };
     }
     default:
@@ -261,6 +303,7 @@ export function createDesktopReleaseBuildPlan({
     requestedTargetTriple,
     releaseMode: effectiveReleaseMode,
     viteMode,
+    env: rustToolchainEnv,
     platform,
     hostArch,
     bundleTargets,
@@ -272,7 +315,7 @@ export function createDesktopReleaseBuildPlan({
     cwd: rootDir,
     env: withSupportedWindowsCmakeGenerator(rustToolchainEnv, platform),
     bundleTargets: plan.bundleTargets ?? [],
-    shell: false,
+    shell: plan.shell ?? false,
   };
 }
 

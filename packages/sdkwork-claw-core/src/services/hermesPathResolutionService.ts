@@ -1,5 +1,7 @@
 export {
+  resolveHermesLogsRootFromConfigFile,
+  resolveHermesSessionsRootFromConfigFile,
+  resolveHermesStateDatabasePathFromConfigFile,
   resolveHermesStateRootFromConfigFile,
-  resolveHermesUserPathFromConfigFile,
   resolveHermesUserRootFromConfigFile,
 } from '@sdkwork/local-api-proxy';

@@ -90,3 +90,38 @@ await runTest(
     );
   },
 );
+
+await runTest(
+  'groupChatMessagesForDisplay orders authoritative sequence messages before grouping',
+  () => {
+    assert.deepEqual(
+      groupChatMessagesForDisplay([
+        { role: 'assistant', content: 'A2', timestamp: 30, seq: 2 } as {
+          role: string;
+          content: string;
+          timestamp: number;
+          seq: number;
+        },
+        { role: 'user', content: 'U1', timestamp: 20, seq: 1 } as {
+          role: string;
+          content: string;
+          timestamp: number;
+          seq: number;
+        },
+        { role: 'assistant', content: 'A3', timestamp: 40, seq: 3 } as {
+          role: string;
+          content: string;
+          timestamp: number;
+          seq: number;
+        },
+      ]).map((group) => ({
+        role: group.role,
+        contents: group.items.map((item) => item.message.content),
+      })),
+      [
+        { role: 'user', contents: ['U1'] },
+        { role: 'assistant', contents: ['A2', 'A3'] },
+      ],
+    );
+  },
+);

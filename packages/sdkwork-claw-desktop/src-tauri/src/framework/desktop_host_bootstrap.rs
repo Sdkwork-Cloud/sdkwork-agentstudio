@@ -575,7 +575,7 @@ mod tests {
                     .expect("studio instance list response");
                 let get_instance = client
                     .get(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary",
                         snapshot.browser_base_url
                     ))
                     .send()
@@ -583,7 +583,7 @@ mod tests {
                     .expect("studio instance get response");
                 let get_instance_detail = client
                     .get(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/detail",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/detail",
                         snapshot.browser_base_url
                     ))
                     .send()
@@ -591,7 +591,7 @@ mod tests {
                     .expect("studio instance detail response");
                 let get_instance_config = client
                     .get(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/config",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/config",
                         snapshot.browser_base_url
                     ))
                     .send()
@@ -599,7 +599,7 @@ mod tests {
                     .expect("studio instance config response");
                 let get_instance_logs = client
                     .get(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/logs",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/logs",
                         snapshot.browser_base_url
                     ))
                     .send()
@@ -652,7 +652,7 @@ mod tests {
         );
         assert!(
             responses.0 .1.as_array().is_some_and(|items| items.iter().any(|item| {
-                item.get("id").and_then(Value::as_str) == Some("local-built-in")
+                item.get("id").and_then(Value::as_str) == Some("managed-openclaw-primary")
             })),
             "desktop embedded host must project the built-in instance through the canonical public studio list route"
         );
@@ -663,7 +663,7 @@ mod tests {
         );
         assert_eq!(
             responses.1 .1.get("id").and_then(Value::as_str),
-            Some("local-built-in")
+            Some("managed-openclaw-primary")
         );
         assert_eq!(
             responses.1 .1.get("isBuiltIn").and_then(Value::as_bool),
@@ -681,7 +681,7 @@ mod tests {
                 .get("instance")
                 .and_then(|value| value.get("id"))
                 .and_then(Value::as_str),
-            Some("local-built-in")
+            Some("managed-openclaw-primary")
         );
         assert!(responses.2 .1.get("health").is_some());
         assert_eq!(
@@ -735,8 +735,8 @@ mod tests {
                     .json(&serde_json::json!({
                         "id": "conversation-1",
                         "title": "Local conversation",
-                        "primaryInstanceId": "local-built-in",
-                        "participantInstanceIds": ["local-built-in"],
+                        "primaryInstanceId": "managed-openclaw-primary",
+                        "participantInstanceIds": ["managed-openclaw-primary"],
                         "createdAt": 1,
                         "updatedAt": 2,
                         "messageCount": 1,
@@ -758,7 +758,7 @@ mod tests {
                     .expect("studio conversation put response");
                 let list_conversations = client
                     .get(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/conversations",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/conversations",
                         snapshot.browser_base_url
                     ))
                     .send()
@@ -1074,7 +1074,7 @@ mod tests {
                 let client = build_browser_session_client(snapshot.browser_base_url.as_str()).await;
                 let create_task_response = client
                     .post(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/tasks",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/tasks",
                         snapshot.browser_base_url
                     ))
                     .json(&serde_json::json!({
@@ -1096,7 +1096,7 @@ mod tests {
                     .expect("studio task create response");
                 let update_task_response = client
                     .put(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/tasks/job-1",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1",
                         snapshot.browser_base_url
                     ))
                     .json(&serde_json::json!({
@@ -1119,7 +1119,7 @@ mod tests {
                     .expect("studio task update response");
                 let clone_task_response = client
                     .post(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/tasks/job-1:clone",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1:clone",
                         snapshot.browser_base_url
                     ))
                     .json(&serde_json::json!({
@@ -1130,7 +1130,7 @@ mod tests {
                     .expect("studio task clone response");
                 let run_task_response = client
                     .post(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/tasks/job-1:run",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1:run",
                         snapshot.browser_base_url
                     ))
                     .send()
@@ -1138,7 +1138,7 @@ mod tests {
                     .expect("studio task run response");
                 let executions_response = client
                     .get(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/tasks/job-1/executions",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1/executions",
                         snapshot.browser_base_url
                     ))
                     .send()
@@ -1146,7 +1146,7 @@ mod tests {
                     .expect("studio task executions response");
                 let status_response = client
                     .post(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/tasks/job-1:status",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1:status",
                         snapshot.browser_base_url
                     ))
                     .json(&serde_json::json!({
@@ -1157,7 +1157,7 @@ mod tests {
                     .expect("studio task status response");
                 let file_update_response = client
                     .put(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/files/%2Fworkspace%2Fmain%2FAGENTS.md",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/files/%2Fworkspace%2Fmain%2FAGENTS.md",
                         snapshot.browser_base_url
                     ))
                     .json(&serde_json::json!({
@@ -1168,7 +1168,7 @@ mod tests {
                     .expect("studio file update response");
                 let provider_update_response = client
                     .put(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/llm-providers/openai",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/llm-providers/openai",
                         snapshot.browser_base_url
                     ))
                     .json(&serde_json::json!({
@@ -1190,7 +1190,7 @@ mod tests {
                     .expect("studio provider update response");
                 let delete_task_response = client
                     .delete(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/tasks/job-1",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1",
                         snapshot.browser_base_url
                     ))
                     .send()
@@ -1352,7 +1352,7 @@ mod tests {
                 let client = build_browser_session_client(snapshot.browser_base_url.as_str()).await;
                 let create_task_response = client
                     .post(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/tasks",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/tasks",
                         snapshot.browser_base_url
                     ))
                     .json(&serde_json::json!({
@@ -1374,7 +1374,7 @@ mod tests {
                     .expect("studio task create response");
                 let file_update_response = client
                     .put(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/files/%2Fworkspace%2Fmain%2FAGENTS.md",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/files/%2Fworkspace%2Fmain%2FAGENTS.md",
                         snapshot.browser_base_url
                     ))
                     .json(&serde_json::json!({
@@ -1385,7 +1385,7 @@ mod tests {
                     .expect("studio file update response");
                 let provider_update_response = client
                     .put(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/llm-providers/openai",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/llm-providers/openai",
                         snapshot.browser_base_url
                     ))
                     .json(&serde_json::json!({
@@ -1407,7 +1407,7 @@ mod tests {
                     .expect("studio provider update response");
                 let detail_response = client
                     .get(format!(
-                        "{}/claw/api/v1/studio/instances/local-built-in/detail",
+                        "{}/claw/api/v1/studio/instances/managed-openclaw-primary/detail",
                         snapshot.browser_base_url
                     ))
                     .send()

@@ -20,9 +20,14 @@ await runTest(
 
     assert.deepEqual(
       presentChatHeader({
-        isOpenClawGateway: true,
+        sendMode: 'gateway',
         gatewayConnectionStatus: 'connected',
         syncState: 'idle',
+        activeRunBinding: {
+          sessionId: 'agent:research:main',
+          runId: 'run-1',
+          isActive: true,
+        },
         activeAgentName: 'Research Agent',
         activeSession: {
           id: 'agent:research:main',
@@ -54,15 +59,73 @@ await runTest(
 );
 
 await runTest(
+  'presentChatHeader falls back to a readable preview while the active session still carries an opaque backend title',
+  () => {
+    assert.deepEqual(
+      presentChatHeader({
+        sendMode: 'gateway',
+        gatewayConnectionStatus: 'connected',
+        syncState: 'idle',
+        activeRunBinding: null,
+        activeAgentName: 'Research Agent',
+        activeModelName: null,
+        activeSession: {
+          id: 'thread:claw-studio:instance-a:session-42',
+          title: 'thread:claw-studio:instance-a:session-42',
+          lastMessagePreview:
+            '  Summarize the current install flow issues across macOS and Windows  ',
+          messages: [],
+        },
+        isActiveSessionGenerating: false,
+      }),
+      {
+        title: 'Summarize the current install flow issues across macOS and Windows',
+        status: 'connected',
+        detailItems: ['Research Agent'],
+      },
+    );
+  },
+);
+
+await runTest(
+  'presentChatHeader hides technical message preview ids when no readable transcript content exists yet',
+  () => {
+    assert.deepEqual(
+      presentChatHeader({
+        sendMode: 'local',
+        gatewayConnectionStatus: null,
+        syncState: 'idle',
+        activeRunBinding: null,
+        activeAgentName: null,
+        activeModelName: null,
+        activeSession: {
+          id: 'thread:claw-studio:instance-a:session-42',
+          title: 'thread:claw-studio:instance-a:session-42',
+          lastMessagePreview: 'message-42',
+          messages: [],
+        },
+        isActiveSessionGenerating: false,
+      }),
+      {
+        title: 'New Conversation',
+        status: 'ready',
+        detailItems: [],
+      },
+    );
+  },
+);
+
+await runTest(
   'presentChatHeader reports reconnecting while the gateway is still hydrating',
   () => {
     assert.equal(typeof presentChatHeader, 'function');
 
     assert.deepEqual(
       presentChatHeader({
-        isOpenClawGateway: true,
+        sendMode: 'gateway',
         gatewayConnectionStatus: 'disconnected',
         syncState: 'loading',
+        activeRunBinding: null,
         activeAgentName: 'Default Agent',
         activeModelName: 'claude-sonnet-4',
         activeSession: null,
@@ -84,9 +147,10 @@ await runTest(
 
     assert.deepEqual(
       presentChatHeader({
-        isOpenClawGateway: false,
+        sendMode: 'local',
         gatewayConnectionStatus: null,
         syncState: 'idle',
+        activeRunBinding: null,
         activeAgentName: null,
         activeModelName: 'GPT-4.1 Mini',
         activeSession: {
@@ -120,9 +184,10 @@ await runTest(
     assert.deepEqual(
       presentChatHeader({
         isChatSupported: false,
-        isOpenClawGateway: false,
+        sendMode: 'local',
         gatewayConnectionStatus: null,
         syncState: 'idle',
+        activeRunBinding: null,
         activeAgentName: null,
         activeModelName: null,
         activeSession: null,
@@ -144,9 +209,14 @@ await runTest(
 
     assert.deepEqual(
       presentChatHeader({
-        isOpenClawGateway: true,
+        sendMode: 'gateway',
         gatewayConnectionStatus: 'connected',
         syncState: 'idle',
+        activeRunBinding: {
+          sessionId: 'agent:research:main',
+          runId: 'kernel-run-1',
+          isActive: true,
+        },
         activeAgentName: null,
         activeModelName: 'fallback-model',
         activeSession: {
@@ -191,6 +261,43 @@ await runTest(
         title: 'Kernel session title',
         status: 'responding',
         detailItems: ['kernel-model'],
+      },
+    );
+  },
+);
+
+await runTest(
+  'presentChatHeader trusts the explicit run binding over stale legacy session run mirrors',
+  () => {
+    assert.deepEqual(
+      presentChatHeader({
+        sendMode: 'gateway',
+        gatewayConnectionStatus: 'connected',
+        syncState: 'idle',
+        activeRunBinding: {
+          sessionId: 'agent:research:main',
+          runId: null,
+          isActive: false,
+        },
+        activeAgentName: 'Research Agent',
+        activeModelName: 'kernel-model',
+        activeSession: {
+          id: 'agent:research:main',
+          title: 'main',
+          runId: 'stale-legacy-run',
+          messages: [
+            {
+              role: 'user',
+              content: 'Refresh the rollout note',
+            },
+          ],
+        },
+        isActiveSessionGenerating: false,
+      }),
+      {
+        title: 'Refresh the rollout note',
+        status: 'connected',
+        detailItems: ['Research Agent', 'kernel-model'],
       },
     );
   },

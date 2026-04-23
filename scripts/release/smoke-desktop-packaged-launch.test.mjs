@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -181,6 +188,13 @@ test('desktop packaged launch smoke selects the canonical packaged launch artifa
     }).relativePath,
     'desktop/macos/arm64/macos/Claw Studio_0.1.0_arm64.app.zip',
   );
+});
+
+test('desktop packaged launch smoke keeps its default wait budget aligned with slow first-launch desktop runtime activation', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-packaged-launch.mjs');
+  const source = readFileSync(smokePath, 'utf8');
+
+  assert.match(source, /const DEFAULT_WAIT_TIMEOUT_MS = 150_000;/);
 });
 
 test('desktop packaged launch smoke prefers the root desktop executable over nested bundled helper binaries on Windows', async () => {
@@ -455,6 +469,58 @@ test('desktop packaged launch smoke captures packaged startup evidence and forwa
     assert.deepEqual(
       JSON.parse(readFileSync(capturedEvidencePath, 'utf8')).phase,
       'shell-mounted',
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop packaged launch smoke rejects stale packaged installers when a newer local desktop bundle artifact exists', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-packaged-launch.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  assert.equal(typeof smoke.assertPackagedDesktopLaunchArtifactFreshness, 'function');
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-artifact-freshness-'));
+  const bundleRoot = path.join(tempRoot, 'bundle');
+  const packagedArtifactPath = path.join(
+    tempRoot,
+    'release-assets',
+    'desktop',
+    'windows',
+    'x64',
+    'nsis',
+    'Claw Studio_0.1.0_x64-setup.exe',
+  );
+  const sourceArtifactPath = path.join(
+    bundleRoot,
+    'nsis',
+    'Claw Studio_0.1.0_x64-setup.exe',
+  );
+
+  try {
+    mkdirSync(path.dirname(packagedArtifactPath), { recursive: true });
+    writeFileSync(packagedArtifactPath, 'stale packaged installer\n', 'utf8');
+    mkdirSync(path.dirname(sourceArtifactPath), { recursive: true });
+    writeFileSync(sourceArtifactPath, 'fresh local installer\n', 'utf8');
+
+    const staleAt = new Date('2026-04-21T02:46:50.000Z');
+    const freshAt = new Date('2026-04-21T03:35:22.000Z');
+    utimesSync(packagedArtifactPath, staleAt, staleAt);
+    utimesSync(sourceArtifactPath, freshAt, freshAt);
+
+    assert.throws(
+      () => smoke.assertPackagedDesktopLaunchArtifactFreshness({
+        artifact: {
+          relativePath: 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe',
+        },
+        artifactPath: packagedArtifactPath,
+        platform: 'windows',
+        arch: 'x64',
+        target: 'x86_64-pc-windows-msvc',
+        resolveExistingDesktopBundleRootFn: () => bundleRoot,
+      }),
+      /newer local desktop bundle artifact exists/i,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });

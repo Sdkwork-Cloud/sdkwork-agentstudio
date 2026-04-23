@@ -15,6 +15,7 @@ import {
 import {
   ChannelWorkspace,
   getChannelOfficialLink,
+  localizeChannelWorkspaceItem,
   type ChannelWorkspaceItem,
 } from '@sdkwork/claw-ui';
 import { Channel, channelService } from '../../services';
@@ -22,10 +23,7 @@ import { resolveChannelsPageInstanceId } from './channelInstanceResolver.ts';
 
 type Translate = (
   key: string,
-  options?: {
-    defaultValue?: string;
-    name?: string;
-  },
+  options?: Record<string, unknown>,
 ) => string;
 
 function resolveChannelWorkspaceIcon(iconName?: string): React.ReactNode | undefined {
@@ -87,33 +85,22 @@ function describeChannelsPageError(
   action: 'load' | 'toggle' | 'save' | 'delete',
 ) {
   if (action === 'load' && isServiceUnavailableError(error)) {
-    return t('channels.page.feedback.loadFailedServiceUnavailable', {
-      defaultValue:
-        'Channel service is temporarily unavailable. Confirm the instance and kernel are running, then retry.',
-    });
+    return t('channels.page.feedback.loadFailedServiceUnavailable');
   }
 
   if (action === 'toggle') {
-    return t('channels.page.feedback.toggleFailed', {
-      defaultValue: 'Unable to update channel status right now.',
-    });
+    return t('channels.page.feedback.toggleFailed');
   }
 
   if (action === 'save') {
-    return t('channels.page.feedback.saveFailed', {
-      defaultValue: 'Unable to save channel configuration right now.',
-    });
+    return t('channels.page.feedback.saveFailed');
   }
 
   if (action === 'delete') {
-    return t('channels.page.feedback.deleteFailed', {
-      defaultValue: 'Unable to delete channel configuration right now.',
-    });
+    return t('channels.page.feedback.deleteFailed');
   }
 
-  return t('channels.page.feedback.loadFailed', {
-    defaultValue: 'Unable to load channel configuration right now.',
-  });
+  return t('channels.page.feedback.loadFailed');
 }
 
 export function Channels() {
@@ -138,16 +125,18 @@ export function Channels() {
 
   const channelWorkspaceItems = useMemo<ChannelWorkspaceItem[]>(
     () =>
-      channels.map((channel) => ({
-        ...channel,
-        icon: resolveChannelWorkspaceIcon(channel.icon),
-        setupSteps: [...channel.setupGuide],
-        values: channel.fields.reduce<Record<string, string>>((accumulator, field) => {
-          accumulator[field.key] = field.value || '';
-          return accumulator;
-        }, {}),
-      })),
-    [channels],
+      channels.map((channel) =>
+        localizeChannelWorkspaceItem(t, {
+          ...channel,
+          icon: resolveChannelWorkspaceIcon(channel.icon),
+          setupSteps: [...channel.setupGuide],
+          values: channel.fields.reduce<Record<string, string>>((accumulator, field) => {
+            accumulator[field.key] = field.value || '';
+            return accumulator;
+          }, {}),
+        }),
+      ),
+    [channels, t],
   );
 
   useEffect(() => {
@@ -369,6 +358,8 @@ export function Channels() {
               saveAction: t('channels.page.actions.saveAndEnable'),
               savingAction: t('channels.page.actions.saving'),
               deleteConfigurationAction: t('channels.page.actions.deleteConfiguration'),
+              validationRequiredField: (fieldLabel: string) =>
+                t('channels.page.validation.requiredField', { field: fieldLabel }),
             }}
             emptyState={
               !effectiveInstanceId ? (

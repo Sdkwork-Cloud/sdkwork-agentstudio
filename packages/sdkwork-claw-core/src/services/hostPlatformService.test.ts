@@ -3,6 +3,7 @@ import type {
   HostPlatformStatusRecord,
   InternalNodeSessionRecord,
 } from '@sdkwork/claw-infrastructure';
+import { STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID } from '@sdkwork/claw-types';
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
   try {
@@ -85,8 +86,8 @@ function createNodeSession(
   overrides: Partial<InternalNodeSessionRecord> = {},
 ): InternalNodeSessionRecord {
   return {
-    sessionId: 'desktop-combined-local-built-in',
-    nodeId: 'local-built-in',
+    sessionId: `desktop-combined-${STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID}`,
+    nodeId: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
     state: 'admitted',
     compatibilityState: 'compatible',
     desiredStateRevision: 7,
@@ -135,3 +136,4 @@ await runTest(
     assert.equal(sessions[1]?.compatibilityState, 'blocked');
   },
 );
+

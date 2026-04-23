@@ -29,7 +29,7 @@ async function loadAgentPresentationModule() {
 }
 
 await runTest(
-  'createOpenClawAgentMutationRunner executes the injected create action, reports success, reloads the workbench, and preserves page-owned saving hooks',
+  'createOpenClawAgentMutationRunner awaits page-owned success follow-up before reloading the workbench',
   async () => {
     const { createOpenClawAgentMutationRunner } = await loadAgentMutationSupportModule();
     const savingStates: boolean[] = [];
@@ -62,8 +62,10 @@ await runTest(
       setSaving: (value: boolean) => {
         savingStates.push(value);
       },
-      afterSuccess: () => {
-        callLog.push('afterSuccess:create');
+      afterSuccess: async () => {
+        callLog.push('afterSuccess:create:start');
+        await Promise.resolve();
+        callLog.push('afterSuccess:create:done');
       },
       successKey: 'instances.detail.instanceWorkbench.agents.toasts.agentCreated',
       failureKey: 'instances.detail.instanceWorkbench.agents.toasts.agentSaveFailed',
@@ -73,7 +75,8 @@ await runTest(
     assert.deepEqual(callLog, [
       'create:instance-01:ops',
       'success:translated:instances.detail.instanceWorkbench.agents.toasts.agentCreated',
-      'afterSuccess:create',
+      'afterSuccess:create:start',
+      'afterSuccess:create:done',
       'reload:instance-01:false',
     ]);
   },
@@ -142,7 +145,10 @@ await runTest(
     const { createOpenClawAgentFormState } = await loadAgentPresentationModule();
     const draft = createOpenClawAgentFormState(null);
     const setSaving = () => undefined;
-    const afterSuccess = () => undefined;
+    const afterSuccessLog: string[] = [];
+    const afterSuccess = (agent: any, kind: 'create' | 'update') => {
+      afterSuccessLog.push(`${kind}:${agent.id}`);
+    };
 
     draft.id = 'ops';
     draft.name = 'Ops Team';
@@ -162,7 +168,6 @@ await runTest(
     assert.equal(result.request.instanceId, 'instance-01');
     assert.equal(result.request.kind, 'update');
     assert.equal(result.request.setSaving, setSaving);
-    assert.equal(result.request.afterSuccess, afterSuccess);
     assert.equal(
       result.request.successKey,
       'instances.detail.instanceWorkbench.agents.toasts.agentUpdated',
@@ -186,6 +191,9 @@ await runTest(
         streaming: true,
       },
     });
+
+    await result.request.afterSuccess?.();
+    assert.deepEqual(afterSuccessLog, ['update:ops']);
   },
 );
 
@@ -228,13 +236,14 @@ await runTest(
 );
 
 await runTest(
-  'buildOpenClawAgentMutationHandlers routes save validation and delete execution through injected page-owned callbacks',
+  'buildOpenClawAgentMutationHandlers routes save validation, create follow-up, and delete execution through injected page-owned callbacks',
   async () => {
     const { buildOpenClawAgentMutationHandlers } = await loadAgentMutationSupportModule();
     const { createOpenClawAgentFormState } = await loadAgentPresentationModule();
     const reportedErrors: string[] = [];
     const executedRequests: any[] = [];
     const dismissLog: string[] = [];
+    const afterSaveLog: string[] = [];
     const invalidHandlers = buildOpenClawAgentMutationHandlers({
       instanceId: 'instance-01',
       editingAgentId: null,
@@ -249,6 +258,9 @@ await runTest(
       },
       executeMutation: async (request) => {
         executedRequests.push(request);
+      },
+      afterSaveSuccess: (agent, kind) => {
+        afterSaveLog.push(`${kind}:${agent.id}`);
       },
       reportError: (message) => {
         reportedErrors.push(message);
@@ -271,11 +283,11 @@ await runTest(
 
     const validHandlers = buildOpenClawAgentMutationHandlers({
       instanceId: 'instance-01',
-      editingAgentId: 'ops',
+      editingAgentId: null,
       agentDialogDraft: validDraft,
       setSavingAgentDialog: () => undefined,
       dismissAgentDialog: () => {
-        dismissLog.push('dismiss-valid');
+        dismissLog.push('dismiss-create');
       },
       agentDeleteId: 'ops',
       clearAgentDeleteId: () => {
@@ -283,6 +295,9 @@ await runTest(
       },
       executeMutation: async (request) => {
         executedRequests.push(request);
+      },
+      afterSaveSuccess: (agent, kind) => {
+        afterSaveLog.push(`${kind}:${agent.id}`);
       },
       reportError: (message) => {
         reportedErrors.push(message);
@@ -294,10 +309,12 @@ await runTest(
     await validHandlers.onDeleteAgent();
 
     assert.equal(executedRequests.length, 2);
-    assert.equal(executedRequests[0].kind, 'update');
-    assert.equal(executedRequests[0].afterSuccess, validHandlers.dismissAgentDialog);
+    assert.equal(executedRequests[0].kind, 'create');
+    await executedRequests[0].afterSuccess();
     assert.equal(executedRequests[1].kind, 'delete');
     assert.equal(executedRequests[1].afterSuccess, validHandlers.clearAgentDeleteId);
+    assert.deepEqual(afterSaveLog, ['create:ops']);
+    assert.deepEqual(dismissLog, ['dismiss-create']);
     assert.deepEqual(reportedErrors, [
       'translated:instances.detail.instanceWorkbench.agents.toasts.agentIdRequired',
     ]);

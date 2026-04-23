@@ -4,15 +4,15 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "node ../../scripts/run-vite-host.mjs serve --host 0.0.0.0 --port 3001 --mode development",
-    "dev:test": "node ../../scripts/run-vite-host.mjs serve --host 0.0.0.0 --port 3001 --mode test",
-    "build": "node ../../scripts/prepare-shared-sdk-packages.mjs && node ../../scripts/run-vite-host.mjs build --mode production && node ../../scripts/check-web-performance-budget.mjs",
-    "build:dev": "node ../../scripts/prepare-shared-sdk-packages.mjs && node ../../scripts/run-vite-host.mjs build --mode development",
-    "build:test": "node ../../scripts/prepare-shared-sdk-packages.mjs && node ../../scripts/run-vite-host.mjs build --mode test",
-    "build:prod": "node ../../scripts/prepare-shared-sdk-packages.mjs && node ../../scripts/run-vite-host.mjs build --mode production && node ../../scripts/check-web-performance-budget.mjs",
+    "dev": "sdkwork-run-node ../../scripts/run-vite-host.mjs serve --host 0.0.0.0 --port 3001 --mode development",
+    "dev:test": "sdkwork-run-node ../../scripts/run-vite-host.mjs serve --host 0.0.0.0 --port 3001 --mode test",
+    "build": "sdkwork-run-node ../../scripts/prepare-shared-sdk-packages.mjs && sdkwork-run-node ../../scripts/run-vite-host.mjs build --mode production && sdkwork-run-node ../../scripts/check-web-performance-budget.mjs",
+    "build:dev": "sdkwork-run-node ../../scripts/prepare-shared-sdk-packages.mjs && sdkwork-run-node ../../scripts/run-vite-host.mjs build --mode development",
+    "build:test": "sdkwork-run-node ../../scripts/prepare-shared-sdk-packages.mjs && sdkwork-run-node ../../scripts/run-vite-host.mjs build --mode test",
+    "build:prod": "sdkwork-run-node ../../scripts/prepare-shared-sdk-packages.mjs && sdkwork-run-node ../../scripts/run-vite-host.mjs build --mode production && sdkwork-run-node ../../scripts/check-web-performance-budget.mjs",
     "preview": "vite preview",
-    "clean": "rm -rf dist",
-    "lint": "node ../../scripts/run-workspace-tsc.mjs --noEmit"
+    "clean": "sdkwork-run-node ../../scripts/remove-path.mjs dist",
+    "lint": "sdkwork-run-node ../../scripts/run-workspace-tsc.mjs --noEmit"
   },
   "dependencies": {
     "@sdkwork/claw-i18n": "workspace:*",

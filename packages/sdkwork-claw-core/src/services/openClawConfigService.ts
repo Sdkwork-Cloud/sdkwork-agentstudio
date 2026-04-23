@@ -38,6 +38,7 @@ import {
   writeOpenClawAgentModelConfig,
   writeOpenClawAgentParams,
 } from './openClawAgentDocumentService.ts';
+import { canonicalizeOpenClawAgentPathsInConfigRoot } from './openClawAgentPathStandardizationService.ts';
 import {
   buildOpenClawAgentSnapshotsFromConfigRoot,
   resolveOpenClawAgentPathsFromConfigRoot,
@@ -597,6 +598,7 @@ export function mutateOpenClawConfigDocument(
 export function saveOpenClawAgentInConfigDocument(raw: string, agent: OpenClawAgentInput) {
   return mutateOpenClawConfigDocument(raw, (root) => {
     saveOpenClawAgentToConfigRoot(root, agent);
+    canonicalizeOpenClawAgentPathsInConfigRoot(root);
     pruneOpenClawProviderModelReferencesInConfigRoot(root);
   });
 }
@@ -775,6 +777,8 @@ function normalizeLegacyProviderLayout(root: JsonObject) {
       writeModelConfig(entry, 'model', readModelConfig(entry.model));
     }
   }
+
+  canonicalizeOpenClawAgentPathsInConfigRoot(root);
 }
 
 function readAgentParams(value: JsonValue | undefined): Record<string, OpenClawAgentParamValue> {
@@ -876,6 +880,7 @@ async function readConfigRoot(configFile: string) {
 
 async function writeConfigRoot(configFile: string, root: JsonObject) {
   const normalizedConfigFile = normalizePath(configFile);
+  canonicalizeOpenClawAgentPathsInConfigRoot(root);
   const content = `${stringifyJson5(root, 2)}\n`;
   await platform.writeFile(normalizedConfigFile, content);
   invalidateOpenClawConfigSnapshot(normalizedConfigFile);
@@ -1054,6 +1059,7 @@ function deleteSkillEntry(root: JsonObject, skillKey: string) {
 
 function saveAgentConfig(root: JsonObject, input: OpenClawAgentInput) {
   saveOpenClawAgentToConfigRoot(root, input);
+  canonicalizeOpenClawAgentPathsInConfigRoot(root);
   pruneOpenClawProviderModelReferencesInConfigRoot(root);
 }
 

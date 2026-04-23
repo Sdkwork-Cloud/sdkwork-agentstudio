@@ -49,6 +49,75 @@ function createWorkbench(id: string, port = '18789') {
   } as InstanceWorkbenchSnapshot;
 }
 
+function createDriftedManagedConfigWorkbench(id: string) {
+  const workbench = createWorkbench(id) as any;
+  workbench.detail = {
+    instance: {
+      id,
+      runtimeKind: 'openclaw',
+      deploymentMode: 'local-managed',
+      isBuiltIn: true,
+      config: {
+        workspacePath: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw/workspace',
+      },
+    },
+    config: {
+      workspacePath: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw/workspace',
+    },
+    lifecycle: {
+      configWritable: true,
+    },
+    dataAccess: {
+      routes: [
+        {
+          id: 'config-route',
+          scope: 'config',
+          mode: 'managedFile',
+          readonly: false,
+          target:
+            'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json',
+        },
+        {
+          id: 'workspace-root',
+          scope: 'files',
+          mode: 'managedDirectory',
+          readonly: false,
+          target: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw/workspace',
+        },
+      ],
+    },
+    artifacts: [
+      {
+        id: 'config-file',
+        kind: 'configFile',
+        location:
+          'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json',
+      },
+      {
+        id: 'workspace-root',
+        kind: 'workspaceDirectory',
+        location: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw/workspace',
+      },
+    ],
+  };
+  workbench.kernelConfig = {
+    configFile:
+      'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json',
+    configRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config',
+    userRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw',
+    standardConfigFile: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw/openclaw.json',
+    standardStateRoot: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw',
+    format: 'json',
+    access: 'localFs',
+    provenance: 'legacyConfigDirectory',
+    writable: true,
+    resolved: true,
+    schemaVersion: null,
+    isStandardUserRootLayout: false,
+  };
+  return workbench as InstanceWorkbenchSnapshot;
+}
+
 await runAsyncTest(
   'startLoadInstanceDetailWorkbench loads the workbench through the injected loader and syncs config state',
   async () => {
@@ -90,6 +159,50 @@ await runAsyncTest(
     assert.equal(captured.workbench, nextWorkbench);
     assert.equal(captured.config, nextWorkbench.config);
     assert.equal(captured.isLoading, false);
+  },
+);
+
+await runAsyncTest(
+  'startLoadInstanceDetailWorkbench normalizes drifted managed-config workbench paths before syncing page state',
+  async () => {
+    const nextWorkbench = createDriftedManagedConfigWorkbench('instance-1');
+    const captured = {
+      workbench: null as InstanceWorkbenchSnapshot | null,
+      config: null as InstanceConfig | null,
+      isLoading: false,
+    };
+
+    const request = startLoadInstanceDetailWorkbench({
+      targetInstanceId: 'instance-1',
+      setWorkbench: (value) => {
+        captured.workbench =
+          typeof value === 'function' ? value(captured.workbench) : value;
+      },
+      setConfig: (value) => {
+        captured.config =
+          typeof value === 'function' ? value(captured.config) : value;
+      },
+      setIsLoading: (value) => {
+        captured.isLoading =
+          typeof value === 'function' ? value(captured.isLoading) : value;
+      },
+      loadWorkbench: async () => nextWorkbench,
+      reportError: (error) => {
+        throw error;
+      },
+    });
+
+    await request.promise;
+
+    assert.equal(
+      captured.workbench?.kernelConfig?.configFile,
+      'C:/Users/admin/.sdkwork/crawstudio/.openclaw/openclaw.json',
+    );
+    assert.equal(
+      captured.workbench?.detail.dataAccess.routes.find((route) => route.scope === 'config')?.target,
+      'C:/Users/admin/.sdkwork/crawstudio/.openclaw/openclaw.json',
+    );
+    assert.equal(captured.config, nextWorkbench.config);
   },
 );
 

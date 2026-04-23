@@ -1,4 +1,4 @@
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
 
 mod bootstrap;
 mod cli;
@@ -49,12 +49,17 @@ fn exit_for_cli_parse_error(error: clap::Error) -> ! {
 #[tokio::main]
 async fn main() {
     let metadata = host_core_metadata();
-    let command = parse_cli_args(std::env::args_os())
-        .unwrap_or_else(|error| exit_for_cli_parse_error(error));
+    let command =
+        parse_cli_args(std::env::args_os()).unwrap_or_else(|error| exit_for_cli_parse_error(error));
+    let executable_path = std::env::current_exe().unwrap_or_else(|error| {
+        eprintln!("failed to resolve current executable path: {error}");
+        std::process::exit(1);
+    });
     let env = std::env::vars().collect::<std::collections::BTreeMap<_, _>>();
     let runtime_config = resolve_server_runtime_config(ServerRuntimeConfigResolutionRequest {
         command: command.clone(),
         env: env.clone(),
+        executable_path: Some(executable_path.clone()),
     })
     .unwrap_or_else(|error| {
         eprintln!("{error}");
@@ -62,10 +67,6 @@ async fn main() {
     });
     let effective_config_path =
         resolve_server_effective_config_path(&command, &env, &runtime_config);
-    let executable_path = std::env::current_exe().unwrap_or_else(|error| {
-        eprintln!("failed to resolve current executable path: {error}");
-        std::process::exit(1);
-    });
 
     match command {
         ClawServerCliCommand::Run(_) => {
@@ -282,11 +283,14 @@ mod tests {
                 return None;
             }
 
-            self.gateway.base_url.clone().map(|base_url| PublishedProxyTarget {
-                id: "openclaw-gateway",
-                base_url,
-                auth_token: None,
-            })
+            self.gateway
+                .base_url
+                .clone()
+                .map(|base_url| PublishedProxyTarget {
+                    id: "openclaw-gateway",
+                    base_url,
+                    auth_token: None,
+                })
         }
 
         fn invoke_gateway(
@@ -534,7 +538,7 @@ mod tests {
         );
         assert_eq!(body.get("total").and_then(Value::as_u64), Some(2));
         assert!(items.iter().any(|item| {
-            item.get("nodeId").and_then(Value::as_str) == Some("local-built-in")
+            item.get("nodeId").and_then(Value::as_str) == Some("managed-openclaw-primary")
                 && item.get("preflightOutcome").and_then(Value::as_str) == Some("admissible")
                 && item
                     .get("desiredStateRevision")
@@ -554,7 +558,7 @@ mod tests {
         ));
         let response = app
             .oneshot(
-                Request::get("/claw/manage/v1/rollouts/rollout-a/targets/local-built-in")
+                Request::get("/claw/manage/v1/rollouts/rollout-a/targets/managed-openclaw-primary")
                     .body(Body::empty())
                     .expect("rollout target item request should build"),
             )
@@ -566,7 +570,7 @@ mod tests {
         assert_eq!(status, StatusCode::OK);
         assert_eq!(
             body.get("nodeId").and_then(Value::as_str),
-            Some("local-built-in")
+            Some("managed-openclaw-primary")
         );
         assert_eq!(
             body.get("preflightOutcome").and_then(Value::as_str),
@@ -1429,10 +1433,8 @@ mod tests {
         assert_eq!(items.len(), 2);
         assert!(items.iter().any(|item| {
             item.get("endpointId").and_then(Value::as_str) == Some("openclaw-gateway")
-                && item.get("baseUrl").and_then(Value::as_str)
-                    == Some("http://127.0.0.1:18871")
-                && item.get("websocketUrl").and_then(Value::as_str)
-                    == Some("ws://127.0.0.1:18871")
+                && item.get("baseUrl").and_then(Value::as_str) == Some("http://127.0.0.1:18871")
+                && item.get("websocketUrl").and_then(Value::as_str) == Some("ws://127.0.0.1:18871")
         }));
     }
 
@@ -1832,8 +1834,14 @@ mod tests {
         let body = response_body_json(response).await;
 
         assert_eq!(status, StatusCode::OK);
-        assert_eq!(body.get("mode").and_then(Value::as_str), Some("desktopCombined"));
-        assert_eq!(body.get("lifecycle").and_then(Value::as_str), Some("stopped"));
+        assert_eq!(
+            body.get("mode").and_then(Value::as_str),
+            Some("desktopCombined")
+        );
+        assert_eq!(
+            body.get("lifecycle").and_then(Value::as_str),
+            Some("stopped")
+        );
     }
 
     #[tokio::test]
@@ -2117,9 +2125,13 @@ mod tests {
         let status = response.status();
         let body = response_body_json(response).await;
         let supported_capability_keys = value_string_array(body.get("supportedCapabilityKeys"))
-            .expect("desktop combined host platform response should expose supported capability keys");
+            .expect(
+                "desktop combined host platform response should expose supported capability keys",
+            );
         let available_capability_keys = value_string_array(body.get("availableCapabilityKeys"))
-            .expect("desktop combined host platform response should expose available capability keys");
+            .expect(
+                "desktop combined host platform response should expose available capability keys",
+            );
         let capability_keys = value_string_array(body.get("capabilityKeys"))
             .expect("desktop combined host platform response should expose capability keys");
 
@@ -2164,8 +2176,14 @@ mod tests {
         let body = response_body_json(response).await;
 
         assert_eq!(status, StatusCode::OK);
-        assert_eq!(body.get("mode").and_then(Value::as_str), Some("desktopCombined"));
-        assert_eq!(body.get("hostId").and_then(Value::as_str), Some("desktop-local"));
+        assert_eq!(
+            body.get("mode").and_then(Value::as_str),
+            Some("desktopCombined")
+        );
+        assert_eq!(
+            body.get("hostId").and_then(Value::as_str),
+            Some("desktop-local")
+        );
         assert_eq!(
             body.get("displayName").and_then(Value::as_str),
             Some("Desktop Combined Host")
@@ -2393,7 +2411,7 @@ mod tests {
         let get_response = app
             .clone()
             .oneshot(
-                Request::get("/claw/api/v1/studio/instances/local-built-in")
+                Request::get("/claw/api/v1/studio/instances/managed-openclaw-primary")
                     .body(Body::empty())
                     .expect("public studio get request should build"),
             )
@@ -2407,11 +2425,11 @@ mod tests {
         let item = body
             .as_array()
             .and_then(|items| {
-                items
-                    .iter()
-                    .find(|item| item.get("id").and_then(Value::as_str) == Some("local-built-in"))
+                items.iter().find(|item| {
+                    item.get("id").and_then(Value::as_str) == Some("managed-openclaw-primary")
+                })
             })
-            .expect("default server provider should expose the local built-in instance");
+            .expect("default server provider should expose the canonical built-in instance");
         assert_eq!(
             item.get("runtimeKind").and_then(Value::as_str),
             Some("openclaw")
@@ -2430,7 +2448,7 @@ mod tests {
         let get_body = response_body_json(get_response).await;
         assert_eq!(
             get_body.get("id").and_then(Value::as_str),
-            Some("local-built-in")
+            Some("managed-openclaw-primary")
         );
     }
 
@@ -2441,7 +2459,7 @@ mod tests {
         ));
         let response = app
             .oneshot(
-                Request::get("/claw/api/v1/studio/instances/local-built-in/detail")
+                Request::get("/claw/api/v1/studio/instances/managed-openclaw-primary/detail")
                     .body(Body::empty())
                     .expect("public studio detail request should build"),
             )
@@ -2455,7 +2473,7 @@ mod tests {
             body.get("instance")
                 .and_then(|value| value.get("id"))
                 .and_then(Value::as_str),
-            Some("local-built-in")
+            Some("managed-openclaw-primary")
         );
         assert!(body.get("config").is_some());
         assert!(body.get("health").is_some());
@@ -2470,7 +2488,7 @@ mod tests {
         let config_response = app
             .clone()
             .oneshot(
-                Request::get("/claw/api/v1/studio/instances/local-built-in/config")
+                Request::get("/claw/api/v1/studio/instances/managed-openclaw-primary/config")
                     .body(Body::empty())
                     .expect("public studio config request should build"),
             )
@@ -2478,7 +2496,7 @@ mod tests {
             .expect("public studio config request should succeed");
         let logs_response = app
             .oneshot(
-                Request::get("/claw/api/v1/studio/instances/local-built-in/logs")
+                Request::get("/claw/api/v1/studio/instances/managed-openclaw-primary/logs")
                     .body(Body::empty())
                     .expect("public studio logs request should build"),
             )
@@ -2506,9 +2524,11 @@ mod tests {
         let list_response = app
             .clone()
             .oneshot(
-                Request::get("/claw/api/v1/studio/instances/local-built-in/conversations")
-                    .body(Body::empty())
-                    .expect("public studio conversation list request should build"),
+                Request::get(
+                    "/claw/api/v1/studio/instances/managed-openclaw-primary/conversations",
+                )
+                .body(Body::empty())
+                .expect("public studio conversation list request should build"),
             )
             .await
             .expect("public studio conversation list request should succeed");
@@ -2518,7 +2538,7 @@ mod tests {
                 Request::put("/claw/api/v1/studio/conversations/conversation-1")
                     .header(axum::http::header::CONTENT_TYPE, "application/json")
                     .body(Body::from(
-                        r#"{"id":"conversation-1","title":"Conversation","primaryInstanceId":"local-built-in","participantInstanceIds":["local-built-in"],"createdAt":1,"updatedAt":1,"messageCount":0,"messages":[]}"#,
+                        r#"{"id":"conversation-1","title":"Conversation","primaryInstanceId":"managed-openclaw-primary","participantInstanceIds":["managed-openclaw-primary"],"createdAt":1,"updatedAt":1,"messageCount":0,"messages":[]}"#,
                     ))
                     .expect("public studio conversation put request should build"),
             )
@@ -2550,18 +2570,284 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn public_studio_openclaw_gateway_invoke_route_returns_error_when_gateway_is_unavailable() {
+    async fn public_studio_kernel_chat_routes_manage_managed_hermes_sessions_with_default_provider()
+    {
+        let hermes_listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .expect("mock Hermes listener should bind");
+        let hermes_addr = hermes_listener
+            .local_addr()
+            .expect("mock Hermes listener local addr should resolve");
+        let hermes_server = tokio::spawn(async move {
+            let app = axum::Router::new().route(
+                "/v1/chat/completions",
+                axum::routing::post(|| async {
+                    axum::Json(json!({
+                        "id": "hermes-run-1",
+                        "choices": [
+                            {
+                                "message": {
+                                    "role": "assistant",
+                                    "content": "Hermes hosted reply"
+                                }
+                            }
+                        ]
+                    }))
+                }),
+            );
+            axum::serve(hermes_listener, app)
+                .await
+                .expect("mock Hermes server should serve");
+        });
+
+        let app = build_router(build_server_state_with_rollout_data_dir(
+            create_test_rollout_data_dir("api-studio-kernel-chat-default-provider"),
+        ));
+        let instance_payload = json!({
+            "name": "Managed Hermes",
+            "runtimeKind": "hermes",
+            "deploymentMode": "local-managed",
+            "transportKind": "customHttp",
+            "baseUrl": format!("http://{}", hermes_addr),
+            "config": {
+                "baseUrl": format!("http://{}", hermes_addr),
+                "authToken": "test-token"
+            }
+        });
+
+        let create_instance_response = app
+            .clone()
+            .oneshot(
+                Request::post("/claw/api/v1/studio/instances")
+                    .header(axum::http::header::CONTENT_TYPE, "application/json")
+                    .body(Body::from(instance_payload.to_string()))
+                    .expect("public studio create hermes instance request should build"),
+            )
+            .await
+            .expect("public studio create hermes instance request should succeed");
+        let create_instance_status = create_instance_response.status();
+        let created_instance = response_body_json(create_instance_response).await;
+        let instance_id = created_instance
+            .get("id")
+            .and_then(Value::as_str)
+            .expect("created Hermes instance should include an id")
+            .to_string();
+
+        let profiles_response = app
+            .clone()
+            .oneshot(
+                Request::get(&format!(
+                    "/claw/api/v1/studio/instances/{instance_id}/kernel-chat/agent-profiles"
+                ))
+                .body(Body::empty())
+                .expect("public studio kernel chat agent profiles request should build"),
+            )
+            .await
+            .expect("public studio kernel chat agent profiles request should succeed");
+        let create_session_response = app
+            .clone()
+            .oneshot(
+                Request::post(&format!(
+                    "/claw/api/v1/studio/instances/{instance_id}/kernel-chat/sessions"
+                ))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    r#"{"title":"Research Session","model":"hermes-large","agentId":"hermes-default"}"#,
+                ))
+                .expect("public studio kernel chat create session request should build"),
+            )
+            .await
+            .expect("public studio kernel chat create session request should succeed");
+        let create_session_status = create_session_response.status();
+        let created_session = response_body_json(create_session_response).await;
+        let session_id = created_session
+            .get("ref")
+            .and_then(|value| value.get("sessionId"))
+            .and_then(Value::as_str)
+            .expect("created kernel chat session should include a session id")
+            .to_string();
+
+        let list_sessions_response = app
+            .clone()
+            .oneshot(
+                Request::get(&format!(
+                    "/claw/api/v1/studio/instances/{instance_id}/kernel-chat/sessions"
+                ))
+                .body(Body::empty())
+                .expect("public studio kernel chat list sessions request should build"),
+            )
+            .await
+            .expect("public studio kernel chat list sessions request should succeed");
+        let get_session_response = app
+            .clone()
+            .oneshot(
+                Request::get(&format!(
+                    "/claw/api/v1/studio/instances/{instance_id}/kernel-chat/sessions/{session_id}"
+                ))
+                .body(Body::empty())
+                .expect("public studio kernel chat get session request should build"),
+            )
+            .await
+            .expect("public studio kernel chat get session request should succeed");
+        let run_response = app
+            .clone()
+            .oneshot(
+                Request::post(&format!(
+                    "/claw/api/v1/studio/instances/{instance_id}/kernel-chat/sessions/{session_id}:run"
+                ))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    r#"{"content":"Hello Hermes","model":"hermes-large"}"#,
+                ))
+                .expect("public studio kernel chat run request should build"),
+            )
+            .await
+            .expect("public studio kernel chat run request should succeed");
+        let list_runs_response = app
+            .clone()
+            .oneshot(
+                Request::get(&format!(
+                    "/claw/api/v1/studio/instances/{instance_id}/kernel-chat/sessions/{session_id}/runs"
+                ))
+                .body(Body::empty())
+                .expect("public studio kernel chat runs request should build"),
+            )
+            .await
+            .expect("public studio kernel chat runs request should succeed");
+        let get_run_response = app
+            .clone()
+            .oneshot(
+                Request::get(&format!(
+                    "/claw/api/v1/studio/instances/{instance_id}/kernel-chat/sessions/{session_id}/runs/hermes-run-1"
+                ))
+                .body(Body::empty())
+                .expect("public studio kernel chat run detail request should build"),
+            )
+            .await
+            .expect("public studio kernel chat run detail request should succeed");
+        let messages_response = app
+            .clone()
+            .oneshot(
+                Request::get(&format!(
+                    "/claw/api/v1/studio/instances/{instance_id}/kernel-chat/sessions/{session_id}/messages"
+                ))
+                .body(Body::empty())
+                .expect("public studio kernel chat messages request should build"),
+            )
+            .await
+            .expect("public studio kernel chat messages request should succeed");
+        let patch_session_response = app
+            .clone()
+            .oneshot(
+                Request::patch(&format!(
+                    "/claw/api/v1/studio/instances/{instance_id}/kernel-chat/sessions/{session_id}"
+                ))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    r#"{"title":"Renamed Session","model":"hermes-large"}"#,
+                ))
+                .expect("public studio kernel chat patch session request should build"),
+            )
+            .await
+            .expect("public studio kernel chat patch session request should succeed");
+        let delete_session_response = app
+            .oneshot(
+                Request::delete(&format!(
+                    "/claw/api/v1/studio/instances/{instance_id}/kernel-chat/sessions/{session_id}"
+                ))
+                .body(Body::empty())
+                .expect("public studio kernel chat delete session request should build"),
+            )
+            .await
+            .expect("public studio kernel chat delete session request should succeed");
+
+        assert_eq!(create_instance_status, StatusCode::OK);
+        assert_eq!(create_session_status, StatusCode::OK);
+        assert_eq!(profiles_response.status(), StatusCode::OK);
+        assert_eq!(list_sessions_response.status(), StatusCode::OK);
+        assert_eq!(get_session_response.status(), StatusCode::OK);
+        assert_eq!(run_response.status(), StatusCode::OK);
+        assert_eq!(list_runs_response.status(), StatusCode::OK);
+        assert_eq!(get_run_response.status(), StatusCode::OK);
+        assert_eq!(messages_response.status(), StatusCode::OK);
+        assert_eq!(patch_session_response.status(), StatusCode::OK);
+        assert_eq!(delete_session_response.status(), StatusCode::OK);
+
+        let profiles_body = response_body_json(profiles_response).await;
+        let list_sessions_body = response_body_json(list_sessions_response).await;
+        let get_session_body = response_body_json(get_session_response).await;
+        let run_body = response_body_json(run_response).await;
+        let list_runs_body = response_body_json(list_runs_response).await;
+        let get_run_body = response_body_json(get_run_response).await;
+        let messages_body = response_body_json(messages_response).await;
+        let patch_session_body = response_body_json(patch_session_response).await;
+        let delete_session_body = response_body_json(delete_session_response).await;
+
+        assert!(profiles_body
+            .as_array()
+            .is_some_and(|items| !items.is_empty()));
+        assert!(list_sessions_body
+            .as_array()
+            .is_some_and(|items| items.len() == 1));
+        assert_eq!(
+            get_session_body
+                .get("ref")
+                .and_then(|value| value.get("sessionId"))
+                .and_then(Value::as_str),
+            Some(session_id.as_str())
+        );
+        assert_eq!(
+            run_body.get("id").and_then(Value::as_str),
+            Some("hermes-run-1")
+        );
+        assert_eq!(
+            list_runs_body
+                .as_array()
+                .and_then(|items| items.first())
+                .and_then(|value| value.get("id"))
+                .and_then(Value::as_str),
+            Some("hermes-run-1")
+        );
+        assert_eq!(
+            get_run_body.get("id").and_then(Value::as_str),
+            Some("hermes-run-1")
+        );
+        assert!(messages_body
+            .as_array()
+            .is_some_and(|items| items.len() == 2));
+        assert_eq!(
+            messages_body
+                .as_array()
+                .and_then(|items| items.last())
+                .and_then(|value| value.get("text"))
+                .and_then(Value::as_str),
+            Some("Hermes hosted reply")
+        );
+        assert_eq!(
+            patch_session_body.get("title").and_then(Value::as_str),
+            Some("Renamed Session")
+        );
+        assert!(delete_session_body.is_null());
+
+        hermes_server.abort();
+    }
+
+    #[tokio::test]
+    async fn public_studio_openclaw_gateway_invoke_route_returns_error_when_gateway_is_unavailable()
+    {
         let app = build_router(build_server_state_with_rollout_data_dir(
             create_test_rollout_data_dir("api-studio-openclaw-gateway-invoke-default-provider"),
         ));
         let response = app
             .oneshot(
-                Request::post("/claw/api/v1/studio/instances/local-built-in/gateway/invoke")
-                    .header(axum::http::header::CONTENT_TYPE, "application/json")
-                    .body(Body::from(
-                        r#"{"request":{"tool":"models","action":"list","args":{}}}"#,
-                    ))
-                    .expect("public studio gateway invoke request should build"),
+                Request::post(
+                    "/claw/api/v1/studio/instances/managed-openclaw-primary/gateway/invoke",
+                )
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    r#"{"request":{"tool":"models","action":"list","args":{}}}"#,
+                ))
+                .expect("public studio gateway invoke request should build"),
             )
             .await
             .expect("public studio gateway invoke request should succeed");
@@ -2580,8 +2866,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn public_studio_instance_mutation_routes_preserve_custom_instance_mutations_and_reject_unsupported_lifecycle_control()
-    {
+    async fn public_studio_instance_mutation_routes_preserve_custom_instance_mutations_and_reject_unsupported_lifecycle_control(
+    ) {
         let app = build_router(build_server_state_with_rollout_data_dir(
             create_test_rollout_data_dir("api-studio-instance-mutations-default-provider"),
         ));
@@ -2718,15 +3004,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn public_studio_workbench_mutation_routes_reject_built_in_mutations_without_live_runtime_authority()
-    {
+    async fn public_studio_workbench_mutation_routes_reject_built_in_mutations_without_live_runtime_authority(
+    ) {
         let app = build_router(build_server_state_with_rollout_data_dir(
             create_test_rollout_data_dir("api-studio-workbench-mutations-default-provider"),
         ));
         let create_task_response = app
             .clone()
             .oneshot(
-                Request::post("/claw/api/v1/studio/instances/local-built-in/tasks")
+                Request::post("/claw/api/v1/studio/instances/managed-openclaw-primary/tasks")
                     .header(axum::http::header::CONTENT_TYPE, "application/json")
                     .body(Body::from(
                         r#"{"id":"job-1","name":"Daily Sync","schedule":{"kind":"cron","expr":"0 9 * * *","tz":"Asia/Shanghai"},"payload":{"kind":"agentTurn","message":"Summarize updates.","model":"openai/gpt-5.4"}}"#,
@@ -2738,7 +3024,7 @@ mod tests {
         let update_task_response = app
             .clone()
             .oneshot(
-                Request::put("/claw/api/v1/studio/instances/local-built-in/tasks/job-1")
+                Request::put("/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1")
                     .header(axum::http::header::CONTENT_TYPE, "application/json")
                     .body(Body::from(
                         r#"{"id":"job-1","name":"Updated Daily Sync","enabled":false,"schedule":{"kind":"cron","expr":"0 10 * * *","tz":"Asia/Shanghai"},"payload":{"kind":"agentTurn","message":"Summarize only critical updates.","model":"openai/gpt-5.4"}}"#,
@@ -2750,38 +3036,46 @@ mod tests {
         let clone_task_response = app
             .clone()
             .oneshot(
-                Request::post("/claw/api/v1/studio/instances/local-built-in/tasks/job-1:clone")
-                    .header(axum::http::header::CONTENT_TYPE, "application/json")
-                    .body(Body::from(r#"{"name":"Daily Sync Copy"}"#))
-                    .expect("public studio task clone request should build"),
+                Request::post(
+                    "/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1:clone",
+                )
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from(r#"{"name":"Daily Sync Copy"}"#))
+                .expect("public studio task clone request should build"),
             )
             .await
             .expect("public studio task clone request should succeed");
         let run_task_response = app
             .clone()
             .oneshot(
-                Request::post("/claw/api/v1/studio/instances/local-built-in/tasks/job-1:run")
-                    .body(Body::empty())
-                    .expect("public studio task run request should build"),
+                Request::post(
+                    "/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1:run",
+                )
+                .body(Body::empty())
+                .expect("public studio task run request should build"),
             )
             .await
             .expect("public studio task run request should succeed");
         let executions_response = app
             .clone()
             .oneshot(
-                Request::get("/claw/api/v1/studio/instances/local-built-in/tasks/job-1/executions")
-                    .body(Body::empty())
-                    .expect("public studio task execution list request should build"),
+                Request::get(
+                    "/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1/executions",
+                )
+                .body(Body::empty())
+                .expect("public studio task execution list request should build"),
             )
             .await
             .expect("public studio task execution list request should succeed");
         let status_response = app
             .clone()
             .oneshot(
-                Request::post("/claw/api/v1/studio/instances/local-built-in/tasks/job-1:status")
-                    .header(axum::http::header::CONTENT_TYPE, "application/json")
-                    .body(Body::from(r#"{"status":"paused"}"#))
-                    .expect("public studio task status request should build"),
+                Request::post(
+                    "/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1:status",
+                )
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from(r#"{"status":"paused"}"#))
+                .expect("public studio task status request should build"),
             )
             .await
             .expect("public studio task status request should succeed");
@@ -2789,7 +3083,7 @@ mod tests {
             .clone()
             .oneshot(
                 Request::put(
-                    "/claw/api/v1/studio/instances/local-built-in/files/%2Fworkspace%2Fmain%2FAGENTS.md",
+                    "/claw/api/v1/studio/instances/managed-openclaw-primary/files/%2Fworkspace%2Fmain%2FAGENTS.md",
                 )
                 .header(axum::http::header::CONTENT_TYPE, "application/json")
                 .body(Body::from(r##"{"content":"# Updated main agent"}"##))
@@ -2800,7 +3094,7 @@ mod tests {
         let provider_update_response = app
             .clone()
             .oneshot(
-                Request::put("/claw/api/v1/studio/instances/local-built-in/llm-providers/openai")
+                Request::put("/claw/api/v1/studio/instances/managed-openclaw-primary/llm-providers/openai")
                     .header(axum::http::header::CONTENT_TYPE, "application/json")
                     .body(Body::from(
                         r#"{"endpoint":"https://api.openai.com/v1","apiKeySource":"env:OPENAI_API_KEY","defaultModelId":"gpt-5.4","reasoningModelId":"o4-mini","embeddingModelId":"text-embedding-3-large","config":{"temperature":0.1,"topP":1.0,"maxTokens":4096,"timeoutMs":60000,"streaming":true}}"#,
@@ -2811,9 +3105,11 @@ mod tests {
             .expect("public studio llm provider update request should succeed");
         let delete_task_response = app
             .oneshot(
-                Request::delete("/claw/api/v1/studio/instances/local-built-in/tasks/job-1")
-                    .body(Body::empty())
-                    .expect("public studio task delete request should build"),
+                Request::delete(
+                    "/claw/api/v1/studio/instances/managed-openclaw-primary/tasks/job-1",
+                )
+                .body(Body::empty())
+                .expect("public studio task delete request should build"),
             )
             .await
             .expect("public studio task delete request should succeed");
@@ -2910,7 +3206,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn desktop_combined_hosted_startup_preflight_allows_browser_session_header_for_critical_routes() {
+    async fn desktop_combined_hosted_startup_preflight_allows_browser_session_header_for_critical_routes(
+    ) {
         let app = build_desktop_combined_browser_session_test_app("hosted-startup-preflight");
 
         for path in [
@@ -2936,12 +3233,7 @@ mod tests {
                 Some(DESKTOP_HOSTED_BROWSER_ORIGIN),
                 "expected allow-origin header for {path}",
             );
-            assert_csv_header_contains(
-                &headers,
-                header::ACCESS_CONTROL_ALLOW_METHODS,
-                "GET",
-                path,
-            );
+            assert_csv_header_contains(&headers, header::ACCESS_CONTROL_ALLOW_METHODS, "GET", path);
             assert_csv_header_contains(
                 &headers,
                 header::ACCESS_CONTROL_ALLOW_HEADERS,
@@ -2952,7 +3244,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn desktop_combined_hosted_startup_requests_include_cors_headers_on_successful_responses() {
+    async fn desktop_combined_hosted_startup_requests_include_cors_headers_on_successful_responses()
+    {
         let app = build_desktop_combined_browser_session_test_app("hosted-startup-response-cors");
 
         for path in [
@@ -2988,10 +3281,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn desktop_combined_hosted_startup_preflight_rejects_remote_origins_for_control_plane_surfaces()
-    {
-        let app =
-            build_desktop_combined_browser_session_test_app("hosted-startup-preflight-remote-origin");
+    async fn desktop_combined_hosted_startup_preflight_rejects_remote_origins_for_control_plane_surfaces(
+    ) {
+        let app = build_desktop_combined_browser_session_test_app(
+            "hosted-startup-preflight-remote-origin",
+        );
 
         for path in [
             "/claw/internal/v1/host-platform",
@@ -3051,8 +3345,9 @@ mod tests {
 
     #[tokio::test]
     async fn desktop_combined_control_plane_responses_do_not_mirror_remote_origins() {
-        let app =
-            build_desktop_combined_browser_session_test_app("hosted-startup-response-remote-origin");
+        let app = build_desktop_combined_browser_session_test_app(
+            "hosted-startup-response-remote-origin",
+        );
 
         for path in [
             "/claw/internal/v1/host-platform",
@@ -3236,8 +3531,7 @@ mod tests {
             document.get("id").and_then(Value::as_str) == Some("openclaw-gateway-v1")
                 && document.get("url").and_then(Value::as_str)
                     == Some("/claw/openapi/openclaw-gateway-v1.json")
-                && document.get("proxyTarget").and_then(Value::as_str)
-                    == Some("openclaw-gateway")
+                && document.get("proxyTarget").and_then(Value::as_str) == Some("openclaw-gateway")
                 && document.get("runtimeCapability").and_then(Value::as_str)
                     == Some("openclaw-gateway-http")
         }));
@@ -3339,6 +3633,25 @@ mod tests {
         assert!(paths.contains_key("/claw/api/v1/studio/instances/{id}:restart"));
         assert!(paths.contains_key("/claw/api/v1/studio/instances/{id}/detail"));
         assert!(paths.contains_key("/claw/api/v1/studio/instances/{id}/config"));
+        assert!(paths.contains_key("/claw/api/v1/studio/instances/{id}/kernel-chat/agent-profiles"));
+        assert!(paths.contains_key("/claw/api/v1/studio/instances/{id}/kernel-chat/sessions"));
+        assert!(paths
+            .contains_key("/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}"));
+        assert!(paths.contains_key(
+            "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}:run"
+        ));
+        assert!(paths.contains_key(
+            "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}:abort"
+        ));
+        assert!(paths.contains_key(
+            "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}/runs"
+        ));
+        assert!(paths.contains_key(
+            "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}/runs/{runId}"
+        ));
+        assert!(paths.contains_key(
+            "/claw/api/v1/studio/instances/{id}/kernel-chat/sessions/{sessionId}/messages"
+        ));
         assert!(paths.contains_key("/claw/api/v1/studio/instances/{id}/logs"));
         assert!(paths.contains_key("/claw/api/v1/studio/instances/{id}/conversations"));
         assert!(paths.contains_key("/claw/api/v1/studio/instances/{id}/gateway/invoke"));
@@ -3672,7 +3985,7 @@ mod tests {
         assert_eq!(status, StatusCode::OK);
         assert_eq!(sessions.len(), 2);
         assert!(sessions.iter().any(|session| {
-            session.get("nodeId").and_then(Value::as_str) == Some("local-built-in")
+            session.get("nodeId").and_then(Value::as_str) == Some("managed-openclaw-primary")
                 && session.get("state").and_then(Value::as_str) == Some("admitted")
                 && session.get("compatibilityState").and_then(Value::as_str) == Some("compatible")
         }));
@@ -3693,8 +4006,9 @@ mod tests {
 
     #[tokio::test]
     async fn internal_node_sessions_route_uses_desktop_host_prefix_in_desktop_combined_mode() {
-        let mut state =
-            build_server_state_with_rollout_data_dir(create_test_rollout_data_dir("node-sessions-desktop"));
+        let mut state = build_server_state_with_rollout_data_dir(create_test_rollout_data_dir(
+            "node-sessions-desktop",
+        ));
         state.set_mode("desktopCombined");
         let app = build_router(state);
         let response = app
@@ -3735,7 +4049,7 @@ mod tests {
                         r#"{
                           "bootId":"boot-local-1",
                           "nodeClaim":{
-                            "claimedNodeId":"local-built-in",
+                            "claimedNodeId":"managed-openclaw-primary",
                             "hostPlatform":"linux",
                             "hostArch":"x64"
                           },
@@ -3774,7 +4088,7 @@ mod tests {
         );
         assert_eq!(list_status, StatusCode::OK);
         assert!(sessions.iter().any(|session| {
-            session.get("nodeId").and_then(Value::as_str) == Some("local-built-in")
+            session.get("nodeId").and_then(Value::as_str) == Some("managed-openclaw-primary")
                 && session.get("state").and_then(Value::as_str) == Some("pending")
                 && session.get("compatibilityState").and_then(Value::as_str) == Some("compatible")
         }));
@@ -3835,7 +4149,7 @@ mod tests {
             session.get("nodeId").and_then(Value::as_str) == Some("archive-node")
         }));
         assert!(!sessions.iter().any(|session| {
-            session.get("nodeId").and_then(Value::as_str) == Some("local-built-in")
+            session.get("nodeId").and_then(Value::as_str) == Some("managed-openclaw-primary")
         }));
     }
 
@@ -3853,7 +4167,7 @@ mod tests {
                         r#"{
                           "bootId":"boot-local-1",
                           "nodeClaim":{
-                            "claimedNodeId":"local-built-in",
+                            "claimedNodeId":"managed-openclaw-primary",
                             "hostPlatform":"linux",
                             "hostArch":"x64"
                           },
@@ -3912,7 +4226,7 @@ mod tests {
             Some(session_id)
         );
         assert!(sessions.iter().any(|session| {
-            session.get("nodeId").and_then(Value::as_str) == Some("local-built-in")
+            session.get("nodeId").and_then(Value::as_str) == Some("managed-openclaw-primary")
                 && session.get("state").and_then(Value::as_str) == Some("admitted")
         }));
     }
@@ -3931,7 +4245,7 @@ mod tests {
                         r#"{
                           "bootId":"boot-local-1",
                           "nodeClaim":{
-                            "claimedNodeId":"local-built-in",
+                            "claimedNodeId":"managed-openclaw-primary",
                             "hostPlatform":"linux",
                             "hostArch":"x64"
                           },
@@ -4009,7 +4323,7 @@ mod tests {
                         r#"{
                           "bootId":"boot-local-1",
                           "nodeClaim":{
-                            "claimedNodeId":"local-built-in",
+                            "claimedNodeId":"managed-openclaw-primary",
                             "hostPlatform":"linux",
                             "hostArch":"x64"
                           },
@@ -4092,7 +4406,7 @@ mod tests {
             Some(lease_id)
         );
         assert!(sessions.iter().any(|session| {
-            session.get("nodeId").and_then(Value::as_str) == Some("local-built-in")
+            session.get("nodeId").and_then(Value::as_str) == Some("managed-openclaw-primary")
                 && session.get("state").and_then(Value::as_str) == Some("admitted")
                 && session
                     .get("lastSeenAt")
@@ -4115,7 +4429,7 @@ mod tests {
                         r#"{
                           "bootId":"boot-local-1",
                           "nodeClaim":{
-                            "claimedNodeId":"local-built-in",
+                            "claimedNodeId":"managed-openclaw-primary",
                             "hostPlatform":"linux",
                             "hostArch":"x64"
                           },
@@ -4223,7 +4537,7 @@ mod tests {
                 .and_then(Value::as_object)
                 .and_then(|projection| projection.get("nodeId"))
                 .and_then(Value::as_str),
-            Some("local-built-in")
+            Some("managed-openclaw-primary")
         );
         assert_eq!(second_pull_status, StatusCode::OK);
         assert_eq!(
@@ -4246,7 +4560,7 @@ mod tests {
                         r#"{
                           "bootId":"boot-local-1",
                           "nodeClaim":{
-                            "claimedNodeId":"local-built-in",
+                            "claimedNodeId":"managed-openclaw-primary",
                             "hostPlatform":"linux",
                             "hostArch":"x64"
                           },
@@ -4374,7 +4688,7 @@ mod tests {
         );
         assert_eq!(list_status, StatusCode::OK);
         assert!(sessions.iter().any(|session| {
-            session.get("nodeId").and_then(Value::as_str) == Some("local-built-in")
+            session.get("nodeId").and_then(Value::as_str) == Some("managed-openclaw-primary")
                 && session.get("lastAppliedRevision").and_then(Value::as_u64)
                     == Some(desired_state_revision)
                 && session.get("lastKnownGoodRevision").and_then(Value::as_u64)
@@ -4402,7 +4716,7 @@ mod tests {
                         r#"{
                           "bootId":"boot-local-1",
                           "nodeClaim":{
-                            "claimedNodeId":"local-built-in",
+                            "claimedNodeId":"managed-openclaw-primary",
                             "hostPlatform":"linux",
                             "hostArch":"x64"
                           },
@@ -4478,7 +4792,7 @@ mod tests {
         advance_rollout_target_semantic_payload(
             &rollout_data_dir,
             "rollout-a",
-            "local-built-in",
+            "managed-openclaw-primary",
             ";generation=2",
         );
         let refreshed_app = build_router(build_server_state_with_overrides(
@@ -4587,7 +4901,7 @@ mod tests {
         ));
         let compatibility_preview = state
             .rollout_control_plane
-            .preview_node_session_compatibility("rollout-a", "local-built-in")
+            .preview_node_session_compatibility("rollout-a", "managed-openclaw-primary")
             .expect("compatibility preview should succeed");
         let hello = state
             .node_session_registry
@@ -4595,7 +4909,7 @@ mod tests {
                 sdkwork_claw_host_core::internal::node_sessions::NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: sdkwork_claw_host_core::internal::node_sessions::NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -4658,7 +4972,7 @@ mod tests {
                         r#"{
                           "bootId":"boot-local-1",
                           "nodeClaim":{
-                            "claimedNodeId":"local-built-in",
+                            "claimedNodeId":"managed-openclaw-primary",
                             "hostPlatform":"linux",
                             "hostArch":"x64"
                           },
@@ -4750,7 +5064,7 @@ mod tests {
         );
         assert_eq!(list_status, StatusCode::OK);
         assert!(sessions.iter().any(|session| {
-            session.get("nodeId").and_then(Value::as_str) == Some("local-built-in")
+            session.get("nodeId").and_then(Value::as_str) == Some("managed-openclaw-primary")
                 && session.get("state").and_then(Value::as_str) == Some("closed")
         }));
     }
@@ -4762,7 +5076,7 @@ mod tests {
         ));
         let compatibility_preview = state
             .rollout_control_plane
-            .preview_node_session_compatibility("rollout-a", "local-built-in")
+            .preview_node_session_compatibility("rollout-a", "managed-openclaw-primary")
             .expect("compatibility preview should succeed");
         let first_hello = state
             .node_session_registry
@@ -4770,7 +5084,7 @@ mod tests {
                 sdkwork_claw_host_core::internal::node_sessions::NodeSessionHelloInput {
                     boot_id: "boot-local-1".to_string(),
                     node_claim: sdkwork_claw_host_core::internal::node_sessions::NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -4803,7 +5117,7 @@ mod tests {
                 sdkwork_claw_host_core::internal::node_sessions::NodeSessionHelloInput {
                     boot_id: "boot-local-2".to_string(),
                     node_claim: sdkwork_claw_host_core::internal::node_sessions::NodeSessionHelloNodeClaim {
-                        claimed_node_id: Some("local-built-in".to_string()),
+                        claimed_node_id: Some("managed-openclaw-primary".to_string()),
                         host_platform: Some("linux".to_string()),
                         host_arch: Some("x64".to_string()),
                     },
@@ -4860,7 +5174,7 @@ mod tests {
 
         assert_eq!(list_status, StatusCode::OK);
         assert!(sessions.iter().any(|session| {
-            session.get("nodeId").and_then(Value::as_str) == Some("local-built-in")
+            session.get("nodeId").and_then(Value::as_str) == Some("managed-openclaw-primary")
                 && session.get("sessionId").and_then(Value::as_str)
                     == Some(second_hello.session_id.as_str())
                 && session.get("state").and_then(Value::as_str) == Some("admitted")
@@ -4881,7 +5195,7 @@ mod tests {
                         r#"{
                           "bootId":"boot-local-1",
                           "nodeClaim":{
-                            "claimedNodeId":"local-built-in",
+                            "claimedNodeId":"managed-openclaw-primary",
                             "hostPlatform":"linux",
                             "hostArch":"x64"
                           },
@@ -4937,7 +5251,7 @@ mod tests {
                         r#"{
                           "bootId":"boot-local-2",
                           "nodeClaim":{
-                            "claimedNodeId":"local-built-in",
+                            "claimedNodeId":"managed-openclaw-primary",
                             "hostPlatform":"linux",
                             "hostArch":"x64"
                           },
@@ -5042,7 +5356,7 @@ mod tests {
             Some(replaced_heartbeat_correlation_id.as_str())
         );
         assert!(sessions.iter().any(|session| {
-            session.get("nodeId").and_then(Value::as_str) == Some("local-built-in")
+            session.get("nodeId").and_then(Value::as_str) == Some("managed-openclaw-primary")
                 && session.get("sessionId").and_then(Value::as_str) == Some(second_session_id)
                 && session.get("state").and_then(Value::as_str) == Some("admitted")
         }));
@@ -5341,6 +5655,7 @@ mod tests {
                     port: Some(19_003),
                 }),
                 env,
+                executable_path: None,
             },
         )
         .expect("server config should resolve");
@@ -5585,10 +5900,7 @@ mod tests {
             .expect("CORS preflight request should build")
     }
 
-    fn header_value(
-        headers: &header::HeaderMap,
-        name: &header::HeaderName,
-    ) -> Option<String> {
+    fn header_value(headers: &header::HeaderMap, name: &header::HeaderName) -> Option<String> {
         headers
             .get(name)
             .and_then(|value| value.to_str().ok())

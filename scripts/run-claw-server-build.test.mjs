@@ -225,3 +225,157 @@ test('server build helper keeps WSL builds independent from the local Rust toolc
   assert.equal(spawnInvocation?.options.env.PATH, 'base-path');
   assert.equal(spawnInvocation?.options.env.SDKWORK_TEST_ENV, '1');
 });
+
+test('server build helper removes stale legacy binaries after a successful native build', async () => {
+  const modulePath = path.join(rootDir, 'scripts', 'run-claw-server-build.mjs');
+  const helper = await import(pathToFileURL(modulePath).href);
+
+  assert.equal(typeof helper.runServerBuild, 'function');
+
+  const removedPaths = [];
+
+  helper.runServerBuild({
+    env: {
+      PATH: 'base-path',
+    },
+    hostPlatform: 'win32',
+    ensureRustToolchain() {},
+    withRustToolchainPathFn(env) {
+      return env;
+    },
+    fileSystem: {
+      rmSync(targetPath, options) {
+        removedPaths.push({
+          targetPath,
+          options,
+        });
+      },
+    },
+    spawnSyncImpl() {
+      return {
+        status: 0,
+      };
+    },
+  });
+
+  const expectedReleaseDir = path.join(
+    rootDir,
+    'packages',
+    'sdkwork-claw-server',
+    'src-host',
+    'target',
+    'release',
+  );
+
+  assert.deepEqual(
+    removedPaths,
+    [
+      {
+        targetPath: path.join(expectedReleaseDir, 'sdkwork-claw-server.exe'),
+        options: { force: true },
+      },
+      {
+        targetPath: path.join(expectedReleaseDir, 'sdkwork-claw-server'),
+        options: { force: true },
+      },
+      {
+        targetPath: path.join(expectedReleaseDir, 'sdkwork-claw-server.d'),
+        options: { force: true },
+      },
+      {
+        targetPath: path.join(expectedReleaseDir, 'sdkwork_claw_server.pdb'),
+        options: { force: true },
+      },
+    ],
+  );
+});
+
+test('server build helper removes stale legacy binaries from both targeted and shared release directories for explicit target builds', async () => {
+  const modulePath = path.join(rootDir, 'scripts', 'run-claw-server-build.mjs');
+  const helper = await import(pathToFileURL(modulePath).href);
+
+  assert.equal(typeof helper.runServerBuild, 'function');
+
+  const removedPaths = [];
+
+  helper.runServerBuild({
+    targetTriple: 'x86_64-pc-windows-msvc',
+    env: {
+      PATH: 'base-path',
+    },
+    hostPlatform: 'win32',
+    ensureRustToolchain() {},
+    withRustToolchainPathFn(env) {
+      return env;
+    },
+    fileSystem: {
+      rmSync(targetPath, options) {
+        removedPaths.push({
+          targetPath,
+          options,
+        });
+      },
+    },
+    spawnSyncImpl() {
+      return {
+        status: 0,
+      };
+    },
+  });
+
+  const expectedRootReleaseDir = path.join(
+    rootDir,
+    'packages',
+    'sdkwork-claw-server',
+    'src-host',
+    'target',
+    'release',
+  );
+  const expectedTargetReleaseDir = path.join(
+    rootDir,
+    'packages',
+    'sdkwork-claw-server',
+    'src-host',
+    'target',
+    'x86_64-pc-windows-msvc',
+    'release',
+  );
+
+  assert.deepEqual(
+    removedPaths,
+    [
+      {
+        targetPath: path.join(expectedTargetReleaseDir, 'sdkwork-claw-server.exe'),
+        options: { force: true },
+      },
+      {
+        targetPath: path.join(expectedTargetReleaseDir, 'sdkwork-claw-server'),
+        options: { force: true },
+      },
+      {
+        targetPath: path.join(expectedTargetReleaseDir, 'sdkwork-claw-server.d'),
+        options: { force: true },
+      },
+      {
+        targetPath: path.join(expectedTargetReleaseDir, 'sdkwork_claw_server.pdb'),
+        options: { force: true },
+      },
+      {
+        targetPath: path.join(expectedRootReleaseDir, 'sdkwork-claw-server.exe'),
+        options: { force: true },
+      },
+      {
+        targetPath: path.join(expectedRootReleaseDir, 'sdkwork-claw-server'),
+        options: { force: true },
+      },
+      {
+        targetPath: path.join(expectedRootReleaseDir, 'sdkwork-claw-server.d'),
+        options: { force: true },
+      },
+      {
+        targetPath: path.join(expectedRootReleaseDir, 'sdkwork_claw_server.pdb'),
+        options: { force: true },
+      },
+    ],
+  );
+});

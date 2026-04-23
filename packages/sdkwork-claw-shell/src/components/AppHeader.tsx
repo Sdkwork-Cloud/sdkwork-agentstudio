@@ -1,33 +1,9 @@
-import { Suspense, lazy, startTransition, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, CircleUserRound, LogIn, LogOut, Search, Settings2, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DesktopWindowControls, useAppStore, useAuthStore } from '@sdkwork/claw-core';
 import { OPEN_COMMAND_PALETTE_EVENT } from './commandPaletteEvents';
-
-const InstanceSwitcher = lazy(() =>
-  import('./InstanceSwitcher').then((module) => ({
-    default: module.InstanceSwitcher,
-  })),
-);
-
-function InstanceSwitcherFallback() {
-  return (
-    <div
-      aria-hidden="true"
-      className="flex h-9 w-full items-center justify-between rounded-2xl bg-zinc-950/[0.045] px-3 dark:bg-white/[0.06]"
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="h-2.5 w-2.5 shrink-0 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-        <div className="space-y-1.5">
-          <div className="h-2.5 w-24 rounded-full bg-zinc-300/80 dark:bg-zinc-700/80" />
-          <div className="h-2 w-20 rounded-full bg-zinc-200/90 dark:bg-zinc-800/90" />
-        </div>
-      </div>
-      <div className="h-4 w-4 rounded-full bg-zinc-300/80 dark:bg-zinc-700/80" />
-    </div>
-  );
-}
 
 function BrandMark() {
   return (
@@ -93,26 +69,10 @@ export function AppHeader({ mode = 'default' }: AppHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isAuthMode = mode === 'auth';
-  const [shouldRenderInstanceSwitcher, setShouldRenderInstanceSwitcher] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const accountSettingsTarget = '/settings?tab=account';
   const loginTarget = `/login?redirect=${encodeURIComponent(accountSettingsTarget)}`;
-
-  useEffect(() => {
-    if (isAuthMode) {
-      setShouldRenderInstanceSwitcher(false);
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      startTransition(() => {
-        setShouldRenderInstanceSwitcher(true);
-      });
-    }, 90);
-
-    return () => window.clearTimeout(timeout);
-  }, [isAuthMode]);
 
   useEffect(() => {
     setIsUserMenuOpen(false);
@@ -200,30 +160,6 @@ export function AppHeader({ mode = 'default' }: AppHeaderProps) {
             </div>
           ) : null}
         </div>
-
-        {!isAuthMode ? (
-          <div
-            data-slot="app-header-center"
-            data-tauri-drag-region="false"
-            className="pointer-events-none absolute left-1/2 top-1/2 flex w-full max-w-[36rem] -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-3 px-28 lg:px-32"
-          >
-            <span
-              data-slot="app-header-workspace"
-              className="hidden shrink-0 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400 md:inline"
-            >
-              {t('sidebar.workspace')}
-            </span>
-            <div className="pointer-events-auto w-full max-w-[24rem]">
-              {shouldRenderInstanceSwitcher ? (
-                <Suspense fallback={<InstanceSwitcherFallback />}>
-                  <InstanceSwitcher />
-                </Suspense>
-              ) : (
-                <InstanceSwitcherFallback />
-              )}
-            </div>
-          </div>
-        ) : null}
 
         <div
           data-slot="app-header-trailing"

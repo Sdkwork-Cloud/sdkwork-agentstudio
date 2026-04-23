@@ -73,18 +73,15 @@ function normalizeKernelReleaseConfig(config: KernelReleaseConfig): KernelReleas
   };
 }
 
-function withCanonicalKernelId(
-  config: KernelReleaseConfig,
-  kernelId: string,
-): KernelReleaseConfig {
-  const normalizedConfig = cloneJsonValue(config);
-  normalizedConfig.kernelId = kernelId;
-  return normalizedConfig;
-}
-
 const rawKernelReleaseCatalog = {
-  openclaw: withCanonicalKernelId(openclawRelease as KernelReleaseConfig, 'openclaw'),
-  hermes: withCanonicalKernelId(hermesRelease as KernelReleaseConfig, 'hermes'),
+  openclaw: {
+    ...(openclawRelease as KernelReleaseConfig),
+    kernelId: 'openclaw',
+  },
+  hermes: {
+    ...(hermesRelease as KernelReleaseConfig),
+    kernelId: 'hermes',
+  },
 } satisfies Record<string, KernelReleaseConfig>;
 
 const kernelReleaseCatalog = Object.freeze(

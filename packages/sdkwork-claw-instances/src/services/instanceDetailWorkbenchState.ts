@@ -1,4 +1,5 @@
 import type { InstanceConfig, InstanceWorkbenchSnapshot } from '../types/index.ts';
+import { normalizeInstanceWorkbenchSnapshot } from './instanceWorkbenchNormalization.ts';
 
 type StateSetter<T> = (value: T | ((current: T) => T)) => void;
 
@@ -41,8 +42,9 @@ export function startLoadInstanceDetailWorkbench({
         return;
       }
 
-      setWorkbench(nextWorkbench);
-      setConfig(nextWorkbench?.config || null);
+      const normalizedWorkbench = normalizeInstanceWorkbenchSnapshot(nextWorkbench);
+      setWorkbench(normalizedWorkbench);
+      setConfig(normalizedWorkbench?.config || null);
     })
     .catch((error) => {
       reportError(error);

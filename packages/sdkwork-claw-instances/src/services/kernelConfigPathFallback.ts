@@ -1,6 +1,6 @@
 import type { StudioInstanceDetailRecord } from '@sdkwork/claw-types';
 
-export interface OpenClawConfigPathFallbackApi {
+export interface KernelConfigPathFallbackApi {
   resolveInstanceConfigPath?(
     detail: StudioInstanceDetailRecord | null | undefined,
   ): string | null | undefined;
@@ -9,8 +9,8 @@ export interface OpenClawConfigPathFallbackApi {
   ): string | null | undefined;
 }
 
-export function resolveOpenClawConfigPathWithFallback(
-  api: OpenClawConfigPathFallbackApi,
+export function resolveKernelConfigPathWithFallback(
+  api: KernelConfigPathFallbackApi,
   detail: StudioInstanceDetailRecord | null | undefined,
 ) {
   return (

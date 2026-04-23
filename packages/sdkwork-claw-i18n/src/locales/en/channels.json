@@ -9,6 +9,9 @@
       "deleteFailed": "Unable to delete channel configuration right now.",
       "toggleFailed": "Unable to update channel status right now."
     },
+    "validation": {
+      "requiredField": "{{field}} is required."
+    },
     "status": {
       "active": "Active",
       "disconnected": "Disconnected",
@@ -38,11 +41,307 @@
         "media": "Media Accounts",
         "all": "All"
       },
+      "descriptions": {
+        "domestic": "China-first conversational surfaces",
+        "global": "International chat and collaboration channels",
+        "media": "Broadcast and public account delivery surfaces",
+        "all": "All channels available in this workspace"
+      },
       "empty": {
         "domestic": "No domestic chat channels are available in this workspace.",
         "global": "No global chat channels are available in this workspace.",
         "media": "No media account channels are available in this workspace.",
         "all": "No chat channels are available in this workspace."
+      }
+    }
+  },
+  "definitions": {
+    "officialLinks": {
+      "sdkworkchat": "SDKWORK Chat app download",
+      "wehcat": "WeChat Official Account platform",
+      "feishu": "Feishu Open Platform",
+      "qq": "QQ Bot platform",
+      "dingtalk": "DingTalk developer console",
+      "wecom": "WeCom admin console",
+      "telegram": "Telegram Bot platform",
+      "discord": "Discord developer portal",
+      "slack": "Slack API apps",
+      "googlechat": "Google Chat developer docs"
+    },
+    "sharedFields": {
+      "contextVisibility": {
+        "label": "Context Visibility",
+        "placeholder": "allowlist_quote",
+        "helpText": "Optional per-channel context visibility policy, for example quote, none, or allowlist_quote."
+      }
+    },
+    "channels": {
+      "sdkworkchat": {
+        "name": "SDKWORK Official Account",
+        "description": "Use the built-in SDKWORK official account delivery path so OpenClaw can hand off conversations without extra credential setup.",
+        "setupSteps": {
+          "0": "Open the integrated SDKWORK official account experience or install the SDKWORK client if this machine has not signed in yet.",
+          "1": "Sign in with your SDKWORK account so the default media channel is ready immediately.",
+          "2": "Keep this channel enabled when the current runtime should hand off into the SDKWORK official account."
+        }
+      },
+      "wehcat": {
+        "name": "WeChat Official Account",
+        "description": "Connect a WeChat official account workflow so OpenClaw can serve China-facing media channels.",
+        "setupSteps": {
+          "0": "Create or manage a WeChat official account in the WeChat official account platform.",
+          "1": "Paste the App ID, App Secret, token, and optional AES key here.",
+          "2": "Configure the callback URL on the WeChat side and enable the official account channel."
+        },
+        "fields": {
+          "appId": {
+            "label": "App ID",
+            "placeholder": "wx1234567890abcdef"
+          },
+          "appSecret": {
+            "label": "App Secret",
+            "placeholder": "WeChat app secret"
+          },
+          "token": {
+            "label": "Token",
+            "placeholder": "Verification token"
+          },
+          "encodingAesKey": {
+            "label": "Encoding AES Key",
+            "placeholder": "Optional AES key"
+          }
+        }
+      },
+      "qq": {
+        "name": "QQ",
+        "description": "Connect a QQ bot so OpenClaw can route commands, alerts, and approvals into QQ groups.",
+        "setupSteps": {
+          "0": "Create or manage the target QQ bot in the QQ bot platform.",
+          "1": "Paste the bot key and target group ID here.",
+          "2": "Enable the channel after a dry-run delivery succeeds."
+        },
+        "fields": {
+          "botKey": {
+            "label": "Bot Key",
+            "placeholder": "QQ bot key"
+          },
+          "groupId": {
+            "label": "Group ID",
+            "placeholder": "123456789",
+            "helpText": "The target QQ group that receives OpenClaw updates."
+          }
+        }
+      },
+      "dingtalk": {
+        "name": "DingTalk",
+        "description": "Connect a DingTalk custom robot so OpenClaw can broadcast updates into DingTalk workspaces.",
+        "setupSteps": {
+          "0": "Create a custom robot in the target DingTalk group.",
+          "1": "Copy the access token and signing secret into this form.",
+          "2": "Enable the channel after the first connectivity check succeeds."
+        },
+        "fields": {
+          "accessToken": {
+            "label": "Access Token",
+            "placeholder": "DingTalk access token"
+          },
+          "secret": {
+            "label": "Secret",
+            "placeholder": "Robot signing secret"
+          }
+        }
+      },
+      "wecom": {
+        "name": "WeCom",
+        "description": "Connect a WeCom application so OpenClaw can serve enterprise WeCom conversations.",
+        "setupSteps": {
+          "0": "Create a WeCom application with bot or customer-contact permissions.",
+          "1": "Paste the corp ID, agent ID, and secret here.",
+          "2": "Save the configuration and verify that message delivery succeeds."
+        },
+        "fields": {
+          "corpId": {
+            "label": "Corp ID",
+            "placeholder": "ww1234567890abcdef"
+          },
+          "agentId": {
+            "label": "Agent ID",
+            "placeholder": "1000002"
+          },
+          "secret": {
+            "label": "Secret",
+            "placeholder": "WeCom app secret"
+          }
+        }
+      },
+      "feishu": {
+        "name": "Feishu",
+        "description": "Connect a Feishu bot so OpenClaw can receive and reply to team messages.",
+        "setupSteps": {
+          "0": "Create a Feishu app in the open platform.",
+          "1": "Copy the App ID and App Secret into this form.",
+          "2": "Add the event callback URL from your OpenClaw deployment if needed."
+        },
+        "fields": {
+          "appId": {
+            "label": "App ID",
+            "placeholder": "cli_xxxxxxxxxxxxx"
+          },
+          "appSecret": {
+            "label": "App Secret",
+            "placeholder": "App secret"
+          },
+          "encryptKey": {
+            "label": "Encrypt Key",
+            "placeholder": "Optional encrypt key"
+          },
+          "verificationToken": {
+            "label": "Verification Token",
+            "placeholder": "Optional verification token"
+          }
+        }
+      },
+      "telegram": {
+        "name": "Telegram",
+        "description": "Use a Telegram bot token to bring OpenClaw into direct messages or group chats.",
+        "setupSteps": {
+          "0": "Create a bot with BotFather and copy the bot token.",
+          "1": "Optionally set a webhook URL if Telegram should push events to your host.",
+          "2": "Enable the channel after the required credentials are filled."
+        },
+        "fields": {
+          "botToken": {
+            "label": "Bot Token",
+            "placeholder": "123456:AA..."
+          },
+          "tokenFile": {
+            "label": "Token File",
+            "placeholder": "Optional token file path"
+          },
+          "webhookUrl": {
+            "label": "Webhook URL",
+            "placeholder": "https://example.com/openclaw/telegram"
+          },
+          "webhookSecret": {
+            "label": "Webhook Secret",
+            "placeholder": "Optional webhook secret"
+          },
+          "webhookPath": {
+            "label": "Webhook Path",
+            "placeholder": "/telegram/webhook"
+          },
+          "webhookHost": {
+            "label": "Webhook Host",
+            "placeholder": "0.0.0.0"
+          },
+          "webhookPort": {
+            "label": "Webhook Port",
+            "placeholder": "8443"
+          },
+          "errorPolicy": {
+            "label": "Error Policy",
+            "placeholder": "retry",
+            "helpText": "Optional Telegram delivery error policy, for example retry or disable."
+          },
+          "errorCooldownMs": {
+            "label": "Error Cooldown (ms)",
+            "placeholder": "300000"
+          }
+        }
+      },
+      "whatsapp": {
+        "name": "WhatsApp",
+        "description": "Manage optional WhatsApp access rules for direct-message allowlists and group delivery behavior.",
+        "setupSteps": {
+          "0": "Authenticate the OpenClaw WhatsApp channel with the official CLI or runtime login flow.",
+          "1": "Optionally restrict allowed direct-message senders or define per-group behavior here.",
+          "2": "Keep the channel enabled so runtime login state can be reused without extra config wiring."
+        },
+        "fields": {
+          "allowFrom": {
+            "label": "Allow From",
+            "placeholder": "+15555550123\n+15555550124",
+            "helpText": "Optional allowlist of direct-message senders. Enter one phone number per line or a JSON array."
+          },
+          "groups": {
+            "label": "Groups",
+            "placeholder": "{\n  \"*\": {\n    \"requireMention\": true\n  }\n}",
+            "helpText": "Optional JSON object of WhatsApp group rules. Use \"*\" to define defaults for all groups."
+          }
+        }
+      },
+      "discord": {
+        "name": "Discord",
+        "description": "Attach OpenClaw to a Discord bot for server and DM conversations.",
+        "setupSteps": {
+          "0": "Create a Discord application and bot in the developer portal.",
+          "1": "Paste the bot token here and invite the bot to your server.",
+          "2": "Turn the channel on once the token has been validated."
+        },
+        "fields": {
+          "token": {
+            "label": "Bot Token",
+            "placeholder": "Discord bot token"
+          }
+        }
+      },
+      "slack": {
+        "name": "Slack",
+        "description": "Configure bot and app tokens so OpenClaw can work inside Slack workspaces.",
+        "setupSteps": {
+          "0": "Create or open your Slack app and install it to the target workspace.",
+          "1": "Paste the bot token and app token below.",
+          "2": "Add a signing secret if your workspace uses slash commands or events."
+        },
+        "fields": {
+          "botToken": {
+            "label": "Bot Token",
+            "placeholder": "xoxb-..."
+          },
+          "appToken": {
+            "label": "App Token",
+            "placeholder": "xapp-..."
+          },
+          "signingSecret": {
+            "label": "Signing Secret",
+            "placeholder": "Optional signing secret"
+          }
+        }
+      },
+      "googlechat": {
+        "name": "Google Chat",
+        "description": "Provide Google Chat service account or reference details for enterprise workspace delivery.",
+        "setupSteps": {
+          "0": "Create a Google Chat app and service account.",
+          "1": "Provide either the inline service account JSON or a service account reference.",
+          "2": "Fill audience or webhook information if your deployment requires it."
+        },
+        "fields": {
+          "serviceAccount": {
+            "label": "Service Account JSON",
+            "placeholder": "{ \"type\": \"service_account\", ... }"
+          },
+          "serviceAccountRef": {
+            "label": "Service Account Ref",
+            "placeholder": "secret://googlechat/service-account"
+          },
+          "audienceType": {
+            "label": "Audience Type",
+            "placeholder": "SPACE or DM"
+          },
+          "audience": {
+            "label": "Audience",
+            "placeholder": "spaces/AAAA12345"
+          },
+          "webhookPath": {
+            "label": "Webhook Path",
+            "placeholder": "/googlechat/webhook"
+          },
+          "webhookUrl": {
+            "label": "Webhook URL",
+            "placeholder": "https://example.com/openclaw/googlechat"
+          }
+        }
       }
     }
   }

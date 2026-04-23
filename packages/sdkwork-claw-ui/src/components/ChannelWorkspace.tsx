@@ -14,18 +14,24 @@ import { Input } from './Input';
 import { Label } from './Label';
 import { OverlaySurface } from './OverlaySurface';
 import { Textarea } from './Textarea';
+import { ChannelEmptyStateSurface, ChannelIdentityBadge } from './channelCatalogShared';
 import {
   getChannelCatalogRegions,
   isChannelDownloadAppAction,
-  getChannelCatalogMonogram,
-  getChannelCatalogTone,
   getChannelOfficialLink,
   partitionChannelCatalogItemsByRegion,
   resolveDefaultChannelCatalogRegion,
   type ChannelCatalogRegion,
   type ChannelOfficialLink,
 } from './channelCatalogMeta';
-import { getChannelCatalogIcon } from './channelCatalogIcons';
+import {
+  buildChannelCatalogRegionLabels,
+  getChannelCatalogRegionEmptyText,
+} from './channelCatalogRegionContent';
+import {
+  localizeChannelOfficialLink,
+  localizeChannelWorkspaceItem,
+} from './channelDefinitionLocalization';
 
 export interface ChannelWorkspaceField {
   key: string;
@@ -52,7 +58,8 @@ export interface ChannelWorkspaceTexts extends ChannelCatalogTexts {
   credentialsTitle: string;
   saveAction: string;
   savingAction: string;
-  deleteConfigurationAction?: string;
+  deleteConfigurationAction: string;
+  validationRequiredField: (fieldLabel: string) => string;
 }
 
 export interface ChannelWorkspaceProps {
@@ -117,45 +124,6 @@ function getInputType(field: ChannelWorkspaceField) {
   return 'text';
 }
 
-function ChannelIdentity({
-  channel,
-}: {
-  channel: ChannelWorkspaceItem;
-}) {
-  const builtInIcon = getChannelCatalogIcon(channel.id);
-
-  return (
-    <div
-      className={cn(
-        'flex h-11 w-11 items-center justify-center rounded-2xl border shadow-sm',
-        getChannelCatalogTone(channel.id),
-      )}
-    >
-      {builtInIcon ? (
-        builtInIcon
-      ) : channel.icon ? (
-        channel.icon
-      ) : (
-        <span className="text-xs font-bold uppercase tracking-[0.18em]">
-          {getChannelCatalogMonogram(channel.id, channel.name)}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function RegionEmptyState({
-  title,
-}: {
-  title: string;
-}) {
-  return (
-    <div className="rounded-[18px] border border-dashed border-zinc-300 bg-white/75 p-6 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/35 dark:text-zinc-400">
-      {title}
-    </div>
-  );
-}
-
 export function ChannelWorkspace({
   items,
   texts,
@@ -178,9 +146,18 @@ export function ChannelWorkspace({
 }: ChannelWorkspaceProps) {
   const { t } = useTranslation();
   const [validationError, setValidationError] = React.useState<string | null>(null);
+  const localizedItems = React.useMemo(
+    () =>
+      items.map((item) =>
+        localizeChannelWorkspaceItem(t, item, {
+          localizeMetadata: false,
+        }),
+      ),
+    [items, t],
+  );
   const regionGroups = React.useMemo(
-    () => partitionChannelCatalogItemsByRegion(items),
-    [items],
+    () => partitionChannelCatalogItemsByRegion(localizedItems),
+    [localizedItems],
   );
   const [activeRegion, setActiveRegion] = React.useState<ChannelCatalogRegion>(() =>
     resolveDefaultChannelCatalogRegion(regionGroups),
@@ -188,8 +165,8 @@ export function ChannelWorkspace({
   const visibleItems = regionGroups[activeRegion];
 
   const selectedChannel = React.useMemo(
-    () => items.find((channel) => channel.id === selectedChannelId) || null,
-    [items, selectedChannelId],
+    () => localizedItems.find((channel) => channel.id === selectedChannelId) || null,
+    [localizedItems, selectedChannelId],
   );
 
   const selectedValues = React.useMemo<Record<string, string>>(() => {
@@ -225,37 +202,30 @@ export function ChannelWorkspace({
   }, [activeRegion, onSelectedChannelIdChange, selectedChannel]);
 
   const displayedError = error || validationError;
+  const resolveLocalizedOfficialLink = React.useCallback(
+    (channel: ChannelWorkspaceItem) =>
+      localizeChannelOfficialLink(t, channel.id, resolveOfficialLink(channel)),
+    [resolveOfficialLink, t],
+  );
   const selectedChannelOfficialLink = selectedChannel
-    ? resolveOfficialLink(selectedChannel)
+    ? resolveLocalizedOfficialLink(selectedChannel)
     : null;
   const selectedOfficialActionLabel =
     selectedChannel && isChannelDownloadAppAction(selectedChannel.id)
       ? texts.actionDownloadApp
       : texts.actionOpenOfficialSite;
-  const deleteActionLabel = texts.deleteConfigurationAction || 'Delete configuration';
+  const deleteActionLabel = texts.deleteConfigurationAction;
   const hasConfiguredValues = selectedChannel
     ? selectedChannel.fields.some((field) => Boolean((selectedValues[field.key] || '').trim()))
     : false;
-  const regionLabels: Record<ChannelCatalogRegion, string> = {
-    domestic: t('channels.page.catalog.tabs.domestic'),
-    global: t('channels.page.catalog.tabs.global'),
-    media: t('channels.page.catalog.tabs.media'),
-    all: t('channels.page.catalog.tabs.all'),
-  };
+  const regionLabels: Record<ChannelCatalogRegion, string> = buildChannelCatalogRegionLabels(t);
   const regionCounts: Record<ChannelCatalogRegion, number> = {
     domestic: regionGroups.domestic.length,
     global: regionGroups.global.length,
     media: regionGroups.media.length,
     all: regionGroups.all.length,
   };
-  const regionEmptyText =
-    activeRegion === 'domestic'
-      ? t('channels.page.catalog.empty.domestic')
-      : activeRegion === 'global'
-        ? t('channels.page.catalog.empty.global')
-        : activeRegion === 'media'
-          ? t('channels.page.catalog.empty.media')
-        : t('channels.page.catalog.empty.all');
+  const regionEmptyText = getChannelCatalogRegionEmptyText(t, activeRegion);
 
   const handleOpenSelectedOfficialLink = () => {
     if (!selectedChannel || !selectedChannelOfficialLink) {
@@ -281,7 +251,7 @@ export function ChannelWorkspace({
       (field) => field.required && !(selectedValues[field.key] || '').trim(),
     );
     if (missingField) {
-      setValidationError(`${missingField.label} is required.`);
+      setValidationError(texts.validationRequiredField(missingField.label));
       return;
     }
 
@@ -291,7 +261,7 @@ export function ChannelWorkspace({
   return (
     <div className={cn('space-y-4', className)}>
       {configFilePath ? (
-        <div className="rounded-[18px] border border-zinc-200/70 bg-white/80 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/35 dark:text-zinc-300">
+        <div className="rounded-[24px] border border-zinc-200/70 bg-white/88 p-4 text-sm text-zinc-600 shadow-[0_20px_50px_-40px_rgba(15,23,42,0.45)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/45 dark:text-zinc-300">
           {texts.configFileLabel ? (
             <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
               {texts.configFileLabel}
@@ -303,7 +273,7 @@ export function ChannelWorkspace({
         </div>
       ) : null}
 
-      {items.length > 0 ? (
+      {localizedItems.length > 0 ? (
         <ChannelRegionTabs
           activeRegion={activeRegion}
           labels={regionLabels}
@@ -317,10 +287,20 @@ export function ChannelWorkspace({
         texts={texts}
         variant={variant}
         emptyState={
-          items.length === 0 ? emptyState : <RegionEmptyState title={regionEmptyText} />
+          localizedItems.length === 0 ? (
+            emptyState
+          ) : (
+            <ChannelEmptyStateSurface
+              dataSlot="channel-workspace-empty-state"
+              title={regionEmptyText}
+              className="rounded-[24px] border border-dashed border-zinc-300/80 bg-gradient-to-br from-white via-white to-zinc-50/90 p-6 text-sm text-zinc-500 shadow-[0_18px_46px_-40px_rgba(15,23,42,0.35)] dark:border-zinc-700 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950/90 dark:text-zinc-400"
+            />
+          )
         }
         showRegionTabs={false}
-        resolveOfficialLink={(channel) => resolveOfficialLink(channel as ChannelWorkspaceItem)}
+        resolveOfficialLink={(channel) =>
+          resolveLocalizedOfficialLink(channel as ChannelWorkspaceItem)
+        }
         onOpenOfficialLink={
           onOpenOfficialLink
             ? (channel, link) => onOpenOfficialLink(channel as ChannelWorkspaceItem, link)
@@ -347,30 +327,50 @@ export function ChannelWorkspace({
           isOpen
           onClose={() => onSelectedChannelIdChange(null)}
           variant="drawer"
-          className={cn('max-w-lg', drawerClassName)}
+          className={cn(
+            'max-w-[34rem] bg-gradient-to-br from-white via-white to-zinc-50 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950',
+            drawerClassName,
+          )}
         >
-          <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50/70 px-6 py-5 dark:border-zinc-800 dark:bg-zinc-800/50">
+          <div
+            data-slot="channel-workspace-drawer-header"
+            className="flex items-start justify-between border-b border-zinc-200/70 bg-gradient-to-br from-white via-white to-zinc-50 px-6 py-5 dark:border-zinc-800 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950"
+          >
             <div className="flex items-center gap-3">
-              <ChannelIdentity channel={selectedChannel} />
+              <ChannelIdentityBadge
+                channelId={selectedChannel.id}
+                channelName={selectedChannel.name}
+                icon={selectedChannel.icon}
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border shadow-sm"
+                monogramClassName="text-xs font-bold uppercase tracking-[0.18em]"
+              />
               <div>
                 <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                   {selectedChannel.name}
                 </h2>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">{texts.panelEyebrow}</p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
+                  {texts.panelEyebrow}
+                </p>
+                <p className="mt-2 max-w-md text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                  {selectedChannel.description}
+                </p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => onSelectedChannelIdChange(null)}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200/80 bg-white/70 text-zinc-500 transition-colors hover:bg-white hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900/70 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
-            <div className="space-y-8 p-6">
-              <div className="rounded-2xl border border-primary-100 bg-primary-50 p-5 dark:border-primary-500/20 dark:bg-primary-500/10">
+          <div className="flex-1 overflow-y-auto bg-zinc-50/40 dark:bg-zinc-950/35">
+            <div className="space-y-6 p-6">
+              <div
+                data-slot="channel-workspace-setup-panel"
+                className="rounded-[24px] border border-primary-200/70 bg-gradient-to-br from-primary-50 via-white to-primary-100/70 p-5 shadow-[0_20px_50px_-40px_rgba(37,99,235,0.45)] dark:border-primary-500/20 dark:from-primary-500/12 dark:via-zinc-900 dark:to-primary-500/8"
+              >
                 <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-primary-900 dark:text-primary-100">
                   <BookOpen className="h-4 w-4" />
                   {texts.setupGuideTitle}
@@ -403,61 +403,69 @@ export function ChannelWorkspace({
                 ) : null}
               </div>
 
-              <div className="space-y-5">
+              <div
+                data-slot="channel-workspace-credentials-panel"
+                className="rounded-[24px] border border-zinc-200/80 bg-white/92 p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.32)] dark:border-zinc-800 dark:bg-zinc-900/86"
+              >
                 <h3 className="border-b border-zinc-100 pb-2 text-sm font-bold text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
                   {texts.credentialsTitle}
                 </h3>
-                {selectedChannel.fields.map((field) => (
-                  <div key={field.key}>
-                    <Label className="mb-1.5 block">
-                      {field.label}
-                      {field.required ? ' *' : ''}
-                    </Label>
-                    {field.multiline ? (
-                      <Textarea
-                        value={selectedValues[field.key] || ''}
-                        onChange={(event) => {
-                          setValidationError(null);
-                          if (!onFieldChange) {
-                            return;
-                          }
-                          void onFieldChange(selectedChannel, field.key, event.target.value);
-                        }}
-                        placeholder={field.placeholder}
-                        rows={5}
-                      />
-                    ) : (
-                      <Input
-                        type={getInputType(field)}
-                        value={selectedValues[field.key] || ''}
-                        onChange={(event) => {
-                          setValidationError(null);
-                          if (!onFieldChange) {
-                            return;
-                          }
-                          void onFieldChange(selectedChannel, field.key, event.target.value);
-                        }}
-                        placeholder={field.placeholder}
-                      />
-                    )}
-                    {field.helpText ? (
-                      <p className="mt-1.5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                        {field.helpText}
-                      </p>
-                    ) : null}
-                  </div>
-                ))}
+                <div className="mt-5 space-y-5">
+                  {selectedChannel.fields.map((field) => (
+                    <div key={field.key}>
+                      <Label className="mb-1.5 block">
+                        {field.label}
+                        {field.required ? ' *' : ''}
+                      </Label>
+                      {field.multiline ? (
+                        <Textarea
+                          value={selectedValues[field.key] || ''}
+                          onChange={(event) => {
+                            setValidationError(null);
+                            if (!onFieldChange) {
+                              return;
+                            }
+                            void onFieldChange(selectedChannel, field.key, event.target.value);
+                          }}
+                          placeholder={field.placeholder}
+                          rows={5}
+                        />
+                      ) : (
+                        <Input
+                          type={getInputType(field)}
+                          value={selectedValues[field.key] || ''}
+                          onChange={(event) => {
+                            setValidationError(null);
+                            if (!onFieldChange) {
+                              return;
+                            }
+                            void onFieldChange(selectedChannel, field.key, event.target.value);
+                          }}
+                          placeholder={field.placeholder}
+                        />
+                      )}
+                      {field.helpText ? (
+                        <p className="mt-1.5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                          {field.helpText}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
 
-                {displayedError ? (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-                    {displayedError}
-                  </div>
-                ) : null}
+                  {displayedError ? (
+                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                      {displayedError}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="border-t border-zinc-100 bg-zinc-50/70 p-6 dark:border-zinc-800 dark:bg-zinc-800/50">
+          <div
+            data-slot="channel-workspace-footer"
+            className="border-t border-zinc-200/70 bg-white/92 p-6 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/82"
+          >
             <div className="flex flex-col gap-3">
               <Button onClick={handleSave} disabled={isSaving} className="w-full">
                 {isSaving ? texts.savingAction : texts.saveAction}

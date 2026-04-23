@@ -268,7 +268,7 @@ await runTest(
 );
 
 await runTest(
-  'chatService prefers adapter identity over raw route mode when deciding whether a kernel must use the native gateway path',
+  'chatService prefers gateway authority over adapter id strings when deciding whether a kernel must use the native gateway path',
   async () => {
     let streamed = false;
     const instance = createHttpSnapshotInstance('adapter-first-openclaw');
@@ -284,7 +284,7 @@ await runTest(
             endpoint: 'http://127.0.0.1:18080/chat/completions',
           },
           adapterResolution: createAdapterResolution(instance, {
-            adapterId: 'openclawGateway',
+            adapterId: 'customGatewayBridge',
             authorityKind: 'gateway',
           }),
         };
@@ -331,7 +331,7 @@ await runTest(
           },
           adapterResolution: createAdapterResolution(instance, {
             adapterId: 'hermes',
-            authorityKind: 'sqlite',
+            authorityKind: 'http',
             supported: false,
             supportsStreaming: false,
             supportsRuns: false,
@@ -363,5 +363,327 @@ await runTest(
     assert.match(output, /not chat-ready yet/i);
     assert.match(output, /Hermes chat transport is not wired yet/i);
     assert.equal(streamed, false);
+  },
+);
+
+await runTest(
+  'chatService keeps generic HTTP streaming for non-gateway authorities even when adapter ids look gateway-like',
+  async () => {
+    let streamed = false;
+    const instance = createHttpSnapshotInstance('http-not-gateway-authority');
+    const service = createChatService({
+      async resolveActiveInstanceContext() {
+        return {
+          activeInstance: instance,
+          route: {
+            mode: 'instanceOpenAiHttp',
+            runtimeKind: instance.runtimeKind,
+            transportKind: instance.transportKind,
+            deploymentMode: instance.deploymentMode,
+            endpoint: 'http://127.0.0.1:18080/chat/completions',
+          },
+          adapterResolution: createAdapterResolution(instance, {
+            adapterId: 'openclawGateway',
+            authorityKind: 'http',
+            supportsAgentProfiles: false,
+          }),
+        };
+      },
+      async *streamRequest() {
+        streamed = true;
+        yield 'streamed-over-http';
+      },
+    });
+
+    const output = await collectStream(
+      service.sendMessageStream(
+        null,
+        'hello',
+        {
+          id: 'gpt-5.4',
+          name: 'GPT-5.4',
+          provider: 'openai',
+          icon: 'OA',
+        },
+      ),
+    );
+
+    assert.equal(output, 'streamed-over-http');
+    assert.equal(streamed, true);
+  },
+);
+
+await runTest(
+  'chatService forwards authoritative Hermes session ids through the Hermes continuity header when local Hermes chat is adapter-backed',
+  async () => {
+    const instance = {
+      ...createHttpSnapshotInstance('hermes-authoritative-http'),
+      runtimeKind: 'hermes' as const,
+      deploymentMode: 'local-managed' as const,
+      transportKind: 'customHttp' as const,
+      typeLabel: 'Hermes Agent',
+      baseUrl: 'http://127.0.0.1:19540',
+      config: {
+        ...createHttpSnapshotInstance('hermes-authoritative-http').config,
+        baseUrl: 'http://127.0.0.1:19540',
+      },
+    };
+    let capturedHeaders: Record<string, string> | null = null;
+    const service = createChatService({
+      async resolveActiveInstanceContext() {
+        return {
+          activeInstance: instance,
+          route: {
+            mode: 'instanceOpenAiHttp',
+            runtimeKind: instance.runtimeKind,
+            transportKind: instance.transportKind,
+            deploymentMode: instance.deploymentMode,
+            endpoint: 'http://127.0.0.1:19540/v1/chat/completions',
+          },
+          adapterResolution: createAdapterResolution(instance, {
+            adapterId: 'hermes',
+            authorityKind: 'http',
+          }),
+        };
+      },
+      async *streamRequest(_endpoint, _body, headers) {
+        capturedHeaders = headers;
+        yield 'hello';
+      },
+    });
+
+    const output = await collectStream(
+      service.sendMessageStream(
+        {
+          id: 'session-hermes-1',
+          instanceId: instance.id,
+          kernelSession: {
+            ref: {
+              kernelId: 'hermes',
+              instanceId: instance.id,
+              sessionId: 'session-hermes-1',
+              nativeSessionId: 'native-hermes-session-1',
+            },
+          },
+        },
+        'hello',
+        {
+          id: 'gpt-5.4',
+          name: 'GPT-5.4',
+          provider: 'openai',
+          icon: 'OA',
+        },
+      ),
+    );
+
+    assert.equal(output, 'hello');
+    assert.equal(capturedHeaders?.['X-Hermes-Session-Id'], 'native-hermes-session-1');
+  },
+);
+
+await runTest(
+  'chatService forwards Hermes continuity headers for transport-backed Hermes HTTP sessions so remote Hermes chat can continue the same session',
+  async () => {
+    const instance = {
+      ...createHttpSnapshotInstance('hermes-remote-http'),
+      runtimeKind: 'hermes' as const,
+      deploymentMode: 'remote' as const,
+      transportKind: 'customHttp' as const,
+      typeLabel: 'Hermes Agent',
+      baseUrl: 'http://127.0.0.1:29540',
+      config: {
+        ...createHttpSnapshotInstance('hermes-remote-http').config,
+        baseUrl: 'http://127.0.0.1:29540',
+      },
+    };
+    let capturedHeaders: Record<string, string> | null = null;
+    const service = createChatService({
+      async resolveActiveInstanceContext() {
+        return {
+          activeInstance: instance,
+          route: {
+            mode: 'instanceOpenAiHttp',
+            runtimeKind: instance.runtimeKind,
+            transportKind: instance.transportKind,
+            deploymentMode: instance.deploymentMode,
+            endpoint: 'http://127.0.0.1:29540/v1/chat/completions',
+          },
+          adapterResolution: createAdapterResolution(instance, {
+            adapterId: 'transportBacked',
+            authorityKind: 'http',
+            durable: false,
+            supportsAgentProfiles: false,
+            supportsSessionMutation: true,
+          }),
+        };
+      },
+      async *streamRequest(_endpoint, _body, headers) {
+        capturedHeaders = headers;
+        yield 'hello';
+      },
+    });
+
+    const output = await collectStream(
+      service.sendMessageStream(
+        {
+          id: 'session-hermes-remote-1',
+          instanceId: instance.id,
+          kernelSession: {
+            ref: {
+              kernelId: 'hermes',
+              instanceId: instance.id,
+              sessionId: 'session-hermes-remote-1',
+              nativeSessionId: 'native-hermes-remote-session-1',
+            },
+          },
+        },
+        'hello',
+        {
+          id: 'gpt-5.4',
+          name: 'GPT-5.4',
+          provider: 'openai',
+          icon: 'OA',
+        },
+      ),
+    );
+
+    assert.equal(output, 'hello');
+    assert.equal(
+      capturedHeaders?.['X-Hermes-Session-Id'],
+      'native-hermes-remote-session-1',
+    );
+  },
+);
+
+await runTest(
+  'chatService builds multimodal OpenAI-style user content for HTTP runtimes when attachments are present',
+  async () => {
+    const instance = createHttpSnapshotInstance('http-multimodal');
+    let capturedBody: Record<string, unknown> | null = null;
+    const service = createChatService({
+      async resolveActiveInstanceContext() {
+        return {
+          activeInstance: instance,
+          route: {
+            mode: 'instanceOpenAiHttp',
+            runtimeKind: instance.runtimeKind,
+            transportKind: instance.transportKind,
+            deploymentMode: instance.deploymentMode,
+            endpoint: 'http://127.0.0.1:18080/chat/completions',
+          },
+          adapterResolution: createAdapterResolution(instance, {
+            adapterId: 'transportBacked',
+            authorityKind: 'http',
+            supportsAgentProfiles: false,
+          }),
+        };
+      },
+      async *streamRequest(_endpoint, body) {
+        capturedBody = body;
+        yield 'done';
+      },
+    });
+
+    const output = await collectStream(
+      service.sendMessageStream(
+        null,
+        'Inspect the screenshot and summarize the spoken note.',
+        {
+          id: 'gpt-5.4',
+          name: 'GPT-5.4',
+          provider: 'openai',
+          icon: 'OA',
+        },
+        undefined,
+        undefined,
+        undefined,
+        [
+          {
+            id: 'attachment-shot',
+            kind: 'screenshot',
+            name: 'error-screen.png',
+            url: 'https://cdn.example.com/error-screen.png',
+            previewUrl: 'https://cdn.example.com/error-screen.png',
+          },
+          {
+            id: 'attachment-audio',
+            kind: 'audio',
+            name: 'voice-note.webm',
+            url: 'https://cdn.example.com/voice-note.webm',
+          },
+        ],
+      ),
+    );
+
+    assert.equal(output, 'done');
+    assert.deepEqual(capturedBody?.messages, [
+      {
+        role: 'system',
+        content: 'You are Claw Studio AI assistant. You help users manage devices, write automation scripts, and answer questions about the ClawHub ecosystem. Keep your answers concise and helpful.',
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text:
+              'Inspect the screenshot and summarize the spoken note.\n\nAttachments:\n1. [audio] voice-note.webm\nURL: https://cdn.example.com/voice-note.webm',
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: 'https://cdn.example.com/error-screen.png',
+            },
+          },
+        ],
+      },
+    ]);
+  },
+);
+
+await runTest(
+  'chatService ignores Hermes tool progress SSE events so tool telemetry does not leak into assistant text',
+  async () => {
+    const instance = {
+      ...createHttpSnapshotInstance('hermes-tool-progress'),
+      runtimeKind: 'hermes' as const,
+    };
+    const service = createChatService({
+      async resolveActiveInstanceContext() {
+        return {
+          activeInstance: instance,
+          route: {
+            mode: 'instanceOpenAiHttp',
+            runtimeKind: instance.runtimeKind,
+            transportKind: instance.transportKind,
+            deploymentMode: instance.deploymentMode,
+            endpoint: 'http://127.0.0.1:19540/v1/chat/completions',
+          },
+          adapterResolution: createAdapterResolution(instance, {
+            adapterId: 'hermes',
+            authorityKind: 'http',
+          }),
+        };
+      },
+      async *streamRequest() {
+        yield 'event: hermes.tool.progress\ndata: {"tool_name":"browser.search","phase":"running","message":"Searching..."}\n\n';
+        yield 'data: {"choices":[{"delta":{"content":"Final answer"}}]}\n\n';
+      },
+    });
+
+    const output = await collectStream(
+      service.sendMessageStream(
+        null,
+        'hello',
+        {
+          id: 'gpt-5.4',
+          name: 'GPT-5.4',
+          provider: 'openai',
+          icon: 'OA',
+        },
+      ),
+    );
+
+    assert.equal(output, 'Final answer');
   },
 );

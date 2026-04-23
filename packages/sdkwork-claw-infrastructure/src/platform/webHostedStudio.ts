@@ -1,4 +1,8 @@
 import type {
+  KernelChatAgentProfile,
+  KernelChatMessage,
+  KernelChatRun,
+  KernelChatSession,
   StudioConversationRecord,
   StudioInstanceConfig,
   StudioInstanceDetailRecord,
@@ -6,11 +10,14 @@ import type {
   StudioWorkbenchTaskExecutionRecord,
 } from '@sdkwork/claw-types';
 import type {
+  StudioCreateKernelChatSessionInput,
   StudioCreateInstanceInput,
   StudioInstanceTaskMutationPayload,
   StudioOpenClawGatewayInvokeOptions,
   StudioOpenClawGatewayInvokeRequest,
+  StudioPatchKernelChatSessionInput,
   StudioPlatformAPI,
+  StudioStartKernelChatRunInput,
   StudioUpdateInstanceInput,
   StudioUpdateInstanceLlmProviderConfigInput,
 } from './contracts/studio.ts';
@@ -100,6 +107,321 @@ export class WebHostedStudioPlatform implements StudioPlatformAPI {
           `studio.getInstanceDetail(${id})`,
         ),
       () => this.requireFallback('getInstanceDetail').getInstanceDetail(id),
+    );
+  }
+
+  async listKernelChatAgentProfiles(instanceId: string): Promise<KernelChatAgentProfile[]> {
+    return this.withHostedOrFallback(
+      'listKernelChatAgentProfiles',
+      (basePath) =>
+        this.requestHostedJson<KernelChatAgentProfile[]>(
+          basePath,
+          `/studio/instances/${encodeURIComponent(instanceId)}/kernel-chat/agent-profiles`,
+          {
+            method: 'GET',
+            headers: {
+              accept: 'application/json',
+            },
+          },
+          `studio.listKernelChatAgentProfiles(${instanceId})`,
+        ),
+      () => {
+        const fallbackList =
+          this.requireFallback('listKernelChatAgentProfiles').listKernelChatAgentProfiles;
+        if (!fallbackList) {
+          throw createHostedStudioUnavailableError('listKernelChatAgentProfiles');
+        }
+        return fallbackList.call(this.fallback, instanceId);
+      },
+    );
+  }
+
+  async listKernelChatSessions(instanceId: string): Promise<KernelChatSession[]> {
+    return this.withHostedOrFallback(
+      'listKernelChatSessions',
+      (basePath) =>
+        this.requestHostedJson<KernelChatSession[]>(
+          basePath,
+          `/studio/instances/${encodeURIComponent(instanceId)}/kernel-chat/sessions`,
+          {
+            method: 'GET',
+            headers: {
+              accept: 'application/json',
+            },
+          },
+          `studio.listKernelChatSessions(${instanceId})`,
+        ),
+      () => {
+        const fallbackList =
+          this.requireFallback('listKernelChatSessions').listKernelChatSessions;
+        if (!fallbackList) {
+          throw createHostedStudioUnavailableError('listKernelChatSessions');
+        }
+        return fallbackList.call(this.fallback, instanceId);
+      },
+    );
+  }
+
+  async getKernelChatSession(
+    instanceId: string,
+    sessionId: string,
+  ): Promise<KernelChatSession | null> {
+    return this.withHostedOrFallback(
+      'getKernelChatSession',
+      (basePath) =>
+        this.requestHostedJson<KernelChatSession | null>(
+          basePath,
+          `/studio/instances/${encodeURIComponent(instanceId)}/kernel-chat/sessions/${encodeURIComponent(sessionId)}`,
+          {
+            method: 'GET',
+            headers: {
+              accept: 'application/json',
+            },
+          },
+          `studio.getKernelChatSession(${instanceId}, ${sessionId})`,
+        ),
+      () => {
+        const fallbackGet =
+          this.requireFallback('getKernelChatSession').getKernelChatSession;
+        if (!fallbackGet) {
+          throw createHostedStudioUnavailableError('getKernelChatSession');
+        }
+        return fallbackGet.call(this.fallback, instanceId, sessionId);
+      },
+    );
+  }
+
+  async createKernelChatSession(
+    input: StudioCreateKernelChatSessionInput,
+  ): Promise<KernelChatSession> {
+    return this.withHostedOrFallback(
+      'createKernelChatSession',
+      (basePath) =>
+        this.requestHostedJson<KernelChatSession>(
+          basePath,
+          `/studio/instances/${encodeURIComponent(input.instanceId)}/kernel-chat/sessions`,
+          {
+            method: 'POST',
+            headers: {
+              accept: 'application/json',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify(input),
+          },
+          `studio.createKernelChatSession(${input.instanceId})`,
+        ),
+      () => {
+        const fallbackCreate =
+          this.requireFallback('createKernelChatSession').createKernelChatSession;
+        if (!fallbackCreate) {
+          throw createHostedStudioUnavailableError('createKernelChatSession');
+        }
+        return fallbackCreate.call(this.fallback, input);
+      },
+    );
+  }
+
+  async listKernelChatRuns(
+    instanceId: string,
+    sessionId: string,
+  ): Promise<KernelChatRun[]> {
+    return this.withHostedOrFallback(
+      'listKernelChatRuns',
+      (basePath) =>
+        this.requestHostedJson<KernelChatRun[]>(
+          basePath,
+          `/studio/instances/${encodeURIComponent(instanceId)}/kernel-chat/sessions/${encodeURIComponent(sessionId)}/runs`,
+          {
+            method: 'GET',
+            headers: {
+              accept: 'application/json',
+            },
+          },
+          `studio.listKernelChatRuns(${instanceId}, ${sessionId})`,
+        ),
+      () => {
+        const fallbackList = this.requireFallback('listKernelChatRuns').listKernelChatRuns;
+        if (!fallbackList) {
+          throw createHostedStudioUnavailableError('listKernelChatRuns');
+        }
+        return fallbackList.call(this.fallback, instanceId, sessionId);
+      },
+    );
+  }
+
+  async getKernelChatRun(
+    instanceId: string,
+    sessionId: string,
+    runId: string,
+  ): Promise<KernelChatRun | null> {
+    return this.withHostedOrFallback(
+      'getKernelChatRun',
+      (basePath) =>
+        this.requestHostedJson<KernelChatRun | null>(
+          basePath,
+          `/studio/instances/${encodeURIComponent(instanceId)}/kernel-chat/sessions/${encodeURIComponent(sessionId)}/runs/${encodeURIComponent(runId)}`,
+          {
+            method: 'GET',
+            headers: {
+              accept: 'application/json',
+            },
+          },
+          `studio.getKernelChatRun(${instanceId}, ${sessionId}, ${runId})`,
+        ),
+      () => {
+        const fallbackGet = this.requireFallback('getKernelChatRun').getKernelChatRun;
+        if (!fallbackGet) {
+          throw createHostedStudioUnavailableError('getKernelChatRun');
+        }
+        return fallbackGet.call(this.fallback, instanceId, sessionId, runId);
+      },
+    );
+  }
+
+  async patchKernelChatSession(
+    input: StudioPatchKernelChatSessionInput,
+  ): Promise<KernelChatSession> {
+    return this.withHostedOrFallback(
+      'patchKernelChatSession',
+      (basePath) =>
+        this.requestHostedJson<KernelChatSession>(
+          basePath,
+          `/studio/instances/${encodeURIComponent(input.instanceId)}/kernel-chat/sessions/${encodeURIComponent(input.sessionId)}`,
+          {
+            method: 'PATCH',
+            headers: {
+              accept: 'application/json',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify(input),
+          },
+          `studio.patchKernelChatSession(${input.instanceId}, ${input.sessionId})`,
+        ),
+      () => {
+        const fallbackPatch =
+          this.requireFallback('patchKernelChatSession').patchKernelChatSession;
+        if (!fallbackPatch) {
+          throw createHostedStudioUnavailableError('patchKernelChatSession');
+        }
+        return fallbackPatch.call(this.fallback, input);
+      },
+    );
+  }
+
+  async deleteKernelChatSession(instanceId: string, sessionId: string): Promise<void> {
+    await this.withHostedOrFallback(
+      'deleteKernelChatSession',
+      (basePath) =>
+        this.requestHostedJson<null>(
+          basePath,
+          `/studio/instances/${encodeURIComponent(instanceId)}/kernel-chat/sessions/${encodeURIComponent(sessionId)}`,
+          {
+            method: 'DELETE',
+            headers: {
+              accept: 'application/json',
+            },
+          },
+          `studio.deleteKernelChatSession(${instanceId}, ${sessionId})`,
+        ),
+      () => {
+        const fallbackDelete =
+          this.requireFallback('deleteKernelChatSession').deleteKernelChatSession;
+        if (!fallbackDelete) {
+          throw createHostedStudioUnavailableError('deleteKernelChatSession');
+        }
+        return fallbackDelete.call(this.fallback, instanceId, sessionId);
+      },
+    );
+  }
+
+  async startKernelChatRun(
+    input: StudioStartKernelChatRunInput,
+  ): Promise<KernelChatRun> {
+    return this.withHostedOrFallback(
+      'startKernelChatRun',
+      (basePath) =>
+        this.requestHostedJson<KernelChatRun>(
+          basePath,
+          `/studio/instances/${encodeURIComponent(input.instanceId)}/kernel-chat/sessions/${encodeURIComponent(input.sessionId)}:run`,
+          {
+            method: 'POST',
+            headers: {
+              accept: 'application/json',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify(input),
+          },
+          `studio.startKernelChatRun(${input.instanceId}, ${input.sessionId})`,
+        ),
+      () => {
+        const fallbackStart =
+          this.requireFallback('startKernelChatRun').startKernelChatRun;
+        if (!fallbackStart) {
+          throw createHostedStudioUnavailableError('startKernelChatRun');
+        }
+        return fallbackStart.call(this.fallback, input);
+      },
+    );
+  }
+
+  async abortKernelChatRun(
+    instanceId: string,
+    sessionId: string,
+    runId?: string | null,
+  ): Promise<boolean> {
+    return this.withHostedOrFallback(
+      'abortKernelChatRun',
+      (basePath) =>
+        this.requestHostedJson<boolean>(
+          basePath,
+          `/studio/instances/${encodeURIComponent(instanceId)}/kernel-chat/sessions/${encodeURIComponent(sessionId)}:abort`,
+          {
+            method: 'POST',
+            headers: {
+              accept: 'application/json',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({ runId: runId ?? null }),
+          },
+          `studio.abortKernelChatRun(${instanceId}, ${sessionId})`,
+        ),
+      () => {
+        const fallbackAbort =
+          this.requireFallback('abortKernelChatRun').abortKernelChatRun;
+        if (!fallbackAbort) {
+          throw createHostedStudioUnavailableError('abortKernelChatRun');
+        }
+        return fallbackAbort.call(this.fallback, instanceId, sessionId, runId);
+      },
+    );
+  }
+
+  async loadKernelChatMessages(
+    instanceId: string,
+    sessionId: string,
+  ): Promise<KernelChatMessage[]> {
+    return this.withHostedOrFallback(
+      'loadKernelChatMessages',
+      (basePath) =>
+        this.requestHostedJson<KernelChatMessage[]>(
+          basePath,
+          `/studio/instances/${encodeURIComponent(instanceId)}/kernel-chat/sessions/${encodeURIComponent(sessionId)}/messages`,
+          {
+            method: 'GET',
+            headers: {
+              accept: 'application/json',
+            },
+          },
+          `studio.loadKernelChatMessages(${instanceId}, ${sessionId})`,
+        ),
+      () => {
+        const fallbackLoad =
+          this.requireFallback('loadKernelChatMessages').loadKernelChatMessages;
+        if (!fallbackLoad) {
+          throw createHostedStudioUnavailableError('loadKernelChatMessages');
+        }
+        return fallbackLoad.call(this.fallback, instanceId, sessionId);
+      },
     );
   }
 

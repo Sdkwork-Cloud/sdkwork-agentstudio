@@ -46,6 +46,7 @@ export interface ApplyInstanceDetailInstanceSwitchResetStateInput {
   setDreamingDraft: Setter<ConfigResetState['dreaming']['draft']>;
   setDreamingError: Setter<ConfigResetState['dreaming']['error']>;
   setIsSavingDreaming: Setter<ConfigResetState['dreaming']['isSaving']>;
+  setIsAgentCreationWorkflowOpen: Setter<AgentWorkspaceResetState['isCreationWorkflowOpen']>;
   setIsAgentDialogOpen: Setter<AgentWorkspaceResetState['isDialogOpen']>;
   setSelectedAgentId: Setter<AgentWorkspaceResetState['selectedAgentId']>;
   setSelectedAgentWorkbench: Setter<AgentWorkspaceResetState['selectedAgentWorkbench']>;
@@ -99,6 +100,7 @@ export function applyInstanceDetailInstanceSwitchResetState(
   args.setDreamingDraft(configResetState.dreaming.draft);
   args.setDreamingError(configResetState.dreaming.error);
   args.setIsSavingDreaming(configResetState.dreaming.isSaving);
+  args.setIsAgentCreationWorkflowOpen(agentWorkspaceResetState.isCreationWorkflowOpen);
   args.setIsAgentDialogOpen(agentWorkspaceResetState.isDialogOpen);
   args.setSelectedAgentId(agentWorkspaceResetState.selectedAgentId);
   args.setSelectedAgentWorkbench(agentWorkspaceResetState.selectedAgentWorkbench);
