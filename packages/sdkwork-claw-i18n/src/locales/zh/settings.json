@@ -32,7 +32,8 @@
       "zinc": "锌灰",
       "violet": "紫罗兰",
       "rose": "玫瑰粉"
-    }
+    },
+    "languageFallbackTo": "当前在 Claw Studio 中回退到 {{language}} 翻译。"
   },
   "page": {
     "title": "设置",
@@ -133,7 +134,7 @@
       "startupEvidence": "启动证据",
       "storage": "存储",
       "provenance": "运行来源",
-      "runtimeAuthority": "\u8fd0\u884c\u65f6\u6388\u6743",
+      "runtimeAuthority": "运行时授权",
       "capabilityRollup": "能力汇总",
       "managedDirectories": "托管目录",
       "supervisorAndBundles": "监管器与内置组件",
@@ -211,10 +212,10 @@
       "configFile": "配置文件",
       "runtimeHome": "运行时主目录",
       "runtimeInstallDir": "运行时安装目录",
-      "configFilePath": "\u914d\u7f6e\u6587\u4ef6\u8def\u5f84",
-      "ownedRuntimeRoot": "\u53d7\u63a7\u8fd0\u884c\u65f6\u6839\u76ee\u5f55 {{index}}",
-      "supportsLoopbackHealthProbe": "\u652f\u6301\u56de\u73af\u5065\u5eb7\u63a2\u6d4b",
-      "healthProbeTimeoutMs": "\u5065\u5eb7\u63a2\u6d4b\u8d85\u65f6",
+      "configFilePath": "配置文件路径",
+      "ownedRuntimeRoot": "受控运行时根目录 {{index}}",
+      "supportsLoopbackHealthProbe": "支持回环健康探测",
+      "healthProbeTimeoutMs": "健康探测超时",
       "machineState": "机器状态目录",
       "machineStaging": "机器暂存目录",
       "userRoot": "用户根目录",

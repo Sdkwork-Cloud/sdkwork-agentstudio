@@ -23,6 +23,54 @@ const BUNDLED_OPENCLAW_MANIFEST_KEYS = [
   'cliRelativePath',
 ];
 
+function sleepSync(ms) {
+  if (!Number.isFinite(ms) || ms <= 0) {
+    return;
+  }
+
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function shouldRetryDirectoryCleanup(error) {
+  const errorCode = typeof error === 'object' && error !== null ? error.code : undefined;
+  return errorCode === 'EPERM' || errorCode === 'EBUSY' || errorCode === 'ENOTEMPTY';
+}
+
+export function removeDirectoryWithRetriesSync(
+  directoryPath,
+  {
+    removeImpl = (targetPath, options) => rmSync(targetPath, options),
+    retryCount = 5,
+    retryDelayMs = 250,
+    sleepImpl = sleepSync,
+    logger = console.warn,
+  } = {},
+) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= retryCount; attempt += 1) {
+    try {
+      removeImpl(directoryPath, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      lastError = error;
+      const canRetry = attempt < retryCount && shouldRetryDirectoryCleanup(error);
+      if (!canRetry) {
+        throw error;
+      }
+
+      if (typeof logger === 'function') {
+        logger(
+          `[ensure-tauri-target-clean] Retrying cleanup of ${directoryPath} after transient Windows file lock (${attempt}/${retryCount - 1}).`,
+        );
+      }
+      sleepImpl(retryDelayMs * attempt);
+    }
+  }
+
+  throw lastError;
+}
+
 function normalizePermissionPath(filePath) {
   if (process.platform === 'win32' && filePath.startsWith('\\\\?\\')) {
     return filePath.slice(4);
@@ -343,7 +391,7 @@ export function ensureTauriTargetClean(srcTauriDir = 'src-tauri', { env = proces
       continue;
     }
 
-    rmSync(targetInspection.targetDir, { recursive: true, force: true });
+    removeDirectoryWithRetriesSync(targetInspection.targetDir);
     removedTargetDirs.push(targetInspection.targetDir);
   }
 

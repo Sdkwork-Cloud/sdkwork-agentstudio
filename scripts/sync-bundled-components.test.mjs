@@ -45,6 +45,11 @@ assert.equal(
   'sync-bundled-components must export resolvePreparedOpenClawPackageRoots',
 );
 assert.equal(
+  typeof syncModule.inspectPreparedOpenClawPackageRuntime,
+  'function',
+  'sync-bundled-components must export inspectPreparedOpenClawPackageRuntime',
+);
+assert.equal(
   typeof syncModule.resolveBundledBuildRoot,
   'function',
   'sync-bundled-components must export resolveBundledBuildRoot',
@@ -123,6 +128,11 @@ assert.match(
   syncModuleSource,
   /validatePreparedOpenClawPackageTree/,
   'sync-bundled-components must reuse the shared prepared OpenClaw package validation before accepting staged bundles',
+);
+assert.match(
+  syncModuleSource,
+  /installMissingBundledPluginRuntimeDeps/,
+  'sync-bundled-components must hydrate missing bundled plugin runtime dependencies after staging npm installs so dev bundles survive plugin dependency additions',
 );
 const overlay = syncModule.createTauriBundleOverlayConfig({
   workspaceRootDir: 'D:\\workspace\\claw-studio',
@@ -851,6 +861,76 @@ assert.match(
       'cli-startup-commit-mismatch',
     ],
     'sync-bundled-components must flag stale build-info and CLI startup metadata drift',
+  );
+
+  rmSync(tempRoot, { recursive: true, force: true });
+}
+
+{
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-sync-prepared-runtime-'));
+  const packageInstallRoot = path.join(tempRoot, 'prepared-runtime');
+  const packageRoot = path.join(packageInstallRoot, 'node_modules', 'openclaw');
+  mkdirSync(path.join(packageRoot, 'dist', 'extensions', 'tlon'), { recursive: true });
+  writeFileSync(
+    path.join(packageRoot, 'package.json'),
+    `${JSON.stringify({ name: 'openclaw', version: expectedOpenClawVersion }, null, 2)}\n`,
+    'utf8',
+  );
+  writeFileSync(
+    path.join(packageRoot, 'dist', 'build-info.json'),
+    `${JSON.stringify(
+      {
+        version: expectedOpenClawVersion,
+        commit: '213a704b71f4996dc82a583288ee53785215f627',
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  );
+  writeFileSync(
+    path.join(packageRoot, 'dist', 'cli-startup-metadata.json'),
+    `${JSON.stringify(
+      {
+        rootHelpText: '\nOpenClaw 2026.4.14 (213a704)\n',
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  );
+  writeFileSync(
+    path.join(packageRoot, 'dist', 'extensions', 'tlon', 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@openclaw/tlon',
+        version: expectedOpenClawVersion,
+        dependencies: {
+          '@aws-sdk/client-s3': '3.1020.0',
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  );
+
+  const inspection = await syncModule.inspectPreparedOpenClawPackageRuntime({
+    packageRoot,
+    packageInstallRoot,
+    expectedVersion: expectedOpenClawVersion,
+    expectedCommit: '213a704b71f4996dc82a583288ee53785215f627',
+    runtimeSupplementalPackages: [],
+  });
+
+  assert.equal(
+    inspection.fresh,
+    false,
+    'sync-bundled-components must reject prepared OpenClaw cache layouts that are missing bundled plugin runtime dependencies',
+  );
+  assert.ok(
+    inspection.issues.some((issue) => issue.includes('bundled-plugin-runtime-dependency @aws-sdk/client-s3')),
+    `Expected prepared cache inspection to report the missing tlon runtime dependency, received ${inspection.issues.join(', ')}`,
   );
 
   rmSync(tempRoot, { recursive: true, force: true });

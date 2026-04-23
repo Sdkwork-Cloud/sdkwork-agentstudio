@@ -1,0 +1,17 @@
+pub const CANONICAL_LOOPBACK_PORT_WINDOW_START: u16 = 21_280;
+pub const CANONICAL_LOOPBACK_PORT_WINDOW_SIZE: u16 = 32;
+
+pub const OPENCLAW_GATEWAY_DEFAULT_PORT: u16 = CANONICAL_LOOPBACK_PORT_WINDOW_START;
+pub const DESKTOP_EMBEDDED_HOST_DEFAULT_PORT: u16 = CANONICAL_LOOPBACK_PORT_WINDOW_START + 2;
+
+pub const LEGACY_MANAGED_LOOPBACK_PORT_RANGE_START: u16 = 18_000;
+pub const LEGACY_MANAGED_LOOPBACK_PORT_RANGE_END: u16 = 19_999;
+
+pub const fn canonical_loopback_port_window_end(requested_port: u16) -> u16 {
+    requested_port.saturating_add(CANONICAL_LOOPBACK_PORT_WINDOW_SIZE - 1)
+}
+
+pub const fn is_legacy_managed_loopback_port(port: u16) -> bool {
+    port >= LEGACY_MANAGED_LOOPBACK_PORT_RANGE_START
+        && port <= LEGACY_MANAGED_LOOPBACK_PORT_RANGE_END
+}

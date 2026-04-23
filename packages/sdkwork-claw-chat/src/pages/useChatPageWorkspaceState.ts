@@ -134,6 +134,7 @@ export function useChatPageWorkspaceState({
     isChatSupportedRoute,
     sessionScopeMode,
     effectiveGatewayAgentId,
+    selectedAgentId,
     routeMode,
     activeAdapterCapabilities,
     sendMode,

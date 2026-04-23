@@ -48,10 +48,12 @@ const DEFAULT_OPENCLAW_GATEWAY_READY_TIMEOUT_MS: u64 = 60_000;
 const DEFAULT_OPENCLAW_GATEWAY_START_RETRY_ATTEMPTS: usize = 3;
 const DEFAULT_OPENCLAW_GATEWAY_START_RETRY_DELAY_MS: u64 = 250;
 const DEFAULT_OPENCLAW_GATEWAY_HEALTH_PROBE_INTERVAL_MS: u64 = 500;
-const DEFAULT_OPENCLAW_GATEWAY_HEALTH_PROBE_TIMEOUT_MS: u64 = 750;
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_CONNECT_TIMEOUT_MS: u64 = 200;
-const DEFAULT_OPENCLAW_GATEWAY_HTTP_READY_IO_TIMEOUT_MS: u64 = 1_500;
-const DEFAULT_OPENCLAW_GATEWAY_HTTP_INVOKE_IO_TIMEOUT_MS: u64 = 300;
+const DEFAULT_OPENCLAW_GATEWAY_START_HTTP_READY_IO_TIMEOUT_MS: u64 = 4_000;
+const DEFAULT_OPENCLAW_GATEWAY_START_HTTP_INVOKE_IO_TIMEOUT_MS: u64 = 8_000;
+const DEFAULT_OPENCLAW_GATEWAY_START_HEALTH_PROBE_TIMEOUT_MS: u64 = 5_000;
+const DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HTTP_IO_TIMEOUT_MS: u64 = 5_000;
+const DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HEALTH_PROBE_TIMEOUT_MS: u64 = 3_000;
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_LIVE_PATH: &str = "/healthz";
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_READY_PATH: &str = "/readyz";
 #[cfg(windows)]
@@ -984,12 +986,18 @@ fn probe_gateway_ready(
     paths: &AppPaths,
     include_health_probe: bool,
 ) -> GatewayProbeStatus {
-    let http_ready_probe = probe_gateway_http_ready(runtime);
+    let http_ready_probe = probe_gateway_http_ready(
+        runtime,
+        DEFAULT_OPENCLAW_GATEWAY_START_HTTP_READY_IO_TIMEOUT_MS,
+    );
     if http_ready_probe.is_ready() {
         return http_ready_probe;
     }
 
-    let invoke_probe = probe_gateway_invoke_ready(runtime);
+    let invoke_probe = probe_gateway_invoke_ready(
+        runtime,
+        DEFAULT_OPENCLAW_GATEWAY_START_HTTP_INVOKE_IO_TIMEOUT_MS,
+    );
     if invoke_probe.is_ready() {
         return invoke_probe;
     }
@@ -1005,7 +1013,7 @@ fn probe_gateway_ready(
     let health_probe = probe_gateway_cli_health_ready(
         runtime,
         paths,
-        DEFAULT_OPENCLAW_GATEWAY_HEALTH_PROBE_TIMEOUT_MS,
+        DEFAULT_OPENCLAW_GATEWAY_START_HEALTH_PROBE_TIMEOUT_MS,
     );
     if health_probe.is_ready() {
         return health_probe;
@@ -1019,19 +1027,27 @@ fn probe_gateway_ready(
     ))
 }
 
-fn probe_gateway_http_ready(runtime: &ActivatedOpenClawRuntime) -> GatewayProbeStatus {
+fn probe_gateway_http_ready(
+    runtime: &ActivatedOpenClawRuntime,
+    io_timeout_ms: u64,
+) -> GatewayProbeStatus {
     probe_gateway_http_status(
         runtime,
         DEFAULT_OPENCLAW_GATEWAY_HTTP_READY_PATH,
         "ready probe",
+        io_timeout_ms,
     )
 }
 
-fn probe_gateway_http_live(runtime: &ActivatedOpenClawRuntime) -> GatewayProbeStatus {
+fn probe_gateway_http_live(
+    runtime: &ActivatedOpenClawRuntime,
+    io_timeout_ms: u64,
+) -> GatewayProbeStatus {
     probe_gateway_http_status(
         runtime,
         DEFAULT_OPENCLAW_GATEWAY_HTTP_LIVE_PATH,
         "live probe",
+        io_timeout_ms,
     )
 }
 
@@ -1039,12 +1055,18 @@ fn probe_running_gateway_health(
     runtime: &ActivatedOpenClawRuntime,
     paths: Option<&AppPaths>,
 ) -> GatewayProbeStatus {
-    let live_probe = probe_gateway_http_live(runtime);
+    let live_probe = probe_gateway_http_live(
+        runtime,
+        DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HTTP_IO_TIMEOUT_MS,
+    );
     if live_probe.is_ready() {
         return live_probe;
     }
 
-    let ready_probe = probe_gateway_http_ready(runtime);
+    let ready_probe = probe_gateway_http_ready(
+        runtime,
+        DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HTTP_IO_TIMEOUT_MS,
+    );
     if ready_probe.is_ready() {
         return ready_probe;
     }
@@ -1060,7 +1082,7 @@ fn probe_running_gateway_health(
     let health_probe = probe_gateway_cli_health_ready(
         runtime,
         paths,
-        DEFAULT_OPENCLAW_GATEWAY_HEALTH_PROBE_TIMEOUT_MS,
+        DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HEALTH_PROBE_TIMEOUT_MS,
     );
     if health_probe.is_ready() {
         return health_probe;
@@ -1078,6 +1100,7 @@ fn probe_gateway_http_status(
     runtime: &ActivatedOpenClawRuntime,
     path: &str,
     label: &str,
+    io_timeout_ms: u64,
 ) -> GatewayProbeStatus {
     let loopback = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, runtime.gateway_port));
     let mut stream = match TcpStream::connect_timeout(
@@ -1094,14 +1117,10 @@ fn probe_gateway_http_status(
     };
 
     if stream
-        .set_read_timeout(Some(Duration::from_millis(
-            DEFAULT_OPENCLAW_GATEWAY_HTTP_READY_IO_TIMEOUT_MS,
-        )))
+        .set_read_timeout(Some(Duration::from_millis(io_timeout_ms)))
         .is_err()
         || stream
-            .set_write_timeout(Some(Duration::from_millis(
-                DEFAULT_OPENCLAW_GATEWAY_HTTP_READY_IO_TIMEOUT_MS,
-            )))
+            .set_write_timeout(Some(Duration::from_millis(io_timeout_ms)))
             .is_err()
     {
         return GatewayProbeStatus::Pending(format!(
@@ -1148,7 +1167,10 @@ fn probe_gateway_http_status(
     GatewayProbeStatus::Pending(format!("{label} returned {}", status_line))
 }
 
-fn probe_gateway_invoke_ready(runtime: &ActivatedOpenClawRuntime) -> GatewayProbeStatus {
+fn probe_gateway_invoke_ready(
+    runtime: &ActivatedOpenClawRuntime,
+    io_timeout_ms: u64,
+) -> GatewayProbeStatus {
     let loopback = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, runtime.gateway_port));
     let mut stream = match TcpStream::connect_timeout(
         &loopback,
@@ -1164,14 +1186,10 @@ fn probe_gateway_invoke_ready(runtime: &ActivatedOpenClawRuntime) -> GatewayProb
     };
 
     if stream
-        .set_read_timeout(Some(Duration::from_millis(
-            DEFAULT_OPENCLAW_GATEWAY_HTTP_INVOKE_IO_TIMEOUT_MS,
-        )))
+        .set_read_timeout(Some(Duration::from_millis(io_timeout_ms)))
         .is_err()
         || stream
-            .set_write_timeout(Some(Duration::from_millis(
-                DEFAULT_OPENCLAW_GATEWAY_HTTP_INVOKE_IO_TIMEOUT_MS,
-            )))
+            .set_write_timeout(Some(Duration::from_millis(io_timeout_ms)))
             .is_err()
     {
         return GatewayProbeStatus::Pending(format!(

@@ -1240,7 +1240,7 @@ await runTest(
     );
     assert.match(
       workspaceStateHookSource,
-      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*activeMessages,\s*conversationBodyState,\s*activeMessageGroups,\s*\}\s*=\s*useChatSessionViewState\(\{\s*sessions,\s*activeInstanceId,\s*activeSessionId,\s*isChatSupportedRoute,\s*sessionScopeMode,\s*effectiveGatewayAgentId,\s*routeMode,\s*activeAdapterCapabilities,\s*sendMode,\s*\}\);/s,
+      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*activeMessages,\s*conversationBodyState,\s*activeMessageGroups,\s*\}\s*=\s*useChatSessionViewState\(\{\s*sessions,\s*activeInstanceId,\s*activeSessionId,\s*isChatSupportedRoute,\s*sessionScopeMode,\s*effectiveGatewayAgentId,\s*selectedAgentId,\s*routeMode,\s*activeAdapterCapabilities,\s*sendMode,\s*\}\);/s,
     );
     assert.doesNotMatch(pageSource, /const instanceSessions = sessions\.filter\(/);
     assert.doesNotMatch(
@@ -1283,7 +1283,7 @@ await runTest(
     );
     assert.match(
       sessionViewHookSource,
-      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*\}\s*=\s*useChatActiveSessionProjectionState\(\{\s*sessions,\s*activeInstanceId,\s*activeSessionId,\s*isChatSupportedRoute,\s*sessionScopeMode,\s*effectiveGatewayAgentId,\s*routeMode,\s*activeAdapterCapabilities,\s*sendMode,\s*\}\);/s,
+      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*\}\s*=\s*useChatActiveSessionProjectionState\(\{\s*sessions,\s*activeInstanceId,\s*activeSessionId,\s*isChatSupportedRoute,\s*sessionScopeMode,\s*effectiveGatewayAgentId,\s*selectedAgentId,\s*routeMode,\s*activeAdapterCapabilities,\s*sendMode,\s*\}\);/s,
     );
     assert.match(
       sessionViewHookSource,
@@ -1310,7 +1310,7 @@ await runTest(
     assert.match(activeSessionProjectionHookSource, /const instanceSessions = sessions\.filter\(/);
     assert.match(
       activeSessionProjectionHookSource,
-      /resolveChatWorkspaceProjection\(\{\s*sessions: instanceSessions,\s*activeSessionId,\s*isChatSupported: isChatSupportedRoute,\s*sessionScopeMode,\s*sessionScopeAgentId: effectiveGatewayAgentId,\s*\}\)/s,
+      /resolveChatWorkspaceProjection\(\{\s*sessions: instanceSessions,\s*activeSessionId,\s*isChatSupported: isChatSupportedRoute,\s*sessionScopeMode,\s*sessionScopeAgentId: effectiveGatewayAgentId,\s*selectedAgentId,\s*\}\)/s,
     );
     assert.match(activeSessionProjectionHookSource, /const workspaceProjection = useMemo\(/);
     assert.match(
@@ -2102,7 +2102,7 @@ await runTest(
     );
     assert.match(
       activeSessionProjectionHookSource,
-      /resolveChatWorkspaceProjection\(\{\s*sessions: instanceSessions,\s*activeSessionId,\s*isChatSupported: isChatSupportedRoute,\s*sessionScopeMode,\s*sessionScopeAgentId: effectiveGatewayAgentId,\s*\}\)/s,
+      /resolveChatWorkspaceProjection\(\{\s*sessions: instanceSessions,\s*activeSessionId,\s*isChatSupported: isChatSupportedRoute,\s*sessionScopeMode,\s*sessionScopeAgentId: effectiveGatewayAgentId,\s*selectedAgentId,\s*\}\)/s,
     );
     assert.match(
       pageRuntimeHookSource,

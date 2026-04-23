@@ -14,7 +14,10 @@ export interface LoadTaskStudioSnapshotInput {
   getTaskRuntimeOverview: (instanceId: string) => Promise<TaskRuntimeOverview>;
   listDeliveryChannels: (instanceId: string) => Promise<TaskDeliveryChannelOption[]>;
   getAgentCatalog: (instanceId: string) => Promise<OpenClawAgentCatalog>;
-  listTaskExecutions: (taskId: string) => Promise<TaskExecutionHistoryEntry[]>;
+  listTaskExecutions: (
+    instanceId: string,
+    taskId: string,
+  ) => Promise<TaskExecutionHistoryEntry[]>;
 }
 
 export interface TaskStudioSnapshot {
@@ -49,7 +52,9 @@ export async function loadTaskStudioSnapshot(
   );
 
   const historyEntries = await Promise.all(
-    historyTaskIds.map(async (taskId) => [taskId, await input.listTaskExecutions(taskId)] as const),
+    historyTaskIds.map(
+      async (taskId) => [taskId, await input.listTaskExecutions(input.instanceId, taskId)] as const,
+    ),
   );
 
   return {

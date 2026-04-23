@@ -63,6 +63,7 @@ pub use kernel_chat::{
     StudioCreateKernelChatSessionInput, StudioPatchKernelChatSessionInput,
     StudioStartKernelChatRunInput,
 };
+use hermes_chat::create_kernel_chat_agent_profile_for_managed_hermes;
 use openclaw_control::{
     clone_openclaw_task, create_openclaw_task, delete_openclaw_task, invoke_openclaw_gateway,
     list_openclaw_task_executions, require_running_openclaw_runtime, run_openclaw_task_now,
@@ -279,15 +280,18 @@ pub struct StudioInstanceConfig {
 
 impl Default for StudioInstanceConfig {
     fn default() -> Self {
+        let base_url = format!("http://127.0.0.1:{DEFAULT_GATEWAY_PORT}");
+        let websocket_url = format!("ws://127.0.0.1:{DEFAULT_GATEWAY_PORT}");
+
         Self {
-            port: "18789".to_string(),
+            port: DEFAULT_GATEWAY_PORT.to_string(),
             sandbox: true,
             auto_update: true,
             log_level: "info".to_string(),
             cors_origins: "*".to_string(),
             workspace_path: None,
-            base_url: Some("http://127.0.0.1:18789".to_string()),
-            websocket_url: Some("ws://127.0.0.1:18789".to_string()),
+            base_url: Some(base_url),
+            websocket_url: Some(websocket_url),
             auth_token: None,
         }
     }
@@ -1137,6 +1141,22 @@ pub enum StudioKernelAgentCreationReasonCode {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct StudioKernelAgentCreationFieldSupport {
+    pub avatar: bool,
+    pub is_default: bool,
+    pub primary_model: bool,
+    pub fallback_models: bool,
+    pub workspace: bool,
+    pub agent_dir: bool,
+    pub temperature: bool,
+    pub top_p: bool,
+    pub max_tokens: bool,
+    pub timeout_ms: bool,
+    pub streaming: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StudioKernelAgentCreationKernelOption {
     pub kernel_id: String,
     pub label: String,
@@ -1145,6 +1165,9 @@ pub struct StudioKernelAgentCreationKernelOption {
     pub reason_code: Option<StudioKernelAgentCreationReasonCode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
+    #[serde(default)]
+    pub model_options: Vec<StudioKernelAgentCreationModelOption>,
+    pub field_support: StudioKernelAgentCreationFieldSupport,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -1164,7 +1187,6 @@ pub struct StudioKernelAgentCreationCapability {
     pub kernel_options: Vec<StudioKernelAgentCreationKernelOption>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_kernel_id: Option<String>,
-    pub model_options: Vec<StudioKernelAgentCreationModelOption>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -2703,29 +2725,45 @@ impl StudioService {
                     reason.is_none(),
                     reason.as_ref().map(|(code, _)| code.clone()),
                     reason.map(|(_, message)| message),
+                    model_options,
+                    build_kernel_agent_creation_field_support(
+                        true, true, true, true, true, true, true, true, true, true, true,
+                    ),
                 )],
                 default_kernel_id: Some(instance_kernel_id),
-                model_options,
             });
         }
 
         let (reason_code, reason) = if is_managed_hermes_instance(&instance) {
             (
-                StudioKernelAgentCreationReasonCode::UnsupportedKernel,
-                "Hermes desktop agent creation is not yet supported because managed Hermes runtime profiles do not yet honor per-agent model and runtime parameters.".to_string(),
+                None,
+                None,
             )
         } else if instance.runtime_kind == StudioRuntimeKind::Openclaw {
             (
-                StudioKernelAgentCreationReasonCode::ConfigUnavailable,
-                "Desktop OpenClaw agent creation currently requires the managed local OpenClaw runtime configuration owned by Claw Studio.".to_string(),
+                Some(StudioKernelAgentCreationReasonCode::ConfigUnavailable),
+                Some("Desktop OpenClaw agent creation currently requires the managed local OpenClaw runtime configuration owned by Claw Studio.".to_string()),
             )
         } else {
             (
-                StudioKernelAgentCreationReasonCode::UnsupportedKernel,
-                format!(
+                Some(StudioKernelAgentCreationReasonCode::UnsupportedKernel),
+                Some(format!(
                     "Kernel \"{}\" does not currently expose a desktop agent creation contract.",
                     instance_kernel_id
-                ),
+                )),
+            )
+        };
+        let field_support = if is_managed_hermes_instance(&instance) {
+            build_kernel_agent_creation_field_support(
+                true, false, false, false, false, false, false, false, false, false, false,
+            )
+        } else if instance.runtime_kind == StudioRuntimeKind::Openclaw {
+            build_kernel_agent_creation_field_support(
+                true, true, true, true, true, true, true, true, true, true, true,
+            )
+        } else {
+            build_kernel_agent_creation_field_support(
+                false, false, false, false, false, false, false, false, false, false, false,
             )
         };
 
@@ -2734,12 +2772,13 @@ impl StudioService {
             instance_name: instance.name,
             kernel_options: vec![build_kernel_agent_creation_kernel_option(
                 instance_kernel_id.as_str(),
-                false,
-                Some(reason_code),
-                Some(reason),
+                reason_code.is_none(),
+                reason_code,
+                reason,
+                Vec::new(),
+                field_support,
             )],
             default_kernel_id: Some(instance_kernel_id),
-            model_options: Vec::new(),
         })
     }
 
@@ -2782,11 +2821,16 @@ impl StudioService {
                 }),
             ));
         }
+        ensure_kernel_agent_create_input_matches_field_support(
+            requested_kernel_id.as_str(),
+            &selected_kernel.field_support,
+            &input,
+        )?;
 
         match requested_kernel_id.as_str() {
             "openclaw" => {
                 self.require_built_in_openclaw_instance(paths, config, storage, instance_id.as_str())?;
-                let supported_model_refs = capability
+                let supported_model_refs = selected_kernel
                     .model_options
                     .iter()
                     .map(|option| option.value.clone())
@@ -2813,7 +2857,7 @@ impl StudioService {
                 }
 
                 let normalized_agent_id =
-                    normalize_openclaw_kernel_agent_id(&trim_required_kernel_agent_field(
+                    normalize_kernel_agent_id(&trim_required_kernel_agent_field(
                         input.agent_id.as_str(),
                         "agentId",
                     )?);
@@ -2847,6 +2891,12 @@ impl StudioService {
                     agent_id: normalized_agent_id,
                     display_name,
                 })
+            }
+            "hermes" => {
+                let instance = self
+                    .get_instance(paths, config, storage, instance_id.as_str())?
+                    .ok_or_else(|| FrameworkError::NotFound(format!("instance \"{}\"", instance_id)))?;
+                create_kernel_chat_agent_profile_for_managed_hermes(paths, &instance, &input)
             }
             _ => Err(FrameworkError::InvalidOperation(format!(
                 "kernel \"{}\" is not implemented for desktop agent creation",
@@ -3073,19 +3123,7 @@ impl StudioService {
                 missing_participant_id
             )));
         }
-
-        for message in record.messages.iter_mut() {
-            message.conversation_id = record.id.clone();
-        }
-
-        record.message_count = record.messages.len() as u64;
-        record.last_message_preview = record
-            .messages
-            .last()
-            .map(|message| message.content.chars().take(120).collect::<String>());
-        if let Some(last_message) = record.messages.last() {
-            record.updated_at = last_message.updated_at.max(record.updated_at);
-        }
+        record = sanitize_studio_conversation_record(record);
 
         storage.put_text(
             paths,
@@ -3205,12 +3243,31 @@ impl StudioService {
             },
         )?;
 
-        response
+        let stored_record = response
             .value
             .as_deref()
             .map(serde_json::from_str::<StudioConversationRecord>)
             .transpose()
-            .map_err(Into::into)
+            .map_err(FrameworkError::from)?;
+        let Some(stored_record) = stored_record else {
+            return Ok(None);
+        };
+        let sanitized_record = sanitize_studio_conversation_record(stored_record.clone());
+
+        if sanitized_record != stored_record {
+            storage.put_text(
+                paths,
+                config,
+                StoragePutTextRequest {
+                    profile_id: chat_storage_profile_id(),
+                    namespace: Some(CHAT_NAMESPACE.to_string()),
+                    key: key.to_string(),
+                    value: serde_json::to_string_pretty(&sanitized_record)?,
+                },
+            )?;
+        }
+
+        Ok(Some(sanitized_record))
     }
 
     fn read_persisted_kernel_chat_agent(
@@ -5773,6 +5830,92 @@ fn normalize_participant_instance_ids(
     normalized
 }
 
+fn normalize_conversation_message_id(value: &str) -> Option<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+fn compare_studio_conversation_message_recency(
+    left_message: &StudioConversationMessage,
+    left_index: usize,
+    right_message: &StudioConversationMessage,
+    right_index: usize,
+) -> std::cmp::Ordering {
+    left_message
+        .updated_at
+        .cmp(&right_message.updated_at)
+        .then_with(|| left_message.created_at.cmp(&right_message.created_at))
+        .then_with(|| left_index.cmp(&right_index))
+}
+
+fn sanitize_studio_conversation_record(
+    mut record: StudioConversationRecord,
+) -> StudioConversationRecord {
+    let conversation_id = record.id.clone();
+    let mut deduped_messages: Vec<(usize, StudioConversationMessage)> = Vec::new();
+    let mut deduped_message_indexes: BTreeMap<String, usize> = BTreeMap::new();
+
+    for (index, mut message) in std::mem::take(&mut record.messages).into_iter().enumerate() {
+        message.conversation_id = conversation_id.clone();
+
+        let Some(normalized_message_id) = normalize_conversation_message_id(message.id.as_str())
+        else {
+            deduped_messages.push((index, message));
+            continue;
+        };
+
+        message.id = normalized_message_id.clone();
+        if let Some(existing_index) = deduped_message_indexes.get(&normalized_message_id).copied()
+        {
+            let existing_message: &(usize, StudioConversationMessage) =
+                &deduped_messages[existing_index];
+            if compare_studio_conversation_message_recency(
+                &existing_message.1,
+                existing_message.0,
+                &message,
+                index,
+            ) != std::cmp::Ordering::Greater
+            {
+                deduped_messages[existing_index] = (index, message);
+            }
+            continue;
+        }
+
+        deduped_message_indexes.insert(normalized_message_id, deduped_messages.len());
+        deduped_messages.push((index, message));
+    }
+
+    deduped_messages.sort_by(|left, right| {
+        left.1
+            .updated_at
+            .cmp(&right.1.updated_at)
+            .then_with(|| left.1.created_at.cmp(&right.1.created_at))
+            .then_with(|| left.0.cmp(&right.0))
+    });
+
+    record.messages = deduped_messages
+        .into_iter()
+        .map(|(_, message)| message)
+        .collect();
+    record.message_count = record.messages.len() as u64;
+    record.last_message_preview = record
+        .messages
+        .last()
+        .map(|message| message.content.chars().take(120).collect::<String>());
+    record.updated_at = record
+        .messages
+        .iter()
+        .fold(record.updated_at.max(record.created_at), |max_updated_at, message| {
+            max_updated_at.max(message.updated_at)
+        });
+
+    record
+}
+
 fn conversation_storage_key(id: &str) -> String {
     format!("{CONVERSATION_KEY_PREFIX}{id}")
 }
@@ -5829,6 +5972,103 @@ fn normalize_optional_kernel_agent_field(value: Option<&str>) -> Option<String> 
     })
 }
 
+fn create_unsupported_kernel_agent_field_error(
+    kernel_id: &str,
+    field_name: &str,
+) -> FrameworkError {
+    FrameworkError::InvalidOperation(format!(
+        "kernel \"{kernel_id}\" does not support create field \"{field_name}\""
+    ))
+}
+
+fn ensure_kernel_agent_field_support(
+    kernel_id: &str,
+    field_name: &str,
+    supported: bool,
+    has_explicit_value: bool,
+) -> Result<()> {
+    if !supported && has_explicit_value {
+        return Err(create_unsupported_kernel_agent_field_error(
+            kernel_id, field_name,
+        ));
+    }
+
+    Ok(())
+}
+
+fn ensure_kernel_agent_create_input_matches_field_support(
+    kernel_id: &str,
+    field_support: &StudioKernelAgentCreationFieldSupport,
+    input: &StudioCreateKernelAgentInput,
+) -> Result<()> {
+    ensure_kernel_agent_field_support(
+        kernel_id,
+        "avatar",
+        field_support.avatar,
+        normalize_optional_kernel_agent_field(input.avatar.as_deref()).is_some(),
+    )?;
+    ensure_kernel_agent_field_support(
+        kernel_id,
+        "isDefault",
+        field_support.is_default,
+        input.is_default,
+    )?;
+    ensure_kernel_agent_field_support(
+        kernel_id,
+        "primaryModel",
+        field_support.primary_model,
+        normalize_optional_kernel_agent_field(input.primary_model.as_deref()).is_some(),
+    )?;
+    ensure_kernel_agent_field_support(
+        kernel_id,
+        "fallbackModels",
+        field_support.fallback_models,
+        input
+            .fallback_models
+            .iter()
+            .any(|entry| normalize_optional_kernel_agent_field(Some(entry.as_str())).is_some()),
+    )?;
+    ensure_kernel_agent_field_support(
+        kernel_id,
+        "workspace",
+        field_support.workspace,
+        normalize_optional_kernel_agent_field(input.workspace.as_deref()).is_some(),
+    )?;
+    ensure_kernel_agent_field_support(
+        kernel_id,
+        "agentDir",
+        field_support.agent_dir,
+        normalize_optional_kernel_agent_field(input.agent_dir.as_deref()).is_some(),
+    )?;
+    ensure_kernel_agent_field_support(
+        kernel_id,
+        "temperature",
+        field_support.temperature,
+        input.temperature.is_some(),
+    )?;
+    ensure_kernel_agent_field_support(kernel_id, "topP", field_support.top_p, input.top_p.is_some())?;
+    ensure_kernel_agent_field_support(
+        kernel_id,
+        "maxTokens",
+        field_support.max_tokens,
+        input.max_tokens.is_some(),
+    )?;
+    ensure_kernel_agent_field_support(
+        kernel_id,
+        "timeoutMs",
+        field_support.timeout_ms,
+        input.timeout_ms.is_some(),
+    )?;
+    ensure_kernel_agent_field_support(
+        kernel_id,
+        "streaming",
+        field_support.streaming,
+        input.streaming.is_some(),
+    )?;
+
+    Ok(())
+}
+
 fn normalize_kernel_agent_kernel_id(value: Option<&str>) -> Option<String> {
     normalize_optional_kernel_agent_field(value).map(|entry| entry.to_ascii_lowercase())
 }
@@ -5867,6 +6107,8 @@ fn build_kernel_agent_creation_kernel_option(
     supported: bool,
     reason_code: Option<StudioKernelAgentCreationReasonCode>,
     reason: Option<String>,
+    model_options: Vec<StudioKernelAgentCreationModelOption>,
+    field_support: StudioKernelAgentCreationFieldSupport,
 ) -> StudioKernelAgentCreationKernelOption {
     StudioKernelAgentCreationKernelOption {
         kernel_id: kernel_id.to_string(),
@@ -5874,6 +6116,36 @@ fn build_kernel_agent_creation_kernel_option(
         supported,
         reason_code,
         reason,
+        model_options,
+        field_support,
+    }
+}
+
+fn build_kernel_agent_creation_field_support(
+    avatar: bool,
+    is_default: bool,
+    primary_model: bool,
+    fallback_models: bool,
+    workspace: bool,
+    agent_dir: bool,
+    temperature: bool,
+    top_p: bool,
+    max_tokens: bool,
+    timeout_ms: bool,
+    streaming: bool,
+) -> StudioKernelAgentCreationFieldSupport {
+    StudioKernelAgentCreationFieldSupport {
+        avatar,
+        is_default,
+        primary_model,
+        fallback_models,
+        workspace,
+        agent_dir,
+        temperature,
+        top_p,
+        max_tokens,
+        timeout_ms,
+        streaming,
     }
 }
 
@@ -5965,7 +6237,7 @@ fn normalize_kernel_agent_fallback_models(
     normalized
 }
 
-fn normalize_openclaw_kernel_agent_id(value: &str) -> String {
+fn normalize_kernel_agent_id(value: &str) -> String {
     let lowered = value.trim().to_ascii_lowercase();
     if lowered.is_empty() {
         return "main".to_string();
@@ -6060,7 +6332,7 @@ fn configured_openclaw_agent_id(entry: &Value) -> Option<String> {
     entry.as_object()
         .and_then(|object| object.get("id"))
         .and_then(read_json_scalar_string)
-        .map(|id| normalize_openclaw_kernel_agent_id(id.as_str()))
+        .map(|id| normalize_kernel_agent_id(id.as_str()))
 }
 
 fn set_optional_json_string(target: &mut Map<String, Value>, key: &str, value: Option<&str>) {
@@ -6919,7 +7191,7 @@ mod tests {
         StudioInstanceDataAccessScope, StudioInstanceDeploymentMode, StudioInstanceIconType,
         StudioInstanceLifecycleOwner, StudioInstanceRecord, StudioInstanceStatus,
         StudioInstanceStorageStatus, StudioInstanceTransportKind,
-        StudioKernelAgentCreationReasonCode, StudioRuntimeKind, StudioService,
+        StudioKernelAgentCreationFieldSupport, StudioRuntimeKind, StudioService,
         StudioUpdateInstanceLlmProviderConfigInput, StudioWorkbenchLLMProviderConfigRecord,
         DEFAULT_INSTANCE_ID,
     };
@@ -8569,6 +8841,190 @@ mod tests {
             local_value.is_none(),
             "conversation should no longer be stored in the default local-file profile"
         );
+    }
+
+    #[test]
+    fn put_conversation_compacts_duplicate_message_ids_before_persisting() {
+        let (_root, paths, config, storage, service) = studio_context();
+
+        let stored = service
+            .put_conversation(
+                &paths,
+                &config,
+                &storage,
+                StudioConversationRecord {
+                    id: "conversation-deduped-write".to_string(),
+                    title: "Deduped Write".to_string(),
+                    primary_instance_id: DEFAULT_INSTANCE_ID.to_string(),
+                    participant_instance_ids: vec![DEFAULT_INSTANCE_ID.to_string()],
+                    created_at: 10,
+                    updated_at: 12,
+                    message_count: 3,
+                    last_message_preview: Some("stale preview".to_string()),
+                    messages: vec![
+                        StudioConversationMessage {
+                            id: "message-duplicate-1".to_string(),
+                            conversation_id: "stale-id".to_string(),
+                            role: StudioConversationRole::User,
+                            content: "stale user prompt".to_string(),
+                            created_at: 10,
+                            updated_at: 10,
+                            model: Some("gpt-4.1".to_string()),
+                            sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
+                            status: StudioConversationMessageStatus::Complete,
+                        },
+                        StudioConversationMessage {
+                            id: "message-duplicate-1".to_string(),
+                            conversation_id: "stale-id".to_string(),
+                            role: StudioConversationRole::User,
+                            content: "latest user prompt".to_string(),
+                            created_at: 10,
+                            updated_at: 18,
+                            model: Some("gpt-4.1".to_string()),
+                            sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
+                            status: StudioConversationMessageStatus::Complete,
+                        },
+                        StudioConversationMessage {
+                            id: "message-duplicate-2".to_string(),
+                            conversation_id: "stale-id".to_string(),
+                            role: StudioConversationRole::Assistant,
+                            content: "final assistant reply".to_string(),
+                            created_at: 22,
+                            updated_at: 22,
+                            model: Some("gpt-4.1".to_string()),
+                            sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
+                            status: StudioConversationMessageStatus::Complete,
+                        },
+                    ],
+                },
+            )
+            .expect("store deduped conversation");
+
+        assert_eq!(stored.message_count, 2);
+        assert_eq!(
+            stored
+                .messages
+                .iter()
+                .map(|message| message.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["message-duplicate-1", "message-duplicate-2"]
+        );
+        assert_eq!(stored.messages[0].content, "latest user prompt");
+        assert_eq!(stored.messages[0].conversation_id, "conversation-deduped-write");
+        assert_eq!(stored.last_message_preview.as_deref(), Some("final assistant reply"));
+        assert_eq!(stored.updated_at, 22);
+    }
+
+    #[test]
+    fn list_conversations_repairs_historical_duplicate_message_ids_before_returning() {
+        let (_root, paths, config, storage, service) = studio_context();
+        let conversation_id = "conversation-deduped-read";
+        let raw_record = StudioConversationRecord {
+            id: conversation_id.to_string(),
+            title: "Deduped Read".to_string(),
+            primary_instance_id: DEFAULT_INSTANCE_ID.to_string(),
+            participant_instance_ids: vec![DEFAULT_INSTANCE_ID.to_string()],
+            created_at: 10,
+            updated_at: 12,
+            message_count: 3,
+            last_message_preview: Some("stale preview".to_string()),
+            messages: vec![
+                StudioConversationMessage {
+                    id: "message-history-1".to_string(),
+                    conversation_id: "stale-id".to_string(),
+                    role: StudioConversationRole::User,
+                    content: "stale hydrated prompt".to_string(),
+                    created_at: 10,
+                    updated_at: 10,
+                    model: Some("gpt-4.1".to_string()),
+                    sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
+                    status: StudioConversationMessageStatus::Complete,
+                },
+                StudioConversationMessage {
+                    id: "message-history-1".to_string(),
+                    conversation_id: "stale-id".to_string(),
+                    role: StudioConversationRole::User,
+                    content: "latest hydrated prompt".to_string(),
+                    created_at: 10,
+                    updated_at: 18,
+                    model: Some("gpt-4.1".to_string()),
+                    sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
+                    status: StudioConversationMessageStatus::Complete,
+                },
+                StudioConversationMessage {
+                    id: "message-history-2".to_string(),
+                    conversation_id: "stale-id".to_string(),
+                    role: StudioConversationRole::Assistant,
+                    content: "final hydrated reply".to_string(),
+                    created_at: 30,
+                    updated_at: 30,
+                    model: Some("gpt-4.1".to_string()),
+                    sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
+                    status: StudioConversationMessageStatus::Complete,
+                },
+            ],
+        };
+
+        storage
+            .put_text(
+                &paths,
+                &config,
+                crate::framework::storage::StoragePutTextRequest {
+                    profile_id: Some("default-sqlite".to_string()),
+                    namespace: Some(super::CHAT_NAMESPACE.to_string()),
+                    key: super::conversation_storage_key(conversation_id),
+                    value: serde_json::to_string_pretty(&raw_record)
+                        .expect("serialize duplicated conversation"),
+                },
+            )
+            .expect("seed duplicated conversation");
+
+        let conversations = service
+            .list_conversations(&paths, &config, &storage, DEFAULT_INSTANCE_ID)
+            .expect("list repaired conversations");
+        let repaired = conversations
+            .iter()
+            .find(|record| record.id == conversation_id)
+            .expect("find repaired conversation");
+
+        assert_eq!(repaired.message_count, 2);
+        assert_eq!(
+            repaired
+                .messages
+                .iter()
+                .map(|message| message.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["message-history-1", "message-history-2"]
+        );
+        assert_eq!(repaired.messages[0].content, "latest hydrated prompt");
+        assert_eq!(repaired.messages[0].conversation_id, conversation_id);
+        assert_eq!(repaired.last_message_preview.as_deref(), Some("final hydrated reply"));
+        assert_eq!(repaired.updated_at, 30);
+
+        let rewritten = storage
+            .get_text(
+                &paths,
+                &config,
+                crate::framework::storage::StorageGetTextRequest {
+                    profile_id: Some("default-sqlite".to_string()),
+                    namespace: Some(super::CHAT_NAMESPACE.to_string()),
+                    key: super::conversation_storage_key(conversation_id),
+                },
+            )
+            .expect("read repaired conversation")
+            .value
+            .expect("persisted repaired conversation");
+        let rewritten_record: StudioConversationRecord =
+            serde_json::from_str(rewritten.as_str()).expect("parse repaired conversation");
+
+        assert_eq!(rewritten_record.message_count, 2);
+        assert_eq!(rewritten_record.messages.len(), 2);
+        assert_eq!(rewritten_record.messages[0].content, "latest hydrated prompt");
+        assert_eq!(
+            rewritten_record.last_message_preview.as_deref(),
+            Some("final hydrated reply")
+        );
+        assert_eq!(rewritten_record.updated_at, 30);
     }
 
     #[test]
@@ -10710,8 +11166,25 @@ mod tests {
         assert_eq!(capability.kernel_options[0].kernel_id, "openclaw");
         assert!(capability.kernel_options[0].supported);
         assert_eq!(capability.kernel_options[0].reason_code, None);
+        assert_eq!(
+            capability.kernel_options[0].field_support,
+            StudioKernelAgentCreationFieldSupport {
+                avatar: true,
+                is_default: true,
+                primary_model: true,
+                fallback_models: true,
+                workspace: true,
+                agent_dir: true,
+                temperature: true,
+                top_p: true,
+                max_tokens: true,
+                timeout_ms: true,
+                streaming: true,
+            }
+        );
         assert!(
             capability
+                .kernel_options[0]
                 .model_options
                 .iter()
                 .any(|option| option.value == "openai/gpt-5.4"
@@ -10719,14 +11192,16 @@ mod tests {
                     && option.provider_label == "Openai")
         );
         assert!(
-            capability.model_options.iter().any(|option| option.value
-                == "openrouter/meta-llama/llama-3.1-8b-instruct"
-                && option.provider_id == "openrouter")
+            capability.kernel_options[0]
+                .model_options
+                .iter()
+                .any(|option| option.value == "openrouter/meta-llama/llama-3.1-8b-instruct"
+                    && option.provider_id == "openrouter")
         );
     }
 
     #[test]
-    fn kernel_agent_creation_capability_marks_managed_hermes_as_unsupported() {
+    fn kernel_agent_creation_capability_marks_managed_hermes_as_supported_for_profile_creation() {
         let (_root, paths, config, storage, service) = studio_context();
         let hermes = service
             .create_instance(
@@ -10763,19 +11238,148 @@ mod tests {
         assert_eq!(capability.default_kernel_id.as_deref(), Some("hermes"));
         assert_eq!(capability.kernel_options.len(), 1);
         assert_eq!(capability.kernel_options[0].kernel_id, "hermes");
-        assert!(!capability.kernel_options[0].supported);
+        assert!(capability.kernel_options[0].supported);
+        assert_eq!(capability.kernel_options[0].reason_code, None);
+        assert_eq!(capability.kernel_options[0].reason, None);
+        assert!(capability.kernel_options[0].model_options.is_empty());
         assert_eq!(
-            capability.kernel_options[0].reason_code,
-            Some(StudioKernelAgentCreationReasonCode::UnsupportedKernel)
+            capability.kernel_options[0].field_support,
+            StudioKernelAgentCreationFieldSupport {
+                avatar: true,
+                is_default: false,
+                primary_model: false,
+                fallback_models: false,
+                workspace: false,
+                agent_dir: false,
+                temperature: false,
+                top_p: false,
+                max_tokens: false,
+                timeout_ms: false,
+                streaming: false,
+            }
         );
+    }
+
+    #[test]
+    fn create_kernel_agent_persists_managed_hermes_agent_profile_catalog() {
+        let (_root, paths, config, storage, service) = studio_context();
+        let hermes = service
+            .create_instance(
+                &paths,
+                &config,
+                &storage,
+                StudioCreateInstanceInput {
+                    name: "Hermes Local Managed".to_string(),
+                    description: Some("Managed local Hermes runtime".to_string()),
+                    runtime_kind: StudioRuntimeKind::Hermes,
+                    deployment_mode: StudioInstanceDeploymentMode::LocalManaged,
+                    transport_kind: StudioInstanceTransportKind::CustomHttp,
+                    icon_type: None,
+                    version: Some("0.1.0".to_string()),
+                    type_label: Some("Hermes Agent".to_string()),
+                    host: Some("127.0.0.1".to_string()),
+                    port: Some(19540),
+                    base_url: Some("http://127.0.0.1:19540".to_string()),
+                    websocket_url: None,
+                    storage: None,
+                    config: Some(PartialStudioInstanceConfig {
+                        port: Some("19540".to_string()),
+                        base_url: Some("http://127.0.0.1:19540".to_string()),
+                        ..Default::default()
+                    }),
+                },
+            )
+            .expect("create hermes instance");
+
+        let created = service
+            .create_kernel_agent(
+                &paths,
+                &config,
+                &storage,
+                StudioCreateKernelAgentInput {
+                    instance_id: hermes.id.clone(),
+                    kernel_id: Some("hermes".to_string()),
+                    agent_id: "Research Planner".to_string(),
+                    display_name: "Research Planner".to_string(),
+                    avatar: Some("RP".to_string()),
+                    ..Default::default()
+                },
+            )
+            .expect("create hermes kernel agent");
+
+        let profiles = service
+            .list_kernel_chat_agent_profiles(&paths, &config, &storage, &hermes.id)
+            .expect("list hermes kernel chat agent profiles");
+
+        assert_eq!(created.instance_id, hermes.id);
+        assert_eq!(created.kernel_id, "hermes");
+        assert_eq!(created.agent_id, "research-planner");
+        assert_eq!(created.display_name, "Research Planner");
+        assert_eq!(profiles.len(), 1);
+        assert_eq!(profiles[0].instance_id, hermes.id);
+        assert_eq!(profiles[0].kernel_id, "hermes");
+        assert_eq!(profiles[0].agent_id, "research-planner");
+        assert_eq!(profiles[0].label, "Research Planner");
+        assert_eq!(profiles[0].source, "kernelCatalog");
+        assert_eq!(profiles[0].avatar.as_deref(), Some("RP"));
+    }
+
+    #[test]
+    fn create_kernel_agent_rejects_managed_hermes_fields_outside_declared_contract() {
+        let (_root, paths, config, storage, service) = studio_context();
+        let hermes = service
+            .create_instance(
+                &paths,
+                &config,
+                &storage,
+                StudioCreateInstanceInput {
+                    name: "Hermes Local Managed".to_string(),
+                    description: Some("Managed local Hermes runtime".to_string()),
+                    runtime_kind: StudioRuntimeKind::Hermes,
+                    deployment_mode: StudioInstanceDeploymentMode::LocalManaged,
+                    transport_kind: StudioInstanceTransportKind::CustomHttp,
+                    icon_type: None,
+                    version: Some("0.1.0".to_string()),
+                    type_label: Some("Hermes Agent".to_string()),
+                    host: Some("127.0.0.1".to_string()),
+                    port: Some(19540),
+                    base_url: Some("http://127.0.0.1:19540".to_string()),
+                    websocket_url: None,
+                    storage: None,
+                    config: Some(PartialStudioInstanceConfig {
+                        port: Some("19540".to_string()),
+                        base_url: Some("http://127.0.0.1:19540".to_string()),
+                        ..Default::default()
+                    }),
+                },
+            )
+            .expect("create hermes instance");
+
+        let error = service
+            .create_kernel_agent(
+                &paths,
+                &config,
+                &storage,
+                StudioCreateKernelAgentInput {
+                    instance_id: hermes.id.clone(),
+                    kernel_id: Some("hermes".to_string()),
+                    agent_id: "Research Planner".to_string(),
+                    display_name: "Research Planner".to_string(),
+                    avatar: Some("RP".to_string()),
+                    is_default: true,
+                    primary_model: Some("hermes/research".to_string()),
+                    workspace: Some("workspace/research".to_string()),
+                    ..Default::default()
+                },
+            )
+            .expect_err("managed hermes should reject unsupported creation fields");
+
+        let message = error.to_string();
         assert!(
-            capability.kernel_options[0]
-                .reason
-                .as_deref()
-                .unwrap_or_default()
-                .contains("Hermes")
+            message.contains("isDefault")
+                || message.contains("primaryModel")
+                || message.contains("workspace")
         );
-        assert!(capability.model_options.is_empty());
     }
 
     #[test]

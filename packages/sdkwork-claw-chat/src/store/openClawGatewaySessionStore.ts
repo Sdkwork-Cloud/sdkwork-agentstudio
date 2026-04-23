@@ -26,6 +26,7 @@ import {
   isGatewayMethodUnavailableError,
   isAnyOpenClawMainSession,
   resolveOpenClawMessagePresentation,
+  sanitizeChatSessionPreviewText,
   type OpenClawMessagePresentationRole,
   type OpenClawToolCard,
   resolveGatewayErrorDetailCode,
@@ -35,8 +36,10 @@ import {
   selectReadableChatSessionTitleCandidates,
 } from '../services/store/index.ts';
 import {
+  dedupeChatMessagesById,
   orderChatMessagesForDisplay,
   normalizeUserVisibleChatSenderLabel,
+  resolveChatMessagePrimaryPreviewText,
   resolveLatestChatMessageForDisplay,
   resolveLatestChatMessageTimestamp,
 } from '../services/index.ts';
@@ -172,6 +175,7 @@ interface OpenClawGatewaySessionStoreOptions {
 type InternalInstanceState = {
   client: OpenClawGatewayClientLike;
   snapshot: OpenClawGatewayInstanceSnapshot;
+  placeholderClient: boolean;
   subscribed: boolean;
   sessionsSubscribeUnsupported: boolean;
   sessionMessagesSubscribeUnsupported: boolean;
@@ -232,7 +236,7 @@ function normalizeSeenTimestamp(value: number | null | undefined) {
 }
 
 function normalizeGatewaySessionMessages(messages: OpenClawGatewayMessage[]) {
-  return orderChatMessagesForDisplay(messages);
+  return dedupeChatMessagesById(messages);
 }
 
 function resolveGatewaySessionLastDisplayMessage(
@@ -855,31 +859,19 @@ function resolveMessagePreview(message: {
   attachments?: StudioConversationAttachment[];
   toolCards?: OpenClawToolCard[];
 }) {
-  const text = message.content.trim();
-  if (text) {
-    return text;
-  }
-
-  const attachmentName = message.attachments?.[0]?.name?.trim();
-  if (attachmentName) {
-    return attachmentName;
-  }
-
-  const preferredToolCard =
-    [...(message.toolCards ?? [])]
-      .reverse()
-      .find((toolCard) => Boolean(toolCard.preview?.trim() || toolCard.detail?.trim())) ??
-    message.toolCards?.[0];
-  if (!preferredToolCard) {
-    return undefined;
-  }
-
-  const toolPreview =
-    preferredToolCard.preview || preferredToolCard.detail || preferredToolCard.name;
-  return toolPreview.trim() || undefined;
+  return resolveChatMessagePrimaryPreviewText(message, 160) ?? undefined;
 }
 
 function syncGatewaySessionDerivedMessageState(session: OpenClawGatewayChatSession) {
+  syncGatewaySessionDerivedMessageStateWithOptions(session);
+}
+
+function syncGatewaySessionDerivedMessageStateWithOptions(
+  session: OpenClawGatewayChatSession,
+  options?: {
+    clearPreviewWhenMessagesEmpty?: boolean;
+  },
+) {
   session.messages = normalizeGatewaySessionMessages(session.messages);
   const lastDisplayMessage = resolveGatewaySessionLastDisplayMessage(session);
   const lastDisplayPreview = lastDisplayMessage
@@ -887,6 +879,8 @@ function syncGatewaySessionDerivedMessageState(session: OpenClawGatewayChatSessi
     : undefined;
   if (lastDisplayPreview) {
     session.lastMessagePreview = lastDisplayPreview;
+  } else if (options?.clearPreviewWhenMessagesEmpty) {
+    session.lastMessagePreview = undefined;
   }
 
   session.updatedAt = Math.max(
@@ -1054,6 +1048,31 @@ function normalizeSessionMessage(
   return normalizeMessage(normalizedPayload, fallbackTimestamp, 'session-message');
 }
 
+function resolveGatewayChatEventMessageId(
+  payload: OpenClawGatewayChatEvent,
+  fallbackPrefix: string,
+) {
+  const record = payload as Record<string, unknown>;
+  const messageRecord =
+    record.message && typeof record.message === 'object' && !Array.isArray(record.message)
+      ? (record.message as Record<string, unknown>)
+      : null;
+  const idCandidate = messageRecord?.id ?? messageRecord?.messageId ?? record.messageId;
+  return typeof idCandidate === 'string' && idCandidate.trim()
+    ? idCandidate.trim()
+    : createMessageId(fallbackPrefix);
+}
+
+function resolveGatewayChatEventMessageSeq(payload: OpenClawGatewayChatEvent) {
+  const record = payload as Record<string, unknown>;
+  const messageRecord =
+    record.message && typeof record.message === 'object' && !Array.isArray(record.message)
+      ? (record.message as Record<string, unknown>)
+      : null;
+  const candidate = messageRecord?.seq ?? record.messageSeq ?? record.seq;
+  return typeof candidate === 'number' ? candidate : undefined;
+}
+
 function deriveSessionTitle(
   existingTitle: string,
   messageContent: string,
@@ -1069,12 +1088,16 @@ function deriveSessionTitle(
 }
 
 function buildSessionTitle(row: Record<string, unknown>) {
+  const preview = sanitizeChatSessionPreviewText({
+    text: typeof row.lastMessagePreview === 'string' ? row.lastMessagePreview : undefined,
+    kernelId: 'openclaw',
+  });
   return selectReadableChatSessionTitleCandidates(
     [
       typeof row.derivedTitle === 'string' ? row.derivedTitle : undefined,
       typeof row.displayName === 'string' ? row.displayName : undefined,
       typeof row.label === 'string' ? row.label : undefined,
-      typeof row.lastMessagePreview === 'string' ? row.lastMessagePreview : undefined,
+      preview,
       typeof row.key === 'string' ? row.key : undefined,
     ],
     DEFAULT_CHAT_SESSION_TITLE,
@@ -1082,6 +1105,10 @@ function buildSessionTitle(row: Record<string, unknown>) {
 }
 
 function buildSessionTitleState(row: Record<string, unknown>) {
+  const preview = sanitizeChatSessionPreviewText({
+    text: typeof row.lastMessagePreview === 'string' ? row.lastMessagePreview : undefined,
+    kernelId: 'openclaw',
+  });
   const explicitTitle = selectReadableChatSessionTitleCandidates(
     [
       typeof row.derivedTitle === 'string' ? row.derivedTitle : undefined,
@@ -1099,7 +1126,7 @@ function buildSessionTitleState(row: Record<string, unknown>) {
   }
 
   const previewTitle = selectReadableChatSessionTitleCandidates(
-    [typeof row.lastMessagePreview === 'string' ? row.lastMessagePreview : undefined],
+    [preview],
     '',
   );
   if (previewTitle) {
@@ -1646,6 +1673,67 @@ function cloneSession(session: OpenClawGatewayChatSession): OpenClawGatewayChatS
   };
 }
 
+function normalizeRestoredMirrorSession(
+  instanceId: string,
+  session: OpenClawGatewayChatSession,
+): OpenClawGatewayChatSession {
+  const normalizedSession: OpenClawGatewayChatSession = {
+    ...cloneSession(session),
+    instanceId,
+    transport: 'openclawGateway',
+    historyState:
+      session.historyState ??
+      (session.messages.length > 0 ? 'ready' : 'idle'),
+  };
+
+  syncGatewaySessionDerivedMessageState(normalizedSession);
+  return normalizedSession;
+}
+
+function mergeRestoredMirrorSession(
+  existing: OpenClawGatewayChatSession,
+  restored: OpenClawGatewayChatSession,
+): OpenClawGatewayChatSession {
+  const preferRestored =
+    restored.updatedAt > existing.updatedAt ||
+    restored.messages.length > existing.messages.length;
+  const preferred = preferRestored ? restored : existing;
+  const fallback = preferRestored ? existing : restored;
+
+  const mergedSession: OpenClawGatewayChatSession = {
+    ...cloneSession(preferred),
+    title: preferred.title || fallback.title,
+    lastSeenAt: preferred.lastSeenAt ?? fallback.lastSeenAt ?? null,
+    defaultModel: preferred.defaultModel ?? fallback.defaultModel ?? null,
+    model: preferred.model || fallback.model,
+    runId: preferred.runId ?? fallback.runId ?? null,
+    isDraft:
+      typeof preferred.isDraft === 'boolean'
+        ? preferred.isDraft
+        : fallback.isDraft,
+    thinkingLevel: preferred.thinkingLevel ?? fallback.thinkingLevel ?? null,
+    fastMode:
+      typeof preferred.fastMode === 'boolean'
+        ? preferred.fastMode
+        : fallback.fastMode ?? null,
+    verboseLevel: preferred.verboseLevel ?? fallback.verboseLevel ?? null,
+    reasoningLevel: preferred.reasoningLevel ?? fallback.reasoningLevel ?? null,
+    lastMessagePreview: sanitizeChatSessionPreviewText({
+      text: preferred.lastMessagePreview ?? fallback.lastMessagePreview,
+      kernelId: 'openclaw',
+    }),
+    titleSource: preferred.titleSource ?? fallback.titleSource,
+    historyState:
+      preferred.historyState ??
+      fallback.historyState ??
+      (preferred.messages.length > 0 ? 'ready' : 'idle'),
+    sessionKind: preferred.sessionKind ?? fallback.sessionKind ?? null,
+  };
+
+  syncGatewaySessionDerivedMessageState(mergedSession);
+  return mergedSession;
+}
+
 function hasOwnSessionOverrideField(record: Record<string, unknown>, key: string) {
   return Object.prototype.hasOwnProperty.call(record, key);
 }
@@ -1801,6 +1889,48 @@ export class OpenClawGatewaySessionStore {
         }),
       ),
     };
+  }
+
+  restorePersistedMirror(params: {
+    instanceId: string;
+    sessions: OpenClawGatewayChatSession[];
+    activeSessionId?: string | null;
+    emit?: boolean;
+  }) {
+    if (params.sessions.length === 0) {
+      return this.getSnapshot(params.instanceId);
+    }
+
+    const state = this.getOrCreatePlaceholderState(params.instanceId);
+    const nextSessionsById = new Map(
+      state.snapshot.sessions.map((session) => [session.id, cloneSession(session)] as const),
+    );
+
+    for (const restoredSession of params.sessions) {
+      const normalizedSession = normalizeRestoredMirrorSession(
+        params.instanceId,
+        restoredSession,
+      );
+      const existingSession = nextSessionsById.get(normalizedSession.id);
+      nextSessionsById.set(
+        normalizedSession.id,
+        existingSession
+          ? mergeRestoredMirrorSession(existingSession, normalizedSession)
+          : normalizedSession,
+      );
+    }
+
+    state.snapshot.sessions = [...nextSessionsById.values()];
+    this.sortSessions(state.snapshot);
+    state.snapshot.activeSessionId = this.resolveActiveSessionId(
+      state.snapshot,
+      params.activeSessionId ?? state.snapshot.activeSessionId,
+    );
+    this.syncActiveSessionSeen(state.snapshot);
+    if (params.emit !== false) {
+      this.emit(params.instanceId);
+    }
+    return this.getSnapshot(params.instanceId);
   }
 
   async hydrateInstance(instanceId: string) {
@@ -2266,6 +2396,20 @@ export class OpenClawGatewaySessionStore {
         key: params.sessionId,
         deleteTranscript: true,
       });
+      state.snapshot.sessions = state.snapshot.sessions.filter(
+        (session) => session.id !== params.sessionId,
+      );
+      state.snapshot.activeSessionId = this.resolveActiveSessionId(
+        state.snapshot,
+        state.snapshot.activeSessionId === params.sessionId
+          ? null
+          : state.snapshot.activeSessionId,
+      );
+      state.snapshot.syncState = 'idle';
+      this.syncActiveSessionSeen(state.snapshot);
+      state.snapshot.lastError = undefined;
+      this.emit(params.instanceId);
+      await this.synchronizeSessionMessageSubscription(params.instanceId, state);
       await this.refreshInstance(params.instanceId, {
         preserveActiveSessionId: false,
         reloadActiveHistory: true,
@@ -2281,6 +2425,11 @@ export class OpenClawGatewaySessionStore {
   private async ensureState(instanceId: string) {
     const existing = this.instances.get(instanceId);
     if (existing) {
+      if (existing.placeholderClient) {
+        const client = await Promise.resolve(this.getClient(instanceId));
+        this.bindClient(instanceId, existing, client);
+        existing.placeholderClient = false;
+      }
       return existing;
     }
 
@@ -2288,6 +2437,7 @@ export class OpenClawGatewaySessionStore {
     const state: InternalInstanceState = {
       client,
       snapshot: createInitialSnapshot(),
+      placeholderClient: false,
       subscribed: false,
       sessionsSubscribeUnsupported: false,
       sessionMessagesSubscribeUnsupported: false,
@@ -2295,6 +2445,65 @@ export class OpenClawGatewaySessionStore {
       pendingConnectInterrupts: new Set<() => void>(),
       refreshVersion: 0,
     };
+    this.bindClient(instanceId, state, client);
+    this.instances.set(instanceId, state);
+    return state;
+  }
+
+  private getOrCreatePlaceholderState(instanceId: string) {
+    const existing = this.instances.get(instanceId);
+    if (existing) {
+      return existing;
+    }
+
+    const state: InternalInstanceState = {
+      client: {
+        connect: async () => ({ type: 'hello-ok', protocol: 3 }),
+        disconnect: () => {},
+        subscribeSessions: async () => ({ ok: true }),
+        subscribeSessionMessages: async ({ key }) => ({ subscribed: true, key }),
+        unsubscribeSessionMessages: async ({ key }) => ({ subscribed: false, key }),
+        listSessions: async () => ({
+          ts: this.now(),
+          path: '',
+          count: 0,
+          defaults: {},
+          sessions: [],
+        }),
+        getChatHistory: async () => ({ messages: [], thinkingLevel: null }),
+        listModels: async () => ({ models: [] }),
+        patchSession: async () => ({ ok: true }),
+        sendChatMessage: async () => ({ runId: this.createRunId() }),
+        abortChatRun: async () => ({ aborted: true }),
+        resetSession: async () => ({ ok: true }),
+        deleteSession: async () => ({ ok: true }),
+        on: () => () => {},
+      },
+      snapshot: createInitialSnapshot(),
+      placeholderClient: true,
+      subscribed: false,
+      sessionsSubscribeUnsupported: false,
+      sessionMessagesSubscribeUnsupported: false,
+      subscribedSessionMessageKeys: new Set<string>(),
+      pendingConnectInterrupts: new Set<() => void>(),
+      refreshVersion: 0,
+    };
+    this.instances.set(instanceId, state);
+    return state;
+  }
+
+  private bindClient(
+    instanceId: string,
+    state: InternalInstanceState,
+    client: OpenClawGatewayClientLike,
+  ) {
+    state.offAgent?.();
+    state.offChat?.();
+    state.offConnection?.();
+    state.offGap?.();
+    state.offSessionMessage?.();
+    state.offSessionsChanged?.();
+    state.client = client;
     state.offAgent = client.on('agent', (payload: OpenClawGatewayAgentEvent) => {
       this.handleAgentEvent(instanceId, payload);
     });
@@ -2371,49 +2580,6 @@ export class OpenClawGatewaySessionStore {
         reloadActiveHistory: true,
       });
     });
-    this.instances.set(instanceId, state);
-    return state;
-  }
-
-  private getOrCreatePlaceholderState(instanceId: string) {
-    const existing = this.instances.get(instanceId);
-    if (existing) {
-      return existing;
-    }
-
-    const state: InternalInstanceState = {
-      client: {
-        connect: async () => ({ type: 'hello-ok', protocol: 3 }),
-        disconnect: () => {},
-        subscribeSessions: async () => ({ ok: true }),
-        subscribeSessionMessages: async ({ key }) => ({ subscribed: true, key }),
-        unsubscribeSessionMessages: async ({ key }) => ({ subscribed: false, key }),
-        listSessions: async () => ({
-          ts: this.now(),
-          path: '',
-          count: 0,
-          defaults: {},
-          sessions: [],
-        }),
-        getChatHistory: async () => ({ messages: [], thinkingLevel: null }),
-        listModels: async () => ({ models: [] }),
-        patchSession: async () => ({ ok: true }),
-        sendChatMessage: async () => ({ runId: this.createRunId() }),
-        abortChatRun: async () => ({ aborted: true }),
-        resetSession: async () => ({ ok: true }),
-        deleteSession: async () => ({ ok: true }),
-        on: () => () => {},
-      },
-      snapshot: createInitialSnapshot(),
-      subscribed: false,
-      sessionsSubscribeUnsupported: false,
-      sessionMessagesSubscribeUnsupported: false,
-      subscribedSessionMessageKeys: new Set<string>(),
-      pendingConnectInterrupts: new Set<() => void>(),
-      refreshVersion: 0,
-    };
-    this.instances.set(instanceId, state);
-    return state;
   }
 
   private async refreshInstance(
@@ -2495,8 +2661,10 @@ export class OpenClawGatewaySessionStore {
         const record = row as Record<string, unknown>;
         const existing = existingSessions.get(String(record.key));
         const rowTitleState = buildSessionTitleState(record);
-        const rowLastMessagePreview =
-          typeof record.lastMessagePreview === 'string' ? record.lastMessagePreview : undefined;
+        const rowLastMessagePreview = sanitizeChatSessionPreviewText({
+          text: typeof record.lastMessagePreview === 'string' ? record.lastMessagePreview : undefined,
+          kernelId: 'openclaw',
+        });
         const updatedAt =
           typeof record.updatedAt === 'number' ? record.updatedAt : existing?.updatedAt ?? this.now();
         const resolvedModel =
@@ -2534,7 +2702,12 @@ export class OpenClawGatewaySessionStore {
           fastMode: existing?.fastMode ?? null,
           verboseLevel: existing?.verboseLevel ?? null,
           reasoningLevel: existing?.reasoningLevel ?? null,
-          lastMessagePreview: rowLastMessagePreview ?? existing?.lastMessagePreview,
+          lastMessagePreview:
+            rowLastMessagePreview ??
+            sanitizeChatSessionPreviewText({
+              text: existing?.lastMessagePreview,
+              kernelId: 'openclaw',
+            }),
           titleSource: shouldKeepExistingTitle ? existing?.titleSource : rowTitleState.source,
           historyState:
             existing?.historyState ??
@@ -2659,6 +2832,9 @@ export class OpenClawGatewaySessionStore {
       if (session && isMissingOperatorReadScopeError(error)) {
         session.messages = [];
         session.historyState = 'error';
+        syncGatewaySessionDerivedMessageStateWithOptions(session, {
+          clearPreviewWhenMessagesEmpty: true,
+        });
         state.snapshot.lastError = formatMissingOperatorReadScopeMessage('existing chat history');
       } else {
         if (session) {
@@ -2709,7 +2885,9 @@ export class OpenClawGatewaySessionStore {
         : null;
     session.isDraft = false;
     session.historyState = 'ready';
-    syncGatewaySessionDerivedMessageState(session);
+    syncGatewaySessionDerivedMessageStateWithOptions(session, {
+      clearPreviewWhenMessagesEmpty: true,
+    });
     if (session.messages.length > 0) {
       const firstUserMessage = session.messages.find((message) => message.role === 'user');
       if (firstUserMessage && session.titleSource !== 'explicit') {
@@ -3023,6 +3201,43 @@ export class OpenClawGatewaySessionStore {
       }
       session = createdSession;
       createdLiveSession = true;
+    }
+
+    if (payloadRole === 'system') {
+      if (
+        payload.state === 'delta' ||
+        (!content && !attachments?.length && !toolCards?.length)
+      ) {
+        return;
+      }
+
+      session.messages = upsertSessionMessage(
+        session.messages,
+        createGatewayMessage({
+          id: resolveGatewayChatEventMessageId(payload, 'system'),
+          role: 'system',
+          content,
+          timestamp,
+          ...(typeof resolveGatewayChatEventMessageSeq(payload) === 'number'
+            ? { seq: resolveGatewayChatEventMessageSeq(payload) }
+            : {}),
+          attachments,
+          reasoning: presentation.reasoning,
+          toolCards,
+        }),
+      );
+      session.updatedAt = timestamp;
+      session.isDraft = false;
+      session.historyState = 'ready';
+      applySessionOverrideFields(session, payloadRecord);
+      syncGatewaySessionDerivedMessageState(session);
+      this.syncActiveSessionSeen(state.snapshot);
+      this.sortSessions(state.snapshot);
+      this.emit(instanceId);
+      if (createdLiveSession) {
+        void this.synchronizeSessionMessageSubscription(instanceId, state);
+      }
+      return;
     }
 
     const lastMessage = resolveGatewaySessionLastDisplayMessage(session);
@@ -3370,8 +3585,8 @@ export class OpenClawGatewaySessionStore {
   }
 
   private async waitForConnectResult(state: InternalInstanceState): Promise<PendingConnectResult> {
-    const connectAttempt: Promise<PendingConnectResult> = state.client
-      .connect()
+    const connectAttempt: Promise<PendingConnectResult> = Promise.resolve()
+      .then(() => state.client.connect())
       .then((hello) => ({
         kind: 'connected' as const,
         hello,

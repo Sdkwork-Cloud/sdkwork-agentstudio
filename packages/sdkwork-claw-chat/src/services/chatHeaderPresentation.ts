@@ -15,6 +15,9 @@ type ChatHeaderSessionLike = {
   model?: string;
   defaultModel?: string | null;
   kernelSession?: {
+    ref?: {
+      kernelId?: string | null;
+    } | null;
     modelBinding?: {
       model?: string | null;
       defaultModel?: string | null;

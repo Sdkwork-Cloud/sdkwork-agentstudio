@@ -183,6 +183,7 @@ export type {
   StudioCreatedKernelAgentRecord,
   StudioCreateKernelAgentInput,
   StudioKernelAgentCreationCapability,
+  StudioKernelAgentCreationFieldSupport,
   StudioKernelAgentCreationKernelOption,
   StudioKernelAgentCreationModelOption,
   StudioKernelAgentCreationReasonCode,

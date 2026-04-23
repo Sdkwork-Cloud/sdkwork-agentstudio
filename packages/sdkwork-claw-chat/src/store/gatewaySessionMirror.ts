@@ -20,6 +20,7 @@ export interface ResolveGatewayMirrorScopeSessionsInput<T extends GatewayMirrorS
 export interface SyncGatewayMirrorSessionsInput<T extends GatewayMirrorSessionLike> {
   instanceId: string;
   snapshotSessions: T[];
+  persistedSessions?: T[];
   listPersistedSessions: (instanceId: string) => Promise<T[]>;
   putPersistedSession: (session: T) => Promise<unknown>;
   deletePersistedSession: (sessionId: string) => Promise<unknown>;
@@ -55,7 +56,7 @@ export async function syncGatewayMirrorSessions<T extends GatewayMirrorSessionLi
 ) {
   const nextSessions = filterGatewayMirrorSessions(input.snapshotSessions);
   const persistedSessions = filterGatewayMirrorSessions(
-    await input.listPersistedSessions(input.instanceId),
+    input.persistedSessions ?? (await input.listPersistedSessions(input.instanceId)),
   );
   const nextSessionIds = new Set(nextSessions.map((session) => session.id));
 
@@ -68,4 +69,6 @@ export async function syncGatewayMirrorSessions<T extends GatewayMirrorSessionLi
       await input.deletePersistedSession(session.id);
     }
   }
+
+  return nextSessions;
 }

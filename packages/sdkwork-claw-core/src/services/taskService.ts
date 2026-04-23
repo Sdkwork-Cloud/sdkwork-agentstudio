@@ -14,7 +14,6 @@ import {
 } from './cronTaskPayload.ts';
 import {
   canManageTasks,
-  hasWorkbench,
   resolveTaskCrudSurface,
 } from './taskSurfaceSupport.ts';
 import type {
@@ -270,31 +269,119 @@ function mergeTaskCollections(
 
 export class TaskService implements ITaskService {
   private readonly taskRouteById = new Map<string, TaskRoute>();
+  private readonly taskRouteByScopedId = new Map<string, TaskRouteMode>();
+  private readonly taskExecutionsByScopedId = new Map<string, TaskExecutionHistoryEntry[]>();
+
+  private buildScopedTaskKey(instanceId: string, taskId: string) {
+    return `${instanceId}::${taskId}`;
+  }
+
+  private findFallbackTaskRoute(taskId: string): TaskRoute | null {
+    const scopedTaskSuffix = `::${taskId}`;
+    const scopedRouteEntries = [...this.taskRouteByScopedId.entries()].reverse();
+
+    for (const [scopedTaskKey, mode] of scopedRouteEntries) {
+      if (!scopedTaskKey.endsWith(scopedTaskSuffix)) {
+        continue;
+      }
+
+      return {
+        instanceId: scopedTaskKey.slice(0, scopedTaskKey.length - scopedTaskSuffix.length),
+        mode,
+      };
+    }
+
+    return null;
+  }
+
+  private refreshFallbackTaskRoute(taskId: string) {
+    const fallbackRoute = this.findFallbackTaskRoute(taskId);
+    if (fallbackRoute) {
+      this.taskRouteById.set(taskId, fallbackRoute);
+      return;
+    }
+
+    this.taskRouteById.delete(taskId);
+  }
 
   private clearTasksForInstance(instanceId: string) {
-    for (const [taskId, route] of [...this.taskRouteById.entries()]) {
-      if (route.instanceId === instanceId) {
-        this.taskRouteById.delete(taskId);
+    const scopedTaskPrefix = `${instanceId}::`;
+
+    for (const [scopedTaskKey] of [...this.taskRouteByScopedId.entries()]) {
+      if (scopedTaskKey.startsWith(scopedTaskPrefix)) {
+        this.taskRouteByScopedId.delete(scopedTaskKey);
       }
     }
+
+    for (const [scopedTaskKey] of [...this.taskExecutionsByScopedId.entries()]) {
+      if (scopedTaskKey.startsWith(scopedTaskPrefix)) {
+        this.taskExecutionsByScopedId.delete(scopedTaskKey);
+      }
+    }
+
+    for (const [taskId, route] of [...this.taskRouteById.entries()]) {
+      if (route.instanceId === instanceId) {
+        this.refreshFallbackTaskRoute(taskId);
+      }
+    }
+  }
+
+  private rememberTaskExecutions(
+    instanceId: string,
+    taskId: string,
+    executions: TaskExecutionHistoryEntry[] | undefined,
+  ) {
+    if (!executions?.length) {
+      return;
+    }
+
+    this.taskExecutionsByScopedId.set(
+      this.buildScopedTaskKey(instanceId, taskId),
+      executions.map((execution) => ({ ...execution })),
+    );
+  }
+
+  private getRememberedTaskExecutions(taskId: string, instanceId?: string) {
+    const resolvedInstanceId = this.resolveTaskInstanceId(taskId, instanceId);
+    if (!resolvedInstanceId) {
+      return [];
+    }
+
+    return (
+      this.taskExecutionsByScopedId.get(this.buildScopedTaskKey(resolvedInstanceId, taskId)) || []
+    ).map((execution) => ({ ...execution }));
   }
 
   private rememberTasks(
     instanceId: string,
     tasks: Task[],
     gatewayTaskIds: ReadonlySet<string> = new Set<string>(),
+    fallbackExecutionsById: Record<string, TaskExecutionHistoryEntry[]> = {},
   ) {
     this.clearTasksForInstance(instanceId);
     tasks.forEach((task) => {
+      const mode = gatewayTaskIds.has(task.id) ? 'gateway' : 'backend';
       this.taskRouteById.set(task.id, {
         instanceId,
-        mode: gatewayTaskIds.has(task.id) ? 'gateway' : 'backend',
+        mode,
       });
+      this.taskRouteByScopedId.set(this.buildScopedTaskKey(instanceId, task.id), mode);
+      this.rememberTaskExecutions(instanceId, task.id, fallbackExecutionsById[task.id]);
     });
   }
 
-  private forgetTask(id: string) {
-    this.taskRouteById.delete(id);
+  private forgetTask(id: string, instanceId?: string) {
+    const resolvedInstanceId = this.resolveTaskInstanceId(id, instanceId);
+    if (resolvedInstanceId) {
+      const scopedTaskKey = this.buildScopedTaskKey(resolvedInstanceId, id);
+      this.taskRouteByScopedId.delete(scopedTaskKey);
+      this.taskExecutionsByScopedId.delete(scopedTaskKey);
+    }
+
+    const rememberedRoute = this.taskRouteById.get(id);
+    if (!rememberedRoute || !resolvedInstanceId || rememberedRoute.instanceId === resolvedInstanceId) {
+      this.refreshFallbackTaskRoute(id);
+    }
   }
 
   private resolveTaskInstanceId(taskId: string, instanceId?: string) {
@@ -302,6 +389,16 @@ export class TaskService implements ITaskService {
   }
 
   private resolveTaskRoute(taskId: string, instanceId?: string) {
+    if (instanceId) {
+      const scopedMode = this.taskRouteByScopedId.get(this.buildScopedTaskKey(instanceId, taskId));
+      if (scopedMode) {
+        return {
+          instanceId,
+          mode: scopedMode,
+        } satisfies TaskRoute;
+      }
+    }
+
     const rememberedRoute = this.taskRouteById.get(taskId);
     if (rememberedRoute) {
       return rememberedRoute;
@@ -346,6 +443,44 @@ export class TaskService implements ITaskService {
     }
 
     return resolvedInstanceId;
+  }
+
+  private collectWorkbenchTaskExecutions(
+    tasks: StudioWorkbenchTaskRecord[],
+    executionsById: Record<string, StudioWorkbenchTaskExecutionRecord[]>,
+  ) {
+    const fallbackExecutionsById: Record<string, TaskExecutionHistoryEntry[]> = {};
+
+    tasks.forEach((task) => {
+      const normalizedTask = mapStudioTask(task);
+      const rawTaskId = normalizeId(task.id);
+      const executionCandidates = [
+        normalizedTask.id,
+        rawTaskId,
+      ].filter((taskId): taskId is string => Boolean(taskId));
+
+      const executions = executionCandidates.flatMap(
+        (taskId) => executionsById[taskId] || [],
+      );
+
+      if (executions.length > 0) {
+        fallbackExecutionsById[normalizedTask.id] = executions.map(mapStudioTaskExecution);
+      }
+    });
+
+    return fallbackExecutionsById;
+  }
+
+  private collectLatestGatewayExecutions(tasks: StudioWorkbenchTaskRecord[]) {
+    const fallbackExecutionsById: Record<string, TaskExecutionHistoryEntry[]> = {};
+
+    tasks.forEach((task) => {
+      if (task.latestExecution) {
+        fallbackExecutionsById[task.id] = [mapStudioTaskExecution(task.latestExecution)];
+      }
+    });
+
+    return fallbackExecutionsById;
   }
 
   async getList(instanceId: string, params: ListParams = {}): Promise<PaginatedResult<Task>> {
@@ -406,18 +541,22 @@ export class TaskService implements ITaskService {
       }
 
       const backendTasks = normalizeUniqueById(workbench.cronTasks.tasks.map(mapStudioTask));
-      this.rememberTasks(instanceId, backendTasks);
+      const backendExecutionsById = this.collectWorkbenchTaskExecutions(
+        workbench.cronTasks.tasks,
+        workbench.cronTasks.taskExecutionsById,
+      );
+      this.rememberTasks(instanceId, backendTasks, new Set<string>(), backendExecutionsById);
       return backendTasks.map(cloneTaskRecord);
     }
 
-    const gatewayTasks = normalizeUniqueById(
-      (await openClawGatewayClient.listWorkbenchCronJobs(instanceId)).map(mapStudioTask),
-    );
+    const gatewayWorkbenchTasks = await openClawGatewayClient.listWorkbenchCronJobs(instanceId);
+    const gatewayTasks = normalizeUniqueById(gatewayWorkbenchTasks.map(mapStudioTask));
     const tasks = mergeTaskCollections([], gatewayTasks);
     this.rememberTasks(
       instanceId,
       tasks,
       new Set(gatewayTasks.map((task) => task.id)),
+      this.collectLatestGatewayExecutions(gatewayWorkbenchTasks),
     );
     return tasks.map(cloneTaskRecord);
   }
@@ -510,12 +649,21 @@ export class TaskService implements ITaskService {
     const route = this.resolveTaskRoute(id, resolvedInstanceId);
     if (route?.mode === 'gateway') {
       await openClawGatewayClient.runCronJob(resolvedInstanceId, id);
-      const [latest] = await openClawGatewayClient.listWorkbenchCronRuns(resolvedInstanceId, id);
-      if (latest) {
-        return mapStudioTaskExecution(latest);
+      try {
+        const executions = await openClawGatewayClient.listWorkbenchCronRuns(resolvedInstanceId, id);
+        if (executions.length > 0) {
+          const mappedExecutions = executions.map(mapStudioTaskExecution);
+          this.rememberTaskExecutions(resolvedInstanceId, id, mappedExecutions);
+          return { ...mappedExecutions[0]! };
+        }
+      } catch {
+        const fallbackExecutions = this.getRememberedTaskExecutions(id, resolvedInstanceId);
+        if (fallbackExecutions?.length) {
+          return { ...fallbackExecutions[0]! };
+        }
       }
 
-      return {
+      const queuedExecution: TaskExecutionHistoryEntry = {
         id: `${id}-${Date.now()}`,
         taskId: id,
         status: 'running',
@@ -523,9 +671,15 @@ export class TaskService implements ITaskService {
         startedAt: new Date().toISOString(),
         summary: 'Cron job has been queued.',
       };
+      const fallbackExecutions = this.getRememberedTaskExecutions(id, resolvedInstanceId);
+      this.rememberTaskExecutions(resolvedInstanceId, id, [queuedExecution, ...fallbackExecutions]);
+      return queuedExecution;
     }
 
-    return mapStudioTaskExecution(await studio.runInstanceTaskNow(resolvedInstanceId, id));
+    const execution = mapStudioTaskExecution(await studio.runInstanceTaskNow(resolvedInstanceId, id));
+    const fallbackExecutions = this.getRememberedTaskExecutions(id, resolvedInstanceId);
+    this.rememberTaskExecutions(resolvedInstanceId, id, [execution, ...fallbackExecutions]);
+    return execution;
   }
 
   async listTaskExecutions(
@@ -536,12 +690,30 @@ export class TaskService implements ITaskService {
     await this.requireTaskWorkbenchDetail(resolvedInstanceId);
     const route = this.resolveTaskRoute(id, resolvedInstanceId);
     if (route?.mode === 'gateway') {
-      return (await openClawGatewayClient.listWorkbenchCronRuns(resolvedInstanceId, id)).map(
-        mapStudioTaskExecution,
-      );
+      try {
+        const executions = (await openClawGatewayClient.listWorkbenchCronRuns(resolvedInstanceId, id)).map(
+          mapStudioTaskExecution,
+        );
+        this.rememberTaskExecutions(resolvedInstanceId, id, executions);
+        return executions;
+      } catch {
+        try {
+          const executions = (await studio.listInstanceTaskExecutions(resolvedInstanceId, id)).map(
+            mapStudioTaskExecution,
+          );
+          this.rememberTaskExecutions(resolvedInstanceId, id, executions);
+          return executions;
+        } catch {
+          return this.getRememberedTaskExecutions(id, resolvedInstanceId);
+        }
+      }
     }
 
-    return (await studio.listInstanceTaskExecutions(resolvedInstanceId, id)).map(mapStudioTaskExecution);
+    const executions = (await studio.listInstanceTaskExecutions(resolvedInstanceId, id)).map(
+      mapStudioTaskExecution,
+    );
+    this.rememberTaskExecutions(resolvedInstanceId, id, executions);
+    return executions;
   }
 
   async listDeliveryChannels(instanceId: string): Promise<TaskDeliveryChannelOption[]> {
@@ -590,7 +762,7 @@ export class TaskService implements ITaskService {
     if (!deleted) {
       throw new Error('Failed to delete task');
     }
-    this.forgetTask(id);
+    this.forgetTask(id, resolvedInstanceId);
   }
 }
 

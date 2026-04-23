@@ -2168,7 +2168,7 @@ export async function resolveMissingBundledPluginRuntimeInstallSpecs({
     .map((runtimeDep) => `${runtimeDep.name}@${runtimeDep.version}`);
 }
 
-async function installMissingBundledPluginRuntimeDeps({
+export async function installMissingBundledPluginRuntimeDeps({
   packageRoot,
   packageInstallRoot = packageRoot,
   runtimeNpm,

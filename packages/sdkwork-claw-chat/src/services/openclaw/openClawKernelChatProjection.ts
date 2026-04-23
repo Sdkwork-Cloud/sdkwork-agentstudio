@@ -10,9 +10,11 @@ import {
   createKernelChatSessionRef,
 } from '@sdkwork/claw-types';
 import type { OpenClawToolCard } from '../openClawMessagePresentation.ts';
+import { sanitizeChatSessionPreviewText } from '../chatSessionPreviewSanitizer.ts';
 import { normalizeUserVisibleChatSenderLabel } from '../chatSenderLabelPolicy.ts';
 import {
   buildKernelChatMessageParts,
+  type KernelChatProjectionNotice,
   trimOptionalString,
 } from '../kernelChatProjectionParts.ts';
 
@@ -20,6 +22,7 @@ export interface OpenClawKernelChatProjectionMessage {
   id: string;
   role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
+  transportText?: string;
   timestamp: number;
   seq?: number;
   senderLabel?: string | null;
@@ -28,6 +31,8 @@ export interface OpenClawKernelChatProjectionMessage {
   attachments?: StudioConversationAttachment[];
   reasoning?: string | null;
   toolCards?: OpenClawToolCard[];
+  notices?: KernelChatProjectionNotice[];
+  pendingDelivery?: boolean;
 }
 
 export interface OpenClawKernelChatProjectionSession {
@@ -138,7 +143,10 @@ export function buildOpenClawKernelChatSession(input: {
     createdAt: input.session.createdAt,
     updatedAt: input.session.updatedAt,
     messageCount: input.session.messages.length,
-    lastMessagePreview: trimOptionalString(input.session.lastMessagePreview),
+    lastMessagePreview: sanitizeChatSessionPreviewText({
+      text: input.session.lastMessagePreview,
+      kernelId: 'openclaw',
+    }),
     sessionKind: trimOptionalString(input.session.sessionKind),
     actorBinding: sessionRef.agentId
       ? {
@@ -202,6 +210,8 @@ export function hydrateOpenClawKernelChatProjection<TSession extends OpenClawKer
   const kernelSession = buildOpenClawKernelChatSession(input);
   const messages = input.session.messages.map((message) => ({
     ...message,
+    ...(message.transportText !== undefined ? { transportText: message.transportText } : {}),
+    ...(message.pendingDelivery === true ? { pendingDelivery: true } : {}),
     kernelMessage: buildOpenClawKernelChatMessage({
       sessionRef: kernelSession.ref,
       message,

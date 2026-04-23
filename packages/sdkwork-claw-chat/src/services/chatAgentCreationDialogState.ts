@@ -1,7 +1,14 @@
 import type { AgentInstallTarget, KernelAgentLibraryItem } from '@sdkwork/claw-core';
 
-export function resolveChatAgentTemplateKey(agent: Pick<KernelAgentLibraryItem, 'sourceInstanceId' | 'agentId'>) {
-  return `${agent.sourceInstanceId}:${agent.agentId}`;
+function normalizeOptionalString(value: string | null | undefined) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized || null;
+}
+
+export function resolveChatAgentTemplateKey(
+  agent: Pick<KernelAgentLibraryItem, 'sourceInstanceId' | 'sourceKernelId' | 'agentId'>,
+) {
+  return `${agent.sourceInstanceId}:${agent.sourceKernelId}:${agent.agentId}`;
 }
 
 export function filterChatAgentTemplates(
@@ -42,6 +49,41 @@ export function resolveChatAgentTemplateSelectionKey(
   }
 
   return resolveChatAgentTemplateKey(agents[0]);
+}
+
+export function resolveChatAgentPreferredKernelId(input: {
+  availableKernelIds: string[];
+  selectedKernelId: string | null;
+  sourceKernelId?: string | null;
+  defaultKernelId?: string | null;
+}) {
+  const availableKernelIds = Array.from(
+    new Set(
+      input.availableKernelIds
+        .map((kernelId) => normalizeOptionalString(kernelId))
+        .filter((kernelId): kernelId is string => Boolean(kernelId)),
+    ),
+  );
+  if (availableKernelIds.length === 0) {
+    return null;
+  }
+
+  const selectedKernelId = normalizeOptionalString(input.selectedKernelId);
+  if (selectedKernelId && availableKernelIds.includes(selectedKernelId)) {
+    return selectedKernelId;
+  }
+
+  const sourceKernelId = normalizeOptionalString(input.sourceKernelId);
+  if (sourceKernelId && availableKernelIds.includes(sourceKernelId)) {
+    return sourceKernelId;
+  }
+
+  const defaultKernelId = normalizeOptionalString(input.defaultKernelId);
+  if (defaultKernelId && availableKernelIds.includes(defaultKernelId)) {
+    return defaultKernelId;
+  }
+
+  return availableKernelIds[0] ?? null;
 }
 
 export function resolveChatAgentMarketSelectedTemplateId(

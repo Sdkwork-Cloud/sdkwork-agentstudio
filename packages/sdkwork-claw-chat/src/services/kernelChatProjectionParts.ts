@@ -5,11 +5,18 @@ import type {
 } from '@sdkwork/claw-types';
 import type { OpenClawToolCard } from './openClawMessagePresentation.ts';
 
+export interface KernelChatProjectionNotice {
+  code: string;
+  text: string;
+  level?: 'info' | 'warning' | 'error' | null;
+}
+
 export interface KernelChatProjectionPartsSource {
   content: string;
   reasoning?: string | null;
   attachments?: StudioConversationAttachment[];
   toolCards?: OpenClawToolCard[];
+  notices?: KernelChatProjectionNotice[];
 }
 
 export function trimOptionalString(value: string | null | undefined) {
@@ -54,6 +61,33 @@ function mapToolCardPart(toolCard: OpenClawToolCard): KernelChatMessagePart {
   };
 }
 
+function normalizeNoticeLevel(
+  value: KernelChatProjectionNotice['level'],
+): 'info' | 'warning' | 'error' | null {
+  switch (value) {
+    case 'info':
+    case 'warning':
+    case 'error':
+      return value;
+    default:
+      return null;
+  }
+}
+
+function mapNoticePart(notice: KernelChatProjectionNotice): KernelChatMessagePart | null {
+  const text = trimOptionalString(notice.text);
+  if (!text) {
+    return null;
+  }
+
+  return {
+    kind: 'notice',
+    code: trimOptionalString(notice.code) ?? 'notice',
+    text,
+    level: normalizeNoticeLevel(notice.level),
+  };
+}
+
 export function buildKernelChatMessageParts(
   message: KernelChatProjectionPartsSource,
 ): KernelChatMessagePart[] {
@@ -83,6 +117,13 @@ export function buildKernelChatMessageParts(
 
   for (const toolCard of message.toolCards ?? []) {
     parts.push(mapToolCardPart(toolCard));
+  }
+
+  for (const notice of message.notices ?? []) {
+    const part = mapNoticePart(notice);
+    if (part) {
+      parts.push(part);
+    }
   }
 
   return parts;

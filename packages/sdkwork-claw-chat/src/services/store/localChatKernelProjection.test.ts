@@ -60,6 +60,13 @@ runTest(
                 preview: 'found docs',
               },
             ],
+            notices: [
+              {
+                code: 'kernel-warning',
+                text: 'Background sync is delayed.',
+                level: 'warning',
+              },
+            ],
             runId: 'run-1',
           },
         ],
@@ -89,8 +96,14 @@ runTest(
     });
     assert.deepEqual(
       projected.messages[0]?.kernelMessage.parts.map((part) => part.kind),
-      ['text', 'reasoning', 'attachment', 'toolCall', 'toolResult'],
+      ['text', 'reasoning', 'attachment', 'toolCall', 'toolResult', 'notice'],
     );
+    assert.deepEqual(projected.messages[0]?.kernelMessage.parts.at(-1), {
+      kind: 'notice',
+      code: 'kernel-warning',
+      text: 'Background sync is delayed.',
+      level: 'warning',
+    });
   },
 );
 

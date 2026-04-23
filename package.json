@@ -69,6 +69,7 @@
     "server:dev": "sdkwork-run-pnpm --dir packages/sdkwork-claw-server dev",
     "server:build": "sdkwork-run-node scripts/run-claw-server-build.mjs",
     "tauri:dev": "sdkwork-run-pnpm --dir packages/sdkwork-claw-desktop tauri:dev",
+    "tauri:dev:quick": "tauri-dev-fast.cmd",
     "tauri:dev:test": "sdkwork-run-pnpm --dir packages/sdkwork-claw-desktop tauri:dev:test",
     "tauri:build": "sdkwork-run-pnpm --dir packages/sdkwork-claw-desktop tauri:build",
     "tauri:build:test": "sdkwork-run-pnpm --dir packages/sdkwork-claw-desktop tauri:build:test",

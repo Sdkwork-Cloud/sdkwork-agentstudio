@@ -37,6 +37,9 @@ export {
   deriveUserMessageTitle,
 } from '../chatComposerAttachments.ts';
 export {
+  sanitizeChatSessionPreviewText,
+} from '../chatSessionPreviewSanitizer.ts';
+export {
   DEFAULT_CHAT_SESSION_TITLE,
   getChatSessionDisplayTitle,
   isReadableChatSessionTitle,
@@ -48,6 +51,7 @@ export {
   openClawGatewayHistoryConfigService,
 } from '../openClawGatewayHistoryConfigService.ts';
 export {
+  sanitizeOpenClawPreviewText,
   resolveOpenClawMessagePresentation,
   type OpenClawMessagePresentationRole,
   type OpenClawToolCard,

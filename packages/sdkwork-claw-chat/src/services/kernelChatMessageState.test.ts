@@ -237,6 +237,30 @@ await runTest(
 );
 
 await runTest(
+  'resolveKernelChatMessageState preserves intentional OpenClaw commentary suppression even when parts include text',
+  () => {
+    assert.equal(
+      resolveKernelChatMessageState({
+        kernelMessage: createKernelMessage({
+          role: 'assistant',
+          text: 'Planning the next steps before the final answer.',
+          parts: [
+            {
+              kind: 'text',
+              text: 'Planning the next steps before the final answer.',
+            },
+          ],
+          nativeMetadata: {
+            phase: 'commentary',
+          },
+        }),
+      }).content,
+      '',
+    );
+  },
+);
+
+await runTest(
   'resolveKernelChatMessageState keeps kernel notices separate from the main markdown content surface',
   () => {
     assert.deepEqual(

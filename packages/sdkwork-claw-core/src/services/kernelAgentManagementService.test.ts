@@ -8,6 +8,48 @@ import type { StudioInstanceDetailRecord } from '@sdkwork/claw-types';
 import { createKernelAgentManagementService } from './kernelAgentManagementService.ts';
 import { openClawConfigService } from './openClawConfigService.ts';
 
+const FULL_FIELD_SUPPORT = {
+  avatar: true,
+  isDefault: true,
+  primaryModel: true,
+  fallbackModels: true,
+  workspace: true,
+  agentDir: true,
+  temperature: true,
+  topP: true,
+  maxTokens: true,
+  timeoutMs: true,
+  streaming: true,
+} as const;
+
+const UNSUPPORTED_FIELD_SUPPORT = {
+  avatar: false,
+  isDefault: false,
+  primaryModel: false,
+  fallbackModels: false,
+  workspace: false,
+  agentDir: false,
+  temperature: false,
+  topP: false,
+  maxTokens: false,
+  timeoutMs: false,
+  streaming: false,
+} as const;
+
+const HERMES_FIELD_SUPPORT = {
+  avatar: true,
+  isDefault: false,
+  primaryModel: false,
+  fallbackModels: false,
+  workspace: false,
+  agentDir: false,
+  temperature: false,
+  topP: false,
+  maxTokens: false,
+  timeoutMs: false,
+  streaming: false,
+} as const;
+
 function runTest(name: string, fn: () => Promise<void> | void) {
   return Promise.resolve()
     .then(fn)
@@ -129,6 +171,8 @@ await runTest(
           supported: true,
           reasonCode: null,
           reason: null,
+          modelOptions: [],
+          fieldSupport: FULL_FIELD_SUPPORT,
         },
       ]);
     } finally {
@@ -297,6 +341,108 @@ await runTest(
 );
 
 await runTest(
+  'kernelAgentManagementService rejects platform kernel options that omit explicit field support declarations',
+  async () => {
+    const instanceId = 'platform-capability-missing-field-support';
+    const originalBridge = getPlatformBridge();
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstanceDetail(requestedInstanceId) {
+          assert.equal(requestedInstanceId, instanceId);
+          throw new Error('detail intentionally unavailable');
+        },
+        async getKernelAgentCreationCapability(requestedInstanceId: string) {
+          assert.equal(requestedInstanceId, instanceId);
+          return {
+            instanceId,
+            instanceName: 'Invalid Capability Runtime',
+            kernelOptions: [
+              {
+                kernelId: 'hermes',
+                label: 'Hermes',
+                supported: true,
+                reasonCode: null,
+                reason: null,
+                modelOptions: [],
+              },
+            ],
+            defaultKernelId: 'hermes',
+          } as any;
+        },
+      },
+    });
+
+    try {
+      const service = createKernelAgentManagementService();
+
+      await assert.rejects(
+        () => service.getCreationCapability(instanceId),
+        /field support/i,
+      );
+    } finally {
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'kernelAgentManagementService does not mask invalid platform capability contracts behind inferred fallback capability',
+  async () => {
+    const instanceId = 'platform-capability-masked-field-support';
+    const originalBridge = getPlatformBridge();
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstanceDetail(requestedInstanceId) {
+          assert.equal(requestedInstanceId, instanceId);
+          return createDetail({
+            instanceId,
+            instanceName: 'Gateway OpenClaw With Invalid Platform Capability',
+            runtimeKind: 'custom',
+            transportKind: 'openclawGatewayWs',
+            primaryTransport: 'openclawGatewayWs',
+            configWritable: false,
+            configFile: null,
+          });
+        },
+        async getKernelAgentCreationCapability(requestedInstanceId: string) {
+          assert.equal(requestedInstanceId, instanceId);
+          return {
+            instanceId,
+            instanceName: 'Gateway OpenClaw With Invalid Platform Capability',
+            kernelOptions: [
+              {
+                kernelId: 'openclaw',
+                label: 'OpenClaw',
+                supported: false,
+                reasonCode: 'configUnavailable',
+                reason: 'Invalid platform capability should fail before inferred fallback.',
+                modelOptions: [],
+              },
+            ],
+            defaultKernelId: 'openclaw',
+          } as any;
+        },
+      },
+    });
+
+    try {
+      const service = createKernelAgentManagementService();
+
+      await assert.rejects(
+        () => service.getCreationCapability(instanceId),
+        /field support/i,
+      );
+    } finally {
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
   'kernelAgentManagementService prefers platform-declared kernel agent creation capability over inferred unsupported kernel fallback',
   async () => {
     const instanceId = 'platform-capability-hermes-instance';
@@ -339,6 +485,7 @@ await runTest(
                     providerLabel: 'Anthropic',
                   },
                 ],
+                fieldSupport: HERMES_FIELD_SUPPORT,
               },
             ],
             defaultKernelId: 'hermes',
@@ -370,6 +517,7 @@ await runTest(
                 providerLabel: 'Anthropic',
               },
             ],
+            fieldSupport: HERMES_FIELD_SUPPORT,
           },
         ],
         defaultKernelId: 'hermes',
@@ -420,6 +568,7 @@ await runTest(
                 reasonCode: null,
                 reason: null,
                 modelOptions: [],
+                fieldSupport: HERMES_FIELD_SUPPORT,
               },
             ],
             defaultKernelId: 'hermes',
@@ -478,6 +627,78 @@ await runTest(
 );
 
 await runTest(
+  'kernelAgentManagementService rejects create requests that set fields outside the selected kernel field support contract',
+  async () => {
+    const instanceId = 'platform-create-hermes-invalid-fields';
+    const originalBridge = getPlatformBridge();
+    let platformCreateCalls = 0;
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstanceDetail(requestedInstanceId) {
+          assert.equal(requestedInstanceId, instanceId);
+          return createDetail({
+            instanceId,
+            instanceName: 'Hermes Runtime',
+            runtimeKind: 'hermes',
+            transportKind: 'http',
+            primaryTransport: 'http',
+            configWritable: false,
+            configFile: null,
+          });
+        },
+        async getKernelAgentCreationCapability(requestedInstanceId: string) {
+          assert.equal(requestedInstanceId, instanceId);
+          return {
+            instanceId,
+            instanceName: 'Hermes Runtime',
+            kernelOptions: [
+              {
+                kernelId: 'hermes',
+                label: 'Hermes',
+                supported: true,
+                reasonCode: null,
+                reason: null,
+                modelOptions: [],
+                fieldSupport: HERMES_FIELD_SUPPORT,
+              },
+            ],
+            defaultKernelId: 'hermes',
+          };
+        },
+        async createKernelAgent() {
+          platformCreateCalls += 1;
+          throw new Error('platform createKernelAgent should not run for invalid field combinations');
+        },
+      },
+    });
+
+    try {
+      const service = createKernelAgentManagementService();
+
+      await assert.rejects(
+        () =>
+          service.createAgent({
+            instanceId,
+            kernelId: 'hermes',
+            agentId: 'researcher',
+            displayName: 'Researcher',
+            primaryModel: 'anthropic/claude-sonnet-4-5',
+            workspace: 'workspace/research',
+            isDefault: true,
+          }),
+        /primaryModel|workspace|isDefault/,
+      );
+
+      assert.equal(platformCreateCalls, 0);
+    } finally {
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
   'kernelAgentManagementService merges platform-declared kernels with inferred OpenClaw transport support so multi-kernel capability stays intact',
   async () => {
     const instanceId = 'platform-custom-openclaw-instance';
@@ -511,6 +732,7 @@ await runTest(
                 reasonCode: 'unsupportedKernel',
                 reason: 'Custom kernel creation is not implemented.',
                 modelOptions: [],
+                fieldSupport: UNSUPPORTED_FIELD_SUPPORT,
               },
             ],
             defaultKernelId: 'custom',
@@ -532,6 +754,7 @@ await runTest(
           reasonCode: null,
           reason: null,
           modelOptions: [],
+          fieldSupport: FULL_FIELD_SUPPORT,
         },
         {
           kernelId: 'custom',
@@ -540,6 +763,7 @@ await runTest(
           reasonCode: 'unsupportedKernel',
           reason: 'Custom kernel creation is not implemented.',
           modelOptions: [],
+          fieldSupport: UNSUPPORTED_FIELD_SUPPORT,
         },
       ]);
     } finally {
@@ -588,6 +812,8 @@ await runTest(
           supported: true,
           reasonCode: null,
           reason: null,
+          modelOptions: [],
+          fieldSupport: FULL_FIELD_SUPPORT,
         },
       ]);
     } finally {
@@ -676,6 +902,79 @@ await runTest(
 );
 
 await runTest(
+  'kernelAgentManagementService rejects inferred OpenClaw model selections that are not present in the kernel model catalog',
+  async () => {
+    const instanceId = 'inferred-openclaw-invalid-model-instance';
+    const originalBridge = getPlatformBridge();
+    const originalGetConfig = openClawGatewayClient.getConfig;
+    const originalSetConfig = openClawGatewayClient.setConfig;
+    let gatewayCalls = 0;
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstanceDetail(requestedInstanceId) {
+          assert.equal(requestedInstanceId, instanceId);
+          return createDetail({
+            instanceId,
+            instanceName: 'Gateway OpenClaw With Model Catalog',
+            runtimeKind: 'custom',
+            transportKind: 'openclawGatewayWs',
+            primaryTransport: 'openclawGatewayWs',
+            configWritable: false,
+            configFile: null,
+            llmProviders: [
+              {
+                id: 'openai',
+                name: 'OpenAI',
+                models: [
+                  {
+                    id: 'gpt-5.4',
+                    name: 'GPT-5.4',
+                  },
+                ],
+              },
+            ],
+          });
+        },
+      },
+    });
+
+    openClawGatewayClient.getConfig = (async () => {
+      gatewayCalls += 1;
+      throw new Error('getConfig should not run for invalid model selections');
+    }) as typeof openClawGatewayClient.getConfig;
+
+    openClawGatewayClient.setConfig = (async () => {
+      gatewayCalls += 1;
+      throw new Error('setConfig should not run for invalid model selections');
+    }) as typeof openClawGatewayClient.setConfig;
+
+    try {
+      const service = createKernelAgentManagementService();
+
+      await assert.rejects(
+        () =>
+          service.createAgent({
+            instanceId,
+            kernelId: 'openclaw',
+            agentId: 'operator',
+            displayName: 'Operator',
+            primaryModel: 'anthropic/claude-sonnet-4-5',
+          }),
+        /primaryModel/,
+      );
+
+      assert.equal(gatewayCalls, 0);
+    } finally {
+      openClawGatewayClient.getConfig = originalGetConfig;
+      openClawGatewayClient.setConfig = originalSetConfig;
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
   'kernelAgentManagementService falls back to inferred OpenClaw provider creation when platform capability does not manage the selected kernel',
   async () => {
     const instanceId = 'platform-openclaw-fallback-instance';
@@ -712,6 +1011,7 @@ await runTest(
                 reasonCode: 'configUnavailable',
                 reason: 'Desktop bridge does not manage this runtime directly.',
                 modelOptions: [],
+                fieldSupport: FULL_FIELD_SUPPORT,
               },
             ],
             defaultKernelId: 'openclaw',
@@ -821,6 +1121,7 @@ await runTest(
                     providerLabel: 'Anthropic',
                   },
                 ],
+                fieldSupport: HERMES_FIELD_SUPPORT,
               },
             ],
             defaultKernelId: 'hermes',
@@ -849,6 +1150,7 @@ await runTest(
               providerLabel: 'OpenAI',
             },
           ],
+          fieldSupport: FULL_FIELD_SUPPORT,
         },
         {
           kernelId: 'hermes',
@@ -864,6 +1166,97 @@ await runTest(
               providerLabel: 'Anthropic',
             },
           ],
+          fieldSupport: HERMES_FIELD_SUPPORT,
+        },
+      ]);
+    } finally {
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'kernelAgentManagementService keeps platform model options authoritative when inferred and platform capability describe the same kernel',
+  async () => {
+    const instanceId = 'platform-openclaw-authoritative-model-options-instance';
+    const originalBridge = getPlatformBridge();
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstanceDetail(requestedInstanceId) {
+          assert.equal(requestedInstanceId, instanceId);
+          return createDetail({
+            instanceId,
+            instanceName: 'OpenClaw Runtime',
+            runtimeKind: 'openclaw',
+            transportKind: 'openclawGatewayWs',
+            primaryTransport: 'openclawGatewayWs',
+            configWritable: false,
+            configFile: null,
+            llmProviders: [
+              {
+                id: 'openai',
+                name: 'OpenAI',
+                models: [
+                  {
+                    id: 'gpt-5.4',
+                    name: 'GPT-5.4',
+                  },
+                ],
+              },
+            ],
+          });
+        },
+        async getKernelAgentCreationCapability(requestedInstanceId: string) {
+          assert.equal(requestedInstanceId, instanceId);
+          return {
+            instanceId,
+            instanceName: 'OpenClaw Runtime',
+            kernelOptions: [
+              {
+                kernelId: 'openclaw',
+                label: 'OpenClaw',
+                supported: true,
+                reasonCode: null,
+                reason: null,
+                modelOptions: [
+                  {
+                    value: 'openrouter/meta-llama/llama-3.1-8b-instruct',
+                    label: 'OpenRouter / Llama 3.1 8B Instruct',
+                    providerId: 'openrouter',
+                    providerLabel: 'OpenRouter',
+                  },
+                ],
+                fieldSupport: FULL_FIELD_SUPPORT,
+              },
+            ],
+            defaultKernelId: 'openclaw',
+          };
+        },
+      },
+    });
+
+    try {
+      const service = createKernelAgentManagementService();
+      const capability = await service.getCreationCapability(instanceId);
+
+      assert.deepEqual(capability.kernelOptions, [
+        {
+          kernelId: 'openclaw',
+          label: 'OpenClaw',
+          supported: true,
+          reasonCode: null,
+          reason: null,
+          modelOptions: [
+            {
+              value: 'openrouter/meta-llama/llama-3.1-8b-instruct',
+              label: 'OpenRouter / Llama 3.1 8B Instruct',
+              providerId: 'openrouter',
+              providerLabel: 'OpenRouter',
+            },
+          ],
+          fieldSupport: FULL_FIELD_SUPPORT,
         },
       ]);
     } finally {

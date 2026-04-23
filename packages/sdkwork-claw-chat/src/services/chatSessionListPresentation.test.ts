@@ -165,6 +165,7 @@ await runTest(
       timeZone: 'UTC',
       previewLabels: {
         you: 'You',
+        system: 'System',
         tool: 'Tool',
         attachment: 'Attachment',
         attachments: 'Attachments',
@@ -444,6 +445,7 @@ await runTest(
       timeZone: 'UTC',
       previewLabels: {
         you: 'You',
+        system: 'System',
         tool: 'Tool',
         attachment: 'Attachment',
         attachments: 'Attachments',
@@ -476,6 +478,7 @@ await runTest(
       timeZone: 'UTC',
       previewLabels: {
         you: 'You',
+        system: 'System',
         tool: 'Tool',
         attachment: 'Attachment',
         attachments: 'Attachments',
@@ -485,6 +488,53 @@ await runTest(
 
     assert.equal(toolPresentation.preview, 'Tool: Synced 18 files');
     assert.equal(attachmentPresentation.preview, 'Attachment: report.pdf');
+  },
+);
+
+await runTest(
+  'presentChatSessionListItem surfaces notice-only authoritative errors in the sidebar preview instead of leaving the row blank',
+  () => {
+    const presentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:notice-preview',
+        title: 'Kernel failure',
+        updatedAt: Date.UTC(2026, 3, 3, 10, 59, 0),
+        messages: [
+          {
+            role: 'assistant',
+            content: '',
+            timestamp: Date.UTC(2026, 3, 3, 10, 59, 0),
+            kernelMessage: {
+              id: 'message-notice',
+              sessionRef: {
+                kernelId: 'hermes',
+                instanceId: 'instance-1',
+                sessionId: 'thread:notice-preview',
+              },
+              role: 'assistant',
+              status: 'error',
+              createdAt: Date.UTC(2026, 3, 3, 10, 59, 0),
+              updatedAt: Date.UTC(2026, 3, 3, 10, 59, 0),
+              text: '',
+              parts: [
+                {
+                  kind: 'notice',
+                  code: 'kernel-error',
+                  text: 'Hermes kernel execution failed.',
+                  level: 'error',
+                },
+              ],
+            },
+          },
+        ],
+      },
+      now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    assert.equal(presentation.preview, 'Hermes kernel execution failed.');
   },
 );
 

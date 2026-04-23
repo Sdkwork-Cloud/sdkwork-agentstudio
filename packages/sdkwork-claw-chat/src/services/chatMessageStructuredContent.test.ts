@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import {
+  detectChatOperationalEvent,
   detectChatJsonBlock,
   presentChatToolCardsSummary,
+  sanitizeChatOperationalMessageText,
 } from './chatMessageStructuredContent.ts';
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
@@ -42,6 +44,57 @@ await runTest('detectChatJsonBlock ignores plain text and oversize payloads', ()
   assert.equal(
     detectChatJsonBlock(`{"payload":"${'x'.repeat(20_001)}"}`),
     null,
+  );
+});
+
+await runTest('detectChatOperationalEvent extracts reminder metadata and summary from structured reminder text', () => {
+  assert.deepEqual(
+    detectChatOperationalEvent(
+      '[2026-04-23 09:00] A scheduled reminder has been triggered. The reminder content is: Prepare the weekly status update. Handle this reminder internally. Current time: 2026-04-23 09:00',
+    ),
+    {
+      kind: 'reminder',
+      badgeLabel: 'Reminder',
+      summary: 'Prepare the weekly status update.',
+      scheduledAtLabel: '2026-04-23 09:00',
+      currentTimeLabel: '2026-04-23 09:00',
+    },
+  );
+});
+
+await runTest('detectChatOperationalEvent supports localized reminder and task payloads', () => {
+  assert.deepEqual(
+    detectChatOperationalEvent(
+      '[2026-04-23 09:00] \u63d0\u9192\uff1a\u660e\u5929 9 \u70b9\u5f00\u4f1a\u3002 Current time: 2026-04-23 09:00',
+    ),
+    {
+      kind: 'reminder',
+      badgeLabel: '\u63d0\u9192',
+      summary: '\u660e\u5929 9 \u70b9\u5f00\u4f1a\u3002',
+      scheduledAtLabel: '2026-04-23 09:00',
+      currentTimeLabel: '2026-04-23 09:00',
+    },
+  );
+
+  assert.deepEqual(
+    detectChatOperationalEvent(
+      '\u4efb\u52a1\uff1a\u6574\u7406\u5468\u62a5\u3002 Handle this task internally. Current time: 2026-04-23 09:30',
+    ),
+    {
+      kind: 'task',
+      badgeLabel: '\u4efb\u52a1',
+      summary: '\u6574\u7406\u5468\u62a5\u3002',
+      currentTimeLabel: '2026-04-23 09:30',
+    },
+  );
+});
+
+await runTest('sanitizeChatOperationalMessageText collapses operational payloads to the visible summary', () => {
+  assert.equal(
+    sanitizeChatOperationalMessageText(
+      'A scheduled reminder has been triggered. The reminder content is: Reply to the vendor. Do not relay it to the user unless explicitly requested. Current time: 2026-04-23 12:00',
+    ),
+    'Reply to the vendor.',
   );
 });
 

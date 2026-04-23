@@ -1,6 +1,17 @@
 import type { KernelChatMessage, StudioConversationAttachment } from '@sdkwork/claw-types';
-import type { OpenClawToolCard } from './openClawMessagePresentation.ts';
+import {
+  isOpenClawSilentReplyText,
+  resolveOpenClawMessagePresentation,
+  type OpenClawToolCard,
+} from './openClawMessagePresentation.ts';
+import {
+  detectChatOperationalEvent,
+  type ChatOperationalEventPresentation,
+  sanitizeChatOperationalMessageText,
+  shouldPromoteChatOperationalMessageToSystem,
+} from './chatMessageStructuredContent.ts';
 import { resolveChatMessageBinding } from './chatMessageBinding.ts';
+import { normalizeUserVisibleChatSenderLabel } from './chatSenderLabelPolicy.ts';
 import {
   resolveChatMessageSequence,
   resolveChatMessageSequenceFromNativeMetadata,
@@ -29,6 +40,7 @@ export type KernelChatMessageState = {
   role: 'user' | 'assistant' | 'system' | 'tool';
   status: 'complete' | 'streaming' | 'error';
   content: string;
+  operationalEvent?: ChatOperationalEventPresentation;
   timestamp: number;
   seq?: number;
   senderLabel: string | null;
@@ -97,6 +109,121 @@ function cloneNativeMetadata(value: Record<string, unknown> | null | undefined) 
   return value ? { ...value } : null;
 }
 
+function resolveOpenClawKernelMessagePresentation(params: {
+  kernelMessage: KernelChatMessage;
+  fallbackReasoning: string | null;
+  fallbackToolCards: OpenClawToolCard[];
+}) {
+  const nativeMetadata = cloneNativeMetadata(
+    params.kernelMessage.nativeMetadata as Record<string, unknown> | null | undefined,
+  );
+  const presentation = resolveOpenClawMessagePresentation({
+    role: params.kernelMessage.role,
+    text: params.kernelMessage.text,
+    ...(params.kernelMessage.senderLabel
+      ? { senderLabel: params.kernelMessage.senderLabel }
+      : {}),
+    ...(params.kernelMessage.model ? { model: params.kernelMessage.model } : {}),
+    ...(params.kernelMessage.runId ? { runId: params.kernelMessage.runId } : {}),
+    ...(nativeMetadata ? { __openclaw: nativeMetadata } : {}),
+  });
+
+  return {
+    role: normalizeRole(presentation.role),
+    content:
+      presentation.role === 'assistant' && isOpenClawSilentReplyText(presentation.text)
+        ? ''
+        : presentation.text,
+    senderLabel:
+      normalizeUserVisibleChatSenderLabel(
+        presentation.senderLabel ?? params.kernelMessage.senderLabel,
+      ),
+    reasoning: presentation.reasoning ?? params.fallbackReasoning,
+    toolCards:
+      params.fallbackToolCards.length > 0
+        ? params.fallbackToolCards
+        : cloneToolCards(presentation.toolCards),
+  };
+}
+
+function resolveKernelMessageContent(params: {
+  legacyContent?: string;
+  kernelMessage: KernelChatMessage | null;
+  partsContent?: string | null;
+  openClawContent?: string | null;
+}) {
+  if (!params.kernelMessage) {
+    return params.legacyContent ?? '';
+  }
+
+  const normalizedPartsContent = trimNullableString(params.partsContent);
+  const normalizedKernelText = trimNullableString(params.kernelMessage.text);
+  if (typeof params.openClawContent === 'string') {
+    const normalizedOpenClawContent = trimNullableString(params.openClawContent);
+    if (normalizedOpenClawContent) {
+      return params.openClawContent;
+    }
+
+    // Preserve intentional OpenClaw suppression when raw text exists, but
+    // reconstruct visible content from structured parts when the transport text
+    // is absent and parts carry the canonical display text.
+    if (!normalizedKernelText) {
+      return normalizedPartsContent ?? '';
+    }
+
+    return params.openClawContent;
+  }
+
+  return normalizedPartsContent ?? params.kernelMessage.text;
+}
+
+function shouldPromoteKernelMessageToSystem(params: {
+  resolvedRole: KernelChatMessageState['role'];
+  legacyContent?: string;
+  kernelMessage: KernelChatMessage | null;
+  partsContent?: string | null;
+  openClawContent?: string | null;
+}) {
+  if (params.resolvedRole === 'system' || params.resolvedRole === 'tool') {
+    return params.resolvedRole === 'system';
+  }
+
+  return [
+    params.kernelMessage?.text,
+    params.partsContent,
+    params.openClawContent,
+    params.legacyContent,
+  ].some(
+    (value) =>
+      typeof value === 'string' && shouldPromoteChatOperationalMessageToSystem(value),
+  );
+}
+
+function resolveKernelOperationalEvent(params: {
+  legacyContent?: string;
+  kernelMessage: KernelChatMessage | null;
+  partsContent?: string | null;
+}) {
+  const candidates = [
+    params.kernelMessage?.text,
+    params.partsContent,
+    params.legacyContent,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string' || !candidate.trim()) {
+      continue;
+    }
+
+    const event = detectChatOperationalEvent(candidate);
+    if (event) {
+      return event;
+    }
+  }
+
+  return null;
+}
+
 export function resolveKernelChatMessageState(
   message: KernelChatMessageStateSource | null | undefined,
 ): KernelChatMessageState {
@@ -105,6 +232,20 @@ export function resolveKernelChatMessageState(
   const partsPresentation = kernelMessage
     ? presentKernelChatMessageParts(kernelMessage)
     : null;
+  const defaultReasoning = kernelMessage
+    ? partsPresentation?.reasoning ?? null
+    : trimNullableString(message?.reasoning);
+  const defaultToolCards = kernelMessage
+    ? partsPresentation?.toolCards ?? []
+    : cloneToolCards(message?.toolCards);
+  const openClawPresentation =
+    kernelMessage && messageBinding.kernelId === 'openclaw'
+      ? resolveOpenClawKernelMessagePresentation({
+          kernelMessage,
+          fallbackReasoning: defaultReasoning,
+          fallbackToolCards: defaultToolCards,
+        })
+      : null;
   const kernelTimestamp =
     typeof kernelMessage?.updatedAt === 'number'
       ? kernelMessage.updatedAt
@@ -119,20 +260,44 @@ export function resolveKernelChatMessageState(
       seq: message?.seq,
       nativeMetadata: message?.nativeMetadata,
     });
+  const resolvedContent = resolveKernelMessageContent({
+    legacyContent: message?.content,
+    kernelMessage,
+    partsContent: partsPresentation?.content,
+    openClawContent: openClawPresentation?.content,
+  });
+  const resolvedRole =
+    openClawPresentation?.role ??
+    normalizeRole(kernelMessage?.role ?? message?.role);
+  const shouldPromoteOperationalRole = shouldPromoteKernelMessageToSystem({
+    resolvedRole,
+    legacyContent: message?.content,
+    kernelMessage,
+    partsContent: partsPresentation?.content,
+    openClawContent: openClawPresentation?.content,
+  });
+  const operationalEvent = shouldPromoteOperationalRole
+    ? resolveKernelOperationalEvent({
+        legacyContent: message?.content,
+        kernelMessage,
+        partsContent: partsPresentation?.content,
+      })
+    : null;
 
   return {
     id: messageBinding.id ?? undefined,
-    role: normalizeRole(kernelMessage?.role ?? message?.role),
+    role: shouldPromoteOperationalRole ? 'system' : resolvedRole,
     status: normalizeStatus(kernelMessage?.status),
-    content: kernelMessage
-      ? partsPresentation?.content ?? kernelMessage.text
-      : message?.content ?? '',
+    content:
+      shouldPromoteOperationalRole && !openClawPresentation
+        ? sanitizeChatOperationalMessageText(resolvedContent)
+        : resolvedContent,
+    ...(operationalEvent ? { operationalEvent } : {}),
     timestamp:
       kernelTimestamp ??
       (typeof message?.timestamp === 'number' ? message.timestamp : 0),
     ...(typeof resolvedSequence === 'number' ? { seq: resolvedSequence } : {}),
-    senderLabel:
-      messageBinding.senderLabel,
+    senderLabel: openClawPresentation?.senderLabel ?? messageBinding.senderLabel,
     model: messageBinding.model ?? undefined,
     runId: messageBinding.runId ?? undefined,
     kernelId: messageBinding.kernelId ?? undefined,
@@ -146,12 +311,8 @@ export function resolveKernelChatMessageState(
     attachments: kernelMessage
       ? partsPresentation?.attachments ?? []
       : cloneAttachments(message?.attachments),
-    reasoning: kernelMessage
-      ? partsPresentation?.reasoning ?? null
-      : trimNullableString(message?.reasoning),
-    toolCards: kernelMessage
-      ? partsPresentation?.toolCards ?? []
-      : cloneToolCards(message?.toolCards),
+    reasoning: openClawPresentation?.reasoning ?? defaultReasoning,
+    toolCards: openClawPresentation?.toolCards ?? defaultToolCards,
     notices: kernelMessage
       ? partsPresentation?.notices ?? []
       : [],

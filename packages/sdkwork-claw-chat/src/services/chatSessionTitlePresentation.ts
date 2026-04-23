@@ -1,6 +1,7 @@
 import type { StudioConversationAttachment } from '@sdkwork/claw-types';
 import type { KernelChatMessage } from '@sdkwork/claw-types';
 import { resolveKernelChatMessageState } from './kernelChatMessageState.ts';
+import { sanitizeChatSessionPreviewText } from './chatSessionPreviewSanitizer.ts';
 
 export const DEFAULT_CHAT_SESSION_TITLE = 'New Conversation';
 
@@ -25,6 +26,12 @@ type ChatSessionTitleSessionLike = {
   titleSource?: ChatSessionTitleSource;
   messages?: ChatSessionTitleMessageLike[];
   lastMessagePreview?: string;
+  transport?: string | null;
+  kernelSession?: {
+    ref?: {
+      kernelId?: string | null;
+    } | null;
+  } | null;
 };
 
 function collapseChatSessionTitleWhitespace(value: string | null | undefined) {
@@ -210,6 +217,13 @@ export function resolveInitialChatSessionTitle(params: {
 
 export function getChatSessionDisplayTitle(session: ChatSessionTitleSessionLike) {
   const explicitTitle = normalizeChatSessionTitle(session.title);
+  const previewKernelId =
+    collapseChatSessionTitleWhitespace(session.kernelSession?.ref?.kernelId) ||
+    (session.transport === 'openclawGateway' ? 'openclaw' : '');
+  const sanitizedPreview = sanitizeChatSessionPreviewText({
+    text: session.lastMessagePreview,
+    kernelId: previewKernelId || undefined,
+  });
   const typedSessionKey = parseTypedChatSessionTitleSessionKey(session.id);
   const normalizedSessionId = normalizeChatSessionTitle(session.id);
   const explicitTitleMatchesTypedSessionKey =
@@ -240,7 +254,7 @@ export function getChatSessionDisplayTitle(session: ChatSessionTitleSessionLike)
     }
   }
 
-  const previewTitle = normalizeChatSessionTitle(session.lastMessagePreview);
+  const previewTitle = normalizeChatSessionTitle(sanitizedPreview);
   if (isReadableChatSessionTitle(previewTitle)) {
     return previewTitle;
   }

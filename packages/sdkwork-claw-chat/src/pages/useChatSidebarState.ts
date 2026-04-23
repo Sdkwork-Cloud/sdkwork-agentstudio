@@ -322,6 +322,12 @@ export function useChatSidebarState({
 
     try {
       revealHiddenAgentId(result.instanceId, result.agentId);
+      await queryClient.invalidateQueries({
+        queryKey: ['chat', 'kernel-agent-catalog', result.instanceId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['chat', 'owned-kernel-agent-library', result.instanceId],
+      });
       const currentActiveInstanceId = resolveCurrentInstanceId();
       const plan = resolveChatSidebarAgentCreatedSelectionPlan({
         result,

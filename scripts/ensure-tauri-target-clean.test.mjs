@@ -4,7 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
 
-import { ensureTauriTargetClean } from './ensure-tauri-target-clean.mjs';
+import {
+  ensureTauriTargetClean,
+  removeDirectoryWithRetriesSync,
+} from './ensure-tauri-target-clean.mjs';
 import {
   DEFAULT_NODE_VERSION,
   DEFAULT_OPENCLAW_VERSION,
@@ -16,6 +19,16 @@ assert.match(
   readFileSync(modulePath, 'utf8'),
   /if \(invokedScriptPath && invokedScriptPath === currentModulePath\) \{\s*try \{\s*runCli\(\);\s*\} catch \(error\) \{\s*console\.error\(error instanceof Error \? error\.message : String\(error\)\);\s*process\.exit\(1\);\s*\}\s*\}/s,
   'ensure-tauri-target-clean must wrap the CLI entrypoint with a top-level error handler',
+);
+assert.equal(
+  typeof removeDirectoryWithRetriesSync,
+  'function',
+  'ensure-tauri-target-clean must export removeDirectoryWithRetriesSync',
+);
+assert.match(
+  readFileSync(modulePath, 'utf8'),
+  /removeDirectoryWithRetriesSync\(targetInspection\.targetDir/,
+  'ensure-tauri-target-clean must remove stale target directories through the Windows lock retry helper',
 );
 
 function withTempDir(callback) {
@@ -37,6 +50,47 @@ function writePermissionManifest(srcTauriDir, manifestName, permissionEntries) {
 function writeJson(filePath, value) {
   mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+{
+  const removedPaths = [];
+  const logLines = [];
+  let attempts = 0;
+  removeDirectoryWithRetriesSync('D:\\workspace\\sdkwork-claw-desktop\\src-tauri\\target', {
+    removeImpl: (targetPath, options) => {
+      removedPaths.push({ targetPath, options });
+      attempts += 1;
+      if (attempts === 1) {
+        const error = new Error('resource busy or locked');
+        error.code = 'EBUSY';
+        throw error;
+      }
+    },
+    retryCount: 2,
+    retryDelayMs: 1,
+    sleepImpl: () => {},
+    logger: (message) => {
+      logLines.push(message);
+    },
+  });
+
+  assert.equal(
+    attempts,
+    2,
+    'ensure-tauri-target-clean must retry target cleanup after transient Windows file locks',
+  );
+  assert.ok(
+    logLines.some((line) => line.includes('Retrying cleanup')),
+    'ensure-tauri-target-clean must log retried stale target cleanup attempts after transient Windows file locks',
+  );
+  assert.deepEqual(
+    removedPaths.map((entry) => entry.targetPath),
+    [
+      'D:\\workspace\\sdkwork-claw-desktop\\src-tauri\\target',
+      'D:\\workspace\\sdkwork-claw-desktop\\src-tauri\\target',
+    ],
+    'ensure-tauri-target-clean must retry the same target directory path until cleanup succeeds',
+  );
 }
 
 withTempDir((tempDir) => {

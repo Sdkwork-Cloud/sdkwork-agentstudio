@@ -162,6 +162,7 @@ await runTest(
       primaryAgentId: null,
       previewLabels: {
         you: 'You',
+        system: 'System',
         tool: 'Tool',
         attachment: 'Attachment',
         attachments: 'Attachments',

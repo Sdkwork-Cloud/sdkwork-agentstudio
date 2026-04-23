@@ -3,6 +3,7 @@ import type { AgentInstallTarget, KernelAgentLibraryItem } from '@sdkwork/claw-c
 import {
   filterChatAgentTemplates,
   resolveChatAgentMarketSelectedTargetId,
+  resolveChatAgentPreferredKernelId,
   resolveChatAgentMarketSelectedTemplateId,
   resolveChatAgentTemplateKey,
   resolveChatAgentTemplateSelectionKey,
@@ -123,6 +124,76 @@ await runTest('resolveChatAgentTemplateSelectionKey preserves valid selection an
     firstKey,
   );
   assert.equal(resolveChatAgentTemplateSelectionKey([], secondKey), null);
+});
+
+await runTest('resolveChatAgentTemplateKey includes the source kernel so same-id agents across kernels remain distinct', () => {
+  const openClawAgent = createLibraryAgent({
+    sourceInstanceId: 'instance-a',
+    sourceKernelId: 'openclaw',
+    agentId: 'assistant',
+  });
+  const hermesAgent = createLibraryAgent({
+    sourceInstanceId: 'instance-a',
+    sourceKernelId: 'hermes',
+    agentId: 'assistant',
+  });
+
+  assert.notEqual(
+    resolveChatAgentTemplateKey(openClawAgent),
+    resolveChatAgentTemplateKey(hermesAgent),
+  );
+});
+
+await runTest('resolveChatAgentPreferredKernelId keeps a valid manual selection and otherwise prefers the source kernel before the default', () => {
+  assert.equal(
+    resolveChatAgentPreferredKernelId({
+      availableKernelIds: ['openclaw', 'hermes'],
+      selectedKernelId: 'hermes',
+      sourceKernelId: 'openclaw',
+      defaultKernelId: 'openclaw',
+    }),
+    'hermes',
+  );
+
+  assert.equal(
+    resolveChatAgentPreferredKernelId({
+      availableKernelIds: ['openclaw', 'hermes'],
+      selectedKernelId: 'missing',
+      sourceKernelId: 'hermes',
+      defaultKernelId: 'openclaw',
+    }),
+    'hermes',
+  );
+
+  assert.equal(
+    resolveChatAgentPreferredKernelId({
+      availableKernelIds: ['openclaw', 'hermes'],
+      selectedKernelId: null,
+      sourceKernelId: 'missing',
+      defaultKernelId: 'openclaw',
+    }),
+    'openclaw',
+  );
+
+  assert.equal(
+    resolveChatAgentPreferredKernelId({
+      availableKernelIds: ['openclaw', 'hermes'],
+      selectedKernelId: null,
+      sourceKernelId: null,
+      defaultKernelId: 'missing',
+    }),
+    'openclaw',
+  );
+
+  assert.equal(
+    resolveChatAgentPreferredKernelId({
+      availableKernelIds: [],
+      selectedKernelId: 'openclaw',
+      sourceKernelId: 'hermes',
+      defaultKernelId: 'openclaw',
+    }),
+    null,
+  );
 });
 
 await runTest('resolveChatAgentMarketSelectedTemplateId preserves valid selection and otherwise falls back to the first template', () => {

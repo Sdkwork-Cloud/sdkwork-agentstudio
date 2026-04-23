@@ -18,6 +18,15 @@ export interface ChatAgentDraft {
   streamingMode: ChatAgentStreamingMode;
 }
 
+function normalizeOptionalString(value: string | null | undefined) {
+  if (typeof value !== 'string') {
+    return value ?? null;
+  }
+
+  const normalized = value.trim();
+  return normalized || null;
+}
+
 export function createChatAgentDraft(): ChatAgentDraft {
   return {
     agentId: '',
@@ -52,6 +61,74 @@ export function parseChatAgentFallbackModels(value: string) {
         .map((entry) => entry.trim())
         .filter(Boolean),
     ),
+  );
+}
+
+export function normalizeChatAgentFallbackModels(input: {
+  value: string;
+  primaryModel?: string | null;
+  allowedModelValues?: string[] | null;
+}) {
+  const primaryModel = normalizeOptionalString(input.primaryModel);
+  const allowedModelValues =
+    input.allowedModelValues && input.allowedModelValues.length > 0
+      ? new Set(
+          input.allowedModelValues
+            .map((value) => normalizeOptionalString(value))
+            .filter((value): value is string => Boolean(value)),
+        )
+      : null;
+
+  return parseChatAgentFallbackModels(input.value).filter((model) => {
+    if (primaryModel && model === primaryModel) {
+      return false;
+    }
+
+    if (allowedModelValues && !allowedModelValues.has(model)) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+export function formatChatAgentFallbackModels(models: string[]) {
+  return Array.from(
+    new Set(
+      models
+        .map((model) => normalizeOptionalString(model))
+        .filter((model): model is string => Boolean(model)),
+    ),
+  ).join('\n');
+}
+
+export function toggleChatAgentFallbackModel(input: {
+  value: string;
+  currentValue: string;
+  primaryModel?: string | null;
+  allowedModelValues?: string[] | null;
+}) {
+  const nextValue = normalizeOptionalString(input.value);
+  const currentModels = normalizeChatAgentFallbackModels({
+    value: input.currentValue,
+    primaryModel: input.primaryModel,
+    allowedModelValues: input.allowedModelValues,
+  });
+
+  if (!nextValue) {
+    return formatChatAgentFallbackModels(currentModels);
+  }
+
+  const nextModels = currentModels.includes(nextValue)
+    ? currentModels.filter((model) => model !== nextValue)
+    : [...currentModels, nextValue];
+
+  return formatChatAgentFallbackModels(
+    normalizeChatAgentFallbackModels({
+      value: formatChatAgentFallbackModels(nextModels),
+      primaryModel: input.primaryModel,
+      allowedModelValues: input.allowedModelValues,
+    }),
   );
 }
 

@@ -11,16 +11,21 @@ import {
   buildLocalChatKernelChatMessage,
   composeOutgoingChatText,
   createAuthoritativeKernelChatAdapterRegistry,
+  dedupeChatMessagesById,
   DEFAULT_CHAT_SESSION_TITLE,
   getSharedOpenClawGatewayClient,
+  resolveChatMessagePrimaryPreviewText,
+  hasRenderableChatMessagePayload,
   hydrateLocalChatKernelProjection,
   isGatewayAuthoritativeRouteMode,
   orderChatMessagesForDisplay,
   openClawGatewayHistoryConfigService,
   resolveLatestChatMessageForDisplay,
   resolveLatestChatMessageTimestamp,
+  sanitizeChatSessionPreviewText,
   type KernelChatAdapter,
   type KernelChatAdapterCapabilities,
+  type KernelChatNoticePresentation,
   type OpenClawToolCard,
   resolveAuthoritativeInstanceChatRoute,
   resolveInitialChatSessionTitle,
@@ -55,6 +60,7 @@ export interface Message {
   role: Role;
   content: string;
   timestamp: number;
+  transportText?: string;
   seq?: number;
   senderLabel?: string | null;
   model?: string;
@@ -62,6 +68,8 @@ export interface Message {
   attachments?: StudioConversationAttachment[];
   reasoning?: string | null;
   toolCards?: OpenClawToolCard[];
+  notices?: KernelChatNoticePresentation[];
+  pendingDelivery?: boolean;
   kernelMessage?: KernelChatMessage | null;
 }
 
@@ -216,7 +224,7 @@ function createSessionId(instanceId?: string) {
 }
 
 function normalizeMessages(messages: Message[] | undefined) {
-  return Array.isArray(messages) ? orderChatMessagesForDisplay(messages) : [];
+  return Array.isArray(messages) ? dedupeChatMessagesById(messages) : [];
 }
 
 function normalizeKernelRuns(runs: KernelChatRun[] | null | undefined) {
@@ -303,6 +311,12 @@ function normalizeSession(session: ChatSession): ChatSession {
         ? 'kernelAdapter'
         : 'local'),
     lastSeenAt: normalizeOptionalTimestamp(session.lastSeenAt),
+    lastMessagePreview: sanitizeChatSessionPreviewText({
+      text: session.lastMessagePreview,
+      kernelId:
+        session.kernelSession?.ref?.kernelId ??
+        (session.transport === 'openclawGateway' ? 'openclaw' : undefined),
+    }),
     messages: normalizeMessages(session.messages),
     kernelRuns: normalizeKernelRuns(session.kernelRuns),
   };
@@ -557,6 +571,7 @@ function resolveScopeActiveSessionId(params: {
   sessions: ChatSession[];
   preferredActiveSessionId?: string | null;
   fallbackActiveSessionId?: string | null;
+  preserveExplicitBlankSelection?: boolean;
 }) {
   const preferredActiveSessionId = params.preferredActiveSessionId ?? null;
   if (
@@ -564,6 +579,10 @@ function resolveScopeActiveSessionId(params: {
     params.sessions.some((session) => session.id === preferredActiveSessionId)
   ) {
     return preferredActiveSessionId;
+  }
+
+  if (params.preserveExplicitBlankSelection && params.preferredActiveSessionId === null) {
+    return null;
   }
 
   const fallbackActiveSessionId = params.fallbackActiveSessionId ?? null;
@@ -584,6 +603,7 @@ function applyAdapterInstanceScopeState(
     baseSessions?: ChatSession[];
     preservedAdapterSessions?: ChatSession[];
     preferredActiveSessionId?: string | null;
+    preserveExplicitBlankSelection?: boolean;
     lastError?: string | undefined;
     syncState?: SyncState;
   } = {},
@@ -599,6 +619,7 @@ function applyAdapterInstanceScopeState(
   const nextActiveSessionId = resolveScopeActiveSessionId({
     sessions: preservedAdapterSessions,
     preferredActiveSessionId: options.preferredActiveSessionId,
+    preserveExplicitBlankSelection: options.preserveExplicitBlankSelection,
     fallbackActiveSessionId: state.activeSessionIdByInstance[scopeKey] ?? null,
   });
   const nextPreservedAdapterSessions = preservedAdapterSessions.map((session) => {
@@ -916,6 +937,30 @@ function isGatewayAuthoritativeStoredSession(session: ChatSession | null | undef
 }
 
 const gatewayMirrorSyncByInstance = new Map<string, Promise<void>>();
+const gatewayMirrorPersistedSessionsByInstance = new Map<string, ChatSession[]>();
+
+async function deletePersistedGatewayMirrorSession(params: {
+  instanceId: string;
+  sessionId: string;
+}) {
+  try {
+    await studioConversationService.deleteConversation(params.sessionId);
+    const persistedSessions =
+      gatewayMirrorPersistedSessionsByInstance.get(params.instanceId) ?? null;
+    if (!persistedSessions) {
+      return;
+    }
+
+    gatewayMirrorPersistedSessionsByInstance.set(
+      params.instanceId,
+      persistedSessions.filter((session) => session.id !== params.sessionId),
+    );
+  } catch (error) {
+    if (!isMissingStudioConversationStoreMethodError(error)) {
+      console.error('Failed to delete cached gateway conversation mirror:', error);
+    }
+  }
+}
 
 async function hydratePersistedGatewaySessions(params: {
   set: (
@@ -931,10 +976,15 @@ async function hydratePersistedGatewaySessions(params: {
     const cachedSessions = filterGatewayMirrorSessions(
       await studioConversationService.listConversations(params.instanceId),
     );
+    gatewayMirrorPersistedSessionsByInstance.set(
+      params.instanceId,
+      cachedSessions.map((session) => normalizeSession(session)),
+    );
     if (cachedSessions.length === 0) {
       return;
     }
 
+    let restoredActiveSessionId: string | null = null;
     params.set((state) => {
       const nextSessions = replaceInstanceSessions(
         state.sessions,
@@ -943,15 +993,16 @@ async function hydratePersistedGatewaySessions(params: {
       );
       const scopeKey = getScopeKey(params.instanceId);
       const nextScopeSessions = listScopeSessions(nextSessions, params.instanceId);
+      restoredActiveSessionId = resolveScopeActiveSessionId({
+        sessions: nextScopeSessions,
+        fallbackActiveSessionId: state.activeSessionIdByInstance[scopeKey] ?? null,
+      });
 
       return {
         sessions: nextSessions,
         activeSessionIdByInstance: {
           ...state.activeSessionIdByInstance,
-          [scopeKey]: resolveScopeActiveSessionId({
-            sessions: nextScopeSessions,
-            fallbackActiveSessionId: state.activeSessionIdByInstance[scopeKey] ?? null,
-          }),
+          [scopeKey]: restoredActiveSessionId,
         },
         syncStateByInstance: {
           ...state.syncStateByInstance,
@@ -963,7 +1014,16 @@ async function hydratePersistedGatewaySessions(params: {
         },
       } satisfies Partial<ChatState>;
     });
+    openClawGatewaySessions.restorePersistedMirror({
+      instanceId: params.instanceId,
+      sessions: cachedSessions as unknown as Parameters<
+        OpenClawGatewaySessionStore['restorePersistedMirror']
+      >[0]['sessions'],
+      activeSessionId: restoredActiveSessionId,
+      emit: false,
+    });
   } catch (error) {
+    gatewayMirrorPersistedSessionsByInstance.delete(params.instanceId);
     if (!isMissingStudioConversationStoreMethodError(error)) {
       console.error('Failed to hydrate cached gateway conversations:', error);
     }
@@ -978,18 +1038,33 @@ function queuePersistGatewaySnapshotMirror(params: {
     return;
   }
 
+  if (
+    params.snapshot.connectionStatus === 'disconnected' &&
+    params.snapshot.sessions.length === 0
+  ) {
+    return;
+  }
+
   const previousTask = gatewayMirrorSyncByInstance.get(params.instanceId) ?? Promise.resolve();
   let nextTask!: Promise<void>;
   nextTask = previousTask
     .catch(() => undefined)
     .then(async () => {
-      await syncGatewayMirrorSessions({
+      const knownPersistedSessions = gatewayMirrorPersistedSessionsByInstance.get(
+        params.instanceId,
+      );
+      const syncedSessions = await syncGatewayMirrorSessions({
         instanceId: params.instanceId,
         snapshotSessions: params.snapshot.sessions as ChatSession[],
+        persistedSessions: knownPersistedSessions,
         listPersistedSessions: (instanceId) => studioConversationService.listConversations(instanceId),
         putPersistedSession: (session) => studioConversationService.putConversation(session),
         deletePersistedSession: (sessionId) => studioConversationService.deleteConversation(sessionId),
       });
+      gatewayMirrorPersistedSessionsByInstance.set(
+        params.instanceId,
+        syncedSessions.map((session) => normalizeSession(session as ChatSession)),
+      );
     })
     .catch((error) => {
       if (!isMissingStudioConversationStoreMethodError(error)) {
@@ -1013,6 +1088,10 @@ function buildChatSessionFromKernelSession(input: {
 }): ChatSession {
   const modelBinding = input.kernelSession.modelBinding ?? null;
   const existingSession = input.existingSession ?? null;
+  const lastMessagePreview =
+    input.kernelSession.lastMessagePreview === undefined
+      ? existingSession?.lastMessagePreview ?? undefined
+      : input.kernelSession.lastMessagePreview ?? undefined;
 
   return normalizeSession({
     id: input.kernelSession.ref.sessionId,
@@ -1033,8 +1112,7 @@ function buildChatSessionFromKernelSession(input: {
         : existingSession?.fastMode ?? null,
     verboseLevel: modelBinding?.verboseLevel ?? existingSession?.verboseLevel ?? null,
     reasoningLevel: modelBinding?.reasoningLevel ?? existingSession?.reasoningLevel ?? null,
-    lastMessagePreview:
-      input.kernelSession.lastMessagePreview ?? existingSession?.lastMessagePreview ?? undefined,
+    lastMessagePreview,
     historyState: existingSession?.historyState,
     sessionKind: input.kernelSession.sessionKind ?? existingSession?.sessionKind ?? null,
     agentId:
@@ -1055,28 +1133,35 @@ function buildChatSessionFromKernelSession(input: {
 function buildChatMessagesFromKernelMessages(
   kernelMessages: KernelChatMessage[],
 ): Message[] {
-  return orderChatMessagesForDisplay(
-    [...kernelMessages].map((kernelMessage) => {
-      const resolved = resolveKernelChatMessageState({
-        kernelMessage,
-      });
+  const messages: Message[] = [];
 
-        return {
-          id: resolved.id ?? createId('msg'),
-          role: resolved.role,
-          content: resolved.content,
-          timestamp: resolved.timestamp,
-          ...(typeof resolved.seq === 'number' ? { seq: resolved.seq } : {}),
-          ...(resolved.senderLabel ? { senderLabel: resolved.senderLabel } : {}),
-          ...(resolved.model ? { model: resolved.model } : {}),
-          ...(resolved.runId ? { runId: resolved.runId } : {}),
-        ...(resolved.attachments.length > 0 ? { attachments: resolved.attachments } : {}),
-        ...(resolved.reasoning ? { reasoning: resolved.reasoning } : {}),
-        ...(resolved.toolCards.length > 0 ? { toolCards: resolved.toolCards } : {}),
-        kernelMessage,
-      } satisfies Message;
-    }),
-  );
+  for (const kernelMessage of kernelMessages) {
+    const resolved = resolveKernelChatMessageState({
+      kernelMessage,
+    });
+
+    const message: Message = {
+      id: resolved.id ?? createId('msg'),
+      role: resolved.role,
+      content: resolved.content,
+      timestamp: resolved.timestamp,
+      ...(typeof resolved.seq === 'number' ? { seq: resolved.seq } : {}),
+      ...(resolved.senderLabel ? { senderLabel: resolved.senderLabel } : {}),
+      ...(resolved.model ? { model: resolved.model } : {}),
+      ...(resolved.runId ? { runId: resolved.runId } : {}),
+      ...(resolved.attachments.length > 0 ? { attachments: resolved.attachments } : {}),
+      ...(resolved.reasoning ? { reasoning: resolved.reasoning } : {}),
+      ...(resolved.toolCards.length > 0 ? { toolCards: resolved.toolCards } : {}),
+      ...(resolved.notices.length > 0 ? { notices: resolved.notices } : {}),
+      kernelMessage,
+    };
+
+    if (hasRenderableChatMessagePayload(message)) {
+      messages.push(message);
+    }
+  }
+
+  return dedupeChatMessagesById(messages);
 }
 
 function applyAuthoritativeKernelSessionMessages(input: {
@@ -1088,17 +1173,18 @@ function applyAuthoritativeKernelSessionMessages(input: {
 }) {
   const hydratedMessages = buildChatMessagesFromKernelMessages(input.kernelMessages);
   const latestVisibleMessage = resolveLatestChatMessageForDisplay(hydratedMessages);
+  const latestMessagePreview = resolveChatMessagePrimaryPreviewText(latestVisibleMessage, 120);
   const latestMessageTimestamp = resolveLatestChatMessageTimestamp(hydratedMessages);
+  const authoritativeLastMessagePreview = latestMessagePreview ?? null;
   const existingKernelSession = input.existingSession.kernelSession ?? null;
   const kernelSession =
     input.kernelSession ??
     (existingKernelSession
-      ? {
+        ? {
           ...existingKernelSession,
           messageCount: hydratedMessages.length,
           updatedAt: latestMessageTimestamp ?? existingKernelSession.updatedAt,
-          lastMessagePreview:
-            latestVisibleMessage?.content ?? existingKernelSession.lastMessagePreview ?? null,
+          lastMessagePreview: authoritativeLastMessagePreview,
         }
       : null);
 
@@ -1107,8 +1193,7 @@ function applyAuthoritativeKernelSessionMessages(input: {
       ...input.existingSession,
       messages: hydratedMessages,
       updatedAt: latestMessageTimestamp ?? input.existingSession.updatedAt,
-      lastMessagePreview:
-        latestVisibleMessage?.content ?? input.existingSession.lastMessagePreview ?? undefined,
+      lastMessagePreview: authoritativeLastMessagePreview ?? undefined,
       kernelRuns: normalizeKernelRuns(input.kernelRuns) ?? input.existingSession.kernelRuns ?? null,
       historyState: 'ready',
     });
@@ -1121,15 +1206,13 @@ function applyAuthoritativeKernelSessionMessages(input: {
         ...kernelSession,
         messageCount: Math.max(kernelSession.messageCount, hydratedMessages.length),
         updatedAt: latestMessageTimestamp ?? kernelSession.updatedAt,
-        lastMessagePreview:
-          latestVisibleMessage?.content ?? kernelSession.lastMessagePreview ?? null,
+        lastMessagePreview: authoritativeLastMessagePreview,
       },
       existingSession: {
         ...input.existingSession,
         messages: hydratedMessages,
         updatedAt: latestMessageTimestamp ?? input.existingSession.updatedAt,
-        lastMessagePreview:
-          latestVisibleMessage?.content ?? input.existingSession.lastMessagePreview ?? undefined,
+        lastMessagePreview: authoritativeLastMessagePreview ?? undefined,
         kernelRuns:
           normalizeKernelRuns(input.kernelRuns) ?? input.existingSession.kernelRuns ?? null,
         historyState: 'ready',
@@ -1783,7 +1866,14 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
           session,
         })
       ) {
-        await openClawGatewaySessions.deleteSession({
+        const deleted = await openClawGatewaySessions.deleteSession({
+          instanceId: resolvedInstanceId,
+          sessionId: id,
+        });
+        if (!deleted) {
+          return;
+        }
+        await deletePersistedGatewayMirrorSession({
           instanceId: resolvedInstanceId,
           sessionId: id,
         });
@@ -2031,6 +2121,7 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
         applyAdapterInstanceScopeState(state, resolvedInstanceId, {
           preservedAdapterSessions,
           preferredActiveSessionId: id,
+          preserveExplicitBlankSelection: id === null,
         }),
       );
       if (id) {

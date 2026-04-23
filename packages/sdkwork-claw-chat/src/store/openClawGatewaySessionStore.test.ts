@@ -867,6 +867,7 @@ await runTest(
     assert.equal(snapshot.syncState, 'error');
     assert.match(snapshot.lastError ?? '', /operator\.read/);
     assert.deepEqual(session?.messages, []);
+    assert.equal(session?.lastMessagePreview, undefined);
     assert.equal(session?.thinkingLevel, 'high');
     assert.equal(session?.fastMode, true);
     assert.equal(session?.verboseLevel, 'full');
@@ -2203,6 +2204,10 @@ await runTest(
     assert.deepEqual(
       snapshotA.sessions.find((session) => session.id === remoteSessionId)?.messages,
       [],
+    );
+    assert.equal(
+      snapshotA.sessions.find((session) => session.id === remoteSessionId)?.lastMessagePreview,
+      undefined,
     );
 
     clientA.shouldFailDelete = true;
@@ -3818,6 +3823,109 @@ await runTest(
     assert.equal(session?.lastMessagePreview, 'assistant second');
     assert.equal(session?.updatedAt, 650);
     assert.equal(session?.lastSeenAt, 650);
+  },
+);
+
+await runTest(
+  'openclaw gateway session store compacts duplicate history message ids before projecting the active session',
+  async () => {
+    const sessionId = 'claw-studio:instance-a:session-history-dedupe';
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-history-dedupe.json',
+        count: 1,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: sessionId,
+            label: 'History Dedupe',
+            updatedAt: 320,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+        ],
+      },
+      {
+        [sessionId]: {
+          messages: [
+            {
+              id: 'msg-user-1',
+              role: 'user',
+              content: [{ type: 'text', text: 'hello gateway' }],
+              timestamp: 100,
+            },
+            {
+              id: 'msg-assistant-1',
+              role: 'assistant',
+              content: [{ type: 'text', text: 'partial reply' }],
+              timestamp: 140,
+            },
+            {
+              id: 'msg-assistant-1',
+              role: 'assistant',
+              content: [{ type: 'text', text: 'final reply' }],
+              timestamp: 180,
+            },
+          ],
+        },
+      },
+    );
+    client.setConnectHello({
+      type: 'hello-ok',
+      protocol: 3,
+      features: {
+        methods: [
+          'sessions.subscribe',
+          'sessions.list',
+          'chat.history',
+          'chat.send',
+          'sessions.messages.subscribe',
+          'sessions.messages.unsubscribe',
+        ],
+        events: ['chat', 'sessions.changed', 'session.message'],
+      },
+    });
+
+    const store = new OpenClawGatewaySessionStore({
+      getClient() {
+        return client;
+      },
+      now: () => 500,
+    });
+
+    await store.hydrateInstance('instance-a');
+
+    const session = store.getSnapshot('instance-a').sessions.find((entry) => entry.id === sessionId);
+    assert.ok(session);
+    assert.equal(session?.messages.length, 2);
+    assert.deepEqual(
+      session?.messages.map((message) => ({
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        timestamp: message.timestamp,
+      })),
+      [
+        {
+          id: 'msg-user-1',
+          role: 'user',
+          content: 'hello gateway',
+          timestamp: 100,
+        },
+        {
+          id: 'msg-assistant-1',
+          role: 'assistant',
+          content: 'final reply',
+          timestamp: 180,
+        },
+      ],
+    );
+    assert.equal(session?.lastMessagePreview, 'final reply');
   },
 );
 

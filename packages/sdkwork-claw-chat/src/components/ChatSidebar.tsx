@@ -228,6 +228,7 @@ export function ChatSidebar({
     agentRailEmptyPreviewLabel: t('chat.sidebar.agentRailEmptyPreview'),
     previewLabels: {
       you: t('chat.sidebar.previewYou'),
+      system: t('chat.sidebar.previewSystem'),
       tool: t('chat.sidebar.previewTool'),
       attachment: t('chat.sidebar.previewAttachment'),
       attachments: t('chat.sidebar.previewAttachments'),

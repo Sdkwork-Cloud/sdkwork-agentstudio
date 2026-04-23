@@ -537,10 +537,14 @@ export class OpenClawGatewayClient {
     }
 
     this.disconnectedManually = false;
-    this.ensureSocket('connecting');
 
     return new Promise<OpenClawGatewayHelloOk>((resolve, reject) => {
       this.connectWaiters.add({ resolve, reject });
+      try {
+        this.ensureSocket('connecting');
+      } catch (error) {
+        this.rejectConnectWaiters(error);
+      }
     });
   }
 
@@ -731,7 +735,29 @@ export class OpenClawGatewayClient {
       status: status === 'reconnecting' ? 'connecting' : status,
     });
 
-    const socket = this.webSocketFactory(this.options.url);
+    let socket: WebSocketLike;
+    try {
+      socket = this.webSocketFactory(this.options.url);
+    } catch (error) {
+      this.isConnectingSocket = false;
+      this.socket = null;
+      this.connectSent = false;
+      this.connectNonce = null;
+      this.lastConnectError = {
+        code: 'SOCKET_CONSTRUCTION_FAILED',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to construct the gateway WebSocket.',
+      };
+      this.emit('connection', {
+        status: 'disconnected',
+        code: CONNECT_FAILED_CLOSE_CODE,
+        reason: 'socket-construction-failed',
+        error: this.lastConnectError,
+      });
+      throw error;
+    }
     this.socket = socket;
 
     socket.addEventListener('open', () => {

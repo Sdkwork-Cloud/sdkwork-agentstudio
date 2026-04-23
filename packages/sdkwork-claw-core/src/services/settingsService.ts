@@ -1,4 +1,5 @@
-﻿import { unwrapAppSdkResponse, type AppSdkEnvelope } from '../sdk/appSdkResult.ts';
+import { storage, type StoragePlatformAPI } from '@sdkwork/claw-infrastructure';
+import { unwrapAppSdkResponse, type AppSdkEnvelope } from '../sdk/appSdkResult.ts';
 
 export interface UserProfile {
   firstName: string;
@@ -51,20 +52,11 @@ interface SettingsSdkClient {
       confirmPassword: string;
     }): Promise<AppSdkEnvelope<null> | null>;
   };
-  notification: {
-    getNotificationSettings(): Promise<AppSdkEnvelope<RemoteNotificationSettings> | RemoteNotificationSettings>;
-    updateNotificationSettings(
-      body: RemoteNotificationSettings,
-    ): Promise<AppSdkEnvelope<RemoteNotificationSettings> | RemoteNotificationSettings>;
-    updateTypeSettings(
-      type: string | number,
-      body: RemoteNotificationTypeSettingsUpdate,
-    ): Promise<AppSdkEnvelope<null> | null>;
-  };
 }
 
 export interface CreateSettingsServiceOptions {
   getClient?: () => SettingsSdkClient | Promise<SettingsSdkClient>;
+  storageApi?: StoragePlatformAPI;
 }
 
 type SettingsOverlay = Pick<
@@ -83,7 +75,9 @@ interface RemoteUserProfileUpdatePayload {
   avatar?: string;
 }
 
-const SETTINGS_OVERLAY_STORAGE_KEY = 'claw-studio-settings-overlay';
+const SETTINGS_STORAGE_NAMESPACE = 'claw-studio-settings';
+const SETTINGS_OVERLAY_STORAGE_KEY = 'preferences-overlay';
+const LEGACY_SETTINGS_OVERLAY_STORAGE_KEY = 'claw-studio-settings-overlay';
 
 const DEFAULT_GENERAL_PREFERENCES: UserPreferences['general'] = {
   launchOnStartup: false,
@@ -109,52 +103,16 @@ const DEFAULT_SECURITY_PREFERENCES: UserPreferences['security'] = {
   loginAlerts: true,
 };
 
-interface RemoteNotificationTypeSettings {
-  enablePush?: boolean;
-  enableInApp?: boolean;
-  enableEmail?: boolean;
-  enableSms?: boolean;
+function createDefaultSettingsOverlay(): SettingsOverlay {
+  return {
+    general: { ...DEFAULT_GENERAL_PREFERENCES },
+    notifications: { ...DEFAULT_NOTIFICATION_PREFERENCES },
+    privacy: { ...DEFAULT_PRIVACY_PREFERENCES },
+    security: { ...DEFAULT_SECURITY_PREFERENCES },
+  };
 }
 
-interface RemoteNotificationTypeSettingsUpdate {
-  type: string;
-  enablePush?: boolean;
-  enableInApp?: boolean;
-  enableEmail?: boolean;
-  enableSms?: boolean;
-}
-
-interface RemoteNotificationSettings {
-  enablePush?: boolean;
-  enableEmail?: boolean;
-  enableSms?: boolean;
-  enableInApp?: boolean;
-  quietHoursStart?: string;
-  quietHoursEnd?: string;
-  notificationSound?: string;
-  vibrationEnabled?: boolean;
-  typeSettings?: Record<string, RemoteNotificationTypeSettings>;
-}
-
-const TASK_NOTIFICATION_TYPE = 'TASK';
-const MESSAGE_NOTIFICATION_TYPE = 'MESSAGE';
-const ALERT_NOTIFICATION_TYPE_CANDIDATES = ['ALERT', 'SECURITY'];
-const AUTHENTICATION_ERROR_NAMES = new Set([
-  'AuthenticationError',
-  'TokenExpiredError',
-  'TokenInvalidError',
-]);
-const AUTHENTICATION_ERROR_CODES = new Set([
-  '401',
-  '4010',
-  'UNAUTHORIZED',
-  'TOKEN_EXPIRED',
-  'TOKEN_INVALID',
-]);
-const AUTHENTICATION_ERROR_MESSAGE_PATTERN =
-  /(token expired|token invalid|invalid token|unauthorized|authentication|\u8bbf\u95ee\u4ee4\u724c|\u4ee4\u724c\u5df2\u8fc7\u671f|\u4ee4\u724c\u65e0\u6548|\u672a\u6388\u6743|\u8ba4\u8bc1|\u9a8c\u8bc1)/i;
-
-function getStorage(): Storage | null {
+function getLegacyStorage(): Storage | null {
   if (typeof globalThis.localStorage !== 'undefined') {
     return globalThis.localStorage;
   }
@@ -166,25 +124,9 @@ function getStorage(): Storage | null {
   return null;
 }
 
-function readSettingsOverlay(): SettingsOverlay {
-  const storage = getStorage();
-  if (!storage) {
-    return {
-      general: { ...DEFAULT_GENERAL_PREFERENCES },
-      notifications: { ...DEFAULT_NOTIFICATION_PREFERENCES },
-      privacy: { ...DEFAULT_PRIVACY_PREFERENCES },
-      security: { ...DEFAULT_SECURITY_PREFERENCES },
-    };
-  }
-
-  const rawValue = storage.getItem(SETTINGS_OVERLAY_STORAGE_KEY);
+function parseSettingsOverlay(rawValue: string | null | undefined): SettingsOverlay | null {
   if (!rawValue) {
-    return {
-      general: { ...DEFAULT_GENERAL_PREFERENCES },
-      notifications: { ...DEFAULT_NOTIFICATION_PREFERENCES },
-      privacy: { ...DEFAULT_PRIVACY_PREFERENCES },
-      security: { ...DEFAULT_SECURITY_PREFERENCES },
-    };
+    return null;
   }
 
   try {
@@ -196,128 +138,82 @@ function readSettingsOverlay(): SettingsOverlay {
       security: { ...DEFAULT_SECURITY_PREFERENCES, ...parsed.security },
     };
   } catch {
-    return {
-      general: { ...DEFAULT_GENERAL_PREFERENCES },
-      notifications: { ...DEFAULT_NOTIFICATION_PREFERENCES },
-      privacy: { ...DEFAULT_PRIVACY_PREFERENCES },
-      security: { ...DEFAULT_SECURITY_PREFERENCES },
-    };
+    return null;
   }
 }
 
-function writeSettingsOverlay(overlay: SettingsOverlay) {
-  const storage = getStorage();
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(SETTINGS_OVERLAY_STORAGE_KEY, JSON.stringify(overlay));
+function readLegacySettingsOverlay(): SettingsOverlay | null {
+  return parseSettingsOverlay(getLegacyStorage()?.getItem(LEGACY_SETTINGS_OVERLAY_STORAGE_KEY));
 }
 
-function resolveNotificationTypeSetting(
-  settings: RemoteNotificationSettings,
-  notificationTypes: string[],
-  channel: keyof RemoteNotificationTypeSettings,
-  fallback: boolean,
-): boolean {
-  for (const notificationType of notificationTypes) {
-    const value = settings.typeSettings?.[notificationType]?.[channel];
-    if (value !== undefined) {
-      return value;
+function clearLegacySettingsOverlay() {
+  getLegacyStorage()?.removeItem(LEGACY_SETTINGS_OVERLAY_STORAGE_KEY);
+}
+
+async function readSettingsOverlay(storageApi: StoragePlatformAPI): Promise<SettingsOverlay> {
+  try {
+    const result = await storageApi.getText({
+      namespace: SETTINGS_STORAGE_NAMESPACE,
+      key: SETTINGS_OVERLAY_STORAGE_KEY,
+    });
+    const persisted = parseSettingsOverlay(result.value);
+    if (persisted) {
+      return persisted;
     }
+  } catch {
+    // Fall back to the legacy browser overlay below.
   }
 
-  return fallback;
+  const legacyOverlay = readLegacySettingsOverlay();
+  if (legacyOverlay) {
+    try {
+      await storageApi.putText({
+        namespace: SETTINGS_STORAGE_NAMESPACE,
+        key: SETTINGS_OVERLAY_STORAGE_KEY,
+        value: JSON.stringify(legacyOverlay),
+      });
+      clearLegacySettingsOverlay();
+    } catch {
+      // Keep the legacy copy as the last-resort fallback if platform storage is unavailable.
+    }
+
+    return legacyOverlay;
+  }
+
+  return createDefaultSettingsOverlay();
 }
 
-function buildPreferencesFromNotificationSettings(
-  settings: RemoteNotificationSettings,
-  overlay = readSettingsOverlay(),
-  options: {
-    preferOverlayNotifications?: boolean;
-  } = {},
-): UserPreferences {
-  const emailEnabled = settings.enableEmail ?? true;
-  const inAppEnabled = settings.enableInApp ?? true;
-  const remoteNotifications: UserPreferences['notifications'] = {
-    systemUpdates: emailEnabled,
-    taskFailures: resolveNotificationTypeSetting(
-      settings,
-      [TASK_NOTIFICATION_TYPE],
-      'enableEmail',
-      emailEnabled,
-    ),
-    securityAlerts: resolveNotificationTypeSetting(
-      settings,
-      ALERT_NOTIFICATION_TYPE_CANDIDATES,
-      'enableEmail',
-      emailEnabled,
-    ),
-    taskCompletions: resolveNotificationTypeSetting(
-      settings,
-      [TASK_NOTIFICATION_TYPE],
-      'enableInApp',
-      inAppEnabled,
-    ),
-    newMessages: resolveNotificationTypeSetting(
-      settings,
-      [MESSAGE_NOTIFICATION_TYPE],
-      'enableInApp',
-      inAppEnabled,
-    ),
-  };
+async function writeSettingsOverlay(
+  storageApi: StoragePlatformAPI,
+  overlay: SettingsOverlay,
+): Promise<void> {
+  const serialized = JSON.stringify(overlay);
 
+  try {
+    await storageApi.putText({
+      namespace: SETTINGS_STORAGE_NAMESPACE,
+      key: SETTINGS_OVERLAY_STORAGE_KEY,
+      value: serialized,
+    });
+    clearLegacySettingsOverlay();
+    return;
+  } catch (error) {
+    const legacyStorage = getLegacyStorage();
+    if (!legacyStorage) {
+      throw error;
+    }
+
+    legacyStorage.setItem(LEGACY_SETTINGS_OVERLAY_STORAGE_KEY, serialized);
+  }
+}
+
+function buildOverlayBackedPreferences(overlay: SettingsOverlay): UserPreferences {
   return {
-    general: overlay.general,
-    notifications: options.preferOverlayNotifications
-      ? overlay.notifications
-      : remoteNotifications,
-    privacy: overlay.privacy,
-    security: {
-      ...overlay.security,
-    },
+    general: { ...overlay.general },
+    notifications: { ...overlay.notifications },
+    privacy: { ...overlay.privacy },
+    security: { ...overlay.security },
   };
-}
-
-function buildOverlayBackedPreferences(
-  overlay = readSettingsOverlay(),
-): UserPreferences {
-  return buildPreferencesFromNotificationSettings({}, overlay, {
-    preferOverlayNotifications: true,
-  });
-}
-
-function isAuthenticationFailure(error: unknown): boolean {
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-
-  const typedError = error as Partial<AppSdkEnvelope<unknown>> &
-    Partial<Error> & {
-    code?: string | number;
-    httpStatus?: number;
-    status?: number;
-  };
-
-  if (error instanceof Error && AUTHENTICATION_ERROR_NAMES.has(error.name)) {
-    return true;
-  }
-
-  const normalizedCode = String(typedError.code ?? '').trim().toUpperCase();
-  if (normalizedCode && AUTHENTICATION_ERROR_CODES.has(normalizedCode)) {
-    return true;
-  }
-
-  if (typedError.httpStatus === 401 || typedError.status === 401) {
-    return true;
-  }
-
-  const message =
-    error instanceof Error
-      ? error.message
-      : String(typedError.message ?? typedError.msg ?? '').trim();
-
-  return AUTHENTICATION_ERROR_MESSAGE_PATTERN.test(message);
 }
 
 function toUserProfile(profile: {
@@ -338,104 +234,6 @@ function toUserProfile(profile: {
   };
 }
 
-function buildNotificationSettingsUpdate(
-  current: RemoteNotificationSettings,
-  notifications: Partial<UserPreferences['notifications']>,
-): RemoteNotificationSettings {
-  return {
-    enablePush: current.enablePush,
-    enableEmail: notifications.systemUpdates ?? current.enableEmail,
-    enableSms: current.enableSms,
-    enableInApp: current.enableInApp,
-    quietHoursStart: current.quietHoursStart,
-    quietHoursEnd: current.quietHoursEnd,
-    notificationSound: current.notificationSound,
-    vibrationEnabled: current.vibrationEnabled,
-  };
-}
-
-function resolvePreferredNotificationType(
-  settings: RemoteNotificationSettings,
-  candidates: string[],
-  fallback: string,
-): string {
-  for (const candidate of candidates) {
-    if (settings.typeSettings?.[candidate]) {
-      return candidate;
-    }
-  }
-
-  return fallback;
-}
-
-function buildNotificationTypeSettingsUpdate(
-  type: string,
-  current: RemoteNotificationTypeSettings | undefined,
-  updates: Partial<RemoteNotificationTypeSettings>,
-): RemoteNotificationTypeSettingsUpdate {
-  return {
-    type,
-    enablePush: updates.enablePush ?? current?.enablePush,
-    enableInApp: updates.enableInApp ?? current?.enableInApp,
-    enableEmail: updates.enableEmail ?? current?.enableEmail,
-    enableSms: updates.enableSms ?? current?.enableSms,
-  };
-}
-
-function buildNotificationTypeSettingsUpdates(
-  currentSettings: RemoteNotificationSettings,
-  notifications: Partial<UserPreferences['notifications']>,
-): RemoteNotificationTypeSettingsUpdate[] {
-  const updates: RemoteNotificationTypeSettingsUpdate[] = [];
-
-  if (
-    notifications.taskFailures !== undefined
-    || notifications.taskCompletions !== undefined
-  ) {
-    updates.push(
-      buildNotificationTypeSettingsUpdate(
-        TASK_NOTIFICATION_TYPE,
-        currentSettings.typeSettings?.[TASK_NOTIFICATION_TYPE],
-        {
-          enableEmail: notifications.taskFailures,
-          enableInApp: notifications.taskCompletions,
-        },
-      ),
-    );
-  }
-
-  if (notifications.securityAlerts !== undefined) {
-    const alertType = resolvePreferredNotificationType(
-      currentSettings,
-      ALERT_NOTIFICATION_TYPE_CANDIDATES,
-      'ALERT',
-    );
-    updates.push(
-      buildNotificationTypeSettingsUpdate(
-        alertType,
-        currentSettings.typeSettings?.[alertType],
-        {
-          enableEmail: notifications.securityAlerts,
-        },
-      ),
-    );
-  }
-
-  if (notifications.newMessages !== undefined) {
-    updates.push(
-      buildNotificationTypeSettingsUpdate(
-        MESSAGE_NOTIFICATION_TYPE,
-        currentSettings.typeSettings?.[MESSAGE_NOTIFICATION_TYPE],
-        {
-          enableInApp: notifications.newMessages,
-        },
-      ),
-    );
-  }
-
-  return updates;
-}
-
 async function getDefaultSettingsClient(): Promise<SettingsSdkClient> {
   const { getAppSdkClientWithSession } = await import('../sdk/useAppSdkClient.ts');
   return getAppSdkClientWithSession() as unknown as SettingsSdkClient;
@@ -443,9 +241,14 @@ async function getDefaultSettingsClient(): Promise<SettingsSdkClient> {
 
 class SettingsService implements ISettingsService {
   private readonly getClient: () => SettingsSdkClient | Promise<SettingsSdkClient>;
+  private readonly storageApi: StoragePlatformAPI;
 
-  constructor(getClient: () => SettingsSdkClient | Promise<SettingsSdkClient>) {
+  constructor(
+    getClient: () => SettingsSdkClient | Promise<SettingsSdkClient>,
+    storageApi: StoragePlatformAPI,
+  ) {
     this.getClient = getClient;
+    this.storageApi = storageApi;
   }
 
   async getProfile(): Promise<UserProfile> {
@@ -490,87 +293,30 @@ class SettingsService implements ISettingsService {
   }
 
   async getPreferences(): Promise<UserPreferences> {
-    const client = await this.getClient();
-    try {
-      const response = await client.notification.getNotificationSettings();
-      if (isAuthenticationFailure(response)) {
-        return buildOverlayBackedPreferences();
-      }
-
-      const settings = unwrapAppSdkResponse<RemoteNotificationSettings>(
-        response,
-        'Failed to load preferences.',
-      );
-
-      return buildPreferencesFromNotificationSettings(settings);
-    } catch (error) {
-      if (isAuthenticationFailure(error)) {
-        return buildOverlayBackedPreferences();
-      }
-
-      throw error;
-    }
+    return buildOverlayBackedPreferences(await readSettingsOverlay(this.storageApi));
   }
 
   async updatePreferences(prefs: Partial<UserPreferences>): Promise<UserPreferences> {
-    const currentOverlay = readSettingsOverlay();
+    const currentOverlay = await readSettingsOverlay(this.storageApi);
     const nextOverlay = {
       general: { ...currentOverlay.general, ...prefs.general },
       notifications: { ...currentOverlay.notifications, ...prefs.notifications },
       privacy: { ...currentOverlay.privacy, ...prefs.privacy },
       security: { ...currentOverlay.security, ...prefs.security },
     };
-    writeSettingsOverlay(nextOverlay);
 
-    if (!prefs.notifications) {
-      return buildOverlayBackedPreferences(nextOverlay);
-    }
-
-    const client = await this.getClient();
-    const currentSettings = unwrapAppSdkResponse<RemoteNotificationSettings>(
-      await client.notification.getNotificationSettings(),
-      'Failed to load notification settings.',
-    );
-
-    const updatedSettings = unwrapAppSdkResponse<RemoteNotificationSettings>(
-      await client.notification.updateNotificationSettings(
-        buildNotificationSettingsUpdate(currentSettings, prefs.notifications),
-      ),
-      'Failed to update preferences.',
-    );
-
-    const typeSettingsUpdates = buildNotificationTypeSettingsUpdates(
-      updatedSettings,
-      prefs.notifications,
-    );
-
-    for (const typeSettingsUpdate of typeSettingsUpdates) {
-      unwrapAppSdkResponse(
-        await client.notification.updateTypeSettings(
-          typeSettingsUpdate.type,
-          typeSettingsUpdate,
-        ),
-        'Failed to update preferences.',
-      );
-    }
-
-    const refreshedSettings =
-      typeSettingsUpdates.length === 0
-        ? updatedSettings
-        : unwrapAppSdkResponse<RemoteNotificationSettings>(
-            await client.notification.getNotificationSettings(),
-            'Failed to load preferences.',
-          );
-
-    return buildPreferencesFromNotificationSettings(refreshedSettings, nextOverlay);
+    await writeSettingsOverlay(this.storageApi, nextOverlay);
+    return buildOverlayBackedPreferences(nextOverlay);
   }
 }
 
 export function createSettingsService(
   options: CreateSettingsServiceOptions = {},
 ): ISettingsService {
-  return new SettingsService(options.getClient ?? getDefaultSettingsClient);
+  return new SettingsService(
+    options.getClient ?? getDefaultSettingsClient,
+    options.storageApi ?? storage,
+  );
 }
 
 export const settingsService = createSettingsService();
-

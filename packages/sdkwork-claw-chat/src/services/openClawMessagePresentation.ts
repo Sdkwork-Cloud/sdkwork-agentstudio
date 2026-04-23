@@ -1,4 +1,8 @@
 import { normalizeUserVisibleChatSenderLabel } from './chatSenderLabelPolicy.ts';
+import {
+  sanitizeChatOperationalMessageText,
+  shouldPromoteChatOperationalMessageToSystem,
+} from './chatMessageStructuredContent.ts';
 
 export type OpenClawMessagePresentationRole = 'user' | 'assistant' | 'system' | 'tool';
 
@@ -61,6 +65,19 @@ const INBOUND_META_FAST_RE = new RegExp(
     .map((entry) => entry.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     .join('|'),
 );
+const OPENCLAW_HIDDEN_CONTROL_USER_SIGNATURES = [
+  {
+    startsWith: 'you are running a boot check. follow boot.md instructions exactly.',
+    includesAll: [
+      'boot.md:',
+      'this file is only used when openclaw internal hooks are enabled.',
+      'use the `target` field (not `to`) for message tool destinations.',
+      'after sending with the message tool, reply with only: no_reply.',
+      'if nothing needs attention, reply with only: no_reply.',
+    ],
+  },
+] as const;
+const OPENCLAW_SILENT_REPLY_TOKENS = new Set(['NO_REPLY', 'ANNOUNCE_SKIP', 'REPLY_SKIP']);
 const TOOL_CALL_TYPES = new Set(['toolcall', 'tool_call', 'tooluse', 'tool_use']);
 const TOOL_RESULT_TYPES = new Set(['toolresult', 'tool_result']);
 
@@ -177,7 +194,28 @@ function collectTextParts(payload: unknown): string[] {
 }
 
 function extractRawText(payload: unknown) {
-  return collectTextParts(unwrapMessagePayload(payload)).join('\n').trim();
+  const rawText = collectTextParts(unwrapMessagePayload(payload)).join('\n').trim();
+  return rawText || extractRecordedAssistantErrorText(payload);
+}
+
+function formatRecordedAssistantErrorText(value: unknown) {
+  const normalized = normalizeOptionalString(value) ?? 'OpenClaw chat error.';
+  return normalized.toLowerCase().startsWith('error:') ? normalized : `Error: ${normalized}`;
+}
+
+function extractRecordedAssistantErrorText(payload: unknown) {
+  const record = asRecord(unwrapMessagePayload(payload));
+  if (!record) {
+    return '';
+  }
+
+  const stopReason = normalizeOptionalString(record.stopReason)?.toLowerCase() ?? null;
+  const errorMessage = normalizeOptionalString(record.errorMessage);
+  if (stopReason !== 'error' && !errorMessage) {
+    return '';
+  }
+
+  return formatRecordedAssistantErrorText(errorMessage);
 }
 
 function stripEnvelope(text: string) {
@@ -453,7 +491,46 @@ function extractAssistantPhase(payload: unknown) {
   );
 }
 
+function isOpenClawHiddenControlUserText(text: string) {
+  const normalized = normalizeInlineWhitespace(text).toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+
+  return OPENCLAW_HIDDEN_CONTROL_USER_SIGNATURES.some(
+    (signature) =>
+      normalized.startsWith(signature.startsWith) &&
+      signature.includesAll.every((segment) => normalized.includes(segment)),
+  );
+}
+
+function isOpenClawHiddenControlUserPayload(payload: unknown, text: string) {
+  const record = asRecord(unwrapMessagePayload(payload));
+  const openClawMeta = asRecord(record?.__openclaw);
+  const visibility = normalizeOptionalString(
+    openClawMeta?.visibility ?? openClawMeta?.presentationVisibility,
+  )?.toLowerCase();
+  const messageKind = normalizeOptionalString(
+    openClawMeta?.messageKind ??
+    openClawMeta?.message_kind ??
+    record?.messageKind ??
+    record?.message_kind,
+  )?.toLowerCase();
+  if (
+    visibility === 'hidden' ||
+    visibility === 'internal' ||
+    messageKind === 'control' ||
+    messageKind === 'bootstrap' ||
+    messageKind === 'boot'
+  ) {
+    return true;
+  }
+
+  return isOpenClawHiddenControlUserText(text);
+}
+
 function normalizeUserVisibleText(
+  payload: unknown,
   rawText: string,
   role: OpenClawMessagePresentationRole,
   phase: string | null,
@@ -471,12 +548,35 @@ function normalizeUserVisibleText(
   }
 
   if (role === 'user') {
-    return normalizeInlineWhitespace(
+    const normalized = normalizeInlineWhitespace(
       stripMessageIdHints(stripInboundMetadata(stripEnvelope(rawText))),
     );
+    return isOpenClawHiddenControlUserPayload(payload, normalized) ? '' : normalized;
+  }
+
+  if (role === 'system') {
+    return sanitizeChatOperationalMessageText(rawText);
   }
 
   return rawText.trim();
+}
+
+export function isOpenClawSilentReplyText(value: string) {
+  return OPENCLAW_SILENT_REPLY_TOKENS.has(value.trim());
+}
+
+export function sanitizeOpenClawPreviewText(value: string | null | undefined) {
+  const preview = normalizeOptionalString(value);
+  if (!preview || isOpenClawSilentReplyText(preview)) {
+    return undefined;
+  }
+
+  const presentation = resolveOpenClawMessagePresentation({
+    role: 'user',
+    text: preview,
+  });
+  const normalizedText = normalizeOptionalString(presentation.text);
+  return normalizedText ?? undefined;
 }
 
 function resolveToolArgs(block: Record<string, unknown>) {
@@ -674,12 +774,6 @@ function extractToolCards(payload: unknown): OpenClawToolCard[] {
 function resolveRole(payload: unknown, text: string, toolCards: OpenClawToolCard[]) {
   const record = asRecord(unwrapMessagePayload(payload));
   const role = typeof record?.role === 'string' ? record.role.toLowerCase() : '';
-  if (role === 'user') {
-    return 'user' satisfies OpenClawMessagePresentationRole;
-  }
-  if (role === 'system') {
-    return 'system' satisfies OpenClawMessagePresentationRole;
-  }
   if (
     role === 'tool' ||
     role === 'toolresult' ||
@@ -693,6 +787,14 @@ function resolveRole(payload: unknown, text: string, toolCards: OpenClawToolCard
     return 'tool' satisfies OpenClawMessagePresentationRole;
   }
 
+  if (role === 'system' || shouldPromoteChatOperationalMessageToSystem(text)) {
+    return 'system' satisfies OpenClawMessagePresentationRole;
+  }
+
+  if (role === 'user') {
+    return 'user' satisfies OpenClawMessagePresentationRole;
+  }
+
   return 'assistant' satisfies OpenClawMessagePresentationRole;
 }
 
@@ -701,8 +803,11 @@ export function resolveOpenClawMessagePresentation(payload: unknown): OpenClawMe
   const toolCards = extractToolCards(payload);
   const preliminaryRole = resolveRole(payload, rawText, toolCards);
   const phase = preliminaryRole === 'assistant' ? extractAssistantPhase(payload) : null;
-  const normalizedText = normalizeUserVisibleText(rawText, preliminaryRole, phase);
-  const role = resolveRole(payload, normalizedText, toolCards);
+  const normalizedText = normalizeUserVisibleText(payload, rawText, preliminaryRole, phase);
+  const role =
+    preliminaryRole === 'system' || preliminaryRole === 'tool'
+      ? preliminaryRole
+      : resolveRole(payload, normalizedText, toolCards);
   const reasoning = extractReasoning(payload);
   const senderLabel = role === 'user' ? extractSenderLabel(payload) : null;
 

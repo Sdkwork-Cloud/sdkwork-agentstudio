@@ -64,7 +64,7 @@ await runTest('task snapshot only fetches execution history for explicitly reque
       agents: [],
       defaultAgentId: null,
     }),
-    listTaskExecutions: async (taskId) => {
+    listTaskExecutions: async (_instanceId, taskId) => {
       requestedTaskIds.push(taskId);
       return [{ id: `execution-${taskId}` }] as any[];
     },

@@ -2,6 +2,12 @@ import type { KernelChatMessage, StudioConversationAttachment } from '@sdkwork/c
 import type { OpenClawToolCard } from './openClawMessagePresentation.ts';
 import { orderChatMessagesForDisplay } from './chatMessageOrdering.ts';
 import {
+  normalizeChatMessagePreviewText,
+  resolveChatMessageAttachmentNamesPreview,
+  resolveChatMessageNoticePreview,
+  resolveChatMessageToolPreview,
+} from './chatMessagePreview.ts';
+import {
   getChatSessionDisplayTitle,
   isReadableChatSessionTitle,
   normalizeChatSessionTitle,
@@ -11,6 +17,7 @@ import {
   type KernelChatMessageState,
 } from './kernelChatMessageState.ts';
 import { resolveChatRunBinding, type ChatRunBindingSource } from './chatRunBinding.ts';
+import { sanitizeChatSessionPreviewText } from './chatSessionPreviewSanitizer.ts';
 
 const DEFAULT_PREVIEW_LENGTH = 96;
 const DAY_IN_MS = 86_400_000;
@@ -33,6 +40,11 @@ type ChatSessionListSessionLike = ChatRunBindingSource & {
   updatedAt: number;
   lastMessagePreview?: string;
   messages?: ChatSessionListMessageLike[];
+  kernelSession?: {
+    ref?: {
+      kernelId?: string | null;
+    } | null;
+  } | null;
 };
 
 export type ChatSessionListItemPresentation = {
@@ -46,6 +58,7 @@ export type ChatSessionListItemPresentation = {
 
 export type ChatSessionListPreviewLabels = {
   you: string;
+  system: string;
   tool: string;
   attachment: string;
   attachments: string;
@@ -69,6 +82,7 @@ type CalendarDateParts = {
 
 const DEFAULT_PREVIEW_LABELS: ChatSessionListPreviewLabels = {
   you: 'You',
+  system: 'System',
   tool: 'Tool',
   attachment: 'Attachment',
   attachments: 'Attachments',
@@ -80,7 +94,7 @@ const DEFAULT_RELATIVE_TIME_LABELS: ChatSessionListRelativeTimeLabels = {
 };
 
 function normalizePreviewCandidate(value: string | null | undefined) {
-  return normalizeChatSessionTitle(value, DEFAULT_PREVIEW_LENGTH);
+  return normalizeChatMessagePreviewText(value, DEFAULT_PREVIEW_LENGTH);
 }
 
 function createPreviewCandidate(
@@ -106,11 +120,10 @@ function listAttachmentPreview(params: {
   attachments: StudioConversationAttachment[] | undefined;
   labels: ChatSessionListPreviewLabels;
 }) {
-  const names = (params.attachments ?? [])
-    .map((attachment) => attachment.name.trim())
-    .filter(Boolean)
-    .join(', ');
-  const normalizedNames = normalizePreviewCandidate(names);
+  const normalizedNames = resolveChatMessageAttachmentNamesPreview(
+    params.attachments,
+    DEFAULT_PREVIEW_LENGTH,
+  );
   if (!normalizedNames) {
     return null;
   }
@@ -124,20 +137,7 @@ function listAttachmentPreview(params: {
 }
 
 function resolveToolCardPreview(toolCards: OpenClawToolCard[] | undefined) {
-  const normalizedCards = Array.isArray(toolCards) ? [...toolCards] : [];
-  for (let index = normalizedCards.length - 1; index >= 0; index -= 1) {
-    const toolCard = normalizedCards[index];
-    const candidate =
-      normalizePreviewCandidate(toolCard?.preview) ??
-      normalizePreviewCandidate(toolCard?.detail) ??
-      normalizePreviewCandidate(toolCard?.text) ??
-      normalizePreviewCandidate(toolCard?.name);
-    if (candidate) {
-      return candidate;
-    }
-  }
-
-  return null;
+  return resolveChatMessageToolPreview(toolCards, DEFAULT_PREVIEW_LENGTH);
 }
 
 function resolveMessagePreviewCandidate(params: {
@@ -145,6 +145,10 @@ function resolveMessagePreviewCandidate(params: {
   labels: ChatSessionListPreviewLabels;
 }) {
   const contentCandidate = normalizePreviewCandidate(params.message.content);
+  const noticeCandidate = resolveChatMessageNoticePreview(
+    params.message.notices,
+    DEFAULT_PREVIEW_LENGTH,
+  );
   const attachmentCandidate = listAttachmentPreview({
     attachments: params.message.attachments,
     labels: params.labels,
@@ -166,6 +170,10 @@ function resolveMessagePreviewCandidate(params: {
       );
     }
 
+    if (noticeCandidate) {
+      return createPreviewCandidate(noticeCandidate, noticeCandidate);
+    }
+
     return attachmentCandidate;
   }
 
@@ -176,8 +184,35 @@ function resolveMessagePreviewCandidate(params: {
     );
   }
 
+  if (params.message.role === 'system') {
+    if (contentCandidate) {
+      return createPreviewCandidate(
+        formatPreviewWithLabel(params.labels.system, contentCandidate),
+        contentCandidate,
+      );
+    }
+
+    if (toolCandidate) {
+      return createPreviewCandidate(
+        formatPreviewWithLabel(params.labels.system, toolCandidate),
+        toolCandidate,
+      );
+    }
+
+    if (attachmentCandidate) {
+      return createPreviewCandidate(
+        formatPreviewWithLabel(params.labels.system, attachmentCandidate.semanticText),
+        attachmentCandidate.semanticText,
+      );
+    }
+  }
+
   if (contentCandidate) {
     return createPreviewCandidate(contentCandidate, contentCandidate);
+  }
+
+  if (noticeCandidate) {
+    return createPreviewCandidate(noticeCandidate, noticeCandidate);
   }
 
   if (toolCandidate) {
@@ -219,14 +254,18 @@ function resolvePreview(
   displayTitle: string,
   labels: ChatSessionListPreviewLabels,
 ) {
-  const normalizedTitle = normalizePreviewCandidate(displayTitle).toLowerCase();
+  const normalizedTitle = (normalizePreviewCandidate(displayTitle) ?? '').toLowerCase();
+  const sanitizedSessionPreview = sanitizeChatSessionPreviewText({
+    text: session.lastMessagePreview,
+    kernelId: session.kernelSession?.ref?.kernelId,
+  });
   const previewCandidates = [
     ...collectMessagePreviewCandidates({
       messages: session.messages,
       labels,
     }),
-    isReadableChatSessionTitle(session.lastMessagePreview)
-      ? createPreviewCandidate(session.lastMessagePreview)
+    isReadableChatSessionTitle(sanitizedSessionPreview)
+      ? createPreviewCandidate(sanitizedSessionPreview)
       : null,
   ];
 

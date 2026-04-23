@@ -20,7 +20,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@sdkwork/claw-ui';
 import {
+  detectChatOperationalEvent,
   detectChatJsonBlock,
+  type ChatOperationalEventPresentation,
   type KernelChatNoticePresentation,
   type OpenClawToolCard,
 } from '../services/index.ts';
@@ -38,6 +40,7 @@ interface ChatMessageProps {
   model?: string;
   timestamp: number;
   senderLabel?: string | null;
+  operationalEvent?: ChatOperationalEventPresentation | null;
   onRegenerate?: () => void;
   isTyping?: boolean;
   attachments?: StudioConversationAttachment[];
@@ -366,6 +369,66 @@ const JsonContentBlock = memo(function JsonContentBlock({
   );
 });
 
+const OperationalEventBlock = memo(function OperationalEventBlock({
+  event,
+}: {
+  event: ReturnType<typeof detectChatOperationalEvent>;
+}) {
+  const { t } = useTranslation();
+  if (!event) {
+    return null;
+  }
+
+  const metaItems = [
+    event.scheduledAtLabel
+      ? `${t('chat.message.operationalScheduledAt')}: ${event.scheduledAtLabel}`
+      : null,
+    event.currentTimeLabel
+      ? `${t('chat.message.operationalCurrentTime')}: ${event.currentTimeLabel}`
+      : null,
+  ].filter(Boolean);
+
+  return (
+    <div
+      className={cn(
+        CHAT_SURFACE_INSET_PANEL_CLASS,
+        'overflow-hidden border-sky-200/80 bg-sky-50/88 dark:border-sky-900/40 dark:bg-sky-950/28',
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2 border-b border-sky-200/70 px-4 py-3 dark:border-sky-900/40">
+        <span className="rounded-md bg-sky-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white dark:bg-sky-500">
+          {event.badgeLabel}
+        </span>
+        <span className="text-sm font-semibold text-sky-950 dark:text-sky-100">
+          {event.kind === 'reminder'
+            ? t('chat.message.operationalReminderTitle')
+            : t('chat.message.operationalTaskTitle')}
+        </span>
+      </div>
+      <div className="px-4 py-3">
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700/80 dark:text-sky-200/75">
+          {t('chat.message.operationalContentLabel')}
+        </div>
+        <div className="whitespace-pre-wrap break-words text-[14px] leading-6 text-zinc-900 dark:text-zinc-100">
+          {event.summary}
+        </div>
+        {metaItems.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {metaItems.map((item) => (
+              <span
+                key={item}
+                className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-medium text-sky-800 shadow-sm dark:bg-sky-950/60 dark:text-sky-100"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+});
+
 const NoticeList = memo(function NoticeList({
   notices,
 }: {
@@ -506,6 +569,7 @@ export const ChatMessage = memo(function ChatMessage({
   model,
   timestamp,
   senderLabel,
+  operationalEvent,
   onRegenerate,
   isTyping,
   attachments = [],
@@ -523,7 +587,7 @@ export const ChatMessage = memo(function ChatMessage({
     }).format(new Date(value));
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(content);
+    navigator.clipboard.writeText(copyText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -547,6 +611,9 @@ export const ChatMessage = memo(function ChatMessage({
   const isUser = role === 'user';
   const isTool = role === 'tool';
   const trimmedContent = content.trim();
+  const resolvedOperationalEvent =
+    operationalEvent ?? (role === 'system' ? detectChatOperationalEvent(trimmedContent) : null);
+  const copyText = resolvedOperationalEvent?.summary ?? content;
   const hasRenderableContent = trimmedContent.length > 0 || isTyping;
   const isCompactToolLinksOnlyMessage =
     isTool &&
@@ -562,6 +629,8 @@ export const ChatMessage = memo(function ChatMessage({
     typeof senderLabel === 'string' && senderLabel.trim() ? senderLabel.trim() : null;
   const messageLabel = isTool
     ? t('chat.message.toolOutput')
+    : role === 'system'
+      ? t('chat.message.system')
     : normalizedModel
       ? (normalizedModel.includes('/') ? normalizedModel.split('/').pop() : normalizedModel)
       : t('chat.message.assistant');
@@ -721,6 +790,8 @@ export const ChatMessage = memo(function ChatMessage({
                     style={{ animationDelay: '300ms' }}
                   />
                 </div>
+              ) : resolvedOperationalEvent ? (
+                <OperationalEventBlock event={resolvedOperationalEvent} />
               ) : hasJsonBlock ? (
                 <JsonContentBlock content={trimmedContent} />
               ) : (

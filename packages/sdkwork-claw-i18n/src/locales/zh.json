@@ -850,6 +850,7 @@
       "skillSelectionDescription": "为当前会话应用专注技能，或保持通用对话模式。",
       "noMatchingAgents": "未找到匹配的 Agent。",
       "noMatchingSkills": "未找到匹配的技能。",
+      "loadingConversationHistory": "正在加载会话历史...",
       "route": {
         "gateway": "OpenClaw Gateway",
         "direct": "直连模型",
@@ -935,6 +936,11 @@
       "toolResult": "工具结果",
       "completed": "已完成",
       "reasoning": "推理过程",
+      "operationalReminderTitle": "定时提醒",
+      "operationalTaskTitle": "任务事件",
+      "operationalContentLabel": "内容",
+      "operationalScheduledAt": "调度时间",
+      "operationalCurrentTime": "当前时间",
       "json": "JSON",
       "jsonArray": "数组（{{count}} 项）",
       "jsonObjectCount": "对象（{{count}} 个键）",
@@ -957,6 +963,7 @@
       "mainAgent": "主 Agent",
       "mainAgentBadge": "主",
       "previewYou": "你",
+      "previewSystem": "系统",
       "previewTool": "工具",
       "previewAttachment": "附件",
       "previewAttachments": "附件",
@@ -1057,6 +1064,7 @@
           "agentId": "coding-engineer",
           "displayName": "Coding Engineer",
           "avatar": "CE",
+          "primaryModel": "openai/gpt-5.1",
           "fallbackModels": "openai/gpt-5.1\nanthropic/claude-sonnet-4",
           "workspace": "/workspace/project",
           "agentDir": ".agents/coding-engineer"
@@ -1082,7 +1090,11 @@
           "invalidNumber": "{{field}} 必须是有效数字。"
         },
         "modelInherit": "继承实例默认模型",
-        "modelHint": "当前实例 workbench 未发现可用模型选项，留空即使用运行时默认值。",
+        "modelHint": "当前实例 workbench 未发现可用模型选项，可手动输入模型引用，或留空以继承运行时默认值。",
+        "fallbackModelsCatalogHint": "请从 kernel 提供的模型目录中选择一个或多个备选模型，当前主模型会自动排除。",
+        "fallbackModelsFreeformHint": "当 kernel 没有提供权威模型目录时，每行输入一个备选模型引用。",
+        "fallbackModelsPrimaryExcluded": "当前主模型",
+        "fallbackModelsEmpty": "当前没有额外可选的备选模型。",
         "defaultAgentDescription": "将该 Agent 设为所选 kernel 配置的默认 Agent。",
         "streamingDescription": "仅针对该 Agent 覆盖运行时的流式输出行为。",
         "streamingModes": {
@@ -1344,6 +1356,10 @@
       "dashboard": {
         "title": "前往仪表盘",
         "subtitle": "打开运营控制台"
+      },
+      "usage": {
+        "title": "打开网关用量",
+        "subtitle": "查看 OpenClaw 网关会话用量、成本与详细日志"
       },
       "apps": {
         "title": "前往应用商店",
@@ -3940,7 +3956,10 @@
       },
       "values": {
         "notAvailable": "不可用",
-        "hostVersionWithVersion": "{{host}} / v{{version}}"
+        "hostVersionWithVersion": "{{host}} / v{{version}}",
+        "activeHostPlatform": "支撑当前节点清单的主机平台。",
+        "internalSessionsReported": "主机平台当前上报的内部节点会话数。",
+        "noHostPlatformId": "未上报主机平台标识。"
       },
       "controlPlane": {
         "values": {
@@ -4209,7 +4228,16 @@
             "allowList": "允许列表",
             "managedFile": "OpenClaw 配置文件",
             "none": "无",
-            "notConfigured": "未配置"
+            "notConfigured": "未配置",
+            "customSections": "自定义配置段",
+            "documentTitle": "文档状态",
+            "groupsDescription": "顶层配置键会按 Control UI 使用的同一领域模型归类，方便你在进入原始编辑之前先快速浏览文件。",
+            "groupsTitle": "配置域",
+            "parseInvalid": "草稿无效",
+            "parseReady": "就绪",
+            "rawLinesDetail": "{{count}} 行原始内容",
+            "rawStatus": "草稿有效性",
+            "sections": "配置段"
           },
           "tools": {
             "channelsTitle": "通道",
@@ -4221,7 +4249,9 @@
             "enabled": "已启用",
             "configured": "已配置",
             "activeProvider": "当前提供方",
-            "timeout": "超时"
+            "timeout": "超时",
+            "sectionsDescription": "openclaw.json 中面向通信的配置段会在这里集中展示，方便审查投递路由和消息表面配置。",
+            "sectionsTitle": "结构化通道配置"
           },
           "raw": {
             "title": "原始 openclaw.json",
@@ -4238,11 +4268,16 @@
             "lines": "行数：{{count}}",
             "characters": "字符：{{count}}",
             "invalidDraft": "The current draft is not valid JSON5",
-            "sections": "Sections: {{count}}"
+            "sections": "Sections: {{count}}",
+            "dirtyShort": "已修改"
           },
           "empty": {
             "providers": "当前挂载的 openclaw.json 中还没有定义提供方。",
-            "agents": "当前挂载的 openclaw.json 中还没有定义智能体。"
+            "agents": "当前挂载的 openclaw.json 中还没有定义智能体。",
+            "aiSections": "当前 openclaw.json 草稿中未检测到面向 AI 的顶层配置段。",
+            "channels": "附加的 openclaw.json 中未定义任何通道。",
+            "communicationSections": "当前 openclaw.json 草稿中未检测到面向通信的顶层配置段。",
+            "runtimeSections": "当前 openclaw.json 草稿中未检测到面向运行时的顶层配置段。"
           },
           "schemaEditor": {
             "hideValue": "隐藏值",
@@ -4481,6 +4516,32 @@
               "ui": "User interface preferences",
               "wizard": "Setup wizard state and history",
               "custom": "Custom top-level section detected in openclaw.json."
+            }
+          },
+          "groups": {
+            "ai": "AI 与 Agent",
+            "appearance": "外观",
+            "automation": "自动化",
+            "communication": "通信",
+            "core": "核心",
+            "infrastructure": "基础设施",
+            "other": "自定义"
+          },
+          "providers": {
+            "sectionsDescription": "这些顶层配置段决定了 openclaw.json 中的模型路由、Agent、技能以及其他 AI 相关默认值。",
+            "sectionsTitle": "结构化 AI 配置"
+          },
+          "runtime": {
+            "parseStatus": "草稿有效性",
+            "sectionsDescription": "核心、自动化、基础设施、外观以及自定义顶层配置会在这里按运行时配置聚合展示。",
+            "sectionsTitle": "结构化运行时配置"
+          },
+          "sections": {
+            "entries": "{{count}} 项",
+            "kind": {
+              "array": "数组",
+              "object": "对象",
+              "scalar": "标量"
             }
           }
         },
@@ -5012,7 +5073,8 @@
             "requirementEnv": "环境变量",
             "requirementBins": "二进制",
             "requirementAnyBin": "任一二进制",
-            "requirementConfig": "配置"
+            "requirementConfig": "配置",
+            "effectiveParams": "生效参数"
           },
           "status": {
             "bound": "已绑定",
@@ -5527,7 +5589,8 @@
         "zinc": "锌灰",
         "violet": "紫罗兰",
         "rose": "玫瑰粉"
-      }
+      },
+      "languageFallbackTo": "当前在 Claw Studio 中回退到 {{language}} 翻译。"
     },
     "page": {
       "title": "设置",
@@ -6358,7 +6421,8 @@
       "signedIn": "已登录",
       "profileSettings": "个人资料设置",
       "logout": "退出登录"
-    }
+    },
+    "usage": "网关用量"
   },
   "taskManager": {
     "activeTasks": "{{count, number}} 个活动任务",

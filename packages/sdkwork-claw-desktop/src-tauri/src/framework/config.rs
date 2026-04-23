@@ -1,4 +1,5 @@
 use crate::framework::{
+    ports::{is_legacy_managed_loopback_port, DESKTOP_EMBEDDED_HOST_DEFAULT_PORT},
     paths::AppPaths,
     storage::{StorageConfig, StorageProfileConfiguredFlags, StorageProviderKind},
     Result,
@@ -227,7 +228,7 @@ impl Default for DesktopHostConfig {
         Self {
             enabled: true,
             bind_host: "127.0.0.1".to_string(),
-            port: 18_797,
+            port: DESKTOP_EMBEDDED_HOST_DEFAULT_PORT,
             allow_dynamic_port: true,
         }
     }
@@ -393,7 +394,9 @@ impl AppConfig {
         if next.desktop_host.bind_host.trim().is_empty() {
             next.desktop_host.bind_host = DesktopHostConfig::default().bind_host;
         }
-        if next.desktop_host.port == 0 {
+        if next.desktop_host.port == 0
+            || is_legacy_managed_loopback_port(next.desktop_host.port)
+        {
             next.desktop_host.port = DesktopHostConfig::default().port;
         }
         // Desktop combined mode requires the embedded loopback host. Keep stale opt-out values

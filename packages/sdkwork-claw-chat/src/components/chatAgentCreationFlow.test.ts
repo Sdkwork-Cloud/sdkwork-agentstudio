@@ -323,7 +323,7 @@ await runTest(
   () => {
     assert.match(
       newAgentDialogSource,
-      /import \{[\s\S]*createChatAgentDraft,[\s\S]*parseChatAgentFallbackModels,[\s\S]*parseChatAgentOptionalNumber,[\s\S]*slugifyChatAgentId,[\s\S]*type ChatAgentDraft[\s\S]*\} from '\.\.\/services';/s,
+      /import \{[\s\S]*buildChatAgentCreateRequest,[\s\S]*createChatAgentDraft,[\s\S]*parseChatAgentOptionalNumber,[\s\S]*resolveKernelAgentCreationFieldSupport,[\s\S]*slugifyChatAgentId,[\s\S]*type ChatAgentDraft[\s\S]*\} from '\.\.\/services';/s,
     );
     assert.match(
       newAgentDialogSource,
@@ -355,6 +355,26 @@ await runTest(
     );
     assert.match(
       newAgentDialogSource,
+      /void kernelAgentManagementService[\s\S]*getCreationCapability\(instanceId\)[\s\S]*\}, \[copySourceKernelId, instanceId, open, resolveCapabilityLoadError\]\);/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /const appliedSourceKernelIdRef = useRef<string \| null>\(null\);/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /const copySourceKernelId =[\s\S]*mode === 'copy' \? String\(sourceAgent\?\.sourceKernelId \?\? ''\)\.trim\(\)\.toLowerCase\(\) \|\| null : null;/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /resolveChatAgentPreferredKernelId\(\{[\s\S]*availableKernelIds: nextCapability\.kernelOptions\.map\(\(option\) => option\.kernelId\),[\s\S]*selectedKernelId: current,[\s\S]*sourceKernelId: copySourceKernelId,[\s\S]*defaultKernelId: nextCapability\.defaultKernelId,[\s\S]*\}\)/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /useEffect\(\(\) => \{[\s\S]*if \(!open \|\| !copySourceKernelId\) \{[\s\S]*appliedSourceKernelIdRef\.current = null;[\s\S]*return;[\s\S]*\}[\s\S]*if \(appliedSourceKernelIdRef\.current === copySourceKernelId\) \{[\s\S]*return;[\s\S]*\}[\s\S]*resolveChatAgentPreferredKernelId\(\{[\s\S]*selectedKernelId: null,[\s\S]*sourceKernelId: copySourceKernelId,[\s\S]*defaultKernelId: capability\.defaultKernelId,[\s\S]*\}\);/s,
+    );
+    assert.match(
+      newAgentDialogSource,
       /if \(!open\) \{[\s\S]*capabilityRequestRef\.current \+= 1;[\s\S]*return;[\s\S]*\}/s,
     );
     assert.match(
@@ -367,7 +387,31 @@ await runTest(
     );
     assert.match(
       newAgentDialogSource,
-      /setCreatedAgentResult\(null\);[\s\S]*setFollowUpError\(null\);[\s\S]*void kernelAgentManagementService/s,
+      /const selectedKernelFieldSupport =[\s\S]*resolveKernelAgentCreationFieldSupport\(selectedKernelOption\);/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /temperature = selectedKernelFieldSupport\.temperature[\s\S]*parseChatAgentOptionalNumber\([\s\S]*draft\.temperature/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /topP = selectedKernelFieldSupport\.topP[\s\S]*parseChatAgentOptionalNumber\([\s\S]*draft\.topP/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /maxTokens = selectedKernelFieldSupport\.maxTokens[\s\S]*parseChatAgentOptionalNumber\([\s\S]*draft\.maxTokens/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /timeoutMs = selectedKernelFieldSupport\.timeoutMs[\s\S]*parseChatAgentOptionalNumber\([\s\S]*draft\.timeoutMs/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /const createRequest = buildChatAgentCreateRequest\(\{[\s\S]*instanceId,[\s\S]*kernelId: selectedKernelId,[\s\S]*draft,[\s\S]*fieldSupport: selectedKernelFieldSupport,[\s\S]*temperature,[\s\S]*topP,[\s\S]*maxTokens,[\s\S]*timeoutMs,[\s\S]*\}\);/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /setCreatedAgentResult\(null\);[\s\S]*setFollowUpError\(null\);[\s\S]*void kernelAgentManagementService[\s\S]*createAgent\(createRequest\)/s,
     );
     assert.match(
       newAgentDialogSource,
@@ -397,7 +441,83 @@ await runTest(
     );
     assert.match(
       newAgentDialogSource,
-      /selectedKernelOption && selectedKernelOption\.modelOptions\.length === 0/,
+      /!hasAuthoritativeModelOptions \? \(/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /const selectedKernelModelOptions = selectedKernelOption\?\.modelOptions \?\? \[\];/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /const selectedKernelModelValues = selectedKernelModelOptions\.map\(\(option\) => option\.value\);/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /const hasAuthoritativeModelOptions = selectedKernelModelValues\.length > 0;/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /const resolvedFallbackModelValues = normalizeChatAgentFallbackModels\(\{[\s\S]*value: draft\.fallbackModelsText,[\s\S]*primaryModel: draft\.primaryModel,[\s\S]*allowedModelValues: hasAuthoritativeModelOptions \? selectedKernelModelValues : null,[\s\S]*\}\);/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /const resolvedFallbackModelsText = formatChatAgentFallbackModels\(resolvedFallbackModelValues\);/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /\{selectedKernelFieldSupport\.avatar \? \(/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /\{selectedKernelFieldSupport\.primaryModel \? \([\s\S]*hasAuthoritativeModelOptions \? \([\s\S]*<Select[\s\S]*: \([\s\S]*<Input/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /const resolvedPrimaryModelValue =[\s\S]*hasAuthoritativeModelOptions[\s\S]*draft\.primaryModel[\s\S]*selectedKernelModelOptions\.some\(\(option\) => option\.value === draft\.primaryModel\)/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /\{selectedKernelFieldSupport\.fallbackModels \? \(/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /hasAuthoritativeModelOptions \? \(/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /<Checkbox[\s\S]*checked=\{resolvedFallbackModelValues\.includes\(option\.value\)\}/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /toggleChatAgentFallbackModel\(\{[\s\S]*value: option\.value,[\s\S]*currentValue: draft\.fallbackModelsText,[\s\S]*primaryModel: draft\.primaryModel,[\s\S]*allowedModelValues: selectedKernelModelValues,[\s\S]*\}\)/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /: \([\s\S]*<Textarea[\s\S]*draft\.fallbackModelsText/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /\{selectedKernelFieldSupport\.workspace \? \(/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /\{selectedKernelFieldSupport\.agentDir \? \(/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /\{selectedKernelFieldSupport\.isDefault \? \(/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /\{selectedKernelFieldSupport\.streaming \? \(/,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /useEffect\(\(\) => \{[\s\S]*if \(!hasAuthoritativeModelOptions \|\| !draft\.primaryModel\) \{[\s\S]*return;[\s\S]*\}[\s\S]*selectedKernelModelOptions\.some\(\(option\) => option\.value === draft\.primaryModel\)[\s\S]*setDraft\(\(current\) => \{[\s\S]*primaryModel: ''[\s\S]*\}\);[\s\S]*\}, \[draft\.primaryModel, hasAuthoritativeModelOptions, selectedKernelModelOptions\]\);/s,
+    );
+    assert.match(
+      newAgentDialogSource,
+      /useEffect\(\(\) => \{[\s\S]*if \(draft\.fallbackModelsText === resolvedFallbackModelsText\) \{[\s\S]*return;[\s\S]*\}[\s\S]*setDraft\(\(current\) => \{[\s\S]*fallbackModelsText: resolvedFallbackModelsText[\s\S]*\}\);[\s\S]*\}, \[draft\.fallbackModelsText, resolvedFallbackModelsText\]\);/s,
     );
     assert.match(
       newAgentDialogSource,
@@ -426,7 +546,7 @@ await runTest(
     );
     assert.match(
       sidebarStateSource,
-      /await commitSelectionPlan\(requestId, plan\);[\s\S]*return CHAT_AGENT_CREATION_FOLLOW_UP_COMPLETED;/s,
+      /await queryClient\.invalidateQueries\(\{[\s\S]*queryKey: \['chat', 'kernel-agent-catalog', result\.instanceId\],[\s\S]*\}\);[\s\S]*await queryClient\.invalidateQueries\(\{[\s\S]*queryKey: \['chat', 'owned-kernel-agent-library', result\.instanceId\],[\s\S]*\}\);[\s\S]*await commitSelectionPlan\(requestId, plan\);[\s\S]*return CHAT_AGENT_CREATION_FOLLOW_UP_COMPLETED;/s,
     );
     assert.match(
       sidebarStateSource,

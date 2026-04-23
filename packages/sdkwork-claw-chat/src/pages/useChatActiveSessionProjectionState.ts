@@ -25,6 +25,7 @@ export interface UseChatActiveSessionProjectionStateInput {
   isChatSupportedRoute: boolean;
   sessionScopeMode: ChatPageSessionScopeMode;
   effectiveGatewayAgentId: string | null;
+  selectedAgentId: string | null | undefined;
   routeMode: InstanceChatRouteMode | undefined;
   activeAdapterCapabilities: KernelChatAdapterCapabilities | null;
   sendMode: ChatPageSendMode;
@@ -53,6 +54,7 @@ export function useChatActiveSessionProjectionState({
   isChatSupportedRoute,
   sessionScopeMode,
   effectiveGatewayAgentId,
+  selectedAgentId,
   routeMode,
   activeAdapterCapabilities,
   sendMode,
@@ -70,12 +72,14 @@ export function useChatActiveSessionProjectionState({
         isChatSupported: isChatSupportedRoute,
         sessionScopeMode,
         sessionScopeAgentId: effectiveGatewayAgentId,
+        selectedAgentId,
       }),
     [
       activeSessionId,
       effectiveGatewayAgentId,
       instanceSessions,
       isChatSupportedRoute,
+      selectedAgentId,
       sessionScopeMode,
     ],
   );

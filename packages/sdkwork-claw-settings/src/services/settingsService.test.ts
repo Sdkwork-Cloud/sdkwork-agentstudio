@@ -1,8 +1,5 @@
 import assert from 'node:assert/strict';
-import {
-  createSettingsService,
-  type CreateSettingsServiceOptions,
-} from './settingsService.ts';
+import { createSettingsService } from './settingsService.ts';
 
 function createStorage() {
   const store = new Map<string, string>();
@@ -29,21 +26,7 @@ Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
 });
 
-function createNotificationSettingsState() {
-  return {
-    enablePush: true,
-    enableEmail: true,
-    enableInApp: true,
-    typeSettings: {
-      TASK: { enableEmail: true, enableInApp: true },
-      SECURITY: { enableEmail: true, enablePush: true },
-      MESSAGE: { enableInApp: true },
-    },
-  };
-}
-
-let notificationSettingsState = createNotificationSettingsState();
-let notificationRequestLog: Array<{
+let requestLog: Array<{
   url: string;
   method: string;
   body?: Record<string, unknown>;
@@ -57,116 +40,61 @@ function jsonResponse(payload: unknown, status = 200) {
 }
 
 function createTestSettingsService() {
-  const client: Awaited<ReturnType<NonNullable<CreateSettingsServiceOptions['getClient']>>> = {
-    user: {
-      async getUserProfile() {
-        return (await fetch('http://localhost/app/v3/api/user/profile')).json();
-      },
-      async updateUserProfile(body) {
-        return (
-          await fetch('http://localhost/app/v3/api/user/profile', {
-            method: 'PUT',
-            body: JSON.stringify(body),
-          })
-        ).json();
-      },
-      async changePassword(body) {
-        return (
-          await fetch('http://localhost/app/v3/api/user/password', {
-            method: 'PUT',
-            body: JSON.stringify(body),
-          })
-        ).json();
-      },
-    },
-    notification: {
-      async getNotificationSettings() {
-        return (await fetch('http://localhost/app/v3/api/notification/settings')).json();
-      },
-      async updateNotificationSettings(body) {
-        return (
-          await fetch('http://localhost/app/v3/api/notification/settings', {
-            method: 'PUT',
-            body: JSON.stringify(body),
-          })
-        ).json();
-      },
-      async updateTypeSettings(type, body) {
-        return (
-          await fetch(
-            `http://localhost/app/v3/api/notification/settings/${encodeURIComponent(String(type))}`,
-            {
+  return createSettingsService({
+    getClient: () => ({
+      user: {
+        async getUserProfile() {
+          return (await fetch('http://localhost/app/v3/api/user/profile')).json();
+        },
+        async updateUserProfile(body: Record<string, unknown>) {
+          return (
+            await fetch('http://localhost/app/v3/api/user/profile', {
               method: 'PUT',
               body: JSON.stringify(body),
-            },
-          )
-        ).json();
+            })
+          ).json();
+        },
+        async changePassword(body: Record<string, unknown>) {
+          return (
+            await fetch('http://localhost/app/v3/api/user/password', {
+              method: 'PUT',
+              body: JSON.stringify(body),
+            })
+          ).json();
+        },
       },
-    },
-  };
-
-  return createSettingsService({
-    getClient: () => client,
+    }),
   });
 }
 
-function resetNotificationFetchState() {
-  notificationSettingsState = createNotificationSettingsState();
-  notificationRequestLog = [];
+function resetFetchState() {
+  requestLog = [];
 
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
     const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : undefined;
 
-    notificationRequestLog.push({
+    requestLog.push({
       url,
       method,
       body,
     });
 
-    if (url.endsWith('/app/v3/api/notification/settings') && method === 'GET') {
-      return jsonResponse({
-        code: 0,
-        data: notificationSettingsState,
-      });
-    }
-
-    if (url.endsWith('/app/v3/api/notification/settings') && method === 'PUT') {
-      notificationSettingsState = {
-        ...notificationSettingsState,
-        ...(body ?? {}),
-      };
-      return jsonResponse({
-        code: 0,
-        data: notificationSettingsState,
-      });
-    }
-
-    const typeSettingsMatch = url.match(/\/app\/v3\/api\/notification\/settings\/([^/?#]+)$/);
-    if (typeSettingsMatch && method === 'PUT') {
-      const type = decodeURIComponent(typeSettingsMatch[1] || '');
-      notificationSettingsState = {
-        ...notificationSettingsState,
-        typeSettings: {
-          ...notificationSettingsState.typeSettings,
-          [type]: {
-            ...(notificationSettingsState.typeSettings[type as keyof typeof notificationSettingsState.typeSettings] ?? {}),
-            ...(body ?? {}),
-          },
-        },
-      };
-
-      return jsonResponse({ code: 0, data: null });
-    }
-
     return jsonResponse({ code: 404, message: 'Not found' }, 404);
   }) as typeof fetch;
 }
 
+function assertNoRemoteNotificationRequests() {
+  assert.deepEqual(
+    requestLog.filter((entry) => entry.url.includes('/app/v3/api/notification/settings')),
+    [],
+  );
+}
+
 async function runTest(name: string, fn: () => Promise<void> | void) {
   storage.clear();
-  resetNotificationFetchState();
+  resetFetchState();
   try {
     await fn();
     console.log(`ok - ${name}`);
@@ -198,9 +126,10 @@ await runTest('settingsService persists general preferences across reads', async
   assert.equal(reloaded.general.launchOnStartup, true);
   assert.equal(reloaded.general.startMinimized, true);
   assert.equal(reloaded.general.compactModelSelector, false);
+  assertNoRemoteNotificationRequests();
 });
 
-await runTest('settingsService keeps security and privacy overlays when notification settings reload', async () => {
+await runTest('settingsService keeps security and privacy overlays across reloads', async () => {
   const settingsService = createTestSettingsService();
   await settingsService.updatePreferences({
     privacy: {
@@ -218,67 +147,10 @@ await runTest('settingsService keeps security and privacy overlays when notifica
   assert.equal(reloaded.privacy.personalizedRecommendations, true);
   assert.equal(reloaded.security.twoFactorAuth, true);
   assert.equal(reloaded.security.loginAlerts, false);
+  assertNoRemoteNotificationRequests();
 });
 
-await runTest('settingsService still updates local-only preferences when notification settings authentication expires', async () => {
-  const settingsService = createTestSettingsService();
-
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = init?.method ?? 'GET';
-
-    if (url.endsWith('/app/v3/api/notification/settings') && method === 'GET') {
-      return jsonResponse(
-        {
-          code: '4010',
-          msg: 'token expired',
-        },
-        401,
-      );
-    }
-
-    return jsonResponse({ code: 404, message: 'Not found' }, 404);
-  }) as typeof fetch;
-
-  const updated = await settingsService.updatePreferences({
-    general: {
-      launchOnStartup: true,
-      startMinimized: true,
-      compactModelSelector: false,
-    },
-    privacy: {
-      shareUsageData: true,
-      personalizedRecommendations: true,
-    },
-    security: {
-      twoFactorAuth: true,
-      loginAlerts: false,
-    },
-  });
-
-  assert.deepEqual(updated.general, {
-    launchOnStartup: true,
-    startMinimized: true,
-    compactModelSelector: false,
-  });
-  assert.deepEqual(updated.privacy, {
-    shareUsageData: true,
-    personalizedRecommendations: true,
-  });
-  assert.deepEqual(updated.security, {
-    twoFactorAuth: true,
-    loginAlerts: false,
-  });
-  assert.deepEqual(updated.notifications, {
-    systemUpdates: true,
-    taskFailures: true,
-    securityAlerts: true,
-    taskCompletions: true,
-    newMessages: true,
-  });
-});
-
-await runTest('settingsService updates notification globals and per-type switches through app sdk routes', async () => {
+await runTest('settingsService persists notification preferences locally without remote sdk routes', async () => {
   const settingsService = createTestSettingsService();
   const updated = await settingsService.updatePreferences({
     notifications: {
@@ -290,30 +162,59 @@ await runTest('settingsService updates notification globals and per-type switche
     },
   });
 
-  assert.equal(notificationSettingsState.enableEmail, false);
-  assert.equal(notificationSettingsState.enableInApp, true);
-  assert.equal(notificationSettingsState.typeSettings.TASK.enableEmail, false);
-  assert.equal(notificationSettingsState.typeSettings.TASK.enableInApp, false);
-  assert.equal(notificationSettingsState.typeSettings.SECURITY.enableEmail, false);
-  assert.equal(notificationSettingsState.typeSettings.MESSAGE.enableInApp, true);
+  assert.deepEqual(updated.notifications, {
+    systemUpdates: false,
+    taskFailures: false,
+    securityAlerts: false,
+    taskCompletions: false,
+    newMessages: true,
+  });
 
-  assert.deepEqual(
-    notificationRequestLog
-      .filter((entry) => entry.method === 'PUT')
-      .map((entry) => entry.url.replace(/^.*\/app\/v3\/api/, '')),
-    [
-      '/notification/settings',
-      '/notification/settings/TASK',
-      '/notification/settings/SECURITY',
-      '/notification/settings/MESSAGE',
-    ],
-  );
+  const reloaded = await settingsService.getPreferences();
+  assert.deepEqual(reloaded.notifications, {
+    systemUpdates: false,
+    taskFailures: false,
+    securityAlerts: false,
+    taskCompletions: false,
+    newMessages: true,
+  });
+  assertNoRemoteNotificationRequests();
+});
 
-  assert.equal(updated.notifications.systemUpdates, false);
-  assert.equal(updated.notifications.taskFailures, false);
-  assert.equal(updated.notifications.securityAlerts, false);
-  assert.equal(updated.notifications.taskCompletions, false);
-  assert.equal(updated.notifications.newMessages, true);
+await runTest('settingsService keeps local preferences available even when fetch is unavailable', async () => {
+  const settingsService = createTestSettingsService();
+  await settingsService.updatePreferences({
+    general: {
+      launchOnStartup: true,
+      startMinimized: true,
+      compactModelSelector: false,
+    },
+    notifications: {
+      systemUpdates: false,
+      taskFailures: false,
+      securityAlerts: false,
+      taskCompletions: false,
+      newMessages: false,
+    },
+  });
+
+  globalThis.fetch = (async () => {
+    throw new Error('network unavailable');
+  }) as typeof fetch;
+
+  const preferences = await settingsService.getPreferences();
+  assert.deepEqual(preferences.general, {
+    launchOnStartup: true,
+    startMinimized: true,
+    compactModelSelector: false,
+  });
+  assert.deepEqual(preferences.notifications, {
+    systemUpdates: false,
+    taskFailures: false,
+    securityAlerts: false,
+    taskCompletions: false,
+    newMessages: false,
+  });
 });
 
 await runTest('settingsService surfaces remote profile failures instead of falling back to mock data', async () => {

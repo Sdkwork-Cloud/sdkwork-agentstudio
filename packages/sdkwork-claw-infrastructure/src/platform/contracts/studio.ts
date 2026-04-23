@@ -99,12 +99,28 @@ export type StudioKernelAgentCreationReasonCode =
   | 'configUnavailable'
   | 'configNotWritable';
 
+export interface StudioKernelAgentCreationFieldSupport {
+  avatar: boolean;
+  isDefault: boolean;
+  primaryModel: boolean;
+  fallbackModels: boolean;
+  workspace: boolean;
+  agentDir: boolean;
+  temperature: boolean;
+  topP: boolean;
+  maxTokens: boolean;
+  timeoutMs: boolean;
+  streaming: boolean;
+}
+
 export interface StudioKernelAgentCreationKernelOption {
   kernelId: string;
   label: string;
   supported: boolean;
   reasonCode: StudioKernelAgentCreationReasonCode | null;
   reason: string | null;
+  modelOptions: StudioKernelAgentCreationModelOption[];
+  fieldSupport: StudioKernelAgentCreationFieldSupport;
 }
 
 export interface StudioKernelAgentCreationModelOption {
@@ -119,7 +135,6 @@ export interface StudioKernelAgentCreationCapability {
   instanceName: string;
   kernelOptions: StudioKernelAgentCreationKernelOption[];
   defaultKernelId: string | null;
-  modelOptions: StudioKernelAgentCreationModelOption[];
 }
 
 export interface StudioCreateKernelAgentInput {

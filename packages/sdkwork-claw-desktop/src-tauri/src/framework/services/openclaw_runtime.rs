@@ -3,6 +3,7 @@ use super::local_ai_proxy::{
 };
 use crate::{
     framework::{
+        ports::{canonical_loopback_port_window_end, OPENCLAW_GATEWAY_DEFAULT_PORT},
         paths::AppPaths, services::kernel_runtime_authority::KernelRuntimeAuthorityService,
         FrameworkError, Result,
     },
@@ -28,7 +29,7 @@ const BUNDLED_RESOURCE_DIR: &str = "openclaw";
 const NESTED_BUNDLED_RESOURCE_DIR: &str = "resources/openclaw";
 const BUNDLED_RUNTIME_ARCHIVE_FILE_NAME: &str = "runtime.zip";
 const PREPARED_RUNTIME_SIDECAR_MANIFEST_FILE_NAME: &str = ".sdkwork-openclaw-runtime.json";
-pub(crate) const DEFAULT_GATEWAY_PORT: u16 = 21_280;
+pub(crate) const DEFAULT_GATEWAY_PORT: u16 = OPENCLAW_GATEWAY_DEFAULT_PORT;
 const OPENCLAW_NODE_PATH_OVERRIDE_ENV: &str = "SDKWORK_OPENCLAW_NODE_PATH";
 const TAURI_CONTROL_UI_ALLOWED_ORIGINS: [&str; 3] = [
     "http://tauri.localhost",
@@ -1220,7 +1221,7 @@ fn allocate_gateway_port(requested_port: u16) -> Result<u16> {
         requested_port,
         fallback_range: Some(PortRange::new(
             requested_port,
-            requested_port.saturating_add(31),
+            canonical_loopback_port_window_end(requested_port),
         )),
         allow_ephemeral_fallback: true,
     })

@@ -10,6 +10,7 @@ use crate::framework::{
     },
     FrameworkError, Result,
 };
+use reqwest::blocking::Client;
 use serde_json::{json, Value};
 use std::{
     fs,
@@ -293,60 +294,48 @@ impl<'a> OpenClawGatewayAdminClient<'a> {
                 }
             })
             .collect::<Vec<_>>();
-        let response = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
+        let client = Client::builder()
+            .timeout(Duration::from_secs(30))
             .build()
             .map_err(|error| {
                 FrameworkError::Internal(format!(
-                    "failed to build OpenClaw gateway admin runtime: {error}"
+                    "failed to build OpenClaw gateway admin client: {error}"
                 ))
-            })?
-            .block_on(async move {
-                let client = reqwest::Client::builder()
-                    .timeout(Duration::from_secs(30))
-                    .build()
-                    .map_err(|error| {
-                        FrameworkError::Internal(format!(
-                            "failed to build OpenClaw gateway admin client: {error}"
-                        ))
-                    })?;
-                let mut request_builder = client
-                    .post(url)
-                    .header(
-                        "authorization",
-                        format!("Bearer {}", self.runtime.gateway_auth_token),
-                    )
-                    .header("content-type", "application/json")
-                    .header("accept", "application/json");
-                if let Some(message_channel) = message_channel.as_deref() {
-                    request_builder =
-                        request_builder.header("x-openclaw-message-channel", message_channel);
-                }
-                if let Some(account_id) = account_id.as_deref() {
-                    request_builder = request_builder.header("x-openclaw-account-id", account_id);
-                }
-                for (key, value) in &extra_headers {
-                    request_builder = request_builder.header(key.as_str(), value.as_str());
-                }
-                let response = request_builder
-                    .json(&request)
-                    .send()
-                    .await
-                    .map_err(|error| {
-                        FrameworkError::Conflict(format!(
-                            "failed to reach the built-in OpenClaw gateway for {method}: {error}"
-                        ))
-                    })?;
-                let status = response.status();
-                let body = response.text().await.map_err(|error| {
-                    FrameworkError::Internal(format!(
-                        "failed to read OpenClaw gateway response for {method}: {error}"
-                    ))
-                })?;
-                Ok::<_, FrameworkError>((status, body))
             })?;
+        let mut request_builder = client
+            .post(url)
+            .header(
+                "authorization",
+                format!("Bearer {}", self.runtime.gateway_auth_token),
+            )
+            .header("content-type", "application/json")
+            .header("accept", "application/json");
+        if let Some(message_channel) = message_channel.as_deref() {
+            request_builder =
+                request_builder.header("x-openclaw-message-channel", message_channel);
+        }
+        if let Some(account_id) = account_id.as_deref() {
+            request_builder = request_builder.header("x-openclaw-account-id", account_id);
+        }
+        for (key, value) in &extra_headers {
+            request_builder = request_builder.header(key.as_str(), value.as_str());
+        }
+        let response = request_builder
+            .json(&request)
+            .send()
+            .map_err(|error| {
+                FrameworkError::Conflict(format!(
+                    "failed to reach the built-in OpenClaw gateway for {method}: {error}"
+                ))
+            })?;
+        let status = response.status();
+        let body = response.text().map_err(|error| {
+            FrameworkError::Internal(format!(
+                "failed to read OpenClaw gateway response for {method}: {error}"
+            ))
+        })?;
 
-        parse_gateway_invoke_response(method, response.0, response.1.as_str())
+        parse_gateway_invoke_response(method, status, body.as_str())
     }
 }
 

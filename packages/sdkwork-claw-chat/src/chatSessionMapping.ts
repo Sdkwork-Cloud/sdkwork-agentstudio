@@ -12,17 +12,24 @@ import {
   isBuiltInOpenClawInstanceId,
 } from '@sdkwork/claw-types';
 import {
-  orderChatMessagesForDisplay,
+  dedupeChatMessagesById,
+  hasRenderableChatMessagePayload,
+  isOpenClawSilentReplyText,
+  mergeChatMessageSequenceIntoNativeMetadata,
+  normalizeUserVisibleChatSenderLabel,
+  resolveChatMessagePrimaryPreviewText,
+  resolveKernelChatMessageState,
   resolveLatestChatMessageForDisplay,
   resolveLatestChatMessageTimestamp,
-  mergeChatMessageSequenceIntoNativeMetadata,
-  resolveChatMessageSequenceFromNativeMetadata,
-  normalizeUserVisibleChatSenderLabel,
+  sanitizeChatSessionPreviewText,
 } from './services/index.ts';
 import type { ChatSession, Message } from './store/useChatStore';
 
 const LOCAL_CHAT_PROJECTION_KERNEL_ID = 'studio-direct';
 const LOCAL_CHAT_PROJECTION_SESSION_KIND = 'direct';
+const CLAW_STUDIO_SESSION_IS_DRAFT_KEY = '__clawStudioIsDraft';
+const CLAW_STUDIO_MESSAGE_TRANSPORT_TEXT_KEY = '__clawStudioTransportText';
+const CLAW_STUDIO_MESSAGE_PENDING_DELIVERY_KEY = '__clawStudioPendingDelivery';
 
 function trimOptionalString(value: string | null | undefined) {
   if (typeof value !== 'string') {
@@ -35,6 +42,28 @@ function trimOptionalString(value: string | null | undefined) {
 
 function normalizeOptionalTimestamp(value: number | null | undefined) {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function readNativeMetadataString(
+  metadata: Record<string, unknown> | null | undefined,
+  key: string,
+) {
+  return trimOptionalString(metadata?.[key] as string | null | undefined);
+}
+
+function readNativeMetadataBoolean(
+  metadata: Record<string, unknown> | null | undefined,
+  key: string,
+) {
+  return typeof metadata?.[key] === 'boolean' ? (metadata[key] as boolean) : undefined;
 }
 
 function cloneAttachments(
@@ -68,11 +97,24 @@ function resolvePersistedConversationInstanceId(session: ChatSession) {
 function resolveLocalSessionPreview(session: ChatSession) {
   const preview = trimOptionalString(session.lastMessagePreview);
   if (preview) {
-    return preview;
+    const kernelId =
+      trimOptionalString(session.kernelSession?.ref?.kernelId) ??
+      (session.transport === 'openclawGateway' ? 'openclaw' : null);
+    const sanitizedPreview = sanitizeChatSessionPreviewText({
+      text: preview,
+      kernelId,
+    });
+    if (sanitizedPreview) {
+      return sanitizedPreview;
+    }
+
+    if (kernelId !== 'openclaw') {
+      return preview;
+    }
   }
 
   const lastMessage = resolveLatestChatMessageForDisplay(session.messages);
-  return trimOptionalString(lastMessage?.content.slice(0, 120));
+  return resolveChatMessagePrimaryPreviewText(lastMessage, 120) ?? undefined;
 }
 
 function resolvePersistedSessionAgentId(session: ChatSession) {
@@ -140,6 +182,18 @@ function resolvePersistedSessionKind(session: ChatSession) {
   );
 }
 
+function buildPersistedSessionNativeMetadata(session: ChatSession) {
+  const baseMetadata = asRecord(session.kernelSession?.nativeMetadata) ?? {};
+  if (typeof session.isDraft !== 'boolean') {
+    return Object.keys(baseMetadata).length > 0 ? baseMetadata : null;
+  }
+
+  return {
+    ...baseMetadata,
+    [CLAW_STUDIO_SESSION_IS_DRAFT_KEY]: session.isDraft,
+  };
+}
+
 function buildPersistedKernelSession(session: ChatSession): KernelChatSession {
   const agentId = resolvePersistedSessionAgentId(session);
 
@@ -154,7 +208,16 @@ function buildPersistedKernelSession(session: ChatSession): KernelChatSession {
       lineageParentSessionId: session.kernelSession?.ref?.lineageParentSessionId ?? null,
     }),
     authority: resolvePersistedSessionAuthority(session),
-    lifecycle: session.runId ? 'running' : session.messages.length === 0 ? 'draft' : 'ready',
+    lifecycle:
+      session.isDraft === true
+        ? session.runId
+          ? 'running'
+          : 'draft'
+        : session.runId
+          ? 'running'
+          : session.messages.length === 0
+            ? 'draft'
+            : 'ready',
     title: session.title,
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
@@ -167,7 +230,7 @@ function buildPersistedKernelSession(session: ChatSession): KernelChatSession {
       ? [...session.kernelSession.capabilities]
       : undefined,
     activeRunId: trimOptionalString(session.runId),
-    nativeMetadata: session.kernelSession?.nativeMetadata ?? null,
+    nativeMetadata: buildPersistedSessionNativeMetadata(session),
   };
 }
 
@@ -236,6 +299,12 @@ function buildPersistedKernelMessage(params: {
 }): KernelChatMessage {
   const messageRunId = trimOptionalString(params.message.runId);
   const activeRunId = trimOptionalString(params.activeRunId);
+  const transportText = trimOptionalString(params.message.transportText);
+  const pendingDelivery = params.message.pendingDelivery === true;
+  const nativeMetadata = mergeChatMessageSequenceIntoNativeMetadata(
+    params.message.kernelMessage?.nativeMetadata as Record<string, unknown> | null | undefined,
+    params.message.seq,
+  ) ?? {};
 
   return {
     id: params.message.id,
@@ -254,95 +323,90 @@ function buildPersistedKernelMessage(params: {
     runId: messageRunId,
     model: trimOptionalString(params.message.model),
     senderLabel: normalizeUserVisibleChatSenderLabel(params.message.senderLabel),
-    nativeMetadata: mergeChatMessageSequenceIntoNativeMetadata(
-      params.message.kernelMessage?.nativeMetadata as Record<string, unknown> | null | undefined,
-      params.message.seq,
-    ),
+    nativeMetadata: {
+      ...nativeMetadata,
+      ...(transportText
+        ? {
+            [CLAW_STUDIO_MESSAGE_TRANSPORT_TEXT_KEY]: transportText,
+          }
+        : {}),
+      ...(pendingDelivery
+        ? {
+            [CLAW_STUDIO_MESSAGE_PENDING_DELIVERY_KEY]: true,
+          }
+        : {}),
+    },
   };
 }
 
-function extractKernelMessageText(message: StudioConversationMessage) {
-  const textPart = message.kernelMessage?.parts.find(
-    (part: KernelChatMessage['parts'][number]) => part.kind === 'text',
-  );
-  if (textPart?.kind === 'text') {
-    return textPart.text;
+function sanitizePersistedOpenClawPreview(
+  value: string | null | undefined,
+  kernelSession: KernelChatSession | null | undefined,
+) {
+  const preview = trimOptionalString(value);
+  if (!preview) {
+    return undefined;
   }
 
-  return message.kernelMessage?.text ?? message.content;
-}
-
-function extractKernelMessageReasoning(message: StudioConversationMessage) {
-  const reasoningPart = message.kernelMessage?.parts.find(
-    (part: KernelChatMessage['parts'][number]) => part.kind === 'reasoning',
-  );
-  return reasoningPart?.kind === 'reasoning' ? reasoningPart.text : null;
-}
-
-function extractKernelMessageAttachments(message: StudioConversationMessage) {
-  if (!message.kernelMessage) {
-    return cloneAttachments(message.attachments);
+  if (trimOptionalString(kernelSession?.ref?.kernelId) !== 'openclaw') {
+    return preview;
   }
 
-  return message.kernelMessage.parts.flatMap((part: KernelChatMessage['parts'][number]) =>
-    part.kind === 'attachment' ? [{ ...part.attachment }] : [],
-  );
-}
-
-function extractKernelMessageToolCards(message: StudioConversationMessage): Message['toolCards'] {
-  if (!message.kernelMessage) {
-    return [];
+  if (isOpenClawSilentReplyText(preview)) {
+    return undefined;
   }
 
-  const toolCards: NonNullable<Message['toolCards']> = [];
-  for (const part of message.kernelMessage.parts) {
-    if (part.kind === 'toolCall') {
-      toolCards.push({
-        kind: 'call',
-        name: part.toolName,
-        argumentsText: part.argumentsText ?? undefined,
-        detail: part.detail ?? part.argumentsText ?? undefined,
-      });
-      continue;
-    }
-
-    if (part.kind === 'toolResult') {
-      toolCards.push({
-        kind: 'result',
-        name: part.toolName,
-        text: part.text ?? undefined,
-        isError: part.isError ?? undefined,
-        preview: part.preview ?? undefined,
-      });
-    }
-  }
-
-  return toolCards;
+  return sanitizeChatSessionPreviewText({
+    text: preview,
+    kernelId: trimOptionalString(kernelSession?.ref?.kernelId),
+  });
 }
 
-export function mapStudioMessage(message: StudioConversationMessage): Message {
-  const seq = resolveChatMessageSequenceFromNativeMetadata(
-    message.kernelMessage?.nativeMetadata as Record<string, unknown> | null | undefined,
-  );
-
-  return {
+export function mapStudioMessage(message: StudioConversationMessage): Message | null {
+  const nativeMetadata = asRecord(message.kernelMessage?.nativeMetadata);
+  const resolved = resolveKernelChatMessageState({
     id: message.id,
-    role: (message.kernelMessage?.role ?? message.role) as Message['role'],
-    content: extractKernelMessageText(message),
-    timestamp: message.kernelMessage?.updatedAt ?? message.updatedAt ?? message.createdAt,
-    ...(typeof seq === 'number' ? { seq } : {}),
-    senderLabel: normalizeUserVisibleChatSenderLabel(message.kernelMessage?.senderLabel),
-    model: trimOptionalString(message.kernelMessage?.model) ?? message.model,
-    runId: trimOptionalString(message.kernelMessage?.runId) ?? undefined,
-    attachments: extractKernelMessageAttachments(message),
-    reasoning: extractKernelMessageReasoning(message),
-    toolCards: extractKernelMessageToolCards(message),
+    role: message.role,
+    content: message.content,
+    timestamp: message.updatedAt ?? message.createdAt,
+    senderLabel: message.kernelMessage?.senderLabel ?? null,
+    model: message.model ?? null,
+    attachments: cloneAttachments(message.attachments),
+    kernelMessage: message.kernelMessage ?? null,
+  });
+
+  const mappedMessage: Message = {
+    id: message.id,
+    role: resolved.role,
+    content: resolved.content,
+    timestamp: resolved.timestamp,
+    transportText:
+      readNativeMetadataString(nativeMetadata, CLAW_STUDIO_MESSAGE_TRANSPORT_TEXT_KEY) ??
+      undefined,
+    ...(typeof resolved.seq === 'number' ? { seq: resolved.seq } : {}),
+    senderLabel: resolved.senderLabel,
+    model: trimOptionalString(resolved.model) ?? message.model,
+    runId: trimOptionalString(resolved.runId) ?? undefined,
+    attachments: resolved.attachments,
+    reasoning: resolved.reasoning,
+    toolCards: resolved.toolCards,
+    pendingDelivery:
+      readNativeMetadataBoolean(nativeMetadata, CLAW_STUDIO_MESSAGE_PENDING_DELIVERY_KEY) === true
+        ? true
+        : undefined,
     kernelMessage: message.kernelMessage ?? null,
   };
+
+  return hasRenderableChatMessagePayload(mappedMessage) ? mappedMessage : null;
 }
 
 export function mapStudioConversation(record: StudioConversationRecord): ChatSession {
-  const messages = orderChatMessagesForDisplay(record.messages.map(mapStudioMessage));
+  const messages = dedupeChatMessagesById(
+    record.messages
+      .map(mapStudioMessage)
+      .filter((message): message is Message => message !== null),
+  );
+  const latestVisibleMessage = resolveLatestChatMessageForDisplay(messages);
   const latestMessageTimestamp = resolveLatestChatMessageTimestamp(messages);
   const normalizedUpdatedAt = Math.max(
     record.createdAt,
@@ -359,12 +423,16 @@ export function mapStudioConversation(record: StudioConversationRecord): ChatSes
       : null;
   const modelBinding = kernelSession?.modelBinding ?? null;
   const authorityKind = kernelSession?.authority.kind ?? 'localProjection';
+  const sessionNativeMetadata = asRecord(kernelSession?.nativeMetadata);
   const normalizedPrimaryInstanceId = trimOptionalString(record.primaryInstanceId);
   const instanceId =
     authorityKind === 'localProjection' &&
     isBuiltInOpenClawInstanceId(normalizedPrimaryInstanceId)
       ? undefined
       : normalizedPrimaryInstanceId ?? undefined;
+  const restoredDraftState =
+    readNativeMetadataBoolean(sessionNativeMetadata, CLAW_STUDIO_SESSION_IS_DRAFT_KEY) ??
+    (kernelSession?.lifecycle === 'draft' ? true : undefined);
 
   return {
     id: record.id,
@@ -388,6 +456,7 @@ export function mapStudioConversation(record: StudioConversationRecord): ChatSes
           : authorityKind !== 'localProjection'
             ? 'kernelAdapter'
             : 'local',
+    isDraft: restoredDraftState,
     sessionKind: record.kernelSession?.sessionKind ?? LOCAL_CHAT_PROJECTION_SESSION_KIND,
     agentId:
       trimOptionalString(record.kernelSession?.ref?.agentId) ??
@@ -399,7 +468,9 @@ export function mapStudioConversation(record: StudioConversationRecord): ChatSes
     fastMode: modelBinding?.fastMode ?? null,
     verboseLevel: trimOptionalString(modelBinding?.verboseLevel),
     reasoningLevel: trimOptionalString(modelBinding?.reasoningLevel),
-    lastMessagePreview: record.lastMessagePreview,
+    lastMessagePreview:
+      latestVisibleMessage?.content ??
+      sanitizePersistedOpenClawPreview(record.lastMessagePreview, kernelSession),
     kernelSession,
   };
 }
@@ -422,7 +493,7 @@ export function mapChatSession(session: ChatSession): StudioConversationRecord {
   }
 
   const kernelSession = buildPersistedKernelSession(session);
-  const messages = session.messages.map((message) => ({
+  const messages = dedupeChatMessagesById(session.messages).map((message) => ({
     id: message.id,
     conversationId: session.id,
     role: normalizeStudioConversationRole(message.role),
@@ -436,10 +507,24 @@ export function mapChatSession(session: ChatSession): StudioConversationRecord {
     kernelMessage: message.kernelMessage
       ? {
           ...message.kernelMessage,
-          nativeMetadata: mergeChatMessageSequenceIntoNativeMetadata(
-            message.kernelMessage.nativeMetadata as Record<string, unknown> | null | undefined,
-            message.seq,
-          ),
+          nativeMetadata: {
+            ...(mergeChatMessageSequenceIntoNativeMetadata(
+              message.kernelMessage.nativeMetadata as Record<string, unknown> | null | undefined,
+              message.seq,
+            ) ?? {}),
+            ...(trimOptionalString(message.transportText)
+              ? {
+                  [CLAW_STUDIO_MESSAGE_TRANSPORT_TEXT_KEY]: trimOptionalString(
+                    message.transportText,
+                  ),
+                }
+              : {}),
+            ...(message.pendingDelivery === true
+              ? {
+                  [CLAW_STUDIO_MESSAGE_PENDING_DELIVERY_KEY]: true,
+                }
+              : {}),
+          },
         }
       : buildPersistedKernelMessage({
           sessionRef: kernelSession.ref,
@@ -457,8 +542,7 @@ export function mapChatSession(session: ChatSession): StudioConversationRecord {
     updatedAt: session.updatedAt,
     lastSeenAt: normalizeOptionalTimestamp(session.lastSeenAt),
     messageCount: messages.length,
-    lastMessagePreview:
-      resolveLatestChatMessageForDisplay(messages)?.content.slice(0, 120) || '',
+    lastMessagePreview: kernelSession.lastMessagePreview ?? '',
     kernelSession,
     messages,
   };

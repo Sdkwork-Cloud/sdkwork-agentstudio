@@ -7,7 +7,9 @@ use super::{
         StudioCreateKernelChatSessionInput, StudioPatchKernelChatSessionInput,
         StudioStartKernelChatRunInput,
     },
-    normalize_optional_string, unix_timestamp_ms, StudioInstanceRecord,
+    normalize_kernel_agent_id, normalize_optional_string, trim_required_kernel_agent_field,
+    unix_timestamp_ms, StudioCreateKernelAgentInput, StudioCreatedKernelAgentRecord,
+    StudioInstanceRecord,
 };
 use crate::framework::{paths::AppPaths, FrameworkError, Result};
 use reqwest::blocking::Client;
@@ -21,6 +23,17 @@ use std::{
 use uuid::Uuid;
 
 const DEFAULT_KERNEL_CHAT_SESSION_TITLE: &str = "New Chat";
+
+struct HermesAgentProfileUpsert<'a> {
+    instance_id: &'a str,
+    agent_id: &'a str,
+    label: &'a str,
+    description: Option<&'a str>,
+    source: &'a str,
+    system_prompt: Option<&'a str>,
+    avatar: Option<&'a str>,
+    creator: Option<&'a str>,
+}
 
 #[derive(Clone, Debug)]
 struct HermesSessionRow {
@@ -169,6 +182,26 @@ fn persist_hermes_agent_profile(
     let Some(agent_id) = normalize_optional_text(agent_id) else {
         return Ok(());
     };
+
+    upsert_hermes_agent_profile(
+        connection,
+        HermesAgentProfileUpsert {
+            instance_id,
+            agent_id: agent_id.as_str(),
+            label: agent_id.as_str(),
+            description: None,
+            source: "sessionBinding",
+            system_prompt: None,
+            avatar: None,
+            creator: None,
+        },
+    )
+}
+
+fn upsert_hermes_agent_profile(
+    connection: &Connection,
+    input: HermesAgentProfileUpsert<'_>,
+) -> Result<()> {
     let now = unix_timestamp_ms()?;
 
     connection.execute(
@@ -183,16 +216,24 @@ fn persist_hermes_agent_profile(
             creator,
             created_at_ms,
             updated_at_ms
-         ) VALUES (?1, ?2, ?3, NULL, ?4, NULL, NULL, NULL, ?5, ?5)
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9)
          ON CONFLICT(instance_id, agent_id) DO UPDATE SET
             label = excluded.label,
+            description = excluded.description,
             source = excluded.source,
+            system_prompt = excluded.system_prompt,
+            avatar = excluded.avatar,
+            creator = excluded.creator,
             updated_at_ms = excluded.updated_at_ms",
         params![
-            instance_id,
-            agent_id.as_str(),
-            agent_id.as_str(),
-            "sessionBinding",
+            input.instance_id,
+            input.agent_id,
+            input.label,
+            input.description,
+            input.source,
+            input.system_prompt,
+            input.avatar,
+            input.creator,
             now as i64
         ],
     )?;
@@ -1450,6 +1491,46 @@ pub(super) fn list_kernel_chat_agent_profiles_for_managed_hermes(
     }
 
     Ok(profiles)
+}
+
+pub(super) fn create_kernel_chat_agent_profile_for_managed_hermes(
+    paths: &AppPaths,
+    instance: &StudioInstanceRecord,
+    input: &StudioCreateKernelAgentInput,
+) -> Result<StudioCreatedKernelAgentRecord> {
+    debug_assert!(is_managed_hermes_instance(instance));
+    let Some(connection) = ensure_hermes_state_db(paths, true)? else {
+        return Err(FrameworkError::Internal(
+            "Hermes state database could not be opened.".to_string(),
+        ));
+    };
+
+    let normalized_agent_id = normalize_kernel_agent_id(
+        trim_required_kernel_agent_field(input.agent_id.as_str(), "agentId")?.as_str(),
+    );
+    let display_name = trim_required_kernel_agent_field(input.display_name.as_str(), "displayName")?;
+    let avatar = normalize_optional_text(input.avatar.as_deref());
+
+    upsert_hermes_agent_profile(
+        &connection,
+        HermesAgentProfileUpsert {
+            instance_id: instance.id.as_str(),
+            agent_id: normalized_agent_id.as_str(),
+            label: display_name.as_str(),
+            description: None,
+            source: "kernelCatalog",
+            system_prompt: None,
+            avatar: avatar.as_deref(),
+            creator: None,
+        },
+    )?;
+
+    Ok(StudioCreatedKernelAgentRecord {
+        instance_id: instance.id.clone(),
+        kernel_id: "hermes".to_string(),
+        agent_id: normalized_agent_id,
+        display_name,
+    })
 }
 
 pub(super) fn list_kernel_chat_sessions_for_managed_hermes(

@@ -507,9 +507,9 @@ export function CronTasksManager({
             agents: [],
             defaultAgentId: null,
           })),
-        listTaskExecutions: async (taskId) => {
+        listTaskExecutions: async (instanceId, taskId) => {
           try {
-            return await taskService.listTaskExecutions(taskId);
+            return await taskService.listTaskExecutions(taskId, instanceId);
           } catch {
             return [] as TaskExecutionHistoryEntry[];
           }
@@ -571,7 +571,7 @@ export function CronTasksManager({
       const entries = await Promise.all(
         historyTaskIds.map(async (taskId) => {
           try {
-            return [taskId, await taskService.listTaskExecutions(taskId)] as const;
+            return [taskId, await taskService.listTaskExecutions(taskId, activeInstanceId)] as const;
           } catch {
             return [taskId, [] as TaskExecutionHistoryEntry[]] as const;
           }
@@ -888,10 +888,14 @@ export function CronTasksManager({
   }
 
   async function openHistoryDrawer(task: Task) {
+    if (!activeInstanceId) {
+      return;
+    }
+
     setHistoryTaskId(task.id);
     setIsHistoryLoading(true);
     try {
-      const entries = await taskService.listTaskExecutions(task.id);
+      const entries = await taskService.listTaskExecutions(task.id, activeInstanceId);
       setExecutionsByTaskId((current) => ({ ...current, [task.id]: entries }));
     } catch {
       toast.error(t('tasks.page.toasts.failedToLoadHistory'));
@@ -901,11 +905,16 @@ export function CronTasksManager({
   }
 
   async function handleCloneTask(task: Task) {
+    if (!activeInstanceId) {
+      toast.error(t('tasks.page.toasts.noActiveInstance'));
+      return;
+    }
+
     setCloningTaskIds((current) => addPendingId(current, task.id));
     try {
       await taskService.cloneTask(task.id, {
         name: t('tasks.page.actions.cloneName', { name: task.name }),
-      });
+      }, activeInstanceId);
       toast.success(t('tasks.page.toasts.cloned'));
       await refreshVisibleTaskStudio();
     } catch {
@@ -916,9 +925,14 @@ export function CronTasksManager({
   }
 
   async function handleRunTaskNow(task: Task) {
+    if (!activeInstanceId) {
+      toast.error(t('tasks.page.toasts.noActiveInstance'));
+      return;
+    }
+
     setRunningTaskIds((current) => addPendingId(current, task.id));
     try {
-      await taskService.runTaskNow(task.id);
+      await taskService.runTaskNow(task.id, activeInstanceId);
       toast.success(t('tasks.page.toasts.ranNow'));
       await refreshVisibleTaskStudio();
     } catch {
@@ -929,6 +943,11 @@ export function CronTasksManager({
   }
 
   async function handleToggleTaskStatus(task: Task) {
+    if (!activeInstanceId) {
+      toast.error(t('tasks.page.toasts.noActiveInstance'));
+      return;
+    }
+
     const nextStatus = getTaskToggleStatusTarget(task.status);
     if (!nextStatus) {
       return;
@@ -936,7 +955,7 @@ export function CronTasksManager({
 
     setStatusTaskIds((current) => addPendingId(current, task.id));
     try {
-      await taskService.updateTaskStatus(task.id, nextStatus);
+      await taskService.updateTaskStatus(task.id, nextStatus, activeInstanceId);
       toast.success(t(nextStatus === 'active' ? 'tasks.page.toasts.enabled' : 'tasks.page.toasts.disabled'));
       await refreshVisibleTaskStudio();
     } catch {
@@ -947,12 +966,17 @@ export function CronTasksManager({
   }
 
   async function handleDeleteTask(task: Task) {
+    if (!activeInstanceId) {
+      toast.error(t('tasks.page.toasts.noActiveInstance'));
+      return;
+    }
+
     if (!window.confirm(t('tasks.page.confirmDelete', { name: task.name }))) {
       return;
     }
     setDeletingTaskIds((current) => addPendingId(current, task.id));
     try {
-      await taskService.deleteTask(task.id);
+      await taskService.deleteTask(task.id, activeInstanceId);
       toast.success(t('tasks.page.toasts.deleted'));
       await refreshVisibleTaskStudio();
     } catch {
@@ -983,7 +1007,7 @@ export function CronTasksManager({
     try {
       const payload = buildCreateTaskInput(taskForm);
       if (editorMode === 'edit' && editingTaskId) {
-        await taskService.updateTask(editingTaskId, payload);
+        await taskService.updateTask(editingTaskId, payload, activeInstanceId);
         toast.success(t('tasks.page.toasts.updated'));
       } else {
         await taskService.createTask(activeInstanceId, payload);

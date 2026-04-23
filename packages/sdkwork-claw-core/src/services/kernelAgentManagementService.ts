@@ -5,6 +5,7 @@ import {
   type StudioCreatedKernelAgentRecord,
   type StudioCreateKernelAgentInput,
   type StudioKernelAgentCreationCapability,
+  type StudioKernelAgentCreationFieldSupport,
   type StudioKernelAgentCreationKernelOption,
   type StudioKernelAgentCreationModelOption,
   type StudioKernelAgentCreationReasonCode,
@@ -29,11 +30,51 @@ import {
 } from './kernelConfigAttachmentService.ts';
 
 export type KernelAgentCreationReasonCode = StudioKernelAgentCreationReasonCode;
+export type KernelAgentCreationFieldSupport = StudioKernelAgentCreationFieldSupport;
 export type KernelAgentCreationKernelOption = StudioKernelAgentCreationKernelOption;
 export type KernelAgentCreationModelOption = StudioKernelAgentCreationModelOption;
 export type KernelAgentCreationCapability = StudioKernelAgentCreationCapability;
 export type CreateKernelAgentRequest = StudioCreateKernelAgentInput;
 export type CreateKernelAgentResult = StudioCreatedKernelAgentRecord;
+
+const FULL_KERNEL_AGENT_CREATION_FIELD_SUPPORT: KernelAgentCreationFieldSupport = {
+  avatar: true,
+  isDefault: true,
+  primaryModel: true,
+  fallbackModels: true,
+  workspace: true,
+  agentDir: true,
+  temperature: true,
+  topP: true,
+  maxTokens: true,
+  timeoutMs: true,
+  streaming: true,
+};
+
+const UNSUPPORTED_KERNEL_AGENT_CREATION_FIELD_SUPPORT: KernelAgentCreationFieldSupport = {
+  avatar: false,
+  isDefault: false,
+  primaryModel: false,
+  fallbackModels: false,
+  workspace: false,
+  agentDir: false,
+  temperature: false,
+  topP: false,
+  maxTokens: false,
+  timeoutMs: false,
+  streaming: false,
+};
+
+class KernelAgentCapabilityContractError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'KernelAgentCapabilityContractError';
+  }
+}
+
+function isKernelAgentCapabilityContractError(error: unknown) {
+  return error instanceof KernelAgentCapabilityContractError;
+}
 
 interface KernelAgentCreationProvider {
   kernelId: string;
@@ -216,6 +257,25 @@ function normalizeKernelAgentCreationModelOption(
   };
 }
 
+function mergeKernelAgentCreationModelOptions(
+  ...collections: Array<KernelAgentCreationModelOption[] | null | undefined>
+) {
+  const mergedOptions = new Map<string, KernelAgentCreationModelOption>();
+
+  for (const collection of collections) {
+    for (const option of collection ?? []) {
+      const normalizedOption = normalizeKernelAgentCreationModelOption(option);
+      if (!normalizedOption) {
+        continue;
+      }
+
+      mergedOptions.set(normalizedOption.value, normalizedOption);
+    }
+  }
+
+  return [...mergedOptions.values()];
+}
+
 function normalizeKernelAgentCreationKernelOption(
   option: KernelAgentCreationKernelOption,
 ): KernelAgentCreationKernelOption | null {
@@ -224,12 +284,40 @@ function normalizeKernelAgentCreationKernelOption(
     return null;
   }
 
+  const fieldSupport = normalizeKernelAgentCreationFieldSupport(option.fieldSupport);
+
   return {
     kernelId,
     label: normalizeOptionalString(option.label) ?? resolveKernelLabel(kernelId),
     supported: option.supported === true,
     reasonCode: option.reasonCode ?? null,
     reason: normalizeOptionalString(option.reason),
+    modelOptions: mergeKernelAgentCreationModelOptions(option.modelOptions),
+    fieldSupport,
+  };
+}
+
+function normalizeKernelAgentCreationFieldSupport(
+  fieldSupport: KernelAgentCreationFieldSupport | null | undefined,
+): KernelAgentCreationFieldSupport {
+  if (!fieldSupport) {
+    throw new KernelAgentCapabilityContractError(
+      'Kernel agent creation capability must declare field support for every kernel option.',
+    );
+  }
+
+  return {
+    avatar: fieldSupport.avatar === true,
+    isDefault: fieldSupport.isDefault === true,
+    primaryModel: fieldSupport.primaryModel === true,
+    fallbackModels: fieldSupport.fallbackModels === true,
+    workspace: fieldSupport.workspace === true,
+    agentDir: fieldSupport.agentDir === true,
+    temperature: fieldSupport.temperature === true,
+    topP: fieldSupport.topP === true,
+    maxTokens: fieldSupport.maxTokens === true,
+    timeoutMs: fieldSupport.timeoutMs === true,
+    streaming: fieldSupport.streaming === true,
   };
 }
 
@@ -253,9 +341,6 @@ function normalizeKernelAgentCreationCapability(
     instanceName: normalizeRequiredString(capability.instanceName, 'instanceName'),
     kernelOptions,
     defaultKernelId: resolvedDefaultKernelId,
-    modelOptions: capability.modelOptions
-      .map((option) => normalizeKernelAgentCreationModelOption(option))
-      .filter((option): option is KernelAgentCreationModelOption => Boolean(option)),
   };
 }
 
@@ -289,19 +374,12 @@ function mergeKernelAgentCreationCapabilities(
   const mergedKernelOptions = new Map<string, KernelAgentCreationKernelOption>();
   const orderedKernelIds: string[] = [];
   const pushKernelOption = (option: KernelAgentCreationKernelOption) => {
-    const normalizedKernelId = normalizeKernelId(option.kernelId);
-    if (!normalizedKernelId) {
+    const normalizedOption = normalizeKernelAgentCreationKernelOption(option);
+    if (!normalizedOption) {
       return;
     }
 
-    const normalizedOption = {
-      ...option,
-      kernelId: normalizedKernelId,
-      label: normalizeOptionalString(option.label) ?? resolveKernelLabel(normalizedKernelId),
-      supported: option.supported === true,
-      reasonCode: option.reasonCode ?? null,
-      reason: normalizeOptionalString(option.reason),
-    };
+    const normalizedKernelId = normalizedOption.kernelId;
 
     if (!orderedKernelIds.includes(normalizedKernelId)) {
       orderedKernelIds.push(normalizedKernelId);
@@ -326,23 +404,6 @@ function mergeKernelAgentCreationCapabilities(
   }
   for (const option of platformCapability.kernelOptions) {
     pushKernelOption(option);
-  }
-
-  const mergedModelOptions = new Map<string, KernelAgentCreationModelOption>();
-  const pushModelOption = (option: KernelAgentCreationModelOption) => {
-    const normalizedOption = normalizeKernelAgentCreationModelOption(option);
-    if (!normalizedOption) {
-      return;
-    }
-
-    mergedModelOptions.set(normalizedOption.value, normalizedOption);
-  };
-
-  for (const option of inferredCapability.modelOptions) {
-    pushModelOption(option);
-  }
-  for (const option of platformCapability.modelOptions) {
-    pushModelOption(option);
   }
 
   const mergedKernelOptionList = orderedKernelIds
@@ -379,7 +440,6 @@ function mergeKernelAgentCreationCapabilities(
       inferredCapability.instanceName,
     kernelOptions: mergedKernelOptionList,
     defaultKernelId,
-    modelOptions: [...mergedModelOptions.values()],
   });
 }
 
@@ -407,6 +467,131 @@ function normalizeFallbackModels(fallbackModels: string[] | null | undefined) {
         .filter((entry): entry is string => Boolean(entry)),
     ),
   );
+}
+
+function createUnsupportedKernelFieldError(kernelId: string, fieldName: string) {
+  return new Error(`Kernel "${kernelId}" does not support create field "${fieldName}".`);
+}
+
+function ensureKernelFieldSupport(
+  kernelId: string,
+  fieldName: string,
+  supported: boolean,
+  hasExplicitValue: boolean,
+) {
+  if (!supported && hasExplicitValue) {
+    throw createUnsupportedKernelFieldError(kernelId, fieldName);
+  }
+}
+
+function ensureKernelModelRefIsSupported(
+  kernelId: string,
+  fieldName: string,
+  supportedModelRefs: Set<string>,
+  modelRef: string | null,
+) {
+  if (!modelRef || supportedModelRefs.size === 0) {
+    return;
+  }
+
+  if (!supportedModelRefs.has(modelRef)) {
+    throw new Error(
+      `Kernel "${kernelId}" does not expose "${modelRef}" as a supported ${fieldName} option.`,
+    );
+  }
+}
+
+function validateCreateKernelAgentRequest(
+  kernelOption: KernelAgentCreationKernelOption,
+  request: CreateKernelAgentRequest,
+) {
+  const kernelId = kernelOption.kernelId;
+  const fieldSupport = kernelOption.fieldSupport;
+  const avatar = normalizeOptionalString(request.avatar);
+  const primaryModel = normalizeOptionalString(request.primaryModel);
+  const workspace = normalizeOptionalString(request.workspace);
+  const agentDir = normalizeOptionalString(request.agentDir);
+  const fallbackModels = normalizeFallbackModels(request.fallbackModels);
+
+  ensureKernelFieldSupport(kernelId, 'avatar', fieldSupport.avatar, Boolean(avatar));
+  ensureKernelFieldSupport(
+    kernelId,
+    'isDefault',
+    fieldSupport.isDefault,
+    request.isDefault === true,
+  );
+  ensureKernelFieldSupport(
+    kernelId,
+    'primaryModel',
+    fieldSupport.primaryModel,
+    Boolean(primaryModel),
+  );
+  ensureKernelFieldSupport(
+    kernelId,
+    'fallbackModels',
+    fieldSupport.fallbackModels,
+    fallbackModels.length > 0,
+  );
+  ensureKernelFieldSupport(
+    kernelId,
+    'workspace',
+    fieldSupport.workspace,
+    Boolean(workspace),
+  );
+  ensureKernelFieldSupport(
+    kernelId,
+    'agentDir',
+    fieldSupport.agentDir,
+    Boolean(agentDir),
+  );
+  ensureKernelFieldSupport(
+    kernelId,
+    'temperature',
+    fieldSupport.temperature,
+    typeof request.temperature === 'number' && Number.isFinite(request.temperature),
+  );
+  ensureKernelFieldSupport(
+    kernelId,
+    'topP',
+    fieldSupport.topP,
+    typeof request.topP === 'number' && Number.isFinite(request.topP),
+  );
+  ensureKernelFieldSupport(
+    kernelId,
+    'maxTokens',
+    fieldSupport.maxTokens,
+    typeof request.maxTokens === 'number' && Number.isFinite(request.maxTokens),
+  );
+  ensureKernelFieldSupport(
+    kernelId,
+    'timeoutMs',
+    fieldSupport.timeoutMs,
+    typeof request.timeoutMs === 'number' && Number.isFinite(request.timeoutMs),
+  );
+  ensureKernelFieldSupport(
+    kernelId,
+    'streaming',
+    fieldSupport.streaming,
+    typeof request.streaming === 'boolean',
+  );
+
+  const supportedModelRefs = new Set(
+    kernelOption.modelOptions.map((option) => option.value),
+  );
+  ensureKernelModelRefIsSupported(
+    kernelId,
+    'primaryModel',
+    supportedModelRefs,
+    primaryModel,
+  );
+  for (const fallbackModel of fallbackModels) {
+    ensureKernelModelRefIsSupported(
+      kernelId,
+      'fallbackModels',
+      supportedModelRefs,
+      fallbackModel,
+    );
+  }
 }
 
 function buildOpenClawAgentInput(request: CreateKernelAgentRequest): OpenClawAgentInput {
@@ -471,6 +656,8 @@ function resolveOpenClawCapability(
       supported: true,
       reasonCode: null,
       reason: null,
+      modelOptions: buildKernelAgentModelOptions(detail.workbench?.llmProviders),
+      fieldSupport: FULL_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
     };
   }
 
@@ -482,6 +669,8 @@ function resolveOpenClawCapability(
       supported: false,
       reasonCode: 'configUnavailable',
       reason: 'Writable OpenClaw config file is not available for this instance.',
+      modelOptions: [],
+      fieldSupport: FULL_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
     };
   }
 
@@ -492,6 +681,8 @@ function resolveOpenClawCapability(
       supported: false,
       reasonCode: 'configNotWritable',
       reason: 'The selected OpenClaw config file is not writable.',
+      modelOptions: [],
+      fieldSupport: FULL_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
     };
   }
 
@@ -501,6 +692,8 @@ function resolveOpenClawCapability(
     supported: true,
     reasonCode: null,
     reason: null,
+    modelOptions: buildKernelAgentModelOptions(detail.workbench?.llmProviders),
+    fieldSupport: FULL_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
   };
 }
 
@@ -622,6 +815,8 @@ function createUnsupportedKernelOption(kernelId: string): KernelAgentCreationKer
     supported: false,
     reasonCode: 'unsupportedKernel',
     reason: 'Agent creation is not implemented for this kernel yet.',
+    modelOptions: [],
+    fieldSupport: UNSUPPORTED_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
   };
 }
 
@@ -649,6 +844,8 @@ async function listKernelCreationOptions(
         supported: option.supported === true,
         reasonCode: option.reasonCode ?? null,
         reason: normalizeOptionalString(option.reason),
+        modelOptions: mergeKernelAgentCreationModelOptions(option.modelOptions),
+        fieldSupport: normalizeKernelAgentCreationFieldSupport(option.fieldSupport),
       });
     }
   }
@@ -711,7 +908,6 @@ class DefaultKernelAgentManagementService {
       instanceName: detail.instance.name,
       kernelOptions,
       defaultKernelId: defaultKernelOption?.kernelId ?? null,
-      modelOptions: buildKernelAgentModelOptions(detail.workbench?.llmProviders),
     });
   }
 
@@ -759,6 +955,13 @@ class DefaultKernelAgentManagementService {
       }
     }
 
+    if (isKernelAgentCapabilityContractError(platformCapabilityError)) {
+      throw platformCapabilityError;
+    }
+    if (isKernelAgentCapabilityContractError(inferredCapabilityError)) {
+      throw inferredCapabilityError;
+    }
+
     const capability = mergeKernelAgentCreationCapabilities(
       inferredCapability,
       platformCapability,
@@ -800,6 +1003,13 @@ class DefaultKernelAgentManagementService {
     } = await this.resolveCreationCapabilityContext(normalizedInstanceId);
 
     const { kernelId } = resolveRequestedKernelId(capability, request.kernelId);
+    const selectedKernelOption =
+      capability.kernelOptions.find((option) => option.kernelId === kernelId) ?? null;
+    if (!selectedKernelOption) {
+      throw new Error('Agent creation is not available for the selected kernel.');
+    }
+    validateCreateKernelAgentRequest(selectedKernelOption, request);
+
     const platformKernelOption =
       platformCapability?.kernelOptions.find((option) => option.kernelId === kernelId) ?? null;
     if (platformKernelOption?.supported) {

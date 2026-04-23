@@ -45,5 +45,6 @@
     "signedIn": "已登录",
     "profileSettings": "个人资料设置",
     "logout": "退出登录"
-  }
+  },
+  "usage": "网关用量"
 }

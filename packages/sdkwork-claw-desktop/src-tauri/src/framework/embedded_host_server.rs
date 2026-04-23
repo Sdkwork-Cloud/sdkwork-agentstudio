@@ -1,6 +1,7 @@
 use crate::framework::{
     config::AppConfig,
     paths::AppPaths,
+    ports::canonical_loopback_port_window_end,
     services::{
         local_ai_proxy::LocalAiProxyService,
         storage::StorageService,
@@ -16,7 +17,7 @@ use sdkwork_claw_host_core::{
     host_endpoints::{
         HostEndpointRecord, HostEndpointRegistration, HostEndpointRegistry, OpenClawLifecycle,
     },
-    port_allocator::{allocate_tcp_listener, PortAllocationRequest},
+    port_allocator::{allocate_tcp_listener, PortAllocationRequest, PortRange},
 };
 use sdkwork_claw_host_studio::{
     build_default_studio_public_api_provider, build_typed_studio_public_api_provider,
@@ -161,8 +162,10 @@ pub fn start_embedded_host_server(
     let bound_listener = allocate_tcp_listener(PortAllocationRequest {
         bind_host: bind_host.trim().to_string(),
         requested_port,
-        fallback_range: None,
-        allow_ephemeral_fallback: allow_dynamic_port,
+        fallback_range: allow_dynamic_port.then(|| {
+            PortRange::new(requested_port, canonical_loopback_port_window_end(requested_port))
+        }),
+        allow_ephemeral_fallback: false,
     })
     .map_err(FrameworkError::Conflict)?;
 
@@ -1391,20 +1394,24 @@ mod tests {
     }
 
     fn test_embedded_host_snapshot() -> EmbeddedHostRuntimeSnapshot {
+        let browser_base_url = format!(
+            "http://127.0.0.1:{}",
+            crate::framework::ports::DESKTOP_EMBEDDED_HOST_DEFAULT_PORT
+        );
         EmbeddedHostRuntimeSnapshot {
             mode: DESKTOP_EMBEDDED_HOST_MODE.to_string(),
             api_base_path: DESKTOP_EMBEDDED_HOST_API_BASE_PATH.to_string(),
             manage_base_path: "/claw/manage/v1".to_string(),
             internal_base_path: "/claw/internal/v1".to_string(),
-            browser_base_url: "http://127.0.0.1:18797".to_string(),
+            browser_base_url: browser_base_url.clone(),
             browser_session_token: "desktop-session-token".to_string(),
             endpoint: HostEndpointRecord {
                 endpoint_id: "claw-manage-http".to_string(),
                 bind_host: "127.0.0.1".to_string(),
-                requested_port: 18_797,
-                active_port: Some(18_797),
+                requested_port: crate::framework::ports::DESKTOP_EMBEDDED_HOST_DEFAULT_PORT,
+                active_port: Some(crate::framework::ports::DESKTOP_EMBEDDED_HOST_DEFAULT_PORT),
                 scheme: "http".to_string(),
-                base_url: Some("http://127.0.0.1:18797".to_string()),
+                base_url: Some(browser_base_url),
                 websocket_url: None,
                 loopback_only: true,
                 dynamic_port: false,
@@ -1435,8 +1442,8 @@ mod tests {
             &supervisor,
             &local_ai_proxy,
             "127.0.0.1".to_string(),
-            18_797,
-            18_797,
+            crate::framework::ports::DESKTOP_EMBEDDED_HOST_DEFAULT_PORT,
+            crate::framework::ports::DESKTOP_EMBEDDED_HOST_DEFAULT_PORT,
             false,
             None,
         )
@@ -1476,8 +1483,8 @@ mod tests {
             &supervisor,
             &local_ai_proxy,
             "127.0.0.1".to_string(),
-            18_797,
-            18_797,
+            crate::framework::ports::DESKTOP_EMBEDDED_HOST_DEFAULT_PORT,
+            crate::framework::ports::DESKTOP_EMBEDDED_HOST_DEFAULT_PORT,
             false,
             None,
         )
@@ -1506,8 +1513,8 @@ mod tests {
             &supervisor,
             &local_ai_proxy,
             "127.0.0.1".to_string(),
-            18_797,
-            18_797,
+            crate::framework::ports::DESKTOP_EMBEDDED_HOST_DEFAULT_PORT,
+            crate::framework::ports::DESKTOP_EMBEDDED_HOST_DEFAULT_PORT,
             false,
             None,
         )
@@ -1551,8 +1558,8 @@ mod tests {
             &supervisor,
             &local_ai_proxy,
             "127.0.0.1".to_string(),
-            18_797,
-            18_797,
+            crate::framework::ports::DESKTOP_EMBEDDED_HOST_DEFAULT_PORT,
+            crate::framework::ports::DESKTOP_EMBEDDED_HOST_DEFAULT_PORT,
             false,
             None,
         )

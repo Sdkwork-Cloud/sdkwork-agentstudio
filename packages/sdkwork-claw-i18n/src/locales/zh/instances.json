@@ -246,7 +246,10 @@
     },
     "values": {
       "notAvailable": "不可用",
-      "hostVersionWithVersion": "{{host}} / v{{version}}"
+      "hostVersionWithVersion": "{{host}} / v{{version}}",
+      "activeHostPlatform": "支撑当前节点清单的主机平台。",
+      "internalSessionsReported": "主机平台当前上报的内部节点会话数。",
+      "noHostPlatformId": "未上报主机平台标识。"
     },
     "controlPlane": {
       "values": {
@@ -360,59 +363,59 @@
     "confirmUninstall": "确认要卸载这个实例吗？此操作不可撤销。",
     "modules": {
       "hermes": {
-        "eyebrow": "Hermes \u5185\u6838",
-        "description": "Hermes \u8fd0\u884c\u5728\u6807\u51c6\u5316\u7684\u53d7\u652f\u6301\u5bbf\u4e3b\u73af\u5883\u4e2d\u3002\u8be5\u8be6\u60c5\u6a21\u5757\u805a\u7126\u4f20\u8f93\u5f62\u6001\u3001\u8fd0\u884c\u65f6\u6807\u51c6\u3001user-root \u5185\u6838\u72b6\u6001\uff0c\u4ee5\u53ca\u5728\u53d7\u652f\u6301\u7684 local-managed\u3001local-external\u3001WSL2 \u548c\u8fdc\u7a0b Linux \u90e8\u7f72\u4e0b\u4fdd\u6301\u7a33\u5b9a\u63a5\u5165\u6240\u9700\u7684\u8fd0\u884c\u8bc1\u636e\u3002",
+        "eyebrow": "Hermes 内核",
+        "description": "Hermes 运行在标准化的受支持宿主环境中。该详情模块聚焦传输形态、运行时标准、user-root 内核状态，以及在受支持的 local-managed、local-external、WSL2 和远程 Linux 部署下保持稳定接入所需的运行证据。",
         "metrics": {
-          "runtime": "\u8fd0\u884c\u65f6",
-          "deployment": "\u90e8\u7f72\u65b9\u5f0f",
-          "transport": "\u4f20\u8f93\u65b9\u5f0f",
-          "health": "\u5065\u5eb7\u72b6\u6001"
+          "runtime": "运行时",
+          "deployment": "部署方式",
+          "transport": "传输方式",
+          "health": "健康状态"
         },
         "runtimePolicies": {
-          "title": "\u8fd0\u884c\u65f6\u6807\u51c6",
+          "title": "运行时标准",
           "windows": {
-            "title": "Windows \u4ec5\u652f\u6301 WSL2 \u6216\u8fdc\u7a0b Linux",
-            "detail": "\u4e0d\u652f\u6301\u539f\u751f Windows \u672c\u5730 Hermes \u8fd0\u884c\u3002Windows \u4e3b\u673a\u5fc5\u987b\u901a\u8fc7 WSL2 \u6216\u8fdc\u7a0b Linux \u673a\u5668\u63a5\u5165 Hermes\u3002"
+            "title": "Windows 仅支持 WSL2 或远程 Linux",
+            "detail": "不支持原生 Windows 本地 Hermes 运行。Windows 主机必须通过 WSL2 或远程 Linux 机器接入 Hermes。"
           },
           "python": {
-            "title": "Python \u4e0e uv \u5747\u4e3a\u5916\u90e8\u4f9d\u8d56",
-            "detail": "\u684c\u9762\u5305\u7edd\u4e0d\u5185\u7f6e Python \u6216 uv\u3002\u8bca\u65ad\u3001\u5b89\u88c5\u548c\u90e8\u7f72\u6d41\u7a0b\u90fd\u5fc5\u987b\u4f9d\u8d56\u5916\u90e8\u5b89\u88c5\u7684\u8fd0\u884c\u65f6\u3002"
+            "title": "Python 与 uv 均为外部依赖",
+            "detail": "桌面包绝不内置 Python 或 uv。诊断、安装和部署流程都必须依赖外部安装的运行时。"
           },
           "node": {
-            "title": "Node.js \u4ecd\u4e3a\u5916\u90e8\u4f9d\u8d56",
-            "detail": "Node.js \u4e0d\u53c2\u4e0e\u6253\u5305\u3002Hermes \u67d0\u4e9b\u80fd\u529b\u53ef\u80fd\u4f1a\u7528\u5230 Node.js\uff0c\u4f46\u5b89\u88c5\u4e0e\u5347\u7ea7\u4ecd\u7531\u5916\u90e8\u73af\u5883\u8d1f\u8d23\u3002"
+            "title": "Node.js 仍为外部依赖",
+            "detail": "Node.js 不参与打包。Hermes 某些能力可能会用到 Node.js，但安装与升级仍由外部环境负责。"
           }
         },
         "readiness": {
-          "title": "\u5c31\u7eea\u6001\u52bf",
+          "title": "就绪态势",
           "deploymentTarget": {
-            "label": "\u90e8\u7f72\u76ee\u6807",
-            "configured": "\u8be5\u5b9e\u4f8b\u5df2\u7ecf\u5448\u73b0\u53d7\u652f\u6301\u7684 Hermes \u90e8\u7f72\u5f62\u6001\u3002Hermes \u53ef\u4ee5\u4f5c\u4e3a Linux\u3001macOS \u6216 Windows WSL2 \u4e0a\u7684 local-managed \u6216 local-external \u8fd0\u884c\u65f6\u63a5\u5165\uff0c\u4e5f\u53ef\u4ee5\u8fde\u63a5\u8fdc\u7a0b Linux \u90e8\u7f72\u3002",
-            "required": "\u8bf7\u4f7f\u7528\u53d7\u652f\u6301\u7684 Hermes \u90e8\u7f72\u5f62\u6001\uff1aLinux\u3001macOS \u6216 Windows WSL2 \u4e0a\u7684 local-managed \u6216 local-external\uff0c\u6216\u8fdc\u7a0b Linux \u90e8\u7f72\u3002\u539f\u751f Windows \u672c\u5730\u8fd0\u884c\u4ecd\u4e0d\u53d7\u652f\u6301\u3002"
+            "label": "部署目标",
+            "configured": "该实例已经呈现受支持的 Hermes 部署形态。Hermes 可以作为 Linux、macOS 或 Windows WSL2 上的 local-managed 或 local-external 运行时接入，也可以连接远程 Linux 部署。",
+            "required": "请使用受支持的 Hermes 部署形态：Linux、macOS 或 Windows WSL2 上的 local-managed 或 local-external，或远程 Linux 部署。原生 Windows 本地运行仍不受支持。"
           },
           "endpointExposure": {
-            "label": "\u8fde\u63a5\u7aef\u70b9",
-            "configured": "\u5171\u4eab\u57fa\u7840\u8be6\u60c5\u5df2\u7ecf\u66b4\u9732\u81f3\u5c11\u4e00\u4e2a Hermes \u8fde\u63a5\u7aef\u70b9\uff0c\u4fbf\u4e8e\u7ee7\u7eed\u505a\u8fd0\u7ef4\u4e0e\u63a5\u5165\u9a8c\u8bc1\u3002",
-            "required": "\u5f53\u524d\u8fd8\u6ca1\u6709\u770b\u5230\u5df2\u53d1\u5e03\u7684 Hermes \u7aef\u70b9\u3002\u5728\u8fde\u63a5\u4fe1\u606f\u660e\u786e\u4e4b\u524d\uff0c\u7aef\u70b9\u6821\u9a8c\u4ecd\u5e94\u7531 Hermes \u6a21\u5757\u8fb9\u754c\u8d1f\u8d23\u3002"
+            "label": "连接端点",
+            "configured": "共享基础详情已经暴露至少一个 Hermes 连接端点，便于继续做运维与接入验证。",
+            "required": "当前还没有看到已发布的 Hermes 端点。在连接信息明确之前，端点校验仍应由 Hermes 模块边界负责。"
           },
           "observability": {
-            "label": "\u53ef\u89c2\u6d4b\u8bc1\u636e",
-            "configured": "\u8be5\u5b9e\u4f8b\u5df2\u7ecf\u6709\u5171\u4eab\u53ef\u89c2\u6d4b\u6570\u636e\uff0c\u8fd0\u884c\u8bc1\u636e\u53ef\u4ee5\u76f4\u63a5\u5728\u8be6\u60c5\u6a21\u5757\u5185\u67e5\u770b\u3002",
-            "optional": "\u5f53\u524d\u8fd8\u6ca1\u6709\u66b4\u9732\u65e5\u5fd7\u8bc1\u636e\u3002Hermes \u4ecd\u53ef\u8fd0\u884c\uff0c\u4f46\u5728\u8865\u9f50\u53ef\u89c2\u6d4b\u6570\u636e\u4e4b\u524d\uff0c\u8bca\u65ad\u80fd\u529b\u4f1a\u53d7\u9650\u3002"
+            "label": "可观测证据",
+            "configured": "该实例已经有共享可观测数据，运行证据可以直接在详情模块内查看。",
+            "optional": "当前还没有暴露日志证据。Hermes 仍可运行，但在补齐可观测数据之前，诊断能力会受限。"
           }
         },
-        "endpointsTitle": "\u8fde\u63a5\u7aef\u70b9",
-        "emptyEndpoints": "\u5f53\u524d Hermes \u5b9e\u4f8b\u8fd8\u6ca1\u6709\u66b4\u9732\u53ef\u7528\u8fde\u63a5\u7aef\u70b9\u3002",
-        "openEndpoint": "\u6253\u5f00\u7aef\u70b9",
-        "capabilitiesTitle": "\u80fd\u529b\u6001\u52bf",
-        "notesTitle": "\u8fd0\u884c\u8bf4\u660e",
-        "emptyNotes": "\u5f53\u524d\u5b9e\u4f8b\u6682\u65e0\u989d\u5916 Hermes \u8bf4\u660e\u3002",
-        "dataAccessTitle": "\u6570\u636e\u8bbf\u95ee\u9762",
-        "artifactsTitle": "\u53d7\u7ba1\u5236\u54c1"
+        "endpointsTitle": "连接端点",
+        "emptyEndpoints": "当前 Hermes 实例还没有暴露可用连接端点。",
+        "openEndpoint": "打开端点",
+        "capabilitiesTitle": "能力态势",
+        "notesTitle": "运行说明",
+        "emptyNotes": "当前实例暂无额外 Hermes 说明。",
+        "dataAccessTitle": "数据访问面",
+        "artifactsTitle": "受管制品"
       },
       "unsupported": {
-        "eyebrow": "\u4e0d\u53d7\u652f\u6301\u7684\u5185\u6838",
-        "description": "\u5f53\u524d\u8fd8\u6ca1\u6709\u4e3a {{kernel}} \u6ce8\u518c\u8be6\u60c5\u6a21\u5757\u3002\u73b0\u5728\u8be5\u8def\u7531\u8981\u6c42\u6bcf\u4e2a\u5185\u6838\u63d0\u4f9b\u81ea\u5df1\u7684\u8be6\u60c5\u5b9e\u73b0\uff0c\u800c\u4e0d\u662f\u7ee7\u7eed\u590d\u7528 OpenClaw \u9875\u9762\u3002"
+        "eyebrow": "不受支持的内核",
+        "description": "当前还没有为 {{kernel}} 注册详情模块。现在该路由要求每个内核提供自己的详情实现，而不是继续复用 OpenClaw 页面。"
       }
     },
     "instanceWorkbench": {
@@ -515,7 +518,16 @@
           "allowList": "允许列表",
           "managedFile": "OpenClaw 配置文件",
           "none": "无",
-          "notConfigured": "未配置"
+          "notConfigured": "未配置",
+          "customSections": "自定义配置段",
+          "documentTitle": "文档状态",
+          "groupsDescription": "顶层配置键会按 Control UI 使用的同一领域模型归类，方便你在进入原始编辑之前先快速浏览文件。",
+          "groupsTitle": "配置域",
+          "parseInvalid": "草稿无效",
+          "parseReady": "就绪",
+          "rawLinesDetail": "{{count}} 行原始内容",
+          "rawStatus": "草稿有效性",
+          "sections": "配置段"
         },
         "tools": {
           "channelsTitle": "通道",
@@ -527,7 +539,9 @@
           "enabled": "已启用",
           "configured": "已配置",
           "activeProvider": "当前提供方",
-          "timeout": "超时"
+          "timeout": "超时",
+          "sectionsDescription": "openclaw.json 中面向通信的配置段会在这里集中展示，方便审查投递路由和消息表面配置。",
+          "sectionsTitle": "结构化通道配置"
         },
         "raw": {
           "title": "原始 openclaw.json",
@@ -544,11 +558,16 @@
           "lines": "行数：{{count}}",
           "characters": "字符：{{count}}",
           "invalidDraft": "The current draft is not valid JSON5",
-          "sections": "Sections: {{count}}"
+          "sections": "Sections: {{count}}",
+          "dirtyShort": "已修改"
         },
         "empty": {
           "providers": "当前挂载的 openclaw.json 中还没有定义提供方。",
-          "agents": "当前挂载的 openclaw.json 中还没有定义智能体。"
+          "agents": "当前挂载的 openclaw.json 中还没有定义智能体。",
+          "aiSections": "当前 openclaw.json 草稿中未检测到面向 AI 的顶层配置段。",
+          "channels": "附加的 openclaw.json 中未定义任何通道。",
+          "communicationSections": "当前 openclaw.json 草稿中未检测到面向通信的顶层配置段。",
+          "runtimeSections": "当前 openclaw.json 草稿中未检测到面向运行时的顶层配置段。"
         },
         "schemaEditor": {
           "hideValue": "隐藏值",
@@ -788,6 +807,32 @@
             "wizard": "Setup wizard state and history",
             "custom": "Custom top-level section detected in openclaw.json."
           }
+        },
+        "groups": {
+          "ai": "AI 与 Agent",
+          "appearance": "外观",
+          "automation": "自动化",
+          "communication": "通信",
+          "core": "核心",
+          "infrastructure": "基础设施",
+          "other": "自定义"
+        },
+        "providers": {
+          "sectionsDescription": "这些顶层配置段决定了 openclaw.json 中的模型路由、Agent、技能以及其他 AI 相关默认值。",
+          "sectionsTitle": "结构化 AI 配置"
+        },
+        "runtime": {
+          "parseStatus": "草稿有效性",
+          "sectionsDescription": "核心、自动化、基础设施、外观以及自定义顶层配置会在这里按运行时配置聚合展示。",
+          "sectionsTitle": "结构化运行时配置"
+        },
+        "sections": {
+          "entries": "{{count}} 项",
+          "kind": {
+            "array": "数组",
+            "object": "对象",
+            "scalar": "标量"
+          }
         }
       },
       "webSearch": {
@@ -982,31 +1027,31 @@
         }
       },
       "dreaming": {
-        "badge": "\u6258\u7ba1\u68a6\u5883",
-        "title": "\u68a6\u5883\u4e0e Dream Diary",
-        "description": "\u7ba1\u7406 plugins.entries.memory-core.config.dreaming\uff0c\u5e76\u67e5\u770b\u8fd0\u884c\u65f6\u662f\u5426\u5df2\u5c06 Dream Diary \u5199\u56de\u5230\u5f53\u524d\u8bb0\u5fc6\u9762\u677f\u3002",
-        "enabledDescription": "\u4e3a\u5f53\u524d\u5b9e\u4f8b\u542f\u7528\u6216\u505c\u7528 OpenClaw dreaming\u3002",
-        "note": "\u5c06\u8c03\u5ea6\u4fdd\u6301\u4e3a\u7a7a\uff0c\u5373\u53ef\u7ee7\u7eed\u4f7f\u7528 OpenClaw \u4e0a\u6e38\u9ed8\u8ba4\u7684 dreaming \u5468\u671f\u3002",
-        "diaryReader": "Dream Diary \u9605\u8bfb\u5668",
+        "badge": "托管梦境",
+        "title": "梦境与 Dream Diary",
+        "description": "管理 plugins.entries.memory-core.config.dreaming，并查看运行时是否已将 Dream Diary 写回到当前记忆面板。",
+        "enabledDescription": "为当前实例启用或停用 OpenClaw dreaming。",
+        "note": "将调度保持为空，即可继续使用 OpenClaw 上游默认的 dreaming 周期。",
+        "diaryReader": "Dream Diary 阅读器",
         "fields": {
-          "enabled": "\u542f\u7528",
-          "frequency": "\u68a6\u5883\u8c03\u5ea6"
+          "enabled": "启用",
+          "frequency": "梦境调度"
         },
         "placeholders": {
           "frequency": "0 3 * * *"
         },
         "metrics": {
-          "status": "\u72b6\u6001",
-          "frequency": "\u8c03\u5ea6",
-          "lastDreamDiary": "Dream Diary \u66f4\u65b0\u65f6\u95f4"
+          "status": "状态",
+          "frequency": "调度",
+          "lastDreamDiary": "Dream Diary 更新时间"
         },
         "values": {
-          "disabled": "\u5df2\u505c\u7528",
-          "upstreamDefault": "\u4e0a\u6e38\u9ed8\u8ba4"
+          "disabled": "已停用",
+          "upstreamDefault": "上游默认"
         },
         "toasts": {
-          "saved": "\u68a6\u5883\u914d\u7f6e\u5df2\u4fdd\u5b58\u3002",
-          "saveFailed": "\u4fdd\u5b58\u68a6\u5883\u914d\u7f6e\u5931\u8d25\u3002"
+          "saved": "梦境配置已保存。",
+          "saveFailed": "保存梦境配置失败。"
         }
       },
       "summary": {
@@ -1318,7 +1363,8 @@
           "requirementEnv": "环境变量",
           "requirementBins": "二进制",
           "requirementAnyBin": "任一二进制",
-          "requirementConfig": "配置"
+          "requirementConfig": "配置",
+          "effectiveParams": "生效参数"
         },
         "status": {
           "bound": "已绑定",
@@ -1489,8 +1535,8 @@
         "runbook": "手册",
         "conversation": "对话",
         "fact": "事实",
-        "artifact": "产物"
-        ,"dream": "\u68a6\u5883"
+        "artifact": "产物",
+        "dream": "梦境"
       },
       "memorySources": {
         "operator": "操作员",

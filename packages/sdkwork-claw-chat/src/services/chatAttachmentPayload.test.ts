@@ -567,3 +567,198 @@ await runTest(
     assert.equal(roundTrip.kernelSession?.updatedAt, 55);
   },
 );
+
+await runTest(
+  'chat attachment payloads compact duplicate message ids while persisting chat sessions',
+  () => {
+    const session = {
+      id: 'session-duplicate-write',
+      title: 'Duplicate persisted write',
+      createdAt: 10,
+      updatedAt: 35,
+      model: 'gpt-4.1',
+      transport: 'local',
+      messages: [
+        {
+          id: 'message-duplicate-1',
+          role: 'user',
+          content: 'stale user prompt',
+          timestamp: 10,
+        },
+        {
+          id: 'message-duplicate-1',
+          role: 'user',
+          content: 'latest user prompt',
+          timestamp: 20,
+        },
+        {
+          id: 'message-duplicate-2',
+          role: 'assistant',
+          content: 'final assistant reply',
+          timestamp: 35,
+        },
+      ],
+    } as any;
+
+    const record = mapChatSession(session);
+
+    assert.equal(record.messageCount, 2);
+    assert.deepEqual(
+      record.messages.map((message) => ({
+        id: message.id,
+        content: message.content,
+      })),
+      [
+        {
+          id: 'message-duplicate-1',
+          content: 'latest user prompt',
+        },
+        {
+          id: 'message-duplicate-2',
+          content: 'final assistant reply',
+        },
+      ],
+    );
+    assert.equal(record.lastMessagePreview, 'final assistant reply');
+  },
+);
+
+await runTest(
+  'chat attachment payloads repair duplicate historical message ids while hydrating persisted conversations',
+  () => {
+    const sessionRef = createKernelChatSessionRef({
+      kernelId: 'zeroclaw',
+      instanceId: 'instance-historical-dedupe',
+      sessionId: 'session-duplicate-read',
+    });
+    const record = {
+      id: 'session-duplicate-read',
+      title: 'Duplicate persisted read',
+      primaryInstanceId: 'instance-historical-dedupe',
+      participantInstanceIds: ['instance-historical-dedupe'],
+      createdAt: 10,
+      updatedAt: 30,
+      messageCount: 3,
+      lastMessagePreview: 'stale preview',
+      kernelSession: {
+        ref: sessionRef,
+        authority: createKernelChatAuthority({
+          kind: 'http',
+          durable: false,
+        }),
+        lifecycle: 'ready',
+        title: 'Duplicate persisted read',
+        createdAt: 10,
+        updatedAt: 30,
+        messageCount: 3,
+        lastMessagePreview: 'stale preview',
+        sessionKind: 'transport',
+      },
+      messages: [
+        {
+          id: 'message-history-1',
+          conversationId: 'session-duplicate-read',
+          role: 'user' as const,
+          content: 'stale hydrated prompt',
+          createdAt: 10,
+          updatedAt: 10,
+          status: 'complete' as const,
+          kernelMessage: {
+            id: 'message-history-1',
+            sessionRef,
+            role: 'user' as const,
+            status: 'complete' as const,
+            createdAt: 10,
+            updatedAt: 10,
+            text: 'stale hydrated prompt',
+            parts: [
+              {
+                kind: 'text',
+                text: 'stale hydrated prompt',
+              },
+            ],
+            nativeMetadata: {
+              seq: 1,
+            },
+          },
+        },
+        {
+          id: 'message-history-1',
+          conversationId: 'session-duplicate-read',
+          role: 'user' as const,
+          content: 'latest hydrated prompt',
+          createdAt: 10,
+          updatedAt: 18,
+          status: 'complete' as const,
+          kernelMessage: {
+            id: 'message-history-1',
+            sessionRef,
+            role: 'user' as const,
+            status: 'complete' as const,
+            createdAt: 10,
+            updatedAt: 18,
+            text: 'latest hydrated prompt',
+            parts: [
+              {
+                kind: 'text',
+                text: 'latest hydrated prompt',
+              },
+            ],
+            nativeMetadata: {
+              seq: 1,
+            },
+          },
+        },
+        {
+          id: 'message-history-2',
+          conversationId: 'session-duplicate-read',
+          role: 'assistant' as const,
+          content: 'final hydrated reply',
+          createdAt: 30,
+          updatedAt: 30,
+          status: 'complete' as const,
+          kernelMessage: {
+            id: 'message-history-2',
+            sessionRef,
+            role: 'assistant' as const,
+            status: 'complete' as const,
+            createdAt: 30,
+            updatedAt: 30,
+            text: 'final hydrated reply',
+            parts: [
+              {
+                kind: 'text',
+                text: 'final hydrated reply',
+              },
+            ],
+            nativeMetadata: {
+              seq: 2,
+            },
+          },
+        },
+      ],
+    } as any;
+
+    const roundTrip = mapStudioConversation(record);
+
+    assert.equal(roundTrip.messages.length, 2);
+    assert.deepEqual(
+      roundTrip.messages.map((message) => ({
+        id: message.id,
+        content: message.content,
+      })),
+      [
+        {
+          id: 'message-history-1',
+          content: 'latest hydrated prompt',
+        },
+        {
+          id: 'message-history-2',
+          content: 'final hydrated reply',
+        },
+      ],
+    );
+    assert.equal(roundTrip.lastMessagePreview, 'final hydrated reply');
+    assert.equal(roundTrip.updatedAt, 30);
+  },
+);

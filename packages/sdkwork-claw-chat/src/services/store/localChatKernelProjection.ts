@@ -13,9 +13,12 @@ import {
 import type { OpenClawToolCard } from '../openClawMessagePresentation.ts';
 import { mergeChatMessageSequenceIntoNativeMetadata } from '../chatMessageSequence.ts';
 import { normalizeUserVisibleChatSenderLabel } from '../chatSenderLabelPolicy.ts';
+import { resolveChatMessagePrimaryPreviewText } from '../chatMessagePreview.ts';
 import { resolveLatestChatMessageForDisplay } from '../chatMessageOrdering.ts';
+import { sanitizeChatSessionPreviewText } from '../chatSessionPreviewSanitizer.ts';
 import {
   buildKernelChatMessageParts,
+  type KernelChatProjectionNotice,
   trimOptionalString,
 } from '../kernelChatProjectionParts.ts';
 
@@ -35,6 +38,7 @@ export interface LocalChatKernelProjectionMessage {
   attachments?: StudioConversationAttachment[];
   reasoning?: string | null;
   toolCards?: OpenClawToolCard[];
+  notices?: KernelChatProjectionNotice[];
 }
 
 export interface LocalChatKernelProjectionSession {
@@ -107,13 +111,17 @@ function resolveSessionKind(sessionKind: string | null | undefined) {
 }
 
 function resolveLastMessagePreview(session: LocalChatKernelProjectionSession) {
-  const previewFromSession = trimOptionalString(session.lastMessagePreview);
+  const previewFromSession = sanitizeChatSessionPreviewText({
+    text: session.lastMessagePreview,
+    kernelId: LOCAL_CHAT_PROJECTION_KERNEL_ID,
+  });
   if (previewFromSession) {
     return previewFromSession;
   }
 
-  return trimOptionalString(
-    resolveLatestChatMessageForDisplay(session.messages)?.content.slice(0, 120),
+  return resolveChatMessagePrimaryPreviewText(
+    resolveLatestChatMessageForDisplay(session.messages),
+    120,
   );
 }
 

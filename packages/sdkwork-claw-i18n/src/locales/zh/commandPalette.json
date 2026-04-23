@@ -17,6 +17,10 @@
       "title": "前往仪表盘",
       "subtitle": "打开运营控制台"
     },
+    "usage": {
+      "title": "打开网关用量",
+      "subtitle": "查看 OpenClaw 网关会话用量、成本与详细日志"
+    },
     "apps": {
       "title": "前往应用商店",
       "subtitle": "浏览 AI 应用"

@@ -145,7 +145,7 @@ runTest('sdkwork-claw-core package exposes a browser root entry and a Node-safe 
   assert.doesNotMatch(nodeServicesSource, /\.\.\/pointsWalletService\.ts/);
 });
 
-runTest('sdkwork-claw-core owns shared account and settings wrappers for remote app sdk access', () => {
+runTest('sdkwork-claw-core owns the remote account wrapper and local desktop-friendly settings wrapper', () => {
   const pkg = readJson<{ exports?: Record<string, string> }>('packages/sdkwork-claw-core/package.json');
   const servicesIndexSource = read('packages/sdkwork-claw-core/src/services/index.ts');
   const accountServiceSource = read('packages/sdkwork-claw-core/src/services/accountService.ts');
@@ -160,7 +160,12 @@ runTest('sdkwork-claw-core owns shared account and settings wrappers for remote 
   assert.match(settingsServiceSource, /getAppSdkClientWithSession/);
   assert.match(settingsServiceSource, /unwrapAppSdkResponse/);
   assert.match(settingsServiceSource, /client\.user\.getUserProfile/);
-  assert.match(settingsServiceSource, /client\.notification\.getNotificationSettings/);
+  assert.match(settingsServiceSource, /StoragePlatformAPI/);
+  assert.match(settingsServiceSource, /storageApi\.getText/);
+  assert.match(settingsServiceSource, /storageApi\.putText/);
+  assert.doesNotMatch(settingsServiceSource, /client\.notification\.getNotificationSettings/);
+  assert.doesNotMatch(settingsServiceSource, /client\.notification\.updateNotificationSettings/);
+  assert.doesNotMatch(settingsServiceSource, /client\.notification\.updateTypeSettings/);
 });
 
 runTest('sdkwork-claw-core keeps browser-root sdk services eager while allowing node-safe commerce loading', () => {

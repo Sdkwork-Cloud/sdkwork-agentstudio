@@ -10,6 +10,7 @@ import {
   DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
   DEFAULT_NODE_VERSION,
   DEFAULT_PREPARE_CACHE_DIR,
+  installMissingBundledPluginRuntimeDeps,
   inspectCachedNodeRuntimeDir,
   inspectPreparedOpenClawRuntime,
   prepareOpenClawRuntime,
@@ -497,6 +498,7 @@ const kernelBundleSources = [
       const { preparedPackageRoot, preparedModulesDir } = resolvePreparedOpenClawPackageRoots({
         openclawVersion: expectedVersion,
       });
+      const preparedPackageInstallRoot = path.dirname(preparedModulesDir);
       const stageVersionDir = path.join(bundledRoot, 'modules', 'openclaw', version);
       const stageDir = path.join(bundledRoot, 'modules', 'openclaw', version, 'app');
 
@@ -509,17 +511,18 @@ const kernelBundleSources = [
         });
 
         if (!sourceInspection.fresh) {
-          const preparedInspection = inspectOpenClawPackageMetadata({
+          const preparedInspection = await inspectPreparedOpenClawPackageRuntime({
             packageRoot: preparedPackageRoot,
+            packageInstallRoot: preparedPackageInstallRoot,
             expectedVersion,
             expectedCommit,
-            expectedSupplementalPackages: DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
+            runtimeSupplementalPackages: DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
           });
 
-        if (preparedInspection.fresh) {
-          console.log(
-            '[bundled-components] using the prepared OpenClaw package layout as the source of truth for openclaw dev staging',
-          );
+          if (preparedInspection.fresh) {
+            console.log(
+              '[bundled-components] using the prepared OpenClaw package layout as the source of truth for openclaw dev staging',
+            );
             prepareBundledOutputRootSync(stageVersionDir, { logger: console.warn });
             fs.mkdirSync(stageDir, { recursive: true });
             copyDirectoryContents(preparedPackageRoot, stageDir, {
@@ -558,7 +561,10 @@ const kernelBundleSources = [
           }
 
           console.log(
-            `[bundled-components] refreshing openclaw dist for dev staging (${sourceInspection.issues.join(', ')})`,
+            `[bundled-components] refreshing openclaw dist for dev staging (${[
+              ...sourceInspection.issues,
+              ...preparedInspection.issues,
+            ].join(', ')})`,
           );
           buildComponentWithRetry(this, repoDir);
 
@@ -617,6 +623,19 @@ const kernelBundleSources = [
       );
 
       const installedModulesDir = resolveGlobalNodeModulesDir(prefixDir);
+      await installMissingBundledPluginRuntimeDeps({
+        packageRoot: path.join(installedModulesDir, 'openclaw'),
+        packageInstallRoot: prefixDir,
+        runtimeNpm: {
+          command: npmCmd,
+          args: [],
+        },
+        baseEnv: commandEnv,
+        cacheDir: DEFAULT_PREPARE_CACHE_DIR,
+        platform: process.platform,
+        arch: process.arch,
+        runCommandImpl: runCommand,
+      });
       if (devMode) {
         prepareBundledOutputRootSync(stageVersionDir, { logger: console.warn });
       } else {
@@ -1218,6 +1237,39 @@ export function inspectOpenClawPackageMetadata({
     fresh: issues.length === 0,
     issues,
     observed,
+  };
+}
+
+export async function inspectPreparedOpenClawPackageRuntime({
+  packageRoot,
+  packageInstallRoot = packageRoot,
+  expectedVersion = null,
+  expectedCommit = null,
+  runtimeSupplementalPackages = DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
+} = {}) {
+  const inspection = inspectOpenClawPackageMetadata({
+    packageRoot,
+    expectedVersion,
+    expectedCommit,
+    expectedSupplementalPackages: runtimeSupplementalPackages,
+  });
+  const issues = [...inspection.issues];
+
+  try {
+    await validatePreparedOpenClawPackageTree({
+      packageRoot,
+      packageInstallRoot,
+      expectedOpenClawVersion: expectedVersion,
+      runtimeSupplementalPackages,
+    });
+  } catch (error) {
+    issues.push(error instanceof Error ? error.message : String(error));
+  }
+
+  return {
+    fresh: issues.length === 0,
+    issues,
+    observed: inspection.observed,
   };
 }
 

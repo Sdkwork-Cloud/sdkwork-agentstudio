@@ -181,6 +181,7 @@ export function ChatConversationPane({
                         model={message.model}
                         timestamp={message.timestamp}
                         senderLabel={message.senderLabel}
+                        operationalEvent={message.operationalEvent}
                         isTyping={item.isTyping}
                         attachments={message.attachments}
                         notices={message.notices}

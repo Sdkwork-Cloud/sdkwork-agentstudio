@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import {
   createChatAgentDraft,
   createChatAgentDraftFromLibraryAgent,
+  formatChatAgentFallbackModels,
+  normalizeChatAgentFallbackModels,
+  toggleChatAgentFallbackModel,
 } from './chatAgentDraft.ts';
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
@@ -78,5 +81,85 @@ await runTest(
       isDefault: false,
       streamingMode: 'disabled',
     });
+  },
+);
+
+await runTest(
+  'normalizeChatAgentFallbackModels de-duplicates values, removes the primary model, and enforces authoritative model catalogs',
+  () => {
+    assert.deepEqual(
+      normalizeChatAgentFallbackModels({
+        value: [
+          'openai/gpt-5.1',
+          'anthropic/claude-sonnet-4',
+          'openai/gpt-5.1',
+          'unknown/provider-model',
+        ].join('\n'),
+        primaryModel: 'openai/gpt-5.1',
+        allowedModelValues: [
+          'openai/gpt-5.1',
+          'anthropic/claude-sonnet-4',
+          'google/gemini-2.5-pro',
+        ],
+      }),
+      ['anthropic/claude-sonnet-4'],
+    );
+  },
+);
+
+await runTest(
+  'formatChatAgentFallbackModels serializes canonical fallback model lists as newline-delimited text',
+  () => {
+    assert.equal(
+      formatChatAgentFallbackModels([
+        'anthropic/claude-sonnet-4',
+        'google/gemini-2.5-pro',
+      ]),
+      'anthropic/claude-sonnet-4\ngoogle/gemini-2.5-pro',
+    );
+  },
+);
+
+await runTest(
+  'toggleChatAgentFallbackModel adds and removes values through the shared normalization policy',
+  () => {
+    assert.equal(
+      toggleChatAgentFallbackModel({
+        value: 'anthropic/claude-sonnet-4',
+        currentValue: '',
+        primaryModel: 'openai/gpt-5.1',
+        allowedModelValues: [
+          'openai/gpt-5.1',
+          'anthropic/claude-sonnet-4',
+        ],
+      }),
+      'anthropic/claude-sonnet-4',
+    );
+
+    assert.equal(
+      toggleChatAgentFallbackModel({
+        value: 'anthropic/claude-sonnet-4',
+        currentValue: 'anthropic/claude-sonnet-4',
+        primaryModel: 'openai/gpt-5.1',
+        allowedModelValues: [
+          'openai/gpt-5.1',
+          'anthropic/claude-sonnet-4',
+        ],
+      }),
+      '',
+    );
+
+    assert.equal(
+      toggleChatAgentFallbackModel({
+        value: 'openai/gpt-5.1',
+        currentValue: 'anthropic/claude-sonnet-4',
+        primaryModel: 'openai/gpt-5.1',
+        allowedModelValues: [
+          'openai/gpt-5.1',
+          'anthropic/claude-sonnet-4',
+        ],
+      }),
+      'anthropic/claude-sonnet-4',
+    );
   },
 );
