@@ -37,6 +37,5 @@ runTest('V5 contract includes auth and extended surface routes', () => {
   assert.ok(baseline.routes.includes('/register'));
   assert.ok(baseline.routes.includes('/forgot-password'));
   assert.ok(baseline.routes.includes('/claw-upload'));
-  assert.ok(baseline.routes.includes('/codebox'));
   assert.equal(baseline.routes.includes('/api-router'), false);
 });

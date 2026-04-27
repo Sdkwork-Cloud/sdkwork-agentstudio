@@ -333,7 +333,7 @@ mod tests {
 
     #[test]
     fn windows_path_registration_prioritizes_embedded_openclaw_bin_directory() {
-        let user_bin_dir = PathBuf::from(r"C:\Users\admin\AppData\Local\Claw Studio\bin");
+        let user_bin_dir = PathBuf::from(r"C:\Users\admin\.sdkwork\crawstudio\bin");
         let current = format!(
             r"C:\Program Files\OpenClaw\bin;{};C:\Windows\System32",
             user_bin_dir.display()

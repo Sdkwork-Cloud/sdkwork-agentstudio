@@ -34,7 +34,7 @@ function createPreview(
       stateDir: 'C:/Users/admin/.openclaw',
       workspaceDir: 'C:/Users/admin/.openclaw/workspace',
       configFile: 'C:/Users/admin/.openclaw/openclaw.json',
-      gatewayPort: 18789,
+      gatewayPort: 21280,
     },
     components: [
       {

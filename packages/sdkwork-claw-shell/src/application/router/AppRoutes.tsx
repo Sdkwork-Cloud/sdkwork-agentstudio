@@ -1,5 +1,4 @@
 import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import type { CreateKernelAgentResult } from '@sdkwork/claw-core';
@@ -142,14 +141,6 @@ function RouteFallback() {
   );
 }
 
-function ComingSoonRoute({ message }: { message: string }) {
-  return (
-    <PageWrapper>
-      <div className="p-8 text-center text-zinc-500">{message}</div>
-    </PageWrapper>
-  );
-}
-
 type InstanceDetailAgentMarketRequest = {
   instanceId: string | null;
   onInstalled?: (
@@ -159,7 +150,6 @@ type InstanceDetailAgentMarketRequest = {
 
 export function AppRoutes() {
   const location = useLocation();
-  const { t } = useTranslation();
   const [instanceDetailAgentMarketRequest, setInstanceDetailAgentMarketRequest] =
     useState<InstanceDetailAgentMarketRequest | null>(null);
 
@@ -413,10 +403,6 @@ export function AppRoutes() {
               </Suspense>
             </PageWrapper>
           }
-        />
-        <Route
-          path="/codebox"
-          element={<ComingSoonRoute message={t('routes.codeboxComingSoon')} />}
         />
         </Routes>
       </AnimatePresence>

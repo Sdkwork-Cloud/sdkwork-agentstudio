@@ -75,6 +75,7 @@ struct LocalAiProxyRuntime {
     lifecycle: LocalAiProxyLifecycle,
     health: Option<LocalAiProxyServiceHealth>,
     snapshot: Option<LocalAiProxySnapshot>,
+    running_snapshot: Option<LocalAiProxySnapshot>,
     last_error: Option<String>,
     handle: Option<LocalApiProxyServerHandle>,
     observability: Arc<Mutex<observability_store::LocalAiProxyObservabilityStore>>,
@@ -87,6 +88,7 @@ impl Default for LocalAiProxyRuntime {
             lifecycle: LocalAiProxyLifecycle::Stopped,
             health: None,
             snapshot: None,
+            running_snapshot: None,
             last_error: None,
             handle: None,
             observability: Arc::new(Mutex::new(
@@ -138,7 +140,6 @@ impl LocalAiProxyService {
         paths: &AppPaths,
         snapshot: LocalAiProxySnapshot,
     ) -> Result<LocalAiProxyServiceHealth> {
-        let _ = self.stop();
         let failed_snapshot = snapshot.clone();
         let start_result = (|| -> Result<LocalAiProxyServiceHealth> {
             let observability_repo = self.ensure_observability_repo(paths)?;
@@ -159,6 +160,15 @@ impl LocalAiProxyService {
                 let mut store = observability_store::lock_observability(&observability)?;
                 health::reconcile_observability_store(&mut store, &snapshot);
             }
+            if let Some(health) = self.running_health_for_unchanged_snapshot(
+                paths,
+                &snapshot,
+                &proxy_config.public_base_host,
+            )? {
+                return Ok(health);
+            }
+
+            let _ = self.stop();
             let state = LocalAiProxyAppState {
                 client: reqwest::Client::new(),
                 snapshot: Arc::new(Mutex::new(snapshot.clone())),
@@ -189,7 +199,8 @@ impl LocalAiProxyService {
             let mut runtime = self.lock_runtime()?;
             runtime.lifecycle = LocalAiProxyLifecycle::Running;
             runtime.health = Some(health.clone());
-            runtime.snapshot = Some(snapshot);
+            runtime.snapshot = Some(snapshot.clone());
+            runtime.running_snapshot = Some(snapshot);
             runtime.last_error = None;
             runtime.handle = Some(server.handle);
 
@@ -208,6 +219,7 @@ impl LocalAiProxyService {
             let mut runtime = self.lock_runtime()?;
             runtime.lifecycle = LocalAiProxyLifecycle::Stopped;
             runtime.health = None;
+            runtime.running_snapshot = None;
             runtime.handle.take()
         };
 
@@ -339,9 +351,34 @@ impl LocalAiProxyService {
         runtime.lifecycle = LocalAiProxyLifecycle::Failed;
         runtime.health = None;
         runtime.snapshot = snapshot;
+        runtime.running_snapshot = None;
         runtime.last_error = Some(message.trim().to_string());
         runtime.handle = None;
         Ok(())
+    }
+
+    fn running_health_for_unchanged_snapshot(
+        &self,
+        paths: &AppPaths,
+        snapshot: &LocalAiProxySnapshot,
+        public_base_host: &str,
+    ) -> Result<Option<LocalAiProxyServiceHealth>> {
+        let mut runtime = self.lock_runtime()?;
+        if runtime.lifecycle != LocalAiProxyLifecycle::Running
+            || runtime.handle.is_none()
+            || runtime.running_snapshot.as_ref() != Some(snapshot)
+        {
+            return Ok(None);
+        }
+
+        let Some(existing_health) = runtime.health.as_ref() else {
+            return Ok(None);
+        };
+        let health =
+            health::build_health(snapshot, existing_health.active_port, public_base_host, paths);
+        runtime.health = Some(health.clone());
+        runtime.last_error = None;
+        Ok(Some(health))
     }
 
     fn ensure_observability_repo(
@@ -3305,6 +3342,140 @@ mod tests {
     }
 
     #[test]
+    fn local_ai_proxy_start_reuses_running_server_when_snapshot_is_unchanged() {
+        let busy_listener = std::net::TcpListener::bind(("127.0.0.1", 0)).expect("busy listener");
+        let busy_port = busy_listener
+            .local_addr()
+            .expect("busy listener addr")
+            .port();
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let service = LocalAiProxyService::new();
+        let snapshot = LocalAiProxySnapshot {
+            requested_port: busy_port,
+            ..sample_projection_snapshot()
+        };
+
+        let first_health = service
+            .start(&paths, snapshot.clone())
+            .expect("start local ai proxy on fallback port");
+        assert_ne!(first_health.active_port, busy_port);
+
+        drop(busy_listener);
+        let second_health = service
+            .start(&paths, snapshot)
+            .expect("re-ensure local ai proxy without restart");
+
+        assert_eq!(second_health.active_port, first_health.active_port);
+        assert_eq!(second_health.base_url, first_health.base_url);
+
+        service.stop().expect("stop local ai proxy");
+    }
+
+    #[test]
+    fn local_ai_proxy_start_restarts_after_ensure_snapshot_changes_running_routes() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let service = LocalAiProxyService::new();
+        let storage = StorageService::new();
+        let token = "sk-local-ai-proxy-test";
+        fs::write(
+            &paths.local_ai_proxy_config_file,
+            format!(
+                r#"{{
+  "schemaVersion": 1,
+  "bindHost": "127.0.0.1",
+  "publicBaseHost": "{}",
+  "requestedPort": {},
+  "clientApiKey": "{token}"
+}}"#,
+                expected_test_public_host(),
+                LOCAL_AI_PROXY_DEFAULT_PORT,
+            ),
+        )
+        .expect("seed local ai proxy config");
+        let mut config = AppConfig::default();
+        config.storage.active_profile_id = "default-sqlite".to_string();
+        config.storage.profiles = vec![StorageProfileConfig {
+            id: "default-sqlite".to_string(),
+            label: "SQLite".to_string(),
+            provider: StorageProviderKind::Sqlite,
+            namespace: "claw-studio".to_string(),
+            path: Some("profiles/default.db".to_string()),
+            connection: None,
+            database: None,
+            endpoint: None,
+            read_only: false,
+        }];
+        let old_snapshot = LocalAiProxySnapshot {
+            schema_version: 1,
+            bind_host: "127.0.0.1".to_string(),
+            requested_port: 0,
+            auth_token: token.to_string(),
+            default_route_id: "route-old".to_string(),
+            routes: vec![local_ai_proxy_test_route("route-old", "old-model")],
+        };
+
+        let old_health = service
+            .start(&paths, old_snapshot)
+            .expect("start local ai proxy with old route");
+        let old_models = request_json(
+            "GET",
+            &format!("{}/models", old_health.base_url),
+            Some(token),
+            None,
+        );
+        assert_eq!(old_models["data"][0]["id"], "old-model");
+
+        storage
+            .put_text(
+                &paths,
+                &config,
+                StoragePutTextRequest {
+                    profile_id: Some("default-sqlite".to_string()),
+                    namespace: Some(LOCAL_AI_PROXY_PROVIDER_CENTER_NAMESPACE.to_string()),
+                    key: "route-new".to_string(),
+                    value: r#"{
+  "id": "route-new",
+  "name": "New Route",
+  "enabled": true,
+  "isDefault": true,
+  "managedBy": "user",
+  "clientProtocol": "openai-compatible",
+  "upstreamProtocol": "openai-compatible",
+  "providerId": "openai",
+  "upstreamBaseUrl": "https://api.openai.com/v1",
+  "apiKey": "sk-openai",
+  "defaultModelId": "new-model",
+  "models": [
+    { "id": "new-model", "name": "New Model" }
+  ],
+  "exposeTo": ["openclaw"]
+}"#
+                    .to_string(),
+                },
+            )
+            .expect("seed updated provider center route");
+
+        let new_snapshot = service
+            .ensure_snapshot(&paths, &config, &storage)
+            .expect("ensure updated local ai proxy snapshot");
+        let new_health = service
+            .start(&paths, new_snapshot)
+            .expect("restart local ai proxy for changed route snapshot");
+        let new_models = request_json(
+            "GET",
+            &format!("{}/models", new_health.base_url),
+            Some(token),
+            None,
+        );
+
+        assert_eq!(new_models["data"][0]["id"], "new-model");
+
+        service.stop().expect("stop local ai proxy");
+    }
+
+    #[test]
     fn project_managed_openclaw_provider_enables_streaming_for_translated_protocols_when_proxy_can_translate(
     ) {
         let root = tempfile::tempdir().expect("temp dir");
@@ -3649,6 +3820,31 @@ mod tests {
         }
     }
 
+    fn local_ai_proxy_test_route(route_id: &str, model_id: &str) -> LocalAiProxyRouteSnapshot {
+        LocalAiProxyRouteSnapshot {
+            id: route_id.to_string(),
+            name: format!("Test Route {route_id}"),
+            enabled: true,
+            is_default: true,
+            managed_by: "user".to_string(),
+            client_protocol: "openai-compatible".to_string(),
+            upstream_protocol: "openai-compatible".to_string(),
+            provider_id: "openai".to_string(),
+            upstream_base_url: "https://api.openai.com/v1".to_string(),
+            api_key: "sk-openai".to_string(),
+            default_model_id: model_id.to_string(),
+            reasoning_model_id: None,
+            embedding_model_id: None,
+            models: vec![LocalAiProxyModelSnapshot {
+                id: model_id.to_string(),
+                name: model_id.to_string(),
+            }],
+            notes: None,
+            expose_to: vec!["openclaw".to_string()],
+            runtime_config: Default::default(),
+        }
+    }
+
     fn sample_projection_health() -> super::LocalAiProxyServiceHealth {
         super::LocalAiProxyServiceHealth {
             base_url: expected_test_public_v1_base_url(LOCAL_AI_PROXY_DEFAULT_PORT),
@@ -3687,12 +3883,7 @@ mod tests {
     fn openclaw_config_file_path(paths: &crate::framework::paths::AppPaths) -> std::path::PathBuf {
         crate::framework::services::kernel_runtime_authority::KernelRuntimeAuthorityService::new()
             .active_config_file_path("openclaw", paths)
-            .unwrap_or_else(|_| {
-                paths
-                    .kernel_paths("openclaw")
-                    .map(|kernel| kernel.config_file)
-                    .unwrap_or_else(|_| paths.openclaw_config_file.clone())
-            })
+            .expect("canonical openclaw config path")
     }
 
     fn read_json(path: &std::path::Path) -> Value {

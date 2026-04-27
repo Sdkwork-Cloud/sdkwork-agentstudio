@@ -52,6 +52,7 @@ export interface ClawHubService {
 }
 
 const SKILL_PAGE_SIZE = 100;
+const MAX_SKILL_PAGES = 25;
 
 function getDefaultClient(): ClawHubClient {
   return getAppSdkClientWithSession();
@@ -240,9 +241,9 @@ async function listAllSkillPages(
   params: ClawHubSkillListParams = {},
 ): Promise<SkillVO[]> {
   const results: SkillVO[] = [];
-  let pageNum = 1;
+  let reachedTerminalPage = false;
 
-  while (true) {
+  for (let pageNum = 1; pageNum <= MAX_SKILL_PAGES; pageNum += 1) {
     const page = unwrapAppSdkResponse<PageSkillVO>(
       await client.skill.list(withDefinedQuery({
         pageNum,
@@ -258,22 +259,29 @@ async function listAllSkillPages(
     results.push(...content);
 
     if (page.last === true || content.length === 0) {
+      reachedTerminalPage = true;
       break;
     }
 
     const totalPages = toNumber(page.totalPages);
     if (totalPages > 0 && pageNum >= totalPages) {
+      reachedTerminalPage = true;
       break;
     }
 
     if (totalPages <= 1 && content.length < SKILL_PAGE_SIZE) {
+      reachedTerminalPage = true;
       break;
     }
-
-    pageNum += 1;
   }
 
-  return results;
+  if (reachedTerminalPage) {
+    return results;
+  }
+
+  throw new Error(
+    `ClawHub skills pagination exceeded ${MAX_SKILL_PAGES} pages without reaching a terminal page.`,
+  );
 }
 
 export function createClawHubService(

@@ -1285,11 +1285,17 @@ class OpenClawConfigService {
     agent: OpenClawAgentInput;
   }) {
     const root = await readConfigRoot(input.configFile);
-    saveAgentConfig(root, input.agent);
+    const resolvedPaths = buildResolvedAgentPaths(root, input.configFile, input.agent.id);
+    saveAgentConfig(root, {
+      ...input.agent,
+      id: resolvedPaths.id,
+      workspace: resolvedPaths.workspace,
+      agentDir: resolvedPaths.agentDir,
+    });
     await writeConfigRoot(input.configFile, root);
 
     return buildAgentSnapshots(root, input.configFile).find(
-      (agent) => agent.id === normalizeAgentId(input.agent.id),
+      (agent) => agent.id === resolvedPaths.id,
     ) || null;
   }
 

@@ -416,6 +416,317 @@ await runTest(
 );
 
 await runTest(
+  'chatStore deleteSession removes only the explicit direct-scope session when another instance reuses the same session id',
+  async () => {
+    const originalBridge = getPlatformBridge();
+    const deletedConversationIds: string[] = [];
+    resetChatStore();
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async deleteConversation(sessionId) {
+          deletedConversationIds.push(sessionId);
+        },
+      },
+    });
+
+    try {
+      chatStore.setState((state) => ({
+        ...state,
+        sessions: [
+          {
+            id: 'shared-session',
+            title: 'Direct shared session',
+            createdAt: 1,
+            updatedAt: 20,
+            messages: [],
+            model: 'direct-model',
+            transport: 'local',
+          },
+          {
+            id: 'shared-session',
+            title: 'Instance shared session',
+            createdAt: 1,
+            updatedAt: 10,
+            messages: [
+              {
+                id: 'instance-message',
+                role: 'assistant',
+                content: 'instance reply should stay',
+                timestamp: 10,
+              },
+            ],
+            model: 'instance-model',
+            instanceId: 'instance-a',
+            transport: 'kernelAdapter',
+          },
+        ],
+        activeSessionIdByInstance: {
+          __direct__: 'shared-session',
+          'instance-a': 'shared-session',
+        },
+      }));
+
+      await chatStore.getState().deleteSession('shared-session', null);
+      await flushAsyncTasks();
+
+      const state = chatStore.getState();
+
+      assert.deepEqual(
+        state.sessions.map((session) => ({
+          id: session.id,
+          instanceId: session.instanceId ?? null,
+          messageCount: session.messages.length,
+        })),
+        [
+          {
+            id: 'shared-session',
+            instanceId: 'instance-a',
+            messageCount: 1,
+          },
+        ],
+      );
+      assert.equal(state.activeSessionIdByInstance.__direct__, null);
+      assert.equal(state.activeSessionIdByInstance['instance-a'], 'shared-session');
+      assert.deepEqual(deletedConversationIds, ['shared-session']);
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore clearSession clears only the explicit direct-scope message list when another instance reuses the same session id',
+  async () => {
+    const originalBridge = getPlatformBridge();
+    const savedConversationIds: string[] = [];
+    resetChatStore();
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async putConversation(record) {
+          savedConversationIds.push(record.id);
+          return record;
+        },
+      },
+    });
+
+    try {
+      chatStore.setState((state) => ({
+        ...state,
+        sessions: [
+          {
+            id: 'shared-session',
+            title: 'Direct shared session',
+            createdAt: 1,
+            updatedAt: 20,
+            messages: [
+              {
+                id: 'direct-message',
+                role: 'user',
+                content: 'direct prompt to clear',
+                timestamp: 20,
+              },
+            ],
+            model: 'direct-model',
+            transport: 'local',
+          },
+          {
+            id: 'shared-session',
+            title: 'Instance shared session',
+            createdAt: 1,
+            updatedAt: 10,
+            messages: [
+              {
+                id: 'instance-message',
+                role: 'assistant',
+                content: 'instance reply should stay',
+                timestamp: 10,
+              },
+            ],
+            model: 'instance-model',
+            instanceId: 'instance-a',
+            transport: 'kernelAdapter',
+          },
+        ],
+        activeSessionIdByInstance: {
+          __direct__: 'shared-session',
+          'instance-a': 'shared-session',
+        },
+      }));
+
+      await chatStore.getState().clearSession('shared-session', null);
+      await flushAsyncTasks();
+
+      const directSession = chatStore
+        .getState()
+        .sessions.find((session) => session.id === 'shared-session' && !session.instanceId);
+      const instanceSession = chatStore
+        .getState()
+        .sessions.find((session) => session.id === 'shared-session' && session.instanceId === 'instance-a');
+
+      assert.equal(directSession?.messages.length, 0);
+      assert.equal(directSession?.lastMessagePreview, undefined);
+      assert.deepEqual(
+        instanceSession?.messages.map((message) => message.content),
+        ['instance reply should stay'],
+      );
+      assert.deepEqual(savedConversationIds, ['shared-session']);
+    } finally {
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore updateMessage leaves session ordering and persistence untouched when the target message is missing',
+  async () => {
+    const originalBridge = getPlatformBridge();
+    const savedConversationIds: string[] = [];
+    const originalNow = Date.now;
+    resetChatStore();
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async putConversation(record) {
+          savedConversationIds.push(record.id);
+          return record;
+        },
+      },
+    });
+
+    try {
+      Date.now = () => 500;
+      chatStore.setState((state) => ({
+        ...state,
+        sessions: [
+          {
+            id: 'direct-session',
+            title: 'Direct session',
+            createdAt: 1,
+            updatedAt: 20,
+            messages: [
+              {
+                id: 'existing-message',
+                role: 'assistant',
+                content: 'existing reply',
+                timestamp: 20,
+              },
+            ],
+            model: 'direct-model',
+            transport: 'local',
+          },
+        ],
+      }));
+
+      chatStore.getState().updateMessage(
+        'direct-session',
+        'missing-message',
+        'must not be applied',
+        null,
+      );
+      await flushAsyncTasks();
+
+      const session = chatStore
+        .getState()
+        .sessions.find((item) => item.id === 'direct-session');
+
+      assert.equal(session?.updatedAt, 20);
+      assert.deepEqual(
+        session?.messages.map((message) => ({
+          id: message.id,
+          content: message.content,
+          timestamp: message.timestamp,
+        })),
+        [
+          {
+            id: 'existing-message',
+            content: 'existing reply',
+            timestamp: 20,
+          },
+        ],
+      );
+      assert.deepEqual(savedConversationIds, []);
+    } finally {
+      Date.now = originalNow;
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'chatStore updateMessage can apply streaming content without writing every intermediate chunk to persistence',
+  async () => {
+    const originalBridge = getPlatformBridge();
+    const savedConversationIds: string[] = [];
+    const originalNow = Date.now;
+    resetChatStore();
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async putConversation(record) {
+          savedConversationIds.push(record.id);
+          return record;
+        },
+      },
+    });
+
+    try {
+      Date.now = () => 700;
+      chatStore.setState((state) => ({
+        ...state,
+        sessions: [
+          {
+            id: 'streaming-session',
+            title: 'Streaming session',
+            createdAt: 1,
+            updatedAt: 20,
+            messages: [
+              {
+                id: 'assistant-streaming-message',
+                role: 'assistant',
+                content: '',
+                timestamp: 20,
+              },
+            ],
+            model: 'direct-model',
+            transport: 'local',
+          },
+        ],
+      }));
+
+      chatStore.getState().updateMessage(
+        'streaming-session',
+        'assistant-streaming-message',
+        'partial streamed reply',
+        null,
+        { persist: false },
+      );
+      await flushAsyncTasks();
+
+      const session = chatStore
+        .getState()
+        .sessions.find((item) => item.id === 'streaming-session');
+
+      assert.equal(session?.messages[0]?.content, 'partial streamed reply');
+      assert.equal(session?.updatedAt, 700);
+      assert.deepEqual(savedConversationIds, []);
+    } finally {
+      Date.now = originalNow;
+      resetChatStore();
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
   'chatStore hydrateInstance for the direct scope ignores built-in OpenClaw gateway mirror records that share the same storage namespace',
   async () => {
     const originalBridge = getPlatformBridge();

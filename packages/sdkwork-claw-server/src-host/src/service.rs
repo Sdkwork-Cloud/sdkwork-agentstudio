@@ -14,6 +14,8 @@ use crate::{cli::ClawServerServicePlatform, config::ResolvedServerRuntimeConfig}
 const LINUX_SERVICE_NAME: &str = "claw-server";
 const MACOS_SERVICE_NAME: &str = "ai.sdkwork.claw.server";
 const WINDOWS_SERVICE_NAME: &str = "ClawServer";
+#[cfg(windows)]
+const WINDOWS_CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ServerServiceManifestProjectionRequest {
@@ -242,10 +244,7 @@ impl ServerServiceRuntime for OsServerServiceRuntime {
         process.stdout(Stdio::piped());
         process.stderr(Stdio::piped());
         #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            process.creation_flags(0x0800_0000);
-        }
+        configure_hidden_service_command(&mut process);
         let output = process.output().map_err(|error| {
             format!(
                 "failed to run service command {}: {error}",
@@ -259,6 +258,18 @@ impl ServerServiceRuntime for OsServerServiceRuntime {
             stderr: String::from_utf8_lossy(&output.stderr).to_string(),
         })
     }
+}
+
+#[cfg(windows)]
+fn configure_hidden_service_command(process: &mut Command) {
+    use std::os::windows::process::CommandExt;
+
+    process.creation_flags(windows_hidden_service_command_creation_flags());
+}
+
+#[cfg(windows)]
+fn windows_hidden_service_command_creation_flags() -> u32 {
+    WINDOWS_CREATE_NO_WINDOW
 }
 
 impl ServerServiceControlPlane for OsServerServiceControlPlane {
@@ -978,6 +989,15 @@ mod tests {
         assert!(
             payload.get("configPath").is_none(),
             "legacy configPath should not be serialized",
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_service_commands_use_hidden_child_process_policy() {
+        assert_eq!(
+            super::windows_hidden_service_command_creation_flags(),
+            super::WINDOWS_CREATE_NO_WINDOW,
         );
     }
 

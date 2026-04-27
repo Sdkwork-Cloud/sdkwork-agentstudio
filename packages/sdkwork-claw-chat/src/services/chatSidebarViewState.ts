@@ -54,7 +54,6 @@ export function resolveChatSidebarViewState<TSession extends ChatAgentSessionLik
   agentOptions: ChatSidebarAgentOption[];
   historyViewMode: ChatSidebarHistoryViewMode;
   fallbackMainAgentName: string;
-  agentRailEmptyPreviewLabel: string;
   previewLabels: ChatSessionListPreviewLabels;
   relativeTimeLabels: ChatSessionListRelativeTimeLabels;
   sessionPreferencesBySessionKey?: Record<
@@ -96,11 +95,6 @@ export function resolveChatSidebarViewState<TSession extends ChatAgentSessionLik
     sessionScopeMode: params.sessionScopeMode,
     selectedAgentId: effectiveSelectedAgentId,
     primaryAgentId: params.primaryAgentId,
-    previewLabels: params.previewLabels,
-    relativeTimeLabels: params.relativeTimeLabels,
-    locale: params.locale,
-    timeZone: params.timeZone,
-    emptyPreviewLabel: params.agentRailEmptyPreviewLabel,
   });
   const currentAgentHistory = resolveChatSidebarHistoryPresentation({
     sessions: currentAgentHistorySessions,
@@ -120,8 +114,8 @@ export function resolveChatSidebarViewState<TSession extends ChatAgentSessionLik
   const allSessionsHistory = resolveChatSidebarHistoryPresentation({
     sessions: instanceSessions,
     selectedSessionId: params.activeSessionId,
-    sessionScopeMode: params.sessionScopeMode,
-    sessionScopeAgentId: params.sessionScopeAgentId,
+    sessionScopeMode: 'all',
+    sessionScopeAgentId: null,
     agentOptions: params.agentOptions,
     sessionPreferencesBySessionKey: params.sessionPreferencesBySessionKey,
     fallbackMainAgentName: params.fallbackMainAgentName,

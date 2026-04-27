@@ -92,7 +92,7 @@ type ChatSidebarRenderProps = {
   className?: string;
   sessions: ChatSession[];
   activeSessionId: string | null;
-  onDeleteSession?: (sessionId: string, instanceId?: string) => Promise<void> | void;
+  onDeleteSession?: (sessionId: string, instanceId?: string | null) => Promise<void> | void;
   activeInstanceId?: string | null;
   onSessionSelect?: (
     selection?: ChatSidebarSessionSelection,

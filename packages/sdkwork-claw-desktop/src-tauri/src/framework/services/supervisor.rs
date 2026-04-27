@@ -4,18 +4,17 @@ use crate::framework::services::openclaw_runtime::{
     ActivatedOpenClawRuntime, OpenClawRuntimeService,
 };
 use crate::framework::{
+    child_process::{configure_hidden_child_process, configure_managed_child_process},
     kernel::{DesktopSupervisorInfo, DesktopSupervisorServiceInfo},
     paths::AppPaths,
     services::kernel_runtime_authority::KernelRuntimeAuthorityService,
     FrameworkError, Result,
 };
-use sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_config_file_path;
-#[cfg(unix)]
-use std::io;
-#[cfg(unix)]
-use std::os::unix::process::CommandExt;
 #[cfg(windows)]
-use std::os::windows::process::CommandExt;
+const CREATE_NEW_PROCESS_GROUP: u32 =
+    crate::framework::child_process::WINDOWS_CREATE_NEW_PROCESS_GROUP;
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = crate::framework::child_process::WINDOWS_CREATE_NO_WINDOW;
 use std::{
     collections::{BTreeMap, HashMap},
     env,
@@ -52,15 +51,10 @@ const DEFAULT_OPENCLAW_GATEWAY_HTTP_CONNECT_TIMEOUT_MS: u64 = 200;
 const DEFAULT_OPENCLAW_GATEWAY_START_HTTP_READY_IO_TIMEOUT_MS: u64 = 4_000;
 const DEFAULT_OPENCLAW_GATEWAY_START_HTTP_INVOKE_IO_TIMEOUT_MS: u64 = 8_000;
 const DEFAULT_OPENCLAW_GATEWAY_START_HEALTH_PROBE_TIMEOUT_MS: u64 = 5_000;
-const DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HTTP_IO_TIMEOUT_MS: u64 = 5_000;
-const DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HEALTH_PROBE_TIMEOUT_MS: u64 = 3_000;
+const DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HTTP_IO_TIMEOUT_MS: u64 = 1_000;
+const DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HEALTH_PROBE_TIMEOUT_MS: u64 = 1_000;
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_LIVE_PATH: &str = "/healthz";
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_READY_PATH: &str = "/readyz";
-#[cfg(windows)]
-const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-#[cfg(windows)]
-const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
-
 pub const SERVICE_ID_OPENCLAW_GATEWAY: &str = "openclaw_gateway";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -181,6 +175,7 @@ struct ManagedChildProcessHandle {
 enum GatewayProbeStatus {
     Ready,
     Pending(String),
+    HttpStatus { code: u16, detail: String },
 }
 
 impl GatewayProbeStatus {
@@ -188,10 +183,19 @@ impl GatewayProbeStatus {
         matches!(self, Self::Ready)
     }
 
+    fn is_http_status(&self) -> bool {
+        matches!(self, Self::HttpStatus { .. })
+    }
+
+    fn is_http_not_found(&self) -> bool {
+        matches!(self, Self::HttpStatus { code: 404, .. })
+    }
+
     fn detail(self) -> String {
         match self {
             Self::Ready => "ready".to_string(),
             Self::Pending(detail) => detail,
+            Self::HttpStatus { detail, .. } => detail,
         }
     }
 }
@@ -882,25 +886,12 @@ fn prepend_path_env(user_bin_dir: &std::path::Path) -> String {
 }
 
 fn configure_command_for_managed_process(command: &mut Command) {
-    #[cfg(windows)]
-    {
-        command.creation_flags(managed_process_creation_flags());
-    }
-
-    #[cfg(unix)]
-    unsafe {
-        command.pre_exec(|| {
-            if libc::setsid() == -1 {
-                return Err(io::Error::last_os_error());
-            }
-            Ok(())
-        });
-    }
+    configure_managed_child_process(command);
 }
 
 #[cfg(windows)]
 fn managed_process_creation_flags() -> u32 {
-    CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW
+    crate::framework::child_process::managed_child_process_creation_flags()
 }
 
 fn terminate_managed_process(child: &mut Child, timeout_ms: u64) -> Result<Option<i32>> {
@@ -993,6 +984,9 @@ fn probe_gateway_ready(
     if http_ready_probe.is_ready() {
         return http_ready_probe;
     }
+    if is_gateway_readiness_terminal_http_status(&http_ready_probe) {
+        return http_ready_probe;
+    }
 
     let invoke_probe = probe_gateway_invoke_ready(
         runtime,
@@ -1010,6 +1004,14 @@ fn probe_gateway_ready(
         ));
     }
 
+    let http_live_probe = probe_gateway_http_live(
+        runtime,
+        DEFAULT_OPENCLAW_GATEWAY_START_HTTP_READY_IO_TIMEOUT_MS,
+    );
+    if http_live_probe.is_ready() {
+        return http_live_probe;
+    }
+
     let health_probe = probe_gateway_cli_health_ready(
         runtime,
         paths,
@@ -1020,11 +1022,22 @@ fn probe_gateway_ready(
     }
 
     GatewayProbeStatus::Pending(format!(
-        "{}; {}; {}",
+        "{}; {}; {}; {}",
         http_ready_probe.detail(),
         invoke_probe.detail(),
+        http_live_probe.detail(),
         health_probe.detail()
     ))
+}
+
+fn is_gateway_readiness_terminal_http_status(status: &GatewayProbeStatus) -> bool {
+    matches!(
+        status,
+        GatewayProbeStatus::HttpStatus {
+            code: 401 | 403,
+            ..
+        }
+    )
 }
 
 fn probe_gateway_http_ready(
@@ -1055,18 +1068,14 @@ fn probe_running_gateway_health(
     runtime: &ActivatedOpenClawRuntime,
     paths: Option<&AppPaths>,
 ) -> GatewayProbeStatus {
-    let live_probe = probe_gateway_http_live(
-        runtime,
-        DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HTTP_IO_TIMEOUT_MS,
-    );
+    let live_probe =
+        probe_gateway_http_live(runtime, DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HTTP_IO_TIMEOUT_MS);
     if live_probe.is_ready() {
         return live_probe;
     }
 
-    let ready_probe = probe_gateway_http_ready(
-        runtime,
-        DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HTTP_IO_TIMEOUT_MS,
-    );
+    let ready_probe =
+        probe_gateway_http_ready(runtime, DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HTTP_IO_TIMEOUT_MS);
     if ready_probe.is_ready() {
         return ready_probe;
     }
@@ -1164,7 +1173,15 @@ fn probe_gateway_http_status(
         return GatewayProbeStatus::Ready;
     }
 
-    GatewayProbeStatus::Pending(format!("{label} returned {}", status_line))
+    let code = parse_http_status_code(status_line.as_str()).unwrap_or_default();
+    GatewayProbeStatus::HttpStatus {
+        code,
+        detail: format!("{label} returned {}", status_line),
+    }
+}
+
+fn parse_http_status_code(status_line: &str) -> Option<u16> {
+    status_line.split_whitespace().nth(1)?.parse::<u16>().ok()
 }
 
 fn probe_gateway_invoke_ready(
@@ -1401,7 +1418,19 @@ fn reap_stale_openclaw_gateway_processes(paths: &AppPaths) -> Result<()> {
     }
 
     let configured_port = configured_openclaw_gateway_port(paths);
-    terminate_process_ids(&stale_pids)?;
+    match terminate_process_ids(&stale_pids) {
+        Ok(()) => {}
+        Err(error) => {
+            if should_continue_after_stale_openclaw_termination_error(
+                &error,
+                configured_port,
+                is_loopback_port_accepting,
+            ) {
+                return Ok(());
+            }
+            return Err(error);
+        }
+    }
 
     let deadline = Instant::now() + Duration::from_secs(5);
     while Instant::now() < deadline {
@@ -1440,6 +1469,26 @@ fn reap_stale_openclaw_gateway_processes(paths: &AppPaths) -> Result<()> {
     )))
 }
 
+fn should_continue_after_stale_openclaw_termination_error<F>(
+    error: &FrameworkError,
+    configured_port: Option<u16>,
+    is_port_accepting: F,
+) -> bool
+where
+    F: Fn(u16) -> bool,
+{
+    is_stale_openclaw_termination_access_denied(error)
+        && configured_port
+            .map(|port| !is_port_accepting(port))
+            .unwrap_or(false)
+}
+
+fn is_stale_openclaw_termination_access_denied(error: &FrameworkError) -> bool {
+    let message = error.to_string().to_ascii_lowercase();
+    message.contains("stale openclaw gateway process")
+        && (message.contains("os error 5") || message.contains("access denied"))
+}
+
 fn configured_openclaw_gateway_port(paths: &AppPaths) -> Option<u16> {
     let config_path = readable_openclaw_config_file_path(paths);
     if !config_path.exists() {
@@ -1458,18 +1507,14 @@ fn configured_openclaw_gateway_port(paths: &AppPaths) -> Option<u16> {
 fn readable_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
-        .unwrap_or_else(|_| default_openclaw_config_file_path(paths))
-}
-
-fn default_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
-    build_standard_openclaw_config_file_path(&paths.user_root)
+        .expect("canonical openclaw config path")
 }
 
 fn built_in_openclaw_runtime_dir(paths: &AppPaths) -> PathBuf {
     paths
         .kernel_paths("openclaw")
         .map(|kernel| kernel.runtime_dir)
-        .unwrap_or_else(|_| paths.openclaw_runtime_dir.clone())
+        .expect("canonical openclaw runtime path")
 }
 
 fn is_loopback_port_accepting(port: u16) -> bool {
@@ -1696,7 +1741,9 @@ fn terminate_process_ids(pids: &[u32]) -> Result<()> {
 #[cfg(windows)]
 fn request_process_shutdown(child: &mut Child) -> Result<()> {
     let pid = child.id().to_string();
-    let _ = Command::new("taskkill")
+    let mut command = Command::new("taskkill");
+    configure_hidden_child_process(&mut command);
+    let _ = command
         .args(["/PID", pid.as_str(), "/T"])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -1716,7 +1763,9 @@ fn request_process_shutdown(child: &mut Child) -> Result<()> {
 #[cfg(windows)]
 fn force_process_shutdown(child: &mut Child) -> Result<()> {
     let pid = child.id().to_string();
-    let _ = Command::new("taskkill")
+    let mut command = Command::new("taskkill");
+    configure_hidden_child_process(&mut command);
+    let _ = command
         .args(["/PID", pid.as_str(), "/T", "/F"])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -1764,7 +1813,10 @@ mod tests {
         fs,
         net::TcpListener,
         process::Command,
-        sync::{Arc, Barrier},
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc, Barrier,
+        },
         thread,
         time::{Duration, Instant, UNIX_EPOCH},
     };
@@ -2024,7 +2076,7 @@ mod tests {
     }
 
     #[test]
-    fn supervisor_waits_for_gateway_http_invoke_readiness_before_marking_openclaw_running() {
+    fn supervisor_accepts_gateway_http_liveness_before_invoke_readiness() {
         let service = SupervisorService::new();
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
@@ -2034,17 +2086,9 @@ mod tests {
             .configure_openclaw_gateway(&runtime)
             .expect("configure runtime");
 
-        let started_at = Instant::now();
         service
             .start_openclaw_gateway(&paths)
-            .expect("gateway should wait for invoke readiness");
-        let elapsed = started_at.elapsed();
-
-        assert!(
-            elapsed >= Duration::from_millis(1_000),
-            "expected supervisor to wait for HTTP invoke readiness, only waited {:?}",
-            elapsed
-        );
+            .expect("gateway should accept /healthz liveness while invoke readiness warms");
 
         let running = service.snapshot().expect("running snapshot");
         let openclaw = running
@@ -2060,12 +2104,12 @@ mod tests {
 
     #[test]
     fn concurrent_gateway_start_requests_do_not_spawn_duplicate_processes() {
-        let service = SupervisorService::new();
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let service = SupervisorService::for_paths(&paths);
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst attemptPath = `${configPath}.startup-attempt`;\nconst readyPath = `${configPath}.startup-ready`;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  if (fs.existsSync(readyPath)) {\n    process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n    process.exit(0);\n  }\n  process.stderr.write('gateway warming');\n  process.exit(1);\n}\nconst attempt = (fs.existsSync(attemptPath) ? Number(fs.readFileSync(attemptPath, 'utf8')) : 0) + 1;\nfs.writeFileSync(attemptPath, String(attempt));\nconst server = http.createServer((req, res) => {\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n    return;\n  }\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n    res.writeHead(401, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n    return;\n  }\n  let body = '';\n  req.setEncoding('utf8');\n  req.on('data', (chunk) => { body += chunk; });\n  req.on('end', () => {\n    const payload = body.trim() ? JSON.parse(body) : {};\n    if (!fs.existsSync(readyPath)) {\n      res.writeHead(503, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'gateway warming' } }));\n      return;\n    }\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, result: { method: payload.action ? `${payload.tool}.${payload.action}` : payload.tool ?? 'unknown' } }));\n  });\n});\nserver.listen(gatewayPort, '127.0.0.1', () => {\n  setTimeout(() => {\n    fs.writeFileSync(readyPath, 'ok');\n  }, 1800);\n});\nsetInterval(() => {}, 1000);\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst attemptPath = `${configPath}.startup-attempt`;\nconst readyPath = `${configPath}.startup-ready`;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  if (fs.existsSync(readyPath)) {\n    process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n    process.exit(0);\n  }\n  process.stderr.write('gateway warming');\n  process.exit(1);\n}\nconst attempt = (fs.existsSync(attemptPath) ? Number(fs.readFileSync(attemptPath, 'utf8')) : 0) + 1;\nfs.writeFileSync(attemptPath, String(attempt));\nconst server = http.createServer((req, res) => {\n  if (req.url === '/health' || req.url === '/healthz') {\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, status: 'live' }));\n    return;\n  }\n  if (req.url === '/ready' || req.url === '/readyz') {\n    if (!fs.existsSync(readyPath)) {\n      res.writeHead(503, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ready: false, failing: ['startup'], uptimeMs: 0 }));\n      return;\n    }\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 1800 }));\n    return;\n  }\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n    return;\n  }\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n    res.writeHead(401, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n    return;\n  }\n  let body = '';\n  req.setEncoding('utf8');\n  req.on('data', (chunk) => { body += chunk; });\n  req.on('end', () => {\n    const payload = body.trim() ? JSON.parse(body) : {};\n    if (!fs.existsSync(readyPath)) {\n      res.writeHead(503, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'gateway warming' } }));\n      return;\n    }\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, result: { method: payload.action ? `${payload.tool}.${payload.action}` : payload.tool ?? 'unknown' } }));\n  });\n});\nserver.listen(gatewayPort, '127.0.0.1', () => {\n  setTimeout(() => {\n    fs.writeFileSync(readyPath, 'ok');\n  }, 1800);\n});\nsetInterval(() => {}, 1000);\n"
                 .to_string(),
         );
         let attempt_path = runtime.config_path.with_extension("json.startup-attempt");
@@ -2131,7 +2175,7 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst attemptPath = `${configPath}.startup-attempt`;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n  process.exit(0);\n}\nconst attempt = (fs.existsSync(attemptPath) ? Number(fs.readFileSync(attemptPath, 'utf8')) : 0) + 1;\nfs.writeFileSync(attemptPath, String(attempt));\nif (attempt === 1) {\n  process.stderr.write('transient cold-start failure');\n  process.exit(1);\n}\nconst server = http.createServer((req, res) => {\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n    return;\n  }\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n    res.writeHead(401, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n    return;\n  }\n  let body = '';\n  req.setEncoding('utf8');\n  req.on('data', (chunk) => { body += chunk; });\n  req.on('end', () => {\n    const payload = body.trim() ? JSON.parse(body) : {};\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, result: { method: payload.action ? `${payload.tool}.${payload.action}` : payload.tool ?? 'unknown' } }));\n  });\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst attemptPath = `${configPath}.startup-attempt`;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n  process.exit(0);\n}\nconst attempt = (fs.existsSync(attemptPath) ? Number(fs.readFileSync(attemptPath, 'utf8')) : 0) + 1;\nfs.writeFileSync(attemptPath, String(attempt));\nif (attempt === 1) {\n  process.stderr.write('transient cold-start failure');\n  process.exit(1);\n}\nconst server = http.createServer((req, res) => {\n  if (req.url === '/health' || req.url === '/healthz') {\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, status: 'live' }));\n    return;\n  }\n  if (req.url === '/ready' || req.url === '/readyz') {\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 1 }));\n    return;\n  }\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n    return;\n  }\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n    res.writeHead(401, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n    return;\n  }\n  let body = '';\n  req.setEncoding('utf8');\n  req.on('data', (chunk) => { body += chunk; });\n  req.on('end', () => {\n    const payload = body.trim() ? JSON.parse(body) : {};\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, result: { method: payload.action ? `${payload.tool}.${payload.action}` : payload.tool ?? 'unknown' } }));\n  });\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
                 .to_string(),
         );
         let attempt_path = runtime.config_path.with_extension("json.startup-attempt");
@@ -2154,7 +2198,11 @@ mod tests {
             .into_iter()
             .find(|managed_service| managed_service.id == SERVICE_ID_OPENCLAW_GATEWAY)
             .expect("openclaw service");
-        assert_eq!(openclaw.lifecycle, ManagedServiceLifecycle::Running);
+        assert_eq!(
+            openclaw.lifecycle,
+            ManagedServiceLifecycle::Running,
+            "openclaw gateway should be running after retry, snapshot: {openclaw:?}"
+        );
         assert!(openclaw.pid.is_some());
 
         service.begin_shutdown().expect("shutdown");
@@ -2166,7 +2214,7 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nconst server = http.createServer((req, res) => {\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n    return;\n  }\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n    res.writeHead(401, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n    return;\n  }\n  let body = '';\n  req.setEncoding('utf8');\n  req.on('data', (chunk) => { body += chunk; });\n  req.on('end', () => {\n    const payload = body.trim() ? JSON.parse(body) : {};\n    if (payload.tool !== 'cron' || payload.action !== 'status') {\n      res.writeHead(404, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: `unexpected method ${payload.tool ?? 'missing'}.${payload.action ?? 'missing'}` } }));\n      return;\n    }\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, result: { method: `${payload.tool}.${payload.action}` } }));\n  });\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nconst server = http.createServer((req, res) => {\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n    return;\n  }\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n    res.writeHead(401, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n    return;\n  }\n  let body = '';\n  req.setEncoding('utf8');\n  req.on('data', (chunk) => { body += chunk; });\n  req.on('end', () => {\n    const payload = body.trim() ? JSON.parse(body) : {};\n    if (payload.tool !== 'cron' || payload.action !== 'status') {\n      res.writeHead(404, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: `unexpected method ${payload.tool ?? 'missing'}.${payload.action ?? 'missing'}` } }));\n      return;\n    }\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, result: { method: `${payload.tool}.${payload.action}` } }));\n  });\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
                 .to_string(),
         );
 
@@ -2193,7 +2241,7 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  setTimeout(() => {\n    process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n    process.exit(0);\n  }, 1200);\n} else {\n  const server = http.createServer((req, res) => {\n    if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n      res.writeHead(404, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n      return;\n    }\n    if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n      res.writeHead(401, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n      return;\n    }\n    let body = '';\n    req.setEncoding('utf8');\n    req.on('data', (chunk) => { body += chunk; });\n    req.on('end', () => {\n      const payload = body.trim() ? JSON.parse(body) : {};\n      const responseBody = JSON.stringify({ ok: true, result: { method: payload.action ? `${payload.tool}.${payload.action}` : payload.tool ?? 'unknown' } });\n      res.writeHead(200, { 'content-type': 'application/json' });\n      res.flushHeaders();\n      res.write(responseBody.slice(0, 20));\n      setTimeout(() => {\n        res.end(responseBody.slice(20));\n      }, 600);\n    });\n  });\n  server.listen(gatewayPort, '127.0.0.1');\n  setInterval(() => {}, 1000);\n}\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  setTimeout(() => {\n    process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n    process.exit(0);\n  }, 1200);\n} else {\n  const server = http.createServer((req, res) => {\n    if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n      res.writeHead(404, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n      return;\n    }\n    if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n      res.writeHead(401, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n      return;\n    }\n    let body = '';\n    req.setEncoding('utf8');\n    req.on('data', (chunk) => { body += chunk; });\n    req.on('end', () => {\n      const payload = body.trim() ? JSON.parse(body) : {};\n      const responseBody = JSON.stringify({ ok: true, result: { method: payload.action ? `${payload.tool}.${payload.action}` : payload.tool ?? 'unknown' } });\n      res.writeHead(200, { 'content-type': 'application/json' });\n      res.flushHeaders();\n      res.write(responseBody.slice(0, 20));\n      setTimeout(() => {\n        res.end(responseBody.slice(20));\n      }, 600);\n    });\n  });\n  server.listen(gatewayPort, '127.0.0.1');\n  setInterval(() => {}, 1000);\n}\n"
                 .to_string(),
         );
 
@@ -2222,7 +2270,7 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nconst readyPath = `${configPath}.health-ready`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  if (fs.existsSync(readyPath)) {\n    process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n    process.exit(0);\n  }\n  process.stderr.write('gateway warming');\n  process.exit(1);\n}\nif (args[0] !== 'gateway') {\n  process.stderr.write(`unexpected args: ${args.join(' ')}`);\n  process.exit(1);\n}\nconst server = http.createServer((req, res) => {\n  res.writeHead(404, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: false, error: { message: 'tools invoke unavailable during startup' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1', () => {\n  setTimeout(() => {\n    fs.writeFileSync(readyPath, 'ok');\n  }, 700);\n});\nsetInterval(() => {}, 1000);\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst readyPath = `${configPath}.health-ready`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  if (fs.existsSync(readyPath)) {\n    process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n    process.exit(0);\n  }\n  process.stderr.write('gateway warming');\n  process.exit(1);\n}\nif (args[0] !== 'gateway') {\n  process.stderr.write(`unexpected args: ${args.join(' ')}`);\n  process.exit(1);\n}\nconst server = http.createServer((req, res) => {\n  res.writeHead(404, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: false, error: { message: 'tools invoke unavailable during startup' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1', () => {\n  setTimeout(() => {\n    fs.writeFileSync(readyPath, 'ok');\n  }, 700);\n});\nsetInterval(() => {}, 1000);\n"
                 .to_string(),
         );
 
@@ -2246,12 +2294,70 @@ mod tests {
     }
 
     #[test]
+    fn wait_for_gateway_ready_accepts_http_healthz_when_readyz_and_invoke_are_unavailable() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let runtime = fake_gateway_runtime_with_script(
+            &paths,
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nif (args[0] === 'gateway' && args[1] === 'health') {\n  process.stderr.write('cli health unavailable while transport is warming');\n  process.exit(1);\n}\nif (args[0] !== 'gateway') {\n  process.stderr.write(`unexpected args: ${args.join(' ')}`);\n  process.exit(1);\n}\nconst server = http.createServer((req, res) => {\n  if (req.url === '/health' || req.url === '/healthz') {\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, status: 'live' }));\n    return;\n  }\n  res.writeHead(404, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: false, error: { message: 'startup endpoint unavailable' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
+                .to_string(),
+        );
+
+        let mut gateway = Command::new(&runtime.node_path);
+        configure_command_for_managed_process(&mut gateway);
+        gateway.arg(&runtime.cli_path);
+        gateway.arg("gateway");
+        gateway.current_dir(&runtime.runtime_dir);
+        gateway.envs(runtime.managed_env());
+        let mut gateway = gateway.spawn().expect("spawn gateway");
+
+        wait_for_test_loopback_listener(runtime.gateway_port, 5_000);
+        let readiness = wait_for_gateway_ready(&mut gateway, &runtime, &paths, 1_500);
+
+        let _ = force_process_shutdown(&mut gateway);
+        let _ = gateway.wait();
+
+        readiness.expect(
+            "gateway startup should accept lightweight /healthz liveness when /readyz and /tools/invoke are unavailable",
+        );
+    }
+
+    #[test]
+    fn wait_for_gateway_ready_accepts_http_healthz_when_readyz_reports_degraded() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let runtime = fake_gateway_runtime_with_script(
+            &paths,
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nif (args[0] === 'gateway' && args[1] === 'health') {\n  process.stderr.write('cli health unavailable while channels reconnect');\n  process.exit(1);\n}\nif (args[0] !== 'gateway') {\n  process.stderr.write(`unexpected args: ${args.join(' ')}`);\n  process.exit(1);\n}\nconst server = http.createServer((req, res) => {\n  if (req.url === '/health' || req.url === '/healthz') {\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, status: 'live' }));\n    return;\n  }\n  if (req.url === '/ready' || req.url === '/readyz') {\n    res.writeHead(503, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ready: false, failing: ['channels'], uptimeMs: 1200 }));\n    return;\n  }\n  if (req.url === '/tools/invoke' && req.method === 'POST') {\n    req.on('data', () => {});\n    req.on('end', () => {\n      res.writeHead(503, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'gateway still reconnecting channels' } }));\n    });\n    return;\n  }\n  res.writeHead(404, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
+                .to_string(),
+        );
+
+        let mut gateway = Command::new(&runtime.node_path);
+        configure_command_for_managed_process(&mut gateway);
+        gateway.arg(&runtime.cli_path);
+        gateway.arg("gateway");
+        gateway.current_dir(&runtime.runtime_dir);
+        gateway.envs(runtime.managed_env());
+        let mut gateway = gateway.spawn().expect("spawn gateway");
+
+        wait_for_test_loopback_listener(runtime.gateway_port, 5_000);
+        let readiness = wait_for_gateway_ready(&mut gateway, &runtime, &paths, 1_500);
+
+        let _ = force_process_shutdown(&mut gateway);
+        let _ = gateway.wait();
+
+        readiness.expect(
+            "gateway startup should keep probing /healthz when /readyz reports temporary degraded status",
+        );
+    }
+
+    #[test]
     fn wait_for_gateway_ready_accepts_readyz_when_legacy_probes_are_stuck() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nconst readyPath = `${configPath}.readyz-ready`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  setTimeout(() => {\n    process.stderr.write('health transport still warming');\n    process.exit(1);\n  }, 4_000);\n} else {\n  const server = http.createServer((req, res) => {\n    if (req.url === '/ready' || req.url === '/readyz') {\n      if (!fs.existsSync(readyPath)) {\n        res.writeHead(503, { 'content-type': 'application/json' });\n        res.end(JSON.stringify({ ready: false, failing: ['startup'], uptimeMs: 0 }));\n        return;\n      }\n      res.writeHead(200, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 700 }));\n      return;\n    }\n    if (req.url === '/tools/invoke' && req.method === 'POST') {\n      req.on('data', () => {});\n      req.on('end', () => {});\n      return;\n    }\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n  });\n  server.listen(gatewayPort, '127.0.0.1', () => {\n    setTimeout(() => {\n      fs.writeFileSync(readyPath, 'ok');\n    }, 700);\n  });\n  setInterval(() => {}, 1000);\n}\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst readyPath = `${configPath}.readyz-ready`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  setTimeout(() => {\n    process.stderr.write('health transport still warming');\n    process.exit(1);\n  }, 4_000);\n} else {\n  const server = http.createServer((req, res) => {\n    if (req.url === '/ready' || req.url === '/readyz') {\n      if (!fs.existsSync(readyPath)) {\n        res.writeHead(503, { 'content-type': 'application/json' });\n        res.end(JSON.stringify({ ready: false, failing: ['startup'], uptimeMs: 0 }));\n        return;\n      }\n      res.writeHead(200, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 700 }));\n      return;\n    }\n    if (req.url === '/tools/invoke' && req.method === 'POST') {\n      req.on('data', () => {});\n      req.on('end', () => {});\n      return;\n    }\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n  });\n  server.listen(gatewayPort, '127.0.0.1', () => {\n    setTimeout(() => {\n      fs.writeFileSync(readyPath, 'ok');\n    }, 700);\n  });\n  setInterval(() => {}, 1000);\n}\n"
                 .to_string(),
         );
 
@@ -2280,7 +2386,7 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nif (args[0] === 'gateway' && args[1] === 'health') {\n  setTimeout(() => {\n    process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n    process.exit(0);\n  }, 1_200);\n} else {\n  const server = http.createServer((req, res) => {\n    if (req.url === '/ready' || req.url === '/readyz') {\n      setTimeout(() => {\n        res.writeHead(200, { 'content-type': 'application/json' });\n        res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 1_200 }));\n      }, 1_200);\n      return;\n    }\n    if (req.url === '/tools/invoke' && req.method === 'POST') {\n      req.on('data', () => {});\n      req.on('end', () => {\n        setTimeout(() => {\n          res.writeHead(200, { 'content-type': 'application/json' });\n          res.end(JSON.stringify({ ok: true, result: { method: 'cron.status' } }));\n        }, 1_200);\n      });\n      return;\n    }\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n  });\n  server.listen(gatewayPort, '127.0.0.1');\n  setInterval(() => {}, 1000);\n}\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nif (args[0] === 'gateway' && args[1] === 'health') {\n  setTimeout(() => {\n    process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n    process.exit(0);\n  }, 1_200);\n} else {\n  const server = http.createServer((req, res) => {\n    if (req.url === '/ready' || req.url === '/readyz') {\n      setTimeout(() => {\n        res.writeHead(200, { 'content-type': 'application/json' });\n        res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 1_200 }));\n      }, 1_200);\n      return;\n    }\n    if (req.url === '/tools/invoke' && req.method === 'POST') {\n      req.on('data', () => {});\n      req.on('end', () => {\n        setTimeout(() => {\n          res.writeHead(200, { 'content-type': 'application/json' });\n          res.end(JSON.stringify({ ok: true, result: { method: 'cron.status' } }));\n        }, 1_200);\n      });\n      return;\n    }\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n  });\n  server.listen(gatewayPort, '127.0.0.1');\n  setInterval(() => {}, 1000);\n}\n"
                 .to_string(),
         );
 
@@ -2309,7 +2415,7 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nif (args[0] === 'gateway' && args[1] === 'health') {\n  if (args.includes('--config')) {\n    process.stderr.write('unexpected --config');\n    process.exit(1);\n  }\n  process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n  process.exit(0);\n}\nif (args[0] !== 'gateway') {\n  process.stderr.write(`unexpected args: ${args.join(' ')}`);\n  process.exit(1);\n}\nconst server = http.createServer((_req, res) => {\n  res.writeHead(404, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: false, error: { message: 'tools invoke unavailable during startup' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nif (args[0] === 'gateway' && args[1] === 'health') {\n  if (args.includes('--config')) {\n    process.stderr.write('unexpected --config');\n    process.exit(1);\n  }\n  process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n  process.exit(0);\n}\nif (args[0] !== 'gateway') {\n  process.stderr.write(`unexpected args: ${args.join(' ')}`);\n  process.exit(1);\n}\nconst server = http.createServer((_req, res) => {\n  res.writeHead(404, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: false, error: { message: 'tools invoke unavailable during startup' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
                 .to_string(),
         );
 
@@ -2341,7 +2447,7 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n  process.exit(0);\n}\nconst server = http.createServer((req, res) => {\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n    return;\n  }\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n    res.writeHead(401, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n    return;\n  }\n  res.writeHead(200, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: true, result: { method: 'health' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1', () => {\n  setTimeout(() => {\n    server.close(() => {});\n  }, 300);\n});\nsetInterval(() => {}, 1000);\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n  process.exit(0);\n}\nconst server = http.createServer((req, res) => {\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n    return;\n  }\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n    res.writeHead(401, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n    return;\n  }\n  res.writeHead(200, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: true, result: { method: 'health' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1', () => {\n  setTimeout(() => {\n    server.close(() => {});\n  }, 300);\n});\nsetInterval(() => {}, 1000);\n"
                 .to_string(),
         );
 
@@ -2384,7 +2490,7 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nconst degradeAt = Date.now() + 500;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  process.stderr.write('readiness degraded while channels reconnect');\n  process.exit(1);\n}\nconst server = http.createServer((req, res) => {\n  if (req.url === '/health' || req.url === '/healthz') {\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, status: 'live' }));\n    return;\n  }\n  if (req.url === '/ready' || req.url === '/readyz') {\n    if (Date.now() >= degradeAt) {\n      res.writeHead(503, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ready: false, failing: ['channels'], uptimeMs: 1200 }));\n      return;\n    }\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 300 }));\n    return;\n  }\n  if (req.url === '/tools/invoke' && req.method === 'POST') {\n    req.on('data', () => {});\n    req.on('end', () => {\n      res.writeHead(503, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'gateway still reconnecting channels' } }));\n    });\n    return;\n  }\n  res.writeHead(404, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst degradeAt = Date.now() + 500;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  process.stderr.write('readiness degraded while channels reconnect');\n  process.exit(1);\n}\nconst server = http.createServer((req, res) => {\n  if (req.url === '/health' || req.url === '/healthz') {\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, status: 'live' }));\n    return;\n  }\n  if (req.url === '/ready' || req.url === '/readyz') {\n    if (Date.now() >= degradeAt) {\n      res.writeHead(503, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ready: false, failing: ['channels'], uptimeMs: 1200 }));\n      return;\n    }\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 300 }));\n    return;\n  }\n  if (req.url === '/tools/invoke' && req.method === 'POST') {\n    req.on('data', () => {});\n    req.on('end', () => {\n      res.writeHead(503, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'gateway still reconnecting channels' } }));\n    });\n    return;\n  }\n  res.writeHead(404, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
                 .to_string(),
         );
 
@@ -2414,6 +2520,51 @@ mod tests {
         assert_eq!(openclaw.last_error, None);
 
         service.begin_shutdown().expect("shutdown");
+    }
+
+    #[test]
+    fn running_gateway_health_probe_returns_quickly_when_the_listener_accepts_without_responding() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let listener = TcpListener::bind(("127.0.0.1", 0)).expect("blackhole listener");
+        listener
+            .set_nonblocking(true)
+            .expect("blackhole listener nonblocking");
+        let gateway_port = listener.local_addr().expect("blackhole addr").port();
+        let stop_listener = Arc::new(AtomicBool::new(false));
+        let stop_listener_for_thread = stop_listener.clone();
+        let accept_thread = thread::spawn(move || {
+            let mut held_connections = Vec::new();
+            while !stop_listener_for_thread.load(Ordering::SeqCst) {
+                match listener.accept() {
+                    Ok((stream, _addr)) => held_connections.push(stream),
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        thread::sleep(Duration::from_millis(10));
+                    }
+                    Err(_error) => break,
+                }
+            }
+        });
+        let mut runtime = fake_gateway_runtime(&paths);
+        runtime.gateway_port = gateway_port;
+
+        let started_at = Instant::now();
+        let health = super::probe_running_gateway_health(&runtime, None);
+        let elapsed = started_at.elapsed();
+
+        stop_listener.store(true, Ordering::SeqCst);
+        accept_thread
+            .join()
+            .expect("blackhole listener thread should join");
+
+        assert!(
+            !health.is_ready(),
+            "blackhole listener should not be considered healthy"
+        );
+        assert!(
+            elapsed < Duration::from_millis(2_500),
+            "runtime health checks are on the startup status path and must not wait for long HTTP read timeouts; elapsed={elapsed:?}, health={health:?}"
+        );
     }
 
     #[test]
@@ -2489,9 +2640,7 @@ mod tests {
     ) -> ActivatedOpenClawRuntime {
         fake_gateway_runtime_with_script(
             paths,
-            format!(
-                "import fs from 'node:fs';\nimport http from 'node:http';\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nconst expectedAuthorization = `Bearer ${{process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}}`;\nconst readyAt = Date.now() + {ready_delay_ms};\nconst server = http.createServer((req, res) => {{\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {{\n    res.writeHead(404, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: false, error: {{ message: 'unexpected path' }} }}));\n    return;\n  }}\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {{\n    res.writeHead(401, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: false, error: {{ message: 'unauthorized' }} }}));\n    return;\n  }}\n  let body = '';\n  req.setEncoding('utf8');\n  req.on('data', (chunk) => {{ body += chunk; }});\n  req.on('end', () => {{\n    const payload = body.trim() ? JSON.parse(body) : {{}};\n    if (Date.now() < readyAt) {{\n      res.writeHead(503, {{ 'content-type': 'application/json' }});\n      res.end(JSON.stringify({{ ok: false, error: {{ message: 'gateway warming' }} }}));\n      return;\n    }}\n    res.writeHead(200, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: true, result: {{ method: payload.action ? `${{payload.tool}}.${{payload.action}}` : payload.tool ?? 'unknown' }} }}));\n  }});\n}});\nconst start = () => server.listen(gatewayPort, '127.0.0.1');\nsetTimeout(start, {listen_delay_ms});\nsetInterval(() => {{}}, 1000);\n"
-            ),
+            fake_gateway_runtime_http_ready_script(listen_delay_ms, ready_delay_ms),
         )
     }
 
@@ -2516,9 +2665,7 @@ mod tests {
     ) -> ActivatedOpenClawRuntime {
         fake_gateway_runtime_with_script(
             paths,
-            format!(
-                "import fs from 'node:fs';\nimport http from 'node:http';\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nconst expectedAuthorization = `Bearer ${{process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}}`;\nconst readyAt = Date.now() + {ready_delay_ms};\nconst server = http.createServer((req, res) => {{\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {{\n    res.writeHead(404, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: false, error: {{ message: 'unexpected path' }} }}));\n    return;\n  }}\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {{\n    res.writeHead(401, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: false, error: {{ message: 'unauthorized' }} }}));\n    return;\n  }}\n  let body = '';\n  req.setEncoding('utf8');\n  req.on('data', (chunk) => {{ body += chunk; }});\n  req.on('end', () => {{\n    const payload = body.trim() ? JSON.parse(body) : {{}};\n    if (Date.now() < readyAt) {{\n      res.writeHead(503, {{ 'content-type': 'application/json' }});\n      res.end(JSON.stringify({{ ok: false, error: {{ message: 'gateway warming' }} }}));\n      return;\n    }}\n    res.writeHead(200, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: true, result: {{ method: payload.action ? `${{payload.tool}}.${{payload.action}}` : payload.tool ?? 'unknown' }} }}));\n  }});\n}});\nconst start = () => server.listen(gatewayPort, '127.0.0.1');\nsetTimeout(start, {listen_delay_ms});\nsetInterval(() => {{}}, 1000);\n"
-            ),
+            fake_gateway_runtime_http_ready_script(listen_delay_ms, ready_delay_ms),
         )
     }
 
@@ -2528,6 +2675,12 @@ mod tests {
         listen_delay_ms: u64,
     ) -> ActivatedOpenClawRuntime {
         fake_gateway_runtime_with_http_ready_delay_ms(paths, listen_delay_ms, 0)
+    }
+
+    fn fake_gateway_runtime_http_ready_script(listen_delay_ms: u64, ready_delay_ms: u64) -> String {
+        format!(
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst expectedAuthorization = `Bearer ${{process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}}`;\nconst readyAt = Date.now() + {ready_delay_ms};\nif (args[0] === 'gateway' && args[1] === 'health') {{\n  if (Date.now() < readyAt) {{\n    process.stderr.write('gateway warming');\n    process.exit(1);\n  }}\n  process.stdout.write(JSON.stringify({{ ok: true, result: {{ status: 'ok' }} }}));\n  process.exit(0);\n}}\nif (args[0] !== 'gateway') {{\n  process.stderr.write(`unexpected args: ${{args.join(' ')}}`);\n  process.exit(1);\n}}\nconst server = http.createServer((req, res) => {{\n  if (req.url === '/health' || req.url === '/healthz') {{\n    res.writeHead(200, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: true, status: 'live' }}));\n    return;\n  }}\n  if (req.url === '/ready' || req.url === '/readyz') {{\n    if (Date.now() < readyAt) {{\n      res.writeHead(503, {{ 'content-type': 'application/json' }});\n      res.end(JSON.stringify({{ ready: false, failing: ['startup'], uptimeMs: 0 }}));\n      return;\n    }}\n    res.writeHead(200, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ready: true, failing: [], uptimeMs: {ready_delay_ms} }}));\n    return;\n  }}\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {{\n    res.writeHead(404, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: false, error: {{ message: 'unexpected path' }} }}));\n    return;\n  }}\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {{\n    res.writeHead(401, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: false, error: {{ message: 'unauthorized' }} }}));\n    return;\n  }}\n  let body = '';\n  req.setEncoding('utf8');\n  req.on('data', (chunk) => {{ body += chunk; }});\n  req.on('end', () => {{\n    const payload = body.trim() ? JSON.parse(body) : {{}};\n    if (Date.now() < readyAt) {{\n      res.writeHead(503, {{ 'content-type': 'application/json' }});\n      res.end(JSON.stringify({{ ok: false, error: {{ message: 'gateway warming' }} }}));\n      return;\n    }}\n    res.writeHead(200, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: true, result: {{ method: payload.action ? `${{payload.tool}}.${{payload.action}}` : payload.tool ?? 'unknown' }} }}));\n  }});\n}});\nconst start = () => server.listen(gatewayPort, '127.0.0.1');\nsetTimeout(start, {listen_delay_ms});\nsetInterval(() => {{}}, 1000);\n"
+        )
     }
 
     fn fake_gateway_runtime_with_script(
@@ -2559,7 +2712,7 @@ mod tests {
             runtime_dir,
             node_path,
             cli_path,
-            home_dir: paths.openclaw_root_dir.clone(),
+            home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
             config_path,
@@ -2571,12 +2724,7 @@ mod tests {
     fn openclaw_config_file_path(paths: &crate::framework::paths::AppPaths) -> std::path::PathBuf {
         KernelRuntimeAuthorityService::new()
             .active_config_file_path("openclaw", paths)
-            .unwrap_or_else(|_| {
-                paths
-                    .kernel_paths("openclaw")
-                    .map(|kernel| kernel.config_file)
-                    .unwrap_or_else(|_| paths.openclaw_config_file.clone())
-            })
+            .expect("canonical openclaw config path")
     }
 
     #[cfg(windows)]
@@ -2733,6 +2881,31 @@ mod tests {
     }
 
     #[test]
+    fn stale_gateway_cleanup_continues_after_access_denied_when_configured_port_is_free() {
+        let error = crate::framework::FrameworkError::Internal(
+            "failed to terminate stale openclaw gateway process 224684: access denied (os error 5)"
+                .to_string(),
+        );
+
+        assert!(
+            super::should_continue_after_stale_openclaw_termination_error(
+                &error,
+                Some(21_280),
+                |_| false,
+            ),
+            "a protected stale process should not block startup when it no longer owns the configured gateway port"
+        );
+        assert!(
+            !super::should_continue_after_stale_openclaw_termination_error(
+                &error,
+                Some(21_280),
+                |_| true,
+            ),
+            "access denied must stay fatal when the stale process still appears to own the gateway port"
+        );
+    }
+
+    #[test]
     fn supervisor_production_code_does_not_call_openclaw_specific_config_wrapper() {
         let production_source = include_str!("supervisor.rs")
             .split("mod tests {")
@@ -2747,6 +2920,33 @@ mod tests {
         assert!(
             super::DEFAULT_OPENCLAW_GATEWAY_READY_TIMEOUT_MS >= 60_000,
             "packaged OpenClaw gateway cold starts can take more than 26 seconds before binding; keep at least a 60s supervisor readiness budget"
+        );
+    }
+
+    #[test]
+    fn supervisor_hides_windows_taskkill_child_processes() {
+        let production_source = include_str!("supervisor.rs")
+            .split("mod tests {")
+            .next()
+            .expect("production source");
+        let request_shutdown_source = production_source
+            .split("fn request_process_shutdown")
+            .nth(1)
+            .and_then(|tail| tail.split("fn force_process_shutdown").next())
+            .expect("request shutdown source");
+        let force_shutdown_source = production_source
+            .split("fn force_process_shutdown")
+            .nth(1)
+            .and_then(|tail| tail.split("#[cfg(test)]").next())
+            .expect("force shutdown source");
+
+        assert!(
+            request_shutdown_source.contains("configure_hidden_child_process(&mut command);"),
+            "taskkill shutdown must use the shared hidden child process policy"
+        );
+        assert!(
+            force_shutdown_source.contains("configure_hidden_child_process(&mut command);"),
+            "forced taskkill shutdown must use the shared hidden child process policy"
         );
     }
 

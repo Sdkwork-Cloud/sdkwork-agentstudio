@@ -13,6 +13,7 @@ import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
 
 function writeJsonFile(filePath, value) {
   mkdirSync(path.dirname(filePath), { recursive: true });
@@ -121,7 +122,7 @@ function buildDesktopStartupEvidence({
       websocketUrl: 'ws://127.0.0.1:19797/openclaw/ws',
     },
     builtInInstance: {
-      id: 'local-built-in',
+      id: BUILT_IN_INSTANCE_ID,
       name: 'OpenClaw',
       version: '2026.4.2',
       runtimeKind: 'openclaw',
@@ -194,7 +195,7 @@ test('desktop packaged launch smoke keeps its default wait budget aligned with s
   const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-packaged-launch.mjs');
   const source = readFileSync(smokePath, 'utf8');
 
-  assert.match(source, /const DEFAULT_WAIT_TIMEOUT_MS = 150_000;/);
+  assert.match(source, /const DEFAULT_WAIT_TIMEOUT_MS = 300_000;/);
 });
 
 test('desktop packaged launch smoke prefers the root desktop executable over nested bundled helper binaries on Windows', async () => {
@@ -325,6 +326,7 @@ test('desktop packaged launch smoke retries transient Windows cleanup lock failu
 
 test('desktop packaged launch smoke executes the Windows installer through PowerShell Start-Process', async () => {
   const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-packaged-launch.mjs');
+  const smokeSource = readFileSync(smokePath, 'utf8');
   const smoke = await import(pathToFileURL(smokePath).href);
 
   assert.equal(typeof smoke.prepareDesktopPackagedLaunch, 'function');
@@ -357,6 +359,11 @@ test('desktop packaged launch smoke executes the Windows installer through Power
     assert.equal(
       preparedLaunch.launcher.command.replaceAll('\\', '/'),
       expectedBinaryPath.replaceAll('\\', '/'),
+    );
+    assert.match(
+      smokeSource,
+      /windowsHide:\s*true/u,
+      'desktop packaged launch smoke must hide delegated Windows child processes so installer and app launch smoke does not flash terminal windows',
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });

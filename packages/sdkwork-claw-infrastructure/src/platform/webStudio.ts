@@ -1,5 +1,9 @@
 import {
   DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  OPENCLAW_GATEWAY_DEFAULT_BASE_URL,
+  OPENCLAW_GATEWAY_DEFAULT_HOST,
+  OPENCLAW_GATEWAY_DEFAULT_PORT,
+  OPENCLAW_GATEWAY_DEFAULT_WEBSOCKET_URL,
   STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
   isBuiltInOpenClawInstanceId,
 } from '@sdkwork/claw-types';
@@ -461,13 +465,13 @@ function createDefaultInstanceConfig(
   input?: Partial<StudioInstanceConfig>,
 ): StudioInstanceConfig {
   return {
-    port: input?.port ?? '18789',
+    port: input?.port ?? String(OPENCLAW_GATEWAY_DEFAULT_PORT),
     sandbox: input?.sandbox ?? true,
     autoUpdate: input?.autoUpdate ?? true,
     logLevel: input?.logLevel ?? 'info',
     corsOrigins: input?.corsOrigins ?? '*',
-    baseUrl: input?.baseUrl ?? 'http://127.0.0.1:18789',
-    websocketUrl: input?.websocketUrl ?? 'ws://127.0.0.1:18789',
+    baseUrl: input?.baseUrl ?? OPENCLAW_GATEWAY_DEFAULT_BASE_URL,
+    websocketUrl: input?.websocketUrl ?? OPENCLAW_GATEWAY_DEFAULT_WEBSOCKET_URL,
   };
 }
 
@@ -487,10 +491,10 @@ function createDefaultBuiltInInstance(): StudioInstanceRecord {
     iconType: 'server',
     version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
     typeLabel: 'Built-In OpenClaw',
-    host: '127.0.0.1',
-    port: 18789,
-    baseUrl: 'http://127.0.0.1:18789',
-    websocketUrl: 'ws://127.0.0.1:18789',
+    host: OPENCLAW_GATEWAY_DEFAULT_HOST,
+    port: OPENCLAW_GATEWAY_DEFAULT_PORT,
+    baseUrl: OPENCLAW_GATEWAY_DEFAULT_BASE_URL,
+    websocketUrl: OPENCLAW_GATEWAY_DEFAULT_WEBSOCKET_URL,
     cpu: 0,
     memory: 0,
     totalMemory: 'Unknown',
@@ -545,18 +549,10 @@ function normalizeBuiltInInstance(instance: StudioInstanceRecord): StudioInstanc
   const resolvedName = instance.name?.trim() || baseline.name;
   const resolvedDescription = instance.description?.trim() || baseline.description;
   const resolvedTypeLabel = instance.typeLabel?.trim() || baseline.typeLabel;
-  const resolvedPort =
-    instance.port ??
-    (instance.config?.port ? Number.parseInt(instance.config.port, 10) : baseline.port) ??
-    baseline.port;
-  const resolvedBaseUrl =
-    instance.baseUrl ??
-    instance.config?.baseUrl ??
-    `http://127.0.0.1:${resolvedPort}`;
+  const resolvedPort = baseline.port ?? OPENCLAW_GATEWAY_DEFAULT_PORT;
+  const resolvedBaseUrl = baseline.baseUrl ?? OPENCLAW_GATEWAY_DEFAULT_BASE_URL;
   const resolvedWebsocketUrl =
-    instance.websocketUrl ??
-    instance.config?.websocketUrl ??
-    `ws://127.0.0.1:${resolvedPort}`;
+    baseline.websocketUrl ?? OPENCLAW_GATEWAY_DEFAULT_WEBSOCKET_URL;
 
   return {
     ...baseline,
@@ -573,7 +569,7 @@ function normalizeBuiltInInstance(instance: StudioInstanceRecord): StudioInstanc
     iconType: 'server',
     version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
     typeLabel: resolvedTypeLabel,
-    host: '127.0.0.1',
+    host: OPENCLAW_GATEWAY_DEFAULT_HOST,
     port: resolvedPort,
     baseUrl: resolvedBaseUrl,
     websocketUrl: resolvedWebsocketUrl,
@@ -2166,13 +2162,16 @@ export class WebStudioPlatform implements StudioPlatformAPI {
       }),
       updatedAt: now(),
     };
+    const next = isManagedBuiltInOpenClawInstance(current)
+      ? normalizeBuiltInInstance(updated)
+      : updated;
 
     document.instances = document.instances.map((instance) =>
-      instance.id === resolvedId ? updated : instance,
+      instance.id === resolvedId ? next : instance,
     );
     writeInstances(document);
-    synchronizeBuiltInOpenClawWorkbench(updated);
-    return updated;
+    synchronizeBuiltInOpenClawWorkbench(next);
+    return next;
   }
 
   async deleteInstance(id: string): Promise<boolean> {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject, type UIEvent } from 'react
 import {
   isChatViewportNearBottom,
   resolveChatAutoScrollDecision,
+  resolveChatMessageScrollSignature,
 } from '../services';
 import type { Message } from '../store/useChatStore';
 
@@ -28,6 +29,7 @@ export function useChatAutoScroll({
   const chatHasAutoScrolledRef = useRef(false);
   const chatUserNearBottomRef = useRef(true);
   const chatScrollRetryTimeoutRef = useRef<number | null>(null);
+  const messageScrollSignature = resolveChatMessageScrollSignature(messages);
 
   const clearChatScrollRetry = () => {
     if (chatScrollRetryTimeoutRef.current !== null) {
@@ -147,7 +149,7 @@ export function useChatAutoScroll({
     return () => {
       window.cancelAnimationFrame(frame);
     };
-  }, [isBusy, messages]);
+  }, [isBusy, messageScrollSignature]);
 
   useEffect(
     () => () => {

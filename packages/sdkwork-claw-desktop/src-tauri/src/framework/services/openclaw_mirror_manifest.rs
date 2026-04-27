@@ -658,11 +658,11 @@ mod tests {
                 .join("0.4.0-windows-x64")
                 .join("runtime")
                 .join("openclaw.cjs"),
-            home_dir: paths.openclaw_root_dir.clone(),
+            home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
             config_path: paths.openclaw_config_file.clone(),
-            gateway_port: 18_789,
+            gateway_port: 21_280,
             gateway_auth_token: "mirror-test-token".to_string(),
         }
     }
@@ -694,13 +694,13 @@ mod tests {
 
         assert_eq!(snapshot.runtime_id, "openclaw");
         assert_eq!(snapshot.install_key.as_deref(), Some("0.4.0-windows-x64"));
-        assert_eq!(snapshot.gateway_port, 18_789);
-        assert!(snapshot.home_dir.ends_with(".openclaw"));
+        assert_eq!(snapshot.gateway_port, 21_280);
+        assert!(snapshot.home_dir.ends_with("app-user-root"));
         assert!(snapshot.state_dir.ends_with(".openclaw"));
         assert!(snapshot.workspace_dir.ends_with(".openclaw/workspace"));
         assert!(snapshot
             .config_file
-            .ends_with("user-home/.openclaw/openclaw.json"));
+            .ends_with("app-user-root/.openclaw/openclaw.json"));
     }
 
     #[test]

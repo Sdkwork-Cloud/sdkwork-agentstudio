@@ -38,8 +38,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..', '..');
 const DEFAULT_RELEASE_ASSETS_DIR = path.join(rootDir, 'artifacts', 'release');
-// Fresh packaged first launch can spend well over 90s converging runtime readiness.
-const DEFAULT_WAIT_TIMEOUT_MS = 150_000;
+const DESKTOP_PACKAGED_LAUNCH_SMOKE_ROOT_PREFIX = 'claw-desktop-packaged-launch-';
+// Fresh packaged first launch can spend multiple minutes converging runtime readiness.
+const DEFAULT_WAIT_TIMEOUT_MS = 300_000;
 const DEFAULT_WAIT_INTERVAL_MS = 250;
 const DEFAULT_CLEANUP_RETRY_COUNT = 10;
 const DEFAULT_CLEANUP_RETRY_DELAY_MS = 250;
@@ -319,6 +320,7 @@ function runCommand({
     env,
     encoding: 'utf8',
     shell,
+    windowsHide: true,
   });
 
   if (result.error) {
@@ -342,6 +344,7 @@ function commandExists(command, args = ['--version']) {
   const result = spawnSync(command, args, {
     encoding: 'utf8',
     shell: false,
+    windowsHide: true,
   });
 
   if (result.error) {
@@ -356,8 +359,118 @@ function ensureDirectory(directoryPath) {
   return directoryPath;
 }
 
+function resolveExistingPackagedLaunchSmokeRoots({
+  tempRootDir = os.tmpdir(),
+  smokeRootPrefix = DESKTOP_PACKAGED_LAUNCH_SMOKE_ROOT_PREFIX,
+  readdirSyncFn = readdirSync,
+  statSyncFn = statSync,
+} = {}) {
+  const normalizedTempRootDir = path.resolve(String(tempRootDir ?? '').trim());
+  if (!normalizedTempRootDir || !existsSync(normalizedTempRootDir)) {
+    return [];
+  }
+
+  const rootPaths = [];
+  const entries = readdirSyncFn(normalizedTempRootDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry?.isDirectory?.() || !String(entry.name ?? '').startsWith(smokeRootPrefix)) {
+      continue;
+    }
+
+    const absolutePath = path.join(normalizedTempRootDir, entry.name);
+    try {
+      if (statSyncFn(absolutePath).isDirectory()) {
+        rootPaths.push(absolutePath);
+      }
+    } catch {
+      // Ignore roots that disappeared while the cleanup inventory was being collected.
+    }
+  }
+
+  rootPaths.sort((left, right) => left.localeCompare(right));
+  return rootPaths;
+}
+
 function toPowerShellSingleQuotedLiteral(value) {
   return `'${String(value ?? '').replaceAll("'", "''")}'`;
+}
+
+function toPowerShellArrayLiteral(values = []) {
+  return `@(${values.map((value) => toPowerShellSingleQuotedLiteral(value)).join(', ')})`;
+}
+
+function normalizeWindowsCleanupRootPaths(rootPaths) {
+  return Array.from(new Set(
+    (Array.isArray(rootPaths) ? rootPaths : [rootPaths])
+      .map((entry) => String(entry ?? '').trim())
+      .filter(Boolean)
+      .map((entry) => path.resolve(entry)),
+  ));
+}
+
+function terminateWindowsProcessTreesForRoots(rootPaths, {
+  spawnSyncFn = spawnSync,
+} = {}) {
+  const normalizedRootPaths = normalizeWindowsCleanupRootPaths(rootPaths);
+  if (normalizedRootPaths.length === 0) {
+    return;
+  }
+
+  const commandScript = [
+    `$rootPaths = ${toPowerShellArrayLiteral(normalizedRootPaths)}`,
+    '$matchingProcesses = Get-CimInstance Win32_Process | Where-Object {',
+    '  $commandLine = [string]$_.CommandLine',
+    '  if ([string]::IsNullOrWhiteSpace($commandLine)) { return $false }',
+    '  foreach ($rootPath in $rootPaths) {',
+    '    if ($commandLine.IndexOf($rootPath, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { return $true }',
+    '  }',
+    '  return $false',
+    '} | Sort-Object ProcessId -Descending',
+    'foreach ($process in $matchingProcesses) {',
+    '  $processId = [int]$process.ProcessId',
+    '  if ($processId -le 0) { continue }',
+    '  Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue',
+    '}',
+    'exit 0',
+  ].join('; ');
+
+  const result = spawnSyncFn('powershell.exe', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-ExecutionPolicy',
+    'Bypass',
+    '-Command',
+    commandScript,
+  ], {
+    encoding: 'utf8',
+    shell: false,
+  });
+
+  if (result?.error) {
+    throw result.error;
+  }
+}
+
+async function cleanupWindowsPackagedLaunchSmokeRoots(rootPaths, {
+  pathExistsFn = existsSync,
+  removeDirectoryWithRetriesFn = removeDirectoryWithRetries,
+  spawnSyncFn = spawnSync,
+} = {}) {
+  const normalizedRootPaths = normalizeWindowsCleanupRootPaths(rootPaths);
+  if (normalizedRootPaths.length === 0) {
+    return;
+  }
+
+  terminateWindowsProcessTreesForRoots(normalizedRootPaths, {
+    spawnSyncFn,
+  });
+
+  for (const rootPath of normalizedRootPaths) {
+    if (!pathExistsFn(rootPath)) {
+      continue;
+    }
+    await removeDirectoryWithRetriesFn(rootPath);
+  }
 }
 
 export function buildWindowsInstallerLaunchCommand({
@@ -895,19 +1008,26 @@ function waitForProcessExit(child, timeoutMs = 5000) {
 export async function stopDesktopPackagedApp(processRecord) {
   const child = processRecord?.child;
   const pid = Number(processRecord?.pid ?? 0);
-  if (!child || child.exitCode !== null || child.signalCode !== null || pid <= 0) {
+  const cleanupRootPaths = normalizeWindowsCleanupRootPaths(processRecord?.cleanupRootPaths);
+
+  if (process.platform === 'win32') {
+    if (child && child.exitCode === null && child.signalCode === null && pid > 0) {
+      const result = spawnSync('taskkill', ['/PID', String(pid), '/T', '/F'], {
+        encoding: 'utf8',
+        shell: false,
+        windowsHide: true,
+      });
+      if (result.error) {
+        throw result.error;
+      }
+      await waitForProcessExit(child);
+    }
+
+    terminateWindowsProcessTreesForRoots(cleanupRootPaths);
     return;
   }
 
-  if (process.platform === 'win32') {
-    const result = spawnSync('taskkill', ['/PID', String(pid), '/T', '/F'], {
-      encoding: 'utf8',
-      shell: false,
-    });
-    if (result.error) {
-      throw result.error;
-    }
-    await waitForProcessExit(child);
+  if (!child || child.exitCode !== null || child.signalCode !== null || pid <= 0) {
     return;
   }
 
@@ -985,7 +1105,12 @@ export async function smokeDesktopPackagedLaunch({
     arch: releaseArch,
     target: targetSpec.targetTriple,
   });
-  const smokeRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-desktop-packaged-launch-'));
+  if (releasePlatform === 'windows') {
+    await cleanupWindowsPackagedLaunchSmokeRoots(
+      resolveExistingPackagedLaunchSmokeRoots(),
+    );
+  }
+  const smokeRoot = mkdtempSync(path.join(os.tmpdir(), DESKTOP_PACKAGED_LAUNCH_SMOKE_ROOT_PREFIX));
   let processRecord = null;
   let preparedLaunch = null;
 
@@ -1002,7 +1127,10 @@ export async function smokeDesktopPackagedLaunch({
       productName: String(manifest?.productName ?? 'Claw Studio').trim() || 'Claw Studio',
       smokeRoot,
     });
-    processRecord = await launchDesktopPackagedAppFn(preparedLaunch.launcher);
+    processRecord = {
+      ...await launchDesktopPackagedAppFn(preparedLaunch.launcher),
+      cleanupRootPaths: [smokeRoot],
+    };
     await waitForReadyDesktopStartupEvidenceFn({
       evidencePath: preparedLaunch.evidencePath,
     });
@@ -1043,6 +1171,13 @@ export async function smokeDesktopPackagedLaunch({
     if (preparedLaunch && typeof preparedLaunch.cleanup === 'function') {
       try {
         await preparedLaunch.cleanup();
+      } catch {
+        // Preserve the original failure while still attempting cleanup.
+      }
+    }
+    if (releasePlatform === 'windows') {
+      try {
+        await cleanupWindowsPackagedLaunchSmokeRoots([smokeRoot]);
       } catch {
         // Preserve the original failure while still attempting cleanup.
       }

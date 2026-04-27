@@ -157,7 +157,7 @@ await runTest('openClawConfigService reuses a cached parsed root across differen
     const snapshot = await openClawConfigService.readConfigSnapshot(configFile);
 
     assert.equal(readFileCalls, 1);
-    assert.equal(resolvedPaths.workspace, 'D:/OpenClaw/workspace');
+    assert.equal(resolvedPaths.workspace, 'D:/OpenClaw/.openclaw/workspace');
     assert.equal(snapshot.channelSnapshots.find((channel) => channel.id === 'telegram')?.enabled, true);
   } finally {
     configurePlatformBridge(originalBridge);
@@ -3034,7 +3034,7 @@ await runTest('openClawConfigService reads legacy api-router-prefixed providers 
   }
 });
 
-await runTest('openClawConfigService manages agent CRUD with OpenClaw-compatible default, workspace, agentDir, and model rules', async () => {
+await runTest('openClawConfigService manages agent CRUD with standard per-agent workspace, agentDir, and model rules', async () => {
   const { configurePlatformBridge, getPlatformBridge } = await import('@sdkwork/claw-infrastructure');
   const { openClawConfigService } = await import('./openClawConfigService.ts');
 
@@ -3140,8 +3140,8 @@ await runTest('openClawConfigService manages agent CRUD with OpenClaw-compatible
     assert.equal(research?.name, 'Research Ops');
     assert.equal(research?.avatar, '馃');
     assert.equal(research?.isDefault, true);
-    assert.equal(research?.workspace, 'D:/OpenClaw/.openclaw/workspace-research-ops');
-    assert.equal(research?.agentDir, 'D:/OpenClaw/.openclaw/agents/research-home/agent');
+    assert.equal(research?.workspace, 'D:/OpenClaw/.openclaw/workspace-research');
+    assert.equal(research?.agentDir, 'D:/OpenClaw/.openclaw/agents/research/agent');
     assert.equal(main?.isDefault, false);
 
     await openClawConfigService.deleteAgent({
@@ -3155,7 +3155,7 @@ await runTest('openClawConfigService manages agent CRUD with OpenClaw-compatible
     assert.equal(snapshot.agentSnapshots[0]?.id, 'main');
     assert.equal(snapshot.agentSnapshots[0]?.isDefault, true);
     assert.match(fileContent, /default:\s*true/);
-    assert.match(fileContent, /workspace:\s*['"]D:\/OpenClaw\/workspace['"]/);
+    assert.doesNotMatch(fileContent, /workspace:\s*['"]D:\/OpenClaw\/workspace['"]/);
   } finally {
     configurePlatformBridge(originalBridge);
   }

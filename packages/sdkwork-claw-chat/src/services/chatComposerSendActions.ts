@@ -1,5 +1,6 @@
 import type { Agent, Skill } from '@sdkwork/claw-types';
 import { composeOutgoingChatText } from './chatComposerAttachments.ts';
+import { resolveChatAgentDisplayIdentity } from './chatSessionOwnerPresentation.ts';
 import type { ChatLocalRunActions } from './chatLocalRunActions.ts';
 import type { ChatSessionRunActions } from './chatSessionRunActions.ts';
 import type { ChatComposerSubmitPayload, ChatModel } from '../types/index.ts';
@@ -68,6 +69,32 @@ function buildChatSessionCreateOptions(input: {
   return Object.keys(options).length > 0 ? options : undefined;
 }
 
+function resolveActiveAgentDisplayName(agent: Agent | null) {
+  if (!agent) {
+    return null;
+  }
+
+  const agentWithKernel = agent as Agent & { kernelLabel?: string | null };
+  return resolveChatAgentDisplayIdentity({
+    agentId: agent.id,
+    agentLabel: agent.name,
+    avatarLabel: agent.avatar,
+    kernelLabel: agentWithKernel.kernelLabel,
+  }).name;
+}
+
+function resolveRequestAgent(agent: Agent | null) {
+  const displayName = resolveActiveAgentDisplayName(agent);
+  if (!agent || !displayName) {
+    return agent ?? undefined;
+  }
+
+  return {
+    ...agent,
+    name: displayName,
+  };
+}
+
 export function createChatComposerSendActions(
   input: CreateChatComposerSendActionsInput,
 ): ChatComposerSendActions {
@@ -111,7 +138,7 @@ export function createChatComposerSendActions(
         if (!sessionId) {
           const draftAgentId =
             input.activeAgent?.id ?? input.sessionScopeAgentId ?? null;
-          const draftAgentLabel = input.activeAgent?.name ?? null;
+          const draftAgentLabel = resolveActiveAgentDisplayName(input.activeAgent);
           if (input.sendMode === 'gateway' && input.activeInstanceId) {
             const draftSessionOptions = input.sessionRunActions.getKernelDraftSessionOptions({
               sessionScopeMode: input.sessionScopeMode,
@@ -154,12 +181,13 @@ export function createChatComposerSendActions(
 
         return input.directRunActions.sendLocalRun({
           sessionId,
+          sessionInstanceId: input.activeInstanceId ?? null,
           content,
           attachments: normalizedAttachments,
           requestText,
           requestModel: activeModel,
           requestSkill: input.activeSkill ?? undefined,
-          requestAgent: input.activeAgent ?? undefined,
+          requestAgent: resolveRequestAgent(input.activeAgent),
         });
       })();
 

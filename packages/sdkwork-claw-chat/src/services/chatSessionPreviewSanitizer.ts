@@ -1,4 +1,5 @@
 import { sanitizeChatOperationalMessageText } from './chatMessageStructuredContent.ts';
+import { normalizeChatMessageTextEncoding } from './chatTextEncoding.ts';
 import { sanitizeOpenClawPreviewText } from './openClawMessagePresentation.ts';
 
 function trimOptionalString(value: string | null | undefined) {
@@ -6,7 +7,7 @@ function trimOptionalString(value: string | null | undefined) {
     return null;
   }
 
-  const normalized = value.trim();
+  const normalized = normalizeChatMessageTextEncoding(value.trim());
   return normalized || null;
 }
 

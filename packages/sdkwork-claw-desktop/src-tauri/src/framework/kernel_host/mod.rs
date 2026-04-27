@@ -75,7 +75,7 @@ mod tests {
                 .join("node_modules")
                 .join("openclaw")
                 .join("openclaw.mjs"),
-            home_dir: paths.openclaw_root_dir.clone(),
+            home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
             config_path: paths.openclaw_config_file.clone(),
@@ -135,7 +135,7 @@ mod tests {
         assert_eq!(macos.service_name, "ai.sdkwork.clawstudio.openclaw");
         assert!(normalize(&macos.launch_target).ends_with("install/claw-studio"));
         assert!(normalize(&macos.service_config_path)
-            .ends_with("user-home/Library/LaunchAgents/ai.sdkwork.clawstudio.openclaw.plist"));
+            .ends_with("app-user-root/Library/LaunchAgents/ai.sdkwork.clawstudio.openclaw.plist"));
         assert_eq!(macos.launch_arguments[0], "--run-kernel-host-service");
 
         let linux = resolve_platform_service_spec(KernelHostPlatform::Linux, &paths);
@@ -143,7 +143,7 @@ mod tests {
         assert_eq!(linux.service_name, "claw-studio-openclaw");
         assert!(normalize(&linux.launch_target).ends_with("install/claw-studio"));
         assert!(normalize(&linux.service_config_path)
-            .ends_with("user-home/.config/systemd/user/claw-studio-openclaw.service"));
+            .ends_with("app-user-root/.config/systemd/user/claw-studio-openclaw.service"));
         assert_eq!(linux.launch_arguments[0], "--run-kernel-host-service");
     }
 
@@ -193,7 +193,7 @@ mod tests {
         assert!(macos_plist.contains("KeepAlive"));
         assert!(macos_plist.contains("--run-kernel-host-service"));
         assert!(normalize(&macos.service_config_path)
-            .ends_with("user-home/Library/LaunchAgents/ai.sdkwork.clawstudio.openclaw.plist"));
+            .ends_with("app-user-root/Library/LaunchAgents/ai.sdkwork.clawstudio.openclaw.plist"));
 
         let linux = repair_platform_service_artifacts(
             KernelHostPlatform::Linux,
@@ -206,7 +206,7 @@ mod tests {
         assert!(linux_unit.contains("Restart=on-failure"));
         assert!(linux_unit.contains("--run-kernel-host-service"));
         assert!(normalize(&linux.service_config_path)
-            .ends_with("user-home/.config/systemd/user/claw-studio-openclaw.service"));
+            .ends_with("app-user-root/.config/systemd/user/claw-studio-openclaw.service"));
     }
 
     #[test]
@@ -237,6 +237,22 @@ mod tests {
         .expect("host info");
 
         assert_native_service(&info, gateway_port);
+    }
+
+    #[test]
+    fn desktop_kernel_host_info_uses_user_root_as_openclaw_home_without_configured_runtime() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+
+        let info =
+            build_desktop_kernel_host_info(&paths, None, &stopped_supervisor(), OPENCLAW_KERNEL_ID)
+                .expect("host info");
+
+        assert!(info
+            .provenance
+            .runtime_home_dir
+            .replace('\\', "/")
+            .ends_with("app-user-root"));
     }
 }
 
@@ -468,11 +484,15 @@ pub fn build_desktop_kernel_host_info(
             runtime_home_dir: runtime
                 .map(|configured| configured.home_dir.to_string_lossy().into_owned())
                 .or_else(|| {
+                    if runtime_id.trim() == OPENCLAW_RUNTIME_ID {
+                        return Some(paths.user_root.to_string_lossy().into_owned());
+                    }
+
                     runtime_kernel_paths
                         .as_ref()
                         .map(|kernel| kernel.kernel_state_dir.to_string_lossy().into_owned())
                 })
-                .unwrap_or_else(|| paths.openclaw_root_dir.to_string_lossy().into_owned()),
+                .unwrap_or_else(|| paths.user_root.to_string_lossy().into_owned()),
             runtime_install_dir: runtime
                 .map(|configured| configured.install_dir.to_string_lossy().into_owned())
                 .or_else(|| {

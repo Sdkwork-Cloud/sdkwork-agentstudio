@@ -1917,6 +1917,7 @@ function exposesOpenClawGatewayTransport(
 function isBuiltInOpenClawAccess(access: OpenClawGatewayAccessDescriptor) {
   return (
     exposesOpenClawGatewayTransport(access.detail) &&
+    access.detail?.instance.runtimeKind === 'openclaw' &&
     access.detail?.instance.isBuiltIn === true &&
     access.detail.instance.deploymentMode === 'local-managed'
   );

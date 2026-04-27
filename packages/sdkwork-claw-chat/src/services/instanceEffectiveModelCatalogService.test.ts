@@ -98,7 +98,7 @@ await runTest(
           deploymentMode: 'local-managed',
           status: 'online',
           baseUrl: 'http://127.0.0.1:18795',
-          websocketUrl: 'ws://127.0.0.1:18789',
+          websocketUrl: 'ws://127.0.0.1:21280',
         }) as any,
       getInstanceDetail: async () =>
         ({
@@ -184,7 +184,7 @@ await runTest(
           deploymentMode: 'local-managed',
           status: 'online',
           baseUrl: 'http://127.0.0.1:18795',
-          websocketUrl: 'ws://127.0.0.1:18789',
+          websocketUrl: 'ws://127.0.0.1:21280',
         }) as any,
       getInstanceDetail: async () =>
         ({
@@ -734,7 +734,7 @@ await runTest(
           deploymentMode: 'local-managed',
           status: 'online',
           baseUrl: 'http://127.0.0.1:18795',
-          websocketUrl: 'ws://127.0.0.1:18789',
+          websocketUrl: 'ws://127.0.0.1:21280',
         }) as any,
       getInstanceDetail: async () =>
         ({
@@ -881,7 +881,7 @@ await runTest(
           deploymentMode: 'local-managed',
           status: 'online',
           baseUrl: 'http://127.0.0.1:18795',
-          websocketUrl: 'ws://127.0.0.1:18789',
+          websocketUrl: 'ws://127.0.0.1:21280',
         }) as any,
       getInstanceDetail: async () =>
         ({
@@ -986,7 +986,7 @@ await runTest(
           deploymentMode: 'local-managed',
           status: 'online',
           baseUrl: 'http://127.0.0.1:18795',
-          websocketUrl: 'ws://127.0.0.1:18789',
+          websocketUrl: 'ws://127.0.0.1:21280',
         }) as any,
       getInstanceDetail: async () =>
         ({
@@ -1150,7 +1150,7 @@ await runTest(
           deploymentMode: 'local-managed',
           status: 'online',
           baseUrl: 'http://127.0.0.1:18795',
-          websocketUrl: 'ws://127.0.0.1:18789',
+          websocketUrl: 'ws://127.0.0.1:21280',
         }) as any,
       getInstanceDetail: async () =>
         ({

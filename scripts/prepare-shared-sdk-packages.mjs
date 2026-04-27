@@ -93,6 +93,7 @@ function run(command, args, workspaceRoot) {
     cwd: workspaceRoot,
     stdio: 'inherit',
     shell: false,
+    windowsHide: true,
   });
 
   if (result.status !== 0) {

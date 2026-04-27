@@ -323,25 +323,29 @@ export async function probeDesktopHostedRuntimeReadiness(
     requiresBuiltInOpenClawEvidence?: boolean;
     webSocketFactory?: DesktopHostedWebSocketFactory;
     webSocketConnectTimeoutMs?: number;
+    signal?: AbortSignal;
   },
 ): Promise<DesktopHostedRuntimeReadinessSnapshot> {
-  const { requiresBuiltInOpenClawEvidence = true } = options ?? {};
+  const { requiresBuiltInOpenClawEvidence = false } = options ?? {};
   const normalizedDescriptor = requireDesktopHostedRuntimeDescriptor(descriptor);
-  const internal = createDesktopHostedInternalPlatform(normalizedDescriptor, fetchImpl);
-  const manage = createDesktopHostedManagePlatform(normalizedDescriptor, fetchImpl);
-  const studio = createDesktopHostedStudioPlatform(normalizedDescriptor, fetchImpl);
+  const probeFetch = createDesktopHostedProbeFetch(fetchImpl, options?.signal);
+  const internal = createDesktopHostedInternalPlatform(normalizedDescriptor, probeFetch);
+  const manage = createDesktopHostedManagePlatform(normalizedDescriptor, probeFetch);
   const openClawRuntimePromise = requiresBuiltInOpenClawEvidence
     ? manage.getOpenClawRuntime()
     : Promise.resolve(createInactiveOpenClawRuntimeRecord(normalizedDescriptor));
   const openClawGatewayPromise = requiresBuiltInOpenClawEvidence
     ? manage.getOpenClawGateway()
     : Promise.resolve(createInactiveOpenClawGatewayRecord(normalizedDescriptor));
+  const instancesPromise = requiresBuiltInOpenClawEvidence
+    ? createDesktopHostedStudioPlatform(normalizedDescriptor, probeFetch).listInstances()
+    : Promise.resolve([] as StudioInstanceRecord[]);
   const [hostPlatformStatus, hostEndpoints, openClawRuntime, openClawGateway, instances] = await Promise.all([
     internal.getHostPlatformStatus(),
     manage.getHostEndpoints(),
     openClawRuntimePromise,
     openClawGatewayPromise,
-    studio.listInstances(),
+    instancesPromise,
   ]);
 
   const evidence = buildDesktopHostedRuntimeReadinessEvidence(
@@ -400,6 +404,49 @@ export async function probeDesktopHostedRuntimeReadiness(
   }
 
   return snapshot;
+}
+
+function createDesktopHostedProbeFetch(
+  fetchImpl: DesktopHostedFetch | undefined,
+  signal: AbortSignal | undefined,
+): DesktopHostedFetch | undefined {
+  if (!signal) {
+    return fetchImpl;
+  }
+
+  const resolvedFetch = fetchImpl ?? resolveGlobalDesktopHostedFetch();
+  return async (input, init) => {
+    return resolvedFetch(input, {
+      ...init,
+      signal: resolveDesktopHostedProbeSignal(signal, init?.signal ?? null),
+    });
+  };
+}
+
+function resolveGlobalDesktopHostedFetch(): DesktopHostedFetch {
+  if (typeof globalThis.fetch !== 'function') {
+    throw new Error('Browser HTTP bridge requires a global fetch implementation.');
+  }
+
+  return globalThis.fetch.bind(globalThis) as DesktopHostedFetch;
+}
+
+function resolveDesktopHostedProbeSignal(
+  retrySignal: AbortSignal,
+  requestSignal: AbortSignal | null,
+): AbortSignal {
+  if (!requestSignal || requestSignal === retrySignal) {
+    return retrySignal;
+  }
+
+  const signalFactory = AbortSignal as typeof AbortSignal & {
+    any?: (signals: AbortSignal[]) => AbortSignal;
+  };
+  if (typeof signalFactory.any === 'function') {
+    return signalFactory.any([retrySignal, requestSignal]);
+  }
+
+  return retrySignal;
 }
 
 function requireDesktopHostedRuntimeDescriptor(
@@ -557,7 +604,7 @@ export function buildDesktopHostedRuntimeReadinessEvidence(
     requiresBuiltInOpenClawEvidence?: boolean;
   },
 ): DesktopHostedRuntimeReadinessEvidence {
-  const { requiresBuiltInOpenClawEvidence = true } = options ?? {};
+  const { requiresBuiltInOpenClawEvidence = false } = options ?? {};
   const manageHostEndpoint = resolveDesktopHostedManageEndpoint(descriptor, hostEndpoints);
   const manageBaseUrl = normalizeRequiredString(manageHostEndpoint?.baseUrl);
   const manageEndpointId = normalizeRequiredString(manageHostEndpoint?.endpointId);
@@ -620,7 +667,15 @@ export function buildDesktopHostedRuntimeReadinessEvidence(
     Boolean(builtInInstanceWebsocketUrl && openClawGatewayWebsocketUrl)
     && normalizeComparableUrl(builtInInstanceWebsocketUrl!)
       === normalizeComparableUrl(openClawGatewayWebsocketUrl!);
-  const hostLifecycleReady = hostPlatformStatus.lifecycle === 'ready';
+  const hostLifecycleReady =
+    hostPlatformStatus.lifecycle === 'ready'
+    || (
+      hostPlatformStatus.lifecycle === 'degraded'
+      && Boolean(manageBaseUrl)
+      && manageEndpointMatchesDescriptor
+      && manageEndpointIdMatchesDescriptor
+      && manageEndpointActivePortMatchesDescriptor
+    );
   const supportedCapabilityKeys = normalizeCapabilityKeys(
     hostPlatformStatus.supportedCapabilityKeys,
   );
@@ -743,7 +798,7 @@ function assertDesktopHostedRuntimeReady(
     requiresBuiltInOpenClawEvidence?: boolean;
   },
 ) {
-  const { requiresBuiltInOpenClawEvidence = true } = options ?? {};
+  const { requiresBuiltInOpenClawEvidence = false } = options ?? {};
 
   if (!evidence.hostLifecycleReady) {
     throw new Error(

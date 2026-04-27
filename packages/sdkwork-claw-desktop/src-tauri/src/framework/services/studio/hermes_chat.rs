@@ -3,9 +3,8 @@ use super::{
     kernel_chat::{
         KernelChatActorBinding, KernelChatAgentProfile, KernelChatAuthority, KernelChatMessage,
         KernelChatMessagePart, KernelChatModelBinding, KernelChatRun, KernelChatSession,
-        KernelChatSessionRef,
-        StudioCreateKernelChatSessionInput, StudioPatchKernelChatSessionInput,
-        StudioStartKernelChatRunInput,
+        KernelChatSessionRef, StudioCreateKernelChatSessionInput,
+        StudioPatchKernelChatSessionInput, StudioStartKernelChatRunInput,
     },
     normalize_kernel_agent_id, normalize_optional_string, trim_required_kernel_agent_field,
     unix_timestamp_ms, StudioCreateKernelAgentInput, StudioCreatedKernelAgentRecord,
@@ -158,11 +157,31 @@ fn initialize_hermes_state_db(connection: &Connection) -> Result<()> {
     ensure_table_column(connection, "sessions", "instance_id", "instance_id TEXT")?;
     ensure_table_column(connection, "sessions", "agent_id", "agent_id TEXT")?;
     ensure_table_column(connection, "sessions", "model", "model TEXT")?;
-    ensure_table_column(connection, "sessions", "thinking_level", "thinking_level TEXT")?;
+    ensure_table_column(
+        connection,
+        "sessions",
+        "thinking_level",
+        "thinking_level TEXT",
+    )?;
     ensure_table_column(connection, "sessions", "fast_mode", "fast_mode INTEGER")?;
-    ensure_table_column(connection, "sessions", "verbose_level", "verbose_level TEXT")?;
-    ensure_table_column(connection, "sessions", "reasoning_level", "reasoning_level TEXT")?;
-    ensure_table_column(connection, "sessions", "active_run_id", "active_run_id TEXT")?;
+    ensure_table_column(
+        connection,
+        "sessions",
+        "verbose_level",
+        "verbose_level TEXT",
+    )?;
+    ensure_table_column(
+        connection,
+        "sessions",
+        "reasoning_level",
+        "reasoning_level TEXT",
+    )?;
+    ensure_table_column(
+        connection,
+        "sessions",
+        "active_run_id",
+        "active_run_id TEXT",
+    )?;
     ensure_table_column(connection, "sessions", "last_run_id", "last_run_id TEXT")?;
     ensure_table_column(connection, "messages", "run_id", "run_id TEXT")?;
     ensure_table_column(connection, "messages", "model", "model TEXT")?;
@@ -333,10 +352,7 @@ fn resolve_session_patch_string(
     }
 }
 
-fn resolve_session_patch_bool(
-    patch: Option<Option<bool>>,
-    current: Option<bool>,
-) -> Option<bool> {
+fn resolve_session_patch_bool(patch: Option<Option<bool>>, current: Option<bool>) -> Option<bool> {
     match patch {
         Some(next) => next,
         None => current,
@@ -979,8 +995,14 @@ fn build_kernel_chat_session(instance_id: &str, row: HermesSessionRow) -> Kernel
         "ready"
     };
     let mut native_metadata = serde_json::Map::new();
-    native_metadata.insert("authorityFile".to_string(), Value::String("state.db".to_string()));
-    native_metadata.insert("runtimeKind".to_string(), Value::String("hermes".to_string()));
+    native_metadata.insert(
+        "authorityFile".to_string(),
+        Value::String("state.db".to_string()),
+    );
+    native_metadata.insert(
+        "runtimeKind".to_string(),
+        Value::String("hermes".to_string()),
+    );
     if let Some(last_run_id) = last_run_id.clone() {
         native_metadata.insert("lastRunId".to_string(), Value::String(last_run_id));
     }
@@ -1191,8 +1213,14 @@ fn build_kernel_chat_run(instance_id: &str, row: HermesRunRow) -> KernelChatRun 
     let agent_id = normalize_optional_string(row.agent_id);
     let model = normalize_optional_string(row.model);
     let mut native_metadata = serde_json::Map::new();
-    native_metadata.insert("authorityFile".to_string(), Value::String("state.db".to_string()));
-    native_metadata.insert("runtimeKind".to_string(), Value::String("hermes".to_string()));
+    native_metadata.insert(
+        "authorityFile".to_string(),
+        Value::String("state.db".to_string()),
+    );
+    native_metadata.insert(
+        "runtimeKind".to_string(),
+        Value::String("hermes".to_string()),
+    );
     native_metadata.insert("persisted".to_string(), Value::Bool(true));
     if let Some(agent_id) = agent_id.as_ref() {
         native_metadata.insert("agentId".to_string(), Value::String(agent_id.clone()));
@@ -1305,8 +1333,7 @@ enum HermesChatEndpointMode {
 
 fn resolve_hermes_chat_endpoint_mode(endpoint: &str) -> HermesChatEndpointMode {
     let normalized_endpoint = endpoint.trim().to_ascii_lowercase();
-    if normalized_endpoint.ends_with("/v1/responses")
-        || normalized_endpoint.ends_with("/responses")
+    if normalized_endpoint.ends_with("/v1/responses") || normalized_endpoint.ends_with("/responses")
     {
         return HermesChatEndpointMode::Responses;
     }
@@ -1473,10 +1500,7 @@ pub(super) fn list_kernel_chat_agent_profiles_for_managed_hermes(
             ",
     )?;
     let session_rows = session_statement.query_map(params![instance.id.as_str()], |row| {
-        Ok((
-            row.get::<_, String>(0)?,
-            row.get::<_, String>(1)?,
-        ))
+        Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
     })?;
 
     for row in session_rows {
@@ -1508,7 +1532,8 @@ pub(super) fn create_kernel_chat_agent_profile_for_managed_hermes(
     let normalized_agent_id = normalize_kernel_agent_id(
         trim_required_kernel_agent_field(input.agent_id.as_str(), "agentId")?.as_str(),
     );
-    let display_name = trim_required_kernel_agent_field(input.display_name.as_str(), "displayName")?;
+    let display_name =
+        trim_required_kernel_agent_field(input.display_name.as_str(), "displayName")?;
     let avatar = normalize_optional_text(input.avatar.as_deref());
 
     upsert_hermes_agent_profile(
@@ -1651,7 +1676,9 @@ pub(super) fn list_kernel_chat_runs_for_managed_hermes(
     let Some(connection) = ensure_hermes_state_db(paths, false)? else {
         return Ok(vec![]);
     };
-    if query_hermes_session_row_for_instance(&connection, instance.id.as_str(), session_id)?.is_none() {
+    if query_hermes_session_row_for_instance(&connection, instance.id.as_str(), session_id)?
+        .is_none()
+    {
         return Ok(vec![]);
     }
 
@@ -1668,7 +1695,9 @@ pub(super) fn get_kernel_chat_run_for_managed_hermes(
     let Some(connection) = ensure_hermes_state_db(paths, false)? else {
         return Ok(None);
     };
-    if query_hermes_session_row_for_instance(&connection, instance.id.as_str(), session_id)?.is_none() {
+    if query_hermes_session_row_for_instance(&connection, instance.id.as_str(), session_id)?
+        .is_none()
+    {
         return Ok(None);
     }
 
@@ -1738,10 +1767,7 @@ pub(super) fn patch_kernel_chat_session_for_managed_hermes(
         input.session_id.as_str(),
     )?
     .ok_or_else(|| {
-        FrameworkError::NotFound(format!(
-            "kernel chat session \"{}\"",
-            input.session_id
-        ))
+        FrameworkError::NotFound(format!("kernel chat session \"{}\"", input.session_id))
     })?;
     let next_title = resolve_session_patch_string(input.title.clone(), existing_row.title.clone());
     let next_model = resolve_session_patch_string(input.model.clone(), existing_row.model.clone());
@@ -1749,8 +1775,7 @@ pub(super) fn patch_kernel_chat_session_for_managed_hermes(
         input.thinking_level.clone(),
         existing_row.thinking_level.clone(),
     );
-    let next_fast_mode =
-        resolve_session_patch_bool(input.fast_mode, existing_row.fast_mode);
+    let next_fast_mode = resolve_session_patch_bool(input.fast_mode, existing_row.fast_mode);
     let next_verbose_level = resolve_session_patch_string(
         input.verbose_level.clone(),
         existing_row.verbose_level.clone(),
@@ -1794,8 +1819,8 @@ pub(super) fn patch_kernel_chat_session_for_managed_hermes(
         input.session_id.as_str(),
     )?
     .ok_or_else(|| {
-            FrameworkError::NotFound(format!("kernel chat session \"{}\"", input.session_id))
-        })?;
+        FrameworkError::NotFound(format!("kernel chat session \"{}\"", input.session_id))
+    })?;
 
     Ok(build_kernel_chat_session(input.instance_id.as_str(), row))
 }
@@ -1835,10 +1860,7 @@ pub(super) fn start_kernel_chat_run_for_managed_hermes(
         input.session_id.as_str(),
     )?
     .ok_or_else(|| {
-        FrameworkError::NotFound(format!(
-            "kernel chat session \"{}\"",
-            input.session_id
-        ))
+        FrameworkError::NotFound(format!("kernel chat session \"{}\"", input.session_id))
     })?;
     let requested_model = normalize_optional_string(input.model.clone());
     let persisted_model = normalize_optional_string(session_row.model.clone());
@@ -1935,8 +1957,7 @@ pub(super) fn load_kernel_chat_messages_for_managed_hermes(
     if session_row.is_none() {
         return Ok(vec![]);
     }
-    let session_agent_id =
-        session_row.and_then(|row| normalize_optional_string(row.agent_id));
+    let session_agent_id = session_row.and_then(|row| normalize_optional_string(row.agent_id));
 
     let mut statement = connection.prepare(
         "
@@ -1995,12 +2016,11 @@ mod tests {
         create_kernel_chat_session_for_managed_hermes, extract_hermes_message_text,
         extract_hermes_message_text_from_value, get_kernel_chat_run_from_connection,
         hermes_state_db_path, initialize_hermes_state_db,
-        list_kernel_chat_agent_profiles_for_managed_hermes,
-        list_kernel_chat_runs_from_connection, list_kernel_chat_sessions_for_managed_hermes,
-        parse_hermes_message_native_metadata, patch_kernel_chat_session_for_managed_hermes,
-        persist_hermes_run_messages, query_hermes_session_row,
-        query_hermes_session_row_for_instance, resolve_hermes_chat_endpoint,
-        start_kernel_chat_run_for_managed_hermes,
+        list_kernel_chat_agent_profiles_for_managed_hermes, list_kernel_chat_runs_from_connection,
+        list_kernel_chat_sessions_for_managed_hermes, parse_hermes_message_native_metadata,
+        patch_kernel_chat_session_for_managed_hermes, persist_hermes_run_messages,
+        query_hermes_session_row, query_hermes_session_row_for_instance,
+        resolve_hermes_chat_endpoint, start_kernel_chat_run_for_managed_hermes,
     };
     use crate::framework::paths::resolve_paths_for_root;
     use crate::framework::services::studio::kernel_chat::{
@@ -2075,13 +2095,18 @@ mod tests {
         thread::JoinHandle<()>,
     ) {
         let listener = TcpListener::bind("127.0.0.1:0").expect("bind single response server");
-        let base_url = format!("http://{}", listener.local_addr().expect("resolve server address"));
+        let base_url = format!(
+            "http://{}",
+            listener.local_addr().expect("resolve server address")
+        );
         let captured_request_body = Arc::new(Mutex::new(None));
         let captured_request_body_clone = Arc::clone(&captured_request_body);
         let response_text = response_body.to_string();
         let response_length = response_text.len();
         let handle = thread::spawn(move || {
-            let (mut stream, _) = listener.accept().expect("accept single response connection");
+            let (mut stream, _) = listener
+                .accept()
+                .expect("accept single response connection");
             let mut buffer = Vec::new();
             let mut chunk = [0_u8; 1024];
             let mut header_end = None;
@@ -2407,8 +2432,8 @@ mod tests {
     }
 
     #[test]
-    fn managed_hermes_agent_profile_listing_recovers_session_bound_agents_without_agents_table_rows()
-    {
+    fn managed_hermes_agent_profile_listing_recovers_session_bound_agents_without_agents_table_rows(
+    ) {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let instance = create_managed_hermes_instance("http://127.0.0.1:19540");
@@ -2632,10 +2657,16 @@ mod tests {
 
         assert_eq!(sessions_a.len(), 1);
         assert_eq!(sessions_a[0].session_ref.instance_id, instance_a.id);
-        assert_eq!(sessions_a[0].session_ref.agent_id.as_deref(), Some("research"));
+        assert_eq!(
+            sessions_a[0].session_ref.agent_id.as_deref(),
+            Some("research")
+        );
         assert_eq!(sessions_b.len(), 1);
         assert_eq!(sessions_b[0].session_ref.instance_id, instance_b.id);
-        assert_eq!(sessions_b[0].session_ref.agent_id.as_deref(), Some("support"));
+        assert_eq!(
+            sessions_b[0].session_ref.agent_id.as_deref(),
+            Some("support")
+        );
         assert_eq!(agents_a.len(), 1);
         assert_eq!(agents_a[0].instance_id, instance_a.id);
         assert_eq!(agents_a[0].agent_id, "research");
@@ -2762,9 +2793,7 @@ mod tests {
         .expect("persist hermes run messages");
 
         let mut statement = connection
-            .prepare(
-                "SELECT role, model FROM messages WHERE session_id = ?1 ORDER BY id ASC",
-            )
+            .prepare("SELECT role, model FROM messages WHERE session_id = ?1 ORDER BY id ASC")
             .expect("prepare model query");
         let rows = statement
             .query_map(params!["session-1"], |row| {
@@ -2843,7 +2872,9 @@ mod tests {
             .clone()
             .expect("captured request body");
         assert_eq!(
-            captured_request_body.get("model").and_then(serde_json::Value::as_str),
+            captured_request_body
+                .get("model")
+                .and_then(serde_json::Value::as_str),
             Some("hermes/persisted")
         );
         assert_eq!(run.id, "resp-fallback-1");
@@ -2966,8 +2997,9 @@ mod tests {
             )
             .expect("insert latest run");
 
-        let runs = list_kernel_chat_runs_from_connection(&connection, "instance-hermes", "session-1")
-            .expect("list runs");
+        let runs =
+            list_kernel_chat_runs_from_connection(&connection, "instance-hermes", "session-1")
+                .expect("list runs");
 
         assert_eq!(runs.len(), 2);
         assert_eq!(runs[0].id, "run-latest");

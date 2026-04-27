@@ -226,7 +226,7 @@ export function useChatSidebarState({
     setSelectedAgentId(plan.nextSelectedAgentId);
 
     if (plan.shouldSetActiveSession) {
-      await setActiveSession(plan.nextSessionId, plan.nextInstanceId ?? undefined);
+      await setActiveSession(plan.nextSessionId, plan.nextInstanceId);
     }
   };
 

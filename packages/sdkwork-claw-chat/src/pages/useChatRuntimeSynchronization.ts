@@ -53,7 +53,7 @@ export interface UseChatRuntimeSynchronizationInput {
       sessionId?: string | null;
     },
   ) => Promise<string>;
-  setActiveSession: (sessionId: string, instanceId?: string) => Promise<void> | void;
+  setActiveSession: (sessionId: string, instanceId?: string | null) => Promise<void> | void;
   setSelectedAgentId: (agentId: string | null | undefined) => void;
   setSelectedSkillId: (skillId: string | null) => void;
 }

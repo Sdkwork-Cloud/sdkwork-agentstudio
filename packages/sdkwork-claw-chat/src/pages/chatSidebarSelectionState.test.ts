@@ -61,6 +61,14 @@ await runTest(
       sidebarStateSource,
       /await commitSelectionPlan\(requestId, plan\);[\s\S]*return CHAT_SIDEBAR_SELECTION_COMPLETED;/s,
     );
+    assert.match(
+      sidebarStateSource,
+      /await setActiveSession\(plan\.nextSessionId, plan\.nextInstanceId\);/,
+    );
+    assert.doesNotMatch(
+      sidebarStateSource,
+      /setActiveSession\(plan\.nextSessionId, plan\.nextInstanceId \?\? undefined\)/,
+    );
   },
 );
 
@@ -95,5 +103,23 @@ await runTest(
     );
     assert.match(sidebarChromeSource, /selectionErrorMessage\?: string \| null;/);
     assert.match(sidebarChromeSource, /onDismissSelectionError\?: \(\) => void;/);
+  },
+);
+
+await runTest(
+  'ChatSidebar indexes visible history sessions once instead of scanning the session list for every rendered row',
+  () => {
+    assert.match(
+      sidebarSource,
+      /const activeHistorySessionById = React\.useMemo\(\(\) => \{/s,
+    );
+    assert.match(
+      sidebarSource,
+      /return activeHistorySessionById\.get\(sessionId\) \?\? null;/,
+    );
+    assert.doesNotMatch(
+      sidebarSource,
+      /const resolveSessionRecord = \(sessionId: string\) =>\s*activeHistorySessions\.find\(\(session\) => session\.id === sessionId\) \?\? null;/,
+    );
   },
 );

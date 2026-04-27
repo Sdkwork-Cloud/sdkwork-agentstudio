@@ -9,7 +9,6 @@ import {
   Search,
   Server,
   Settings,
-  Terminal,
 } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { instanceDirectoryService } from '../services/index.ts';
@@ -102,14 +101,6 @@ export function CommandPalette() {
         icon: Settings,
         category: t('commandPalette.categories.navigation'),
         action: () => navigate('/settings'),
-      },
-      {
-        id: 'action-terminal',
-        title: t('commandPalette.commands.terminal.title'),
-        subtitle: t('commandPalette.commands.terminal.subtitle'),
-        icon: Terminal,
-        category: t('commandPalette.categories.actions'),
-        action: () => console.log('Terminal opened'),
       },
     ];
 

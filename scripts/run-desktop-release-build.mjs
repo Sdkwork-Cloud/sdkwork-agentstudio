@@ -520,10 +520,11 @@ export function repairMacosDmgBundleOutput({
       '-o',
       repairPlan.targetPath,
     ],
-    {
-      stdio: 'inherit',
-    },
-  );
+      {
+        stdio: 'inherit',
+        windowsHide: true,
+      },
+    );
 
   if (repairResult?.error) {
     console.error(`[run-desktop-release-build] failed to repair macOS dmg output: ${repairResult.error.message}`);
@@ -649,11 +650,12 @@ function runCli() {
   });
   if (preflightPlan) {
     const preflightResult = spawnSync(preflightPlan.command, preflightPlan.args, {
-      cwd: preflightPlan.cwd,
-      env: preflightPlan.env,
-      stdio: 'inherit',
-      shell: preflightPlan.shell,
-    });
+        cwd: preflightPlan.cwd,
+        env: preflightPlan.env,
+        stdio: 'inherit',
+        shell: preflightPlan.shell,
+        windowsHide: true,
+      });
     if (preflightResult.error) {
       console.error(
         `[run-desktop-release-build] OpenClaw release-asset preflight failed: ${preflightResult.error.message}`,
@@ -675,6 +677,7 @@ function runCli() {
     env: plan.env,
     stdio: 'inherit',
     shell: plan.shell,
+    windowsHide: true,
   });
 
   child.on('error', (error) => {

@@ -6,6 +6,7 @@ import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
+const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
 
 function buildInstallerContract(platform) {
   if (platform === 'windows') {
@@ -131,7 +132,7 @@ function buildDesktopStartupSmokeReport({
     includedKernelIds,
     defaultEnabledKernelIds,
     descriptorBrowserBaseUrl: 'http://127.0.0.1:19797',
-    builtInInstanceId: 'local-built-in',
+    builtInInstanceId: BUILT_IN_INSTANCE_ID,
     builtInInstanceStatus: 'online',
     localAiProxyRuntime,
     artifactRelativePaths,
@@ -162,7 +163,7 @@ function writePassingDesktopStartupSmokeFixture({
         browserBaseUrl: 'http://127.0.0.1:19797',
       },
       builtInInstance: {
-        id: 'local-built-in',
+        id: BUILT_IN_INSTANCE_ID,
         status: 'online',
       },
       localAiProxy: {
@@ -1092,7 +1093,7 @@ test('release asset finalizer rejects desktop release assets when startup smoke 
           browserBaseUrl: 'http://127.0.0.1:19797',
         },
         builtInInstance: {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           status: 'online',
         },
         localAiProxy: {
@@ -1250,7 +1251,7 @@ test('release asset finalizer lifts desktop startup smoke metadata onto desktop 
           browserBaseUrl: 'http://127.0.0.1:19797',
         },
         builtInInstance: {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           status: 'online',
         },
         localAiProxy: {
@@ -1303,7 +1304,7 @@ test('release asset finalizer lifts desktop startup smoke metadata onto desktop 
         includedKernelIds: ['openclaw'],
         defaultEnabledKernelIds: ['openclaw'],
         descriptorBrowserBaseUrl: 'http://127.0.0.1:19797',
-        builtInInstanceId: 'local-built-in',
+        builtInInstanceId: BUILT_IN_INSTANCE_ID,
         builtInInstanceStatus: 'online',
         localAiProxyRuntime: {
           lifecycle: 'running',
@@ -1444,7 +1445,7 @@ test('release asset finalizer rejects desktop startup smoke metadata when packag
           browserBaseUrl: 'http://127.0.0.1:19797',
         },
         builtInInstance: {
-          id: 'local-built-in',
+          id: BUILT_IN_INSTANCE_ID,
           status: 'online',
         },
         localAiProxy: {

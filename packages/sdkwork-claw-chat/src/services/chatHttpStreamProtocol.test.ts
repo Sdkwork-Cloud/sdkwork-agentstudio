@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { Buffer } from 'node:buffer';
 
 import { extractChatHttpStreamTextDeltas } from './chatHttpStreamProtocol.ts';
 
@@ -12,6 +13,10 @@ function runTest(name: string, callback: () => void | Promise<void>) {
       console.error(`not ok - ${name}`);
       throw error;
     });
+}
+
+function encodeUtf8AsLatin1(value: string) {
+  return Buffer.from(value, 'utf8').toString('latin1');
 }
 
 await runTest(
@@ -50,6 +55,20 @@ await runTest(
         `event: hermes.tool.progress\ndata: {"tool_name":"browser.search","phase":"running","message":"Searching..."}\n\n`,
       ),
       [],
+    );
+  },
+);
+
+await runTest(
+  'extractChatHttpStreamTextDeltas repairs mojibake text fragments from generic HTTP streams',
+  () => {
+    const mojibake = encodeUtf8AsLatin1('你好，HTTP 流式消息正常显示。');
+
+    assert.deepEqual(
+      extractChatHttpStreamTextDeltas(
+        `data: ${JSON.stringify({ choices: [{ delta: { content: mojibake } }] })}`,
+      ),
+      ['你好，HTTP 流式消息正常显示。'],
     );
   },
 );

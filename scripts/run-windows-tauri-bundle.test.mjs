@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 
 const rootDir = path.resolve(import.meta.dirname, '..');
 const bundleModulePath = path.join(rootDir, 'scripts', 'run-windows-tauri-bundle.mjs');
+const bundleModuleSource = readFileSync(bundleModulePath, 'utf8');
 const bundleModule = await import(pathToFileURL(bundleModulePath).href);
 const syntheticWorkspaceRoot = 'D:\\workspace\\claw-studio';
 
@@ -49,6 +50,16 @@ assert.equal(
   'run-windows-tauri-bundle must export buildWindowsTauriBundlePreflightCommand',
 );
 assert.equal(
+  typeof bundleModule.buildWindowsBeforeBuildCommand,
+  'function',
+  'run-windows-tauri-bundle must export buildWindowsBeforeBuildCommand',
+);
+assert.equal(
+  typeof bundleModule.ensureWindowsTauriBuildRuntimeOverlay,
+  'function',
+  'run-windows-tauri-bundle must export ensureWindowsTauriBuildRuntimeOverlay',
+);
+assert.equal(
   typeof bundleModule.ensureWindowsBundleOpenClawAliasRoot,
   'function',
   'run-windows-tauri-bundle must export ensureWindowsBundleOpenClawAliasRoot',
@@ -79,55 +90,82 @@ assert.throws(
   'run-windows-tauri-bundle must reject a missing --bundles value',
 );
 assert.match(
-  readFileSync(bundleModulePath, 'utf8'),
+  bundleModuleSource,
   /if \(path\.resolve\(process\.argv\[1\] \?\? ''\) === __filename\) \{\s*try \{\s*await main\(\);\s*\} catch \(error\) \{\s*console\.error\(error instanceof Error \? error\.message : String\(error\)\);\s*process\.exit\(1\);\s*\}\s*\}/s,
   'run-windows-tauri-bundle must wrap the CLI entrypoint with a top-level error handler',
 );
 assert.match(
-  readFileSync(bundleModulePath, 'utf8'),
+  bundleModuleSource,
   /const preflightPlan = buildWindowsTauriBundlePreflightCommand\(/,
   'run-windows-tauri-bundle must derive an OpenClaw preflight plan before tauri build',
 );
 assert.match(
-  readFileSync(bundleModulePath, 'utf8'),
+  bundleModuleSource,
   /runCommand\(\s*preflightPlan\.command,\s*preflightPlan\.args,/s,
   'run-windows-tauri-bundle must execute the OpenClaw verifier before tauri build',
 );
 assert.match(
-  readFileSync(bundleModulePath, 'utf8'),
+  bundleModuleSource,
   /await ensureWindowsBundleOpenClawAliasRoot\([\s\S]*const buildPlan = buildWindowsTauriBundleCommand\(/s,
   'run-windows-tauri-bundle must refresh the Windows OpenClaw alias root before invoking tauri build',
 );
+assert.match(
+  bundleModuleSource,
+  /windowsHide:\s*true/u,
+  'run-windows-tauri-bundle must hide delegated Windows child processes so installer retry automation does not flash terminal windows',
+);
 
-const windowsBundleCommand = bundleModule.buildWindowsTauriBundleCommand();
+const windowsBundleCommand = bundleModule.buildWindowsTauriBundleCommand({
+  platform: 'win32',
+  env: {},
+  execPath: process.execPath,
+  resolveTauriCliEntrypoint: () => 'D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
+});
 assert.equal(
   windowsBundleCommand.command,
-  process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
-  'run-windows-tauri-bundle must use the Windows pnpm launcher when it shells out to tauri',
+  process.execPath,
+  'run-windows-tauri-bundle must reuse the shared tauri CLI runner entrypoint when it shells out to tauri',
 );
 assert.deepEqual(
-  windowsBundleCommand.args.slice(0, 10),
+  windowsBundleCommand.args.slice(0, 1),
+  ['D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js'],
+  'run-windows-tauri-bundle must prefix tauri invocations with the resolved @tauri-apps/cli entrypoint on Windows',
+);
+assert.equal(
+  windowsBundleCommand.shell,
+  false,
+  'run-windows-tauri-bundle must keep direct Windows tauri execution out of shell mode',
+);
+assert.deepEqual(
+  windowsBundleCommand.args.slice(1, 9),
   [
-    '--dir',
-    'packages/sdkwork-claw-desktop',
-    'exec',
-    'tauri',
     'build',
     '--config',
     'src-tauri/tauri.windows.conf.json',
     '--config',
     'src-tauri/generated/tauri.bundle.overlay.json',
+    '--config',
+    'src-tauri/generated/tauri.windows.runtime.overlay.json',
     '--bundles',
   ],
   'run-windows-tauri-bundle must invoke tauri from the desktop package with the explicit Windows config and generated bundle overlay config',
 );
 assert.equal(
-  windowsBundleCommand.args[10],
+  windowsBundleCommand.args[9],
   'nsis',
   'run-windows-tauri-bundle must request nsis-only Windows installers to avoid flaky WiX/MSI packaging on CI runners',
 );
+assert.equal(
+  windowsBundleCommand.cwd,
+  path.join(rootDir, 'packages', 'sdkwork-claw-desktop'),
+  'run-windows-tauri-bundle must execute the tauri CLI from the desktop package directory',
+);
 const configuredWindowsBundleCommand = bundleModule.buildWindowsTauriBundleCommand({
   bundleTargets: ['nsis', 'msi'],
+  platform: 'win32',
+  env: {},
+  execPath: process.execPath,
+  resolveTauriCliEntrypoint: () => 'D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
 });
 assert.deepEqual(
   configuredWindowsBundleCommand.args.slice(-2),

@@ -50,7 +50,7 @@ function createDetail(overrides: DetailOverrides = {}): StudioInstanceDetailReco
       version: '2026.4.5',
       typeLabel: 'OpenClaw Gateway',
       host: '10.0.0.8',
-      port: 18789,
+      port: 21280,
       baseUrl: 'https://gateway.example.com',
       websocketUrl: 'wss://gateway.example.com/ws',
       cpu: 0,
@@ -63,7 +63,7 @@ function createDetail(overrides: DetailOverrides = {}): StudioInstanceDetailReco
         namespace: 'openclaw-instance',
       },
       config: {
-        port: '18789',
+        port: '21280',
         sandbox: true,
         autoUpdate: true,
         logLevel: 'info',
@@ -77,7 +77,7 @@ function createDetail(overrides: DetailOverrides = {}): StudioInstanceDetailReco
       ...(instanceOverrides || {}),
     },
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',

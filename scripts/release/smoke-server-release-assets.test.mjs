@@ -258,6 +258,7 @@ test('server bundle smoke stops Windows launcher trees with taskkill before clea
       options: {
         encoding: 'utf8',
         shell: false,
+        windowsHide: true,
       },
     },
   ]);

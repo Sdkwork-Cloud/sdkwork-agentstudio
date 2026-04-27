@@ -1,5 +1,7 @@
 use super::requests::ValidatedProcessRequest;
-use crate::framework::{events, runtime, FrameworkError, Result};
+use crate::framework::{
+    child_process::configure_hidden_child_process, events, runtime, FrameworkError, Result,
+};
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader, Read},
@@ -106,6 +108,7 @@ impl ProcessRuntime {
 
         runtime::run_blocking("process.run_capture", move || {
             let mut process = Command::new(&validated.command);
+            configure_hidden_child_process(&mut process);
             process.args(&validated.args);
             process.stdout(Stdio::piped());
             process.stderr(Stdio::piped());
@@ -530,6 +533,19 @@ mod tests {
             self.events.lock().expect("event lock").push(payload);
             Ok(())
         }
+    }
+
+    #[test]
+    fn process_runtime_hides_gui_child_process_console_windows() {
+        let production_source = include_str!("runtime.rs")
+            .split("mod tests {")
+            .next()
+            .expect("production source");
+
+        assert!(
+            production_source.contains("configure_hidden_child_process(&mut process);"),
+            "desktop GUI process execution must apply the shared hidden-child-process policy before spawning shell commands"
+        );
     }
 
     #[test]

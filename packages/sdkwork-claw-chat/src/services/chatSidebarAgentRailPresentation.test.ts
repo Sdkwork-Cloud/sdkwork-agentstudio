@@ -3,11 +3,6 @@ import { readFileSync } from 'node:fs';
 
 import { resolveChatSidebarAgentRailPresentation } from './chatSidebarAgentRailPresentation.ts';
 
-const EN_RELATIVE_TIME_LABELS = {
-  yesterday: 'Yesterday',
-  daysAgo: (count: number) => `${count} days ago`,
-};
-
 function runTest(name: string, callback: () => void | Promise<void>) {
   return Promise.resolve()
     .then(callback)
@@ -104,9 +99,8 @@ await runTest(
 );
 
 await runTest(
-  'resolveChatSidebarAgentRailPresentation derives IM-style preview and recency metadata from each agent latest session while keeping empty agents explicit',
+  'resolveChatSidebarAgentRailPresentation keeps agent rail items identity-only without chat preview metadata',
   () => {
-    const now = Date.UTC(2026, 3, 3, 11, 0, 0);
     const presentation = resolveChatSidebarAgentRailPresentation({
       agentOptions: [
         {
@@ -160,41 +154,101 @@ await runTest(
       sessionScopeMode: 'all',
       selectedAgentId: 'research',
       primaryAgentId: null,
-      previewLabels: {
-        you: 'You',
-        system: 'System',
-        tool: 'Tool',
-        attachment: 'Attachment',
-        attachments: 'Attachments',
-      },
-      relativeTimeLabels: EN_RELATIVE_TIME_LABELS,
-      locale: 'en-US',
-      timeZone: 'UTC',
-      emptyPreviewLabel: 'No conversations yet',
-      now,
     });
 
     assert.deepEqual(
       presentation.items.map((item) => ({
         id: item.id,
-        preview: item.preview,
-        relativeTimeLabel: item.relativeTimeLabel,
+        name: item.name,
+        sessionCount: item.sessionCount,
+        hasPreview: Object.prototype.hasOwnProperty.call(item, 'preview'),
+        hasRelativeTimeLabel: Object.prototype.hasOwnProperty.call(item, 'relativeTimeLabel'),
       })),
       [
         {
           id: 'research',
-          preview: 'Drafting the final parity report',
-          relativeTimeLabel: '10:58',
+          name: 'Research Agent',
+          sessionCount: 1,
+          hasPreview: false,
+          hasRelativeTimeLabel: false,
         },
         {
           id: 'ops',
-          preview: 'Ops incident review',
-          relativeTimeLabel: 'Yesterday',
+          name: 'Ops Agent',
+          sessionCount: 1,
+          hasPreview: false,
+          hasRelativeTimeLabel: false,
         },
         {
           id: 'planner',
-          preview: 'No conversations yet',
-          relativeTimeLabel: null,
+          name: 'Planner Agent',
+          sessionCount: 0,
+          hasPreview: false,
+          hasRelativeTimeLabel: false,
+        },
+      ],
+    );
+  },
+);
+
+await runTest(
+  'resolveChatSidebarAgentRailPresentation never exposes opaque agent names or date labels in agent items',
+  () => {
+    const presentation = resolveChatSidebarAgentRailPresentation({
+      agentOptions: [
+        {
+          id: 'agent:20260426105830:main',
+          name: '2026-04-26 10:58',
+          avatarLabel: '20',
+          kernelId: 'openclaw',
+          kernelLabel: 'OpenClaw',
+        },
+        {
+          id: 'thread:claw-studio:20260426105830',
+          name: 'thread:claw-studio:20260426105830',
+          avatarLabel: 'TH',
+        },
+      ],
+      sessions: [
+        {
+          id: 'agent:20260426105830:main',
+          updatedAt: 200,
+          kernelSession: {
+            ref: {
+              agentId: 'agent:20260426105830:main',
+              kernelId: 'openclaw',
+            },
+          },
+        },
+        {
+          id: 'thread:claw-studio:20260426105830',
+          updatedAt: 100,
+          agentId: 'thread:claw-studio:20260426105830',
+        },
+      ],
+      activeSessionId: null,
+      isChatSupported: true,
+      sessionScopeMode: 'all',
+      selectedAgentId: null,
+      primaryAgentId: null,
+    });
+
+    assert.deepEqual(
+      presentation.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        avatarLabel: item.avatarLabel,
+      })),
+      [
+        {
+          id: 'agent:20260426105830:main',
+          name: 'OpenClaw Agent',
+          avatarLabel: 'OP',
+        },
+        {
+          id: 'thread:claw-studio:20260426105830',
+          name: 'Agent',
+          avatarLabel: 'AG',
         },
       ],
     );

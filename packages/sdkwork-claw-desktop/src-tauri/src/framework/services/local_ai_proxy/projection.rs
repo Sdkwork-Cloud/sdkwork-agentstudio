@@ -8,7 +8,6 @@ use crate::framework::{
     paths::AppPaths, services::kernel_runtime_authority::KernelRuntimeAuthorityService,
     FrameworkError, Result,
 };
-use sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_config_file_path;
 use serde_json::{json, Value};
 use std::{
     fs,
@@ -116,7 +115,7 @@ fn readable_openclaw_config_path(paths: &AppPaths) -> PathBuf {
 fn active_openclaw_config_path(paths: &AppPaths) -> PathBuf {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
-        .unwrap_or_else(|_| build_standard_openclaw_config_file_path(&paths.user_root))
+        .expect("canonical openclaw config path")
 }
 
 fn resolve_default_route_model_id(route: &LocalAiProxyRouteSnapshot) -> Result<String> {

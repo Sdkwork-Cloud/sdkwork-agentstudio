@@ -1,9 +1,9 @@
 import { useEffect, useEffectEvent, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { instanceDirectoryService, useInstanceStore } from '@sdkwork/claw-core';
 import { runtime } from '@sdkwork/claw-infrastructure';
-import { useChatStore } from '../store/useChatStore';
+import { openClawGatewaySessions, useChatStore } from '../store/useChatStore';
 import {
   resolveOpenClawGatewayWarmRefreshKey,
   resolveOpenClawGatewayWarmPlan,
@@ -15,6 +15,7 @@ const DIRECTORY_REFRESH_MS = 15_000;
 
 export function OpenClawGatewayConnections() {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const activeInstanceId = useInstanceStore((state) => state.activeInstanceId);
   const connectGatewayInstances = useChatStore((state) => state.connectGatewayInstances);
   const [builtInStatusRefreshTick, setBuiltInStatusRefreshTick] = useState(0);
@@ -72,6 +73,21 @@ export function OpenClawGatewayConnections() {
 
     setBuiltInStatusRefreshTick((current) => current + 1);
   });
+
+  const handleGatewayAgentCatalogChanged = useEffectEvent((event: { instanceId: string }) => {
+    void queryClient.invalidateQueries({
+      queryKey: ['chat', 'kernel-agent-catalog', event.instanceId],
+    });
+    void queryClient.invalidateQueries({
+      queryKey: ['chat', 'owned-kernel-agent-library', event.instanceId],
+    });
+  });
+
+  useEffect(() => {
+    return openClawGatewaySessions.subscribeAgentCatalogChanged((event) => {
+      handleGatewayAgentCatalogChanged(event);
+    });
+  }, [handleGatewayAgentCatalogChanged]);
 
   useEffect(() => {
     let disposed = false;

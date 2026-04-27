@@ -4,14 +4,21 @@ use sdkwork_local_api_proxy_native::kernel::{
     build_standard_openclaw_config_file_path, build_standard_openclaw_root_dir,
     build_standard_openclaw_workspace_dir,
 };
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 #[cfg(not(windows))]
 use tauri::Manager;
 use tauri::{AppHandle, Runtime};
 
 pub const OPENCLAW_KERNEL_ID: &str = "openclaw";
 pub const HERMES_KERNEL_ID: &str = "hermes";
+pub const OPENCLAW_DEFAULT_AGENT_ID: &str = "main";
 const SUPPORTED_KERNEL_IDS: [&str; 2] = [OPENCLAW_KERNEL_ID, HERMES_KERNEL_ID];
+const SDKWORK_USER_HOME_DIR_NAME: &str = ".sdkwork";
+const PRODUCT_USER_ROOT_DIR_NAME: &str = "crawstudio";
+const MAX_OPENCLAW_AGENT_ID_LEN: usize = 64;
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -19,12 +26,94 @@ pub struct KernelPaths {
     pub runtime_id: String,
     pub kernel_state_dir: PathBuf,
     pub runtime_dir: PathBuf,
+    pub home_dir: PathBuf,
+    pub state_dir: PathBuf,
+    pub workspace_dir: PathBuf,
     pub authority_file: PathBuf,
     pub migrations_file: PathBuf,
     pub runtime_upgrades_file: PathBuf,
     pub config_dir: PathBuf,
     pub config_file: PathBuf,
     pub quarantine_dir: PathBuf,
+}
+
+impl KernelPaths {
+    pub fn openclaw_agents_dir(&self) -> Result<PathBuf> {
+        self.ensure_openclaw_paths()?;
+        Ok(self.state_dir.join("agents"))
+    }
+
+    pub fn openclaw_agent_root_dir(&self, agent_id: &str) -> Result<PathBuf> {
+        self.ensure_openclaw_paths()?;
+        Ok(self
+            .openclaw_agents_dir()?
+            .join(normalize_openclaw_agent_id(agent_id)))
+    }
+
+    pub fn openclaw_agent_dir(&self, agent_id: &str) -> Result<PathBuf> {
+        Ok(self.openclaw_agent_root_dir(agent_id)?.join("agent"))
+    }
+
+    pub fn openclaw_agent_sessions_dir(&self, agent_id: &str) -> Result<PathBuf> {
+        Ok(self.openclaw_agent_root_dir(agent_id)?.join("sessions"))
+    }
+
+    pub fn openclaw_agent_workspace_dir(&self, agent_id: &str) -> Result<PathBuf> {
+        self.ensure_openclaw_paths()?;
+        let normalized_agent_id = normalize_openclaw_agent_id(agent_id);
+        if normalized_agent_id == OPENCLAW_DEFAULT_AGENT_ID {
+            return Ok(self.workspace_dir.clone());
+        }
+        Ok(self
+            .state_dir
+            .join(format!("workspace-{normalized_agent_id}")))
+    }
+
+    pub fn openclaw_workspace_memory_dir(&self) -> Result<PathBuf> {
+        self.ensure_openclaw_paths()?;
+        Ok(self.workspace_dir.join("memory"))
+    }
+
+    pub fn openclaw_workspace_skills_dir(&self) -> Result<PathBuf> {
+        self.ensure_openclaw_paths()?;
+        Ok(self.workspace_dir.join("skills"))
+    }
+
+    pub fn openclaw_workspace_extensions_dir(&self) -> Result<PathBuf> {
+        self.ensure_openclaw_paths()?;
+        Ok(self.workspace_dir.join(".openclaw").join("extensions"))
+    }
+
+    pub fn openclaw_skills_dir(&self) -> Result<PathBuf> {
+        self.ensure_openclaw_paths()?;
+        Ok(self.state_dir.join("skills"))
+    }
+
+    pub fn openclaw_extensions_dir(&self) -> Result<PathBuf> {
+        self.ensure_openclaw_paths()?;
+        Ok(self.state_dir.join("extensions"))
+    }
+
+    pub fn openclaw_cron_dir(&self) -> Result<PathBuf> {
+        self.ensure_openclaw_paths()?;
+        Ok(self.state_dir.join("cron"))
+    }
+
+    pub fn openclaw_credentials_dir(&self) -> Result<PathBuf> {
+        self.ensure_openclaw_paths()?;
+        Ok(self.state_dir.join("credentials"))
+    }
+
+    fn ensure_openclaw_paths(&self) -> Result<()> {
+        if self.runtime_id == OPENCLAW_KERNEL_ID {
+            return Ok(());
+        }
+
+        Err(FrameworkError::ValidationFailed(format!(
+            "OpenClaw path helper requires openclaw kernel paths, received {}",
+            self.runtime_id
+        )))
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
@@ -116,34 +205,53 @@ impl AppPaths {
         let normalized_runtime_id = normalize_kernel_id(runtime_id);
         if !supported_kernel_ids()
             .iter()
-            .any(|candidate| *candidate == normalized_runtime_id)
+            .any(|candidate| *candidate == normalized_runtime_id.as_str())
         {
             return Err(unsupported_kernel_id_error(runtime_id));
         }
 
-        let kernel_state_dir = self.kernels_state_dir.join(normalized_runtime_id);
-        let runtime_dir = self.managed_runtimes_dir.join(normalized_runtime_id);
-        let (config_dir, config_file) = if normalized_runtime_id == OPENCLAW_KERNEL_ID {
-            (
-                build_standard_openclaw_root_dir(&self.user_root),
-                build_standard_openclaw_config_file_path(&self.user_root),
-            )
-        } else if normalized_runtime_id == HERMES_KERNEL_ID {
-            (
-                build_standard_hermes_root_dir(&self.user_root),
-                build_standard_hermes_config_file_path(&self.user_root),
-            )
-        } else {
-            let config_dir = kernel_state_dir.join("config");
-            (
-                config_dir.clone(),
-                config_dir.join(format!("{normalized_runtime_id}.json")),
-            )
-        };
+        let kernel_state_dir = self.kernels_state_dir.join(&normalized_runtime_id);
+        let runtime_dir = self.managed_runtimes_dir.join(&normalized_runtime_id);
+        let (home_dir, state_dir, workspace_dir, config_dir, config_file) =
+            if normalized_runtime_id == OPENCLAW_KERNEL_ID {
+                let state_dir = build_standard_openclaw_root_dir(&self.user_root);
+                (
+                    self.user_root.clone(),
+                    state_dir.clone(),
+                    build_standard_openclaw_workspace_dir(&self.user_root),
+                    state_dir,
+                    build_standard_openclaw_config_file_path(&self.user_root),
+                )
+            } else if normalized_runtime_id == HERMES_KERNEL_ID {
+                let state_dir = build_standard_hermes_root_dir(&self.user_root);
+                (
+                    self.user_root.clone(),
+                    state_dir.clone(),
+                    self.user_root
+                        .join("kernels")
+                        .join(&normalized_runtime_id)
+                        .join("workspace"),
+                    state_dir,
+                    build_standard_hermes_config_file_path(&self.user_root),
+                )
+            } else {
+                let base_dir = self.user_root.join("kernels").join(&normalized_runtime_id);
+                let config_dir = kernel_state_dir.join("config");
+                (
+                    base_dir.join("home"),
+                    base_dir.join("state"),
+                    base_dir.join("workspace"),
+                    config_dir.clone(),
+                    config_dir.join(format!("{normalized_runtime_id}.json")),
+                )
+            };
         Ok(KernelPaths {
-            runtime_id: normalized_runtime_id.to_string(),
+            runtime_id: normalized_runtime_id,
             kernel_state_dir: kernel_state_dir.clone(),
             runtime_dir,
+            home_dir,
+            state_dir,
+            workspace_dir,
             authority_file: kernel_state_dir.join("authority.json"),
             migrations_file: kernel_state_dir.join("migrations.json"),
             runtime_upgrades_file: kernel_state_dir.join("runtime-upgrades.json"),
@@ -215,9 +323,31 @@ impl AppPaths {
         ];
         for runtime_id in supported_kernel_ids() {
             if let Ok(kernel) = self.kernel_paths(runtime_id) {
-                roots.push(kernel.kernel_state_dir);
-                roots.push(kernel.config_dir);
-                roots.push(kernel.quarantine_dir);
+                roots.push(kernel.kernel_state_dir.clone());
+                roots.push(kernel.home_dir.clone());
+                roots.push(kernel.state_dir.clone());
+                roots.push(kernel.workspace_dir.clone());
+                roots.push(kernel.config_dir.clone());
+                roots.push(kernel.quarantine_dir.clone());
+                if kernel.runtime_id == OPENCLAW_KERNEL_ID {
+                    for root in [
+                        kernel.openclaw_workspace_memory_dir(),
+                        kernel.openclaw_workspace_skills_dir(),
+                        kernel.openclaw_workspace_extensions_dir(),
+                        kernel.openclaw_agents_dir(),
+                        kernel.openclaw_agent_dir(OPENCLAW_DEFAULT_AGENT_ID),
+                        kernel.openclaw_agent_sessions_dir(OPENCLAW_DEFAULT_AGENT_ID),
+                        kernel.openclaw_skills_dir(),
+                        kernel.openclaw_extensions_dir(),
+                        kernel.openclaw_cron_dir(),
+                        kernel.openclaw_credentials_dir(),
+                    ]
+                    .into_iter()
+                    .filter_map(|root| root.ok())
+                    {
+                        roots.push(root);
+                    }
+                }
             }
         }
         roots.sort();
@@ -226,8 +356,40 @@ impl AppPaths {
     }
 }
 
-fn normalize_kernel_id(runtime_id: &str) -> &str {
-    runtime_id.trim()
+fn normalize_kernel_id(runtime_id: &str) -> String {
+    runtime_id.trim().to_ascii_lowercase()
+}
+
+pub fn normalize_openclaw_agent_id(raw: &str) -> String {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return OPENCLAW_DEFAULT_AGENT_ID.to_string();
+    }
+
+    let mut normalized = String::new();
+    let mut previous_was_invalid = false;
+    for ch in trimmed.to_ascii_lowercase().chars() {
+        let is_valid =
+            ch.is_ascii_lowercase() || ch.is_ascii_digit() || matches!(ch, '.' | '_' | '-');
+        if is_valid {
+            normalized.push(ch);
+            previous_was_invalid = false;
+        } else if !previous_was_invalid {
+            normalized.push('-');
+            previous_was_invalid = true;
+        }
+    }
+
+    let normalized = normalized
+        .trim_matches('-')
+        .chars()
+        .take(MAX_OPENCLAW_AGENT_ID_LEN)
+        .collect::<String>();
+    if normalized.is_empty() {
+        OPENCLAW_DEFAULT_AGENT_ID.to_string()
+    } else {
+        normalized
+    }
 }
 
 pub fn supported_kernel_ids() -> &'static [&'static str] {
@@ -274,10 +436,16 @@ pub fn resolve_paths_for_root(root: &std::path::Path) -> Result<AppPaths> {
     let paths = build_paths(
         root.join("install"),
         root.join("machine"),
-        root.join("user-home"),
+        root.join("app-user-root"),
     );
     ensure_runtime_directories(&paths)?;
     Ok(paths)
+}
+
+fn build_user_root_from_home_dir(home_dir: &Path) -> PathBuf {
+    home_dir
+        .join(SDKWORK_USER_HOME_DIR_NAME)
+        .join(PRODUCT_USER_ROOT_DIR_NAME)
 }
 
 fn build_paths(install_root: PathBuf, machine_root: PathBuf, user_root: PathBuf) -> AppPaths {
@@ -504,11 +672,11 @@ fn resolve_user_root<R: Runtime>(_app: &AppHandle<R>) -> Result<PathBuf> {
 
 #[cfg(windows)]
 fn resolve_user_root_from_env() -> Result<PathBuf> {
-    let base = std::env::var_os("USERPROFILE")
-        .map(PathBuf::from)
-        .ok_or_else(|| FrameworkError::NotFound("USERPROFILE environment variable".to_string()))?;
+    let base = dirs::home_dir()
+        .or_else(|| std::env::var_os("USERPROFILE").map(PathBuf::from))
+        .ok_or_else(|| FrameworkError::NotFound("user home directory".to_string()))?;
 
-    Ok(base.join(".sdkwork").join("crawstudio"))
+    Ok(build_user_root_from_home_dir(&base))
 }
 
 #[cfg(windows)]
@@ -521,14 +689,14 @@ fn resolve_user_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
     let resolver = app.path();
     resolver
         .home_dir()
-        .map(|path| path.join(".sdkwork").join("crawstudio"))
+        .map(|path| build_user_root_from_home_dir(&path))
         .map_err(FrameworkError::from)
 }
 
 #[cfg(not(windows))]
 fn resolve_user_root_from_current_process() -> Result<PathBuf> {
     dirs::home_dir()
-        .map(|path| path.join(".sdkwork").join("crawstudio"))
+        .map(|path| build_user_root_from_home_dir(&path))
         .ok_or_else(|| FrameworkError::NotFound("user home directory".to_string()))
 }
 
@@ -545,10 +713,33 @@ pub fn ensure_runtime_directories(paths: &AppPaths) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::resolve_paths_for_root;
+    use super::{
+        build_user_root_from_home_dir, normalize_openclaw_agent_id, resolve_paths_for_root,
+    };
+    use std::path::PathBuf;
 
     fn normalize(path: &std::path::Path) -> String {
         path.to_string_lossy().replace('\\', "/")
+    }
+
+    #[test]
+    fn app_user_root_is_always_under_the_platform_user_home_directory() {
+        let home_dir = PathBuf::from("C:/Users/alice");
+        let user_root = build_user_root_from_home_dir(home_dir.as_path());
+
+        assert_eq!(normalize(&user_root), "C:/Users/alice/.sdkwork/crawstudio");
+        assert!(
+            !normalize(&user_root).contains("AppData")
+                && !normalize(&user_root).contains("ProgramData")
+        );
+        assert_eq!(
+            normalize(
+                &sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_root_dir(
+                    &user_root
+                )
+            ),
+            "C:/Users/alice/.sdkwork/crawstudio/.openclaw"
+        );
     }
 
     #[test]
@@ -557,7 +748,7 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
 
         assert!(normalize(&paths.config_dir).ends_with("machine/state"));
-        assert!(normalize(&paths.data_dir).ends_with("user-home/studio"));
+        assert!(normalize(&paths.data_dir).ends_with("app-user-root/studio"));
         assert!(normalize(&paths.cache_dir).ends_with("machine/staging"));
         assert!(normalize(&paths.logs_dir).ends_with("machine/logs/app"));
         assert!(normalize(&paths.state_dir).ends_with("machine/runtime/state"));
@@ -573,13 +764,13 @@ mod tests {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
 
-        assert!(normalize(&paths.storage_dir).ends_with("user-home/user/storage"));
+        assert!(normalize(&paths.storage_dir).ends_with("app-user-root/user/storage"));
         assert!(normalize(&paths.plugins_dir).ends_with("install/extensions/plugins"));
-        assert!(normalize(&paths.integrations_dir).ends_with("user-home/user/integrations"));
-        assert!(normalize(&paths.backups_dir).ends_with("user-home/studio/backups"));
+        assert!(normalize(&paths.integrations_dir).ends_with("app-user-root/user/integrations"));
+        assert!(normalize(&paths.backups_dir).ends_with("app-user-root/studio/backups"));
         assert!(root
             .path()
-            .join("user-home")
+            .join("app-user-root")
             .join("user")
             .join("storage")
             .exists());
@@ -591,13 +782,13 @@ mod tests {
             .exists());
         assert!(root
             .path()
-            .join("user-home")
+            .join("app-user-root")
             .join("user")
             .join("integrations")
             .exists());
         assert!(root
             .path()
-            .join("user-home")
+            .join("app-user-root")
             .join("studio")
             .join("backups")
             .exists());
@@ -610,20 +801,20 @@ mod tests {
 
         assert!(normalize(&paths.managed_runtimes_dir).ends_with("install/runtimes"));
         assert!(normalize(&paths.openclaw_runtime_dir).ends_with("install/runtimes/openclaw"));
-        assert!(normalize(&paths.user_bin_dir).ends_with("user-home/bin"));
-        assert!(normalize(&paths.openclaw_root_dir).ends_with("user-home/.openclaw"));
+        assert!(normalize(&paths.user_bin_dir).ends_with("app-user-root/bin"));
+        assert!(normalize(&paths.openclaw_root_dir).ends_with("app-user-root/.openclaw"));
+        assert!(normalize(&paths.openclaw_config_file)
+            .ends_with("app-user-root/.openclaw/openclaw.json"));
         assert!(
-            normalize(&paths.openclaw_config_file).ends_with("user-home/.openclaw/openclaw.json")
+            normalize(&paths.openclaw_workspace_dir).ends_with("app-user-root/.openclaw/workspace")
         );
-        assert!(normalize(&paths.openclaw_workspace_dir).ends_with("user-home/.openclaw/workspace"));
-        assert!(normalize(&paths.openclaw_skills_dir).ends_with("user-home/.openclaw/skills"));
-        assert!(
-            normalize(&paths.openclaw_extensions_dir).ends_with("user-home/.openclaw/extensions")
-        );
+        assert!(normalize(&paths.openclaw_skills_dir).ends_with("app-user-root/.openclaw/skills"));
+        assert!(normalize(&paths.openclaw_extensions_dir)
+            .ends_with("app-user-root/.openclaw/extensions"));
         assert!(normalize(&paths.openclaw_workspace_skills_dir)
-            .ends_with("user-home/.openclaw/workspace/skills"));
+            .ends_with("app-user-root/.openclaw/workspace/skills"));
         assert!(normalize(&paths.openclaw_workspace_extensions_dir)
-            .ends_with("user-home/.openclaw/workspace/.openclaw/extensions"));
+            .ends_with("app-user-root/.openclaw/workspace/.openclaw/extensions"));
         assert!(normalize(&paths.local_ai_proxy_config_file)
             .ends_with("machine/state/local-ai-proxy.json"));
         assert!(normalize(&paths.local_ai_proxy_snapshot_file)
@@ -686,8 +877,11 @@ mod tests {
             .ends_with("machine/state/kernels/openclaw/migrations.json"));
         assert!(normalize(&openclaw.runtime_upgrades_file)
             .ends_with("machine/state/kernels/openclaw/runtime-upgrades.json"));
-        assert!(normalize(&openclaw.config_dir).ends_with("user-home/.openclaw"));
-        assert!(normalize(&openclaw.config_file).ends_with("user-home/.openclaw/openclaw.json"));
+        assert!(normalize(&openclaw.home_dir).ends_with("app-user-root"));
+        assert!(normalize(&openclaw.state_dir).ends_with("app-user-root/.openclaw"));
+        assert!(normalize(&openclaw.workspace_dir).ends_with("app-user-root/.openclaw/workspace"));
+        assert!(normalize(&openclaw.config_dir).ends_with("app-user-root/.openclaw"));
+        assert!(normalize(&openclaw.config_file).ends_with("app-user-root/.openclaw/openclaw.json"));
         assert!(normalize(&openclaw.quarantine_dir)
             .ends_with("machine/state/kernels/openclaw/quarantine"));
     }
@@ -707,8 +901,8 @@ mod tests {
             .ends_with("machine/state/kernels/hermes/migrations.json"));
         assert!(normalize(&hermes.runtime_upgrades_file)
             .ends_with("machine/state/kernels/hermes/runtime-upgrades.json"));
-        assert!(normalize(&hermes.config_dir).ends_with("user-home/.hermes"));
-        assert!(normalize(&hermes.config_file).ends_with("user-home/.hermes/config.yaml"));
+        assert!(normalize(&hermes.config_dir).ends_with("app-user-root/.hermes"));
+        assert!(normalize(&hermes.config_file).ends_with("app-user-root/.hermes/config.yaml"));
         assert!(
             normalize(&hermes.quarantine_dir).ends_with("machine/state/kernels/hermes/quarantine")
         );
@@ -718,6 +912,71 @@ mod tests {
             .expect_err("unknown kernel paths should still be rejected");
 
         assert!(!error.to_string().trim().is_empty());
+    }
+
+    #[test]
+    fn kernel_paths_canonicalize_runtime_id_case_and_whitespace() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+
+        let openclaw = paths
+            .kernel_paths(" OpenClaw ")
+            .expect("case-insensitive openclaw kernel paths");
+
+        assert_eq!(openclaw.runtime_id, "openclaw");
+        assert!(normalize(&openclaw.kernel_state_dir).ends_with("machine/state/kernels/openclaw"));
+        assert!(normalize(&openclaw.runtime_dir).ends_with("install/runtimes/openclaw"));
+        assert!(normalize(&openclaw.config_file).ends_with("app-user-root/.openclaw/openclaw.json"));
+    }
+
+    #[test]
+    fn kernel_paths_resolve_openclaw_agent_paths_with_canonical_agent_ids() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let openclaw = paths
+            .kernel_paths(" OpenClaw ")
+            .expect("case-insensitive openclaw kernel paths");
+
+        assert_eq!(
+            normalize_openclaw_agent_id(" Research Agent "),
+            "research-agent"
+        );
+        assert_eq!(normalize_openclaw_agent_id("main"), "main");
+        assert_eq!(normalize_openclaw_agent_id(" 中文 "), "main");
+        assert!(
+            normalize(&openclaw.openclaw_agents_dir().expect("openclaw agents dir"))
+                .ends_with("app-user-root/.openclaw/agents")
+        );
+        assert!(normalize(
+            &openclaw
+                .openclaw_agent_workspace_dir(" main ")
+                .expect("main workspace")
+        )
+        .ends_with("app-user-root/.openclaw/workspace"));
+        assert!(normalize(
+            &openclaw
+                .openclaw_agent_dir(" MAIN ")
+                .expect("main agent dir")
+        )
+        .ends_with("app-user-root/.openclaw/agents/main/agent"));
+        assert!(normalize(
+            &openclaw
+                .openclaw_agent_sessions_dir(" MAIN ")
+                .expect("main sessions dir")
+        )
+        .ends_with("app-user-root/.openclaw/agents/main/sessions"));
+        assert!(normalize(
+            &openclaw
+                .openclaw_agent_workspace_dir(" Research Agent ")
+                .expect("agent workspace")
+        )
+        .ends_with("app-user-root/.openclaw/workspace-research-agent"));
+        assert!(normalize(
+            &openclaw
+                .openclaw_agent_dir(" Research Agent ")
+                .expect("agent dir")
+        )
+        .ends_with("app-user-root/.openclaw/agents/research-agent/agent"));
     }
 
     #[test]
@@ -746,8 +1005,8 @@ mod tests {
             .ends_with("machine/state/kernels/openclaw/migrations.json"));
         assert!(normalize(&openclaw.runtime_upgrades_file)
             .ends_with("machine/state/kernels/openclaw/runtime-upgrades.json"));
-        assert!(normalize(&openclaw.config_dir).ends_with("user-home/.openclaw"));
-        assert!(normalize(&openclaw.config_file).ends_with("user-home/.openclaw/openclaw.json"));
+        assert!(normalize(&openclaw.config_dir).ends_with("app-user-root/.openclaw"));
+        assert!(normalize(&openclaw.config_file).ends_with("app-user-root/.openclaw/openclaw.json"));
         assert!(normalize(&openclaw.quarantine_dir)
             .ends_with("machine/state/kernels/openclaw/quarantine"));
     }

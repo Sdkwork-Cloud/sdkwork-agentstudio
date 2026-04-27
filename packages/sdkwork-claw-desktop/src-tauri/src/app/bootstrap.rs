@@ -8,6 +8,7 @@ use crate::{
         },
         context::{BuiltInOpenClawStatusChangedPayload, FrameworkContext},
         events,
+        paths::OPENCLAW_KERNEL_ID,
         services::local_ai_proxy::SERVICE_ID_LOCAL_AI_PROXY,
         services::openclaw_runtime::{resolve_bundled_resource_root, ActivatedOpenClawRuntime},
         services::studio::StudioInstanceStatus,
@@ -17,7 +18,7 @@ use crate::{
     plugins,
     state::{AppMetadata, AppState},
 };
-use std::{sync::Arc, thread};
+use std::{sync::Arc, thread, time::Duration};
 use tauri::{
     menu::{Menu, MenuBuilder, SubmenuBuilder},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -115,12 +116,14 @@ const OPENCLAW_ACTIVATION_STAGE_DESKTOP_KERNEL_RUNNING: &str =
     "bundled openclaw activation stage: desktop-kernel-running";
 const OPENCLAW_ACTIVATION_STAGE_BUILT_IN_INSTANCE_ONLINE: &str =
     "bundled openclaw activation stage: built-in-instance-online";
+const BUNDLED_OPENCLAW_ACTIVATION_MAX_ATTEMPTS: usize = 3;
+const BUNDLED_OPENCLAW_ACTIVATION_RETRY_DELAY: Duration = Duration::from_millis(1500);
 
 pub fn build() -> tauri::Builder<tauri::Wry> {
     plugins::register(tauri::Builder::default())
         .setup(|app| {
             let app_handle = app.handle().clone();
-            let mut context = FrameworkContext::bootstrap(&app_handle)?;
+            let context = FrameworkContext::bootstrap(&app_handle)?;
             context.bootstrap_desktop_host()?;
             let context = Arc::new(context);
             context.logger.info("managed desktop state initialized")?;
@@ -134,10 +137,28 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             let state = AppState::from_metadata(metadata, context.clone());
             app.manage(state);
             ensure_tray(&app_handle)?;
-            let resource_root = resolve_bundled_openclaw_resource_root(&app_handle);
-            sync_built_in_openclaw_status(context.as_ref(), StudioInstanceStatus::Starting);
             app.emit(events::APP_READY, ())?;
-            spawn_bundled_openclaw_activation(context.clone(), resource_root);
+            let bundled_openclaw_activation_enabled =
+                match should_activate_bundled_openclaw(context.as_ref()) {
+                    Ok(true) => true,
+                    Ok(false) => {
+                        context.logger.info(
+                            "skipping bundled openclaw activation because the bundle profile does not include openclaw",
+                        )?;
+                        false
+                    }
+                    Err(error) => {
+                        context.logger.error(&format!(
+                            "failed to evaluate bundled kernel profile; skipping bundled openclaw activation to keep desktop startup available: {error}"
+                        ))?;
+                        false
+                    }
+                };
+            if bundled_openclaw_activation_enabled {
+                let resource_root = resolve_bundled_openclaw_resource_root(&app_handle);
+                sync_built_in_openclaw_status(context.as_ref(), StudioInstanceStatus::Starting);
+                spawn_bundled_openclaw_activation(context.clone(), resource_root);
+            }
 
             Ok(())
         })
@@ -651,7 +672,27 @@ fn spawn_bundled_openclaw_activation(
 ) {
     thread::spawn(move || {
         let activation_result = resource_root.and_then(|resource_root| {
-            activate_bundled_openclaw_from_resource_root(context.as_ref(), &resource_root)
+            retry_bundled_openclaw_activation(
+                BUNDLED_OPENCLAW_ACTIVATION_MAX_ATTEMPTS,
+                BUNDLED_OPENCLAW_ACTIVATION_RETRY_DELAY,
+                |attempt| {
+                    if attempt > 1 {
+                        let _ = context.logger.warn(&format!(
+                            "retrying bundled openclaw activation after startup failure: attempt {attempt}/{BUNDLED_OPENCLAW_ACTIVATION_MAX_ATTEMPTS}"
+                        ));
+                    }
+                    sync_built_in_openclaw_status(
+                        context.as_ref(),
+                        StudioInstanceStatus::Starting,
+                    );
+
+                    activate_bundled_openclaw_from_resource_root(
+                        context.as_ref(),
+                        &resource_root,
+                    )
+                },
+                thread::sleep,
+            )
         });
 
         if let Err(error) = activation_result {
@@ -663,11 +704,57 @@ fn spawn_bundled_openclaw_activation(
     });
 }
 
+fn retry_bundled_openclaw_activation<F, S>(
+    max_attempts: usize,
+    retry_delay: Duration,
+    mut activate: F,
+    mut sleep: S,
+) -> FrameworkResult<()>
+where
+    F: FnMut(usize) -> FrameworkResult<()>,
+    S: FnMut(Duration),
+{
+    let attempts = max_attempts.max(1);
+    let mut last_failure = None;
+
+    for attempt in 1..=attempts {
+        match activate(attempt) {
+            Ok(()) => return Ok(()),
+            Err(error) => {
+                last_failure = Some(error);
+                if attempt < attempts {
+                    sleep(retry_delay);
+                }
+            }
+        }
+    }
+
+    Err(last_failure.unwrap_or_else(|| {
+        FrameworkError::Internal(
+            "bundled openclaw activation retry loop exhausted without a final result".to_string(),
+        )
+    }))
+}
+
 fn resolve_bundled_openclaw_resource_root<R: Runtime>(
     app: &AppHandle<R>,
 ) -> FrameworkResult<std::path::PathBuf> {
     let resource_dir = app.path().resource_dir().map_err(FrameworkError::from)?;
     resolve_bundled_resource_root(&resource_dir)
+}
+
+fn should_activate_bundled_openclaw(context: &FrameworkContext) -> FrameworkResult<bool> {
+    let resources = context.services.components.load_resources(&context.paths)?;
+    Ok(
+        kernel_ids_include_openclaw(&resources.bundle_manifest.included_kernel_ids)
+            || kernel_ids_include_openclaw(&resources.bundle_manifest.default_enabled_kernel_ids),
+    )
+}
+
+fn kernel_ids_include_openclaw(kernel_ids: &[String]) -> bool {
+    kernel_ids
+        .iter()
+        .any(|kernel_id| kernel_id.trim().eq_ignore_ascii_case(OPENCLAW_KERNEL_ID))
 }
 
 fn activate_bundled_openclaw_from_resource_root(
@@ -939,6 +1026,7 @@ fn build_tray_menu<R: Runtime>(
 mod tests {
     use super::{
         activate_bundled_openclaw_from_resource_root, build_tray_menu_spec, resolve_tray_language,
+        retry_bundled_openclaw_activation, should_activate_bundled_openclaw,
         should_prevent_main_window_close, tray_action_for_menu_id, TrayAction, TrayLanguage,
         TrayMenuEntry, TRAY_MENU_ID_QUIT_APP, TRAY_MENU_ID_RESTART_BACKGROUND_SERVICES,
         TRAY_MENU_ID_RESTART_OPENCLAW_GATEWAY, TRAY_MENU_ID_SHOW_WINDOW,
@@ -956,6 +1044,7 @@ mod tests {
             studio::StudioInstanceStatus,
             supervisor::{ManagedServiceLifecycle, SERVICE_ID_OPENCLAW_GATEWAY},
         },
+        FrameworkError,
     };
     use serde_json::Value;
     use sha2::{Digest, Sha256};
@@ -1046,6 +1135,165 @@ mod tests {
             activation_spawn_index < activation_failure_log_index,
             "background activation failures should be logged from the async activation path"
         );
+    }
+
+    #[test]
+    fn setup_gates_bundled_openclaw_activation_by_bundle_profile() {
+        let source = include_str!("bootstrap.rs");
+        let production_source = source
+            .split("mod tests {")
+            .next()
+            .expect("production bootstrap source");
+
+        let decision_index = production_source
+            .find("should_activate_bundled_openclaw(context.as_ref())")
+            .expect("setup should evaluate the bundle profile before OpenClaw activation");
+        let starting_status_index = production_source
+            .find(
+                "sync_built_in_openclaw_status(context.as_ref(), StudioInstanceStatus::Starting);",
+            )
+            .expect(
+                "setup should only mark built-in OpenClaw as starting when activation is enabled",
+            );
+        let activation_spawn_index = production_source
+            .find("spawn_bundled_openclaw_activation(context.clone(), resource_root);")
+            .expect("setup should still schedule bundled OpenClaw activation when the profile includes OpenClaw");
+
+        assert!(
+            decision_index < starting_status_index && decision_index < activation_spawn_index,
+            "the bundle profile decision should guard both built-in status publication and activation scheduling"
+        );
+        assert!(
+            production_source.contains(
+                "skipping bundled openclaw activation because the bundle profile does not include openclaw"
+            ),
+            "setup should leave an explicit diagnostic when a non-OpenClaw bundle skips activation"
+        );
+    }
+
+    #[test]
+    fn bundled_openclaw_activation_retry_helper_recovers_transient_startup_failures() {
+        let mut attempts = Vec::new();
+        let mut delays = Vec::new();
+
+        retry_bundled_openclaw_activation(
+            3,
+            Duration::from_millis(25),
+            |attempt| {
+                attempts.push(attempt);
+                if attempt == 1 {
+                    return Err(FrameworkError::Internal(
+                        "transient gateway startup failure".to_string(),
+                    ));
+                }
+
+                Ok(())
+            },
+            |delay| {
+                delays.push(delay);
+            },
+        )
+        .expect("activation should recover on the second attempt");
+
+        assert_eq!(attempts, vec![1, 2]);
+        assert_eq!(delays, vec![Duration::from_millis(25)]);
+    }
+
+    #[test]
+    fn bundled_openclaw_activation_retry_helper_returns_the_last_failure_after_budget_exhaustion() {
+        let mut attempts = Vec::new();
+        let mut delays = Vec::new();
+
+        let error = retry_bundled_openclaw_activation(
+            2,
+            Duration::from_millis(10),
+            |attempt| {
+                attempts.push(attempt);
+                Err(FrameworkError::Internal(format!(
+                    "attempt {attempt} failed"
+                )))
+            },
+            |delay| {
+                delays.push(delay);
+            },
+        )
+        .expect_err("activation should fail after the retry budget is exhausted");
+
+        assert_eq!(attempts, vec![1, 2]);
+        assert_eq!(delays, vec![Duration::from_millis(10)]);
+        assert!(
+            error.to_string().contains("attempt 2 failed"),
+            "final error should preserve the last activation failure, received {error}"
+        );
+    }
+
+    #[test]
+    fn background_bundled_openclaw_activation_marks_starting_before_retry_attempts() {
+        let source = include_str!("bootstrap.rs");
+        let production_source = source
+            .split("mod tests {")
+            .next()
+            .expect("production bootstrap source");
+        let retry_helper_index = production_source
+            .find("retry_bundled_openclaw_activation(")
+            .expect("background activation should use the retry helper");
+        let starting_status_index = production_source
+            .find("sync_built_in_openclaw_status(\n                        context.as_ref(),\n                        StudioInstanceStatus::Starting,")
+            .expect("background activation should mark the built-in instance as starting before each retry attempt");
+        let activation_index = production_source
+            .find("activate_bundled_openclaw_from_resource_root(\n                        context.as_ref(),")
+            .expect("background activation should call the bundled activation routine");
+
+        assert!(
+            retry_helper_index < starting_status_index && starting_status_index < activation_index,
+            "background activation retry attempts should publish Starting before invoking the bundled activation routine"
+        );
+    }
+
+    #[test]
+    fn bundled_openclaw_activation_is_skipped_when_bundle_profile_excludes_openclaw() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        fs::create_dir_all(&paths.foundation_components_dir).expect("foundation components dir");
+        fs::write(
+            paths.foundation_components_dir.join("bundle-manifest.json"),
+            r#"{
+  "version": 1,
+  "packageProfileId": "hermes-only",
+  "includedKernelIds": ["hermes"],
+  "defaultEnabledKernelIds": ["hermes"]
+}
+"#,
+        )
+        .expect("bundle manifest");
+        let logger = init_logger(&paths).expect("logger");
+        let context = FrameworkContext::from_parts(paths, AppConfig::default(), logger);
+
+        assert!(!should_activate_bundled_openclaw(&context)
+            .expect("openclaw activation decision should read bundle resources"));
+    }
+
+    #[test]
+    fn bundled_openclaw_activation_runs_when_bundle_profile_includes_openclaw() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        fs::create_dir_all(&paths.foundation_components_dir).expect("foundation components dir");
+        fs::write(
+            paths.foundation_components_dir.join("bundle-manifest.json"),
+            r#"{
+  "version": 1,
+  "packageProfileId": "dual-kernel",
+  "includedKernelIds": ["hermes", "openclaw"],
+  "defaultEnabledKernelIds": ["hermes"]
+}
+"#,
+        )
+        .expect("bundle manifest");
+        let logger = init_logger(&paths).expect("logger");
+        let context = FrameworkContext::from_parts(paths, AppConfig::default(), logger);
+
+        assert!(should_activate_bundled_openclaw(&context)
+            .expect("openclaw activation decision should read bundle resources"));
     }
 
     #[test]
@@ -1308,11 +1556,17 @@ mod tests {
     }
 
     #[test]
-    fn bundled_openclaw_activation_installs_runtime_shims_by_default() {
+    fn bundled_openclaw_activation_installs_runtime_shims_when_shell_exposure_is_enabled() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let logger = init_logger(&paths).expect("logger");
-        let context = FrameworkContext::from_parts(paths.clone(), AppConfig::default(), logger);
+        let config = AppConfig {
+            embedded_openclaw: crate::framework::config::EmbeddedOpenClawConfig {
+                expose_cli_to_shell: true,
+            },
+            ..AppConfig::default()
+        };
+        let context = FrameworkContext::from_parts(paths.clone(), config, logger);
         let resource_root = create_bundled_gateway_fixture(root.path());
         seed_built_in_openclaw_gateway_port(&paths, reserve_available_loopback_port());
 
@@ -1464,17 +1718,11 @@ mod tests {
     }
 
     #[test]
-    fn bundled_openclaw_activation_skips_runtime_shims_when_shell_exposure_is_disabled() {
+    fn bundled_openclaw_activation_skips_runtime_shims_by_default() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let logger = init_logger(&paths).expect("logger");
-        let config = AppConfig {
-            embedded_openclaw: crate::framework::config::EmbeddedOpenClawConfig {
-                expose_cli_to_shell: false,
-            },
-            ..AppConfig::default()
-        };
-        let context = FrameworkContext::from_parts(paths.clone(), config, logger);
+        let context = FrameworkContext::from_parts(paths.clone(), AppConfig::default(), logger);
         let resource_root = create_bundled_gateway_fixture(root.path());
         seed_built_in_openclaw_gateway_port(&paths, reserve_available_loopback_port());
 
@@ -1554,12 +1802,7 @@ mod tests {
     fn openclaw_config_file_path(paths: &crate::framework::paths::AppPaths) -> std::path::PathBuf {
         crate::framework::services::kernel_runtime_authority::KernelRuntimeAuthorityService::new()
             .active_config_file_path("openclaw", paths)
-            .unwrap_or_else(|_| {
-                paths
-                    .kernel_paths("openclaw")
-                    .map(|kernel| kernel.config_file)
-                    .unwrap_or_else(|_| paths.openclaw_config_file.clone())
-            })
+            .expect("canonical openclaw config path")
     }
 
     fn seed_built_in_openclaw_gateway_port(paths: &crate::framework::paths::AppPaths, port: u16) {
@@ -1657,11 +1900,30 @@ try {
     fn bundled_gateway_fixture_cli_source() -> &'static str {
         r#"import fs from 'node:fs';
 import http from 'node:http';
+const args = process.argv.slice(2);
 const configPath = process.env.OPENCLAW_CONFIG_PATH;
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-const gatewayPort = Number(config?.gateway?.port ?? 18789);
+const gatewayPort = Number(config?.gateway?.port ?? 21280);
 const expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;
+if (args[0] === 'gateway' && args[1] === 'health') {
+  process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));
+  process.exit(0);
+}
+if (args[0] !== 'gateway') {
+  process.stderr.write(`unexpected args: ${args.join(' ')}`);
+  process.exit(1);
+}
 const server = http.createServer((req, res) => {
+  if (req.url === '/health' || req.url === '/healthz') {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, status: 'live' }));
+    return;
+  }
+  if (req.url === '/ready' || req.url === '/readyz') {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 1 }));
+    return;
+  }
   if (req.url !== '/tools/invoke' || req.method !== 'POST') {
     res.writeHead(404, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));

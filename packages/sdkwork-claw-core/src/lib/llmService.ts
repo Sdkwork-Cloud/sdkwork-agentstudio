@@ -28,8 +28,12 @@ const STANDARD_CHAT_ENDPOINT_SUFFIXES = [
   '/chat/completions',
 ] as const;
 const WEB_CHAT_ENDPOINT_SUFFIXES = ['/api/chat/completions'] as const;
+const DEFAULT_LLM_REQUEST_TIMEOUT_MS = 60_000;
 
 type ActiveInstanceRecord = NonNullable<Awaited<ReturnType<typeof studio.getInstance>>>;
+type ProviderRoutingRecord = Awaited<
+  ReturnType<typeof providerRoutingCatalogService.listProviderRoutingRecords>
+>[number];
 
 function normalizeUrl(value: string | null | undefined) {
   if (!value) {
@@ -259,29 +263,80 @@ function createMissingEndpointError(instance: ActiveInstanceRecord) {
   );
 }
 
-async function listConfiguredModelIds() {
-  const records = await providerRoutingCatalogService.listProviderRoutingRecords().catch(() => []);
+async function listEnabledProviderRoutingRecords(): Promise<ProviderRoutingRecord[]> {
+  return (await providerRoutingCatalogService.listProviderRoutingRecords().catch(() => []))
+    .filter((record) => record.enabled);
+}
 
-  return Array.from(
-    new Set(
-      records
-        .filter((record) => record.enabled)
-        .flatMap((record) => [
-          record.defaultModelId,
-          record.reasoningModelId,
-          record.embeddingModelId,
-          ...record.models.map((model) => model.id),
-        ])
-        .map((modelId) => modelId?.trim())
-        .filter((modelId): modelId is string => Boolean(modelId)),
-    ),
-  );
+function normalizeRequestTimeoutMs(value: number | null | undefined) {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? value
+    : DEFAULT_LLM_REQUEST_TIMEOUT_MS;
+}
+
+function resolveRequestTimeoutMs(records: ProviderRoutingRecord[]) {
+  const preferredRecord = records.find((record) => record.isDefault) ?? records[0] ?? null;
+  return normalizeRequestTimeoutMs(preferredRecord?.config?.timeoutMs);
+}
+
+function createRequestTimeoutError(endpoint: string, timeoutMs: number) {
+  return new Error(`AI generation request to ${endpoint} timed out after ${timeoutMs}ms.`);
+}
+
+async function fetchWithTimeout(
+  endpoint: string,
+  init: RequestInit,
+  timeoutMs: number,
+) {
+  if (typeof AbortController === 'undefined') {
+    return fetch(endpoint, init);
+  }
+
+  const controller = new AbortController();
+  const timeoutHandle = setTimeout(() => {
+    controller.abort(createRequestTimeoutError(endpoint, timeoutMs));
+  }, timeoutMs);
+
+  try {
+    return await fetch(endpoint, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      const reason = controller.signal.reason;
+      throw reason instanceof Error
+        ? reason
+        : createRequestTimeoutError(endpoint, timeoutMs);
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
 }
 
 class LLMService implements ILLMService {
-  private async resolveRequestModel() {
-    const modelIds = await listConfiguredModelIds();
-    return modelIds[0] || 'openclaw/default';
+  private async resolveRequestConfig() {
+    const records = await listEnabledProviderRoutingRecords();
+    const modelIds = Array.from(
+      new Set(
+        records
+          .flatMap((record) => [
+            record.defaultModelId,
+            record.reasoningModelId,
+            record.embeddingModelId,
+            ...record.models.map((model) => model.id),
+          ])
+          .map((modelId) => modelId?.trim())
+          .filter((modelId): modelId is string => Boolean(modelId)),
+      ),
+    );
+
+    return {
+      modelId: modelIds[0] || 'openclaw/default',
+      timeoutMs: resolveRequestTimeoutMs(records),
+    };
   }
 
   private async resolveActiveInstanceTarget() {
@@ -308,11 +363,11 @@ class LLMService implements ILLMService {
 
   private async executePrompt(options: AIRequestOptions) {
     const { activeInstance, endpointCandidates } = await this.resolveActiveInstanceTarget();
-    const requestModel = await this.resolveRequestModel();
+    const requestConfig = await this.resolveRequestConfig();
     const prompt = buildPrompt(options);
     const headers = buildInstanceHeaders(activeInstance);
     const body = JSON.stringify({
-      model: requestModel,
+      model: requestConfig.modelId,
       messages: [
         {
           role: 'system',
@@ -335,11 +390,15 @@ class LLMService implements ILLMService {
     let lastError: Error | null = null;
 
     for (const endpoint of endpointCandidates) {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body,
-      }).catch((error: unknown) => {
+      const response = await fetchWithTimeout(
+        endpoint,
+        {
+          method: 'POST',
+          headers,
+          body,
+        },
+        requestConfig.timeoutMs,
+      ).catch((error: unknown) => {
         lastError = error instanceof Error ? error : new Error(String(error));
         return null;
       });

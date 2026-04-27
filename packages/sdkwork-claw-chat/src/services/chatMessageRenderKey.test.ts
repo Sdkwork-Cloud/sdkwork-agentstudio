@@ -89,6 +89,36 @@ await runTest(
 );
 
 await runTest(
+  'resolveChatMessageRenderKey keeps duplicate sequence fallback messages distinct within one session',
+  () => {
+    const firstKey = resolveChatMessageRenderKey({
+      sessionId: 'session-a',
+      message: {
+        role: 'assistant',
+        seq: 7,
+      } as {
+        role: string;
+        seq: number;
+      },
+      index: 4,
+    });
+    const secondKey = resolveChatMessageRenderKey({
+      sessionId: 'session-a',
+      message: {
+        role: 'assistant',
+        seq: 7,
+      } as {
+        role: string;
+        seq: number;
+      },
+      index: 5,
+    });
+
+    assert.notEqual(firstKey, secondKey);
+  },
+);
+
+await runTest(
   'resolveChatMessageRenderKey prefers authoritative message sequence before index-based fallbacks',
   () => {
     assert.equal(
@@ -103,7 +133,7 @@ await runTest(
         },
         index: 4,
       }),
-      'session:session-a:msg:seq:7',
+      'session:session-a:msg:seq:7:4',
     );
   },
 );

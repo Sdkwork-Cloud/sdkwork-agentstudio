@@ -693,15 +693,19 @@ runTest('sdkwork-claw-desktop bootstraps shell runtime before mounting the React
   );
   assert.match(
     desktopRuntimeConnectionSource,
-    /Hosted runtime readiness will continue in the background\./,
+    /Desktop runtime metadata connected\. Continuing shell launch while hosted runtime readiness is checked in the background\./,
   );
   assert.match(
     desktopRuntimeConnectionSource,
-    /const readinessTask = \(\s*async \(\) => \{/,
+    /const readinessSnapshot = await options\.probeHostedRuntimeReadiness\(\);/,
   );
   assert.match(
     desktopRuntimeConnectionSource,
-    /void readinessTask\.catch\(/,
+    /await options\.onReadinessFailed\(\{[\s\S]*\.\.\.baseContext,[\s\S]*error,[\s\S]*localAiProxy,[\s\S]*}\);[\s\S]*throw error;/,
+  );
+  assert.doesNotMatch(
+    desktopRuntimeConnectionSource,
+    /readinessTask/,
   );
   assert.match(
     desktopBootstrapAppSource,
@@ -769,7 +773,7 @@ runTest('sdkwork-claw-desktop bootstraps shell runtime before mounting the React
   );
   assert.match(
     desktopBackgroundRuntimeReadinessRecoverySource,
-    /if \(recoveryMode === 'managed-openclaw'\) \{[\s\S]*if \(!instanceId\) \{[\s\S]*'The built-in OpenClaw instance could not be resolved for retry\.'/,
+    /if \(recoveryMode === 'managed-openclaw'\) \{[\s\S]*if \(instanceId\) \{[\s\S]*const restartedInstance = await restartInstance\(instanceId\);[\s\S]*if \(restartedInstance\) \{[\s\S]*await reconnectHostedRuntimeReadiness\(\);[\s\S]*return;[\s\S]*await ensureDesktopKernelRunning\(\);[\s\S]*await reconnectHostedRuntimeReadiness\(\);/,
   );
   assert.match(
     desktopBootstrapAppSource,
@@ -848,10 +852,17 @@ runTest('desktop hosted readiness probe validates live OpenClaw authority instea
   );
   assert.match(desktopBootstrapAppSource, /openClawRuntimeLifecycle:/);
   assert.match(desktopBootstrapAppSource, /openClawGatewayLifecycle:/);
-  assert.match(internalRouteSource, /resolve_host_platform_lifecycle/);
   assert.doesNotMatch(
     internalRouteSource,
+    /merge_hosted_openclaw_lifecycle|resolve_host_platform_lifecycle/,
+  );
+  assert.match(
+    internalRouteSource,
     /lifecycle:\s*"ready"\.to_string\(\),/,
+  );
+  assert.match(
+    desktopBootstrapAppSource,
+    /blockOnReadiness:\s*false/,
   );
 });
 
@@ -965,8 +976,12 @@ runTest('internal built-in OpenClaw helpers use built-in naming instead of manag
   );
 
   assert.match(builtInSelectionSource, /function isBuiltInOpenClawInstance\(/);
-  assert.match(builtInSelectionSource, /builtInOpenClawPriority:\s*isBuiltInOpenClawInstance\(instance\)\s*\?\s*1\s*:\s*0/);
-  assert.match(builtInSelectionSource, /const builtInOpenClawInstance = instances\.find\(isBuiltInOpenClawInstance\)/);
+  assert.match(builtInSelectionSource, /isBuiltInOpenClawInstanceId\(instance\.id\)/);
+  assert.match(builtInSelectionSource, /const candidates = instances\.filter\(isBuiltInOpenClawInstance\)/);
+  assert.match(builtInSelectionSource, /if \(candidates\.length === 0\)\s*{\s*return null;/);
+  assert.match(builtInSelectionSource, /const rankedByGateway = candidates/);
+  assert.match(builtInSelectionSource, /const explicitBuiltInInstance = candidates\.find/);
+  assert.doesNotMatch(builtInSelectionSource, /return instances\[0\]/);
   assert.doesNotMatch(builtInSelectionSource, /function isManagedOpenClawInstance\(/);
   assert.doesNotMatch(builtInSelectionSource, /managedOpenClawPriority/);
   assert.doesNotMatch(builtInSelectionSource, /const managedOpenClawInstance = instances\.find\(isManagedOpenClawInstance\)/);
@@ -1879,8 +1894,8 @@ await runAsyncTest('sdkwork-claw-desktop waits for a late Tauri runtime before i
           assert.equal(command, 'studio_list_instances');
           return Promise.resolve([
             {
-              id: 'local-built-in',
-              name: 'Local Built-In',
+              id: 'managed-openclaw-primary',
+              name: 'Built-In OpenClaw Primary',
               description: 'Packaged local OpenClaw kernel managed by Claw Studio.',
               runtimeKind: 'openclaw',
               deploymentMode: 'local-managed',

@@ -2,12 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   AlertCircle,
-  Bookmark,
   ChevronDown,
-  Loader2,
   MessageSquare,
-  MoreHorizontal,
-  Pin,
   Plus,
   Search,
   X,
@@ -25,6 +21,7 @@ import {
   type ChatSidebarSessionSelection,
   resolveChatSidebarAgentActionsPresentation,
   resolveChatSidebarSessionActionsPresentation,
+  resolveChatSidebarSessionTitleText,
   resolveChatSidebarViewState,
   type ChatSidebarAgentOption,
   type ChatSidebarAgentRailItemPresentation,
@@ -40,23 +37,14 @@ import {
   type ChatSidebarCreateAgentMenuActionId,
 } from './ChatSidebarCreateAgentMenu';
 import { ChatSidebarAgentActionMenu } from './ChatSidebarAgentActionMenu';
-import {
-  CHAT_SIDEBAR_PREVIEW_TEXT_CLASS,
-  CHAT_SIDEBAR_PRIMARY_BADGE_CLASS,
-  CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS,
-  CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS,
-  CHAT_SIDEBAR_ROW_BUTTON_CLASS,
-  CHAT_SIDEBAR_TIME_LABEL_CLASS,
-  SESSION_KERNEL_SLOT_CLASS,
-  SESSION_OWNER_SLOT_CLASS,
-  resolveKernelBadgeLabel,
-} from './chatSidebarItemPrimitives';
+import { ChatSidebarAgentItem } from './ChatSidebarAgentItem';
+import { ChatSidebarSessionItem } from './ChatSidebarSessionItem';
 import { ChatSidebarSessionActionMenu } from './ChatSidebarSessionActionMenu';
 import type { FloatingAnchorPoint, FloatingAnchorRect } from './floatingMenuPosition.ts';
 
 type SessionMenuState = {
   item: ChatSidebarHistorySectionPresentation['items'][number];
-  sessionInstanceId?: string;
+  sessionInstanceId: string | null;
   restoreFocusElement?: HTMLElement | null;
   anchorRect?: FloatingAnchorRect | null;
   anchorPoint?: FloatingAnchorPoint | null;
@@ -121,7 +109,7 @@ export function ChatSidebar({
   className?: string;
   sessions: ChatSession[];
   activeSessionId: string | null;
-  onDeleteSession?: (sessionId: string, instanceId?: string) => Promise<void> | void;
+  onDeleteSession?: (sessionId: string, instanceId?: string | null) => Promise<void> | void;
   onSessionSelect?: (
     selection?: ChatSidebarSessionSelection,
   ) =>
@@ -225,7 +213,6 @@ export function ChatSidebar({
     agentOptions: filteredAgentOptions,
     historyViewMode,
     fallbackMainAgentName: t('chat.sidebar.mainAgent'),
-    agentRailEmptyPreviewLabel: t('chat.sidebar.agentRailEmptyPreview'),
     previewLabels: {
       you: t('chat.sidebar.previewYou'),
       system: t('chat.sidebar.previewSystem'),
@@ -314,8 +301,12 @@ export function ChatSidebar({
     },
   ] as const;
 
-  const resolveSessionRecord = (sessionId: string) =>
-    activeHistorySessions.find((session) => session.id === sessionId) ?? null;
+  const activeHistorySessionById = React.useMemo(() => {
+    return new Map(activeHistorySessions.map((session) => [session.id, session]));
+  }, [activeHistorySessions]);
+  const resolveSessionRecord = (sessionId: string) => {
+    return activeHistorySessionById.get(sessionId) ?? null;
+  };
   const resolveSessionMenuRestoreFocusElement = (container: HTMLElement | null) =>
     container?.querySelector<HTMLButtonElement>('button[type="button"]') ?? null;
   const visibleAgentRailItems = React.useMemo(() => {
@@ -483,7 +474,7 @@ export function ChatSidebar({
     closeCreateAgentMenu();
     setSessionMenuState({
       item,
-      sessionInstanceId: sessionRecord?.instanceId ?? undefined,
+      sessionInstanceId: sessionRecord?.instanceId ?? null,
       restoreFocusElement,
       anchorRect: null,
       anchorPoint: {
@@ -507,7 +498,7 @@ export function ChatSidebar({
     closeCreateAgentMenu();
     setSessionMenuState({
       item,
-      sessionInstanceId: sessionRecord?.instanceId ?? undefined,
+      sessionInstanceId: sessionRecord?.instanceId ?? null,
       restoreFocusElement,
       anchorPoint: null,
       anchorRect: resolveAnchorRectFromElement(element),
@@ -633,328 +624,6 @@ export function ChatSidebar({
     void onAgentAction?.(request);
   };
 
-  const renderAgentRailItem = (agent: ChatSidebarAgentRailItemPresentation) => {
-    const isAgentPending = selectionTransition?.kind === 'agent' && pendingAgentId === agent.id;
-    const agentPreviewText = agent.preview ?? t('chat.sidebar.agentRailEmptyPreview');
-    const canOpenAgentMenu = Boolean(agent.id && activeInstanceId);
-    const isAgentMenuOpen = agentMenuState?.item.id === agent.id;
-
-    return (
-      <div
-        key={agent.id ?? '__main__'}
-        className="group relative"
-        onContextMenu={(event) => {
-          if (!canOpenAgentMenu) {
-            return;
-          }
-
-          event.preventDefault();
-          event.stopPropagation();
-          openAgentMenuAtPoint(
-            event,
-            agent,
-            resolveSessionMenuRestoreFocusElement(event.currentTarget),
-          );
-        }}
-      >
-        <button
-          type="button"
-          disabled={isSelectionPending}
-          onClick={() => {
-            void onSelectAgent?.({
-              agentId: agent.id,
-            });
-          }}
-          onKeyDown={(event) => {
-            if (!canOpenAgentMenu) {
-              return;
-            }
-
-            if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
-              event.preventDefault();
-              openAgentMenuAtElement(event.currentTarget, agent, event.currentTarget);
-            }
-          }}
-          className={cn(
-            CHAT_SIDEBAR_ROW_BUTTON_CLASS,
-            agent.isSelected
-              ? 'bg-primary-500/14 text-primary-900 dark:bg-primary-500/18 dark:text-primary-50'
-              : 'text-zinc-700 hover:bg-zinc-900/[0.035] disabled:hover:bg-transparent dark:text-zinc-300 dark:hover:bg-white/[0.04] dark:disabled:hover:bg-transparent',
-          )}
-          aria-busy={isAgentPending}
-        >
-          <div
-            className={cn(
-              CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS,
-              agent.isSelected
-                ? 'bg-primary-500/20 text-primary-800 dark:bg-primary-500/24 dark:text-primary-100'
-                : 'bg-zinc-900/[0.055] text-zinc-700 dark:bg-white/[0.09] dark:text-zinc-200',
-            )}
-          >
-            <span
-              className={cn(
-                CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS,
-                'bg-transparent',
-              )}
-            >
-              {agent.avatarLabel ?? 'AI'}
-            </span>
-          </div>
-          <div className="min-w-0 flex-1 overflow-hidden">
-            <div className="flex min-w-0 items-center gap-1.5">
-              <span className={SESSION_OWNER_SLOT_CLASS} title={agent.name}>
-                <span className="truncate">{agent.name}</span>
-              </span>
-              {agent.kernelLabel ? (
-                <span className={SESSION_KERNEL_SLOT_CLASS} title={agent.kernelLabel}>
-                  {resolveKernelBadgeLabel(agent.kernelLabel)}
-                </span>
-              ) : null}
-              {agent.isPrimary ? (
-                <span className={CHAT_SIDEBAR_PRIMARY_BADGE_CLASS}>
-                  {t('chat.sidebar.mainAgentBadge')}
-                </span>
-              ) : null}
-              {isAgentPending ? (
-                <Loader2 className="ml-auto h-3.5 w-3.5 shrink-0 animate-spin text-zinc-500 dark:text-zinc-300" />
-              ) : agent.relativeTimeLabel ? (
-                <span
-                  className={cn(
-                    CHAT_SIDEBAR_TIME_LABEL_CLASS,
-                    'transition-opacity text-zinc-400 dark:text-zinc-500',
-                    canOpenAgentMenu && !isAgentPending
-                      ? isAgentMenuOpen
-                        ? 'opacity-0'
-                        : 'opacity-100 group-hover:opacity-0 group-focus-within:opacity-0'
-                      : 'opacity-100',
-                  )}
-                >
-                  {agent.relativeTimeLabel}
-                </span>
-              ) : null}
-            </div>
-            <p
-              className={cn(
-                CHAT_SIDEBAR_PREVIEW_TEXT_CLASS,
-                agent.sessionCount > 0
-                  ? 'text-zinc-500 dark:text-zinc-400'
-                  : 'text-zinc-400 dark:text-zinc-500',
-              )}
-            >
-              {agentPreviewText}
-            </p>
-          </div>
-        </button>
-        {canOpenAgentMenu ? (
-          <button
-            type="button"
-            disabled={isSelectionPending}
-            onClick={(event) => {
-              event.stopPropagation();
-              if (isAgentMenuOpen) {
-                closeAgentMenu();
-                return;
-              }
-
-              openAgentMenuAtElement(event.currentTarget, agent, event.currentTarget);
-            }}
-            className={cn(
-              'absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-all hover:bg-zinc-900/[0.06] hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white/[0.08] dark:hover:text-zinc-200',
-              isAgentMenuOpen
-                ? 'pointer-events-auto opacity-100'
-                : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100',
-            )}
-            title={t('chat.sidebar.moreActions')}
-            aria-label={t('chat.sidebar.moreActions')}
-            aria-haspopup="menu"
-            aria-expanded={isAgentMenuOpen}
-            aria-controls={isAgentMenuOpen ? 'chat-sidebar-agent-actions-menu' : undefined}
-          >
-            {isAgentPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <MoreHorizontal className="h-4 w-4" />
-            )}
-          </button>
-        ) : null}
-      </div>
-    );
-  };
-
-  const renderSessionGroup = (
-    section: ChatSidebarHistorySectionPresentation,
-    title: string,
-  ) => {
-    if (section.items.length === 0) {
-      return null;
-    }
-
-    return (
-      <div className="mb-6">
-        <h3 className="mb-1.5 px-3 text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
-          {title}
-        </h3>
-        <div className="space-y-1 px-2">
-          {section.items.map((item, itemIndex) => {
-            const previewText = item.preview ?? item.displayTitle;
-            const isSessionMenuOpen = sessionMenuState?.item.sessionId === item.sessionId;
-
-            return (
-              <div
-                key={`${section.id}:${item.sessionId}:${itemIndex}`}
-                className="group relative"
-                onContextMenu={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  openSessionMenuAtPoint(
-                    event,
-                    item,
-                    resolveSessionMenuRestoreFocusElement(event.currentTarget),
-                  );
-                }}
-              >
-                <button
-                  type="button"
-                  disabled={isSelectionPending}
-                  onClick={() => {
-                    selectSession(item);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      selectSession(item);
-                      return;
-                    }
-
-                    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
-                      event.preventDefault();
-                      openSessionMenuAtElement(event.currentTarget, item, event.currentTarget);
-                    }
-                  }}
-                  className={cn(
-                    CHAT_SIDEBAR_ROW_BUTTON_CLASS,
-                    item.isSelected
-                      ? 'bg-primary-500/14 text-primary-900 dark:bg-primary-500/18 dark:text-primary-50'
-                      : 'text-zinc-700 hover:bg-zinc-900/[0.035] dark:text-zinc-300 dark:hover:bg-white/[0.04]',
-                  )}
-                  aria-current={item.isSelected ? 'page' : undefined}
-                >
-                  <div
-                    className={cn(
-                      CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS,
-                      item.isSelected
-                        ? 'bg-primary-500/20 text-primary-800 dark:bg-primary-500/24 dark:text-primary-100'
-                        : 'bg-zinc-900/[0.055] text-zinc-700 dark:bg-white/[0.09] dark:text-zinc-200',
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS,
-                        'bg-transparent',
-                      )}
-                    >
-                      {item.ownerAvatarLabel ?? 'AI'}
-                    </span>
-                    {item.showStatusDot ? (
-                      <span
-                        className={cn(
-                          'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-zinc-50 dark:border-zinc-950',
-                          item.isRunning
-                            ? 'animate-pulse bg-emerald-500'
-                            : 'bg-primary-400/90 dark:bg-primary-300/90',
-                        )}
-                      />
-                    ) : null}
-                  </div>
-
-                  <div className="min-w-0 flex-1 overflow-hidden">
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <span className={SESSION_OWNER_SLOT_CLASS} title={item.ownerName}>
-                        <span className="truncate">{item.ownerName}</span>
-                      </span>
-                      {item.ownerKernelLabel ? (
-                        <span className={SESSION_KERNEL_SLOT_CLASS} title={item.ownerKernelLabel}>
-                          {resolveKernelBadgeLabel(item.ownerKernelLabel)}
-                        </span>
-                      ) : null}
-                      {item.pinOrigin === 'system' ? (
-                        <span className={CHAT_SIDEBAR_PRIMARY_BADGE_CLASS}>
-                          {t('chat.sidebar.mainAgentBadge')}
-                        </span>
-                      ) : null}
-                      {item.pinOrigin === 'user' ? (
-                        <Pin className="h-3.5 w-3.5 shrink-0 text-primary-600 dark:text-primary-300" />
-                      ) : null}
-                      {item.isFavorited ? (
-                        <Bookmark className="h-3.5 w-3.5 shrink-0 text-amber-500 dark:text-amber-300" />
-                      ) : null}
-                      {item.hasUnread ? (
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-primary-500/90 dark:bg-primary-300/90" />
-                      ) : null}
-                      <span
-                        className={cn(
-                          CHAT_SIDEBAR_TIME_LABEL_CLASS,
-                          'transition-opacity',
-                          item.hasUnread
-                            ? 'text-zinc-600 dark:text-zinc-300'
-                            : 'text-zinc-400 dark:text-zinc-500',
-                          isSessionMenuOpen
-                            ? 'opacity-0'
-                            : 'opacity-100 group-hover:opacity-0 group-focus-within:opacity-0',
-                        )}
-                      >
-                        {item.relativeTimeLabel}
-                      </span>
-                    </div>
-                    <p
-                      className={cn(
-                        CHAT_SIDEBAR_PREVIEW_TEXT_CLASS,
-                        item.hasUnread
-                          ? 'font-medium text-zinc-700 dark:text-zinc-200'
-                          : 'text-zinc-500 dark:text-zinc-400',
-                      )}
-                    >
-                      {previewText}
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={isSelectionPending}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    if (isSessionMenuOpen) {
-                      closeSessionMenu();
-                      return;
-                    }
-                    openSessionMenuAtElement(event.currentTarget, item, event.currentTarget);
-                  }}
-                  className={cn(
-                    'absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-all hover:bg-zinc-900/[0.06] hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white/[0.08] dark:hover:text-zinc-200',
-                    isSessionMenuOpen
-                      ? 'pointer-events-auto opacity-100'
-                      : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100',
-                  )}
-                  title={t('chat.sidebar.moreActions')}
-                  aria-label={t('chat.sidebar.moreActions')}
-                  aria-haspopup="menu"
-                  aria-expanded={isSessionMenuOpen}
-                  aria-controls={isSessionMenuOpen ? 'chat-sidebar-session-actions-menu' : undefined}
-                >
-                  {selectionTransition?.kind === 'session' && pendingSessionId === item.sessionId ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <MoreHorizontal className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
   const isCreateAgentMenuOpen = Boolean(createAgentMenuState);
 
   return (
@@ -1052,7 +721,43 @@ export function ChatSidebar({
               </div>
             ) : (
               <div className="max-h-[22.875rem] overflow-y-auto pr-1">
-                <div className="space-y-1.5">{visibleAgentRailItems.map(renderAgentRailItem)}</div>
+                <div className="space-y-1.5">
+                  {visibleAgentRailItems.map((agent) => {
+                    const isAgentPending =
+                      selectionTransition?.kind === 'agent' && pendingAgentId === agent.id;
+                    const canOpenAgentMenu = Boolean(agent.id && activeInstanceId);
+                    const isAgentMenuOpen = agentMenuState?.item.id === agent.id;
+
+                    return (
+                      <ChatSidebarAgentItem
+                        key={agent.id ?? '__main__'}
+                        agent={agent}
+                        isSelectionPending={isSelectionPending}
+                        isAgentPending={isAgentPending}
+                        isAgentMenuOpen={isAgentMenuOpen}
+                        canOpenAgentMenu={canOpenAgentMenu}
+                        moreActionsLabel={t('chat.sidebar.moreActions')}
+                        mainAgentBadgeLabel={t('chat.sidebar.mainAgentBadge')}
+                        onSelectAgent={(selectedAgent) => {
+                          void onSelectAgent?.({
+                            agentId: selectedAgent.id,
+                          });
+                        }}
+                        onOpenMenuAtPoint={(event, selectedAgent) => {
+                          openAgentMenuAtPoint(
+                            event,
+                            selectedAgent,
+                            resolveSessionMenuRestoreFocusElement(event.currentTarget),
+                          );
+                        }}
+                        onOpenMenuAtElement={(element, selectedAgent) => {
+                          openAgentMenuAtElement(element, selectedAgent, element);
+                        }}
+                        onCloseMenu={closeAgentMenu}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -1100,11 +805,58 @@ export function ChatSidebar({
           </div>
         </div>
 
-        {sidebarChrome.sections.map(({ section, titleKey }) => (
-          <React.Fragment key={section.id}>
-            {renderSessionGroup(section, t(titleKey))}
-          </React.Fragment>
-        ))}
+        {sidebarChrome.sections.map(({ section, titleKey }) => {
+          if (section.items.length === 0) {
+            return null;
+          }
+
+          return (
+            <div key={section.id} className="mb-6">
+              <h3 className="mb-1.5 px-3 text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
+                {t(titleKey)}
+              </h3>
+              <div className="space-y-1 px-2">
+                {section.items.map((item, itemIndex) => {
+                  const sessionRecord = resolveSessionRecord(item.sessionId);
+                  const sessionTitleText = resolveChatSidebarSessionTitleText({
+                    itemDisplayTitle: item.displayTitle,
+                    session: sessionRecord,
+                  });
+                  const isSessionMenuOpen =
+                    sessionMenuState?.item.sessionId === item.sessionId;
+                  const isSessionPending =
+                    selectionTransition?.kind === 'session' &&
+                    pendingSessionId === item.sessionId;
+
+                  return (
+                    <ChatSidebarSessionItem
+                      key={`${section.id}:${item.sessionId}:${itemIndex}`}
+                      item={item}
+                      sessionTitleText={sessionTitleText}
+                      isSelectionPending={isSelectionPending}
+                      isSessionPending={isSessionPending}
+                      isSessionMenuOpen={isSessionMenuOpen}
+                      moreActionsLabel={t('chat.sidebar.moreActions')}
+                      mainAgentBadgeLabel={t('chat.sidebar.mainAgentBadge')}
+                      onSelectSession={selectSession}
+                      onOpenMenuAtPoint={(event, selectedItem) => {
+                        openSessionMenuAtPoint(
+                          event,
+                          selectedItem,
+                          resolveSessionMenuRestoreFocusElement(event.currentTarget),
+                        );
+                      }}
+                      onOpenMenuAtElement={(element, selectedItem) => {
+                        openSessionMenuAtElement(element, selectedItem, element);
+                      }}
+                      onCloseMenu={closeSessionMenu}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
 
         {sidebarChrome.showEmptyState ? (
           <div className="px-4 py-8 text-center">

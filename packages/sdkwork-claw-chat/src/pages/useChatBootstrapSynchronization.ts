@@ -26,7 +26,7 @@ export interface UseChatBootstrapSynchronizationInput {
       sessionId?: string | null;
     },
   ) => Promise<string>;
-  setActiveSession: (sessionId: string, instanceId?: string) => Promise<void> | void;
+  setActiveSession: (sessionId: string, instanceId?: string | null) => Promise<void> | void;
 }
 
 export function useChatBootstrapSynchronization({

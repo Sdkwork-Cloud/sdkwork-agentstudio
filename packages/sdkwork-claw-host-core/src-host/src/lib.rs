@@ -123,8 +123,8 @@ mod tests {
         let record = registry.register(HostEndpointRegistration {
             endpoint_id: "openclaw-gateway".to_string(),
             bind_host: "127.0.0.1".to_string(),
-            requested_port: 18_789,
-            active_port: Some(28_789),
+            requested_port: 21_280,
+            active_port: Some(31_280),
             scheme: "http".to_string(),
             base_path: Some("/v1".to_string()),
             websocket_path: Some("/ws".to_string()),
@@ -134,35 +134,35 @@ mod tests {
             last_conflict_reason: Some("requested port busy".to_string()),
         });
 
-        assert_eq!(record.requested_port, 18_789);
-        assert_eq!(record.active_port, Some(28_789));
+        assert_eq!(record.requested_port, 21_280);
+        assert_eq!(record.active_port, Some(31_280));
         assert_eq!(
             record.base_url.as_deref(),
-            Some("http://127.0.0.1:28789/v1")
+            Some("http://127.0.0.1:31280/v1")
         );
         assert_eq!(
             record.websocket_url.as_deref(),
-            Some("ws://127.0.0.1:28789/ws")
+            Some("ws://127.0.0.1:31280/ws")
         );
 
         let runtime =
             project_openclaw_runtime(Some(&record), OpenClawLifecycle::Ready, "host-core", 2_000);
         assert_eq!(runtime.runtime_kind, "openclaw");
-        assert_eq!(runtime.requested_port, Some(18_789));
-        assert_eq!(runtime.active_port, Some(28_789));
+        assert_eq!(runtime.requested_port, Some(21_280));
+        assert_eq!(runtime.active_port, Some(31_280));
         assert_eq!(
             runtime.base_url.as_deref(),
-            Some("http://127.0.0.1:28789/v1")
+            Some("http://127.0.0.1:31280/v1")
         );
 
         let gateway =
             project_openclaw_gateway(Some(&record), OpenClawLifecycle::Ready, "host-core", 2_000);
         assert_eq!(gateway.gateway_kind, "openclawGateway");
-        assert_eq!(gateway.requested_port, Some(18_789));
-        assert_eq!(gateway.active_port, Some(28_789));
+        assert_eq!(gateway.requested_port, Some(21_280));
+        assert_eq!(gateway.active_port, Some(31_280));
         assert_eq!(
             gateway.websocket_url.as_deref(),
-            Some("ws://127.0.0.1:28789/ws")
+            Some("ws://127.0.0.1:31280/ws")
         );
     }
 

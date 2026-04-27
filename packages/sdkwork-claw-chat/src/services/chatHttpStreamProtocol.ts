@@ -1,3 +1,5 @@
+import { normalizeChatMessageTextEncoding } from './chatTextEncoding.ts';
+
 function asRecord(payload: unknown): Record<string, unknown> | null {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     return null;
@@ -12,7 +14,7 @@ function normalizeOptionalString(value: unknown) {
 
 export function extractChatHttpPayloadTextFragments(payload: unknown): string[] {
   if (typeof payload === 'string') {
-    return payload ? [payload] : [];
+    return payload ? [normalizeChatMessageTextEncoding(payload)] : [];
   }
 
   if (!payload || typeof payload !== 'object') {
@@ -31,7 +33,7 @@ export function extractChatHttpPayloadTextFragments(payload: unknown): string[] 
 
   if (record.delta !== undefined) {
     if (typeof record.delta === 'string') {
-      return record.delta ? [record.delta] : [];
+      return record.delta ? [normalizeChatMessageTextEncoding(record.delta)] : [];
     }
 
     return extractChatHttpPayloadTextFragments(record.delta);
@@ -50,11 +52,11 @@ export function extractChatHttpPayloadTextFragments(payload: unknown): string[] 
   }
 
   if (typeof record.content === 'string') {
-    return record.content ? [record.content] : [];
+    return record.content ? [normalizeChatMessageTextEncoding(record.content)] : [];
   }
 
   if (typeof record.text === 'string') {
-    return record.text ? [record.text] : [];
+    return record.text ? [normalizeChatMessageTextEncoding(record.text)] : [];
   }
 
   return [];
@@ -106,7 +108,7 @@ function shouldIgnoreEventType(eventType: string | null) {
 function extractEventText(eventType: string | null, payload: unknown) {
   if (eventType === 'response.output_text.delta') {
     const delta = normalizeOptionalString(asRecord(payload)?.delta);
-    return delta ? [delta] : [];
+    return delta ? [normalizeChatMessageTextEncoding(delta)] : [];
   }
 
   return extractChatHttpPayloadTextFragments(payload);
@@ -129,7 +131,7 @@ export function extractChatHttpStreamTextDeltas(frame: string): string[] {
       continue;
     } catch {
       if (!eventType || eventType === 'message') {
-        deltas.push(payloadText);
+        deltas.push(normalizeChatMessageTextEncoding(payloadText));
       }
     }
   }

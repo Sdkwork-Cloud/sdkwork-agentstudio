@@ -3,8 +3,6 @@ import type {
   JsonValue,
 } from './openClawConfigDocumentService.ts';
 
-const LEGACY_OPENCLAW_HOME_SEGMENT_RE = /(^|\/)openclaw-home\/\.openclaw(?=\/|$)/gi;
-
 function isJsonObject(value: unknown): value is JsonObject {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -31,7 +29,7 @@ function setCanonicalPath(target: JsonObject, key: string) {
     return;
   }
 
-  const normalized = normalizeOpenClawLegacyManagedPath(current);
+  const normalized = normalizeOpenClawManagedPath(current);
   if (normalized) {
     target[key] = normalized;
     return;
@@ -40,16 +38,13 @@ function setCanonicalPath(target: JsonObject, key: string) {
   delete target[key];
 }
 
-export function normalizeOpenClawLegacyManagedPath(value: string | null | undefined) {
+export function normalizeOpenClawManagedPath(value: string | null | undefined) {
   const normalized = value?.replace(/\\/g, '/').trim() || '';
   if (!normalized) {
     return '';
   }
 
-  return normalized.replace(
-    LEGACY_OPENCLAW_HOME_SEGMENT_RE,
-    (_match, leadingSlash: string) => `${leadingSlash}.openclaw`,
-  );
+  return normalized;
 }
 
 export function normalizeOpenClawAgentPathOverrides<
@@ -63,11 +58,11 @@ export function normalizeOpenClawAgentPathOverrides<
     workspace:
       input.workspace == null
         ? input.workspace
-        : normalizeOpenClawLegacyManagedPath(input.workspace),
+        : normalizeOpenClawManagedPath(input.workspace),
     agentDir:
       input.agentDir == null
         ? input.agentDir
-        : normalizeOpenClawLegacyManagedPath(input.agentDir),
+        : normalizeOpenClawManagedPath(input.agentDir),
   };
 }
 
@@ -79,8 +74,8 @@ export function canonicalizeOpenClawAgentPathsInConfigRoot(root: JsonObject) {
 
   const defaultsRoot = readObject(agentsRoot.defaults);
   if (defaultsRoot) {
-    setCanonicalPath(defaultsRoot, 'workspace');
-    setCanonicalPath(defaultsRoot, 'agentDir');
+    delete defaultsRoot.workspace;
+    delete defaultsRoot.agentDir;
   }
 
   for (const entry of readArray(agentsRoot.list)) {

@@ -1,16 +1,18 @@
 import type { AppAuthSocialProvider } from '@sdkwork/claw-core';
 
 export function resolveRedirectTarget(rawTarget: string | null) {
-  if (!rawTarget || !rawTarget.startsWith('/')) {
+  if (!rawTarget || !rawTarget.startsWith('/') || rawTarget.startsWith('//')) {
     return '/dashboard';
   }
 
+  const [targetPathname] = rawTarget.split(/[?#]/, 1);
+
   if (
-    rawTarget === '/auth' ||
-    rawTarget === '/login' ||
-    rawTarget === '/register' ||
-    rawTarget === '/forgot-password' ||
-    rawTarget.startsWith('/login/oauth/callback')
+    targetPathname === '/auth' ||
+    targetPathname === '/login' ||
+    targetPathname === '/register' ||
+    targetPathname === '/forgot-password' ||
+    targetPathname.startsWith('/login/oauth/callback')
   ) {
     return '/dashboard';
   }

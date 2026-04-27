@@ -43,6 +43,7 @@ function resolveGitCommand() {
   const whereResult = spawnSync('where.exe', ['git'], {
     encoding: 'utf8',
     shell: false,
+    windowsHide: true,
   });
   if (whereResult.status === 0) {
     const resolvedCandidate = (whereResult.stdout ?? '')
@@ -83,6 +84,7 @@ function run(command, args, { cwd = process.cwd(), captureStdout = false } = {})
     encoding: 'utf8',
     stdio: captureStdout ? ['ignore', 'pipe', 'inherit'] : 'inherit',
     shell: false,
+    windowsHide: true,
   });
 
   if (result.error) {

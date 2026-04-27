@@ -89,7 +89,7 @@ await runTest(
 
     assert.equal(snapshots?.[0]?.id, 'main');
     assert.equal(snapshots?.[0]?.isDefault, true);
-    assert.equal(snapshots?.[0]?.workspace, 'D:/OpenClaw/workspace');
+    assert.equal(snapshots?.[0]?.workspace, 'D:/OpenClaw/.openclaw/workspace');
     assert.equal(snapshots?.[0]?.agentDir, 'D:/OpenClaw/.openclaw/agents/main/agent');
     assert.deepEqual(snapshots?.[0]?.model, {
       primary: 'openai/gpt-4.1',
@@ -129,7 +129,7 @@ await runTest(
 );
 
 await runTest(
-  'openClawAgentSnapshotService resolves effective agent paths from config root defaults and explicit overrides',
+  'openClawAgentSnapshotService resolves effective agent paths from standard workspace roots and explicit overrides',
   () => {
     const research = agentSnapshotServiceModule?.resolveOpenClawAgentPathsFromConfigRoot({
       root: {

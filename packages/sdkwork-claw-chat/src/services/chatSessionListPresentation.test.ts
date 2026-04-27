@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { Buffer } from 'node:buffer';
 import { readFileSync } from 'node:fs';
 import {
   formatChatSessionRelativeTime,
@@ -20,6 +21,10 @@ function runTest(name: string, callback: () => void | Promise<void>) {
       console.error(`not ok - ${name}`);
       throw error;
     });
+}
+
+function encodeUtf8AsLatin1(value: string) {
+  return Buffer.from(value, 'utf8').toString('latin1');
 }
 
 await runTest(
@@ -141,6 +146,145 @@ await runTest(
 
     assert.equal(presentation.displayTitle, 'New Conversation');
     assert.equal(presentation.preview, null);
+  },
+);
+
+await runTest(
+  'presentChatSessionListItem keeps latest message preview separate from the session title',
+  () => {
+    const presentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:title-preview-boundary',
+        title: 'Kernel startup reliability',
+        updatedAt: Date.UTC(2026, 3, 3, 10, 33, 0),
+        lastMessagePreview: 'Assistant latest update that belongs only in preview',
+        messages: [],
+      },
+      now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    assert.equal(presentation.displayTitle, 'Kernel startup reliability');
+    assert.equal(presentation.preview, 'Assistant latest update that belongs only in preview');
+  },
+);
+
+await runTest(
+  'presentChatSessionListItem repairs mojibake in stored titles and previews before rendering',
+  () => {
+    const presentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:mojibake-title-preview',
+        title: encodeUtf8AsLatin1('聊天标题正常显示'),
+        updatedAt: Date.UTC(2026, 3, 3, 10, 35, 0),
+        lastMessagePreview: encodeUtf8AsLatin1('助手回复也不能乱码'),
+        messages: [],
+      },
+      now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    assert.equal(presentation.displayTitle, '聊天标题正常显示');
+    assert.equal(presentation.preview, '助手回复也不能乱码');
+  },
+);
+
+await runTest(
+  'presentChatSessionListItem does not use a readable latest message preview as the title for untitled sessions',
+  () => {
+    const presentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:untitled-preview-boundary',
+        title: 'New Conversation',
+        updatedAt: Date.UTC(2026, 3, 3, 10, 34, 0),
+        lastMessagePreview: 'Readable assistant summary that must not become the title',
+        messages: [],
+      },
+      now: Date.UTC(2026, 3, 3, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    assert.equal(presentation.displayTitle, 'New Conversation');
+    assert.equal(presentation.preview, 'Readable assistant summary that must not become the title');
+  },
+);
+
+await runTest(
+  'presentChatSessionListItem repairs legacy preview-backed stored titles from the first user message',
+  () => {
+    const presentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:legacy-preview-title',
+        title: 'Assistant latest update that belongs only in preview',
+        updatedAt: Date.UTC(2026, 3, 26, 10, 58, 0),
+        lastMessagePreview: 'Assistant latest update that belongs only in preview',
+        messages: [
+          {
+            role: 'user',
+            content: 'Diagnose why the desktop hosted runtime starts degraded',
+            timestamp: Date.UTC(2026, 3, 26, 10, 50, 0),
+          },
+          {
+            role: 'assistant',
+            content: 'Assistant latest update that belongs only in preview',
+            timestamp: Date.UTC(2026, 3, 26, 10, 58, 0),
+          },
+        ],
+      },
+      now: Date.UTC(2026, 3, 26, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    assert.equal(
+      presentation.displayTitle,
+      'Diagnose why the desktop hosted runtime starts degraded',
+    );
+    assert.equal(presentation.preview, 'Assistant latest update that belongs only in preview');
+  },
+);
+
+await runTest(
+  'presentChatSessionListItem derives the visible title from the first user message when the stored title is a date',
+  () => {
+    const presentation = presentChatSessionListItem({
+      session: {
+        id: 'thread:date-title-boundary',
+        title: '2026-04-26 10:58',
+        updatedAt: Date.UTC(2026, 3, 26, 10, 58, 0),
+        lastMessagePreview: 'Assistant latest update that belongs only in preview',
+        messages: [
+          {
+            role: 'user',
+            content: 'Diagnose why the desktop hosted runtime starts degraded',
+            timestamp: Date.UTC(2026, 3, 26, 10, 50, 0),
+          },
+          {
+            role: 'assistant',
+            content: 'Assistant latest update that belongs only in preview',
+            timestamp: Date.UTC(2026, 3, 26, 10, 58, 0),
+          },
+        ],
+      },
+      now: Date.UTC(2026, 3, 26, 11, 0, 0),
+      locale: 'zh-CN',
+      timeZone: 'UTC',
+      relativeTimeLabels: ZH_RELATIVE_TIME_LABELS,
+    });
+
+    assert.equal(
+      presentation.displayTitle,
+      'Diagnose why the desktop hosted runtime starts degraded',
+    );
+    assert.notEqual(presentation.displayTitle, '2026-04-26 10:58');
+    assert.equal(presentation.preview, 'Assistant latest update that belongs only in preview');
   },
 );
 

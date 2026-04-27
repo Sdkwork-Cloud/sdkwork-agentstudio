@@ -35,7 +35,7 @@ await runTest(
     );
     assert.match(
       pageSynchronizationSource,
-      /const activeSessionSelectionSynchronization: UseChatActiveSessionSelectionSynchronizationInput = \{[\s\S]*isChatSupportedRoute: workspaceState\.runtime\.isChatSupportedRoute,[\s\S]*activeSession: workspaceState\.session\.selectedSession,[\s\S]*selectedAgentId: selection\.selectedAgentId,[\s\S]*agentOptionIds: workspaceState\.presentation\.sidebarAgentOptions\.map\(\(agent\) => agent\.id\),[\s\S]*setSelectedAgentId: selection\.setSelectedAgentId,[\s\S]*\};/s,
+      /const activeSessionSelectionSynchronization: UseChatActiveSessionSelectionSynchronizationInput = \{[\s\S]*isChatSupportedRoute: workspaceState\.runtime\.isChatSupportedRoute,[\s\S]*activeSession: workspaceState\.session\.displaySession,[\s\S]*selectedAgentId: selection\.selectedAgentId,[\s\S]*agentOptionIds: workspaceState\.presentation\.sidebarAgentOptions\.map\(\(agent\) => agent\.id\),[\s\S]*setSelectedAgentId: selection\.setSelectedAgentId,[\s\S]*\};/s,
     );
     assert.match(
       pageSynchronizationSource,

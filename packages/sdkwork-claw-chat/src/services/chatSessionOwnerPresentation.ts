@@ -1,4 +1,5 @@
 import { resolveChatSessionBinding, type ChatSessionBindingSource } from './chatSessionBinding.ts';
+import { isOpaqueChatSessionTitle } from './chatSessionTitlePresentation.ts';
 
 export interface ChatSidebarAgentOption {
   id: string | null;
@@ -38,7 +39,7 @@ function normalizeSemanticLabel(value: string | null | undefined) {
 
 function titleizeIdentifier(value: string) {
   return value
-    .split(/[-_.]/)
+    .split(/[-_.\s]+/)
     .filter(Boolean)
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(' ');
@@ -63,6 +64,96 @@ function resolveFallbackAvatarLabel(name: string) {
 function resolveOwnerAvatarLabel(value: string | null | undefined) {
   const normalized = normalizeOptionalString(value);
   return normalized ? normalized.slice(0, 2).toUpperCase() : null;
+}
+
+function isReadableChatAgentLabel(value: string | null | undefined) {
+  const normalized = normalizeOptionalString(value);
+  if (!normalized) {
+    return false;
+  }
+
+  const semanticLabel = normalizeSemanticLabel(normalized);
+  if (semanticLabel && MAIN_AGENT_SEMANTIC_LABELS.has(semanticLabel)) {
+    return true;
+  }
+
+  return !isOpaqueChatSessionTitle(normalized) && !isMachineLikeChatAgentId(normalized);
+}
+
+function isMachineLikeChatAgentId(value: string) {
+  const normalized = normalizeOptionalString(value);
+  if (!normalized) {
+    return true;
+  }
+
+  const segments = normalized.split(/[-_.:/\s]+/).filter(Boolean);
+  if (segments.some((segment) => /^[0-9a-f]{8,}$/i.test(segment))) {
+    return true;
+  }
+
+  const digitCount = (normalized.match(/\d/g) ?? []).length;
+  if (digitCount >= 6) {
+    return true;
+  }
+
+  const compact = normalized.replace(/[^a-z0-9]+/gi, '');
+  return /^[a-z]*[0-9a-f]{12,}$/i.test(compact);
+}
+
+function resolveReadablePersistedAgentLabel(value: string | null | undefined) {
+  const normalized = normalizeOptionalString(value);
+  return isReadableChatAgentLabel(normalized) ? normalized : null;
+}
+
+function resolveReadableAgentIdLabel(value: string | null | undefined) {
+  const normalized = normalizeOptionalString(value);
+  return normalized &&
+    isReadableChatAgentLabel(normalized) &&
+    !isMachineLikeChatAgentId(normalized)
+    ? titleizeIdentifier(normalized)
+    : null;
+}
+
+export function resolveChatSidebarFallbackAgentName(params: {
+  agentId: string | null | undefined;
+  agentLabel?: string | null;
+  kernelLabel?: string | null;
+}) {
+  const normalizedKernelLabel = normalizeOptionalString(params.kernelLabel);
+
+  return (
+    resolveReadablePersistedAgentLabel(params.agentLabel) ??
+    resolveReadableAgentIdLabel(params.agentId) ??
+    (normalizedKernelLabel ? `${normalizedKernelLabel} Agent` : null) ??
+    'Agent'
+  );
+}
+
+export function resolveChatAgentDisplayIdentity(params: {
+  agentId: string | null | undefined;
+  agentLabel?: string | null;
+  avatarLabel?: string | null;
+  kernelLabel?: string | null;
+  fallbackAvatarWhenMissing?: boolean;
+}) {
+  const name = resolveChatSidebarFallbackAgentName({
+    agentId: params.agentId,
+    agentLabel: params.agentLabel,
+    kernelLabel: params.kernelLabel,
+  });
+  const normalizedAgentLabel = normalizeOptionalString(params.agentLabel);
+  const normalizedAvatarLabel = normalizeOptionalString(params.avatarLabel);
+
+  return {
+    name,
+    avatarLabel:
+      normalizedAgentLabel === name
+        ? normalizedAvatarLabel ??
+          (params.fallbackAvatarWhenMissing === false
+            ? null
+            : resolveFallbackAvatarLabel(name))
+        : resolveFallbackAvatarLabel(name),
+  };
 }
 
 function resolvePersistedAgentLabel(
@@ -168,12 +259,17 @@ export function buildChatSidebarAgentOptions(input: {
     const kernelLabel =
       normalizeOptionalString(agent.kernelLabel) ??
       resolveChatSidebarKernelLabel(agent.kernelId);
+    const identity = resolveChatAgentDisplayIdentity({
+      agentId: agent.id,
+      agentLabel: agent.name,
+      avatarLabel: agent.avatar,
+      kernelLabel,
+    });
 
     return {
       id: agent.id,
-      name: agent.name,
-      avatarLabel:
-        normalizeOptionalString(agent.avatar) ?? resolveFallbackAvatarLabel(agent.name),
+      name: identity.name,
+      avatarLabel: identity.avatarLabel,
       ...(kernelId ? { kernelId } : {}),
       ...(kernelLabel ? { kernelLabel } : {}),
     } satisfies ChatSidebarAgentOption;
@@ -226,11 +322,20 @@ export function resolveChatSessionOwnerPresentation(params: {
   const matchingAgent = findChatSidebarAgentOption(params.agentOptions, binding.agentId);
   const bindingKernelLabel = resolveChatSidebarKernelLabel(binding.kernelId);
   if (matchingAgent) {
+    const kernelLabel = normalizeOptionalString(matchingAgent.kernelLabel) ?? bindingKernelLabel;
+    const identity = resolveChatAgentDisplayIdentity({
+      agentId: matchingAgent.id ?? binding.agentId,
+      agentLabel: matchingAgent.name,
+      avatarLabel: matchingAgent.avatarLabel,
+      kernelLabel,
+      fallbackAvatarWhenMissing: false,
+    });
+
     return {
       id: matchingAgent.id,
-      name: matchingAgent.name,
-      avatarLabel: matchingAgent.avatarLabel,
-      kernelLabel: normalizeOptionalString(matchingAgent.kernelLabel) ?? bindingKernelLabel,
+      name: identity.name,
+      avatarLabel: identity.avatarLabel,
+      kernelLabel,
     };
   }
 
@@ -244,19 +349,26 @@ export function resolveChatSessionOwnerPresentation(params: {
   }
 
   const persistedAgentLabel = resolvePersistedAgentLabel(params.session);
-  if (persistedAgentLabel) {
+  const readablePersistedAgentLabel = resolveReadablePersistedAgentLabel(persistedAgentLabel);
+  if (readablePersistedAgentLabel) {
     return {
       id: binding.agentId,
-      name: persistedAgentLabel,
-      avatarLabel: resolveOwnerAvatarLabel(persistedAgentLabel),
+      name: readablePersistedAgentLabel,
+      avatarLabel: resolveOwnerAvatarLabel(readablePersistedAgentLabel),
       kernelLabel: bindingKernelLabel,
     };
   }
 
+  const fallbackAgentName = resolveChatSidebarFallbackAgentName({
+    agentId: binding.agentId,
+    agentLabel: persistedAgentLabel,
+    kernelLabel: bindingKernelLabel,
+  });
+
   return {
     id: binding.agentId,
-    name: binding.agentId,
-    avatarLabel: resolveOwnerAvatarLabel(binding.agentId),
+    name: fallbackAgentName,
+    avatarLabel: resolveOwnerAvatarLabel(fallbackAgentName),
     kernelLabel: bindingKernelLabel,
   };
 }

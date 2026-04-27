@@ -41,7 +41,7 @@ Add tests that assert:
 
 - install-root assets live under `Program Files` in runtime mode and under `install/` in test-root mode
 - machine state lives under `ProgramData` in runtime mode and under `machine/` in test-root mode
-- user-private assets live under `~/.sdkwork/crawstudio/` in runtime mode and under `user-home/` in test-root mode
+- user-private assets live under `~/.sdkwork/crawstudio/` in runtime mode and under `app-user-root/` in test-root mode
 - required subdirectories are created for modules, runtimes, store, staging, user storage, and user integrations
 
 **Step 2: Run the focused tests to verify failure**

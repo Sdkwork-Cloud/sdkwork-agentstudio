@@ -184,7 +184,8 @@ const DESKTOP_INTERNAL_BASE_PATH = '/claw/internal/v1';
 // Packaged first-launch on Windows can spend tens of seconds extracting the
 // bundled runtime and then another ~26s cold-starting the OpenClaw gateway.
 const DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_TIMEOUT_MS = 120_000;
-const DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_POLL_MS = 80;
+const DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_POLL_MS = 250;
+const DESKTOP_HOSTED_RUNTIME_READINESS_ATTEMPT_TIMEOUT_MS = 5_000;
 const desktopHostRuntimeResolver = createDesktopHostRuntimeResolver({
   waitForRuntime: () => waitForTauriRuntime(),
   loadRuntime: async () => {
@@ -1349,6 +1350,7 @@ export async function probeDesktopHostedRuntimeReadiness(options?: {
   requiresBuiltInOpenClawEvidence?: boolean;
   retryTimeoutMs?: number;
   retryPollMs?: number;
+  attemptTimeoutMs?: number;
   onRetry?: (context: RetryDesktopHostRuntimeOperationRetryContext) => void;
 }): Promise<DesktopHostedRuntimeReadinessSnapshot> {
   return retryDesktopHostRuntimeOperation({
@@ -1356,14 +1358,17 @@ export async function probeDesktopHostedRuntimeReadiness(options?: {
       options?.retryTimeoutMs ?? DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_TIMEOUT_MS,
     retryPollMs:
       options?.retryPollMs ?? DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_POLL_MS,
+    attemptTimeoutMs:
+      options?.attemptTimeoutMs ?? DESKTOP_HOSTED_RUNTIME_READINESS_ATTEMPT_TIMEOUT_MS,
     onRetry: options?.onRetry,
-    operation: async () =>
+    operation: async ({ signal }) =>
       probeStaticDesktopHostedRuntimeReadiness(
         await requireDesktopHostedRuntime('desktop.probeHostedRuntimeReadiness'),
         undefined,
         {
           requiresBuiltInOpenClawEvidence:
-            options?.requiresBuiltInOpenClawEvidence,
+            options?.requiresBuiltInOpenClawEvidence ?? false,
+          signal,
           webSocketFactory:
             typeof WebSocket === 'function'
               ? (url) => new WebSocket(url)

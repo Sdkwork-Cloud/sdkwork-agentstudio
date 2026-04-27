@@ -130,6 +130,7 @@ function runCli() {
     env: plan.env,
     stdio: 'inherit',
     shell: plan.shell,
+    windowsHide: true,
   });
 
   child.on('error', (error) => {

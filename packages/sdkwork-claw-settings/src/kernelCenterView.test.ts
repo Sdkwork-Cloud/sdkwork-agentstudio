@@ -29,7 +29,7 @@ function createDashboard(
       serviceConfigPath: null,
     },
     endpoint: {
-      preferredPort: 18789,
+      preferredPort: 21280,
       activePort: 18845,
       baseUrl: 'http://127.0.0.1:18845',
       websocketUrl: 'ws://127.0.0.1:18845',
@@ -100,9 +100,9 @@ await runTest('resolveEndpointPortValue returns null when the endpoint port is m
 await runTest('resolveEndpointPortValue stringifies numeric endpoint ports', async () => {
   const module = await import('./kernelCenterView.ts').catch(() => ({}));
   assert.equal(typeof module.resolveEndpointPortValue, 'function');
-  const dashboard = createDashboard({ preferredPort: 18789, activePort: 18845 });
+  const dashboard = createDashboard({ preferredPort: 21280, activePort: 18845 });
 
-  assert.equal(module.resolveEndpointPortValue?.(dashboard, 'preferredPort'), '18789');
+  assert.equal(module.resolveEndpointPortValue?.(dashboard, 'preferredPort'), '21280');
   assert.equal(module.resolveEndpointPortValue?.(dashboard, 'activePort'), '18845');
 });
 

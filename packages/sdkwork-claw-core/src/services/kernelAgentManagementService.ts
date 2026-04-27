@@ -2,6 +2,7 @@ import {
   getStudioPlatform,
   invalidateStudioPlatformCaches,
   openClawGatewayClient,
+  type OpenClawConfigSnapshot,
   type StudioCreatedKernelAgentRecord,
   type StudioCreateKernelAgentInput,
   type StudioKernelAgentCreationCapability,
@@ -24,10 +25,15 @@ import {
   serializeOpenClawConfigDocument,
   type OpenClawAgentInput,
 } from './openClawConfigService.ts';
+import { normalizeOpenClawAgentId } from './openClawAgentDocumentService.ts';
 import {
   resolveAttachedKernelConfig,
   resolveAttachedKernelConfigFile,
 } from './kernelConfigAttachmentService.ts';
+import {
+  resolveOpenClawAgentPathsFromConfigRoot,
+  type OpenClawResolvedAgentPaths,
+} from './openClawAgentSnapshotService.ts';
 
 export type KernelAgentCreationReasonCode = StudioKernelAgentCreationReasonCode;
 export type KernelAgentCreationFieldSupport = StudioKernelAgentCreationFieldSupport;
@@ -37,13 +43,13 @@ export type KernelAgentCreationCapability = StudioKernelAgentCreationCapability;
 export type CreateKernelAgentRequest = StudioCreateKernelAgentInput;
 export type CreateKernelAgentResult = StudioCreatedKernelAgentRecord;
 
-const FULL_KERNEL_AGENT_CREATION_FIELD_SUPPORT: KernelAgentCreationFieldSupport = {
+const OPENCLAW_KERNEL_AGENT_CREATION_FIELD_SUPPORT: KernelAgentCreationFieldSupport = {
   avatar: true,
   isDefault: true,
   primaryModel: true,
   fallbackModels: true,
-  workspace: true,
-  agentDir: true,
+  workspace: false,
+  agentDir: false,
   temperature: true,
   topP: true,
   maxTokens: true,
@@ -284,7 +290,10 @@ function normalizeKernelAgentCreationKernelOption(
     return null;
   }
 
-  const fieldSupport = normalizeKernelAgentCreationFieldSupport(option.fieldSupport);
+  const fieldSupport = normalizeKernelAgentCreationFieldSupportForKernel(
+    kernelId,
+    option.fieldSupport,
+  );
 
   return {
     kernelId,
@@ -318,6 +327,22 @@ function normalizeKernelAgentCreationFieldSupport(
     maxTokens: fieldSupport.maxTokens === true,
     timeoutMs: fieldSupport.timeoutMs === true,
     streaming: fieldSupport.streaming === true,
+  };
+}
+
+function normalizeKernelAgentCreationFieldSupportForKernel(
+  kernelId: string,
+  fieldSupport: KernelAgentCreationFieldSupport | null | undefined,
+): KernelAgentCreationFieldSupport {
+  const normalizedFieldSupport = normalizeKernelAgentCreationFieldSupport(fieldSupport);
+  if (kernelId !== 'openclaw') {
+    return normalizedFieldSupport;
+  }
+
+  return {
+    ...normalizedFieldSupport,
+    workspace: false,
+    agentDir: false,
   };
 }
 
@@ -616,11 +641,11 @@ function buildOpenClawAgentInput(request: CreateKernelAgentRequest): OpenClawAge
   }
 
   return {
-    id: normalizeRequiredString(request.agentId, 'agentId'),
+    id: normalizeOpenClawAgentId(normalizeRequiredString(request.agentId, 'agentId')),
     name: normalizeRequiredString(request.displayName, 'displayName'),
     avatar: normalizeOptionalString(request.avatar) ?? '',
-    workspace: normalizeOptionalString(request.workspace) ?? '',
-    agentDir: normalizeOptionalString(request.agentDir) ?? '',
+    workspace: '',
+    agentDir: '',
     isDefault: request.isDefault === true,
     model:
       primaryModel || fallbackModels.length > 0
@@ -657,7 +682,7 @@ function resolveOpenClawCapability(
       reasonCode: null,
       reason: null,
       modelOptions: buildKernelAgentModelOptions(detail.workbench?.llmProviders),
-      fieldSupport: FULL_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
+      fieldSupport: OPENCLAW_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
     };
   }
 
@@ -670,7 +695,7 @@ function resolveOpenClawCapability(
       reasonCode: 'configUnavailable',
       reason: 'Writable OpenClaw config file is not available for this instance.',
       modelOptions: [],
-      fieldSupport: FULL_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
+      fieldSupport: OPENCLAW_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
     };
   }
 
@@ -682,7 +707,7 @@ function resolveOpenClawCapability(
       reasonCode: 'configNotWritable',
       reason: 'The selected OpenClaw config file is not writable.',
       modelOptions: [],
-      fieldSupport: FULL_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
+      fieldSupport: OPENCLAW_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
     };
   }
 
@@ -693,7 +718,7 @@ function resolveOpenClawCapability(
     reasonCode: null,
     reason: null,
     modelOptions: buildKernelAgentModelOptions(detail.workbench?.llmProviders),
-    fieldSupport: FULL_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
+    fieldSupport: OPENCLAW_KERNEL_AGENT_CREATION_FIELD_SUPPORT,
   };
 }
 
@@ -705,17 +730,147 @@ function resolveWritableOpenClawConfigFile(detail: StudioInstanceDetailRecord) {
   return resolveAttachedKernelConfigFile(detail);
 }
 
+function applyResolvedOpenClawAgentPaths(
+  agent: OpenClawAgentInput,
+  paths: OpenClawResolvedAgentPaths,
+): OpenClawAgentInput {
+  return {
+    ...agent,
+    id: paths.id,
+    workspace: paths.workspace,
+    agentDir: paths.agentDir,
+  };
+}
+
+function resolveOpenClawGatewayConfigFile(
+  detail: StudioInstanceDetailRecord,
+  snapshot: OpenClawConfigSnapshot | null | undefined,
+) {
+  return normalizeOptionalString(snapshot?.path) ?? resolveAttachedKernelConfigFile(detail);
+}
+
+function resolveOpenClawAgentFromConfigRoot(input: {
+  configFile: string;
+  root: Record<string, unknown>;
+  agent: OpenClawAgentInput;
+}) {
+  const paths = resolveOpenClawAgentPathsFromConfigRoot({
+    root: input.root,
+    configFile: input.configFile,
+    agentId: input.agent.id,
+    workspace: normalizeOptionalString(input.agent.workspace),
+    agentDir: normalizeOptionalString(input.agent.agentDir),
+  });
+
+  return applyResolvedOpenClawAgentPaths(input.agent, paths);
+}
+
+function readOpenClawConfigAgentEntries(root: Record<string, unknown>) {
+  const agentsRoot = root.agents;
+  if (!agentsRoot || typeof agentsRoot !== 'object' || Array.isArray(agentsRoot)) {
+    return [];
+  }
+
+  const agentList = (agentsRoot as Record<string, unknown>).list;
+  return Array.isArray(agentList)
+    ? agentList.filter(
+        (entry): entry is Record<string, unknown> =>
+          Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry),
+      )
+    : [];
+}
+
+function hasOpenClawConfigAgent(root: Record<string, unknown>, agentId: string) {
+  const normalizedAgentId = normalizeOpenClawAgentId(agentId);
+  return readOpenClawConfigAgentEntries(root).some(
+    (entry) => normalizeOpenClawAgentId(String(entry.id ?? '')) === normalizedAgentId,
+  );
+}
+
+function hasOpenClawConfigDefaultAgent(root: Record<string, unknown>) {
+  return readOpenClawConfigAgentEntries(root).some((entry) => entry.default === true);
+}
+
+function ensureStandardOpenClawMainAgentInConfigDocument(input: {
+  raw: string;
+  configFile: string;
+  root: Record<string, unknown>;
+  nextAgent: OpenClawAgentInput;
+}) {
+  if (
+    input.nextAgent.id === 'main'
+    || hasOpenClawConfigAgent(input.root, 'main')
+  ) {
+    return input.raw;
+  }
+
+  const mainPaths = resolveOpenClawAgentPathsFromConfigRoot({
+    root: input.root,
+    configFile: input.configFile,
+    agentId: 'main',
+  });
+
+  return saveOpenClawAgentInConfigDocument(input.raw, {
+    id: 'main',
+    name: 'Main',
+    workspace: mainPaths.workspace,
+    agentDir: mainPaths.agentDir,
+    isDefault:
+      input.nextAgent.isDefault === true
+        ? false
+        : !hasOpenClawConfigDefaultAgent(input.root),
+  });
+}
+
+async function resolveOpenClawAgentForWritableConfig(
+  detail: StudioInstanceDetailRecord,
+  agent: OpenClawAgentInput,
+) {
+  const configFile = resolveWritableOpenClawConfigFile(detail);
+  if (!configFile) {
+    return null;
+  }
+
+  const paths = await openClawConfigService.resolveAgentPaths({
+    configFile,
+    agentId: agent.id,
+    workspace: normalizeOptionalString(agent.workspace),
+    agentDir: normalizeOptionalString(agent.agentDir),
+  });
+
+  return {
+    configFile,
+    agent: applyResolvedOpenClawAgentPaths(agent, paths),
+  };
+}
+
 async function trySaveOpenClawAgentWithGateway(
-  instanceId: string,
+  detail: StudioInstanceDetailRecord,
   agent: OpenClawAgentInput,
 ) {
   try {
-    const snapshot = await openClawGatewayClient.getConfig(instanceId);
-    const nextRaw = saveOpenClawAgentInConfigDocument(
-      serializeOpenClawConfigDocument(snapshot?.config ?? {}),
+    const snapshot = await openClawGatewayClient.getConfig(detail.instance.id);
+    const configFile = resolveOpenClawGatewayConfigFile(detail, snapshot);
+    if (!configFile) {
+      throw new Error(
+        'OpenClaw gateway config path is required before agent paths can be resolved.',
+      );
+    }
+
+    const agentForConfig = resolveOpenClawAgentFromConfigRoot({
+      configFile,
+      root: snapshot?.config ?? {},
       agent,
-    );
-    const result = await openClawGatewayClient.setConfig(instanceId, {
+    });
+    const root = snapshot?.config ?? {};
+    const rawWithStandardMain = ensureStandardOpenClawMainAgentInConfigDocument({
+      raw: serializeOpenClawConfigDocument(root),
+      configFile,
+      root,
+      nextAgent: agentForConfig,
+    });
+    const nextRaw = saveOpenClawAgentInConfigDocument(rawWithStandardMain, agentForConfig);
+    const result = await openClawGatewayClient.setConfig(detail.instance.id, {
       raw: nextRaw,
       baseHash: snapshot?.baseHash,
     });
@@ -758,25 +913,26 @@ const openClawKernelAgentCreationProvider: KernelAgentCreationProvider = {
 
     const agent = buildOpenClawAgentInput(request);
     const displayName = normalizeRequiredString(agent.name, 'displayName');
-    const savedWithGateway = exposesOpenClawGatewayTransport(detail)
-      ? await trySaveOpenClawAgentWithGateway(detail.instance.id, agent)
-      : {
-          ok: false,
-          errorMessage: null,
-        };
+    const savedWithGateway =
+      exposesOpenClawGatewayTransport(detail)
+        ? await trySaveOpenClawAgentWithGateway(detail, agent)
+        : {
+            ok: false,
+            errorMessage: null,
+          };
 
     if (!savedWithGateway.ok) {
-      const configFile = resolveWritableOpenClawConfigFile(detail);
-      if (!configFile) {
+      const writableConfigAgent = await resolveOpenClawAgentForWritableConfig(detail, agent);
+      if (!writableConfigAgent) {
         throw new Error(
           savedWithGateway.errorMessage
-          || 'Writable OpenClaw config file is not available for this instance.',
+            || 'Writable OpenClaw config file is not available for this instance.',
         );
       }
 
       await openClawConfigService.saveAgent({
-        configFile,
-        agent,
+        configFile: writableConfigAgent.configFile,
+        agent: writableConfigAgent.agent,
       });
     }
 
@@ -1012,7 +1168,9 @@ class DefaultKernelAgentManagementService {
 
     const platformKernelOption =
       platformCapability?.kernelOptions.find((option) => option.kernelId === kernelId) ?? null;
-    if (platformKernelOption?.supported) {
+    const shouldPreferOpenClawGatewayProvider =
+      kernelId === 'openclaw' && Boolean(detail && exposesOpenClawGatewayTransport(detail));
+    if (platformKernelOption?.supported && !shouldPreferOpenClawGatewayProvider) {
       const createKernelAgent = studioPlatform.createKernelAgent;
       if (!createKernelAgent) {
         throw new Error(

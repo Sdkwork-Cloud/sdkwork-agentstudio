@@ -1,41 +1,14 @@
-import type {
-  KernelChatMessage,
-  StudioConversationAttachment,
-} from '@sdkwork/claw-types';
-import type { OpenClawToolCard } from './openClawMessagePresentation.ts';
-import type { ChatRunBindingSource } from './chatRunBinding.ts';
-import type {
-  ChatSessionListPreviewLabels,
-  ChatSessionListRelativeTimeLabels,
-} from './chatSessionListPresentation.ts';
-import { presentChatSessionListItem } from './chatSessionListPresentation.ts';
-import type { ChatSidebarAgentOption } from './chatSessionOwnerPresentation.ts';
+import {
+  resolveChatSidebarFallbackAgentName,
+  type ChatSidebarAgentOption,
+} from './chatSessionOwnerPresentation.ts';
 import {
   sortChatSidebarAgentOptionsByActivity,
   resolveChatSessionsForAgent,
   type ChatAgentSessionLike,
 } from './chatAgentSessionWorkspace.ts';
 
-const DEFAULT_AGENT_RAIL_EMPTY_PREVIEW_LABEL = 'No conversations yet';
-
-type ChatSidebarAgentRailMessageLike = {
-  role?: string;
-  content?: string;
-  timestamp?: number;
-  seq?: number;
-  senderLabel?: string | null;
-  attachments?: StudioConversationAttachment[];
-  toolCards?: OpenClawToolCard[];
-  nativeMetadata?: Record<string, unknown> | null;
-  kernelMessage?: KernelChatMessage | null;
-};
-
-type ChatSidebarAgentRailSessionLike = ChatAgentSessionLike &
-  ChatRunBindingSource & {
-    title?: string;
-    lastMessagePreview?: string;
-    messages?: ChatSidebarAgentRailMessageLike[];
-  };
+type ChatSidebarAgentRailSessionLike = ChatAgentSessionLike;
 
 export interface ChatSidebarAgentRailItemPresentation {
   id: string | null;
@@ -46,8 +19,6 @@ export interface ChatSidebarAgentRailItemPresentation {
   isSelected: boolean;
   isPrimary: boolean;
   sessionCount: number;
-  preview: string;
-  relativeTimeLabel: string | null;
 }
 
 interface ChatSidebarAgentRailSortableItemPresentation
@@ -68,6 +39,27 @@ function sameAgentId(left: string | null, right: string | null) {
   return normalizeOptionalString(left) === normalizeOptionalString(right);
 }
 
+function resolveFallbackAvatarLabel(name: string) {
+  return name.slice(0, 2).toUpperCase();
+}
+
+function resolveAgentRailItemIdentity(option: ChatSidebarAgentOption) {
+  const name = resolveChatSidebarFallbackAgentName({
+    agentId: option.id,
+    agentLabel: option.name,
+    kernelLabel: option.kernelLabel,
+  });
+  const normalizedOptionName = normalizeOptionalString(option.name);
+  const shouldReuseOptionAvatar = normalizedOptionName === name;
+
+  return {
+    name,
+    avatarLabel: shouldReuseOptionAvatar
+      ? option.avatarLabel
+      : resolveFallbackAvatarLabel(name),
+  };
+}
+
 function resolveLatestAgentSession<T extends ChatSidebarAgentRailSessionLike>(sessions: T[]) {
   return [...sessions].sort((left, right) => {
     if (left.updatedAt !== right.updatedAt) {
@@ -76,41 +68,6 @@ function resolveLatestAgentSession<T extends ChatSidebarAgentRailSessionLike>(se
 
     return left.id.localeCompare(right.id);
   })[0] ?? null;
-}
-
-function resolveAgentRailLatestSessionPresentation<T extends ChatSidebarAgentRailSessionLike>(params: {
-  latestSession: T | null;
-  previewLabels?: ChatSessionListPreviewLabels;
-  relativeTimeLabels?: ChatSessionListRelativeTimeLabels;
-  locale?: string;
-  timeZone?: string;
-  emptyPreviewLabel?: string;
-  now?: number;
-}) {
-  if (!params.latestSession) {
-    return {
-      preview: params.emptyPreviewLabel ?? DEFAULT_AGENT_RAIL_EMPTY_PREVIEW_LABEL,
-      relativeTimeLabel: null,
-    };
-  }
-
-  const latestSessionPresentation = presentChatSessionListItem({
-    session: params.latestSession,
-    now: params.now,
-    locale: params.locale,
-    timeZone: params.timeZone,
-    previewLabels: params.previewLabels,
-    relativeTimeLabels: params.relativeTimeLabels,
-  });
-
-  return {
-    preview:
-      latestSessionPresentation.preview ??
-      latestSessionPresentation.displayTitle ??
-      params.emptyPreviewLabel ??
-      DEFAULT_AGENT_RAIL_EMPTY_PREVIEW_LABEL,
-    relativeTimeLabel: latestSessionPresentation.relativeTimeLabel,
-  };
 }
 
 export function resolveChatSidebarAgentRailPresentation<
@@ -123,12 +80,6 @@ export function resolveChatSidebarAgentRailPresentation<
   sessionScopeMode: 'all' | 'agentBound';
   selectedAgentId: string | null;
   primaryAgentId?: string | null;
-  previewLabels?: ChatSessionListPreviewLabels;
-  relativeTimeLabels?: ChatSessionListRelativeTimeLabels;
-  locale?: string;
-  timeZone?: string;
-  emptyPreviewLabel?: string;
-  now?: number;
 }) {
   const sortedAgentOptions = sortChatSidebarAgentOptionsByActivity({
     agentOptions: params.agentOptions,
@@ -148,28 +99,18 @@ export function resolveChatSidebarAgentRailPresentation<
       agentOptions: params.agentOptions,
     });
     const latestSession = resolveLatestAgentSession(optionSessions);
-    const latestSessionPresentation = resolveAgentRailLatestSessionPresentation({
-      latestSession,
-      previewLabels: params.previewLabels,
-      relativeTimeLabels: params.relativeTimeLabels,
-      locale: params.locale,
-      timeZone: params.timeZone,
-      emptyPreviewLabel: params.emptyPreviewLabel,
-      now: params.now,
-    });
     const latestActivityAt = latestSession?.updatedAt ?? Number.NEGATIVE_INFINITY;
+    const itemIdentity = resolveAgentRailItemIdentity(option);
 
     return {
       id: option.id,
-      name: option.name,
-      avatarLabel: option.avatarLabel,
+      name: itemIdentity.name,
+      avatarLabel: itemIdentity.avatarLabel,
       ...(option.kernelId ? { kernelId: option.kernelId } : {}),
       ...(option.kernelLabel ? { kernelLabel: option.kernelLabel } : {}),
       isSelected: sameAgentId(option.id, params.selectedAgentId),
       isPrimary: sameAgentId(option.id, params.primaryAgentId ?? null),
       sessionCount: optionSessions.length,
-      preview: latestSessionPresentation.preview,
-      relativeTimeLabel: latestSessionPresentation.relativeTimeLabel,
       latestActivityAt,
     } satisfies ChatSidebarAgentRailSortableItemPresentation;
   });

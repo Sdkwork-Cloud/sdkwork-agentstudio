@@ -495,13 +495,13 @@ await runTest(
       newAgentDialogSource,
       /: \([\s\S]*<Textarea[\s\S]*draft\.fallbackModelsText/s,
     );
-    assert.match(
+    assert.doesNotMatch(
       newAgentDialogSource,
-      /\{selectedKernelFieldSupport\.workspace \? \(/,
+      /selectedKernelFieldSupport\.workspace/,
     );
-    assert.match(
+    assert.doesNotMatch(
       newAgentDialogSource,
-      /\{selectedKernelFieldSupport\.agentDir \? \(/,
+      /selectedKernelFieldSupport\.agentDir/,
     );
     assert.match(
       newAgentDialogSource,

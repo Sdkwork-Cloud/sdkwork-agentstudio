@@ -93,15 +93,17 @@ machine/state/kernels/<kernelId>/installs.json
 machine/state/kernels/<kernelId>/instances.json
 machine/state/kernels/<kernelId>/doctor.json
 machine/state/kernels/<kernelId>/managed-config/
-user-home/kernels/<kernelId>/home/
-user-home/kernels/<kernelId>/state/
-user-home/kernels/<kernelId>/workspace/
+app-user-root/kernels/<kernelId>/home/
+app-user-root/kernels/<kernelId>/state/
+app-user-root/kernels/<kernelId>/workspace/
 ```
 
 Rules:
 
 - `AppPaths` must stop growing kernel-specific top-level fields
 - shared code resolves kernel roots through a kernel path resolver
+- adapter-owned subpaths that affect runtime identity also resolve through the kernel path resolver. For OpenClaw, `main` maps to the primary workspace and `agents/main/{agent,sessions}`; every non-main agent maps to `.openclaw/workspace-<normalizedAgentId>` and `.openclaw/agents/<normalizedAgentId>/agent`. The normalized agent id is lowercase, path-safe, and capped at 64 characters.
+- OpenClaw built-in mode must not persist `agents.defaults.workspace` or `agents.defaults.agentDir`; those fields create global fallback behavior and bypass the standard per-agent directory contract.
 - cleanup and migration operate only on authority-owned roots
 
 ### 3. State Normalization
@@ -135,6 +137,8 @@ Rules:
 
 - OpenClaw and Hermes differ inside the adapter boundary only
 - no future kernel may require core host services to grow new runtime-id branches
+- kernel ids are canonical lowercase identifiers; UI, config, and adapter inputs may be normalized at the boundary, but persisted state and derived paths must use only the canonical id
+- the kernel path resolver owns runtime `home`, runtime `state`, and `workspace` paths in addition to install and machine authority paths; host, supervisor, snapshot, and workbench surfaces must consume these resolver fields instead of per-kernel compatibility fields
 
 ### 5. Upgrade Orchestration Standard
 
@@ -163,6 +167,7 @@ Rules:
 - directory replacement alone is not success
 - success requires authority write plus health evidence
 - each activation creates receipts and audit records
+- startup code must not fall back from canonical kernel path resolution to legacy per-kernel fields; resolver failure is a standard violation and should fail loudly
 
 ## Kernel-Type Compatibility Model
 

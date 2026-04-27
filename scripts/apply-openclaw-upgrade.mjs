@@ -95,6 +95,7 @@ export async function runNodeScript({
       cwd: workspaceRootDir,
       stdio: 'inherit',
       shell: false,
+      windowsHide: true,
     });
 
     child.on('error', reject);

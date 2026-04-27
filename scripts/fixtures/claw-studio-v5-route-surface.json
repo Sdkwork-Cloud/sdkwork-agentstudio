@@ -8,7 +8,6 @@
     "/claw-center",
     "/claw-center/:id",
     "/claw-upload",
-    "/codebox",
     "/community",
     "/community/:id",
     "/community/new",

@@ -32,6 +32,10 @@ interface LocalChatSessionLike {
   } | null;
 }
 
+interface LocalChatMessageUpdateOptions {
+  persist?: boolean;
+}
+
 interface AbortControllerRefLike {
   current: AbortController | null;
 }
@@ -40,11 +44,28 @@ export interface CreateChatLocalRunActionsInput {
   sendMode: 'local' | 'gateway';
   abortControllerRef: AbortControllerRefLike;
   setPendingSendSessionId: PendingSendSessionIdSetter;
-  addMessage: (sessionId: string, message: LocalChatMessageMutationInput) => void;
-  updateMessage: (sessionId: string, messageId: string, content: string) => void;
-  removeMessages: (sessionId: string, messageIds: string[]) => void;
-  flushSession: (sessionId: string) => Promise<void>;
-  getSessionById: (sessionId: string) => LocalChatSessionLike | undefined;
+  addMessage: (
+    sessionId: string,
+    message: LocalChatMessageMutationInput,
+    instanceId?: string | null,
+  ) => void;
+  updateMessage: (
+    sessionId: string,
+    messageId: string,
+    content: string,
+    instanceId?: string | null,
+    options?: LocalChatMessageUpdateOptions,
+  ) => void;
+  removeMessages: (
+    sessionId: string,
+    messageIds: string[],
+    instanceId?: string | null,
+  ) => void;
+  flushSession: (sessionId: string, instanceId?: string | null) => Promise<void>;
+  getSessionById: (
+    sessionId: string,
+    instanceId?: string | null,
+  ) => LocalChatSessionLike | undefined;
   sendMessageStream: (
     chatSession: unknown,
     message: string,
@@ -59,6 +80,7 @@ export interface CreateChatLocalRunActionsInput {
 
 export interface SendChatLocalRunInput {
   sessionId: string;
+  sessionInstanceId?: string | null;
   content: string;
   attachments: StudioConversationAttachment[];
   requestText: string;
@@ -74,11 +96,16 @@ export interface ChatLocalRunActions {
 
 function updateLastAssistantMessage(params: {
   sessionId: string;
+  sessionInstanceId?: string | null;
   nextContent: string;
+  updateOptions?: LocalChatMessageUpdateOptions;
   getSessionById: CreateChatLocalRunActionsInput['getSessionById'];
   updateMessage: CreateChatLocalRunActionsInput['updateMessage'];
 }) {
-  const currentSession = params.getSessionById(params.sessionId);
+  const currentSession = params.getSessionById(
+    params.sessionId,
+    params.sessionInstanceId,
+  );
   const currentMessages = Array.isArray(currentSession?.messages)
     ? currentSession.messages
     : [];
@@ -86,7 +113,13 @@ function updateLastAssistantMessage(params: {
     .reverse()
     .find((message) => message.role === 'assistant');
   if (lastMessage?.role === 'assistant') {
-    params.updateMessage(params.sessionId, lastMessage.id, params.nextContent);
+    params.updateMessage(
+      params.sessionId,
+      lastMessage.id,
+      params.nextContent,
+      params.sessionInstanceId,
+      params.updateOptions,
+    );
     return true;
   }
 
@@ -95,13 +128,18 @@ function updateLastAssistantMessage(params: {
 
 function updateAssistantMessage(params: {
   sessionId: string;
+  sessionInstanceId?: string | null;
   assistantMessageId?: string;
   nextContent: string;
+  updateOptions?: LocalChatMessageUpdateOptions;
   getSessionById: CreateChatLocalRunActionsInput['getSessionById'];
   updateMessage: CreateChatLocalRunActionsInput['updateMessage'];
 }) {
   if (params.assistantMessageId) {
-    const currentSession = params.getSessionById(params.sessionId);
+    const currentSession = params.getSessionById(
+      params.sessionId,
+      params.sessionInstanceId,
+    );
     const currentMessages = Array.isArray(currentSession?.messages)
       ? currentSession.messages
       : [];
@@ -113,6 +151,8 @@ function updateAssistantMessage(params: {
         params.sessionId,
         params.assistantMessageId,
         params.nextContent,
+        params.sessionInstanceId,
+        params.updateOptions,
       );
       return true;
     }
@@ -173,21 +213,29 @@ export function createChatLocalRunActions(
       }
 
       const previousMessageCount = listSessionMessageIds(
-        input.getSessionById(params.sessionId),
+        input.getSessionById(params.sessionId, params.sessionInstanceId),
       ).length;
-      input.addMessage(params.sessionId, {
-        role: 'user',
-        content: params.content,
-        attachments: params.attachments,
-      });
+      input.addMessage(
+        params.sessionId,
+        {
+          role: 'user',
+          content: params.content,
+          attachments: params.attachments,
+        },
+        params.sessionInstanceId,
+      );
       input.setPendingSendSessionId(params.sessionId);
-      input.addMessage(params.sessionId, {
-        role: 'assistant',
-        content: '',
-        model: params.requestModel.name,
-      });
+      input.addMessage(
+        params.sessionId,
+        {
+          role: 'assistant',
+          content: '',
+          model: params.requestModel.name,
+        },
+        params.sessionInstanceId,
+      );
       const optimisticMessageIds = listSessionMessageIds(
-        input.getSessionById(params.sessionId),
+        input.getSessionById(params.sessionId, params.sessionInstanceId),
         previousMessageCount,
       );
       const assistantPlaceholderId = optimisticMessageIds.at(-1);
@@ -196,7 +244,7 @@ export function createChatLocalRunActions(
       try {
         input.abortControllerRef.current = new AbortController();
         const stream = input.sendMessageStream(
-          input.getSessionById(params.sessionId) ?? null,
+          input.getSessionById(params.sessionId, params.sessionInstanceId) ?? null,
           params.requestText,
           params.requestModel,
           params.requestSkill,
@@ -209,8 +257,10 @@ export function createChatLocalRunActions(
           fullContent += chunk;
           updateAssistantMessage({
             sessionId: params.sessionId,
+            sessionInstanceId: params.sessionInstanceId,
             assistantMessageId: assistantPlaceholderId,
             nextContent: fullContent,
+            updateOptions: { persist: false },
             getSessionById: input.getSessionById,
             updateMessage: input.updateMessage,
           });
@@ -219,7 +269,11 @@ export function createChatLocalRunActions(
         if (error?.name === 'AbortError') {
           if (fullContent.length === 0) {
             if (assistantPlaceholderId) {
-              input.removeMessages(params.sessionId, [assistantPlaceholderId]);
+              input.removeMessages(
+                params.sessionId,
+                [assistantPlaceholderId],
+                params.sessionInstanceId,
+              );
             }
           }
         } else {
@@ -230,23 +284,29 @@ export function createChatLocalRunActions(
           );
           const updatedExistingAssistant = updateAssistantMessage({
             sessionId: params.sessionId,
+            sessionInstanceId: params.sessionInstanceId,
             assistantMessageId: assistantPlaceholderId,
             nextContent: failureContent,
+            updateOptions: { persist: false },
             getSessionById: input.getSessionById,
             updateMessage: input.updateMessage,
           });
           if (!updatedExistingAssistant) {
-            input.addMessage(params.sessionId, {
-              role: 'assistant',
-              content: failureContent,
-              model: params.requestModel.name,
-            });
+            input.addMessage(
+              params.sessionId,
+              {
+                role: 'assistant',
+                content: failureContent,
+                model: params.requestModel.name,
+              },
+              params.sessionInstanceId,
+            );
           }
         }
       } finally {
         input.setPendingSendSessionId((current) => (current === params.sessionId ? null : current));
         input.abortControllerRef.current = null;
-        void input.flushSession(params.sessionId);
+        void input.flushSession(params.sessionId, params.sessionInstanceId);
       }
 
       return true;

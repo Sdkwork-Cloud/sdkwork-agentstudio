@@ -195,6 +195,102 @@ await runTest(
 );
 
 await runTest(
+  'openclaw agent catalog reads live gateway agents for OpenClaw-compatible runtimes without local config files',
+  async () => {
+    const service = createOpenClawAgentCatalogService({
+      getInstanceDetail: async () =>
+        ({
+          instance: {
+            id: 'instance-gateway-compatible',
+            runtimeKind: 'custom',
+            transportKind: 'openclawGatewayWs',
+          },
+          connectivity: {
+            primaryTransport: 'openclawGatewayWs',
+          },
+          workbench: null,
+        }) as any,
+      resolveAttachedKernelConfigFile: () => null,
+      readOpenClawConfigSnapshot: async () => {
+        throw new Error('local config should not be required');
+      },
+      getOpenClawGatewayConfig: async (instanceId) => {
+        assert.equal(instanceId, 'instance-gateway-compatible');
+        return {
+          path: '/runtime/openclaw.json',
+          config: {
+            agents: {
+              list: [
+                {
+                  id: 'main',
+                  name: 'Main',
+                  default: true,
+                },
+              ],
+            },
+          },
+        };
+      },
+      listOpenClawGatewayAgents: async (instanceId) => {
+        assert.equal(instanceId, 'instance-gateway-compatible');
+        return {
+          agents: [
+            {
+              id: 'main',
+              name: 'Main',
+              description: 'Default runtime agent',
+              identity: {
+                emoji: 'M',
+              },
+            },
+            {
+              id: 'research-agent',
+              name: 'Research Agent',
+              description: 'Created from chat',
+              avatar: 'R',
+              systemPrompt: 'You are Research.',
+              creator: 'OpenClaw',
+            },
+          ],
+        };
+      },
+    });
+
+    const catalog = await service.getCatalog('instance-gateway-compatible');
+
+    assert.equal(catalog.defaultAgentId, 'main');
+    assert.deepEqual(
+      catalog.agents.map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        description: agent.description,
+        avatar: agent.avatar,
+        systemPrompt: agent.systemPrompt,
+        isDefault: agent.isDefault,
+      })),
+      [
+        {
+          id: 'main',
+          name: 'Main',
+          description: 'Default runtime agent',
+          avatar: 'M',
+          systemPrompt: '',
+          isDefault: true,
+        },
+        {
+          id: 'research-agent',
+          name: 'Research Agent',
+          description: 'Created from chat',
+          avatar: 'R',
+          systemPrompt: 'You are Research.',
+          isDefault: false,
+        },
+      ],
+    );
+  },
+);
+
+await runTest(
   'task agent select state keeps a default routing option and preserves unavailable agent bindings',
   () => {
     const state = buildTaskAgentSelectState({

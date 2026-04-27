@@ -1,5 +1,9 @@
 import type { Agent } from '@sdkwork/claw-types';
 import { resolveChatSessionBinding, type ChatSessionBindingSource } from './chatSessionBinding.ts';
+import {
+  resolveChatSidebarFallbackAgentName,
+  resolveChatSidebarKernelLabel,
+} from './chatSessionOwnerPresentation.ts';
 
 export type ChatAgentCatalogFallbackSession = ChatSessionBindingSource & {
   id?: string | null;
@@ -21,11 +25,16 @@ function resolveFallbackAvatar(name: string) {
 }
 
 function resolveFallbackAgentLabel(session: ChatAgentCatalogFallbackSession, agentId: string) {
-  return (
-    normalizeOptionalString(session.agentLabel) ??
-    normalizeOptionalString(session.kernelSession?.actorBinding?.label) ??
-    agentId
-  );
+  const binding = resolveChatSessionBinding(session);
+  const kernelLabel = resolveChatSidebarKernelLabel(binding.kernelId);
+
+  return resolveChatSidebarFallbackAgentName({
+    agentId,
+    agentLabel:
+      normalizeOptionalString(session.agentLabel) ??
+      normalizeOptionalString(session.kernelSession?.actorBinding?.label),
+    kernelLabel,
+  });
 }
 
 export function mergeChatCatalogAgentsWithSessionFallback(params: {

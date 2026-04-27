@@ -247,11 +247,20 @@ runTest('sdkwork-claw-core app store tracks one-time mobile guide exposure separ
   );
 });
 
-runTest('sdkwork-claw-core sidebar removes legacy codebox and api-router entries', () => {
+runTest('sdkwork-claw-core sidebar removes legacy api-router entries', () => {
   const sidebarSource = read('packages/sdkwork-claw-core/src/components/Sidebar.tsx');
 
-  assert.doesNotMatch(sidebarSource, /id: 'codebox'/);
   assert.doesNotMatch(sidebarSource, /id: 'api-router'/);
+});
+
+runTest('sdkwork-claw-core shortcuts and legacy command palette avoid removed or placeholder actions', () => {
+  const shortcutSource = read('packages/sdkwork-claw-core/src/hooks/useKeyboardShortcuts.ts');
+  const commandPaletteSource = read('packages/sdkwork-claw-core/src/components/CommandPalette.tsx');
+
+  assert.doesNotMatch(shortcutSource, /navigate\('\/market'\)/);
+  assert.match(shortcutSource, /navigate\('\/agents'\)/);
+  assert.doesNotMatch(commandPaletteSource, /id: 'action-terminal'/);
+  assert.doesNotMatch(commandPaletteSource, /Terminal opened/);
 });
 
 runTest('sdkwork-claw-core exports shared desktop window controls for shell and auth surfaces', () => {
@@ -527,6 +536,7 @@ runTest('claw workspace keeps relative-path shared sdk development while pinning
   assert.match(nodeTypeScriptRunner, /ts-extension-loader\.mjs/);
   assert.match(coreCheckRunner, /runNodeTypeScriptChecks/);
   assert.match(coreCheckRunner, /sdkwork-core-contract\.test\.ts/);
+  assert.match(coreCheckRunner, /clawHubService\.test\.ts/);
   assert.match(coreCheckRunner, /accountService\.test\.ts/);
   assert.match(coreCheckRunner, /communityService\.test\.ts/);
   assert.match(coreCheckRunner, /updateService\.test\.ts/);

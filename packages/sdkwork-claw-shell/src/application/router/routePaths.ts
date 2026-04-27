@@ -26,5 +26,4 @@ export const ROUTE_PATHS = {
   NODES: '/nodes',
   SETTINGS: '/settings',
   DOCS: '/docs',
-  CODEBOX: '/codebox',
 } as const;

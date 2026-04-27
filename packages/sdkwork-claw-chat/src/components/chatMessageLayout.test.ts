@@ -19,6 +19,10 @@ const conversationPaneSource = readFileSync(
   new URL('./ChatConversationPane.tsx', import.meta.url),
   'utf8',
 );
+const chromeSurfaceSource = readFileSync(
+  new URL('./chatChromeSurface.ts', import.meta.url),
+  'utf8',
+);
 let drawerSource = '';
 try {
   drawerSource = readFileSync(new URL('./ChatSessionContextDrawer.tsx', import.meta.url), 'utf8');
@@ -85,7 +89,7 @@ await runTest(
   () => {
     assert.match(
       source,
-      /relative mb-4 mt-3 min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-\[#1E1E1E\]/,
+      /CHAT_SURFACE_PANEL_CLASS,\s*'relative mb-4 mt-3 min-w-0 overflow-hidden rounded-xl dark:bg-\[#1E1E1E\]'/,
     );
     assert.match(
       source,
@@ -101,8 +105,13 @@ await runTest(
     );
     assert.match(source, /attachments\.length > 0 \? \(\s*<div className="mb-2\.5 grid gap-3 sm:grid-cols-2">/);
     assert.match(source, /const NoticeList = memo\(function NoticeList/);
+    assert.match(source, /presentOpenClawToolLinkItems/);
+    assert.doesNotMatch(source, /const stableToolId = toolCard\.toolCallId\?\.trim\(\) \|\|/);
     assert.match(source, /notices\.length > 0 \? \(\s*<NoticeList notices=\{notices\} \/>\s*\) : null/);
-    assert.match(source, /reasoning \? \(\s*<details className="mb-2\.5 overflow-hidden rounded-2xl border/);
+    assert.match(
+      source,
+      /reasoning \? \(\s*<details\s*className=\{cn\(\s*CHAT_SURFACE_INSET_PANEL_CLASS,\s*'mb-2\.5 overflow-hidden dark:bg-zinc-900\/65'/,
+    );
     assert.match(
       source,
       /<div className=\{hasRenderableContent \? 'mt-1\.5' : (?:null|undefined)\}>/,
@@ -148,7 +157,7 @@ await runTest(
     );
     assert.match(
       conversationPaneSource,
-      /<div key=\{groupKey\} className="space-y-1\.5 sm:space-y-2">/,
+      /<div key=\{group\.key\} className="space-y-1\.5 sm:space-y-2">/,
     );
     assert.doesNotMatch(pageSource, /ml-11 sm:ml-14/);
   },
@@ -169,7 +178,11 @@ await runTest(
     );
     assert.match(
       conversationPaneSource,
-      /className="flex-shrink-0 bg-gradient-to-t from-zinc-50 via-zinc-50\/78 to-transparent px-3 pb-3 pt-1\.5 sm:px-4 sm:pb-4 sm:pt-2 lg:px-6 dark:from-zinc-950 dark:via-zinc-950\/38 dark:to-transparent"/,
+      /<div className=\{CHAT_CHROME_COMPOSER_LAYER_CLASS\}>/,
+    );
+    assert.match(
+      chromeSurfaceSource,
+      /export const CHAT_CHROME_COMPOSER_LAYER_CLASS =\s*'flex-shrink-0 bg-transparent px-3 pb-3 pt-1\.5 sm:px-4 sm:pb-4 sm:pt-2 lg:px-6'/,
     );
   },
 );
@@ -239,7 +252,7 @@ await runTest(
     );
     assert.match(
       conversationPaneSource,
-      /<span className="truncate text-zinc-400 dark:text-zinc-500">\s*\{footerPresentation\.modelLabel\}\s*<\/span>/,
+      /<span className="truncate text-zinc-400 dark:text-zinc-500">\s*\{group\.footer\.modelLabel\}\s*<\/span>/,
     );
     assert.doesNotMatch(
       pageSource,

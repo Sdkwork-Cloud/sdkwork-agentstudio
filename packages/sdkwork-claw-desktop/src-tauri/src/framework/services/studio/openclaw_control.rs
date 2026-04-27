@@ -3,7 +3,7 @@ use super::{
     StudioOpenClawGatewayInvokeRequest, StudioWorkbenchTaskExecutionRecord,
 };
 use crate::framework::{
-    paths::AppPaths,
+    paths::{AppPaths, OPENCLAW_KERNEL_ID},
     services::{
         openclaw_runtime::ActivatedOpenClawRuntime,
         supervisor::{ManagedServiceLifecycle, SupervisorService, SERVICE_ID_OPENCLAW_GATEWAY},
@@ -185,7 +185,7 @@ pub(super) fn delete_openclaw_task(
 }
 
 fn read_openclaw_task_definition(paths: &AppPaths, task_id: &str) -> Result<Value> {
-    let store_path = resolve_openclaw_jobs_store_path(paths);
+    let store_path = resolve_openclaw_jobs_store_path(paths)?;
     let root = read_json_document(&store_path)?;
     let jobs = root.get("jobs").and_then(Value::as_array).ok_or_else(|| {
         FrameworkError::ValidationFailed(format!(
@@ -205,8 +205,11 @@ fn read_openclaw_task_definition(paths: &AppPaths, task_id: &str) -> Result<Valu
         .ok_or_else(|| FrameworkError::NotFound(format!("openclaw cron task \"{task_id}\"")))
 }
 
-fn resolve_openclaw_jobs_store_path(paths: &AppPaths) -> std::path::PathBuf {
-    paths.openclaw_root_dir.join("cron").join("jobs.json")
+fn resolve_openclaw_jobs_store_path(paths: &AppPaths) -> Result<std::path::PathBuf> {
+    Ok(paths
+        .kernel_paths(OPENCLAW_KERNEL_ID)?
+        .openclaw_cron_dir()?
+        .join("jobs.json"))
 }
 
 fn read_json_document(path: &Path) -> Result<Value> {
@@ -311,8 +314,7 @@ impl<'a> OpenClawGatewayAdminClient<'a> {
             .header("content-type", "application/json")
             .header("accept", "application/json");
         if let Some(message_channel) = message_channel.as_deref() {
-            request_builder =
-                request_builder.header("x-openclaw-message-channel", message_channel);
+            request_builder = request_builder.header("x-openclaw-message-channel", message_channel);
         }
         if let Some(account_id) = account_id.as_deref() {
             request_builder = request_builder.header("x-openclaw-account-id", account_id);
@@ -320,14 +322,11 @@ impl<'a> OpenClawGatewayAdminClient<'a> {
         for (key, value) in &extra_headers {
             request_builder = request_builder.header(key.as_str(), value.as_str());
         }
-        let response = request_builder
-            .json(&request)
-            .send()
-            .map_err(|error| {
-                FrameworkError::Conflict(format!(
-                    "failed to reach the built-in OpenClaw gateway for {method}: {error}"
-                ))
-            })?;
+        let response = request_builder.json(&request).send().map_err(|error| {
+            FrameworkError::Conflict(format!(
+                "failed to reach the built-in OpenClaw gateway for {method}: {error}"
+            ))
+        })?;
         let status = response.status();
         let body = response.text().map_err(|error| {
             FrameworkError::Internal(format!(
@@ -808,7 +807,7 @@ mod tests {
                 runtime_dir,
                 node_path,
                 cli_path,
-                home_dir: paths.openclaw_root_dir.clone(),
+                home_dir: paths.user_root.clone(),
                 state_dir: paths.openclaw_root_dir.clone(),
                 workspace_dir: paths.openclaw_workspace_dir.clone(),
                 config_path: paths.openclaw_config_file.clone(),

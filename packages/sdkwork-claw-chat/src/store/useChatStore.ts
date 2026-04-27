@@ -11,6 +11,7 @@ import {
 
 export {
   chatStore,
+  openClawGatewaySessions,
   type ChatSession,
   type ChatState,
   type GatewayConnectionStatus,

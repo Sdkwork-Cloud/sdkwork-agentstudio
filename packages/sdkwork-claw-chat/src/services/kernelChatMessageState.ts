@@ -18,6 +18,7 @@ import {
 } from './chatMessageSequence.ts';
 import { presentKernelChatMessageParts } from './kernelChatMessagePartsPresentation.ts';
 import type { KernelChatNoticePresentation } from './kernelChatMessagePartsPresentation.ts';
+import { normalizeChatMessageTextEncoding } from './chatTextEncoding.ts';
 
 type KernelChatMessageStateSource = {
   id?: string;
@@ -260,12 +261,14 @@ export function resolveKernelChatMessageState(
       seq: message?.seq,
       nativeMetadata: message?.nativeMetadata,
     });
-  const resolvedContent = resolveKernelMessageContent({
-    legacyContent: message?.content,
-    kernelMessage,
-    partsContent: partsPresentation?.content,
-    openClawContent: openClawPresentation?.content,
-  });
+  const resolvedContent = normalizeChatMessageTextEncoding(
+    resolveKernelMessageContent({
+      legacyContent: message?.content,
+      kernelMessage,
+      partsContent: partsPresentation?.content,
+      openClawContent: openClawPresentation?.content,
+    }),
+  );
   const resolvedRole =
     openClawPresentation?.role ??
     normalizeRole(kernelMessage?.role ?? message?.role);

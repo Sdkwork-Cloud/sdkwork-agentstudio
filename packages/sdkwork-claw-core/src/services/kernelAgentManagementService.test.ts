@@ -22,6 +22,20 @@ const FULL_FIELD_SUPPORT = {
   streaming: true,
 } as const;
 
+const OPENCLAW_MANAGED_FIELD_SUPPORT = {
+  avatar: true,
+  isDefault: true,
+  primaryModel: true,
+  fallbackModels: true,
+  workspace: false,
+  agentDir: false,
+  temperature: true,
+  topP: true,
+  maxTokens: true,
+  timeoutMs: true,
+  streaming: true,
+} as const;
+
 const UNSUPPORTED_FIELD_SUPPORT = {
   avatar: false,
   isDefault: false,
@@ -172,7 +186,7 @@ await runTest(
           reasonCode: null,
           reason: null,
           modelOptions: [],
-          fieldSupport: FULL_FIELD_SUPPORT,
+          fieldSupport: OPENCLAW_MANAGED_FIELD_SUPPORT,
         },
       ]);
     } finally {
@@ -182,13 +196,15 @@ await runTest(
 );
 
 await runTest(
-  'kernelAgentManagementService creates OpenClaw agents through the gateway when no local config file is available',
+  'kernelAgentManagementService creates OpenClaw gateway agents by writing canonical workspace and agentDir paths to the gateway config',
   async () => {
     const instanceId = 'gateway-openclaw-create-instance';
+    const configFile = 'D:/OpenClaw/.openclaw/openclaw.json';
     const originalBridge = getPlatformBridge();
+    const originalCreateAgent = openClawGatewayClient.createAgent;
     const originalGetConfig = openClawGatewayClient.getConfig;
     const originalSetConfig = openClawGatewayClient.setConfig;
-    const gatewayCalls: Array<{ method: 'getConfig' | 'setConfig'; args: unknown }> = [];
+    const gatewayCalls: Array<{ method: 'createAgent' | 'getConfig' | 'setConfig'; args: unknown }> = [];
 
     configurePlatformBridge({
       studio: {
@@ -203,10 +219,38 @@ await runTest(
             primaryTransport: 'openclawGatewayWs',
             configWritable: false,
             configFile: null,
+            llmProviders: [
+              {
+                id: 'openai',
+                name: 'OpenAI',
+                models: [
+                  {
+                    id: 'gpt-5.4',
+                    name: 'GPT-5.4',
+                  },
+                  {
+                    id: 'gpt-4.1',
+                    name: 'GPT-4.1',
+                  },
+                ],
+              },
+            ],
           });
         },
       },
     });
+
+    openClawGatewayClient.createAgent = (async (
+      requestedInstanceId: string,
+      args: Record<string, unknown>,
+    ) => {
+      assert.equal(requestedInstanceId, instanceId);
+      gatewayCalls.push({
+        method: 'createAgent',
+        args,
+      });
+      throw new Error('agents.create should not be used because it cannot preserve the requested agent id and agentDir.');
+    }) as typeof openClawGatewayClient.createAgent;
 
     openClawGatewayClient.getConfig = (async (requestedInstanceId: string) => {
       assert.equal(requestedInstanceId, instanceId);
@@ -215,6 +259,224 @@ await runTest(
         args: requestedInstanceId,
       });
       return {
+        path: configFile,
+        config: {},
+        baseHash: 'base-hash-create',
+      };
+    }) as typeof openClawGatewayClient.getConfig;
+
+    openClawGatewayClient.setConfig = (async (
+      requestedInstanceId: string,
+      args: { raw: string; baseHash?: string },
+    ) => {
+      assert.equal(requestedInstanceId, instanceId);
+      gatewayCalls.push({
+        method: 'setConfig',
+        args,
+      });
+      return {
+        ok: true,
+      };
+    }) as typeof openClawGatewayClient.setConfig;
+
+    try {
+      const service = createKernelAgentManagementService();
+      const result = await service.createAgent({
+        instanceId,
+        kernelId: 'openclaw',
+        agentId: 'navigator',
+        displayName: 'Navigator',
+        avatar: 'N',
+        isDefault: true,
+        primaryModel: 'openai/gpt-5.4',
+        fallbackModels: ['openai/gpt-4.1'],
+        temperature: 0.4,
+        topP: 0.9,
+        maxTokens: 1200,
+        timeoutMs: 60000,
+        streaming: true,
+      });
+
+      assert.deepEqual(result, {
+        instanceId,
+        kernelId: 'openclaw',
+        agentId: 'navigator',
+        displayName: 'Navigator',
+      });
+      assert.equal(gatewayCalls.some((call) => call.method === 'createAgent'), false);
+      assert.equal(gatewayCalls[0]?.method, 'getConfig');
+      assert.equal(gatewayCalls[1]?.method, 'setConfig');
+      const setConfigArgs = gatewayCalls[1]?.args as { raw: string; baseHash?: string };
+      assert.equal(setConfigArgs.baseHash, 'base-hash-create');
+      const parsed = JSON.parse(setConfigArgs.raw);
+      const main = parsed.agents.list.find((entry: any) => entry.id === 'main');
+      const navigator = parsed.agents.list.find((entry: any) => entry.id === 'navigator');
+      assert.deepEqual(main, {
+        id: 'main',
+        name: 'Main',
+        workspace: 'D:/OpenClaw/.openclaw/workspace',
+        agentDir: 'D:/OpenClaw/.openclaw/agents/main/agent',
+        default: false,
+      });
+      assert.deepEqual(navigator, {
+        id: 'navigator',
+        name: 'Navigator',
+        workspace: 'D:/OpenClaw/.openclaw/workspace-navigator',
+        agentDir: 'D:/OpenClaw/.openclaw/agents/navigator/agent',
+        params: {
+          temperature: 0.4,
+          topP: 0.9,
+          maxTokens: 1200,
+          timeoutMs: 60000,
+          streaming: true,
+        },
+        identity: {
+          emoji: 'N',
+        },
+        default: true,
+      });
+    } finally {
+      openClawGatewayClient.createAgent = originalCreateAgent;
+      openClawGatewayClient.getConfig = originalGetConfig;
+      openClawGatewayClient.setConfig = originalSetConfig;
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'kernelAgentManagementService keeps the standard main OpenClaw agent when gateway config is empty and the created agent is not default',
+  async () => {
+    const instanceId = 'gateway-openclaw-empty-config-non-default-instance';
+    const configFile = 'D:/OpenClaw/.openclaw/openclaw.json';
+    const originalBridge = getPlatformBridge();
+    const originalGetConfig = openClawGatewayClient.getConfig;
+    const originalSetConfig = openClawGatewayClient.setConfig;
+    let setConfigRaw = '';
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstanceDetail(requestedInstanceId) {
+          assert.equal(requestedInstanceId, instanceId);
+          return createDetail({
+            instanceId,
+            instanceName: 'Gateway OpenClaw Empty Config',
+            runtimeKind: 'custom',
+            transportKind: 'openclawGatewayWs',
+            primaryTransport: 'openclawGatewayWs',
+            configWritable: false,
+            configFile: null,
+          });
+        },
+      },
+    });
+
+    openClawGatewayClient.getConfig = (async (requestedInstanceId: string) => {
+      assert.equal(requestedInstanceId, instanceId);
+      return {
+        path: configFile,
+        config: {},
+        baseHash: 'base-hash-empty-config',
+      };
+    }) as typeof openClawGatewayClient.getConfig;
+
+    openClawGatewayClient.setConfig = (async (
+      requestedInstanceId: string,
+      args: { raw: string; baseHash?: string },
+    ) => {
+      assert.equal(requestedInstanceId, instanceId);
+      assert.equal(args.baseHash, 'base-hash-empty-config');
+      setConfigRaw = args.raw;
+      return {
+        ok: true,
+      };
+    }) as typeof openClawGatewayClient.setConfig;
+
+    try {
+      const service = createKernelAgentManagementService();
+      const result = await service.createAgent({
+        instanceId,
+        kernelId: 'openclaw',
+        agentId: 'research analyst',
+        displayName: 'Research Analyst',
+        isDefault: false,
+      });
+
+      assert.deepEqual(result, {
+        instanceId,
+        kernelId: 'openclaw',
+        agentId: 'research-analyst',
+        displayName: 'Research Analyst',
+      });
+
+      const parsed = JSON.parse(setConfigRaw);
+      const main = parsed.agents.list.find((entry: any) => entry.id === 'main');
+      const research = parsed.agents.list.find((entry: any) => entry.id === 'research-analyst');
+      assert.deepEqual(main, {
+        id: 'main',
+        name: 'Main',
+        workspace: 'D:/OpenClaw/.openclaw/workspace',
+        agentDir: 'D:/OpenClaw/.openclaw/agents/main/agent',
+        default: true,
+      });
+      assert.equal(research.workspace, 'D:/OpenClaw/.openclaw/workspace-research-analyst');
+      assert.equal(research.agentDir, 'D:/OpenClaw/.openclaw/agents/research-analyst/agent');
+      assert.equal(research.default, false);
+    } finally {
+      openClawGatewayClient.getConfig = originalGetConfig;
+      openClawGatewayClient.setConfig = originalSetConfig;
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'kernelAgentManagementService resolves empty OpenClaw workspace and agentDir fields from the gateway config path before saving',
+  async () => {
+    const instanceId = 'gateway-openclaw-config-fallback-instance';
+    const configFile = 'D:/OpenClaw/.openclaw/openclaw.json';
+    const originalBridge = getPlatformBridge();
+    const originalCreateAgent = openClawGatewayClient.createAgent;
+    const originalGetConfig = openClawGatewayClient.getConfig;
+    const originalSetConfig = openClawGatewayClient.setConfig;
+    const gatewayCalls: Array<{ method: 'createAgent' | 'getConfig' | 'setConfig'; args: unknown }> = [];
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstanceDetail(requestedInstanceId) {
+          assert.equal(requestedInstanceId, instanceId);
+          return createDetail({
+            instanceId,
+            instanceName: 'Gateway OpenClaw Config Fallback',
+            runtimeKind: 'custom',
+            transportKind: 'openclawGatewayWs',
+            primaryTransport: 'openclawGatewayWs',
+            configWritable: false,
+            configFile: null,
+          });
+        },
+      },
+    });
+
+    openClawGatewayClient.createAgent = (async (requestedInstanceId: string) => {
+      assert.equal(requestedInstanceId, instanceId);
+      gatewayCalls.push({
+        method: 'createAgent',
+        args: requestedInstanceId,
+      });
+      throw new Error('agents.create should not be used for config-backed OpenClaw agent creation');
+    }) as typeof openClawGatewayClient.createAgent;
+
+    openClawGatewayClient.getConfig = (async (requestedInstanceId: string) => {
+      assert.equal(requestedInstanceId, instanceId);
+      gatewayCalls.push({
+        method: 'getConfig',
+        args: requestedInstanceId,
+      });
+      return {
+        path: configFile,
         config: {},
         baseHash: 'base-hash-1',
       };
@@ -249,10 +511,18 @@ await runTest(
         agentId: 'ops',
         displayName: 'Ops',
       });
+      assert.equal(gatewayCalls.some((call) => call.method === 'createAgent'), false);
       assert.equal(gatewayCalls.length, 2);
       assert.equal(gatewayCalls[0]?.method, 'getConfig');
       assert.equal(gatewayCalls[1]?.method, 'setConfig');
+      const setConfigArgs = gatewayCalls[1]?.args as { raw: string; baseHash?: string };
+      assert.equal(setConfigArgs.baseHash, 'base-hash-1');
+      const parsed = JSON.parse(setConfigArgs.raw);
+      const ops = parsed.agents.list.find((entry: any) => entry.id === 'ops');
+      assert.equal(ops.workspace, 'D:/OpenClaw/.openclaw/workspace-ops');
+      assert.equal(ops.agentDir, 'D:/OpenClaw/.openclaw/agents/ops/agent');
     } finally {
+      openClawGatewayClient.createAgent = originalCreateAgent;
       openClawGatewayClient.getConfig = originalGetConfig;
       openClawGatewayClient.setConfig = originalSetConfig;
       configurePlatformBridge(originalBridge);
@@ -261,15 +531,23 @@ await runTest(
 );
 
 await runTest(
-  'kernelAgentManagementService falls back to the writable OpenClaw config file when gateway config updates fail',
+  'kernelAgentManagementService falls back to the writable OpenClaw config file when gateway agent creation and config updates fail',
   async () => {
     const instanceId = 'gateway-openclaw-fallback-instance';
     const configFile = 'D:/OpenClaw/.openclaw/openclaw.json';
     const originalBridge = getPlatformBridge();
+    const originalCreateAgent = openClawGatewayClient.createAgent;
     const originalGetConfig = openClawGatewayClient.getConfig;
     const originalSetConfig = openClawGatewayClient.setConfig;
+    const originalResolveAgentPaths = openClawConfigService.resolveAgentPaths;
     const originalSaveAgent = openClawConfigService.saveAgent;
-    const saveAgentCalls: Array<{ configFile: string; agentId: string; displayName: string }> = [];
+    const saveAgentCalls: Array<{
+      configFile: string;
+      agentId: string;
+      displayName: string;
+      workspace?: string;
+      agentDir?: string;
+    }> = [];
 
     configurePlatformBridge({
       studio: {
@@ -289,6 +567,10 @@ await runTest(
       },
     });
 
+    openClawGatewayClient.createAgent = (async () => {
+      throw new Error('agents.create unavailable');
+    }) as typeof openClawGatewayClient.createAgent;
+
     openClawGatewayClient.getConfig = (async () => {
       throw new Error('Gateway config update failed.');
     }) as typeof openClawGatewayClient.getConfig;
@@ -297,14 +579,36 @@ await runTest(
       throw new Error('setConfig should not run when getConfig already failed');
     }) as typeof openClawGatewayClient.setConfig;
 
+    openClawConfigService.resolveAgentPaths = (async (input: {
+      configFile: string;
+      agentId: string;
+      workspace?: string | null;
+      agentDir?: string | null;
+    }) => {
+      assert.deepEqual(input, {
+        configFile,
+        agentId: 'planner',
+        workspace: null,
+        agentDir: null,
+      });
+      return {
+        id: 'planner',
+        workspace: 'D:/OpenClaw/.openclaw/workspace-planner',
+        agentDir: 'D:/OpenClaw/.openclaw/agents/planner/agent',
+        isDefault: false,
+      };
+    }) as typeof openClawConfigService.resolveAgentPaths;
+
     openClawConfigService.saveAgent = (async (input: {
       configFile: string;
-      agent: { id: string; name: string };
+      agent: { id: string; name: string; workspace?: string; agentDir?: string };
     }) => {
       saveAgentCalls.push({
         configFile: input.configFile,
         agentId: input.agent.id,
         displayName: input.agent.name,
+        workspace: input.agent.workspace,
+        agentDir: input.agent.agentDir,
       });
       return null;
     }) as typeof openClawConfigService.saveAgent;
@@ -329,11 +633,15 @@ await runTest(
           configFile,
           agentId: 'planner',
           displayName: 'Planner',
+          workspace: 'D:/OpenClaw/.openclaw/workspace-planner',
+          agentDir: 'D:/OpenClaw/.openclaw/agents/planner/agent',
         },
       ]);
     } finally {
+      openClawGatewayClient.createAgent = originalCreateAgent;
       openClawGatewayClient.getConfig = originalGetConfig;
       openClawGatewayClient.setConfig = originalSetConfig;
+      openClawConfigService.resolveAgentPaths = originalResolveAgentPaths;
       openClawConfigService.saveAgent = originalSaveAgent;
       configurePlatformBridge(originalBridge);
     }
@@ -627,6 +935,132 @@ await runTest(
 );
 
 await runTest(
+  'kernelAgentManagementService prefers OpenClaw gateway config writes over platform local config writes for gateway-backed OpenClaw kernels',
+  async () => {
+    const instanceId = 'platform-openclaw-gateway-preferred-instance';
+    const configFile = 'D:/OpenClaw/.openclaw/openclaw.json';
+    const originalBridge = getPlatformBridge();
+    const originalCreateAgent = openClawGatewayClient.createAgent;
+    const originalGetConfig = openClawGatewayClient.getConfig;
+    const originalSetConfig = openClawGatewayClient.setConfig;
+    let platformCreateCalls = 0;
+    const gatewayCalls: Array<{ method: 'createAgent' | 'getConfig' | 'setConfig'; args: unknown }> = [];
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstanceDetail(requestedInstanceId) {
+          assert.equal(requestedInstanceId, instanceId);
+          return createDetail({
+            instanceId,
+            instanceName: 'Built In OpenClaw Gateway',
+            runtimeKind: 'openclaw',
+            transportKind: 'openclawGatewayWs',
+            primaryTransport: 'openclawGatewayWs',
+            configWritable: true,
+            configFile,
+          });
+        },
+        async getKernelAgentCreationCapability(requestedInstanceId: string) {
+          assert.equal(requestedInstanceId, instanceId);
+          return {
+            instanceId,
+            instanceName: 'Built In OpenClaw Gateway',
+            kernelOptions: [
+              {
+                kernelId: 'openclaw',
+                label: 'OpenClaw',
+                supported: true,
+                reasonCode: null,
+                reason: null,
+                modelOptions: [],
+                fieldSupport: FULL_FIELD_SUPPORT,
+              },
+            ],
+            defaultKernelId: 'openclaw',
+          };
+        },
+        async createKernelAgent() {
+          platformCreateCalls += 1;
+          throw new Error('platform createKernelAgent should not run for gateway-backed OpenClaw creation');
+        },
+      },
+    });
+
+    openClawGatewayClient.createAgent = (async (
+      requestedInstanceId: string,
+      args: Record<string, unknown>,
+    ) => {
+      assert.equal(requestedInstanceId, instanceId);
+      gatewayCalls.push({
+        method: 'createAgent',
+        args,
+      });
+      throw new Error('agents.create should not be used for config-backed OpenClaw agent creation');
+    }) as typeof openClawGatewayClient.createAgent;
+
+    openClawGatewayClient.getConfig = (async (requestedInstanceId: string) => {
+      assert.equal(requestedInstanceId, instanceId);
+      gatewayCalls.push({
+        method: 'getConfig',
+        args: requestedInstanceId,
+      });
+      return {
+        path: configFile,
+        config: {},
+        baseHash: 'base-hash-preferred',
+      };
+    }) as typeof openClawGatewayClient.getConfig;
+
+    openClawGatewayClient.setConfig = (async (
+      requestedInstanceId: string,
+      args: { raw: string; baseHash?: string },
+    ) => {
+      assert.equal(requestedInstanceId, instanceId);
+      gatewayCalls.push({
+        method: 'setConfig',
+        args,
+      });
+      return {
+        ok: true,
+      };
+    }) as typeof openClawGatewayClient.setConfig;
+
+    try {
+      const service = createKernelAgentManagementService();
+      const result = await service.createAgent({
+        instanceId,
+        kernelId: 'openclaw',
+        agentId: 'reviewer',
+        displayName: 'Reviewer',
+      });
+
+      assert.equal(platformCreateCalls, 0);
+      assert.equal(gatewayCalls.some((call) => call.method === 'createAgent'), false);
+      assert.equal(gatewayCalls[0]?.method, 'getConfig');
+      assert.equal(gatewayCalls[1]?.method, 'setConfig');
+      const setConfigArgs = gatewayCalls[1]?.args as { raw: string; baseHash?: string };
+      assert.equal(setConfigArgs.baseHash, 'base-hash-preferred');
+      const parsed = JSON.parse(setConfigArgs.raw);
+      const reviewer = parsed.agents.list.find((entry: any) => entry.id === 'reviewer');
+      assert.equal(reviewer.workspace, 'D:/OpenClaw/.openclaw/workspace-reviewer');
+      assert.equal(reviewer.agentDir, 'D:/OpenClaw/.openclaw/agents/reviewer/agent');
+      assert.deepEqual(result, {
+        instanceId,
+        kernelId: 'openclaw',
+        agentId: 'reviewer',
+        displayName: 'Reviewer',
+      });
+    } finally {
+      openClawGatewayClient.createAgent = originalCreateAgent;
+      openClawGatewayClient.getConfig = originalGetConfig;
+      openClawGatewayClient.setConfig = originalSetConfig;
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
   'kernelAgentManagementService rejects create requests that set fields outside the selected kernel field support contract',
   async () => {
     const instanceId = 'platform-create-hermes-invalid-fields';
@@ -754,7 +1188,7 @@ await runTest(
           reasonCode: null,
           reason: null,
           modelOptions: [],
-          fieldSupport: FULL_FIELD_SUPPORT,
+          fieldSupport: OPENCLAW_MANAGED_FIELD_SUPPORT,
         },
         {
           kernelId: 'custom',
@@ -813,7 +1247,7 @@ await runTest(
           reasonCode: null,
           reason: null,
           modelOptions: [],
-          fieldSupport: FULL_FIELD_SUPPORT,
+          fieldSupport: OPENCLAW_MANAGED_FIELD_SUPPORT,
         },
       ]);
     } finally {
@@ -860,6 +1294,7 @@ await runTest(
     openClawGatewayClient.getConfig = (async (requestedInstanceId: string) => {
       assert.equal(requestedInstanceId, instanceId);
       return {
+        path: 'D:/OpenClaw/.openclaw/openclaw.json',
         config: {},
         baseHash: 'base-hash-capability-error',
       };
@@ -893,6 +1328,73 @@ await runTest(
         agentId: 'navigator',
         displayName: 'Navigator',
       });
+    } finally {
+      openClawGatewayClient.getConfig = originalGetConfig;
+      openClawGatewayClient.setConfig = originalSetConfig;
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'kernelAgentManagementService rejects OpenClaw gateway config writes when no authoritative config path is available',
+  async () => {
+    const instanceId = 'gateway-openclaw-missing-config-path-instance';
+    const originalBridge = getPlatformBridge();
+    const originalGetConfig = openClawGatewayClient.getConfig;
+    const originalSetConfig = openClawGatewayClient.setConfig;
+    let gatewaySetConfigCalls = 0;
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstanceDetail(requestedInstanceId) {
+          assert.equal(requestedInstanceId, instanceId);
+          return createDetail({
+            instanceId,
+            instanceName: 'Gateway OpenClaw Missing Config Path',
+            runtimeKind: 'custom',
+            transportKind: 'openclawGatewayWs',
+            primaryTransport: 'openclawGatewayWs',
+            configWritable: false,
+            configFile: null,
+          });
+        },
+        async getKernelAgentCreationCapability(requestedInstanceId: string) {
+          assert.equal(requestedInstanceId, instanceId);
+          throw new Error('desktop capability bridge unavailable');
+        },
+      },
+    });
+
+    openClawGatewayClient.getConfig = (async (requestedInstanceId: string) => {
+      assert.equal(requestedInstanceId, instanceId);
+      return {
+        config: {},
+        baseHash: 'base-hash-without-path',
+      };
+    }) as typeof openClawGatewayClient.getConfig;
+
+    openClawGatewayClient.setConfig = (async () => {
+      gatewaySetConfigCalls += 1;
+      throw new Error('setConfig should not run without a config path');
+    }) as typeof openClawGatewayClient.setConfig;
+
+    try {
+      const service = createKernelAgentManagementService();
+
+      await assert.rejects(
+        () =>
+          service.createAgent({
+            instanceId,
+            kernelId: 'openclaw',
+            agentId: 'navigator',
+            displayName: 'Navigator',
+          }),
+        /OpenClaw gateway config path is required/,
+      );
+
+      assert.equal(gatewaySetConfigCalls, 0);
     } finally {
       openClawGatewayClient.getConfig = originalGetConfig;
       openClawGatewayClient.setConfig = originalSetConfig;
@@ -1027,6 +1529,7 @@ await runTest(
     openClawGatewayClient.getConfig = (async (requestedInstanceId: string) => {
       assert.equal(requestedInstanceId, instanceId);
       return {
+        path: 'D:/OpenClaw/.openclaw/openclaw.json',
         config: {},
         baseHash: 'base-hash-platform-fallback',
       };
@@ -1150,7 +1653,7 @@ await runTest(
               providerLabel: 'OpenAI',
             },
           ],
-          fieldSupport: FULL_FIELD_SUPPORT,
+          fieldSupport: OPENCLAW_MANAGED_FIELD_SUPPORT,
         },
         {
           kernelId: 'hermes',
@@ -1256,7 +1759,7 @@ await runTest(
               providerLabel: 'OpenRouter',
             },
           ],
-          fieldSupport: FULL_FIELD_SUPPORT,
+          fieldSupport: OPENCLAW_MANAGED_FIELD_SUPPORT,
         },
       ]);
     } finally {

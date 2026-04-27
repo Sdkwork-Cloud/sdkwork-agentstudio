@@ -1,5 +1,6 @@
 pub mod bundled;
 pub mod capabilities;
+pub mod child_process;
 pub mod components;
 pub mod config;
 pub mod context;
@@ -17,8 +18,8 @@ pub mod layout;
 pub mod logging;
 pub mod openclaw_release;
 pub mod paths;
-pub mod ports;
 pub mod policy;
+pub mod ports;
 pub mod runtime;
 pub mod services;
 pub mod storage;

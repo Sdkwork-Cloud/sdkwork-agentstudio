@@ -3,6 +3,7 @@ import type {
   KernelChatMessage,
 } from '@sdkwork/claw-types';
 import type { OpenClawToolCard } from './openClawMessagePresentation.ts';
+import { normalizeChatMessageTextEncoding } from './chatTextEncoding.ts';
 
 export interface KernelChatNoticePresentation {
   code: string;
@@ -23,7 +24,7 @@ function normalizeOptionalString(value: string | null | undefined) {
     return value ?? null;
   }
 
-  const normalized = value.trim();
+  const normalized = normalizeChatMessageTextEncoding(value.trim());
   return normalized || null;
 }
 

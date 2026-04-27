@@ -780,6 +780,7 @@ function runZipCommand(archivePath, workingDirectory, entryName) {
               SDKWORK_ZIP_SOURCE: path.join(workingDirectory, normalizedEntryName),
               SDKWORK_ZIP_DESTINATION: archivePath,
             },
+            windowsHide: true,
           },
         )
       : spawnSync(
@@ -790,6 +791,7 @@ function runZipCommand(archivePath, workingDirectory, entryName) {
           {
             cwd: workingDirectory,
             stdio: 'inherit',
+            windowsHide: true,
           },
         );
 
@@ -1285,6 +1287,7 @@ function runTarCommand(archivePath, workingDirectory, entryName) {
     cwd: tarPlan.cwd,
     stdio: tarPlan.stdio,
     shell: tarPlan.shell,
+    windowsHide: true,
   });
 
   if (result.error) {

@@ -1307,7 +1307,10 @@ await runTest(
       activeSessionProjectionHookSource,
       /export function useChatActiveSessionProjectionState/,
     );
-    assert.match(activeSessionProjectionHookSource, /const instanceSessions = sessions\.filter\(/);
+    assert.match(
+      activeSessionProjectionHookSource,
+      /const instanceSessions = useMemo\(\s*\(\) =>\s*sessions\.filter\(/s,
+    );
     assert.match(
       activeSessionProjectionHookSource,
       /resolveChatWorkspaceProjection\(\{\s*sessions: instanceSessions,\s*activeSessionId,\s*isChatSupported: isChatSupportedRoute,\s*sessionScopeMode,\s*sessionScopeAgentId: effectiveGatewayAgentId,\s*selectedAgentId,\s*\}\)/s,
@@ -1429,7 +1432,7 @@ await runTest(
     );
     assert.match(
       workspaceStateHookSource,
-      /const\s*\{\s*isActiveSessionGenerating,\s*isBusy,\s*canStop,\s*channels,\s*activeChannel,\s*activeModel,\s*sessionControlActions,\s*activeThinkingLevel,\s*thinkingLevelDefaultLabel,\s*thinkingLevelOptions,\s*activeFastMode,\s*fastModeDefaultLabel,\s*fastModeOptions,\s*activeVerboseLevel,\s*verboseLevelDefaultLabel,\s*verboseLevelOptions,\s*activeReasoningLevel,\s*reasoningLevelDefaultLabel,\s*reasoningLevelOptions,\s*newSessionModel,\s*handleChannelChange,\s*handleModelChange,\s*handleSend,\s*handleStop,\s*\}\s*=\s*useChatInteractionState\(\{\s*t,\s*activeInstanceId,\s*selectedSessionId:\s*activeSessionId,\s*displaySessionId,\s*sessionControlSessionId:\s*isDisplaySessionFallback\s*\?\s*null\s*:\s*selectedSession\?\.id\s*\?\?\s*null,\s*activeKernelSessionState,\s*activeRunBinding,\s*runningRunBinding,\s*sendMode,\s*catalogChannels,\s*sessionSelectedModelId,\s*activeChannelId,\s*activeModelId,\s*routeMode,\s*isChatSupportedRoute,\s*activeAdapterCapabilities,\s*newSessionModelMode,\s*effectiveGatewayAgentId,\s*activeSkill,\s*activeAgent,\s*sessionScopeMode,\s*createSession,\s*addMessage,\s*updateMessage,\s*removeMessages,\s*flushSession,\s*sendKernelMessage,\s*abortSession,\s*setActiveChannel,\s*setActiveModel,\s*setKernelSessionModel,\s*setKernelSessionThinkingLevel,\s*setKernelSessionFastMode,\s*setKernelSessionVerboseLevel,\s*setKernelSessionReasoningLevel,\s*\}\);/s,
+      /const\s*\{\s*isActiveSessionGenerating,\s*isBusy,\s*canStop,\s*channels,\s*activeChannel,\s*activeModel,\s*sessionControlActions,\s*activeThinkingLevel,\s*thinkingLevelDefaultLabel,\s*thinkingLevelOptions,\s*activeFastMode,\s*fastModeDefaultLabel,\s*fastModeOptions,\s*activeVerboseLevel,\s*verboseLevelDefaultLabel,\s*verboseLevelOptions,\s*activeReasoningLevel,\s*reasoningLevelDefaultLabel,\s*reasoningLevelOptions,\s*newSessionModel,\s*handleChannelChange,\s*handleModelChange,\s*handleSend,\s*handleStop,\s*\}\s*=\s*useChatInteractionState\(\{\s*t,\s*activeInstanceId,\s*selectedSessionId:\s*sendSessionId,\s*displaySessionId,\s*sessionControlSessionId:\s*isDisplaySessionFallback\s*\?\s*null\s*:\s*selectedSession\?\.id\s*\?\?\s*null,\s*activeKernelSessionState,\s*activeRunBinding,\s*runningRunBinding,\s*sendMode,\s*catalogChannels,\s*sessionSelectedModelId,\s*activeChannelId,\s*activeModelId,\s*routeMode,\s*isChatSupportedRoute,\s*activeAdapterCapabilities,\s*newSessionModelMode,\s*effectiveGatewayAgentId,\s*activeSkill,\s*activeAgent,\s*sessionScopeMode,\s*createSession,\s*addMessage,\s*updateMessage,\s*removeMessages,\s*flushSession,\s*sendKernelMessage,\s*abortSession,\s*setActiveChannel,\s*setActiveModel,\s*setKernelSessionModel,\s*setKernelSessionThinkingLevel,\s*setKernelSessionFastMode,\s*setKernelSessionVerboseLevel,\s*setKernelSessionReasoningLevel,\s*\}\);/s,
     );
     assert.doesNotMatch(pageSource, /const sessionRunActions = createChatSessionRunActions\(/);
     assert.doesNotMatch(pageSource, /const directRunActions = createChatLocalRunActions\(/);
@@ -1636,7 +1639,7 @@ await runTest(
     assert.match(agentCatalogStateHookSource, /export function useChatAgentCatalogState/);
     assert.match(
       agentCatalogStateHookSource,
-      /import \{ useQuery \} from '@tanstack\/react-query';/,
+      /import \{ useQuery, useQueryClient \} from '@tanstack\/react-query';/,
     );
     assert.match(
       agentCatalogStateHookSource,
@@ -2029,6 +2032,32 @@ await runTest(
 );
 
 await runTest(
+  'Chat page sends through the displayed session when a hidden raw active session falls back to a visible session',
+  () => {
+    assert.match(
+      workspaceStateHookSource,
+      /resolveChatSendSessionId,/,
+    );
+    assert.match(
+      workspaceStateHookSource,
+      /resolveChatWorkspacePresentation,/,
+    );
+    assert.match(
+      workspaceStateHookSource,
+      /const sendSessionId = resolveChatSendSessionId\(\{\s*selectedSessionId: activeSessionId,\s*displaySessionId,\s*sendMode,\s*\}\);/s,
+    );
+    assert.match(
+      workspaceStateHookSource,
+      /useChatInteractionState\(\{[\s\S]*selectedSessionId: sendSessionId,[\s\S]*displaySessionId,/s,
+    );
+    assert.doesNotMatch(
+      workspaceStateHookSource,
+      /useChatInteractionState\(\{[\s\S]*selectedSessionId:\s*activeSessionId,/,
+    );
+  },
+);
+
+await runTest(
   'Chat page only loads the OpenClaw agent catalog when the active adapter resolves to a gateway kernel chat path',
   () => {
     assert.match(
@@ -2360,7 +2389,7 @@ await runTest(
   () => {
     assert.match(
       sendExecutionStateHookSource,
-      /const directRunActions = createChatLocalRunActions\(\{\s*sendMode,\s*abortControllerRef,\s*setPendingSendSessionId,\s*addMessage,\s*updateMessage,\s*removeMessages,\s*flushSession,\s*getSessionById: \(sessionId\) =>\s*useChatStore\.getState\(\)\.sessions\.find\(\(session\) => session\.id === sessionId\),\s*sendMessageStream: chatService\.sendMessageStream\.bind\(chatService\),\s*\}\);/s,
+      /const directRunActions = createChatLocalRunActions\(\{\s*sendMode,\s*abortControllerRef,\s*setPendingSendSessionId,\s*addMessage,\s*updateMessage,\s*removeMessages,\s*flushSession,\s*getSessionById: \(sessionId, instanceId\) => \{\s*const scopedInstanceId =\s*instanceId === undefined \? activeInstanceId \?\? null : instanceId;\s*return useChatStore\s*\.getState\(\)\s*\.sessions\.find\(\s*\(session\) =>\s*session\.id === sessionId &&\s*\(session\.instanceId \?\? null\) === scopedInstanceId,\s*\);\s*\},\s*sendMessageStream: chatService\.sendMessageStream\.bind\(chatService\),\s*\}\);/s,
     );
     assert.match(sendExecutionStateHookSource, /const handleSend = composerSendActions\.submit;/);
     assert.doesNotMatch(pageSource, /const directRunActions = createChatLocalRunActions\(/);

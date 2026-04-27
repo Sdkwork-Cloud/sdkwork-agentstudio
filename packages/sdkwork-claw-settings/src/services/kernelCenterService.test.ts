@@ -40,7 +40,7 @@ function createSnapshot(overrides: Record<string, unknown> = {}) {
       lastTransitionAt: 1_743_100_000_000,
     },
     endpoint: {
-      preferredPort: 18789,
+      preferredPort: 21280,
       activePort: 18845,
       baseUrl: 'http://127.0.0.1:18845',
       websocketUrl: 'ws://127.0.0.1:18845',
@@ -900,8 +900,8 @@ if (kernelCenterServiceModule) {
         homeDir: 'C:/Users/admin',
         workspaceDir: 'C:/Users/admin/.openclaw/workspace',
         configFile: 'C:/Users/admin/.openclaw/openclaw.json',
-        gatewayPort: 18789,
-        gatewayBaseUrl: 'http://127.0.0.1:18789',
+        gatewayPort: 21280,
+        gatewayBaseUrl: 'http://127.0.0.1:21280',
         localAiProxyBaseUrl: LOCAL_AI_PROXY_BASE_URL,
         localAiProxySnapshotPath:
           'C:/ProgramData/SdkWork/ClawStudio/state/local-ai-proxy.snapshot.json',
@@ -1009,8 +1009,8 @@ if (kernelCenterServiceModule) {
         homeDir: 'C:/Users/admin',
         workspaceDir: 'C:/Users/admin/.openclaw/workspace',
         configFile: 'C:/Users/admin/.openclaw/openclaw.json',
-        gatewayPort: 18789,
-        gatewayBaseUrl: 'http://127.0.0.1:18789',
+        gatewayPort: 21280,
+        gatewayBaseUrl: 'http://127.0.0.1:21280',
         localAiProxyBaseUrl: LOCAL_AI_PROXY_BASE_URL,
         localAiProxySnapshotPath:
           'C:/ProgramData/SdkWork/ClawStudio/state/local-ai-proxy.snapshot.json',
@@ -1610,8 +1610,8 @@ if (kernelCenterServiceModule) {
         homeDir: 'C:/Users/admin',
         workspaceDir: 'C:/Users/admin/.openclaw/workspace',
         configFile: 'C:/Users/admin/.openclaw/openclaw.json',
-        gatewayPort: 18789,
-        gatewayBaseUrl: 'http://127.0.0.1:18789',
+        gatewayPort: 21280,
+        gatewayBaseUrl: 'http://127.0.0.1:21280',
         localAiProxyBaseUrl: LOCAL_AI_PROXY_BASE_URL,
         localAiProxySnapshotPath:
           'C:/ProgramData/SdkWork/ClawStudio/state/local-ai-proxy.snapshot.json',

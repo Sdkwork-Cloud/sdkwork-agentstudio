@@ -1,6 +1,9 @@
 use crate::framework::{
-    ports::{is_legacy_managed_loopback_port, DESKTOP_EMBEDDED_HOST_DEFAULT_PORT},
     paths::AppPaths,
+    ports::{
+        DESKTOP_EMBEDDED_HOST_DEFAULT_PORT, OPENCLAW_SIDECAR_RESERVED_PORT_END,
+        OPENCLAW_SIDECAR_RESERVED_PORT_START,
+    },
     storage::{StorageConfig, StorageProfileConfiguredFlags, StorageProviderKind},
     Result,
 };
@@ -209,7 +212,7 @@ pub struct EmbeddedOpenClawConfig {
 impl Default for EmbeddedOpenClawConfig {
     fn default() -> Self {
         Self {
-            expose_cli_to_shell: true,
+            expose_cli_to_shell: false,
         }
     }
 }
@@ -395,7 +398,7 @@ impl AppConfig {
             next.desktop_host.bind_host = DesktopHostConfig::default().bind_host;
         }
         if next.desktop_host.port == 0
-            || is_legacy_managed_loopback_port(next.desktop_host.port)
+            || is_openclaw_reserved_desktop_host_port(next.desktop_host.port)
         {
             next.desktop_host.port = DesktopHostConfig::default().port;
         }
@@ -426,6 +429,10 @@ impl AppConfig {
             component_upgrades: normalized.component_upgrades,
         }
     }
+}
+
+fn is_openclaw_reserved_desktop_host_port(port: u16) -> bool {
+    (OPENCLAW_SIDECAR_RESERVED_PORT_START..=OPENCLAW_SIDECAR_RESERVED_PORT_END).contains(&port)
 }
 
 fn validate_app_config_document(document: &serde_json::Value) -> Result<()> {
@@ -591,7 +598,10 @@ fn project_storage_profile(
 #[cfg(test)]
 mod tests {
     use super::{load_or_create_config, write_config, AppConfig};
-    use crate::framework::paths::resolve_paths_for_root;
+    use crate::framework::{
+        paths::resolve_paths_for_root,
+        ports::{DESKTOP_EMBEDDED_HOST_DEFAULT_PORT, OPENCLAW_BROWSER_CONTROL_DEFAULT_PORT},
+    };
     use serde_json::Value;
 
     #[test]
@@ -650,12 +660,12 @@ mod tests {
     }
 
     #[test]
-    fn default_embedded_openclaw_config_enables_shell_cli_exposure() {
+    fn default_embedded_openclaw_config_keeps_shell_cli_exposure_opt_in() {
         let config = AppConfig::default();
 
         assert!(
-            config.embedded_openclaw.expose_cli_to_shell,
-            "bundled openclaw shell exposure should be enabled by default"
+            !config.embedded_openclaw.expose_cli_to_shell,
+            "desktop startup should not silently expose bundled openclaw shims on the user's shell PATH"
         );
     }
 
@@ -718,6 +728,40 @@ mod tests {
         assert!(
             normalized.desktop_host.enabled,
             "desktop combined mode requires the canonical embedded host even when config tries to opt out"
+        );
+    }
+
+    #[test]
+    fn normalizes_conflicting_openclaw_sidecar_desktop_host_port_to_safe_default() {
+        let config = AppConfig {
+            desktop_host: super::DesktopHostConfig {
+                port: OPENCLAW_BROWSER_CONTROL_DEFAULT_PORT,
+                ..super::DesktopHostConfig::default()
+            },
+            ..AppConfig::default()
+        };
+
+        assert_eq!(
+            config.normalized().desktop_host.port,
+            DESKTOP_EMBEDDED_HOST_DEFAULT_PORT,
+            "existing installs using 21282 must move off OpenClaw gateway+2 browser control"
+        );
+    }
+
+    #[test]
+    fn config_preserves_explicit_desktop_host_ports_without_hidden_migration_windows() {
+        let config = AppConfig {
+            desktop_host: super::DesktopHostConfig {
+                port: 18_878,
+                ..super::DesktopHostConfig::default()
+            },
+            ..AppConfig::default()
+        };
+
+        assert_eq!(
+            config.normalized().desktop_host.port,
+            18_878,
+            "current desktop host config should not treat historical generated port ranges as implicit migration input",
         );
     }
 

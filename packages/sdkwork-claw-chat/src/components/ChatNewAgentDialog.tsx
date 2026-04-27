@@ -728,30 +728,6 @@ export function ChatNewAgentDialog({
                 )}
               </div>
             ) : null}
-            {selectedKernelFieldSupport.workspace ? (
-              <label className="block md:col-span-2">
-                <Label className="mb-2">
-                  {t('chat.sidebar.newAgentDialog.labels.workspace')}
-                </Label>
-                <Input
-                  value={draft.workspace}
-                  onChange={(event) => updateDraft('workspace', event.target.value)}
-                  placeholder={t('chat.sidebar.newAgentDialog.placeholders.workspace')}
-                />
-              </label>
-            ) : null}
-            {selectedKernelFieldSupport.agentDir ? (
-              <label className="block md:col-span-2">
-                <Label className="mb-2">
-                  {t('chat.sidebar.newAgentDialog.labels.agentDir')}
-                </Label>
-                <Input
-                  value={draft.agentDir}
-                  onChange={(event) => updateDraft('agentDir', event.target.value)}
-                  placeholder={t('chat.sidebar.newAgentDialog.placeholders.agentDir')}
-                />
-              </label>
-            ) : null}
             {selectedKernelFieldSupport.temperature ? (
               <label className="block">
                 <Label className="mb-2">

@@ -21,9 +21,14 @@ use super::{
     storage::StorageService,
     supervisor::SupervisorService,
 };
+#[cfg(windows)]
+use crate::framework::child_process::configure_hidden_child_process;
 use crate::framework::storage::{StorageGetTextRequest, StorageListKeysRequest};
-use crate::framework::{config::AppConfig, paths::AppPaths, FrameworkError, Result};
-use sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_config_file_path;
+use crate::framework::{
+    config::AppConfig,
+    paths::{normalize_openclaw_agent_id, AppPaths, OPENCLAW_DEFAULT_AGENT_ID, OPENCLAW_KERNEL_ID},
+    FrameworkError, Result,
+};
 use serde_json::Value;
 use std::{
     collections::{HashMap, HashSet},
@@ -137,7 +142,7 @@ pub fn import_openclaw_mirror(
         }
 
         restore_manifest_payloads(prepared, runtime)?;
-        rebase_restored_managed_runtime_config(runtime, &prepared.source_runtime_snapshot)?;
+        rebase_restored_managed_runtime_config(paths, runtime, &prepared.source_runtime_snapshot)?;
         repair_local_managed_plugin_installs(paths, runtime)?;
         if let Some(catalog) = prepared.provider_center_catalog.as_ref() {
             restore_provider_center_catalog(paths, config, storage, catalog)?;
@@ -266,9 +271,11 @@ fn restore_manifest_payloads(
 }
 
 fn rebase_restored_managed_runtime_config(
+    paths: &AppPaths,
     runtime: &ActivatedOpenClawRuntime,
     source_runtime_snapshot: &OpenClawMirrorRuntimeSnapshot,
 ) -> Result<()> {
+    let openclaw_paths = paths.kernel_paths(OPENCLAW_KERNEL_ID)?;
     let config_text = fs::read_to_string(&runtime.config_path)?;
     let mut config_root = serde_json::from_str::<Value>(&config_text)?;
     if !config_root.is_object() {
@@ -287,44 +294,61 @@ fn rebase_restored_managed_runtime_config(
         &["gateway", "auth", "token"],
         runtime.gateway_auth_token.as_str(),
     );
-    set_nested_string(
-        &mut config_root,
-        &["agents", "defaults", "workspace"],
-        runtime.workspace_dir.to_string_lossy().as_ref(),
-    );
+    remove_nested_value(&mut config_root, &["agents", "defaults", "workspace"]);
+    remove_nested_value(&mut config_root, &["agents", "defaults", "agentDir"]);
 
-    let default_agent_id = resolve_default_agent_id(&config_root);
-    if let Some(agent_entries) = get_nested_array_mut(&mut config_root, &["agents", "list"]) {
-        for entry in agent_entries.iter_mut() {
-            let Some(agent_root) = entry.as_object_mut() else {
-                continue;
-            };
-            let agent_id = normalize_agent_id(
-                agent_root
-                    .get("id")
-                    .and_then(Value::as_str)
-                    .unwrap_or_default(),
-            );
-            let workspace_dir = if agent_id == default_agent_id {
-                runtime.workspace_dir.clone()
-            } else {
-                runtime.state_dir.join(format!("workspace-{agent_id}"))
-            };
-            let agent_dir = runtime
-                .state_dir
-                .join("agents")
-                .join(&agent_id)
-                .join("agent");
+    let agent_entries = ensure_array_path(&mut config_root, &["agents", "list"]);
+    let main_index = agent_entries
+        .iter()
+        .position(|entry| {
+            entry
+                .as_object()
+                .and_then(|agent_root| agent_root.get("id"))
+                .and_then(Value::as_str)
+                .map(normalize_openclaw_agent_id)
+                .is_some_and(|agent_id| agent_id == OPENCLAW_DEFAULT_AGENT_ID)
+        })
+        .unwrap_or_else(|| {
+            agent_entries.push(Value::Object(serde_json::Map::new()));
+            agent_entries.len() - 1
+        });
 
-            agent_root.insert(
-                "workspace".to_string(),
-                Value::String(workspace_dir.to_string_lossy().into_owned()),
-            );
-            agent_root.insert(
-                "agentDir".to_string(),
-                Value::String(agent_dir.to_string_lossy().into_owned()),
-            );
+    for (index, entry) in agent_entries.iter_mut().enumerate() {
+        if !entry.is_object() {
+            *entry = Value::Object(serde_json::Map::new());
         }
+        let Some(agent_root) = entry.as_object_mut() else {
+            continue;
+        };
+
+        let mut agent_id = normalize_openclaw_agent_id(
+            agent_root
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or_default(),
+        );
+        if index == main_index {
+            agent_id = OPENCLAW_DEFAULT_AGENT_ID.to_string();
+            agent_root
+                .entry("name".to_string())
+                .or_insert_with(|| Value::String("Main".to_string()));
+        } else if agent_id == OPENCLAW_DEFAULT_AGENT_ID {
+            agent_id = format!("agent-{index}");
+        }
+
+        let workspace_dir = openclaw_paths.openclaw_agent_workspace_dir(&agent_id)?;
+        let agent_dir = openclaw_paths.openclaw_agent_dir(&agent_id)?;
+
+        agent_root.insert("id".to_string(), Value::String(agent_id.clone()));
+        agent_root.insert(
+            "workspace".to_string(),
+            Value::String(workspace_dir.to_string_lossy().into_owned()),
+        );
+        agent_root.insert(
+            "agentDir".to_string(),
+            Value::String(agent_dir.to_string_lossy().into_owned()),
+        );
+        agent_root.insert("default".to_string(), Value::Bool(index == main_index));
     }
 
     let managed_path_rebaser = ManagedPathRebaser::new(source_runtime_snapshot, runtime);
@@ -498,6 +522,28 @@ fn set_nested_u16(root: &mut Value, path: &[&str], value: u16) {
     );
 }
 
+fn remove_nested_value(root: &mut Value, path: &[&str]) -> bool {
+    if path.is_empty() {
+        return false;
+    }
+
+    let mut current = root;
+    for segment in &path[..path.len() - 1] {
+        let Some(object) = current.as_object_mut() else {
+            return false;
+        };
+        let Some(next) = object.get_mut(*segment) else {
+            return false;
+        };
+        current = next;
+    }
+
+    current
+        .as_object_mut()
+        .and_then(|object| object.remove(path[path.len() - 1]))
+        .is_some()
+}
+
 fn ensure_object_path<'a>(
     root: &'a mut Value,
     path: &[&str],
@@ -526,6 +572,19 @@ fn ensure_object_path<'a>(
     current
         .as_object_mut()
         .expect("value should be object after normalization")
+}
+
+fn ensure_array_path<'a>(root: &'a mut Value, path: &[&str]) -> &'a mut Vec<Value> {
+    let parent = ensure_object_path(root, &path[..path.len() - 1]);
+    let key = path[path.len() - 1];
+    if !matches!(parent.get(key), Some(Value::Array(_))) {
+        parent.insert(key.to_string(), Value::Array(Vec::new()));
+    }
+
+    parent
+        .get_mut(key)
+        .and_then(Value::as_array_mut)
+        .expect("value should be array after normalization")
 }
 
 fn get_nested_array_mut<'a>(root: &'a mut Value, path: &[&str]) -> Option<&'a mut Vec<Value>> {
@@ -559,55 +618,6 @@ fn rebase_object_string_field(
     };
     if let Some(rebased_path) = rebaser.rebase(raw_path) {
         root.insert(key.to_string(), Value::String(rebased_path));
-    }
-}
-
-fn resolve_default_agent_id(config_root: &Value) -> String {
-    let Some(agent_entries) = config_root
-        .get("agents")
-        .and_then(Value::as_object)
-        .and_then(|agents| agents.get("list"))
-        .and_then(Value::as_array)
-    else {
-        return "main".to_string();
-    };
-
-    for entry in agent_entries {
-        let Some(agent_root) = entry.as_object() else {
-            continue;
-        };
-        if agent_root
-            .get("default")
-            .and_then(Value::as_bool)
-            .unwrap_or(false)
-        {
-            return normalize_agent_id(
-                agent_root
-                    .get("id")
-                    .and_then(Value::as_str)
-                    .unwrap_or_default(),
-            );
-        }
-    }
-
-    agent_entries
-        .iter()
-        .find_map(|entry| {
-            entry
-                .as_object()
-                .and_then(|agent_root| agent_root.get("id"))
-                .and_then(Value::as_str)
-                .map(normalize_agent_id)
-        })
-        .unwrap_or_else(|| "main".to_string())
-}
-
-fn normalize_agent_id(raw: &str) -> String {
-    let trimmed = raw.trim();
-    if trimmed.is_empty() {
-        "main".to_string()
-    } else {
-        trimmed.to_string()
     }
 }
 
@@ -1014,12 +1024,7 @@ fn readable_openclaw_config_path(paths: &AppPaths) -> PathBuf {
 fn active_openclaw_config_path(paths: &AppPaths) -> PathBuf {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
-        .unwrap_or_else(|_| {
-            paths
-                .kernel_paths("openclaw")
-                .map(|kernel| kernel.config_file)
-                .unwrap_or_else(|_| build_standard_openclaw_config_file_path(&paths.user_root))
-        })
+        .expect("canonical openclaw config path")
 }
 
 fn verify_managed_state(paths: &AppPaths) -> OpenClawMirrorImportVerificationCheck {
@@ -1807,6 +1812,7 @@ fn create_safety_snapshot(
 
 fn run_post_import_doctor(paths: &AppPaths, runtime: &ActivatedOpenClawRuntime) -> Result<()> {
     let mut command = Command::new(&runtime.node_path);
+    configure_hidden_child_process(&mut command);
     command.arg(&runtime.cli_path);
     command.arg("doctor");
     command.arg("--fix");
@@ -2247,22 +2253,14 @@ fn extract_archive_to_staging(source_path: &Path, staging_root: &Path) -> Result
     let archive_copy_path = staging_root.join("openclaw-import.zip");
     fs::copy(source_path, &archive_copy_path)?;
 
-    let extract_result = if cfg!(windows) {
-        extract_windows_archive(&archive_copy_path, staging_root)
-    } else {
-        extract_unix_archive(&archive_copy_path, staging_root)
-    };
+    let extract_result = extract_archive(&archive_copy_path, staging_root);
 
     let _ = fs::remove_file(&archive_copy_path);
     extract_result
 }
 
 fn validate_archive_entry_paths(source_path: &Path) -> Result<()> {
-    let entries = if cfg!(windows) {
-        list_windows_archive_entries(source_path)?
-    } else {
-        list_unix_archive_entries(source_path)?
-    };
+    let entries = list_archive_entries(source_path)?;
     let mut seen_entries = HashMap::<String, String>::new();
 
     for entry in entries {
@@ -2301,16 +2299,27 @@ fn validate_archive_entry_layout(raw_name: &str) -> Result<()> {
     )))
 }
 
+#[cfg(windows)]
+fn list_archive_entries(source_path: &Path) -> Result<Vec<String>> {
+    list_windows_archive_entries(source_path)
+}
+
+#[cfg(not(windows))]
+fn list_archive_entries(source_path: &Path) -> Result<Vec<String>> {
+    list_unix_archive_entries(source_path)
+}
+
+#[cfg(windows)]
 fn list_windows_archive_entries(source_path: &Path) -> Result<Vec<String>> {
-    let command = format!(
+    let script = format!(
         "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName 'System.IO.Compression.FileSystem'; \
          $zip = [System.IO.Compression.ZipFile]::OpenRead('{}'); \
          try {{ $zip.Entries | ForEach-Object {{ $_.FullName }} }} finally {{ $zip.Dispose() }}",
         normalize_native_path(source_path)
     );
-    let output = Command::new(windows_powershell_executable())
-        .args(["-NoProfile", "-Command", &command])
-        .output()?;
+    let mut command = Command::new(windows_powershell_executable());
+    configure_hidden_child_process(&mut command);
+    let output = command.args(["-NoProfile", "-Command", &script]).output()?;
 
     if !output.status.success() {
         return Err(FrameworkError::ProcessFailed {
@@ -2328,6 +2337,7 @@ fn list_windows_archive_entries(source_path: &Path) -> Result<Vec<String>> {
         .collect())
 }
 
+#[cfg(not(windows))]
 fn list_unix_archive_entries(source_path: &Path) -> Result<Vec<String>> {
     let output = Command::new("unzip")
         .args(["-Z1", source_path.to_string_lossy().as_ref()])
@@ -2399,15 +2409,26 @@ fn archive_entry_identity(raw_name: &str) -> Option<String> {
     )
 }
 
+#[cfg(windows)]
+fn extract_archive(archive_path: &Path, destination_dir: &Path) -> Result<()> {
+    extract_windows_archive(archive_path, destination_dir)
+}
+
+#[cfg(not(windows))]
+fn extract_archive(archive_path: &Path, destination_dir: &Path) -> Result<()> {
+    extract_unix_archive(archive_path, destination_dir)
+}
+
+#[cfg(windows)]
 fn extract_windows_archive(archive_path: &Path, destination_dir: &Path) -> Result<()> {
-    let command = format!(
+    let script = format!(
         "$ErrorActionPreference = 'Stop'; Expand-Archive -Force -LiteralPath '{}' -DestinationPath '{}'",
         normalize_native_path(archive_path),
         normalize_native_path(destination_dir)
     );
-    let output = Command::new(windows_powershell_executable())
-        .args(["-NoProfile", "-Command", &command])
-        .output()?;
+    let mut command = Command::new(windows_powershell_executable());
+    configure_hidden_child_process(&mut command);
+    let output = command.args(["-NoProfile", "-Command", &script]).output()?;
 
     if !output.status.success() {
         return Err(FrameworkError::ProcessFailed {
@@ -2420,6 +2441,7 @@ fn extract_windows_archive(archive_path: &Path, destination_dir: &Path) -> Resul
     Ok(())
 }
 
+#[cfg(not(windows))]
 fn extract_unix_archive(archive_path: &Path, destination_dir: &Path) -> Result<()> {
     let output = Command::new("unzip")
         .args([
@@ -2590,12 +2612,7 @@ mod tests {
     fn openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
         crate::framework::services::kernel_runtime_authority::KernelRuntimeAuthorityService::new()
             .active_config_file_path("openclaw", paths)
-            .unwrap_or_else(|_| {
-                paths
-                    .kernel_paths("openclaw")
-                    .map(|kernel| kernel.config_file)
-                    .unwrap_or_else(|_| paths.openclaw_config_file.clone())
-            })
+            .expect("canonical openclaw config path")
     }
 
     fn create_archive_runtime(paths: &AppPaths) -> ActivatedOpenClawRuntime {
@@ -2616,11 +2633,11 @@ mod tests {
                 .join("0.4.0-windows-x64")
                 .join("runtime")
                 .join("openclaw.cjs"),
-            home_dir: paths.openclaw_root_dir.clone(),
+            home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
             config_path: openclaw_config_file_path(paths),
-            gateway_port: 18_789,
+            gateway_port: 21_280,
             gateway_auth_token: "mirror-import-test-token".to_string(),
         }
     }
@@ -2776,7 +2793,7 @@ mod tests {
                                 "agentDir": normalize_path(&source_root.join("archived-main-agent").join("agent"))
                             },
                             {
-                                "id": "writer",
+                                "id": "Writer Agent",
                                 "workspace": normalize_path(&source_root.join("archived-writer-workspace")),
                                 "agentDir": normalize_path(&source_root.join("archived-writer-agent").join("agent"))
                             }
@@ -3966,7 +3983,7 @@ mod tests {
 
     fn create_gateway_runtime_cli_script(paths: &AppPaths) -> String {
         format!(
-            "import fs from 'node:fs';\nimport path from 'node:path';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst markerPath = {};\nif (args[0] === 'doctor') {{\n  fs.mkdirSync(path.dirname(markerPath), {{ recursive: true }});\n  fs.writeFileSync(markerPath, JSON.stringify({{ args }}));\n  process.exit(0);\n}}\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 18789);\nif (args[0] === 'gateway' && args[1] === 'health') {{\n  process.stdout.write(JSON.stringify({{ ok: true, result: {{ status: 'ok' }} }}));\n  process.exit(0);\n}}\nif (args[0] !== 'gateway') {{\n  process.stderr.write(`unexpected args: ${{args.join(' ')}}`);\n  process.exit(1);\n}}\nconst expectedAuthorization = `Bearer ${{process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}}`;\nconst server = http.createServer((req, res) => {{\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {{\n    res.writeHead(404, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: false, error: {{ message: 'unexpected path' }} }}));\n    return;\n  }}\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {{\n    res.writeHead(401, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: false, error: {{ message: 'unauthorized' }} }}));\n    return;\n  }}\n  let body = '';\n  req.setEncoding('utf8');\n  req.on('data', (chunk) => {{ body += chunk; }});\n  req.on('end', () => {{\n    const payload = body.trim() ? JSON.parse(body) : {{}};\n    if (payload.tool !== 'cron' || payload.action !== 'status') {{\n      res.writeHead(404, {{ 'content-type': 'application/json' }});\n      res.end(JSON.stringify({{ ok: false, error: {{ message: `unexpected method ${{payload.tool ?? 'missing'}}.${{payload.action ?? 'missing'}}` }} }}));\n      return;\n    }}\n    res.writeHead(200, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: true, result: {{ method: 'cron.status' }} }}));\n  }});\n}});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {{}}, 1000);\n",
+            "import fs from 'node:fs';\nimport path from 'node:path';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst markerPath = {};\nif (args[0] === 'doctor') {{\n  fs.mkdirSync(path.dirname(markerPath), {{ recursive: true }});\n  fs.writeFileSync(markerPath, JSON.stringify({{ args }}));\n  process.exit(0);\n}}\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nif (args[0] === 'gateway' && args[1] === 'health') {{\n  process.stdout.write(JSON.stringify({{ ok: true, result: {{ status: 'ok' }} }}));\n  process.exit(0);\n}}\nif (args[0] !== 'gateway') {{\n  process.stderr.write(`unexpected args: ${{args.join(' ')}}`);\n  process.exit(1);\n}}\nconst expectedAuthorization = `Bearer ${{process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}}`;\nconst server = http.createServer((req, res) => {{\n  if (req.url === '/health' || req.url === '/healthz') {{\n    res.writeHead(200, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: true, status: 'live' }}));\n    return;\n  }}\n  if (req.url === '/ready' || req.url === '/readyz') {{\n    res.writeHead(200, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ready: true, failing: [], uptimeMs: 1 }}));\n    return;\n  }}\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {{\n    res.writeHead(404, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: false, error: {{ message: 'unexpected path' }} }}));\n    return;\n  }}\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {{\n    res.writeHead(401, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: false, error: {{ message: 'unauthorized' }} }}));\n    return;\n  }}\n  let body = '';\n  req.setEncoding('utf8');\n  req.on('data', (chunk) => {{ body += chunk; }});\n  req.on('end', () => {{\n    const payload = body.trim() ? JSON.parse(body) : {{}};\n    if (payload.tool !== 'cron' || payload.action !== 'status') {{\n      res.writeHead(404, {{ 'content-type': 'application/json' }});\n      res.end(JSON.stringify({{ ok: false, error: {{ message: `unexpected method ${{payload.tool ?? 'missing'}}.${{payload.action ?? 'missing'}}` }} }}));\n      return;\n    }}\n    res.writeHead(200, {{ 'content-type': 'application/json' }});\n    res.end(JSON.stringify({{ ok: true, result: {{ method: 'cron.status' }} }}));\n  }});\n}});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {{}}, 1000);\n",
             serde_json::to_string(&doctor_marker_path(paths).to_string_lossy().into_owned())
                 .expect("doctor marker path json"),
         )
@@ -3997,7 +4014,7 @@ mod tests {
             runtime_dir,
             node_path,
             cli_path,
-            home_dir: paths.openclaw_root_dir.clone(),
+            home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
             config_path: openclaw_config_file_path(paths),
@@ -4031,7 +4048,7 @@ mod tests {
             runtime_dir,
             node_path,
             cli_path,
-            home_dir: paths.openclaw_root_dir.clone(),
+            home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
             config_path: openclaw_config_file_path(paths),
@@ -4675,7 +4692,7 @@ mod tests {
             "gemini-2.5-pro",
         );
         let runtime = create_gateway_runtime(&paths, reserve_test_loopback_port());
-        let supervisor = SupervisorService::new();
+        let supervisor = SupervisorService::for_paths(&paths);
         let local_ai_proxy = LocalAiProxyService::new();
         supervisor
             .configure_openclaw_gateway(&runtime)
@@ -4798,9 +4815,11 @@ mod tests {
             restored_openclaw_config["gateway"]["auth"]["token"],
             Value::String(runtime.gateway_auth_token.clone())
         );
-        assert_json_path_value(
-            &restored_openclaw_config["agents"]["defaults"]["workspace"],
-            &paths.openclaw_workspace_dir,
+        assert!(
+            restored_openclaw_config
+                .pointer("/agents/defaults/workspace")
+                .is_none(),
+            "managed restore must not reintroduce agents.defaults.workspace because OpenClaw treats it as a global fallback for non-main agents"
         );
         assert_eq!(
             restored_openclaw_config["models"]["providers"]["sdkwork-local-proxy"]["apiKey"],
@@ -4829,7 +4848,7 @@ mod tests {
         let storage = StorageService::new();
         seed_built_in_openclaw_tree(&paths, "doctor-automation-target-before");
         let runtime = create_gateway_runtime(&paths, reserve_test_loopback_port());
-        let supervisor = SupervisorService::new();
+        let supervisor = SupervisorService::for_paths(&paths);
         let local_ai_proxy = LocalAiProxyService::new();
         supervisor
             .configure_openclaw_gateway(&runtime)
@@ -5163,8 +5182,8 @@ mod tests {
             .expect("main agent");
         let writer_agent = agents_list
             .iter()
-            .find(|entry| entry["id"] == "writer")
-            .expect("writer agent");
+            .find(|entry| entry["id"] == "writer-agent")
+            .expect("canonical writer agent");
 
         assert_eq!(
             restored_openclaw_config["gateway"]["port"],
@@ -5178,9 +5197,11 @@ mod tests {
             restored_openclaw_config["gateway"]["auth"]["token"],
             Value::String(runtime.gateway_auth_token.clone())
         );
-        assert_json_path_value(
-            &restored_openclaw_config["agents"]["defaults"]["workspace"],
-            &paths.openclaw_workspace_dir,
+        assert!(
+            restored_openclaw_config
+                .pointer("/agents/defaults/workspace")
+                .is_none(),
+            "managed restore must not reintroduce agents.defaults.workspace because OpenClaw treats it as a global fallback for non-main agents"
         );
         assert_json_path_value(&main_agent["workspace"], &paths.openclaw_workspace_dir);
         assert_json_path_value(
@@ -5193,14 +5214,14 @@ mod tests {
         );
         assert_json_path_value(
             &writer_agent["workspace"],
-            &paths.openclaw_root_dir.join("workspace-writer"),
+            &paths.openclaw_root_dir.join("workspace-writer-agent"),
         );
         assert_json_path_value(
             &writer_agent["agentDir"],
             &paths
                 .openclaw_root_dir
                 .join("agents")
-                .join("writer")
+                .join("writer-agent")
                 .join("agent"),
         );
 
@@ -5365,6 +5386,44 @@ mod tests {
     }
 
     #[test]
+    fn openclaw_mirror_import_hides_all_background_child_processes() {
+        let production_source = include_str!("openclaw_mirror_import.rs")
+            .split("mod tests {")
+            .next()
+            .expect("production source");
+
+        let doctor_source = production_source
+            .split("fn run_post_import_doctor")
+            .nth(1)
+            .and_then(|tail| tail.split("fn build_safety_snapshot_record").next())
+            .expect("post-import doctor source");
+        assert!(
+            doctor_source.contains("configure_hidden_child_process(&mut command);"),
+            "post-import OpenClaw doctor runs node.exe from the GUI app and must hide child process windows"
+        );
+
+        let archive_listing_source = production_source
+            .split("fn list_windows_archive_entries")
+            .nth(1)
+            .and_then(|tail| tail.split("fn normalize_archive_entry_name").next())
+            .expect("windows archive listing source");
+        assert!(
+            archive_listing_source.contains("configure_hidden_child_process(&mut command);"),
+            "PowerShell ZipArchive listing must use the shared hidden child process policy"
+        );
+
+        let archive_extract_source = production_source
+            .split("fn extract_windows_archive")
+            .nth(1)
+            .and_then(|tail| tail.split("fn extract_unix_archive").next())
+            .expect("windows archive extract source");
+        assert!(
+            archive_extract_source.contains("configure_hidden_child_process(&mut command);"),
+            "PowerShell Expand-Archive must use the shared hidden child process policy"
+        );
+    }
+
+    #[test]
     fn openclaw_mirror_import_can_restart_gateway_when_requested() {
         let root = tempfile::tempdir().expect("temp dir");
         let archive_path = export_fixture_archive(root.path(), "restart-source");
@@ -5375,7 +5434,7 @@ mod tests {
         let storage = StorageService::new();
         let gateway_port = reserve_test_loopback_port();
         let runtime = create_gateway_runtime(&paths, gateway_port);
-        let supervisor = SupervisorService::new();
+        let supervisor = SupervisorService::for_paths(&paths);
         let local_ai_proxy = LocalAiProxyService::new();
         supervisor
             .configure_openclaw_gateway(&runtime)
@@ -5423,7 +5482,7 @@ mod tests {
         let storage = StorageService::new();
         let gateway_port = reserve_test_loopback_port();
         let runtime = create_gateway_runtime(&paths, gateway_port);
-        let supervisor = SupervisorService::new();
+        let supervisor = SupervisorService::for_paths(&paths);
         let local_ai_proxy = LocalAiProxyService::new();
         supervisor
             .configure_openclaw_gateway(&runtime)

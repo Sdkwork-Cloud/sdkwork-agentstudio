@@ -390,6 +390,23 @@ await runTest('web studio does not fabricate OpenAI HTTP endpoints for the built
   );
 });
 
+await runTest('web studio creates the browser fallback built-in OpenClaw instance on the canonical gateway authority', async () => {
+  await withMockedWindowStorage(async () => {
+    const platform = new WebStudioPlatform();
+
+    const instances = await platform.listInstances();
+    const builtIn = instances.find((instance) => instance.id === BUILT_IN_INSTANCE_ID);
+
+    assert.ok(builtIn);
+    assert.equal(builtIn?.port, 21280);
+    assert.equal(builtIn?.baseUrl, 'http://127.0.0.1:21280');
+    assert.equal(builtIn?.websocketUrl, 'ws://127.0.0.1:21280');
+    assert.equal(builtIn?.config.port, '21280');
+    assert.equal(builtIn?.config.baseUrl, 'http://127.0.0.1:21280');
+    assert.equal(builtIn?.config.websocketUrl, 'ws://127.0.0.1:21280');
+  });
+});
+
 await runTest('web studio preserves an explicitly configured OpenClaw responses endpoint without inventing chat completions', async () => {
   const originalWindow = (globalThis as typeof globalThis & { window?: unknown }).window;
   const storage = new Map<string, string>();
@@ -499,14 +516,14 @@ await runTest('web studio strips trusted built-in instance config state from bro
     const platform = new WebStudioPlatform();
 
     await platform.updateInstanceConfig(BUILT_IN_INSTANCE_ID, {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
       corsOrigins: '*',
       workspacePath: 'C:\\kernel\\workspace',
-      baseUrl: 'http://127.0.0.1:18789',
-      websocketUrl: 'ws://127.0.0.1:18789',
+      baseUrl: 'http://127.0.0.1:21280',
+      websocketUrl: 'ws://127.0.0.1:21280',
       authToken: 'root-secret',
     });
 
@@ -531,8 +548,33 @@ await runTest('web studio strips trusted built-in instance config state from bro
     assert.ok(persistedBuiltIn);
     assert.equal(persistedBuiltIn?.config?.workspacePath, undefined);
     assert.equal(persistedBuiltIn?.config?.authToken, undefined);
-    assert.equal(persistedBuiltIn?.config?.baseUrl, 'http://127.0.0.1:18789');
-    assert.equal(persistedBuiltIn?.config?.websocketUrl, 'ws://127.0.0.1:18789');
+    assert.equal(persistedBuiltIn?.config?.baseUrl, 'http://127.0.0.1:21280');
+    assert.equal(persistedBuiltIn?.config?.websocketUrl, 'ws://127.0.0.1:21280');
+  });
+});
+
+await runTest('web studio keeps the built-in OpenClaw gateway authority canonical when config updates carry non-canonical endpoint metadata', async () => {
+  await withMockedWindowStorage(async () => {
+    const platform = new WebStudioPlatform();
+
+    const config = await platform.updateInstanceConfig(BUILT_IN_INSTANCE_ID, {
+      port: '30080',
+      sandbox: true,
+      autoUpdate: true,
+      logLevel: 'debug',
+      corsOrigins: '*',
+      baseUrl: 'http://127.0.0.1:30080',
+      websocketUrl: 'ws://127.0.0.1:30080',
+    });
+    const builtIn = await platform.getInstance(BUILT_IN_INSTANCE_ID);
+
+    assert.equal(config?.port, '21280');
+    assert.equal(config?.baseUrl, 'http://127.0.0.1:21280');
+    assert.equal(config?.websocketUrl, 'ws://127.0.0.1:21280');
+    assert.equal(config?.logLevel, 'debug');
+    assert.equal(builtIn?.port, 21280);
+    assert.equal(builtIn?.baseUrl, 'http://127.0.0.1:21280');
+    assert.equal(builtIn?.websocketUrl, 'ws://127.0.0.1:21280');
   });
 });
 
@@ -612,7 +654,7 @@ await runTest(
   },
 );
 
-await runTest('web studio upgrades the stored built-in OpenClaw instance metadata to the latest bundled version', async () => {
+await runTest('web studio normalizes stored built-in OpenClaw metadata to the canonical authority and latest bundled version', async () => {
   await withMockedWindowStorage(async ({ readJson }) => {
     const storage = (globalThis as typeof globalThis & {
       window: { localStorage: { setItem(key: string, value: string): void; getItem(key: string): string | null } };
@@ -693,12 +735,14 @@ await runTest('web studio upgrades the stored built-in OpenClaw instance metadat
 
     assert.ok(builtIn);
     assert.equal(builtIn?.version, DEFAULT_BUNDLED_OPENCLAW_VERSION);
-    assert.equal(builtIn?.port, 19991);
-    assert.equal(builtIn?.baseUrl, 'http://127.0.0.1:19991');
+    assert.equal(builtIn?.port, 21280);
+    assert.equal(builtIn?.baseUrl, 'http://127.0.0.1:21280');
+    assert.equal(builtIn?.websocketUrl, 'ws://127.0.0.1:21280');
     assert.equal(
       persistedBuiltIn?.version,
       DEFAULT_BUNDLED_OPENCLAW_VERSION,
     );
+    assert.equal(persistedBuiltIn?.config?.port, '21280');
     assert.equal(persistedBuiltIn?.config?.workspacePath, undefined);
     assert.equal(persistedBuiltIn?.config?.authToken, undefined);
   });
@@ -775,7 +819,9 @@ await runTest(
       assert.equal(instances[0]?.id, BUILT_IN_INSTANCE_ID);
       assert.equal(instances[0]?.name, 'Built-In OpenClaw Primary');
       assert.equal(instances[0]?.version, DEFAULT_BUNDLED_OPENCLAW_VERSION);
-      assert.equal(instances[0]?.port, 18871);
+      assert.equal(instances[0]?.port, 21280);
+      assert.equal(instances[0]?.baseUrl, 'http://127.0.0.1:21280');
+      assert.equal(instances[0]?.websocketUrl, 'ws://127.0.0.1:21280');
       assert.equal(
         instances.some((instance) => instance.id === 'unexpected-bundled-openclaw-id'),
         false,
@@ -787,6 +833,7 @@ await runTest(
         persistedDocument?.instances?.[0]?.version,
         DEFAULT_BUNDLED_OPENCLAW_VERSION,
       );
+      assert.equal(persistedDocument?.instances?.[0]?.config?.port, '21280');
     });
   },
 );

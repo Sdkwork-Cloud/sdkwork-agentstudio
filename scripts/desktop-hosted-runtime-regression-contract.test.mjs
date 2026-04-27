@@ -69,9 +69,15 @@ assert.doesNotMatch(
   /embedded_host_bootstrap_exposes_canonical_server_route_families -- --exact/,
   'desktop embedded host canonical route regressions must not use cargo --exact filtering that skips the target test path',
 );
-assert.match(
-  tauriBridgeSource,
-  /const DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_TIMEOUT_MS = (1[5-9]\d{3}|[2-9]\d{4,});/,
+const retryTimeoutMatch = tauriBridgeSource.match(
+  /const DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_TIMEOUT_MS = ([\d_]+);/,
+);
+assert.ok(
+  retryTimeoutMatch,
+  'desktop hosted runtime readiness retry timeout must stay declared as a numeric constant',
+);
+assert.ok(
+  Number(retryTimeoutMatch[1].replaceAll('_', '')) >= 15_000,
   'desktop packaged runtime readiness must tolerate 9s-class bundled OpenClaw startup before surfacing a background failure',
 );
 

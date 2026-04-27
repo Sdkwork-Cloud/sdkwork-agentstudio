@@ -1,4 +1,5 @@
 import type { Agent, Skill } from '@sdkwork/claw-types';
+import { resolveChatAgentDisplayIdentity } from '../services';
 
 export interface ChatContextOption {
   id: string | null;
@@ -7,8 +8,12 @@ export interface ChatContextOption {
   avatarLabel: string | null;
 }
 
+type ChatAgentOptionSource = Agent & {
+  kernelLabel?: string | null;
+};
+
 export function buildChatAgentOptions(params: {
-  agents: Agent[];
+  agents: ChatAgentOptionSource[];
   defaultLabel: string;
   defaultDescription: string;
 }) {
@@ -19,12 +24,21 @@ export function buildChatAgentOptions(params: {
       description: params.defaultDescription,
       avatarLabel: null,
     },
-    ...params.agents.map((agent) => ({
-      id: agent.id,
-      name: agent.name,
-      description: agent.description ?? '',
-      avatarLabel: agent.avatar || agent.name.slice(0, 2).toUpperCase(),
-    })),
+    ...params.agents.map((agent) => {
+      const identity = resolveChatAgentDisplayIdentity({
+        agentId: agent.id,
+        agentLabel: agent.name,
+        avatarLabel: agent.avatar,
+        kernelLabel: agent.kernelLabel,
+      });
+
+      return {
+        id: agent.id,
+        name: identity.name,
+        description: agent.description ?? '',
+        avatarLabel: identity.avatarLabel,
+      };
+    }),
   ] satisfies ChatContextOption[];
 }
 

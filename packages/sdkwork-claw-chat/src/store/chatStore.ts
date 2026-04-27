@@ -18,11 +18,16 @@ import {
   hasRenderableChatMessagePayload,
   hydrateLocalChatKernelProjection,
   isGatewayAuthoritativeRouteMode,
+  isPreviewBackedChatSessionTitle,
+  isReadableChatSessionTitle,
+  normalizeChatSessionTitle,
+  normalizeChatMessageTextEncoding,
   orderChatMessagesForDisplay,
   openClawGatewayHistoryConfigService,
   resolveLatestChatMessageForDisplay,
   resolveLatestChatMessageTimestamp,
   sanitizeChatSessionPreviewText,
+  type ChatSessionTitleSource,
   type KernelChatAdapter,
   type KernelChatAdapterCapabilities,
   type KernelChatNoticePresentation,
@@ -76,6 +81,7 @@ export interface Message {
 export interface ChatSession {
   id: string;
   title: string;
+  titleSource?: ChatSessionTitleSource;
   createdAt: number;
   updatedAt: number;
   lastSeenAt?: number | null;
@@ -128,13 +134,29 @@ export interface ChatState {
       agentLabel?: string | null;
     },
   ) => Promise<string | null>;
-  deleteSession: (id: string, instanceId?: string) => Promise<void>;
-  setActiveSession: (id: string | null, instanceId?: string) => Promise<void>;
-  addMessage: (sessionId: string, message: Omit<Message, 'id' | 'timestamp'>) => void;
-  updateMessage: (sessionId: string, messageId: string, content: string) => void;
-  removeMessages: (sessionId: string, messageIds: string[]) => void;
-  clearSession: (id: string, instanceId?: string) => Promise<void>;
-  flushSession: (id: string) => Promise<void>;
+  deleteSession: (id: string, instanceId?: string | null) => Promise<void>;
+  setActiveSession: (id: string | null, instanceId?: string | null) => Promise<void>;
+  addMessage: (
+    sessionId: string,
+    message: Omit<Message, 'id' | 'timestamp'>,
+    instanceId?: string | null,
+  ) => void;
+  updateMessage: (
+    sessionId: string,
+    messageId: string,
+    content: string,
+    instanceId?: string | null,
+    options?: {
+      persist?: boolean;
+    },
+  ) => void;
+  removeMessages: (
+    sessionId: string,
+    messageIds: string[],
+    instanceId?: string | null,
+  ) => void;
+  clearSession: (id: string, instanceId?: string | null) => Promise<void>;
+  flushSession: (id: string, instanceId?: string | null) => Promise<void>;
   setKernelSessionModel: (params: {
     instanceId: string;
     sessionId: string;
@@ -183,6 +205,32 @@ function createId(prefix: string) {
 
 function getScopeKey(instanceId: string | null | undefined) {
   return instanceId ?? DIRECT_SCOPE_KEY;
+}
+
+function isChatSessionOperationTarget(
+  session: Pick<ChatSession, 'id' | 'instanceId'>,
+  sessionId: string,
+  instanceId?: string | null,
+) {
+  if (session.id !== sessionId) {
+    return false;
+  }
+
+  if (instanceId === undefined) {
+    return true;
+  }
+
+  return (session.instanceId ?? null) === instanceId;
+}
+
+function findChatSessionByOperationScope(
+  sessions: ChatSession[],
+  sessionId: string,
+  instanceId?: string | null,
+) {
+  return sessions.find((session) =>
+    isChatSessionOperationTarget(session, sessionId, instanceId),
+  ) ?? null;
 }
 
 function getDirectConversationStoreInstanceId(): string {
@@ -302,9 +350,103 @@ function cloneAttachments(
   return attachments?.map((attachment) => ({ ...attachment }));
 }
 
+function deriveFirstUserChatSessionTitle(messages: Message[] | undefined) {
+  const firstUserMessage = normalizeMessages(messages)
+    .map((message) => resolveKernelChatMessageState(message))
+    .find((message) => message.role === 'user');
+  if (!firstUserMessage) {
+    return null;
+  }
+
+  const title = resolveInitialChatSessionTitle({
+    existingTitle: DEFAULT_TITLE,
+    text: firstUserMessage.content,
+    attachments: firstUserMessage.attachments,
+    isFirstUserMessage: true,
+  });
+
+  return title && title !== DEFAULT_TITLE ? title : null;
+}
+
+function shouldPreserveExistingSessionTitle(session: ChatSession | null | undefined) {
+  return (
+    (session?.titleSource === 'firstUser' || session?.titleSource === 'explicit') &&
+    isReadableChatSessionTitle(session.title)
+  );
+}
+
+function resolveProjectedChatSessionTitleState(params: {
+  title: string | null | undefined;
+  titleSource?: ChatSessionTitleSource;
+  lastMessagePreview?: string | null;
+  messages?: Message[];
+  existingSession?: ChatSession | null;
+}): { title: string; titleSource: ChatSessionTitleSource } {
+  if (shouldPreserveExistingSessionTitle(params.existingSession)) {
+    return {
+      title: normalizeChatSessionTitle(params.existingSession!.title),
+      titleSource: params.existingSession!.titleSource!,
+    };
+  }
+
+  const explicitTitle = normalizeChatSessionTitle(params.title);
+  const isLegacyPreviewBackedTitle = isPreviewBackedChatSessionTitle({
+    title: explicitTitle,
+    titleSource: params.titleSource,
+    lastMessagePreview: params.lastMessagePreview,
+    messages: params.messages,
+  });
+  if (isReadableChatSessionTitle(explicitTitle) && !isLegacyPreviewBackedTitle) {
+    return {
+      title: explicitTitle,
+      titleSource: 'explicit',
+    };
+  }
+
+  const firstUserTitle = deriveFirstUserChatSessionTitle(params.messages);
+  if (firstUserTitle) {
+    return {
+      title: firstUserTitle,
+      titleSource: 'firstUser',
+    };
+  }
+
+  return {
+    title: DEFAULT_TITLE,
+    titleSource: 'default',
+  };
+}
+
 function normalizeSession(session: ChatSession): ChatSession {
+  const normalizedMessages = normalizeMessages(session.messages);
+  const titleMatchesLegacyPreview = isPreviewBackedChatSessionTitle({
+    title: session.title,
+    titleSource: session.titleSource,
+    lastMessagePreview: session.lastMessagePreview,
+    messages: normalizedMessages,
+  });
+  const shouldRepairTitle =
+    titleMatchesLegacyPreview ||
+    !isReadableChatSessionTitle(session.title) ||
+    session.titleSource === 'default' ||
+    session.titleSource === 'firstUser';
+  const titleState = shouldRepairTitle
+    ? resolveProjectedChatSessionTitleState({
+        title: session.title,
+        titleSource: session.titleSource,
+        lastMessagePreview: session.lastMessagePreview,
+        messages: normalizedMessages,
+        existingSession: session,
+      })
+    : null;
   const normalizedSession = {
     ...session,
+    ...(titleState
+      ? {
+          title: titleState.title,
+          titleSource: titleState.titleSource,
+        }
+      : {}),
     transport:
       session.transport ??
       (session.instanceId && session.kernelSession?.authority.kind !== 'localProjection'
@@ -317,7 +459,7 @@ function normalizeSession(session: ChatSession): ChatSession {
         session.kernelSession?.ref?.kernelId ??
         (session.transport === 'openclawGateway' ? 'openclaw' : undefined),
     }),
-    messages: normalizeMessages(session.messages),
+    messages: normalizedMessages,
     kernelRuns: normalizeKernelRuns(session.kernelRuns),
   };
 
@@ -410,8 +552,13 @@ async function persistStudioConversationSession(params: {
     replace?: false,
   ) => void;
   sessionId: string;
+  instanceId?: string | null;
 }) {
-  const session = params.get().sessions.find((candidate) => candidate.id === params.sessionId) ?? null;
+  const session = findChatSessionByOperationScope(
+    params.get().sessions,
+    params.sessionId,
+    params.instanceId,
+  );
   if (!isStudioConversationPersistableSession(session)) {
     return;
   }
@@ -726,7 +873,7 @@ async function resolveInstanceRouteMode(instanceId: string | null | undefined) {
   };
 }
 
-const openClawGatewaySessions = new OpenClawGatewaySessionStore({
+export const openClawGatewaySessions = new OpenClawGatewaySessionStore({
   getClient: getSharedOpenClawGatewayClient,
   createSessionKey(_instanceId, agentId) {
     return buildOpenClawThreadSessionKey(agentId, `claw-studio:${createId('session')}`);
@@ -1092,14 +1239,23 @@ function buildChatSessionFromKernelSession(input: {
     input.kernelSession.lastMessagePreview === undefined
       ? existingSession?.lastMessagePreview ?? undefined
       : input.kernelSession.lastMessagePreview ?? undefined;
+  const messages = existingSession?.messages ?? [];
+  const titleState = resolveProjectedChatSessionTitleState({
+    title: input.kernelSession.title,
+    titleSource: existingSession?.titleSource,
+    lastMessagePreview,
+    messages,
+    existingSession,
+  });
 
   return normalizeSession({
     id: input.kernelSession.ref.sessionId,
-    title: input.kernelSession.title,
+    title: titleState.title,
+    titleSource: titleState.titleSource,
     createdAt: input.kernelSession.createdAt,
     updatedAt: input.kernelSession.updatedAt,
     lastSeenAt: existingSession?.lastSeenAt ?? null,
-    messages: existingSession?.messages ?? [],
+    messages,
     model: modelBinding?.model ?? existingSession?.model ?? DEFAULT_MODEL,
     defaultModel: modelBinding?.defaultModel ?? existingSession?.defaultModel ?? null,
     instanceId: input.instanceId,
@@ -1124,10 +1280,60 @@ function buildChatSessionFromKernelSession(input: {
       input.kernelSession.actorBinding?.label ??
       existingSession?.agentLabel ??
       null,
-    kernelSession: input.kernelSession,
+    kernelSession: {
+      ...input.kernelSession,
+      title: titleState.title,
+    },
     kernelRuns: normalizeKernelRuns(input.kernelRuns) ?? existingSession?.kernelRuns ?? null,
     transport: 'kernelAdapter',
   });
+}
+
+function normalizeKernelMessageFallbackIdPart(value: string | null | undefined) {
+  const normalized = value?.trim();
+  return normalized || null;
+}
+
+function hashKernelMessageFallbackContent(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return (hash >>> 0).toString(36);
+}
+
+function resolveProjectedKernelMessageFallbackId(
+  resolved: ReturnType<typeof resolveKernelChatMessageState>,
+  index: number,
+) {
+  const sessionId = normalizeKernelMessageFallbackIdPart(
+    resolved.nativeSessionId ?? resolved.sessionId,
+  );
+  const runId = normalizeKernelMessageFallbackIdPart(resolved.runId);
+  const sequence =
+    typeof resolved.seq === 'number' && Number.isFinite(resolved.seq)
+      ? `seq:${resolved.seq}`
+      : null;
+  const timestampValue =
+    typeof resolved.timestamp === 'number' && Number.isFinite(resolved.timestamp)
+      ? resolved.timestamp
+      : null;
+  const hasStableKernelMetadata = Boolean(sequence || runId || timestampValue !== null);
+
+  return [
+    'kernel-message',
+    sessionId ? `session:${sessionId}` : null,
+    `role:${resolved.role}`,
+    sequence,
+    runId ? `run:${runId}` : null,
+    timestampValue !== null ? `ts:${timestampValue}` : null,
+    `content:${hashKernelMessageFallbackContent(resolved.content)}`,
+    hasStableKernelMetadata ? null : `idx:${index}`,
+  ]
+    .filter((part): part is string => Boolean(part))
+    .join(':');
 }
 
 function buildChatMessagesFromKernelMessages(
@@ -1135,13 +1341,13 @@ function buildChatMessagesFromKernelMessages(
 ): Message[] {
   const messages: Message[] = [];
 
-  for (const kernelMessage of kernelMessages) {
+  for (const [index, kernelMessage] of kernelMessages.entries()) {
     const resolved = resolveKernelChatMessageState({
       kernelMessage,
     });
 
     const message: Message = {
-      id: resolved.id ?? createId('msg'),
+      id: resolved.id ?? resolveProjectedKernelMessageFallbackId(resolved, index),
       role: resolved.role,
       content: resolved.content,
       timestamp: resolved.timestamp,
@@ -1170,6 +1376,7 @@ function applyAuthoritativeKernelSessionMessages(input: {
   kernelSession?: KernelChatSession | null;
   kernelMessages: KernelChatMessage[];
   kernelRuns?: KernelChatRun[] | null;
+  preserveSessionUpdatedAt?: boolean;
 }) {
   const hydratedMessages = buildChatMessagesFromKernelMessages(input.kernelMessages);
   const latestVisibleMessage = resolveLatestChatMessageForDisplay(hydratedMessages);
@@ -1177,41 +1384,57 @@ function applyAuthoritativeKernelSessionMessages(input: {
   const latestMessageTimestamp = resolveLatestChatMessageTimestamp(hydratedMessages);
   const authoritativeLastMessagePreview = latestMessagePreview ?? null;
   const existingKernelSession = input.existingSession.kernelSession ?? null;
+  const projectedUpdatedAt = input.preserveSessionUpdatedAt
+    ? input.existingSession.updatedAt
+    : latestMessageTimestamp ?? input.existingSession.updatedAt;
   const kernelSession =
     input.kernelSession ??
     (existingKernelSession
         ? {
           ...existingKernelSession,
           messageCount: hydratedMessages.length,
-          updatedAt: latestMessageTimestamp ?? existingKernelSession.updatedAt,
+          updatedAt: input.preserveSessionUpdatedAt
+            ? existingKernelSession.updatedAt
+            : latestMessageTimestamp ?? existingKernelSession.updatedAt,
           lastMessagePreview: authoritativeLastMessagePreview,
         }
       : null);
 
   if (!kernelSession) {
+    const titleState = resolveProjectedChatSessionTitleState({
+      title: input.existingSession.title,
+      titleSource: input.existingSession.titleSource,
+      lastMessagePreview: authoritativeLastMessagePreview,
+      messages: hydratedMessages,
+      existingSession: input.existingSession,
+    });
     return normalizeSession({
       ...input.existingSession,
+      title: titleState.title,
+      titleSource: titleState.titleSource,
       messages: hydratedMessages,
-      updatedAt: latestMessageTimestamp ?? input.existingSession.updatedAt,
+      updatedAt: projectedUpdatedAt,
       lastMessagePreview: authoritativeLastMessagePreview ?? undefined,
       kernelRuns: normalizeKernelRuns(input.kernelRuns) ?? input.existingSession.kernelRuns ?? null,
       historyState: 'ready',
     });
   }
 
-  return normalizeSession(
+  const projectedSession = normalizeSession(
     buildChatSessionFromKernelSession({
       instanceId: input.instanceId,
       kernelSession: {
         ...kernelSession,
         messageCount: Math.max(kernelSession.messageCount, hydratedMessages.length),
-        updatedAt: latestMessageTimestamp ?? kernelSession.updatedAt,
+        updatedAt: input.preserveSessionUpdatedAt
+          ? input.existingSession.kernelSession?.updatedAt ?? kernelSession.updatedAt
+          : latestMessageTimestamp ?? kernelSession.updatedAt,
         lastMessagePreview: authoritativeLastMessagePreview,
       },
       existingSession: {
         ...input.existingSession,
         messages: hydratedMessages,
-        updatedAt: latestMessageTimestamp ?? input.existingSession.updatedAt,
+        updatedAt: projectedUpdatedAt,
         lastMessagePreview: authoritativeLastMessagePreview ?? undefined,
         kernelRuns:
           normalizeKernelRuns(input.kernelRuns) ?? input.existingSession.kernelRuns ?? null,
@@ -1220,6 +1443,23 @@ function applyAuthoritativeKernelSessionMessages(input: {
       kernelRuns: input.kernelRuns,
     }),
   );
+
+  if (!input.preserveSessionUpdatedAt) {
+    return projectedSession;
+  }
+
+  return normalizeSession({
+    ...projectedSession,
+    updatedAt: input.existingSession.updatedAt,
+    kernelSession: projectedSession.kernelSession
+      ? {
+          ...projectedSession.kernelSession,
+          updatedAt:
+            input.existingSession.kernelSession?.updatedAt ??
+            projectedSession.kernelSession.updatedAt,
+        }
+      : projectedSession.kernelSession,
+  });
 }
 
 async function loadAuthoritativeKernelSessionProjection(params: {
@@ -1243,6 +1483,53 @@ async function loadAuthoritativeKernelSessionProjection(params: {
   };
 }
 
+async function persistDerivedAuthoritativeKernelSessionTitle(params: {
+  get: ChatStoreStateGetter;
+  instanceId: string;
+  sessionId: string;
+  adapterResolution: NonNullable<Awaited<ReturnType<typeof resolveInstanceChatContext>>['adapterResolution']>;
+  originalTitle?: string | null;
+}) {
+  if (
+    !params.adapterResolution.adapter.patchSession ||
+    !params.adapterResolution.capabilities.supported
+  ) {
+    return;
+  }
+
+  const session = params.get().sessions.find(
+    (candidate) =>
+      candidate.id === params.sessionId &&
+      candidate.instanceId === params.instanceId,
+  );
+  if (
+    !session ||
+    session.transport !== 'kernelAdapter' ||
+    session.titleSource !== 'firstUser'
+  ) {
+    return;
+  }
+
+  const title = normalizeChatSessionTitle(session.title);
+  if (!title || title === DEFAULT_TITLE) {
+    return;
+  }
+
+  if (normalizeChatSessionTitle(params.originalTitle) === title) {
+    return;
+  }
+
+  try {
+    await params.adapterResolution.adapter.patchSession({
+      instanceId: params.instanceId,
+      sessionId: params.sessionId,
+      title,
+    });
+  } catch (error) {
+    console.error('Failed to persist derived kernel chat session title:', error);
+  }
+}
+
 function applyAuthoritativeKernelSessionProjectionState(
   state: ChatState,
   input: {
@@ -1254,6 +1541,7 @@ function applyAuthoritativeKernelSessionProjectionState(
     syncState?: SyncState;
     lastError?: string | undefined;
     preferredActiveSessionId?: string | null;
+    preserveSessionUpdatedAt?: boolean;
   },
 ) {
   const existingSession = state.sessions.find(
@@ -1272,6 +1560,7 @@ function applyAuthoritativeKernelSessionProjectionState(
               kernelSession: input.kernelSession,
               kernelMessages: input.kernelMessages,
               kernelRuns: input.kernelRuns,
+              preserveSessionUpdatedAt: input.preserveSessionUpdatedAt,
             })
           : normalizeSession(session),
       ),
@@ -1287,6 +1576,7 @@ function applyAuthoritativeKernelSessionProjectionState(
       kernelSession: input.kernelSession,
       kernelMessages: input.kernelMessages,
       kernelRuns: input.kernelRuns,
+      preserveSessionUpdatedAt: input.preserveSessionUpdatedAt,
     });
     nextSessions = sortSessions([
       projectedSession,
@@ -1742,6 +2032,7 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
           get,
           set,
           sessionId: session.id,
+          instanceId: session.instanceId ?? null,
         });
       }
 
@@ -1753,6 +2044,7 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
     const session: ChatSession = normalizeSession({
       id: createSessionId(instanceId),
       title: DEFAULT_TITLE,
+      titleSource: 'default',
       createdAt: timestamp,
       updatedAt: timestamp,
       lastSeenAt: timestamp,
@@ -1796,6 +2088,7 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
       get,
       set,
       sessionId: session.id,
+      instanceId: session.instanceId ?? null,
     });
 
     return session.id;
@@ -1844,8 +2137,14 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
     });
   },
   async deleteSession(id, instanceId) {
-    const session = get().sessions.find((item) => item.id === id);
-    const resolvedInstanceId = instanceId ?? session?.instanceId;
+    const session = findChatSessionByOperationScope(get().sessions, id, instanceId);
+    if (!session) {
+      return;
+    }
+
+    const resolvedInstanceId =
+      instanceId === undefined ? session.instanceId : instanceId;
+    const operationInstanceId = resolvedInstanceId ?? null;
     const scopeKey = getScopeKey(resolvedInstanceId);
 
     if (isGatewayAuthoritativeStoredSession(session) && resolvedInstanceId) {
@@ -1938,7 +2237,9 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
           );
         }
         set((state) => {
-          const nextSessions = state.sessions.filter((item) => item.id !== id);
+          const nextSessions = state.sessions.filter(
+            (item) => !isChatSessionOperationTarget(item, id, operationInstanceId),
+          );
           const nextAdapterSessions = listScopeAdapterSessions(nextSessions, resolvedInstanceId);
           return applyAdapterInstanceScopeState(state, resolvedInstanceId, {
             baseSessions: nextSessions,
@@ -1949,20 +2250,22 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
           void deleteStudioConversationSession({
             set,
             sessionId: id,
-            instanceId: resolvedInstanceId,
+            instanceId: operationInstanceId,
           });
         }
         clearDeletedChatSessionPreferences({
           sessionId: id,
-          instanceId: resolvedInstanceId,
+          instanceId: operationInstanceId,
         });
         return;
       }
     }
 
     set((state) => {
-      const nextSessions = state.sessions.filter((item) => item.id !== id);
-      const nextScopeSessions = listScopeSessions(nextSessions, resolvedInstanceId);
+      const nextSessions = state.sessions.filter(
+        (item) => !isChatSessionOperationTarget(item, id, operationInstanceId),
+      );
+      const nextScopeSessions = listScopeSessions(nextSessions, operationInstanceId);
       const currentActiveSessionId = state.activeSessionIdByInstance[scopeKey] ?? null;
 
       return {
@@ -1979,18 +2282,20 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
       void deleteStudioConversationSession({
         set,
         sessionId: id,
-        instanceId: resolvedInstanceId,
+        instanceId: operationInstanceId,
       });
     }
 
     clearDeletedChatSessionPreferences({
       sessionId: id,
-      instanceId: resolvedInstanceId,
+      instanceId: operationInstanceId,
     });
   },
   async setActiveSession(id, instanceId) {
     const resolvedInstanceId =
-      instanceId ?? get().sessions.find((session) => session.id === id)?.instanceId ?? null;
+      instanceId === undefined
+        ? get().sessions.find((session) => session.id === id)?.instanceId ?? null
+        : instanceId;
     if (resolvedInstanceId) {
       const selectionToken = createLatestOperationToken(
         activeSessionSelectionRevisionByInstance,
@@ -2070,6 +2375,7 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
               kernelSession: authoritativeProjection.kernelSession,
               kernelMessages: authoritativeProjection.kernelMessages,
               kernelRuns: authoritativeProjection.kernelRuns,
+              preserveSessionUpdatedAt: true,
               preferredActiveSessionId: isLatestSelection
                 ? id
                 : state.activeSessionIdByInstance[scopeKey] ?? null,
@@ -2086,6 +2392,14 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
               get,
               set,
               sessionId: id,
+              instanceId: resolvedInstanceId,
+            });
+            void persistDerivedAuthoritativeKernelSessionTitle({
+              get,
+              instanceId: resolvedInstanceId,
+              sessionId: id,
+              adapterResolution: resolvedContext.adapterResolution,
+              originalTitle: authoritativeProjection.kernelSession?.title,
             });
           }
           return;
@@ -2129,6 +2443,7 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
           get,
           set,
           sessionId: id,
+          instanceId: resolvedInstanceId,
         });
       }
       return;
@@ -2146,16 +2461,17 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
         get,
         set,
         sessionId: id,
+        instanceId: null,
       });
     }
   },
-  addMessage(sessionId, message) {
+  addMessage(sessionId, message, instanceId) {
     let nextSession: ChatSession | undefined;
 
     set((state) => {
       const timestamp = Date.now();
       const sessions = state.sessions.map((session) => {
-        if (session.id !== sessionId) {
+        if (!isChatSessionOperationTarget(session, sessionId, instanceId)) {
           return normalizeSession(session);
         }
 
@@ -2164,25 +2480,36 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
         }
 
         const currentMessages = normalizeMessages(session.messages);
+        const normalizedContent = normalizeChatMessageTextEncoding(message.content);
         const nextMessage: Message = {
           ...message,
+          content: normalizedContent,
           id: createId('msg'),
           timestamp,
           attachments: cloneAttachments(message.attachments),
         };
+        const isFirstUserMessage =
+          currentMessages.length === 0 && message.role === 'user';
         const nextTitle =
-          currentMessages.length === 0 && message.role === 'user'
+          isFirstUserMessage
             ? resolveInitialChatSessionTitle({
                 existingTitle: session.title,
-                text: message.content,
+                text: normalizedContent,
                 attachments: message.attachments ?? [],
                 isFirstUserMessage: true,
               })
             : session.title;
+        const nextTitleSource: ChatSessionTitleSource | undefined =
+          isFirstUserMessage
+            ? isReadableChatSessionTitle(session.title)
+              ? session.titleSource ?? 'explicit'
+              : 'firstUser'
+            : session.titleSource;
 
         nextSession = {
           ...normalizeSession(session),
           title: nextTitle,
+          ...(nextTitleSource ? { titleSource: nextTitleSource } : {}),
           updatedAt: timestamp,
           messages: [...currentMessages, nextMessage],
         };
@@ -2221,24 +2548,42 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
       get,
       set,
       sessionId,
+      instanceId: nextSession.instanceId ?? null,
     });
   },
-  updateMessage(sessionId, messageId, content) {
-    let updatedDirectSession = false;
+  updateMessage(sessionId, messageId, content, instanceId, options) {
+    let updatedSessionInstanceId: string | null | undefined;
 
     set((state) => {
       const timestamp = Date.now();
+      const normalizedContent = normalizeChatMessageTextEncoding(content);
       let updatedInstanceId: string | null | undefined;
       const sessions = state.sessions.map((session) => {
-        if (session.id === sessionId && !isGatewayAuthoritativeStoredSession(session)) {
+        if (
+          isChatSessionOperationTarget(session, sessionId, instanceId) &&
+          !isGatewayAuthoritativeStoredSession(session)
+        ) {
+          const currentMessages = normalizeMessages(session.messages);
+          let didUpdateMessage = false;
+          const nextMessages = currentMessages.map((message) => {
+            if (message.id !== messageId) {
+              return message;
+            }
+
+            didUpdateMessage = true;
+            return { ...message, content: normalizedContent, timestamp };
+          });
+
+          if (!didUpdateMessage) {
+            return normalizeSession(session);
+          }
+
           updatedInstanceId = session.instanceId;
-          updatedDirectSession = !session.instanceId;
+          updatedSessionInstanceId = session.instanceId ?? null;
           const nextSession = {
             ...normalizeSession(session),
             updatedAt: timestamp,
-            messages: normalizeMessages(session.messages).map((message) =>
-              message.id === messageId ? { ...message, content, timestamp } : message,
-            ),
+            messages: nextMessages,
           } as ChatSession;
           return state.activeSessionIdByInstance[getScopeKey(session.instanceId)] === sessionId
             ? markChatSessionSeen(nextSession)
@@ -2267,26 +2612,30 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
       };
     });
 
-    if (updatedDirectSession || get().sessions.some((session) => session.id === sessionId)) {
+    if (options?.persist !== false && updatedSessionInstanceId !== undefined) {
       void persistStudioConversationSession({
         get,
         set,
         sessionId,
+        instanceId: instanceId ?? updatedSessionInstanceId,
       });
     }
   },
-  removeMessages(sessionId, messageIds) {
+  removeMessages(sessionId, messageIds, instanceId) {
     if (messageIds.length === 0) {
       return;
     }
 
     const removedMessageIds = new Set(messageIds);
-    let updatedDirectSession = false;
+    let updatedSessionInstanceId: string | null | undefined;
     set((state) => {
       const timestamp = Date.now();
       let updatedInstanceId: string | null | undefined;
       const sessions = state.sessions.map((session) => {
-        if (session.id !== sessionId || isGatewayAuthoritativeStoredSession(session)) {
+        if (
+          !isChatSessionOperationTarget(session, sessionId, instanceId) ||
+          isGatewayAuthoritativeStoredSession(session)
+        ) {
           return normalizeSession(session);
         }
 
@@ -2297,10 +2646,11 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
         }
 
         updatedInstanceId = session.instanceId;
-        updatedDirectSession = !session.instanceId;
+        updatedSessionInstanceId = session.instanceId ?? null;
         const nextSession = {
           ...session,
           title: nextMessages.length === 0 ? DEFAULT_TITLE : session.title,
+          titleSource: nextMessages.length === 0 ? 'default' : session.titleSource,
           updatedAt: timestamp,
           messages: nextMessages,
         } satisfies ChatSession;
@@ -2328,17 +2678,24 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
       };
     });
 
-    if (updatedDirectSession || get().sessions.some((session) => session.id === sessionId)) {
+    if (updatedSessionInstanceId !== undefined) {
       void persistStudioConversationSession({
         get,
         set,
         sessionId,
+        instanceId: instanceId ?? updatedSessionInstanceId,
       });
     }
   },
   async clearSession(id, instanceId) {
-    const session = get().sessions.find((item) => item.id === id);
-    const resolvedInstanceId = instanceId ?? session?.instanceId;
+    const session = findChatSessionByOperationScope(get().sessions, id, instanceId);
+    if (!session) {
+      return;
+    }
+
+    const resolvedInstanceId =
+      instanceId === undefined ? session.instanceId : instanceId;
+    const operationInstanceId = resolvedInstanceId ?? null;
     if (isGatewayAuthoritativeStoredSession(session) && resolvedInstanceId) {
       const resolvedContext = await resolveInstanceChatContext(resolvedInstanceId);
       const routeMode = resolvedContext.mode;
@@ -2386,7 +2743,7 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
 
     set((state) => {
       const nextSessions = state.sessions.map((currentSession) => {
-        if (currentSession.id !== id) {
+        if (!isChatSessionOperationTarget(currentSession, id, operationInstanceId)) {
           return normalizeSession(currentSession);
         }
 
@@ -2428,10 +2785,11 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
       get,
       set,
       sessionId: cleared.id,
+      instanceId: cleared.instanceId ?? null,
     });
   },
-  async flushSession(id) {
-    const session = get().sessions.find((item) => item.id === id);
+  async flushSession(id, instanceId) {
+    const session = findChatSessionByOperationScope(get().sessions, id, instanceId);
     if (!session || isGatewayAuthoritativeStoredSession(session)) {
       return;
     }
@@ -2443,6 +2801,7 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
         get,
         set,
         sessionId: id,
+        instanceId: session.instanceId ?? null,
       });
       if (!session.instanceId || shouldUseStudioConversationFallbackStore(get().instanceChatAdapterCapabilitiesById[session.instanceId] ?? null)) {
         return;
@@ -2561,6 +2920,13 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
             syncState: 'idle',
             lastError: undefined,
           });
+        });
+        void persistDerivedAuthoritativeKernelSessionTitle({
+          get,
+          instanceId: sessionInstanceId,
+          sessionId: session.id,
+          adapterResolution: resolvedContext.adapterResolution,
+          originalTitle: authoritativeProjection.kernelSession?.title,
         });
         return;
       }
@@ -2776,6 +3142,7 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
         get,
         set,
         sessionId: params.sessionId,
+        instanceId: params.instanceId,
       });
       throw new Error(nextError);
     }
@@ -2823,6 +3190,13 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
           lastError: undefined,
         }),
       );
+      void persistDerivedAuthoritativeKernelSessionTitle({
+        get,
+        instanceId: params.instanceId,
+        sessionId: params.sessionId,
+        adapterResolution: resolvedContext.adapterResolution,
+        originalTitle: authoritativeProjection.kernelSession?.title,
+      });
 
       return {
         runId: kernelRun.id,
@@ -2851,6 +3225,7 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
         get,
         set,
         sessionId: params.sessionId,
+        instanceId: params.instanceId,
       });
       throw error;
     }
@@ -2944,6 +3319,13 @@ export const chatStore = createSimpleStore<ChatState>((set, get) => ({
             lastError: undefined,
           }),
         );
+        void persistDerivedAuthoritativeKernelSessionTitle({
+          get,
+          instanceId: params.instanceId,
+          sessionId: params.sessionId,
+          adapterResolution: resolvedContext.adapterResolution,
+          originalTitle: authoritativeProjection.kernelSession?.title,
+        });
       }
 
       return true;

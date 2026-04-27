@@ -8,8 +8,16 @@ use crate::framework::{
     services::{studio::StudioInstanceStatus, FrameworkServices},
     FrameworkError, Result,
 };
-use std::{fmt::Debug, sync::Arc};
+use std::{
+    fmt::Debug,
+    sync::{Arc, Mutex},
+};
 use tauri::{AppHandle, Emitter, Runtime};
+
+pub type DesktopHostRuntimeState = (
+    Option<crate::framework::embedded_host_server::EmbeddedHostRuntimeSnapshot>,
+    Option<crate::framework::embedded_host_server::EmbeddedHostRuntimeStatus>,
+);
 
 #[derive(Clone, Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -42,7 +50,7 @@ pub struct FrameworkContext {
     pub logger: AppLogger,
     pub services: FrameworkServices,
     event_sink: Option<Arc<dyn FrameworkEventSink>>,
-    desktop_host: Option<DesktopHostRuntime>,
+    desktop_host: Mutex<Option<DesktopHostRuntime>>,
 }
 
 impl FrameworkContext {
@@ -54,33 +62,47 @@ impl FrameworkContext {
         Ok(context)
     }
 
-    pub fn bootstrap_desktop_host(&mut self) -> Result<()> {
-        if self.desktop_host.is_some() {
-            return Ok(());
+    pub fn bootstrap_desktop_host(&self) -> Result<()> {
+        let _ = self.ensure_desktop_host_runtime()?;
+        Ok(())
+    }
+
+    pub fn ensure_desktop_host_runtime(
+        &self,
+    ) -> Result<Option<crate::framework::embedded_host_server::EmbeddedHostRuntimeSnapshot>> {
+        let mut desktop_host = self.lock_desktop_host()?;
+        if let Some(runtime) = desktop_host.as_ref() {
+            let status = runtime.status();
+            if status.lifecycle == "ready" || status.lifecycle == "starting" {
+                return Ok(Some(runtime.snapshot().clone()));
+            }
+
+            self.logger.warn(&format!(
+                "desktop embedded host runtime is {}; restarting embedded host before returning the runtime descriptor",
+                status.lifecycle
+            ))?;
+            *desktop_host = None;
         }
 
-        self.desktop_host = bootstrap_desktop_host_runtime(
+        *desktop_host = bootstrap_desktop_host_runtime(
             &self.paths,
             &self.config,
             &self.services.supervisor,
             &self.services.local_ai_proxy,
             &self.logger,
         )?;
-        Ok(())
-    }
 
-    pub fn desktop_host_snapshot(
-        &self,
-    ) -> Option<crate::framework::embedded_host_server::EmbeddedHostRuntimeSnapshot> {
-        self.desktop_host
+        Ok(desktop_host
             .as_ref()
-            .map(|runtime| runtime.snapshot().clone())
+            .map(|runtime| runtime.snapshot().clone()))
     }
 
-    pub fn desktop_host_status(
-        &self,
-    ) -> Option<crate::framework::embedded_host_server::EmbeddedHostRuntimeStatus> {
-        self.desktop_host.as_ref().map(|runtime| runtime.status())
+    pub fn desktop_host_runtime_state(&self) -> Result<DesktopHostRuntimeState> {
+        let desktop_host = self.lock_desktop_host()?;
+        Ok(match desktop_host.as_ref() {
+            Some(runtime) => (Some(runtime.snapshot().clone()), Some(runtime.status())),
+            None => (None, None),
+        })
     }
 
     pub fn emit_built_in_openclaw_status_changed(
@@ -108,13 +130,19 @@ impl FrameworkContext {
             logger,
             services,
             event_sink: None,
-            desktop_host: None,
+            desktop_host: Mutex::new(None),
         }
     }
 
     #[cfg(test)]
-    pub fn set_desktop_host_for_test(&mut self, runtime: DesktopHostRuntime) {
-        self.desktop_host = Some(runtime);
+    pub fn set_desktop_host_for_test(&self, runtime: DesktopHostRuntime) {
+        *self.lock_desktop_host().expect("desktop host runtime lock") = Some(runtime);
+    }
+
+    fn lock_desktop_host(&self) -> Result<std::sync::MutexGuard<'_, Option<DesktopHostRuntime>>> {
+        self.desktop_host.lock().map_err(|_| {
+            FrameworkError::Internal("desktop embedded host runtime lock was poisoned".to_string())
+        })
     }
 }
 
@@ -141,7 +169,7 @@ where
         logger,
         services,
         event_sink: None,
-        desktop_host: None,
+        desktop_host: Mutex::new(None),
     })
 }
 
@@ -190,7 +218,7 @@ mod tests {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let logger = init_logger(&paths).expect("logger");
-        let mut context = FrameworkContext::from_parts(paths, AppConfig::default(), logger);
+        let context = FrameworkContext::from_parts(paths, AppConfig::default(), logger);
         let runtime = bootstrap_desktop_host_runtime(
             &context.paths,
             &context.config,
@@ -203,12 +231,36 @@ mod tests {
 
         context.set_desktop_host_for_test(runtime);
 
-        let status = context
-            .desktop_host_status()
-            .expect("desktop host runtime status");
+        let (_snapshot, status) = context
+            .desktop_host_runtime_state()
+            .expect("desktop host runtime state");
+        let status = status.expect("desktop host runtime status");
 
         assert_eq!(status.lifecycle, "ready");
         assert_eq!(status.last_error, None);
+    }
+
+    #[test]
+    fn framework_context_can_bootstrap_desktop_host_after_it_is_shared() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let logger = init_logger(&paths).expect("logger");
+        let context = std::sync::Arc::new(FrameworkContext::from_parts(
+            paths,
+            AppConfig::default(),
+            logger,
+        ));
+
+        context
+            .bootstrap_desktop_host()
+            .expect("shared framework context should still bootstrap desktop host");
+
+        let (_snapshot, status) = context
+            .desktop_host_runtime_state()
+            .expect("desktop host runtime state");
+        let status = status.expect("desktop host runtime status");
+
+        assert_eq!(status.lifecycle, "ready");
     }
 
     #[test]

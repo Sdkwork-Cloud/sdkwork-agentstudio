@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -287,7 +288,7 @@ where
 }
 
 const BUILT_IN_INSTANCE_ID: &str = "managed-openclaw-primary";
-const DEFAULT_PORT: u16 = 18_789;
+const DEFAULT_PORT: u16 = 21_280;
 const STORAGE_DIR_NAME: &str = "studio-public-api";
 const INSTANCES_FILE_NAME: &str = "instances.json";
 const CONVERSATIONS_FILE_NAME: &str = "conversations.json";
@@ -3827,7 +3828,7 @@ fn build_default_openclaw_config_content(instance: &Value, default_provider_id: 
                 .and_then(Value::as_u64)
                 .map(|value| value.to_string())
         })
-        .unwrap_or_else(|| "18789".to_string());
+        .unwrap_or_else(|| DEFAULT_PORT.to_string());
 
     serde_json::to_string_pretty(&json!({
         "runtime": "openclaw",
@@ -4753,7 +4754,7 @@ fn into_object(value: Value) -> Map<String, Value> {
 
 fn read_json_document<T>(path: &Path) -> Result<T, String>
 where
-    T: Default + DeserializeOwned,
+    T: Default + DeserializeOwned + Serialize,
 {
     if !path.exists() {
         return Ok(T::default());
@@ -4762,8 +4763,36 @@ where
     if bytes.is_empty() {
         return Ok(T::default());
     }
-    serde_json::from_slice(&bytes)
-        .map_err(|error| format!("deserialize {}: {error}", path.display()))
+    match serde_json::from_slice(&bytes) {
+        Ok(document) => Ok(document),
+        Err(error) => recover_json_document_from_concatenated_store(path, &bytes, error),
+    }
+}
+
+fn recover_json_document_from_concatenated_store<T>(
+    path: &Path,
+    bytes: &[u8],
+    original_error: serde_json::Error,
+) -> Result<T, String>
+where
+    T: DeserializeOwned + Serialize,
+{
+    let mut values = Vec::new();
+    for value in serde_json::Deserializer::from_slice(bytes).into_iter::<Value>() {
+        match value {
+            Ok(value) => values.push(value),
+            Err(_) => break,
+        }
+    }
+
+    for value in values.into_iter().rev() {
+        if let Ok(document) = serde_json::from_value::<T>(value) {
+            write_json_document(path, &document)?;
+            return Ok(document);
+        }
+    }
+
+    Err(format!("deserialize {}: {original_error}", path.display()))
 }
 
 fn write_json_document<T>(path: &Path, value: &T) -> Result<(), String>
@@ -4776,7 +4805,39 @@ where
     }
     let bytes = serde_json::to_vec_pretty(value)
         .map_err(|error| format!("serialize {}: {error}", path.display()))?;
-    fs::write(path, bytes).map_err(|error| format!("write {}: {error}", path.display()))
+    write_json_document_bytes(path, &bytes)
+}
+
+fn write_json_document_bytes(path: &Path, bytes: &[u8]) -> Result<(), String> {
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    let file_name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("document.json");
+    let temp_path = parent.join(format!(".{file_name}.{}.tmp", Uuid::new_v4()));
+    let mut temp_file = fs::File::create(&temp_path)
+        .map_err(|error| format!("create {}: {error}", temp_path.display()))?;
+    temp_file
+        .write_all(bytes)
+        .map_err(|error| format!("write {}: {error}", temp_path.display()))?;
+    temp_file
+        .sync_all()
+        .map_err(|error| format!("flush {}: {error}", temp_path.display()))?;
+    drop(temp_file);
+
+    #[cfg(windows)]
+    if path.exists() {
+        fs::remove_file(path).map_err(|error| format!("replace {}: {error}", path.display()))?;
+    }
+
+    fs::rename(&temp_path, path).map_err(|error| {
+        let _ = fs::remove_file(&temp_path);
+        format!(
+            "replace {} with {}: {error}",
+            path.display(),
+            temp_path.display()
+        )
+    })
 }
 
 fn serialize_provider_value<T>(value: T, label: &str) -> Result<Value, String>
@@ -4859,7 +4920,10 @@ mod tests {
     };
     use serde::{Deserialize, Serialize};
     use serde_json::{json, Value};
-    use std::sync::{Arc, Mutex};
+    use std::{
+        fs,
+        sync::{Arc, Mutex},
+    };
 
     #[test]
     fn default_provider_exposes_canonical_built_in_instance_projection() {
@@ -4893,6 +4957,109 @@ mod tests {
                 .and_then(serde_json::Value::as_str),
             Some("openclawGatewayWs")
         );
+    }
+
+    #[test]
+    fn default_provider_repairs_concatenated_instance_store_documents_before_listing() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let provider = super::ServerStudioPublicApiProvider::new(
+            root.path().to_path_buf(),
+            std::sync::Arc::new(OpenClawControlPlane::inactive("test-host")),
+        )
+        .expect("provider");
+        let instances_path = provider.instances_path();
+        fs::create_dir_all(instances_path.parent().expect("instances dir"))
+            .expect("create instances dir");
+        let stale_document = json!({
+            "customInstances": [
+                {
+                    "id": "stale-openclaw",
+                    "name": "Stale OpenClaw"
+                }
+            ]
+        });
+        let current_document = json!({
+            "customInstances": [
+                {
+                    "id": "current-openclaw",
+                    "name": "Current OpenClaw"
+                }
+            ]
+        });
+        fs::write(
+            &instances_path,
+            format!(
+                "{}\n{}",
+                serde_json::to_string_pretty(&stale_document).expect("stale json"),
+                serde_json::to_string_pretty(&current_document).expect("current json")
+            ),
+        )
+        .expect("write concatenated instances store");
+
+        let instances = <super::ServerStudioPublicApiProvider as super::StudioPublicApiProvider>::list_instances(
+            &provider,
+        )
+        .expect("list instances");
+        let ids = instances
+            .as_array()
+            .expect("instance array")
+            .iter()
+            .filter_map(|instance| instance.get("id").and_then(Value::as_str))
+            .collect::<Vec<_>>();
+
+        assert!(ids.contains(&"current-openclaw"));
+        assert!(!ids.contains(&"stale-openclaw"));
+        serde_json::from_str::<Value>(
+            &fs::read_to_string(&instances_path).expect("repaired instances store"),
+        )
+        .expect("instances store should be repaired to one strict JSON document");
+    }
+
+    #[test]
+    fn default_provider_repairs_instance_store_document_with_trailing_stale_bytes() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let provider = super::ServerStudioPublicApiProvider::new(
+            root.path().to_path_buf(),
+            std::sync::Arc::new(OpenClawControlPlane::inactive("test-host")),
+        )
+        .expect("provider");
+        let instances_path = provider.instances_path();
+        fs::create_dir_all(instances_path.parent().expect("instances dir"))
+            .expect("create instances dir");
+        let current_document = json!({
+            "customInstances": [
+                {
+                    "id": "current-openclaw",
+                    "name": "Current OpenClaw"
+                }
+            ]
+        });
+        fs::write(
+            &instances_path,
+            format!(
+                "{}\n{{\"customInstances\":[{{\"id\":\"stale-openclaw\"",
+                serde_json::to_string_pretty(&current_document).expect("current json")
+            ),
+        )
+        .expect("write instances store with stale tail");
+
+        let instances = <super::ServerStudioPublicApiProvider as super::StudioPublicApiProvider>::list_instances(
+            &provider,
+        )
+        .expect("list instances");
+        let ids = instances
+            .as_array()
+            .expect("instance array")
+            .iter()
+            .filter_map(|instance| instance.get("id").and_then(Value::as_str))
+            .collect::<Vec<_>>();
+
+        assert!(ids.contains(&"current-openclaw"));
+        assert!(!ids.contains(&"stale-openclaw"));
+        let repaired = fs::read_to_string(&instances_path).expect("repaired instances store");
+        serde_json::from_str::<Value>(&repaired)
+            .expect("instances store should be repaired to one strict JSON document");
+        assert!(!repaired.contains("stale-openclaw"));
     }
 
     #[test]
@@ -5623,8 +5790,8 @@ mod tests {
         host_endpoints.register(HostEndpointRegistration {
             endpoint_id: "openclaw-gateway".to_string(),
             bind_host: "127.0.0.1".to_string(),
-            requested_port: 18_789,
-            active_port: Some(18_789),
+            requested_port: 21_280,
+            active_port: Some(21_280),
             scheme: "http".to_string(),
             base_path: None,
             websocket_path: None,
@@ -5657,7 +5824,7 @@ mod tests {
         );
         assert_eq!(
             console_access.get("url").and_then(Value::as_str),
-            Some("http://127.0.0.1:18789/")
+            Some("http://127.0.0.1:21280/")
         );
         assert_eq!(
             console_access.get("installMethod").and_then(Value::as_str),

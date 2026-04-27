@@ -1,4 +1,5 @@
 use crate::framework::{
+    child_process::configure_hidden_child_process,
     kernel_host::{
         clear_kernel_host_ownership_marker, platform::resolve_current_platform_service_spec,
         types::KernelHostOwnershipMarker, write_kernel_host_ownership_marker,
@@ -332,6 +333,7 @@ fn run_openclaw_cli_for_paths_and_install_root_with_resource_root(
     command.stdout(Stdio::inherit());
     command.stderr(Stdio::inherit());
     command.envs(runtime.managed_env());
+    configure_hidden_child_process(&mut command);
 
     let status = command.status()?;
     Ok(status
@@ -363,7 +365,7 @@ fn resolve_install_scoped_path_overrides(
         .map(|install_root| {
             (
                 Some(install_root.join("machine")),
-                Some(install_root.join("user-home")),
+                Some(install_root.join("app-user-root")),
             )
         })
         .unwrap_or((None, None))
@@ -832,7 +834,7 @@ mod tests {
         );
         assert!(
             install_root
-                .join("user-home")
+                .join("app-user-root")
                 .join(".openclaw")
                 .exists(),
             "install-root override should keep managed user state inside the install root during prewarm",
@@ -890,6 +892,21 @@ mod tests {
         let capture = fs::read_to_string(&capture_path).expect("capture file");
         assert!(capture.contains("\"doctor\""));
         assert!(capture.contains("\"--json\""));
+    }
+
+    #[test]
+    fn internal_openclaw_cli_child_process_uses_hidden_window_policy() {
+        let source = include_str!("internal_cli.rs");
+        let hidden_child_process_call = [
+            "command.envs(runtime.managed_env());",
+            "configure_hidden_child_process(&mut command);",
+        ]
+        .join("\n    ");
+
+        assert!(
+            source.contains(&hidden_child_process_call),
+            "internal OpenClaw CLI bridge must hide the child Node process on Windows"
+        );
     }
 
     #[test]

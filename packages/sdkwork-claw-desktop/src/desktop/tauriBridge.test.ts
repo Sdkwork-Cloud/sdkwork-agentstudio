@@ -701,7 +701,7 @@ test('tauriBridge keeps canonical host-manage placeholders and startup metadata 
   assert.match(runtimeContractSource, /runtimeDataDir\?: string \| null;/);
   assert.match(runtimeContractSource, /webDistDir\?: string \| null;/);
   assert.match(runtimeContractSource, /export interface RuntimeDesktopActiveKernelRuntimeInfo \{/);
-  assert.doesNotMatch(
+  assert.match(
     runtimeContractSource,
     /export interface RuntimeDesktopOpenClawRuntimeInfo \{[\s\S]*stateDir: string;/,
   );
@@ -949,6 +949,58 @@ test('tauriBridge keeps enough hosted runtime readiness budget for packaged cold
   );
 });
 
+test('tauriBridge avoids high-frequency hosted runtime readiness polling during slow kernel startup', () => {
+  const tauriBridgeSource = fs.readFileSync(
+    path.join(import.meta.dirname, 'tauriBridge.ts'),
+    'utf8',
+  );
+  const readinessRetryPollMatch = tauriBridgeSource.match(
+    /const DESKTOP_HOSTED_RUNTIME_READINESS_RETRY_POLL_MS = ([0-9_]+);/,
+  );
+
+  assert.ok(
+    readinessRetryPollMatch,
+    'desktop hosted runtime readiness poll interval should stay explicit in tauriBridge.ts',
+  );
+
+  const readinessRetryPollMs = Number(
+    readinessRetryPollMatch[1].replaceAll('_', ''),
+  );
+
+  assert.ok(
+    readinessRetryPollMs >= 200,
+    `hosted runtime readiness polling should avoid high-frequency local HTTP probes, received ${readinessRetryPollMs}ms`,
+  );
+});
+
+test('tauriBridge caps each hosted runtime readiness probe so one hung local request cannot consume the full startup budget', () => {
+  const tauriBridgeSource = fs.readFileSync(
+    path.join(import.meta.dirname, 'tauriBridge.ts'),
+    'utf8',
+  );
+  const readinessAttemptTimeoutMatch = tauriBridgeSource.match(
+    /const DESKTOP_HOSTED_RUNTIME_READINESS_ATTEMPT_TIMEOUT_MS = ([0-9_]+);/,
+  );
+
+  assert.ok(
+    readinessAttemptTimeoutMatch,
+    'desktop hosted runtime readiness per-attempt timeout should stay explicit in tauriBridge.ts',
+  );
+
+  const readinessAttemptTimeoutMs = Number(
+    readinessAttemptTimeoutMatch[1].replaceAll('_', ''),
+  );
+
+  assert.ok(
+    readinessAttemptTimeoutMs >= 2_000 && readinessAttemptTimeoutMs <= 10_000,
+    `hosted runtime readiness should cap each local HTTP probe between 2000ms and 10000ms, received ${readinessAttemptTimeoutMs}ms`,
+  );
+  assert.match(
+    tauriBridgeSource,
+    /attemptTimeoutMs:\s*options\?\.attemptTimeoutMs\s*\?\?\s*DESKTOP_HOSTED_RUNTIME_READINESS_ATTEMPT_TIMEOUT_MS/,
+  );
+});
+
 test('tauriBridge reuses the shared hosted studio adapter instead of maintaining a second manual studio fetch implementation', () => {
   const tauriBridgeSource = fs.readFileSync(
     path.join(import.meta.dirname, 'tauriBridge.ts'),
@@ -1123,5 +1175,28 @@ test('tauriBridge exposes built-in OpenClaw status change events through the sha
   assert.match(
     contextSource,
     /self\.emit\(events::BUILT_IN_OPENCLAW_STATUS_CHANGED,\s*payload\)/,
+  );
+});
+
+test('tauriBridge hosted readiness defaults to generic runtime evidence unless OpenClaw is explicitly requested', () => {
+  const tauriBridgeSource = fs.readFileSync(
+    path.join(import.meta.dirname, 'tauriBridge.ts'),
+    'utf8',
+  );
+  const functionStart = tauriBridgeSource.indexOf(
+    'export async function probeDesktopHostedRuntimeReadiness',
+  );
+  assert.notEqual(functionStart, -1, 'probeDesktopHostedRuntimeReadiness should exist');
+  const functionEnd = tauriBridgeSource.indexOf(
+    'export async function getRuntimeInfo',
+    functionStart,
+  );
+  assert.notEqual(functionEnd, -1, 'getRuntimeInfo should follow hosted readiness');
+  const functionSource = tauriBridgeSource.slice(functionStart, functionEnd);
+
+  assert.match(
+    functionSource,
+    /requiresBuiltInOpenClawEvidence:\s*options\?\.requiresBuiltInOpenClawEvidence\s*\?\?\s*false/,
+    'the public desktop bridge must not silently turn unknown or generic kernel profiles into OpenClaw readiness probes',
   );
 });

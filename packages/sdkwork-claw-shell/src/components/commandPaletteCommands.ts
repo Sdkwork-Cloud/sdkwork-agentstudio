@@ -1,14 +1,12 @@
 import type { ElementType } from 'react';
 import {
   Activity,
-  Code,
   Cpu,
   LayoutDashboard,
   MessageCircle,
   Server,
   Settings,
   ShieldCheck,
-  Terminal,
   Waypoints,
 } from 'lucide-react';
 
@@ -107,28 +105,12 @@ export function buildCommandPaletteCommands({
       action: () => navigate('/devices'),
     },
     {
-      id: 'nav-codebox',
-      title: t('commandPalette.commands.codebox.title'),
-      subtitle: t('commandPalette.commands.codebox.subtitle'),
-      icon: Code,
-      category: t('commandPalette.categories.navigation'),
-      action: () => navigate('/codebox'),
-    },
-    {
       id: 'nav-settings',
       title: t('commandPalette.commands.settings.title'),
       subtitle: t('commandPalette.commands.settings.subtitle'),
       icon: Settings,
       category: t('commandPalette.categories.navigation'),
       action: () => navigate('/settings'),
-    },
-    {
-      id: 'action-terminal',
-      title: t('commandPalette.commands.terminal.title'),
-      subtitle: t('commandPalette.commands.terminal.subtitle'),
-      icon: Terminal,
-      category: t('commandPalette.categories.actions'),
-      action: () => console.log('Terminal opened'),
     },
   ];
 

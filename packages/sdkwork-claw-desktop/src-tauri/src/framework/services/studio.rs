@@ -39,7 +39,6 @@ use sdkwork_claw_server::bootstrap::{
 };
 use sdkwork_local_api_proxy_native::kernel::{
     build_standard_hermes_config_file_path, build_standard_hermes_root_dir,
-    build_standard_openclaw_config_file_path,
 };
 use serde::{de::Error as SerdeDeError, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Map, Number, Value};
@@ -57,13 +56,12 @@ mod openclaw_chat;
 mod openclaw_control;
 mod openclaw_workbench;
 
-pub use kernel_chat::{
-    KernelChatAgentProfile, KernelChatMessage, KernelChatRun, KernelChatSession,
-    PersistedKernelChatAgentRecord,
-    StudioCreateKernelChatSessionInput, StudioPatchKernelChatSessionInput,
-    StudioStartKernelChatRunInput,
-};
 use hermes_chat::create_kernel_chat_agent_profile_for_managed_hermes;
+pub use kernel_chat::{
+    KernelChatAgentProfile, KernelChatAttachment, KernelChatMessage, KernelChatRun,
+    KernelChatSession, PersistedKernelChatAgentRecord, StudioCreateKernelChatSessionInput,
+    StudioPatchKernelChatSessionInput, StudioStartKernelChatRunInput,
+};
 use openclaw_control::{
     clone_openclaw_task, create_openclaw_task, delete_openclaw_task, invoke_openclaw_gateway,
     list_openclaw_task_executions, require_running_openclaw_runtime, run_openclaw_task_now,
@@ -349,7 +347,7 @@ pub enum StudioConversationMessageStatus {
     Error,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StudioConversationMessage {
     pub id: String,
@@ -363,9 +361,13 @@ pub struct StudioConversationMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sender_instance_id: Option<String>,
     pub status: StudioConversationMessageStatus,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub attachments: Vec<KernelChatAttachment>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kernel_message: Option<KernelChatMessage>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StudioConversationRecord {
     pub id: String,
@@ -377,6 +379,10 @@ pub struct StudioConversationRecord {
     pub message_count: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_message_preview: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_seen_at: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kernel_session: Option<KernelChatSession>,
     pub messages: Vec<StudioConversationMessage>,
 }
 
@@ -1937,7 +1943,10 @@ impl StudioService {
 
         let current = registry.instances[index].clone();
         let next_port = input.port.or(current.port);
-        let merged_config = merge_instance_config(current.config.clone(), input.config);
+        let mut merged_config = merge_instance_config(current.config.clone(), input.config);
+        if is_built_in_openclaw_instance(&current) {
+            merged_config = normalize_built_in_openclaw_instance_config(paths, merged_config);
+        }
 
         registry.instances[index] = StudioInstanceRecord {
             name: input.name.unwrap_or(current.name),
@@ -2726,19 +2735,14 @@ impl StudioService {
                     reason.as_ref().map(|(code, _)| code.clone()),
                     reason.map(|(_, message)| message),
                     model_options,
-                    build_kernel_agent_creation_field_support(
-                        true, true, true, true, true, true, true, true, true, true, true,
-                    ),
+                    build_openclaw_kernel_agent_creation_field_support(),
                 )],
                 default_kernel_id: Some(instance_kernel_id),
             });
         }
 
         let (reason_code, reason) = if is_managed_hermes_instance(&instance) {
-            (
-                None,
-                None,
-            )
+            (None, None)
         } else if instance.runtime_kind == StudioRuntimeKind::Openclaw {
             (
                 Some(StudioKernelAgentCreationReasonCode::ConfigUnavailable),
@@ -2758,9 +2762,7 @@ impl StudioService {
                 true, false, false, false, false, false, false, false, false, false, false,
             )
         } else if instance.runtime_kind == StudioRuntimeKind::Openclaw {
-            build_kernel_agent_creation_field_support(
-                true, true, true, true, true, true, true, true, true, true, true,
-            )
+            build_openclaw_kernel_agent_creation_field_support()
         } else {
             build_kernel_agent_creation_field_support(
                 false, false, false, false, false, false, false, false, false, false, false,
@@ -2789,9 +2791,14 @@ impl StudioService {
         storage: &StorageService,
         input: StudioCreateKernelAgentInput,
     ) -> Result<StudioCreatedKernelAgentRecord> {
-        let instance_id = trim_required_kernel_agent_field(input.instance_id.as_str(), "instanceId")?;
-        let capability =
-            self.get_kernel_agent_creation_capability(paths, config, storage, instance_id.as_str())?;
+        let instance_id =
+            trim_required_kernel_agent_field(input.instance_id.as_str(), "instanceId")?;
+        let capability = self.get_kernel_agent_creation_capability(
+            paths,
+            config,
+            storage,
+            instance_id.as_str(),
+        )?;
         let requested_kernel_id = normalize_kernel_agent_kernel_id(input.kernel_id.as_deref())
             .or(capability.default_kernel_id.clone())
             .ok_or_else(|| {
@@ -2829,7 +2836,12 @@ impl StudioService {
 
         match requested_kernel_id.as_str() {
             "openclaw" => {
-                self.require_built_in_openclaw_instance(paths, config, storage, instance_id.as_str())?;
+                self.require_built_in_openclaw_instance(
+                    paths,
+                    config,
+                    storage,
+                    instance_id.as_str(),
+                )?;
                 let supported_model_refs = selected_kernel
                     .model_options
                     .iter()
@@ -2856,14 +2868,22 @@ impl StudioService {
                     )?;
                 }
 
-                let normalized_agent_id =
-                    normalize_kernel_agent_id(&trim_required_kernel_agent_field(
-                        input.agent_id.as_str(),
-                        "agentId",
-                    )?);
+                let normalized_agent_id = normalize_kernel_agent_id(
+                    &trim_required_kernel_agent_field(input.agent_id.as_str(), "agentId")?,
+                );
                 let display_name =
                     trim_required_kernel_agent_field(input.display_name.as_str(), "displayName")?;
+                let openclaw_paths = paths.kernel_paths("openclaw")?;
+                let workspace = openclaw_paths
+                    .openclaw_agent_workspace_dir(normalized_agent_id.as_str())?
+                    .to_string_lossy()
+                    .into_owned();
+                let agent_dir = openclaw_paths
+                    .openclaw_agent_dir(normalized_agent_id.as_str())?
+                    .to_string_lossy()
+                    .into_owned();
                 let mut root = read_openclaw_config(paths)?;
+                ensure_built_in_openclaw_standard_agent_paths(&mut root, paths);
 
                 save_openclaw_kernel_agent_to_config_root(
                     &mut root,
@@ -2874,8 +2894,8 @@ impl StudioService {
                         is_default: input.is_default,
                         primary_model,
                         fallback_models,
-                        workspace: normalize_optional_kernel_agent_field(input.workspace.as_deref()),
-                        agent_dir: normalize_optional_kernel_agent_field(input.agent_dir.as_deref()),
+                        workspace: Some(workspace),
+                        agent_dir: Some(agent_dir),
                         temperature: input.temperature,
                         top_p: input.top_p,
                         max_tokens: input.max_tokens,
@@ -2895,7 +2915,9 @@ impl StudioService {
             "hermes" => {
                 let instance = self
                     .get_instance(paths, config, storage, instance_id.as_str())?
-                    .ok_or_else(|| FrameworkError::NotFound(format!("instance \"{}\"", instance_id)))?;
+                    .ok_or_else(|| {
+                        FrameworkError::NotFound(format!("instance \"{}\"", instance_id))
+                    })?;
                 create_kernel_chat_agent_profile_for_managed_hermes(paths, &instance, &input)
             }
             _ => Err(FrameworkError::InvalidOperation(format!(
@@ -2967,7 +2989,8 @@ impl StudioService {
                 continue;
             }
 
-            let Some(record) = self.read_persisted_kernel_chat_agent(paths, config, storage, &key)?
+            let Some(record) =
+                self.read_persisted_kernel_chat_agent(paths, config, storage, &key)?
             else {
                 continue;
             };
@@ -3038,25 +3061,20 @@ impl StudioService {
         }
 
         for (index, record) in records.iter_mut().enumerate() {
-            record.instance_id = trim_required_storage_field(
-                record.instance_id.as_str(),
-                "instanceId",
-            )?;
+            record.instance_id =
+                trim_required_storage_field(record.instance_id.as_str(), "instanceId")?;
             if record.instance_id != instance_id {
                 return Err(FrameworkError::InvalidOperation(format!(
                     "persisted kernel chat agent \"{}\" targets instance \"{}\" instead of \"{}\"",
                     record.id, record.instance_id, instance_id,
                 )));
             }
-            record.kernel_id =
-                trim_required_storage_field(record.kernel_id.as_str(), "kernelId")?;
-            record.agent_id =
-                trim_required_storage_field(record.agent_id.as_str(), "agentId")?;
+            record.kernel_id = trim_required_storage_field(record.kernel_id.as_str(), "kernelId")?;
+            record.agent_id = trim_required_storage_field(record.agent_id.as_str(), "agentId")?;
             record.label = trim_required_storage_field(record.label.as_str(), "label")?;
             record.description = normalize_optional_storage_field(record.description.take());
             record.source = trim_required_storage_field(record.source.as_str(), "source")?;
-            record.system_prompt =
-                normalize_optional_storage_field(record.system_prompt.take());
+            record.system_prompt = normalize_optional_storage_field(record.system_prompt.take());
             record.avatar = normalize_optional_storage_field(record.avatar.take());
             record.creator = normalize_optional_storage_field(record.creator.take());
             record.sort_order = index as u32;
@@ -3335,13 +3353,7 @@ impl StudioService {
         if let Some(auth_token) = config.auth_token.as_deref() {
             set_nested_string(&mut root, &["gateway", "auth", "token"], auth_token);
         }
-        if let Some(workspace_path) = config.workspace_path.as_deref() {
-            set_nested_string(
-                &mut root,
-                &["agents", "defaults", "workspace"],
-                workspace_path,
-            );
-        }
+        ensure_built_in_openclaw_standard_agent_paths(&mut root, paths);
 
         write_openclaw_config_file(paths, &root)?;
         Ok(())
@@ -5559,7 +5571,7 @@ fn build_built_in_instance(paths: &AppPaths, config: &AppConfig) -> Result<Studi
     let active_version = resolve_built_in_openclaw_display_version(paths);
     let root = read_openclaw_config(paths)?;
     let port = get_nested_u16(&root, &["gateway", "port"]).unwrap_or(DEFAULT_GATEWAY_PORT);
-    let workspace_path = get_nested_string(&root, &["agents", "defaults", "workspace"]);
+    let workspace_path = Some(paths.openclaw_workspace_dir.to_string_lossy().into_owned());
     let log_level =
         get_nested_string(&root, &["studio", "logLevel"]).unwrap_or_else(|| "info".to_string());
     let cors_origins =
@@ -5794,6 +5806,16 @@ fn merge_instance_config(
     }
 }
 
+fn normalize_built_in_openclaw_instance_config(
+    paths: &AppPaths,
+    mut config: StudioInstanceConfig,
+) -> StudioInstanceConfig {
+    config.workspace_path = Some(paths.openclaw_workspace_dir.to_string_lossy().into_owned());
+    config.base_url = None;
+    config.websocket_url = None;
+    config
+}
+
 fn normalize_optional_string(value: Option<String>) -> Option<String> {
     value.and_then(|item| {
         let trimmed = item.trim().to_string();
@@ -5869,8 +5891,7 @@ fn sanitize_studio_conversation_record(
         };
 
         message.id = normalized_message_id.clone();
-        if let Some(existing_index) = deduped_message_indexes.get(&normalized_message_id).copied()
-        {
+        if let Some(existing_index) = deduped_message_indexes.get(&normalized_message_id).copied() {
             let existing_message: &(usize, StudioConversationMessage) =
                 &deduped_messages[existing_index];
             if compare_studio_conversation_message_recency(
@@ -5906,12 +5927,10 @@ fn sanitize_studio_conversation_record(
         .messages
         .last()
         .map(|message| message.content.chars().take(120).collect::<String>());
-    record.updated_at = record
-        .messages
-        .iter()
-        .fold(record.updated_at.max(record.created_at), |max_updated_at, message| {
-            max_updated_at.max(message.updated_at)
-        });
+    record.updated_at = record.messages.iter().fold(
+        record.updated_at.max(record.created_at),
+        |max_updated_at, message| max_updated_at.max(message.updated_at),
+    );
 
     record
 }
@@ -5929,9 +5948,7 @@ fn persisted_kernel_chat_agent_storage_key(
     kernel_id: &str,
     agent_id: &str,
 ) -> String {
-    format!(
-        "{PERSISTED_KERNEL_CHAT_AGENT_KEY_PREFIX}{instance_id}:{kernel_id}:{agent_id}"
-    )
+    format!("{PERSISTED_KERNEL_CHAT_AGENT_KEY_PREFIX}{instance_id}:{kernel_id}:{agent_id}")
 }
 
 struct OpenClawKernelAgentConfigInput {
@@ -6046,7 +6063,12 @@ fn ensure_kernel_agent_create_input_matches_field_support(
         field_support.temperature,
         input.temperature.is_some(),
     )?;
-    ensure_kernel_agent_field_support(kernel_id, "topP", field_support.top_p, input.top_p.is_some())?;
+    ensure_kernel_agent_field_support(
+        kernel_id,
+        "topP",
+        field_support.top_p,
+        input.top_p.is_some(),
+    )?;
     ensure_kernel_agent_field_support(
         kernel_id,
         "maxTokens",
@@ -6149,10 +6171,17 @@ fn build_kernel_agent_creation_field_support(
     }
 }
 
+fn build_openclaw_kernel_agent_creation_field_support() -> StudioKernelAgentCreationFieldSupport {
+    build_kernel_agent_creation_field_support(
+        true, true, true, true, false, false, true, true, true, true, true,
+    )
+}
+
 fn build_openclaw_kernel_agent_creation_model_options(
     root: &Value,
 ) -> Vec<StudioKernelAgentCreationModelOption> {
-    let Some(providers) = get_nested_value(root, &["models", "providers"]).and_then(Value::as_object)
+    let Some(providers) =
+        get_nested_value(root, &["models", "providers"]).and_then(Value::as_object)
     else {
         return Vec::new();
     };
@@ -6175,13 +6204,15 @@ fn build_openclaw_kernel_agent_creation_model_options(
             let Some(model_id) = get_nested_string(model, &["id"]) else {
                 continue;
             };
-            let Some(value) = build_openclaw_model_ref(provider_id.as_str(), model_id.as_str()) else {
+            let Some(value) = build_openclaw_model_ref(provider_id.as_str(), model_id.as_str())
+            else {
                 continue;
             };
             if !seen.insert(value.clone()) {
                 continue;
             }
-            let model_label = get_nested_string(model, &["name"]).unwrap_or_else(|| model_id.clone());
+            let model_label =
+                get_nested_string(model, &["name"]).unwrap_or_else(|| model_id.clone());
 
             options.push(StudioKernelAgentCreationModelOption {
                 value: value.clone(),
@@ -6223,7 +6254,8 @@ fn normalize_kernel_agent_fallback_models(
     let mut normalized = Vec::new();
 
     for fallback_model in fallback_models {
-        let Some(candidate) = normalize_optional_kernel_agent_field(Some(fallback_model.as_str())) else {
+        let Some(candidate) = normalize_optional_kernel_agent_field(Some(fallback_model.as_str()))
+        else {
             continue;
         };
         if primary_model.is_some_and(|primary| primary == candidate.as_str()) {
@@ -6307,7 +6339,10 @@ fn ensure_json_child_object<'a>(
         .expect("json child object")
 }
 
-fn ensure_json_child_array<'a>(parent: &'a mut Map<String, Value>, key: &str) -> &'a mut Vec<Value> {
+fn ensure_json_child_array<'a>(
+    parent: &'a mut Map<String, Value>,
+    key: &str,
+) -> &'a mut Vec<Value> {
     let reset_child = !matches!(parent.get(key), Some(Value::Array(_)));
     if reset_child {
         parent.insert(key.to_string(), Value::Array(Vec::new()));
@@ -6329,7 +6364,8 @@ fn read_json_scalar_string(value: &Value) -> Option<String> {
 }
 
 fn configured_openclaw_agent_id(entry: &Value) -> Option<String> {
-    entry.as_object()
+    entry
+        .as_object()
         .and_then(|object| object.get("id"))
         .and_then(read_json_scalar_string)
         .map(|id| normalize_kernel_agent_id(id.as_str()))
@@ -6369,6 +6405,57 @@ fn ensure_single_default_openclaw_kernel_agent(agent_list: &mut [Value]) {
     }
 }
 
+fn ensure_built_in_openclaw_standard_agent_paths(root: &mut Value, paths: &AppPaths) {
+    remove_nested_value(root, &["agents", "defaults", "workspace"]);
+    remove_nested_value(root, &["agents", "defaults", "agentDir"]);
+
+    let root_object = ensure_json_object(root);
+    let agents_object = ensure_json_child_object(root_object, "agents");
+    if agents_object
+        .get("defaults")
+        .and_then(Value::as_object)
+        .is_some_and(|object| object.is_empty())
+    {
+        agents_object.remove("defaults");
+    }
+
+    let agent_list = ensure_json_child_array(agents_object, "list");
+    let main_index = agent_list
+        .iter()
+        .position(|entry| configured_openclaw_agent_id(entry).as_deref() == Some("main"))
+        .unwrap_or_else(|| {
+            agent_list.push(Value::Object(Map::new()));
+            agent_list.len() - 1
+        });
+
+    if !agent_list[main_index].is_object() {
+        agent_list[main_index] = Value::Object(Map::new());
+    }
+
+    for (index, entry) in agent_list.iter_mut().enumerate() {
+        let Some(agent) = entry.as_object_mut() else {
+            continue;
+        };
+
+        if index == main_index {
+            agent.insert("id".to_string(), Value::String("main".to_string()));
+            agent
+                .entry("name".to_string())
+                .or_insert_with(|| Value::String("Main".to_string()));
+            agent.insert(
+                "workspace".to_string(),
+                Value::String(paths.openclaw_workspace_dir.to_string_lossy().into_owned()),
+            );
+            agent.insert(
+                "agentDir".to_string(),
+                Value::String(paths.openclaw_main_agent_dir.to_string_lossy().into_owned()),
+            );
+        }
+
+        agent.insert("default".to_string(), Value::Bool(index == main_index));
+    }
+}
+
 fn save_openclaw_kernel_agent_to_config_root(
     root: &mut Value,
     input: OpenClawKernelAgentConfigInput,
@@ -6382,9 +6469,9 @@ fn save_openclaw_kernel_agent_to_config_root(
     {
         existing_index
     } else {
-            agent_list.push(Value::Object(Map::new()));
-            agent_list.len() - 1
-        };
+        agent_list.push(Value::Object(Map::new()));
+        agent_list.len() - 1
+    };
     if !agent_list[target_index].is_object() {
         agent_list[target_index] = Value::Object(Map::new());
     }
@@ -6432,10 +6519,16 @@ fn save_openclaw_kernel_agent_to_config_root(
         params.insert("topP".to_string(), Value::Number(top_p));
     }
     if let Some(max_tokens) = input.max_tokens {
-        params.insert("maxTokens".to_string(), Value::Number(Number::from(max_tokens)));
+        params.insert(
+            "maxTokens".to_string(),
+            Value::Number(Number::from(max_tokens)),
+        );
     }
     if let Some(timeout_ms) = input.timeout_ms {
-        params.insert("timeoutMs".to_string(), Value::Number(Number::from(timeout_ms)));
+        params.insert(
+            "timeoutMs".to_string(),
+            Value::Number(Number::from(timeout_ms)),
+        );
     }
     if let Some(streaming) = input.streaming {
         params.insert("streaming".to_string(), Value::Bool(streaming));
@@ -6475,7 +6568,8 @@ fn save_openclaw_kernel_agent_to_config_root(
 
     if input.is_default {
         for entry in agent_list.iter_mut() {
-            let is_target = configured_openclaw_agent_id(entry).as_deref() == Some(input.id.as_str());
+            let is_target =
+                configured_openclaw_agent_id(entry).as_deref() == Some(input.id.as_str());
             let Some(object) = entry.as_object_mut() else {
                 continue;
             };
@@ -6563,6 +6657,10 @@ fn blocked_reason_for_outcome(outcome: PreflightOutcome) -> Option<String> {
 }
 
 fn built_in_openclaw_lifecycle(supervisor: &SupervisorService) -> Result<OpenClawLifecycle> {
+    if supervisor.configured_openclaw_runtime()?.is_none() {
+        return Ok(OpenClawLifecycle::Inactive);
+    }
+
     if supervisor.is_openclaw_gateway_running()? {
         Ok(OpenClawLifecycle::Ready)
     } else if supervisor.snapshot()?.services.iter().any(|service| {
@@ -6570,14 +6668,16 @@ fn built_in_openclaw_lifecycle(supervisor: &SupervisorService) -> Result<OpenCla
             && matches!(service.lifecycle, ManagedServiceLifecycle::Failed)
     }) {
         Ok(OpenClawLifecycle::Degraded)
-    } else if supervisor.configured_openclaw_runtime()?.is_some() {
-        Ok(OpenClawLifecycle::Stopped)
     } else {
-        Ok(OpenClawLifecycle::Inactive)
+        Ok(OpenClawLifecycle::Stopped)
     }
 }
 
 fn built_in_openclaw_last_error(supervisor: &SupervisorService) -> Result<Option<String>> {
+    if supervisor.configured_openclaw_runtime()?.is_none() {
+        return Ok(None);
+    }
+
     Ok(supervisor
         .snapshot()?
         .services
@@ -6595,15 +6695,15 @@ fn project_desktop_host_available_capability_keys(
     desktop_host_status: Option<&EmbeddedHostRuntimeStatus>,
 ) -> Result<Vec<String>> {
     let mut capability_keys = supported_capability_keys.to_vec();
-    let host_ready = desktop_host_status
-        .map(|status| status.lifecycle.as_str() == "ready")
+    let host_surface_usable = desktop_host_status
+        .map(|status| matches!(status.lifecycle.as_str(), "ready" | "degraded"))
         .unwrap_or(false);
     let gateway_ready = matches!(
         built_in_openclaw_lifecycle(supervisor)?,
         OpenClawLifecycle::Ready
     );
 
-    if !(host_ready && gateway_ready) {
+    if !(host_surface_usable && gateway_ready) {
         capability_keys.retain(|key| key != "manage.openclaw.gateway.invoke");
     }
 
@@ -7009,7 +7109,7 @@ fn built_in_openclaw_runtime_dir(paths: &AppPaths) -> PathBuf {
     paths
         .kernel_paths("openclaw")
         .map(|kernel| kernel.runtime_dir)
-        .unwrap_or_else(|_| paths.openclaw_runtime_dir.clone())
+        .expect("canonical openclaw runtime path")
 }
 
 fn readable_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
@@ -7019,12 +7119,7 @@ fn readable_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
 fn authority_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
-        .unwrap_or_else(|_| {
-            paths
-                .kernel_paths("openclaw")
-                .map(|kernel| kernel.config_file)
-                .unwrap_or_else(|_| build_standard_openclaw_config_file_path(&paths.user_root))
-        })
+        .expect("canonical openclaw config path")
 }
 
 fn build_openclaw_provider_model_value(id: &str, role: &str, existing: Option<&Value>) -> Value {
@@ -7180,17 +7275,17 @@ fn get_nested_value<'a>(value: &'a Value, path: &[&str]) -> Option<&'a Value> {
 #[cfg(test)]
 mod tests {
     use super::{
-        bundled_openclaw_version, console_install_method_from_install_record,
-        default_storage_binding, get_nested_string, get_nested_value, percent_encode_url_component,
-        read_json5_object, EmbeddedHostRuntimeStatus, InstanceRegistryDocument,
-        PartialStudioInstanceConfig, StudioConversationMessage, StudioConversationMessageStatus,
-        StudioConversationRecord, StudioConversationRole, StudioCreateInstanceInput,
-        StudioCreateKernelAgentInput, StudioInstanceArtifactKind, StudioInstanceAuthMode,
-        StudioInstanceCapability, StudioInstanceCapabilityStatus, StudioInstanceConfig,
-        StudioInstanceConsoleInstallMethod, StudioInstanceDataAccessMode,
-        StudioInstanceDataAccessScope, StudioInstanceDeploymentMode, StudioInstanceIconType,
-        StudioInstanceLifecycleOwner, StudioInstanceRecord, StudioInstanceStatus,
-        StudioInstanceStorageStatus, StudioInstanceTransportKind,
+        built_in_openclaw_last_error, built_in_openclaw_lifecycle, bundled_openclaw_version,
+        console_install_method_from_install_record, default_storage_binding, get_nested_string,
+        get_nested_value, percent_encode_url_component, read_json5_object,
+        EmbeddedHostRuntimeStatus, InstanceRegistryDocument, PartialStudioInstanceConfig,
+        StudioConversationMessage, StudioConversationMessageStatus, StudioConversationRecord,
+        StudioConversationRole, StudioCreateInstanceInput, StudioCreateKernelAgentInput,
+        StudioInstanceArtifactKind, StudioInstanceAuthMode, StudioInstanceCapability,
+        StudioInstanceCapabilityStatus, StudioInstanceConfig, StudioInstanceConsoleInstallMethod,
+        StudioInstanceDataAccessMode, StudioInstanceDataAccessScope, StudioInstanceDeploymentMode,
+        StudioInstanceIconType, StudioInstanceLifecycleOwner, StudioInstanceRecord,
+        StudioInstanceStatus, StudioInstanceStorageStatus, StudioInstanceTransportKind,
         StudioKernelAgentCreationFieldSupport, StudioRuntimeKind, StudioService,
         StudioUpdateInstanceLlmProviderConfigInput, StudioWorkbenchLLMProviderConfigRecord,
         DEFAULT_INSTANCE_ID,
@@ -7211,6 +7306,7 @@ mod tests {
         },
         storage::StorageProviderKind,
     };
+    use sdkwork_claw_host_core::host_endpoints::OpenClawLifecycle;
     use sdkwork_claw_host_core::openclaw_control_plane::OpenClawGatewayInvokeRequest;
     use sdkwork_claw_server::bootstrap::{
         ServerStateStoreProfileRecord, ServerStateStoreProviderRecord, ServerStateStoreSnapshot,
@@ -7310,16 +7406,7 @@ mod tests {
     fn openclaw_config_file_path(paths: &crate::framework::paths::AppPaths) -> std::path::PathBuf {
         KernelRuntimeAuthorityService::new()
             .active_config_file_path("openclaw", paths)
-            .unwrap_or_else(|_| {
-                paths
-                    .kernel_paths("openclaw")
-                    .map(|kernel| kernel.config_file)
-                    .unwrap_or_else(|_| {
-                        sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_config_file_path(
-                            &paths.user_root,
-                        )
-                    })
-            })
+            .expect("canonical openclaw config path")
     }
 
     fn desktop_host_snapshot_fixture(
@@ -7329,15 +7416,15 @@ mod tests {
             api_base_path: "/claw/api/v1".to_string(),
             manage_base_path: "/claw/manage/v1".to_string(),
             internal_base_path: "/claw/internal/v1".to_string(),
-            browser_base_url: "http://127.0.0.1:18797".to_string(),
+            browser_base_url: "http://127.0.0.1:21289".to_string(),
             browser_session_token: "desktop-session-token".to_string(),
             endpoint: sdkwork_claw_host_core::host_endpoints::HostEndpointRecord {
                 endpoint_id: "claw-manage-http".to_string(),
                 bind_host: "127.0.0.1".to_string(),
-                requested_port: 18_797,
-                active_port: Some(18_797),
+                requested_port: 21_289,
+                active_port: Some(21_289),
                 scheme: "http".to_string(),
-                base_url: Some("http://127.0.0.1:18797".to_string()),
+                base_url: Some("http://127.0.0.1:21289".to_string()),
                 websocket_url: None,
                 loopback_only: true,
                 dynamic_port: false,
@@ -7494,6 +7581,39 @@ mod tests {
     }
 
     #[test]
+    fn host_platform_status_keeps_gateway_invoke_available_when_degraded_host_surface_is_usable() {
+        let (_root, paths, config, storage, service) = studio_context();
+        let (supervisor, _server) = configured_openclaw_supervisor(&paths);
+        let desktop_host_snapshot = desktop_host_snapshot_fixture();
+        let desktop_host_status = EmbeddedHostRuntimeStatus {
+            lifecycle: "degraded".to_string(),
+            last_error: Some(
+                "background worker exited after the host surface was published".to_string(),
+            ),
+        };
+
+        let status = service
+            .get_host_platform_status(
+                &paths,
+                &config,
+                &storage,
+                &supervisor,
+                Some(&desktop_host_snapshot),
+                Some(&desktop_host_status),
+            )
+            .expect("host platform status");
+
+        assert_eq!(status.lifecycle, "degraded");
+        assert!(status
+            .supported_capability_keys
+            .contains(&"manage.openclaw.gateway.invoke".to_string()));
+        assert!(status
+            .available_capability_keys
+            .contains(&"manage.openclaw.gateway.invoke".to_string()));
+        assert_eq!(status.capability_keys, status.available_capability_keys);
+    }
+
+    #[test]
     fn host_platform_status_excludes_gateway_invoke_from_available_capabilities_when_runtime_is_not_ready(
     ) {
         let (_root, paths, config, storage, service) = studio_context();
@@ -7522,6 +7642,26 @@ mod tests {
             .available_capability_keys
             .contains(&"manage.openclaw.gateway.invoke".to_string()));
         assert_eq!(status.capability_keys, status.available_capability_keys);
+    }
+
+    #[test]
+    fn built_in_openclaw_lifecycle_ignores_stale_failed_service_when_runtime_is_not_configured() {
+        let supervisor = SupervisorService::new();
+        supervisor
+            .record_stopped(
+                SERVICE_ID_OPENCLAW_GATEWAY,
+                None,
+                Some("stale gateway failure from a previous kernel profile".to_string()),
+            )
+            .expect("record stale failed gateway service");
+
+        let lifecycle =
+            built_in_openclaw_lifecycle(&supervisor).expect("project built-in lifecycle");
+        let last_error =
+            built_in_openclaw_last_error(&supervisor).expect("project built-in last error");
+
+        assert_eq!(lifecycle, OpenClawLifecycle::Inactive);
+        assert_eq!(last_error, None);
     }
 
     #[test]
@@ -7880,7 +8020,7 @@ mod tests {
                 runtime_dir,
                 node_path,
                 cli_path,
-                home_dir: paths.openclaw_root_dir.clone(),
+                home_dir: paths.user_root.clone(),
                 state_dir: paths.openclaw_root_dir.clone(),
                 workspace_dir: paths.openclaw_workspace_dir.clone(),
                 config_path: openclaw_config_file_path(paths),
@@ -8140,6 +8280,32 @@ mod tests {
     }
 
     #[test]
+    fn list_instances_repairs_corrupt_local_file_storage_document_before_projection() {
+        let (_root, paths, config, storage, service) = studio_context();
+        let profile_path = paths
+            .storage_dir
+            .join("profiles")
+            .join("default-local.json");
+        fs::create_dir_all(profile_path.parent().expect("profile dir"))
+            .expect("create profile dir");
+        fs::write(
+            &profile_path,
+            "{\n  \"studio.instances\": {\n    \"registry\": \"{\\\"version\\\":1,\\\"instances\\\":[]}\"\n  }\n}\n}",
+        )
+        .expect("seed corrupt storage document");
+
+        let instances = service
+            .list_instances(&paths, &config, &storage)
+            .expect("list instances");
+
+        assert_eq!(instances.len(), 1);
+        assert_eq!(instances[0].id, DEFAULT_INSTANCE_ID);
+        let repaired = fs::read_to_string(profile_path).expect("repaired storage document");
+        serde_json::from_str::<Value>(&repaired)
+            .expect("storage document should be repaired to strict JSON");
+    }
+
+    #[test]
     fn list_instances_preserves_stable_built_in_openclaw_identity_without_injecting_legacy_default_instance(
     ) {
         let (_root, paths, config, storage, service) = studio_context();
@@ -8206,7 +8372,7 @@ mod tests {
         assert_eq!(instances[0].version, bundled_openclaw_version());
         assert!(!instances
             .iter()
-            .any(|instance| instance.id == DEFAULT_INSTANCE_ID));
+            .any(|instance| instance.id == "local-built-in"));
     }
 
     #[test]
@@ -8560,6 +8726,71 @@ mod tests {
     }
 
     #[test]
+    fn updating_built_in_instance_removes_legacy_global_workspace_fallback() {
+        let (_root, paths, config, storage, service) = studio_context();
+        let canonical_workspace = paths.openclaw_workspace_dir.to_string_lossy().into_owned();
+
+        fs::write(
+            &openclaw_config_file_path(&paths),
+            r#"{
+  gateway: {
+    port: 19876,
+    auth: {
+      mode: "token",
+      token: "studio-token",
+    },
+  },
+  agents: {
+    defaults: {
+      workspace: "D:/legacy/global-workspace",
+    },
+    list: [
+      {
+        id: "main",
+        name: "Main",
+        default: true,
+      },
+    ],
+  },
+}
+"#,
+        )
+        .expect("seed config file");
+
+        let updated = service
+            .update_instance_config(
+                &paths,
+                &config,
+                &storage,
+                DEFAULT_INSTANCE_ID,
+                super::StudioInstanceConfig {
+                    port: "19888".to_string(),
+                    sandbox: true,
+                    auto_update: true,
+                    log_level: "info".to_string(),
+                    cors_origins: "*".to_string(),
+                    workspace_path: Some("D:/ui/custom-workspace".to_string()),
+                    base_url: None,
+                    websocket_url: None,
+                    auth_token: Some("studio-token".to_string()),
+                },
+            )
+            .expect("update built-in config")
+            .expect("updated config");
+
+        assert_eq!(
+            updated.workspace_path.as_deref(),
+            Some(canonical_workspace.as_str())
+        );
+
+        let root = read_json5_object(&openclaw_config_file_path(&paths)).expect("read config file");
+        assert!(
+            get_nested_value(&root, &["agents", "defaults", "workspace"]).is_none(),
+            "built-in OpenClaw must not persist agents.defaults.workspace because OpenClaw treats it as a global fallback for non-main agents"
+        );
+    }
+
+    #[test]
     fn remote_instance_crud_round_trips_with_storage_binding_metadata() {
         let (_root, paths, config, storage, service) = studio_context();
 
@@ -8688,6 +8919,8 @@ mod tests {
                     updated_at: 12,
                     message_count: 0,
                     last_message_preview: None,
+                    last_seen_at: None,
+                    kernel_session: None,
                     messages: vec![
                         StudioConversationMessage {
                             id: "message-1".to_string(),
@@ -8699,6 +8932,8 @@ mod tests {
                             model: Some("gpt-4.1".to_string()),
                             sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
                             status: StudioConversationMessageStatus::Complete,
+                            attachments: Vec::new(),
+                            kernel_message: None,
                         },
                         StudioConversationMessage {
                             id: "message-2".to_string(),
@@ -8710,6 +8945,8 @@ mod tests {
                             model: Some("ironclaw".to_string()),
                             sender_instance_id: Some(remote.id.clone()),
                             status: StudioConversationMessageStatus::Complete,
+                            attachments: Vec::new(),
+                            kernel_message: None,
                         },
                     ],
                 },
@@ -8766,6 +9003,8 @@ mod tests {
                     updated_at: 1,
                     message_count: 0,
                     last_message_preview: None,
+                    last_seen_at: None,
+                    kernel_session: None,
                     messages: Vec::new(),
                 },
             )
@@ -8796,6 +9035,8 @@ mod tests {
                     updated_at: 1,
                     message_count: 0,
                     last_message_preview: None,
+                    last_seen_at: None,
+                    kernel_session: None,
                     messages: vec![StudioConversationMessage {
                         id: "message-sqlite-1".to_string(),
                         conversation_id: conversation_id.to_string(),
@@ -8806,6 +9047,8 @@ mod tests {
                         model: Some("gpt-4.1".to_string()),
                         sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
                         status: StudioConversationMessageStatus::Complete,
+                        attachments: Vec::new(),
+                        kernel_message: None,
                     }],
                 },
             )
@@ -8836,10 +9079,147 @@ mod tests {
             .expect("read conversation from local profile")
             .value;
 
-        assert!(sqlite_value.is_some(), "conversation should be stored in sqlite");
+        assert!(
+            sqlite_value.is_some(),
+            "conversation should be stored in sqlite"
+        );
         assert!(
             local_value.is_none(),
             "conversation should no longer be stored in the default local-file profile"
+        );
+    }
+
+    #[test]
+    fn list_conversations_preserves_gateway_kernel_session_metadata_from_sqlite() {
+        let (_root, paths, config, storage, service) = studio_context();
+        let conversation_id = "conversation-gateway-metadata";
+        let raw_record = serde_json::json!({
+            "id": conversation_id,
+            "title": "Explain why OpenClaw starts degraded and repair the startup flow",
+            "primaryInstanceId": DEFAULT_INSTANCE_ID,
+            "participantInstanceIds": [DEFAULT_INSTANCE_ID],
+            "createdAt": 10_u64,
+            "updatedAt": 20_u64,
+            "lastSeenAt": 18_u64,
+            "messageCount": 1_u64,
+            "lastMessagePreview": "Explain why OpenClaw starts degraded and repair the startup flow",
+            "kernelSession": {
+                "ref": {
+                    "kernelId": "openclaw",
+                    "instanceId": DEFAULT_INSTANCE_ID,
+                    "sessionId": "session-alpha",
+                    "routingKey": "session-alpha"
+                },
+                "authority": {
+                    "kind": "gateway",
+                    "source": "kernel",
+                    "durable": true,
+                    "writable": true
+                },
+                "lifecycle": "ready",
+                "title": "Explain why OpenClaw starts degraded and repair the startup flow",
+                "createdAt": 10_u64,
+                "updatedAt": 20_u64,
+                "messageCount": 1_u64,
+                "lastMessagePreview": "Explain why OpenClaw starts degraded and repair the startup flow",
+                "nativeMetadata": {
+                    "__clawStudioTitleSource": "firstUser"
+                }
+            },
+            "messages": [{
+                "id": "message-1",
+                "conversationId": conversation_id,
+                "role": "user",
+                "content": "Explain why OpenClaw starts degraded and repair the startup flow",
+                "createdAt": 10_u64,
+                "updatedAt": 20_u64,
+                "model": "openai/gpt-4.1",
+                "senderInstanceId": DEFAULT_INSTANCE_ID,
+                "status": "complete",
+                "attachments": [{
+                    "id": "attachment-1",
+                    "kind": "file",
+                    "name": "startup.log"
+                }],
+                "kernelMessage": {
+                    "id": "message-1",
+                    "sessionRef": {
+                        "kernelId": "openclaw",
+                        "instanceId": DEFAULT_INSTANCE_ID,
+                        "sessionId": "session-alpha",
+                        "routingKey": "session-alpha"
+                    },
+                    "role": "user",
+                    "status": "complete",
+                    "createdAt": 10_u64,
+                    "updatedAt": 20_u64,
+                    "text": "Explain why OpenClaw starts degraded and repair the startup flow",
+                    "parts": [{
+                        "kind": "text",
+                        "text": "Explain why OpenClaw starts degraded and repair the startup flow"
+                    }],
+                    "nativeMetadata": {
+                        "seq": 1
+                    }
+                }
+            }]
+        });
+
+        storage
+            .put_text(
+                &paths,
+                &config,
+                crate::framework::storage::StoragePutTextRequest {
+                    profile_id: Some("default-sqlite".to_string()),
+                    namespace: Some(super::CHAT_NAMESPACE.to_string()),
+                    key: super::conversation_storage_key(conversation_id),
+                    value: serde_json::to_string_pretty(&raw_record)
+                        .expect("serialize gateway conversation"),
+                },
+            )
+            .expect("seed gateway conversation");
+
+        let conversations = service
+            .list_conversations(&paths, &config, &storage, DEFAULT_INSTANCE_ID)
+            .expect("list gateway conversations");
+        let stored = conversations
+            .iter()
+            .find(|record| record.id == conversation_id)
+            .expect("gateway conversation should be returned");
+        let stored_json = serde_json::to_value(stored).expect("serialize stored conversation");
+
+        assert_eq!(
+            stored.title,
+            "Explain why OpenClaw starts degraded and repair the startup flow"
+        );
+        assert_eq!(
+            stored_json
+                .get("kernelSession")
+                .and_then(|kernel_session| kernel_session.get("authority"))
+                .and_then(|authority| authority.get("kind"))
+                .and_then(|kind| kind.as_str()),
+            Some("gateway")
+        );
+        assert_eq!(
+            stored_json
+                .get("messages")
+                .and_then(|messages| messages.as_array())
+                .and_then(|messages| messages.first())
+                .and_then(|message| message.get("kernelMessage"))
+                .and_then(|kernel_message| kernel_message.get("nativeMetadata"))
+                .and_then(|metadata| metadata.get("seq"))
+                .and_then(|seq| seq.as_u64()),
+            Some(1)
+        );
+        assert_eq!(
+            stored_json
+                .get("messages")
+                .and_then(|messages| messages.as_array())
+                .and_then(|messages| messages.first())
+                .and_then(|message| message.get("attachments"))
+                .and_then(|attachments| attachments.as_array())
+                .map(|attachments| attachments.len()),
+            Some(1)
         );
     }
 
@@ -8861,6 +9241,8 @@ mod tests {
                     updated_at: 12,
                     message_count: 3,
                     last_message_preview: Some("stale preview".to_string()),
+                    last_seen_at: None,
+                    kernel_session: None,
                     messages: vec![
                         StudioConversationMessage {
                             id: "message-duplicate-1".to_string(),
@@ -8872,6 +9254,8 @@ mod tests {
                             model: Some("gpt-4.1".to_string()),
                             sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
                             status: StudioConversationMessageStatus::Complete,
+                            attachments: Vec::new(),
+                            kernel_message: None,
                         },
                         StudioConversationMessage {
                             id: "message-duplicate-1".to_string(),
@@ -8883,6 +9267,8 @@ mod tests {
                             model: Some("gpt-4.1".to_string()),
                             sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
                             status: StudioConversationMessageStatus::Complete,
+                            attachments: Vec::new(),
+                            kernel_message: None,
                         },
                         StudioConversationMessage {
                             id: "message-duplicate-2".to_string(),
@@ -8894,6 +9280,8 @@ mod tests {
                             model: Some("gpt-4.1".to_string()),
                             sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
                             status: StudioConversationMessageStatus::Complete,
+                            attachments: Vec::new(),
+                            kernel_message: None,
                         },
                     ],
                 },
@@ -8910,8 +9298,14 @@ mod tests {
             vec!["message-duplicate-1", "message-duplicate-2"]
         );
         assert_eq!(stored.messages[0].content, "latest user prompt");
-        assert_eq!(stored.messages[0].conversation_id, "conversation-deduped-write");
-        assert_eq!(stored.last_message_preview.as_deref(), Some("final assistant reply"));
+        assert_eq!(
+            stored.messages[0].conversation_id,
+            "conversation-deduped-write"
+        );
+        assert_eq!(
+            stored.last_message_preview.as_deref(),
+            Some("final assistant reply")
+        );
         assert_eq!(stored.updated_at, 22);
     }
 
@@ -8928,6 +9322,8 @@ mod tests {
             updated_at: 12,
             message_count: 3,
             last_message_preview: Some("stale preview".to_string()),
+            last_seen_at: None,
+            kernel_session: None,
             messages: vec![
                 StudioConversationMessage {
                     id: "message-history-1".to_string(),
@@ -8939,6 +9335,8 @@ mod tests {
                     model: Some("gpt-4.1".to_string()),
                     sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
                     status: StudioConversationMessageStatus::Complete,
+                    attachments: Vec::new(),
+                    kernel_message: None,
                 },
                 StudioConversationMessage {
                     id: "message-history-1".to_string(),
@@ -8950,6 +9348,8 @@ mod tests {
                     model: Some("gpt-4.1".to_string()),
                     sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
                     status: StudioConversationMessageStatus::Complete,
+                    attachments: Vec::new(),
+                    kernel_message: None,
                 },
                 StudioConversationMessage {
                     id: "message-history-2".to_string(),
@@ -8961,6 +9361,8 @@ mod tests {
                     model: Some("gpt-4.1".to_string()),
                     sender_instance_id: Some(DEFAULT_INSTANCE_ID.to_string()),
                     status: StudioConversationMessageStatus::Complete,
+                    attachments: Vec::new(),
+                    kernel_message: None,
                 },
             ],
         };
@@ -8998,7 +9400,10 @@ mod tests {
         );
         assert_eq!(repaired.messages[0].content, "latest hydrated prompt");
         assert_eq!(repaired.messages[0].conversation_id, conversation_id);
-        assert_eq!(repaired.last_message_preview.as_deref(), Some("final hydrated reply"));
+        assert_eq!(
+            repaired.last_message_preview.as_deref(),
+            Some("final hydrated reply")
+        );
         assert_eq!(repaired.updated_at, 30);
 
         let rewritten = storage
@@ -9019,7 +9424,10 @@ mod tests {
 
         assert_eq!(rewritten_record.message_count, 2);
         assert_eq!(rewritten_record.messages.len(), 2);
-        assert_eq!(rewritten_record.messages[0].content, "latest hydrated prompt");
+        assert_eq!(
+            rewritten_record.messages[0].content,
+            "latest hydrated prompt"
+        );
         assert_eq!(
             rewritten_record.last_message_preview.as_deref(),
             Some("final hydrated reply")
@@ -9076,7 +9484,10 @@ mod tests {
             .value;
 
         assert_eq!(stored.len(), 1);
-        assert!(sqlite_value.is_some(), "persisted kernel chat agent should be stored in sqlite");
+        assert!(
+            sqlite_value.is_some(),
+            "persisted kernel chat agent should be stored in sqlite"
+        );
     }
 
     #[test]
@@ -9846,7 +10257,7 @@ mod tests {
             && route.authoritative
             && route.target.as_deref().is_some_and(|target| target
                 .replace('\\', "/")
-                .ends_with("/user-home/.hermes/config.yaml"))));
+                .ends_with("/app-user-root/.hermes/config.yaml"))));
         assert!(detail.workbench.is_none());
     }
 
@@ -11126,8 +11537,8 @@ mod tests {
     }
 
     #[test]
-    fn kernel_agent_creation_capability_reports_supported_openclaw_models_for_the_built_in_instance()
-    {
+    fn kernel_agent_creation_capability_reports_supported_openclaw_models_for_the_built_in_instance(
+    ) {
         let (_root, paths, config, storage, service) = studio_context();
         fs::write(
             &openclaw_config_file_path(&paths),
@@ -11173,8 +11584,8 @@ mod tests {
                 is_default: true,
                 primary_model: true,
                 fallback_models: true,
-                workspace: true,
-                agent_dir: true,
+                workspace: false,
+                agent_dir: false,
                 temperature: true,
                 top_p: true,
                 max_tokens: true,
@@ -11182,22 +11593,19 @@ mod tests {
                 streaming: true,
             }
         );
-        assert!(
-            capability
-                .kernel_options[0]
-                .model_options
-                .iter()
-                .any(|option| option.value == "openai/gpt-5.4"
-                    && option.provider_id == "openai"
-                    && option.provider_label == "Openai")
-        );
-        assert!(
-            capability.kernel_options[0]
-                .model_options
-                .iter()
-                .any(|option| option.value == "openrouter/meta-llama/llama-3.1-8b-instruct"
-                    && option.provider_id == "openrouter")
-        );
+        assert!(capability.kernel_options[0]
+            .model_options
+            .iter()
+            .any(|option| option.value == "openai/gpt-5.4"
+                && option.provider_id == "openai"
+                && option.provider_label == "Openai"));
+        assert!(capability.kernel_options[0]
+            .model_options
+            .iter()
+            .any(
+                |option| option.value == "openrouter/meta-llama/llama-3.1-8b-instruct"
+                    && option.provider_id == "openrouter"
+            ));
     }
 
     #[test]
@@ -11426,8 +11834,8 @@ mod tests {
                     is_default: true,
                     primary_model: Some("openai/gpt-5.4".to_string()),
                     fallback_models: vec!["openai/o4-mini".to_string()],
-                    workspace: Some("~/agents/reviewer".to_string()),
-                    agent_dir: Some("agents/reviewer".to_string()),
+                    workspace: None,
+                    agent_dir: None,
                     temperature: Some(0.3),
                     top_p: Some(0.95),
                     max_tokens: Some(12000),
@@ -11451,7 +11859,10 @@ mod tests {
             .find(|entry| get_nested_string(entry, &["id"]).as_deref() == Some("reviewer-agent"))
             .expect("reviewer agent entry");
 
-        assert_eq!(get_nested_string(reviewer, &["name"]).as_deref(), Some("Reviewer"));
+        assert_eq!(
+            get_nested_string(reviewer, &["name"]).as_deref(),
+            Some("Reviewer")
+        );
         assert_eq!(
             get_nested_string(reviewer, &["identity", "emoji"]).as_deref(),
             Some("R")
@@ -11466,13 +11877,27 @@ mod tests {
                 .cloned(),
             Some(vec![Value::String("openai/o4-mini".to_string())])
         );
+        let reviewer_workspace = paths
+            .kernel_paths("openclaw")
+            .expect("openclaw kernel paths")
+            .openclaw_agent_workspace_dir("reviewer-agent")
+            .expect("reviewer workspace")
+            .to_string_lossy()
+            .into_owned();
+        let reviewer_agent_dir = paths
+            .kernel_paths("openclaw")
+            .expect("openclaw kernel paths")
+            .openclaw_agent_dir("reviewer-agent")
+            .expect("reviewer agent dir")
+            .to_string_lossy()
+            .into_owned();
         assert_eq!(
             get_nested_string(reviewer, &["workspace"]).as_deref(),
-            Some("~/agents/reviewer")
+            Some(reviewer_workspace.as_str())
         );
         assert_eq!(
             get_nested_string(reviewer, &["agentDir"]).as_deref(),
-            Some("agents/reviewer")
+            Some(reviewer_agent_dir.as_str())
         );
         assert_eq!(
             get_nested_value(reviewer, &["params", "temperature"]).and_then(Value::as_f64),
@@ -11505,6 +11930,61 @@ mod tests {
             .filter_map(|entry| get_nested_string(entry, &["id"]))
             .collect::<Vec<_>>();
         assert_eq!(default_agent_ids, vec!["reviewer-agent".to_string()]);
+    }
+
+    #[test]
+    fn create_kernel_agent_keeps_main_as_default_when_config_has_no_agent_list() {
+        let (_root, paths, config, storage, service) = studio_context();
+        fs::write(&openclaw_config_file_path(&paths), "{}").expect("seed empty config file");
+
+        let created = service
+            .create_kernel_agent(
+                &paths,
+                &config,
+                &storage,
+                StudioCreateKernelAgentInput {
+                    instance_id: DEFAULT_INSTANCE_ID.to_string(),
+                    kernel_id: Some("openclaw".to_string()),
+                    agent_id: "Research Analyst".to_string(),
+                    display_name: "Research Analyst".to_string(),
+                    avatar: Some("RA".to_string()),
+                    is_default: false,
+                    ..Default::default()
+                },
+            )
+            .expect("create kernel agent");
+
+        assert_eq!(created.agent_id, "research-analyst");
+
+        let root = read_json5_object(&openclaw_config_file_path(&paths)).expect("read config file");
+        let agents = get_nested_value(&root, &["agents", "list"])
+            .and_then(Value::as_array)
+            .expect("agent list");
+        let main = agents
+            .iter()
+            .find(|entry| get_nested_string(entry, &["id"]).as_deref() == Some("main"))
+            .expect("main agent entry");
+        let created_agent = agents
+            .iter()
+            .find(|entry| get_nested_string(entry, &["id"]).as_deref() == Some("research-analyst"))
+            .expect("created agent entry");
+
+        assert_eq!(
+            get_nested_value(main, &["default"]).and_then(Value::as_bool),
+            Some(true)
+        );
+        assert_eq!(
+            get_nested_string(main, &["workspace"]).as_deref(),
+            Some(paths.openclaw_workspace_dir.to_string_lossy().as_ref())
+        );
+        assert_eq!(
+            get_nested_string(main, &["agentDir"]).as_deref(),
+            Some(paths.openclaw_main_agent_dir.to_string_lossy().as_ref())
+        );
+        assert_eq!(
+            get_nested_value(created_agent, &["default"]).and_then(Value::as_bool),
+            Some(false)
+        );
     }
 
     #[test]
@@ -11995,14 +12475,14 @@ Reads runtime diagnostics and summarizes them.
                     version: Some("2026.3.23-2".to_string()),
                     type_label: Some("Remote OpenClaw".to_string()),
                     host: Some("openclaw.example.com".to_string()),
-                    port: Some(18789),
+                    port: Some(21280),
                     base_url: Some("https://openclaw.example.com".to_string()),
                     websocket_url: Some("wss://openclaw.example.com/ws".to_string()),
                     storage: None,
                     config: Some(super::PartialStudioInstanceConfig {
                         base_url: Some("https://openclaw.example.com".to_string()),
                         websocket_url: Some("wss://openclaw.example.com/ws".to_string()),
-                        port: Some("18789".to_string()),
+                        port: Some("21280".to_string()),
                         auth_token: Some("remote-token".to_string()),
                         ..super::PartialStudioInstanceConfig::default()
                     }),
@@ -12058,14 +12538,14 @@ Reads runtime diagnostics and summarizes them.
                     version: Some("2026.3.23-2".to_string()),
                     type_label: Some("Remote OpenClaw".to_string()),
                     host: Some("openclaw.example.com".to_string()),
-                    port: Some(18789),
+                    port: Some(21280),
                     base_url: Some("https://openclaw.example.com".to_string()),
                     websocket_url: Some("wss://openclaw.example.com/ws".to_string()),
                     storage: None,
                     config: Some(super::PartialStudioInstanceConfig {
                         base_url: Some("https://openclaw.example.com".to_string()),
                         websocket_url: Some("wss://openclaw.example.com/ws".to_string()),
-                        port: Some("18789".to_string()),
+                        port: Some("21280".to_string()),
                         auth_token: Some("remote-token".to_string()),
                         ..super::PartialStudioInstanceConfig::default()
                     }),

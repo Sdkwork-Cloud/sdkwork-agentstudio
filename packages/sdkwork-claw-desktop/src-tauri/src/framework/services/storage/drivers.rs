@@ -2,14 +2,18 @@ use super::{profiles::StorageDriverScope, registry::StorageDriver};
 use crate::framework::{storage::StorageProviderKind, FrameworkError, Result};
 use postgres::{Client as PostgresClient, Config as PostgresConfig, NoTls};
 use rusqlite::{params, Connection as SqliteConnection, OptionalExtension};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::{
     collections::BTreeMap,
     fs,
+    io::Write,
     path::Path,
     str::FromStr,
     sync::{Arc, Mutex, MutexGuard},
     time::Duration,
 };
+use uuid::Uuid;
 
 type NamespaceStore = BTreeMap<String, String>;
 type ProfileNamespaceStore = BTreeMap<String, NamespaceStore>;
@@ -126,12 +130,15 @@ impl LocalFileStorageDriver {
             return Ok(BTreeMap::new());
         }
 
-        let content = fs::read_to_string(path)?;
-        if content.trim().is_empty() {
+        let bytes = fs::read(path)?;
+        if bytes.iter().all(u8::is_ascii_whitespace) {
             return Ok(BTreeMap::new());
         }
 
-        Ok(serde_json::from_str::<LocalFileStorageDocument>(&content)?)
+        match serde_json::from_slice::<LocalFileStorageDocument>(&bytes) {
+            Ok(document) => Ok(document),
+            Err(error) => recover_local_file_storage_document(path, &bytes, error),
+        }
     }
 
     fn write_document(&self, path: &Path, document: &LocalFileStorageDocument) -> Result<()> {
@@ -139,10 +146,61 @@ impl LocalFileStorageDriver {
             fs::create_dir_all(parent)?;
         }
 
-        let content = serde_json::to_string_pretty(document)?;
-        fs::write(path, content)?;
-        Ok(())
+        let bytes = serde_json::to_vec_pretty(document)?;
+        write_storage_document_bytes(path, &bytes)
     }
+}
+
+fn recover_local_file_storage_document<T>(
+    path: &Path,
+    bytes: &[u8],
+    original_error: serde_json::Error,
+) -> Result<T>
+where
+    T: DeserializeOwned + Serialize,
+{
+    let mut values = Vec::new();
+    for value in serde_json::Deserializer::from_slice(bytes).into_iter::<serde_json::Value>() {
+        match value {
+            Ok(value) => values.push(value),
+            Err(_) => break,
+        }
+    }
+
+    for value in values.into_iter().rev() {
+        if let Ok(document) = serde_json::from_value::<T>(value) {
+            let bytes = serde_json::to_vec_pretty(&document)?;
+            write_storage_document_bytes(path, &bytes)?;
+            return Ok(document);
+        }
+    }
+
+    Err(FrameworkError::from(original_error))
+}
+
+fn write_storage_document_bytes(path: &Path, bytes: &[u8]) -> Result<()> {
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent)?;
+    let file_name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("storage.json");
+    let temp_path = parent.join(format!(".{file_name}.{}.tmp", Uuid::new_v4()));
+    let mut temp_file = fs::File::create(&temp_path)?;
+    temp_file.write_all(bytes)?;
+    temp_file.sync_all()?;
+    drop(temp_file);
+
+    #[cfg(windows)]
+    if path.exists() {
+        fs::remove_file(path)?;
+    }
+
+    fs::rename(&temp_path, path).map_err(|error| {
+        let _ = fs::remove_file(&temp_path);
+        FrameworkError::from(error)
+    })?;
+    Ok(())
 }
 
 impl StorageDriver for MemoryStorageDriver {
@@ -426,6 +484,7 @@ mod tests {
         StorageDriver, UnavailableStorageDriver,
     };
     use crate::framework::storage::StorageProviderKind;
+    use std::fs;
 
     #[test]
     fn local_file_driver_persists_values_across_driver_instances() {
@@ -447,6 +506,59 @@ mod tests {
         let value = reopened.get_text(&scope, "welcome").expect("get text");
 
         assert_eq!(value.as_deref(), Some("desktop kernel"));
+    }
+
+    #[test]
+    fn local_file_driver_repairs_valid_document_with_trailing_stale_bytes() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let path = root.path().join("profiles/default-local.json");
+        fs::create_dir_all(path.parent().expect("profile dir")).expect("create profile dir");
+        fs::write(
+            &path,
+            "{\n  \"claw-studio\": {\n    \"registry\": \"current-registry\"\n  }\n}\n}",
+        )
+        .expect("seed storage document with stale tail");
+        let scope = storage_scope(
+            "default-local",
+            StorageProviderKind::LocalFile,
+            "claw-studio",
+            Some(path.clone()),
+        );
+
+        let driver = LocalFileStorageDriver::default();
+        let value = driver.get_text(&scope, "registry").expect("get text");
+
+        assert_eq!(value.as_deref(), Some("current-registry"));
+        let repaired = fs::read_to_string(path).expect("repaired storage document");
+        serde_json::from_str::<serde_json::Value>(&repaired)
+            .expect("storage document should be repaired to strict JSON");
+    }
+
+    #[test]
+    fn local_file_driver_repairs_concatenated_documents_by_keeping_newest_document() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let path = root.path().join("profiles/default-local.json");
+        fs::create_dir_all(path.parent().expect("profile dir")).expect("create profile dir");
+        fs::write(
+            &path,
+            "{\n  \"claw-studio\": {\n    \"registry\": \"stale-registry\"\n  }\n}\n{\n  \"claw-studio\": {\n    \"registry\": \"current-registry\"\n  }\n}",
+        )
+        .expect("seed concatenated storage documents");
+        let scope = storage_scope(
+            "default-local",
+            StorageProviderKind::LocalFile,
+            "claw-studio",
+            Some(path.clone()),
+        );
+
+        let driver = LocalFileStorageDriver::default();
+        let value = driver.get_text(&scope, "registry").expect("get text");
+
+        assert_eq!(value.as_deref(), Some("current-registry"));
+        let repaired = fs::read_to_string(path).expect("repaired storage document");
+        assert!(!repaired.contains("stale-registry"));
+        serde_json::from_str::<serde_json::Value>(&repaired)
+            .expect("storage document should be repaired to strict JSON");
     }
 
     #[test]

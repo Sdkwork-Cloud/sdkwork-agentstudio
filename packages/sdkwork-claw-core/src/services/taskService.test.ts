@@ -108,6 +108,7 @@ function createDetail(input: {
   deploymentMode?: 'remote' | 'local-managed';
   transportKind?: string;
   isBuiltIn?: boolean;
+  authToken?: string;
   workbench?: StudioWorkbenchSnapshot | null;
 }): StudioInstanceDetailRecord {
   return {
@@ -143,6 +144,7 @@ function createDetail(input: {
         autoUpdate: false,
         logLevel: 'info',
         corsOrigins: '*',
+        ...(input.authToken ? { authToken: input.authToken } : {}),
       },
       createdAt: 1,
       updatedAt: 1,
@@ -154,6 +156,7 @@ function createDetail(input: {
       autoUpdate: false,
       logLevel: 'info',
       corsOrigins: '*',
+      ...(input.authToken ? { authToken: input.authToken } : {}),
     },
     logs: '',
     health: {
@@ -821,7 +824,13 @@ await runTest('taskService routes backend-authored OpenClaw task mutations and f
 
 await runTest('taskService uses gateway-authored cron jobs for instances that expose the gateway task transport even when runtimeKind is custom', async () => {
   const originalBridge = getPlatformBridge();
+  const originalFetch = globalThis.fetch;
   const gatewayCalls: Array<{ instanceId: string; request: Record<string, unknown> }> = [];
+  const httpCalls: Array<{
+    url: string;
+    authorization: string | null;
+    request: Record<string, unknown>;
+  }> = [];
 
   configurePlatformBridge({
     studio: {
@@ -833,6 +842,7 @@ await runTest('taskService uses gateway-authored cron jobs for instances that ex
           deploymentMode: 'local-managed',
           transportKind: 'openclawGatewayWs',
           isBuiltIn: true,
+          authToken: 'custom-gateway-token',
           workbench: null,
         });
       },
@@ -852,6 +862,34 @@ await runTest('taskService uses gateway-authored cron jobs for instances that ex
       },
     },
   });
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    httpCalls.push({
+      url: String(input),
+      authorization:
+        init?.headers && typeof init.headers === 'object' && !Array.isArray(init.headers)
+          ? ((init.headers as Record<string, string>).Authorization ?? null)
+          : null,
+      request: JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>,
+    });
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        result: {
+          items: [
+            createOpenClawGatewayJob('gateway-custom-task-1', {
+              name: 'Gateway Task Surface',
+              prompt: 'Route by transport, not runtime kind.',
+            }),
+          ],
+        },
+      }),
+      {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      },
+    );
+  }) as typeof fetch;
 
   try {
     const tasks = await taskService.getTasks('custom-gateway-runtime');
@@ -859,9 +897,11 @@ await runTest('taskService uses gateway-authored cron jobs for instances that ex
     assert.equal(tasks.length, 1);
     assert.equal(tasks[0]?.id, 'gateway-custom-task-1');
     assert.equal(tasks[0]?.name, 'Gateway Task Surface');
-    assert.deepEqual(gatewayCalls, [
+    assert.deepEqual(gatewayCalls, []);
+    assert.deepEqual(httpCalls, [
       {
-        instanceId: 'custom-gateway-runtime',
+        url: 'http://127.0.0.1:18080/tools/invoke',
+        authorization: 'Bearer custom-gateway-token',
         request: {
           tool: 'cron',
           action: 'list',
@@ -872,6 +912,7 @@ await runTest('taskService uses gateway-authored cron jobs for instances that ex
       },
     ]);
   } finally {
+    globalThis.fetch = originalFetch;
     configurePlatformBridge(originalBridge);
   }
 });

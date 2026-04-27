@@ -4,6 +4,7 @@ runNodeTypeScriptChecks([
   'scripts/sdkwork-core-contract.test.ts',
   'packages/sdkwork-claw-core/src/node.test.ts',
   'packages/sdkwork-claw-core/src/lib/llmService.test.ts',
+  'packages/sdkwork-claw-core/src/services/clawHubService.test.ts',
   'packages/sdkwork-claw-core/src/services/kernelDetailModuleRegistry.test.ts',
   'packages/sdkwork-claw-core/src/services/kernelAgentManagementService.test.ts',
   'packages/sdkwork-claw-core/src/services/kernelAgentLibraryService.test.ts',

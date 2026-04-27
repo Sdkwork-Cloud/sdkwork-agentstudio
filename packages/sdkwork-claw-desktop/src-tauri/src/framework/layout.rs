@@ -707,7 +707,10 @@ mod tests {
         assert_eq!(layout.layout_version, 1);
         assert!(layout.install_root.replace('\\', "/").ends_with("install"));
         assert!(layout.machine_root.replace('\\', "/").ends_with("machine"));
-        assert!(layout.user_root.replace('\\', "/").ends_with("user-home"));
+        assert!(layout
+            .user_root
+            .replace('\\', "/")
+            .ends_with("app-user-root"));
         assert!(active.modules.is_empty());
         assert!(active.runtimes.is_empty());
         assert!(inventory.module_packages.is_empty());

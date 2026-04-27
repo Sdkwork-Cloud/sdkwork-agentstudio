@@ -216,7 +216,7 @@ await runTest(
       officialRuntimeNotes: [],
       consoleAccess: null,
       config: {
-        port: '18789',
+        port: '21280',
         sandbox: true,
         autoUpdate: true,
         logLevel: 'info',

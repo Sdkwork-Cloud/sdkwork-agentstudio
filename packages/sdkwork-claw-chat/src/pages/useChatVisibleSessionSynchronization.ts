@@ -8,7 +8,7 @@ export interface UseChatVisibleSessionSynchronizationInput {
   effectiveActiveSessionId: string | null;
   selectedAgentId?: string | null | undefined;
   isSelectionTransitionPending: boolean;
-  setActiveSession: (sessionId: string, instanceId?: string) => Promise<void> | void;
+  setActiveSession: (sessionId: string, instanceId?: string | null) => Promise<void> | void;
 }
 
 export function useChatVisibleSessionSynchronization({

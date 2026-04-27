@@ -28,9 +28,9 @@ await runTest('openclaw gateway instances prefer the native websocket route even
     version: 'bundled',
     typeLabel: 'Built-In OpenClaw',
     host: '127.0.0.1',
-    port: 18789,
-    baseUrl: 'http://127.0.0.1:18789',
-    websocketUrl: 'ws://127.0.0.1:18789',
+    port: 21280,
+    baseUrl: 'http://127.0.0.1:21280',
+    websocketUrl: 'ws://127.0.0.1:21280',
     cpu: 0,
     memory: 0,
     totalMemory: 'Unknown',
@@ -41,20 +41,20 @@ await runTest('openclaw gateway instances prefer the native websocket route even
       namespace: 'claw-studio',
     },
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
       corsOrigins: '*',
-      baseUrl: 'http://127.0.0.1:18789',
-      websocketUrl: 'ws://127.0.0.1:18789',
+      baseUrl: 'http://127.0.0.1:21280',
+      websocketUrl: 'ws://127.0.0.1:21280',
     },
     createdAt: 1,
     updatedAt: 1,
   });
 
   assert.equal(route.mode, 'instanceOpenClawGatewayWs');
-  assert.equal(route.websocketUrl, 'ws://127.0.0.1:18789');
+  assert.equal(route.websocketUrl, 'ws://127.0.0.1:21280');
   assert.equal(route.endpoint, undefined);
 });
 
@@ -219,7 +219,7 @@ await runTest(
       host: '127.0.0.1',
       port: 18795,
       baseUrl: 'http://127.0.0.1:18795/v1/chat/completions',
-      websocketUrl: 'ws://127.0.0.1:18789',
+      websocketUrl: 'ws://127.0.0.1:21280',
       cpu: 0,
       memory: 0,
       totalMemory: 'Unknown',
@@ -236,7 +236,7 @@ await runTest(
         logLevel: 'info',
         corsOrigins: '*',
         baseUrl: 'http://127.0.0.1:18795/v1/chat/completions',
-        websocketUrl: 'ws://127.0.0.1:18789',
+        websocketUrl: 'ws://127.0.0.1:21280',
       },
       createdAt: 1,
       updatedAt: 1,

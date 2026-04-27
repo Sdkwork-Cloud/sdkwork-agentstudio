@@ -13,6 +13,7 @@ export interface UseChatConversationPaneMessagesStateInput {
   activeMessageGroups: ChatMessageGroup<KernelChatMessageState>[];
   messageCount: number;
   isActiveSessionGenerating: boolean;
+  activeRunId?: string | null;
   groupTimeFormatter: Intl.DateTimeFormat;
 }
 
@@ -26,6 +27,7 @@ export function useChatConversationPaneMessagesState({
   activeMessageGroups,
   messageCount,
   isActiveSessionGenerating,
+  activeRunId,
   groupTimeFormatter,
 }: UseChatConversationPaneMessagesStateInput): UseChatConversationPaneMessagesStateResult {
   const messageGroups = useMemo(
@@ -35,6 +37,7 @@ export function useChatConversationPaneMessagesState({
         messageGroups: activeMessageGroups,
         messageCount,
         isActiveSessionGenerating,
+        activeRunId,
         groupTimeFormatter,
         assistantLabel: t('chat.message.assistant'),
         userLabel: t('chat.message.you'),
@@ -43,6 +46,7 @@ export function useChatConversationPaneMessagesState({
       }),
     [
       activeMessageGroups,
+      activeRunId,
       effectiveActiveSessionId,
       groupTimeFormatter,
       isActiveSessionGenerating,

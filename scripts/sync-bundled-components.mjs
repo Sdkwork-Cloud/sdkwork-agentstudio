@@ -1018,6 +1018,7 @@ function runCommand(command, commandArgs, options = {}) {
     maxBuffer: options.maxBuffer ?? 64 * 1024 * 1024,
     shell: useWindowsShell,
     stdio: options.captureStdout ? ['ignore', 'pipe', 'inherit'] : 'inherit',
+    windowsHide: true,
   });
 
   if (result.error) {

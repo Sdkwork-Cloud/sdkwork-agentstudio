@@ -3,8 +3,12 @@ use super::local_ai_proxy::{
 };
 use crate::{
     framework::{
-        ports::{canonical_loopback_port_window_end, OPENCLAW_GATEWAY_DEFAULT_PORT},
-        paths::AppPaths, services::kernel_runtime_authority::KernelRuntimeAuthorityService,
+        paths::{AppPaths, KernelPaths},
+        ports::{
+            managed_gateway_fallback_port_range_end, managed_gateway_fallback_port_range_start,
+            OPENCLAW_GATEWAY_DEFAULT_PORT,
+        },
+        services::kernel_runtime_authority::KernelRuntimeAuthorityService,
         FrameworkError, Result,
     },
     platform,
@@ -25,6 +29,7 @@ use uuid::Uuid;
 use zip::ZipArchive;
 
 pub const OPENCLAW_RUNTIME_ID: &str = "openclaw";
+const OPENCLAW_DEFAULT_AGENT_ID: &str = "main";
 const BUNDLED_RESOURCE_DIR: &str = "openclaw";
 const NESTED_BUNDLED_RESOURCE_DIR: &str = "resources/openclaw";
 const BUNDLED_RUNTIME_ARCHIVE_FILE_NAME: &str = "runtime.zip";
@@ -897,19 +902,20 @@ fn ensure_built_in_openclaw_state(
     paths: &AppPaths,
     bundled_openclaw_version: Option<&str>,
 ) -> Result<BuiltInOpenClawState> {
-    fs::create_dir_all(&paths.openclaw_root_dir)?;
-    fs::create_dir_all(&paths.openclaw_root_dir)?;
-    fs::create_dir_all(&paths.openclaw_workspace_dir)?;
-    fs::create_dir_all(&paths.openclaw_workspace_memory_dir)?;
-    fs::create_dir_all(&paths.openclaw_workspace_skills_dir)?;
-    fs::create_dir_all(&paths.openclaw_workspace_extensions_dir)?;
-    fs::create_dir_all(&paths.openclaw_agents_dir)?;
-    fs::create_dir_all(&paths.openclaw_main_agent_dir)?;
-    fs::create_dir_all(&paths.openclaw_main_agent_sessions_dir)?;
-    fs::create_dir_all(&paths.openclaw_skills_dir)?;
-    fs::create_dir_all(&paths.openclaw_extensions_dir)?;
-    fs::create_dir_all(&paths.openclaw_cron_dir)?;
-    fs::create_dir_all(&paths.openclaw_credentials_dir)?;
+    let openclaw_paths = paths.kernel_paths(OPENCLAW_RUNTIME_ID)?;
+
+    fs::create_dir_all(&openclaw_paths.state_dir)?;
+    fs::create_dir_all(&openclaw_paths.workspace_dir)?;
+    fs::create_dir_all(openclaw_paths.openclaw_workspace_memory_dir()?)?;
+    fs::create_dir_all(openclaw_paths.openclaw_workspace_skills_dir()?)?;
+    fs::create_dir_all(openclaw_paths.openclaw_workspace_extensions_dir()?)?;
+    fs::create_dir_all(openclaw_paths.openclaw_agents_dir()?)?;
+    fs::create_dir_all(openclaw_paths.openclaw_agent_dir(OPENCLAW_DEFAULT_AGENT_ID)?)?;
+    fs::create_dir_all(openclaw_paths.openclaw_agent_sessions_dir(OPENCLAW_DEFAULT_AGENT_ID)?)?;
+    fs::create_dir_all(openclaw_paths.openclaw_skills_dir()?)?;
+    fs::create_dir_all(openclaw_paths.openclaw_extensions_dir()?)?;
+    fs::create_dir_all(openclaw_paths.openclaw_cron_dir()?)?;
+    fs::create_dir_all(openclaw_paths.openclaw_credentials_dir()?)?;
     let authority = KernelRuntimeAuthorityService::new();
     let config_file_path = authority.active_config_file_path("openclaw", paths)?;
     let imported_config = authority.import_or_default_openclaw_config(paths, &config_file_path)?;
@@ -934,11 +940,7 @@ fn ensure_built_in_openclaw_state(
     );
     ensure_managed_control_ui_allowed_origins(&mut config);
     ensure_nested_string_array_contains(&mut config, &["gateway", "tools", "allow"], "cron");
-    set_nested_string(
-        &mut config,
-        &["agents", "defaults", "workspace"],
-        &paths.openclaw_workspace_dir.to_string_lossy(),
-    );
+    ensure_built_in_main_agent_paths(&mut config, &openclaw_paths)?;
     remove_nested_key(&mut config, &["meta", "lastTouchedVersion"]);
     remove_nested_key(&mut config, &["meta", "lastTouchedAt"]);
 
@@ -954,9 +956,9 @@ fn ensure_built_in_openclaw_state(
     )?;
 
     Ok(BuiltInOpenClawState {
-        home_dir: paths.openclaw_root_dir.clone(),
-        state_dir: paths.openclaw_root_dir.clone(),
-        workspace_dir: paths.openclaw_workspace_dir.clone(),
+        home_dir: openclaw_paths.home_dir,
+        state_dir: openclaw_paths.state_dir,
+        workspace_dir: openclaw_paths.workspace_dir,
         config_path: config_file_path,
         gateway_port,
         gateway_auth_token,
@@ -1038,6 +1040,112 @@ fn ensure_managed_control_ui_allowed_origins(config: &mut Value) {
             origin,
         );
     }
+}
+
+fn ensure_built_in_main_agent_paths(
+    config: &mut Value,
+    openclaw_paths: &KernelPaths,
+) -> Result<()> {
+    remove_nested_key(config, &["agents", "defaults", "workspace"]);
+    remove_nested_key(config, &["agents", "defaults", "agentDir"]);
+
+    if !config.is_object() {
+        *config = Value::Object(Map::new());
+    }
+
+    let root = config.as_object_mut().expect("openclaw config object");
+    let agents_root = root
+        .entry("agents".to_string())
+        .or_insert_with(|| Value::Object(Map::new()));
+    if !agents_root.is_object() {
+        *agents_root = Value::Object(Map::new());
+    }
+
+    let agents_root = agents_root
+        .as_object_mut()
+        .expect("openclaw agents root object");
+    if agents_root
+        .get("defaults")
+        .and_then(Value::as_object)
+        .is_some_and(|object| object.is_empty())
+    {
+        agents_root.remove("defaults");
+    }
+    let list = agents_root
+        .entry("list".to_string())
+        .or_insert_with(|| Value::Array(Vec::new()));
+    if !list.is_array() {
+        *list = Value::Array(Vec::new());
+    }
+
+    let list = list.as_array_mut().expect("openclaw agents list");
+    let main_index = list.iter().position(|entry| {
+        entry
+            .get("id")
+            .and_then(Value::as_str)
+            .is_some_and(|id| id.trim().eq_ignore_ascii_case(OPENCLAW_DEFAULT_AGENT_ID))
+    });
+    let main_index = match main_index {
+        Some(index) => index,
+        None => {
+            let mut main = Map::new();
+            main.insert(
+                "id".to_string(),
+                Value::String(OPENCLAW_DEFAULT_AGENT_ID.to_string()),
+            );
+            main.insert("name".to_string(), Value::String("Main".to_string()));
+            list.push(Value::Object(main));
+            list.len() - 1
+        }
+    };
+
+    if !list[main_index].is_object() {
+        list[main_index] = Value::Object(Map::new());
+    }
+
+    {
+        let main = list[main_index]
+            .as_object_mut()
+            .expect("openclaw main agent object");
+        main.insert(
+            "id".to_string(),
+            Value::String(OPENCLAW_DEFAULT_AGENT_ID.to_string()),
+        );
+        if main
+            .get("name")
+            .and_then(Value::as_str)
+            .is_none_or(|name| name.trim().is_empty())
+        {
+            main.insert("name".to_string(), Value::String("Main".to_string()));
+        }
+        main.insert(
+            "workspace".to_string(),
+            Value::String(
+                openclaw_paths
+                    .openclaw_agent_workspace_dir(OPENCLAW_DEFAULT_AGENT_ID)?
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
+        );
+        main.insert(
+            "agentDir".to_string(),
+            Value::String(
+                openclaw_paths
+                    .openclaw_agent_dir(OPENCLAW_DEFAULT_AGENT_ID)?
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
+        );
+    }
+
+    for (index, entry) in list.iter_mut().enumerate() {
+        let Some(agent) = entry.as_object_mut() else {
+            continue;
+        };
+        agent.insert("default".to_string(), Value::Bool(index == main_index));
+    }
+
+    Ok(())
 }
 
 pub(crate) fn load_manifest(path: &Path) -> Result<BundledOpenClawManifest> {
@@ -1220,8 +1328,8 @@ fn allocate_gateway_port(requested_port: u16) -> Result<u16> {
         bind_host: "127.0.0.1".to_string(),
         requested_port,
         fallback_range: Some(PortRange::new(
-            requested_port,
-            canonical_loopback_port_window_end(requested_port),
+            managed_gateway_fallback_port_range_start(requested_port),
+            managed_gateway_fallback_port_range_end(requested_port),
         )),
         allow_ephemeral_fallback: true,
     })
@@ -1363,7 +1471,7 @@ mod tests {
                 .join("openclaw")
                 .join("openclaw.mjs")
         );
-        assert_eq!(activated.home_dir, paths.openclaw_root_dir);
+        assert_eq!(activated.home_dir, paths.user_root);
         assert_eq!(activated.state_dir, paths.openclaw_root_dir);
         assert_eq!(activated.workspace_dir, paths.openclaw_workspace_dir);
         assert_eq!(activated.config_path, paths.openclaw_config_file);
@@ -1424,7 +1532,24 @@ mod tests {
             config
                 .pointer("/agents/defaults/workspace")
                 .and_then(Value::as_str),
+            None
+        );
+        let agents = config
+            .pointer("/agents/list")
+            .and_then(Value::as_array)
+            .expect("agent list");
+        let main = agents
+            .iter()
+            .find(|entry| entry.get("id").and_then(Value::as_str) == Some("main"))
+            .expect("main agent entry");
+        assert_eq!(main.get("default").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            main.get("workspace").and_then(Value::as_str),
             Some(paths.openclaw_workspace_dir.to_string_lossy().as_ref())
+        );
+        assert_eq!(
+            main.get("agentDir").and_then(Value::as_str),
+            Some(paths.openclaw_main_agent_dir.to_string_lossy().as_ref())
         );
         assert!(config.pointer("/meta/lastTouchedVersion").is_none());
         assert!(config.pointer("/meta/lastTouchedAt").is_none());
@@ -1443,15 +1568,212 @@ mod tests {
     }
 
     #[test]
-    fn bundled_runtime_uses_21280_as_the_canonical_default_gateway_port() {
+    fn activation_materializes_main_agent_paths_without_global_workspace_fallback() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp.path()).expect("paths");
+        let resource_root =
+            create_bundled_runtime_fixture(temp.path(), TEST_BUNDLED_OPENCLAW_VERSION);
+        let service = OpenClawRuntimeService::new();
+
+        fs::write(
+            &paths.openclaw_config_file,
+            r#"{
+  "agents": {
+    "defaults": {
+      "workspace": "legacy-workspace",
+      "agentDir": "legacy-agent-dir"
+    },
+    "list": [
+      {
+        "id": "research",
+        "name": "Research"
+      }
+    ]
+  }
+}
+"#,
+        )
+        .expect("seed config file");
+
+        service
+            .ensure_bundled_runtime_from_root(&paths, &resource_root)
+            .expect("activated runtime");
+
+        let config = serde_json::from_str::<Value>(
+            &fs::read_to_string(&paths.openclaw_config_file).expect("config file"),
+        )
+        .expect("config json");
         assert_eq!(
-            DEFAULT_GATEWAY_PORT, 21_280,
-            "the bundled OpenClaw runtime should default to port 21280 to avoid conflicts with legacy local gateways"
+            config
+                .pointer("/agents/defaults/workspace")
+                .and_then(Value::as_str),
+            None,
+            "global workspace fallback would make non-default agents resolve under workspace/<agentId>"
+        );
+        assert_eq!(
+            config
+                .pointer("/agents/defaults/agentDir")
+                .and_then(Value::as_str),
+            None,
+            "global agentDir fallback has no role in the built-in OpenClaw directory contract"
+        );
+        let agents = config
+            .pointer("/agents/list")
+            .and_then(Value::as_array)
+            .expect("agent list");
+        let main = agents
+            .iter()
+            .find(|entry| entry.get("id").and_then(Value::as_str) == Some("main"))
+            .expect("main agent entry");
+        assert_eq!(main.get("default").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            main.get("workspace").and_then(Value::as_str),
+            Some(paths.openclaw_workspace_dir.to_string_lossy().as_ref())
+        );
+        assert_eq!(
+            main.get("agentDir").and_then(Value::as_str),
+            Some(paths.openclaw_main_agent_dir.to_string_lossy().as_ref())
+        );
+        let research = agents
+            .iter()
+            .find(|entry| entry.get("id").and_then(Value::as_str) == Some("research"))
+            .expect("research agent entry");
+        assert!(research.get("workspace").is_none());
+        assert!(research.get("agentDir").is_none());
+        assert!(paths
+            .openclaw_root_dir
+            .join("workspace-research")
+            .starts_with(&paths.openclaw_root_dir));
+    }
+
+    #[test]
+    fn activation_promotes_main_as_single_default_agent_while_pinpointing_paths() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp.path()).expect("paths");
+        let resource_root =
+            create_bundled_runtime_fixture(temp.path(), TEST_BUNDLED_OPENCLAW_VERSION);
+        let service = OpenClawRuntimeService::new();
+
+        fs::write(
+            &paths.openclaw_config_file,
+            r#"{
+  "agents": {
+    "defaults": {
+      "workspace": "legacy-workspace"
+    },
+    "list": [
+      {
+        "id": "research",
+        "default": true,
+        "name": "Research"
+      }
+    ]
+  }
+}
+"#,
+        )
+        .expect("seed config file");
+
+        service
+            .ensure_bundled_runtime_from_root(&paths, &resource_root)
+            .expect("activated runtime");
+
+        let config = serde_json::from_str::<Value>(
+            &fs::read_to_string(&paths.openclaw_config_file).expect("config file"),
+        )
+        .expect("config json");
+        let agents = config
+            .pointer("/agents/list")
+            .and_then(Value::as_array)
+            .expect("agent list");
+        let main = agents
+            .iter()
+            .find(|entry| entry.get("id").and_then(Value::as_str) == Some("main"))
+            .expect("main agent entry");
+        let research = agents
+            .iter()
+            .find(|entry| entry.get("id").and_then(Value::as_str) == Some("research"))
+            .expect("research agent entry");
+
+        assert_eq!(main.get("default").and_then(Value::as_bool), Some(true));
+        assert_ne!(research.get("default").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            main.get("workspace").and_then(Value::as_str),
+            Some(paths.openclaw_workspace_dir.to_string_lossy().as_ref())
+        );
+        assert_eq!(
+            main.get("agentDir").and_then(Value::as_str),
+            Some(paths.openclaw_main_agent_dir.to_string_lossy().as_ref())
+        );
+        assert!(config.pointer("/meta/lastTouchedVersion").is_none());
+        assert!(config.pointer("/meta/lastTouchedAt").is_none());
+    }
+
+    #[test]
+    fn activation_normalizes_case_variant_main_agent_without_creating_a_duplicate() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp.path()).expect("paths");
+        let resource_root =
+            create_bundled_runtime_fixture(temp.path(), TEST_BUNDLED_OPENCLAW_VERSION);
+        let service = OpenClawRuntimeService::new();
+
+        fs::write(
+            &paths.openclaw_config_file,
+            r#"{
+  "agents": {
+    "list": [
+      {
+        "id": "Main",
+        "name": "Primary"
+      }
+    ]
+  }
+}
+"#,
+        )
+        .expect("seed config file");
+
+        service
+            .ensure_bundled_runtime_from_root(&paths, &resource_root)
+            .expect("activated runtime");
+
+        let config = serde_json::from_str::<Value>(
+            &fs::read_to_string(&paths.openclaw_config_file).expect("config file"),
+        )
+        .expect("config json");
+        let agents = config
+            .pointer("/agents/list")
+            .and_then(Value::as_array)
+            .expect("agent list");
+        let main_entries = agents
+            .iter()
+            .filter(|entry| entry.get("id").and_then(Value::as_str) == Some("main"))
+            .collect::<Vec<_>>();
+
+        assert_eq!(main_entries.len(), 1);
+        let main = main_entries[0];
+        assert_eq!(main.get("name").and_then(Value::as_str), Some("Primary"));
+        assert_eq!(main.get("default").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            main.get("workspace").and_then(Value::as_str),
+            Some(paths.openclaw_workspace_dir.to_string_lossy().as_ref())
+        );
+        assert_eq!(
+            main.get("agentDir").and_then(Value::as_str),
+            Some(paths.openclaw_main_agent_dir.to_string_lossy().as_ref())
         );
     }
 
     #[test]
-    fn activation_rewrites_a_legacy_saved_gateway_port_into_the_canonical_default_window() {
+    fn bundled_runtime_uses_21280_as_the_canonical_default_gateway_port() {
+        assert_eq!(
+            DEFAULT_GATEWAY_PORT, 21_280,
+            "the bundled OpenClaw runtime should default to the canonical multi-kernel gateway port"
+        );
+    }
+
+    #[test]
+    fn activation_rewrites_a_non_canonical_saved_gateway_port_into_the_default_window() {
         let temp = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(temp.path()).expect("paths");
         let resource_root =
@@ -1462,7 +1784,7 @@ mod tests {
             &paths.openclaw_config_file,
             "{\n  \"gateway\": {\n    \"port\": 18878\n  }\n}\n",
         )
-        .expect("seed legacy config file");
+        .expect("seed non-canonical config file");
 
         let activated = service
             .ensure_bundled_runtime_from_root(&paths, &resource_root)
@@ -1554,7 +1876,24 @@ mod tests {
             migrated
                 .pointer("/agents/defaults/workspace")
                 .and_then(Value::as_str),
+            None
+        );
+        let main = migrated
+            .pointer("/agents/list")
+            .and_then(Value::as_array)
+            .and_then(|agents| {
+                agents
+                    .iter()
+                    .find(|entry| entry.get("id").and_then(Value::as_str) == Some("main"))
+            })
+            .expect("main agent entry");
+        assert_eq!(
+            main.get("workspace").and_then(Value::as_str),
             Some(paths.openclaw_workspace_dir.to_string_lossy().as_ref())
+        );
+        assert_eq!(
+            main.get("agentDir").and_then(Value::as_str),
+            Some(paths.openclaw_main_agent_dir.to_string_lossy().as_ref())
         );
 
         let authority = serde_json::from_str::<KernelAuthorityState>(
@@ -1635,6 +1974,35 @@ mod tests {
         assert_ne!(
             managed_env.get(OPENCLAW_LOCAL_PROXY_TOKEN_ENV_VAR),
             Some(&"sk_sdkwork_api_key".to_string())
+        );
+    }
+
+    #[test]
+    fn activation_exports_openclaw_home_as_user_root_and_state_dir_as_openclaw_root() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp.path()).expect("paths");
+        let resource_root =
+            create_bundled_runtime_fixture(temp.path(), TEST_BUNDLED_OPENCLAW_VERSION);
+        let service = OpenClawRuntimeService::new();
+
+        let activated = service
+            .ensure_bundled_runtime_from_root(&paths, &resource_root)
+            .expect("activated runtime");
+        let managed_env = activated.managed_env();
+
+        assert_eq!(activated.home_dir, paths.user_root);
+        assert_eq!(activated.state_dir, paths.openclaw_root_dir);
+        assert_eq!(
+            managed_env.get("OPENCLAW_HOME"),
+            Some(&paths.user_root.to_string_lossy().into_owned())
+        );
+        assert_eq!(
+            managed_env.get("OPENCLAW_STATE_DIR"),
+            Some(&paths.openclaw_root_dir.to_string_lossy().into_owned())
+        );
+        assert_eq!(
+            managed_env.get("OPENCLAW_CONFIG_PATH"),
+            Some(&paths.openclaw_config_file.to_string_lossy().into_owned())
         );
     }
 

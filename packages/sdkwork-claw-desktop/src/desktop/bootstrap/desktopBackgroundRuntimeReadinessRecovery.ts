@@ -4,6 +4,9 @@ export type BackgroundRuntimeReadinessRecoveryMode =
   | 'managed-openclaw'
   | 'generic-hosted-runtime';
 
+export const BACKGROUND_RUNTIME_READINESS_AUTO_RECOVERY_DELAY_MS = 1200;
+export const BACKGROUND_RUNTIME_READINESS_AUTO_RECOVERY_MAX_ATTEMPTS = 2;
+
 export interface BackgroundRuntimeReadinessRecoveryToastCopy {
   retryActionLabel: string;
   detailsActionLabel: string;
@@ -16,46 +19,190 @@ export interface BackgroundRuntimeReadinessRecoveryToastCopy {
   readyDescription: string;
 }
 
+export interface StartupRuntimeReadinessRetryRecoveryRequest {
+  recoveryMode: BackgroundRuntimeReadinessRecoveryMode;
+  instanceId: string | null;
+}
+
+export interface BackgroundRuntimeReadinessAutoRecoveryPlan {
+  signature: string;
+  nextAttemptCount: number;
+  delayMs: number;
+}
+
 interface RetryBackgroundRuntimeReadinessRecoveryArgs {
   recoveryMode?: BackgroundRuntimeReadinessRecoveryMode;
   instanceId?: string | null;
   clearFailureState: () => void;
   restartInstance: (instanceId: string) => Promise<unknown>;
+  ensureDesktopKernelRunning: () => Promise<unknown>;
   reconnectHostedRuntimeReadiness: () => Promise<void>;
+}
+
+interface PlanStartupRuntimeReadinessRetryRecoveryArgs {
+  runtimeReadinessFailed: boolean;
+  recoveryMode?: BackgroundRuntimeReadinessRecoveryMode;
+  instanceId?: string | null;
+}
+
+interface PlanBackgroundRuntimeReadinessAutoRecoveryArgs {
+  currentRunId: number;
+  status: 'booting' | 'launching' | 'error';
+  shouldRenderShell: boolean;
+  notification: {
+    runId: number;
+    message: string;
+    recoveryMode?: BackgroundRuntimeReadinessRecoveryMode;
+  } | null;
+  recoveryInFlight: boolean;
+  attemptCount: number;
+  pendingSignature: string;
+  maxAttempts?: number;
+  delayMs?: number;
+}
+
+interface RunStartupRuntimeReadinessRetryRecoveryArgs {
+  request: StartupRuntimeReadinessRetryRecoveryRequest | null;
+  clearFailureState: () => void;
+  restartInstance: (instanceId: string) => Promise<unknown>;
+  ensureDesktopKernelRunning: () => Promise<unknown>;
 }
 
 interface ResolveBackgroundRuntimeReadinessRecoveryToastCopyOptions {
   recoveryMode?: BackgroundRuntimeReadinessRecoveryMode;
 }
 
+function normalizeOptionalInstanceId(value: string | null | undefined): string | null {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+function normalizeKernelId(value: string | null | undefined) {
+  return value?.trim().toLowerCase() ?? '';
+}
+
+export function resolveBackgroundRuntimeReadinessRecoveryMode(
+  includedKernelIds: readonly string[] | null | undefined,
+): BackgroundRuntimeReadinessRecoveryMode {
+  if (!includedKernelIds?.length) {
+    return 'generic-hosted-runtime';
+  }
+
+  return includedKernelIds.some((kernelId) => normalizeKernelId(kernelId) === 'openclaw')
+    ? 'managed-openclaw'
+    : 'generic-hosted-runtime';
+}
+
+export function planBackgroundRuntimeReadinessAutoRecovery({
+  currentRunId,
+  status,
+  shouldRenderShell,
+  notification,
+  recoveryInFlight,
+  attemptCount,
+  pendingSignature,
+  maxAttempts = BACKGROUND_RUNTIME_READINESS_AUTO_RECOVERY_MAX_ATTEMPTS,
+  delayMs = BACKGROUND_RUNTIME_READINESS_AUTO_RECOVERY_DELAY_MS,
+}: PlanBackgroundRuntimeReadinessAutoRecoveryArgs): BackgroundRuntimeReadinessAutoRecoveryPlan | null {
+  if (
+    !shouldRenderShell
+    || status === 'error'
+    || recoveryInFlight
+    || !notification
+    || notification.runId !== currentRunId
+  ) {
+    return null;
+  }
+
+  if (attemptCount >= Math.max(0, maxAttempts)) {
+    return null;
+  }
+
+  const recoveryMode = notification.recoveryMode ?? 'generic-hosted-runtime';
+  const normalizedMessage = notification.message.trim();
+  const signature = `${notification.runId}:${recoveryMode}:${normalizedMessage}`;
+  if (signature === pendingSignature) {
+    return null;
+  }
+
+  return {
+    signature,
+    nextAttemptCount: attemptCount + 1,
+    delayMs: Math.max(0, delayMs),
+  };
+}
+
+export function planStartupRuntimeReadinessRetryRecovery({
+  runtimeReadinessFailed,
+  recoveryMode = 'generic-hosted-runtime',
+  instanceId,
+}: PlanStartupRuntimeReadinessRetryRecoveryArgs): StartupRuntimeReadinessRetryRecoveryRequest | null {
+  if (!runtimeReadinessFailed) {
+    return null;
+  }
+
+  return {
+    recoveryMode,
+    instanceId: normalizeOptionalInstanceId(instanceId),
+  };
+}
+
 export async function retryBackgroundRuntimeReadinessRecovery({
-  recoveryMode = 'managed-openclaw',
+  recoveryMode = 'generic-hosted-runtime',
   instanceId,
   clearFailureState,
   restartInstance,
+  ensureDesktopKernelRunning,
   reconnectHostedRuntimeReadiness,
 }: RetryBackgroundRuntimeReadinessRecoveryArgs): Promise<void> {
   clearFailureState();
 
   if (recoveryMode === 'managed-openclaw') {
-    if (!instanceId) {
-      throw new Error('The built-in OpenClaw instance could not be resolved for retry.');
+    if (instanceId) {
+      const restartedInstance = await restartInstance(instanceId);
+      if (restartedInstance) {
+        await reconnectHostedRuntimeReadiness();
+        return;
+      }
     }
 
-    const restartedInstance = await restartInstance(instanceId);
-    if (!restartedInstance) {
-      throw new Error('The built-in OpenClaw instance could not be resolved for retry.');
-    }
+    await ensureDesktopKernelRunning();
+  }
+
+  if (recoveryMode === 'generic-hosted-runtime') {
+    await ensureDesktopKernelRunning();
   }
 
   await reconnectHostedRuntimeReadiness();
+}
+
+export async function runStartupRuntimeReadinessRetryRecovery({
+  request,
+  clearFailureState,
+  restartInstance,
+  ensureDesktopKernelRunning,
+}: RunStartupRuntimeReadinessRetryRecoveryArgs): Promise<boolean> {
+  if (!request) {
+    return false;
+  }
+
+  await retryBackgroundRuntimeReadinessRecovery({
+    recoveryMode: request.recoveryMode,
+    instanceId: request.instanceId,
+    clearFailureState,
+    restartInstance,
+    ensureDesktopKernelRunning,
+    reconnectHostedRuntimeReadiness: async () => {},
+  });
+
+  return true;
 }
 
 export function resolveBackgroundRuntimeReadinessRecoveryToastCopy(
   language: StartupAppearanceSnapshot['language'],
   options?: ResolveBackgroundRuntimeReadinessRecoveryToastCopyOptions,
 ): BackgroundRuntimeReadinessRecoveryToastCopy {
-  if (options?.recoveryMode === 'generic-hosted-runtime') {
+  if (options?.recoveryMode !== 'managed-openclaw') {
     if (language === 'zh') {
       return {
         retryActionLabel: '\u91cd\u8bd5\u68c0\u67e5',

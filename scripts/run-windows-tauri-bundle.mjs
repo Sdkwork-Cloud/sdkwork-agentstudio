@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { resolveDesktopCargoTargetDir } from './desktop-cargo-target.mjs';
 import { withRustToolchainPath } from './ensure-tauri-rust-toolchain.mjs';
 import { buildDesktopReleaseEnv, parseDesktopTargetTriple } from './release/desktop-targets.mjs';
+import { createTauriCliPlan } from './run-tauri-cli.mjs';
 import {
   DEFAULT_RELEASE_PROFILE_ID,
   resolveDesktopBundleTargets,
@@ -36,6 +37,18 @@ const defaultWindowsConfigPath = path.join(
   'src-tauri',
   'tauri.windows.conf.json',
 );
+const defaultWindowsRuntimeOverlayConfigPath = path.join(
+  desktopPackageDir,
+  'src-tauri',
+  'generated',
+  'tauri.windows.runtime.overlay.json',
+);
+const defaultWindowsBeforeBuildScriptPath = path.join(
+  desktopPackageDir,
+  'src-tauri',
+  'generated',
+  'tauri.windows.before-build.cmd',
+);
 const desktopTauriConfig = JSON.parse(
   fs.readFileSync(path.join(desktopSrcTauriDir, 'tauri.conf.json'), 'utf8'),
 );
@@ -50,40 +63,119 @@ const windowsNsisShortSourceSpecs = [
   ['bridge-openclaw', 'openclaw', ['generated', 'br', 'o'], false],
 ];
 
+function buildWindowsBeforeBuildScriptContent({
+  workspaceRootDir = rootDir,
+  nodeExecutable = process.execPath,
+  viteMode = String(process.env.SDKWORK_VITE_MODE ?? '').trim() || 'production',
+} = {}) {
+  const normalizedViteMode = String(viteMode ?? '').trim().toLowerCase() || 'production';
+  const nodeCommand = `"${nodeExecutable}"`;
+  const prepareScriptPath = path.join(workspaceRootDir, 'scripts', 'prepare-shared-sdk-packages.mjs');
+  const viteScriptPath = path.join(workspaceRootDir, 'scripts', 'run-vite-host.mjs');
+  const verifyScriptPath = path.join(workspaceRootDir, 'scripts', 'verify-desktop-build-assets.mjs');
+  const viteModeArgs = normalizedViteMode === 'production' ? '' : ` --mode ${normalizedViteMode}`;
+
+  return [
+    '@echo off',
+    `${nodeCommand} "${prepareScriptPath}"`,
+    'if errorlevel 1 exit /b %errorlevel%',
+    `${nodeCommand} "${viteScriptPath}" build${viteModeArgs}`,
+    'if errorlevel 1 exit /b %errorlevel%',
+    `${nodeCommand} "${verifyScriptPath}"`,
+    'if errorlevel 1 exit /b %errorlevel%',
+  ].join('\r\n');
+}
+
+export function buildWindowsBeforeBuildCommand({
+  beforeBuildScriptPath = defaultWindowsBeforeBuildScriptPath,
+  workspaceRootDir = rootDir,
+} = {}) {
+  return path.isAbsolute(beforeBuildScriptPath)
+    ? beforeBuildScriptPath
+    : path.resolve(workspaceRootDir, beforeBuildScriptPath);
+}
+
+export function ensureWindowsTauriBuildRuntimeOverlay({
+  overlayFilePath = defaultWindowsRuntimeOverlayConfigPath,
+  beforeBuildScriptPath = defaultWindowsBeforeBuildScriptPath,
+  workspaceRootDir = rootDir,
+  nodeExecutable = process.execPath,
+  viteMode = String(process.env.SDKWORK_VITE_MODE ?? '').trim() || 'production',
+} = {}) {
+  const resolvedOverlayFilePath = path.isAbsolute(overlayFilePath)
+    ? overlayFilePath
+    : path.resolve(workspaceRootDir, overlayFilePath);
+  const resolvedBeforeBuildScriptPath = path.isAbsolute(beforeBuildScriptPath)
+    ? beforeBuildScriptPath
+    : path.resolve(workspaceRootDir, beforeBuildScriptPath);
+  fs.mkdirSync(path.dirname(resolvedBeforeBuildScriptPath), { recursive: true });
+  fs.writeFileSync(
+    resolvedBeforeBuildScriptPath,
+    `${buildWindowsBeforeBuildScriptContent({
+      workspaceRootDir,
+      nodeExecutable,
+      viteMode,
+    })}\r\n`,
+    'utf8',
+  );
+  const overlayContent = {
+    build: {
+      beforeBuildCommand: buildWindowsBeforeBuildCommand({
+        beforeBuildScriptPath: resolvedBeforeBuildScriptPath,
+        workspaceRootDir,
+      }),
+    },
+  };
+
+  fs.mkdirSync(path.dirname(resolvedOverlayFilePath), { recursive: true });
+  fs.writeFileSync(resolvedOverlayFilePath, `${JSON.stringify(overlayContent, null, 2)}\n`, 'utf8');
+  return resolvedOverlayFilePath;
+}
+
 export function buildWindowsTauriBundleCommand({
   profileId = DEFAULT_RELEASE_PROFILE_ID,
   configPath = defaultBundleOverlayConfig,
   targetTriple = '',
   bundleTargets = [],
+  env = process.env,
+  platform = process.platform,
+  execPath = process.execPath,
+  cwd = desktopPackageDir,
+  resolveTauriCliEntrypoint,
+  beforeBuildCommandConfigPath = defaultWindowsRuntimeOverlayConfigPath,
 } = {}) {
   const resolvedWindowsConfigPath = defaultWindowsConfigPath;
   const resolvedConfigPath = path.isAbsolute(configPath)
     ? configPath
     : path.resolve(rootDir, configPath);
+  const resolvedBeforeBuildCommandConfigPath = path.isAbsolute(beforeBuildCommandConfigPath)
+    ? beforeBuildCommandConfigPath
+    : path.resolve(rootDir, beforeBuildCommandConfigPath);
   const resolvedBundleTargets = resolveDesktopBundleTargets({
     profileId,
     platform: 'windows',
     targetTriple,
     bundleTargets,
   });
-
-  return {
-    command: process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
-    args: [
-      '--dir',
-      path.relative(rootDir, desktopPackageDir).replaceAll('\\', '/'),
-      'exec',
-      'tauri',
+  return createTauriCliPlan({
+    argv: [
       'build',
       '--config',
-      path.relative(desktopPackageDir, resolvedWindowsConfigPath).replaceAll('\\', '/'),
+      path.relative(cwd, resolvedWindowsConfigPath).replaceAll('\\', '/'),
       '--config',
-      path.relative(desktopPackageDir, resolvedConfigPath).replaceAll('\\', '/'),
+      path.relative(cwd, resolvedConfigPath).replaceAll('\\', '/'),
+      '--config',
+      path.relative(cwd, resolvedBeforeBuildCommandConfigPath).replaceAll('\\', '/'),
       '--bundles',
       serializeBundleTargets(resolvedBundleTargets),
       ...(String(targetTriple ?? '').trim().length > 0 ? ['--target', targetTriple] : []),
     ],
-  };
+    env,
+    platform,
+    cwd,
+    execPath,
+    resolveTauriCliEntrypoint,
+  });
 }
 
 export function buildWindowsTauriBundlePreflightCommand({
@@ -479,6 +571,7 @@ function runCommand(command, args, options = {}) {
     },
     shell: options.shell ?? useWindowsShell,
     stdio: 'inherit',
+    windowsHide: true,
   });
 }
 
@@ -548,6 +641,7 @@ function resolveMakensisExecutable() {
     cwd: rootDir,
     encoding: 'utf8',
     shell: false,
+    windowsHide: true,
   });
   if (commandProbe.status === 0) {
     const resolved = String(commandProbe.stdout ?? '')
@@ -669,15 +763,22 @@ async function main() {
     workspaceRootDir: rootDir,
     platform: process.platform,
   });
+  const runtimeOverlayConfigPath = ensureWindowsTauriBuildRuntimeOverlay({
+    workspaceRootDir: rootDir,
+    nodeExecutable: process.execPath,
+    viteMode: String(process.env.SDKWORK_VITE_MODE ?? '').trim() || 'production',
+  });
   const buildPlan = buildWindowsTauriBundleCommand({
     profileId: options.profileId,
     configPath: options.configPath,
     targetTriple: options.targetTriple,
     bundleTargets: options.bundleTargets,
+    beforeBuildCommandConfigPath: runtimeOverlayConfigPath,
   });
   const buildStartedAtMs = Date.now();
   const buildResult = runCommand(buildPlan.command, buildPlan.args, {
-    cwd: rootDir,
+    cwd: buildPlan.cwd ?? rootDir,
+    shell: buildPlan.shell,
   });
 
   if (!buildResult.error && !buildResult.signal && buildResult.status === 0) {

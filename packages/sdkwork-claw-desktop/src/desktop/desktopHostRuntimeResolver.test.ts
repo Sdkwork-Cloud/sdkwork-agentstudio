@@ -15,7 +15,7 @@ function createRuntime(
     apiBasePath: '/claw/api/v1',
     manageBasePath: '/claw/manage/v1',
     internalBasePath: '/claw/internal/v1',
-    browserBaseUrl: 'http://127.0.0.1:18797',
+    browserBaseUrl: 'http://127.0.0.1:21289',
     browserSessionToken,
     lastError: null,
   };
@@ -231,4 +231,94 @@ test('desktop host runtime retry helper rethrows the last startup failure once t
   );
 
   assert.equal(attempt, 1);
+});
+
+test('desktop host runtime retry helper times out an operation that never settles', async () => {
+  let attempt = 0;
+
+  const result = await Promise.race([
+    retryDesktopHostRuntimeOperation({
+      retryTimeoutMs: 10,
+      retryPollMs: 1,
+      operation: async () => {
+        attempt += 1;
+        await new Promise(() => {});
+        return 'ready';
+      },
+    }).then(
+      () => 'resolved',
+      (error: unknown) => (error instanceof Error ? error.message : String(error)),
+    ),
+    new Promise<string>((resolve) => {
+      setTimeout(() => resolve('hung'), 50);
+    }),
+  ]);
+
+  assert.match(result, /timed out/i);
+  assert.equal(attempt, 1);
+});
+
+test('desktop host runtime retry helper aborts the in-flight operation when the retry window expires', async () => {
+  let attempt = 0;
+  let signalWasProvided = false;
+  let signalWasAborted = false;
+
+  const result = await Promise.race([
+    retryDesktopHostRuntimeOperation({
+      retryTimeoutMs: 10,
+      retryPollMs: 1,
+      operation: async (context) => {
+        attempt += 1;
+        signalWasProvided = Boolean(context?.signal);
+        context?.signal.addEventListener('abort', () => {
+          signalWasAborted = true;
+        });
+        await new Promise(() => {});
+        return 'ready';
+      },
+    }).then(
+      () => 'resolved',
+      (error: unknown) => (error instanceof Error ? error.message : String(error)),
+    ),
+    new Promise<string>((resolve) => {
+      setTimeout(() => resolve('hung'), 50);
+    }),
+  ]);
+
+  assert.match(result, /timed out/i);
+  assert.equal(attempt, 1);
+  assert.equal(signalWasProvided, true);
+  assert.equal(signalWasAborted, true);
+});
+
+test('desktop host runtime retry helper retries abortable operations after a per-attempt timeout', async () => {
+  let attempt = 0;
+  let aborts = 0;
+
+  await assert.rejects(
+    () =>
+      retryDesktopHostRuntimeOperation({
+        retryTimeoutMs: 30,
+        retryPollMs: 1,
+        attemptTimeoutMs: 5,
+        operation: async ({ signal }) => {
+          attempt += 1;
+          await new Promise((_resolve, reject) => {
+            signal.addEventListener(
+              'abort',
+              () => {
+                aborts += 1;
+                reject(new Error('attempt aborted'));
+              },
+              { once: true },
+            );
+          });
+          return 'ready';
+        },
+      }),
+    /timed out/i,
+  );
+
+  assert.ok(attempt > 1, 'expected retry to continue after a per-attempt timeout');
+  assert.equal(aborts, attempt);
 });

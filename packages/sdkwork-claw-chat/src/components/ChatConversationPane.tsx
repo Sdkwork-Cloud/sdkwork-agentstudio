@@ -183,10 +183,10 @@ export function ChatConversationPane({
                         senderLabel={message.senderLabel}
                         operationalEvent={message.operationalEvent}
                         isTyping={item.isTyping}
-                        attachments={message.attachments}
-                        notices={message.notices}
+                        attachments={message.attachments.length > 0 ? message.attachments : undefined}
+                        notices={message.notices.length > 0 ? message.notices : undefined}
                         reasoning={message.reasoning}
-                        toolCards={message.toolCards}
+                        toolCards={message.toolCards.length > 0 ? message.toolCards : undefined}
                         showHeader={false}
                       />
                     );

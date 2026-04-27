@@ -533,6 +533,178 @@ await runTest(
 );
 
 await runTest(
+  'openclaw gateway session store emits catalog refresh notifications for agent mutation events',
+  async () => {
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-a.json',
+        count: 0,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [],
+      },
+      {},
+    );
+
+    const store = new OpenClawGatewaySessionStore({
+      getClient() {
+        return client;
+      },
+      now: () => 950,
+    });
+    const catalogEvents: Array<{ instanceId: string; name: string | null }> = [];
+    const lifecycleEvents: Array<{
+      instanceId: string;
+      kernelId: string;
+      type: string;
+      agentId: string | null;
+    }> = [];
+    const unsubscribe = store.subscribeAgentCatalogChanged((event) => {
+      const data =
+        event.payload.data && typeof event.payload.data === 'object'
+          ? (event.payload.data as Record<string, unknown>)
+          : null;
+      catalogEvents.push({
+        instanceId: event.instanceId,
+        name: typeof data?.name === 'string' ? data.name : null,
+      });
+    });
+    const unsubscribeLifecycle = store.subscribeAgentLifecycle((event) => {
+      lifecycleEvents.push({
+        instanceId: event.instanceId,
+        kernelId: event.kernelId,
+        type: event.type,
+        agentId: event.agentId,
+      });
+    });
+
+    await store.hydrateInstance('instance-a');
+
+    client.emitAgent({
+      sessionKey: 'thread:agent-creator',
+      runId: 'run-1',
+      stream: 'tool',
+      data: {
+        phase: 'start',
+        toolCallId: 'tool-create-agent',
+        name: 'agents.create',
+      },
+    });
+    client.emitAgent({
+      sessionKey: 'thread:agent-creator',
+      runId: 'run-1',
+      stream: 'tool',
+      data: {
+        phase: 'result',
+        toolCallId: 'tool-search',
+        name: 'web_search',
+        result: 'docs',
+      },
+    });
+    assert.deepEqual(catalogEvents, []);
+    assert.deepEqual(lifecycleEvents, []);
+
+    client.emitAgent({
+      sessionKey: 'thread:agent-creator',
+      runId: 'run-1',
+      stream: 'tool',
+      data: {
+        phase: 'result',
+        toolCallId: 'tool-create-agent',
+        name: 'agents.create',
+        result: {
+          agentId: 'research',
+        },
+      },
+    });
+    client.emitAgent({
+      stream: 'agent.catalog',
+      action: 'created',
+      agentId: 'ops',
+    });
+    client.emitAgent({
+      sessionKey: 'thread:agent-creator',
+      runId: 'run-1',
+      stream: 'tool',
+      data: {
+        phase: 'result',
+        toolCallId: 'tool-config-patch',
+        name: 'gateway',
+        args: {
+          method: 'config.patch',
+          params: {
+            raw: {
+              agents: {
+                list: [
+                  {
+                    id: 'writer',
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    });
+
+    assert.deepEqual(catalogEvents, [
+      {
+        instanceId: 'instance-a',
+        name: 'agents.create',
+      },
+      {
+        instanceId: 'instance-a',
+        name: null,
+      },
+      {
+        instanceId: 'instance-a',
+        name: 'gateway',
+      },
+    ]);
+    assert.deepEqual(lifecycleEvents, [
+      {
+        instanceId: 'instance-a',
+        kernelId: 'openclaw',
+        type: 'created',
+        agentId: 'research',
+      },
+      {
+        instanceId: 'instance-a',
+        kernelId: 'openclaw',
+        type: 'created',
+        agentId: 'ops',
+      },
+      {
+        instanceId: 'instance-a',
+        kernelId: 'openclaw',
+        type: 'catalogChanged',
+        agentId: 'writer',
+      },
+    ]);
+
+    unsubscribe();
+    unsubscribeLifecycle();
+    client.emitAgent({
+      sessionKey: 'thread:agent-creator',
+      runId: 'run-1',
+      stream: 'tool',
+      data: {
+        phase: 'result',
+        toolCallId: 'tool-update-agent',
+        name: 'agents.update',
+      },
+    });
+
+    assert.equal(catalogEvents.length, 3);
+    assert.equal(lifecycleEvents.length, 3);
+  },
+);
+
+await runTest(
   'openclaw gateway session store ignores delta events from another run while a session is still streaming',
   async () => {
     const client = new MockGatewayClient(
@@ -649,6 +821,101 @@ await runTest(
         maxChars: 4096,
       },
     ]);
+  },
+);
+
+await runTest(
+  'openclaw gateway session store keeps the all-sessions order stable when selecting a session hydrates newer history',
+  async () => {
+    const sessionA = 'claw-studio:instance-a:session-order-a';
+    const sessionB = 'claw-studio:instance-a:session-order-b';
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-order-stability.json',
+        count: 2,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: sessionA,
+            label: 'Recent Session A',
+            updatedAt: 220,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+          {
+            key: sessionB,
+            label: 'Older Session B',
+            updatedAt: 210,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+        ],
+      },
+      {
+        [sessionA]: {
+          messages: [
+            {
+              role: 'assistant',
+              content: [{ type: 'text', text: 'session A history' }],
+              timestamp: 220,
+            },
+          ],
+        },
+        [sessionB]: {
+          messages: [
+            {
+              role: 'assistant',
+              content: [{ type: 'text', text: 'session B selected history' }],
+              timestamp: 320,
+            },
+          ],
+        },
+      },
+    );
+
+    const store = new OpenClawGatewaySessionStore({
+      getClient() {
+        return client;
+      },
+      now: () => 500,
+    });
+
+    await store.hydrateInstance('instance-a');
+    assert.deepEqual(
+      store.getSnapshot('instance-a').sessions.map((session) => session.id),
+      [sessionA, sessionB],
+    );
+
+    await store.setActiveSession({
+      instanceId: 'instance-a',
+      sessionId: sessionB,
+    });
+
+    const snapshot = store.getSnapshot('instance-a');
+    const selectedSession = snapshot.sessions.find((session) => session.id === sessionB);
+
+    assert.deepEqual(
+      snapshot.sessions.map((session) => session.id),
+      [sessionA, sessionB],
+    );
+    assert.deepEqual(
+      selectedSession?.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
+      [
+        {
+          role: 'assistant',
+          content: 'session B selected history',
+        },
+      ],
+    );
+    assert.equal(selectedSession?.updatedAt, 210);
   },
 );
 
@@ -1780,7 +2047,13 @@ await runTest(
         idempotencyKey: 'run-1',
       },
     ]);
-    assert.deepEqual(clientA.patchCalls, []);
+    assert.deepEqual(clientA.patchCalls, [
+      {
+        key: 'claw-studio:instance-a:draft-1',
+        label: 'stream to A',
+      },
+    ]);
+    clientA.patchCalls.length = 0;
 
     await store.setSessionModel({
       instanceId: 'instance-a',
@@ -2645,7 +2918,7 @@ await runTest(
 );
 
 await runTest(
-  'openclaw gateway session store prefers derived titles or readable previews over opaque session ids during hydration',
+  'openclaw gateway session store uses explicit derived titles but keeps latest message previews out of titles during hydration',
   async () => {
     const client = new MockGatewayClient(
       {
@@ -2702,19 +2975,27 @@ await runTest(
       snapshot.sessions.map((session) => ({
         id: session.id,
         title: session.title,
+        titleSource: session.titleSource,
+        lastMessagePreview: session.lastMessagePreview ?? null,
       })),
       [
         {
           id: 'agent:research:main',
           title: 'Weekly API Router audit',
+          titleSource: 'explicit',
+          lastMessagePreview: null,
         },
         {
           id: 'claw-studio:instance-a:session-2',
-          title: 'Summarize the current install flow issues across macOS and Windows',
+          title: 'New Conversation',
+          titleSource: 'default',
+          lastMessagePreview: 'Summarize the current install flow issues across macOS and Windows',
         },
         {
           id: 'claw-studio:instance-a:session-3',
           title: 'New Conversation',
+          titleSource: 'default',
+          lastMessagePreview: null,
         },
       ],
     );
@@ -2722,7 +3003,7 @@ await runTest(
 );
 
 await runTest(
-  'openclaw gateway session store ignores weak technical runtime labels and shows readable preview titles during hydration',
+  'openclaw gateway session store ignores weak technical runtime labels and does not promote latest previews during hydration',
   async () => {
     const client = new MockGatewayClient(
       {
@@ -2765,9 +3046,388 @@ await runTest(
     await store.hydrateInstance('instance-a');
     const snapshot = store.getSnapshot('instance-a');
 
+    assert.equal(snapshot.sessions[0]?.title, 'New Conversation');
+    assert.equal(snapshot.sessions[0]?.titleSource, 'default');
+    assert.equal(snapshot.sessions[0]?.lastMessagePreview, undefined);
+  },
+);
+
+await runTest(
+  'openclaw gateway session store treats date and time row labels as metadata instead of conversation titles',
+  async () => {
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-date-labels.json',
+        count: 1,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: '202604261058',
+            displayName: '2026-04-26',
+            label: '10:58',
+            lastMessagePreview:
+              '  The first user message should be loaded before a stable title is shown  ',
+            updatedAt: 315,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+        ],
+      },
+      {
+        '202604261058': {
+          thinkingLevel: 'medium',
+          messages: [],
+        },
+      },
+    );
+
+    const store = new OpenClawGatewaySessionStore({
+      getClient() {
+        return client;
+      },
+      now: () => 520,
+    });
+
+    await store.hydrateInstance('instance-a');
+    const snapshot = store.getSnapshot('instance-a');
+
+    assert.equal(snapshot.sessions[0]?.title, 'New Conversation');
+    assert.equal(snapshot.sessions[0]?.titleSource, 'default');
+    assert.notEqual(snapshot.sessions[0]?.title, '2026-04-26');
+    assert.notEqual(snapshot.sessions[0]?.title, '10:58');
+  },
+);
+
+await runTest(
+  'openclaw gateway session store treats id plus date row labels as metadata instead of conversation titles',
+  async () => {
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-id-date-labels.json',
+        count: 1,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: 'claw-studio:instance-a:session-technical-title',
+            derivedTitle: 'session-technical-title(2026-04-26)',
+            label: 'claw-studio:instance-a:session-technical-title (2026-04-26)',
+            updatedAt: 530,
+            kind: 'direct',
+            model: 'OpenClaw A',
+            lastMessagePreview: 'Readable assistant summary that must not become the title',
+          },
+        ],
+      },
+      {},
+    );
+    const store = new OpenClawGatewaySessionStore({
+      getClient: () => client,
+      now: () => 540,
+    });
+
+    await store.hydrateInstance('instance-a');
+
+    const session = store.getSnapshot('instance-a').sessions[0];
+    assert.equal(session?.title, 'New Conversation');
+    assert.equal(session?.titleSource, 'default');
+  },
+);
+
+await runTest(
+  'openclaw gateway session store persists the first user message title into the gateway session label',
+  async () => {
+    const sessionId = 'claw-studio:instance-a:session-new-title';
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-new-title.json',
+        count: 1,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: sessionId,
+            label: 'session-new-title(2026-04-26)',
+            updatedAt: 100,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+        ],
+      },
+      {},
+    );
+    const store = new OpenClawGatewaySessionStore({
+      getClient: () => client,
+      now: () => 200,
+    });
+
+    await store.hydrateInstance('instance-a');
+    await store.sendMessage({
+      instanceId: 'instance-a',
+      sessionId,
+      content: 'Fix the session title persistence path before rendering the sidebar',
+    });
+
+    assert.deepEqual(
+      client.patchCalls.filter((call) => Object.prototype.hasOwnProperty.call(call, 'label')),
+      [
+        {
+          key: sessionId,
+          label: 'Fix the session title persistence path before rendering the sidebar',
+        },
+      ],
+    );
     assert.equal(
-      snapshot.sessions[0]?.title,
-      'Use the first user message as a ChatGPT-style title instead of runtime labels',
+      store.getSnapshot('instance-a').sessions.find((session) => session.id === sessionId)?.title,
+      'Fix the session title persistence path before rendering the sidebar',
+    );
+  },
+);
+
+await runTest(
+  'openclaw gateway session store repairs unreadable inactive session titles from first user history during hydration',
+  async () => {
+    const activeSessionId = 'claw-studio:instance-a:active-readable';
+    const inactiveSessionId = 'openclaw7d9f2a';
+    const firstUserTitle =
+      'Use the first user message as the durable sidebar title before the row is clicked';
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-title-repair.json',
+        count: 2,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: activeSessionId,
+            label: 'Active Planning Session',
+            updatedAt: 300,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+          {
+            key: inactiveSessionId,
+            label: 'openclaw7d9f2a(2026-04-26)',
+            updatedAt: 200,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+        ],
+      },
+      {
+        [activeSessionId]: {
+          thinkingLevel: 'low',
+          messages: [],
+        },
+        [inactiveSessionId]: {
+          thinkingLevel: 'medium',
+          messages: [
+            {
+              role: 'user',
+              content: [{ type: 'text', text: firstUserTitle }],
+              timestamp: 205,
+            },
+          ],
+        },
+      },
+    );
+    const store = new OpenClawGatewaySessionStore({
+      getClient: () => client,
+      now: () => 400,
+    });
+
+    await store.hydrateInstance('instance-a');
+    await waitFor(
+      () =>
+        store.getSnapshot('instance-a').sessions.find((session) => session.id === inactiveSessionId)?.title ===
+        firstUserTitle,
+    );
+
+    const inactiveSession = store
+      .getSnapshot('instance-a')
+      .sessions.find((session) => session.id === inactiveSessionId);
+    assert.equal(inactiveSession?.title, firstUserTitle);
+    assert.equal(inactiveSession?.titleSource, 'firstUser');
+    assert.ok(client.historyCalls.includes(inactiveSessionId));
+    assert.deepEqual(
+      client.patchCalls.filter((call) => call.key === inactiveSessionId),
+      [
+        {
+          key: inactiveSessionId,
+          label: firstUserTitle,
+        },
+      ],
+    );
+  },
+);
+
+await runTest(
+  'openclaw gateway session store repairs unreadable inactive session titles from first readable history message when no user turn exists',
+  async () => {
+    const activeSessionId = 'claw-studio:instance-a:active-readable';
+    const inactiveSessionId = 'openclaw-assistant-title-repair';
+    const firstMessageTitle =
+      'Recovered title from assistant-only imported OpenClaw history';
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-title-repair-assistant.json',
+        count: 2,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: activeSessionId,
+            label: 'Active Planning Session',
+            updatedAt: 300,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+          {
+            key: inactiveSessionId,
+            label: 'openclaw-assistant-title-repair(2026-04-26)',
+            updatedAt: 200,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+        ],
+      },
+      {
+        [activeSessionId]: {
+          thinkingLevel: 'low',
+          messages: [],
+        },
+        [inactiveSessionId]: {
+          thinkingLevel: 'medium',
+          messages: [
+            {
+              role: 'assistant',
+              content: [{ type: 'text', text: firstMessageTitle }],
+              timestamp: 205,
+            },
+          ],
+        },
+      },
+    );
+    const store = new OpenClawGatewaySessionStore({
+      getClient: () => client,
+      now: () => 400,
+    });
+
+    await store.hydrateInstance('instance-a');
+    await waitFor(
+      () =>
+        store.getSnapshot('instance-a').sessions.find((session) => session.id === inactiveSessionId)?.title ===
+        firstMessageTitle,
+    );
+
+    const inactiveSession = store
+      .getSnapshot('instance-a')
+      .sessions.find((session) => session.id === inactiveSessionId);
+    assert.equal(inactiveSession?.title, firstMessageTitle);
+    assert.equal(inactiveSession?.titleSource, 'firstUser');
+    assert.deepEqual(
+      client.patchCalls.filter((call) => call.key === inactiveSessionId),
+      [
+        {
+          key: inactiveSessionId,
+          label: firstMessageTitle,
+        },
+      ],
+    );
+  },
+);
+
+await runTest(
+  'openclaw gateway session store does not block hydration on inactive title repair history',
+  async () => {
+    const activeSessionId = 'claw-studio:instance-a:active-readable';
+    const inactiveSessionId = 'openclaw-title-repair-slow';
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-title-repair-slow.json',
+        count: 2,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: activeSessionId,
+            label: 'Active Planning Session',
+            updatedAt: 300,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+          {
+            key: inactiveSessionId,
+            label: 'openclaw-title-repair-slow(2026-04-26)',
+            updatedAt: 200,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+        ],
+      },
+      {
+        [activeSessionId]: {
+          thinkingLevel: 'low',
+          messages: [],
+        },
+      },
+    );
+    const deferredInactiveHistory = client.deferHistory(inactiveSessionId);
+    const store = new OpenClawGatewaySessionStore({
+      getClient: () => client,
+      now: () => 400,
+    });
+
+    let hydrateResolved = false;
+    const hydratePromise = store.hydrateInstance('instance-a').then(() => {
+      hydrateResolved = true;
+    });
+
+    await waitFor(() => client.historyCalls.includes(inactiveSessionId));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(hydrateResolved, true);
+
+    deferredInactiveHistory.resolve({
+      thinkingLevel: 'medium',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Slow repaired title' }],
+          timestamp: 205,
+        },
+      ],
+    });
+    await hydratePromise;
+    await waitFor(
+      () =>
+        store.getSnapshot('instance-a').sessions.find((session) => session.id === inactiveSessionId)?.title ===
+        'Slow repaired title',
     );
   },
 );
@@ -3582,6 +4242,95 @@ await runTest(
     );
     assert.deepEqual(client.historyCalls, historyCallsBefore);
     assert.equal(client.listSessionsCalls.length, listSessionsCallsBefore);
+  },
+);
+
+await runTest(
+  'openclaw gateway session store does not merge different roles only because session.message seq is reused',
+  async () => {
+    const sessionId = 'claw-studio:instance-a:session-reused-seq';
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-a.json',
+        count: 1,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: sessionId,
+            label: 'Reused Seq',
+            updatedAt: 210,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+        ],
+      },
+      {
+        [sessionId]: {
+          thinkingLevel: 'low',
+          messages: [],
+        },
+      },
+    );
+    client.setConnectHello({
+      type: 'hello-ok',
+      protocol: 3,
+      features: {
+        methods: [
+          'sessions.subscribe',
+          'sessions.list',
+          'chat.history',
+          'chat.send',
+          'sessions.messages.subscribe',
+          'sessions.messages.unsubscribe',
+        ],
+        events: ['chat', 'sessions.changed', 'session.message'],
+      },
+    });
+
+    const store = new OpenClawGatewaySessionStore({
+      getClient() {
+        return client;
+      },
+      now: () => 421,
+    });
+
+    await store.hydrateInstance('instance-a');
+    await waitFor(() => client.subscribeSessionMessagesCalls.includes(sessionId));
+
+    client.emitSessionMessage({
+      sessionKey: sessionId,
+      messageSeq: 1,
+      message: {
+        role: 'user',
+        content: [{ type: 'text', text: 'user turn with reused seq' }],
+      },
+    });
+    client.emitSessionMessage({
+      sessionKey: sessionId,
+      messageSeq: 1,
+      message: {
+        role: 'assistant',
+        content: [{ type: 'text', text: 'assistant turn with reused seq' }],
+      },
+    });
+
+    const snapshot = store.getSnapshot('instance-a');
+    assert.deepEqual(
+      snapshot.sessions.find((session) => session.id === sessionId)?.messages.map((message) => ({
+        seq: message.seq ?? null,
+        role: message.role,
+        content: message.content,
+      })),
+      [
+        { seq: 1, role: 'user', content: 'user turn with reused seq' },
+        { seq: 1, role: 'assistant', content: 'assistant turn with reused seq' },
+      ],
+    );
   },
 );
 

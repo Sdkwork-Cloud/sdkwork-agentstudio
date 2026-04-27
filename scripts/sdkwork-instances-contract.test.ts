@@ -3204,12 +3204,13 @@ runTest('sdkwork-claw-instances renders backend-authored data access and artifac
 });
 
 runTest(
-  'sdkwork-claw-instances keeps shared startup refresh support keyed to platform startup facts instead of the OpenClaw kernel id',
+  'sdkwork-claw-instances keys built-in OpenClaw startup refresh through the shared runtime identity helper',
   () => {
     const startupRefreshSupportSource = read(
       'packages/sdkwork-claw-instances/src/services/instanceStartupRefreshSupport.ts',
     );
 
+    assert.match(startupRefreshSupportSource, /isOpenClawRuntimeKind/);
     assert.match(startupRefreshSupportSource, /instance\.isBuiltIn === true/);
     assert.match(startupRefreshSupportSource, /instance\.deploymentMode === 'local-managed'/);
     assert.match(startupRefreshSupportSource, /instance\.status === 'starting'/);

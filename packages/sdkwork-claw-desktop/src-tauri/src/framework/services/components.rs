@@ -90,7 +90,7 @@ impl BundledKernelPackageManifest {
         let package_profile_id = normalize_optional_string(Some(self.package_profile_id))
             .unwrap_or_else(|| DEFAULT_KERNEL_PACKAGE_PROFILE_ID.to_string());
         let included_kernel_ids = {
-            let normalized = normalize_string_vec(self.included_kernel_ids);
+            let normalized = normalize_kernel_id_vec(self.included_kernel_ids);
             if normalized.is_empty() {
                 vec![DEFAULT_OPENCLAW_KERNEL_ID.to_string()]
             } else {
@@ -98,7 +98,7 @@ impl BundledKernelPackageManifest {
             }
         };
         let default_enabled_kernel_ids = {
-            let mut normalized = normalize_string_vec(self.default_enabled_kernel_ids)
+            let mut normalized = normalize_kernel_id_vec(self.default_enabled_kernel_ids)
                 .into_iter()
                 .filter(|kernel_id| included_kernel_ids.contains(kernel_id))
                 .collect::<Vec<_>>();
@@ -249,13 +249,14 @@ fn normalize_optional_string(value: Option<String>) -> Option<String> {
     })
 }
 
-fn normalize_string_vec(values: Vec<String>) -> Vec<String> {
+fn normalize_kernel_id_vec(values: Vec<String>) -> Vec<String> {
     let mut normalized = Vec::new();
 
     for value in values {
         if let Some(trimmed) = normalize_optional_string(Some(value)) {
-            if !normalized.contains(&trimmed) {
-                normalized.push(trimmed);
+            let kernel_id = trimmed.to_ascii_lowercase();
+            if !normalized.contains(&kernel_id) {
+                normalized.push(kernel_id);
             }
         }
     }
@@ -400,6 +401,39 @@ mod tests {
         assert_eq!(
             resources.bundle_manifest.default_enabled_kernel_ids,
             vec!["openclaw", "hermes"]
+        );
+    }
+
+    #[test]
+    fn component_registry_resources_canonicalize_kernel_ids_to_lowercase() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let service = ComponentRegistryService::new();
+
+        fs::create_dir_all(&paths.foundation_components_dir).expect("foundation components dir");
+        fs::write(
+            paths.foundation_components_dir.join("bundle-manifest.json"),
+            r#"{
+  "version": 1,
+  "packageProfileId": "mixed-case-profile",
+  "includedKernelIds": [" OpenClaw ", "HERMES", "openclaw"],
+  "defaultEnabledKernelIds": [" HERMES "]
+}
+"#,
+        )
+        .expect("bundle manifest");
+
+        let resources = service
+            .load_resources(&paths)
+            .expect("bundled component resources");
+
+        assert_eq!(
+            resources.bundle_manifest.included_kernel_ids,
+            vec!["openclaw", "hermes"]
+        );
+        assert_eq!(
+            resources.bundle_manifest.default_enabled_kernel_ids,
+            vec!["hermes"]
         );
     }
 }

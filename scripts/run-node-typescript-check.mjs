@@ -41,6 +41,7 @@ export function runNodeTypeScriptChecks(scriptPaths) {
     const result = spawnSync(process.execPath, createNodeTypeScriptArgs(scriptPath), {
       cwd: workspaceRoot,
       stdio: 'inherit',
+      windowsHide: true,
     });
 
     if (result.status !== 0) {

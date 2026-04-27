@@ -1405,10 +1405,6 @@
         "title": "Go to AI Chat",
         "subtitle": "Talk to your local models"
       },
-      "codebox": {
-        "title": "Go to CodeBox",
-        "subtitle": "Open the staged CodeBox integration route"
-      },
       "providerCenter": {
         "title": "Go to Provider Center",
         "subtitle": "Manage LLM, embedding, and route configs"
@@ -1420,10 +1416,6 @@
       "settings": {
         "title": "Go to Settings",
         "subtitle": "Preferences and configuration"
-      },
-      "terminal": {
-        "title": "Open Terminal",
-        "subtitle": "Launch local CLI"
       },
       "guided": {
         "title": "Guided install",
@@ -5552,9 +5544,7 @@
       "download": "Download"
     }
   },
-  "routes": {
-    "codeboxComingSoon": "CodeBox integration coming soon."
-  },
+  "routes": {},
   "settings": {
     "general": {
       "title": "General",
@@ -6398,7 +6388,6 @@
     "workspace": "Workspace",
     "ecosystem": "Ecosystem",
     "setup": "Setup",
-    "codebox": "CodeBox",
     "providerCenter": "Provider Center",
     "modelPurchase": "Model Purchase",
     "clawUpload": "Networking",

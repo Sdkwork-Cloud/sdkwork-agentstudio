@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 function runTest(name: string, callback: () => void | Promise<void>) {
   return Promise.resolve()
@@ -14,6 +14,10 @@ function runTest(name: string, callback: () => void | Promise<void>) {
 }
 
 const source = readFileSync(new URL('./ChatSidebar.tsx', import.meta.url), 'utf8');
+const agentItemUrl = new URL('./ChatSidebarAgentItem.tsx', import.meta.url);
+const sessionItemUrl = new URL('./ChatSidebarSessionItem.tsx', import.meta.url);
+const agentItemSource = existsSync(agentItemUrl) ? readFileSync(agentItemUrl, 'utf8') : '';
+const sessionItemSource = existsSync(sessionItemUrl) ? readFileSync(sessionItemUrl, 'utf8') : '';
 const primitivesSource = readFileSync(
   new URL('./chatSidebarItemPrimitives.ts', import.meta.url),
   'utf8',
@@ -30,89 +34,113 @@ await runTest(
     assert.match(source, /sessionPreferencesBySessionKey,/);
     assert.match(source, /locale: i18n\.resolvedLanguage,/);
     assert.match(source, /timeZone,/);
-    assert.match(source, /from '\.\/chatSidebarItemPrimitives';/);
-    assert.match(source, /CHAT_SIDEBAR_ROW_BUTTON_CLASS/);
-    assert.match(source, /CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS/);
-    assert.match(source, /CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS/);
-    assert.match(source, /CHAT_SIDEBAR_PRIMARY_BADGE_CLASS/);
-    assert.match(source, /SESSION_OWNER_SLOT_CLASS/);
-    assert.match(source, /SESSION_KERNEL_SLOT_CLASS/);
-    assert.match(source, /resolveKernelBadgeLabel/);
+    assert.match(agentItemSource, /from '\.\/chatSidebarItemPrimitives';/);
+    assert.match(sessionItemSource, /from '\.\/chatSidebarItemPrimitives';/);
+    assert.match(agentItemSource, /CHAT_SIDEBAR_AGENT_ROW_BUTTON_CLASS/);
+    assert.match(sessionItemSource, /CHAT_SIDEBAR_ROW_BUTTON_CLASS/);
+    assert.match(agentItemSource, /CHAT_SIDEBAR_AGENT_AVATAR_SHELL_CLASS/);
+    assert.match(sessionItemSource, /CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS/);
+    assert.match(sessionItemSource, /CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS/);
+    assert.match(agentItemSource, /CHAT_SIDEBAR_AGENT_NAME_CLASS/);
+    assert.match(agentItemSource, /CHAT_SIDEBAR_PRIMARY_BADGE_CLASS/);
+    assert.match(sessionItemSource, /CHAT_SIDEBAR_PRIMARY_BADGE_CLASS/);
+    assert.match(sessionItemSource, /SESSION_OWNER_SLOT_CLASS/);
+    assert.match(agentItemSource, /CHAT_SIDEBAR_KERNEL_BADGE_CLASS/);
+    assert.match(agentItemSource, /resolveKernelBadgeLabel/);
     assert.match(primitivesSource, /export const CHAT_SIDEBAR_ROW_BUTTON_CLASS =/);
     assert.match(primitivesSource, /export const CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS =/);
     assert.match(primitivesSource, /export const CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS =/);
+    assert.match(primitivesSource, /export const CHAT_SIDEBAR_AGENT_ROW_BUTTON_CLASS =/);
+    assert.match(primitivesSource, /export const CHAT_SIDEBAR_AGENT_AVATAR_SHELL_CLASS =/);
+    assert.match(primitivesSource, /export const CHAT_SIDEBAR_AGENT_NAME_CLASS =/);
     assert.match(primitivesSource, /export const CHAT_SIDEBAR_PRIMARY_BADGE_CLASS =/);
+    assert.match(primitivesSource, /export const CHAT_SIDEBAR_TITLE_TEXT_CLASS =/);
     assert.match(primitivesSource, /export const CHAT_SIDEBAR_PREVIEW_TEXT_CLASS =/);
     assert.match(primitivesSource, /export const CHAT_SIDEBAR_TIME_LABEL_CLASS =/);
     assert.match(primitivesSource, /export const SESSION_OWNER_SLOT_CLASS =/);
     assert.match(primitivesSource, /export const SESSION_KERNEL_SLOT_CLASS =/);
+    assert.match(primitivesSource, /export const CHAT_SIDEBAR_KERNEL_BADGE_CLASS =/);
     assert.match(primitivesSource, /export function resolveKernelBadgeLabel\(/);
     assert.match(
       source,
-      /sidebarChrome\.showAgentRail[\s\S]*visibleAgentRailItems\.map\(renderAgentRailItem\)/s,
+      /sidebarChrome\.showAgentRail[\s\S]*visibleAgentRailItems\.map\(\(agent\) => \{/s,
     );
     assert.match(
       source,
-      /sidebarChrome\.sections\.map\(\(\{ section, titleKey \}\) => \([\s\S]*renderSessionGroup\(section, t\(titleKey\)\)[\s\S]*<\/React\.Fragment>[\s\S]*\)\)/s,
+      /sidebarChrome\.sections\.map\(\(\{ section, titleKey \}\) => \{[\s\S]*section\.items\.map\(\(item, itemIndex\) => \{[\s\S]*<ChatSidebarSessionItem/s,
     );
     assert.doesNotMatch(source, /const SESSION_OWNER_SLOT_CLASS =/);
     assert.doesNotMatch(source, /const SESSION_KERNEL_SLOT_CLASS =/);
     assert.doesNotMatch(source, /function resolveKernelBadgeLabel\(/);
-    assert.match(source, /className="group relative"/);
+    assert.match(agentItemSource, /className="group relative"/);
+    assert.match(sessionItemSource, /className="group relative"/);
     assert.match(
-      source,
+      agentItemSource,
+      /className=\{cn\(\s*CHAT_SIDEBAR_AGENT_ROW_BUTTON_CLASS,/,
+    );
+    assert.match(
+      sessionItemSource,
       /className=\{cn\(\s*CHAT_SIDEBAR_ROW_BUTTON_CLASS,/,
     );
     assert.match(
-      source,
+      agentItemSource,
+      /className=\{cn\(\s*CHAT_SIDEBAR_AGENT_AVATAR_SHELL_CLASS,/,
+    );
+    assert.match(
+      sessionItemSource,
       /className=\{cn\(\s*CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS,/,
     );
     assert.match(
-      source,
+      sessionItemSource,
       /className=\{cn\(\s*CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS,/,
     );
-    assert.match(source, /<div className="min-w-0 flex-1 overflow-hidden">/);
-    assert.match(source, /<div className="flex min-w-0 items-center gap-1\.5">/);
-    assert.match(source, /className=\{SESSION_OWNER_SLOT_CLASS\}/);
+    assert.equal(existsSync(agentItemUrl), true);
+    assert.equal(existsSync(sessionItemUrl), true);
+    assert.match(source, /import \{ ChatSidebarAgentItem \} from '\.\/ChatSidebarAgentItem';/);
+    assert.match(source, /import \{ ChatSidebarSessionItem \} from '\.\/ChatSidebarSessionItem';/);
+    assert.doesNotMatch(source, /const renderAgentRailItem =/);
+    assert.doesNotMatch(source, /const renderSessionGroup =/);
+    assert.match(sessionItemSource, /<div className="min-w-0 flex-1 overflow-hidden pr-8">/);
+    assert.match(sessionItemSource, /<div className="mb-1 flex min-h-5 min-w-0 items-center gap-1\.5">/);
+    assert.match(sessionItemSource, /<span className=\{SESSION_OWNER_SLOT_CLASS\} title=\{item\.ownerName\}>/);
+    assert.match(sessionItemSource, /<span className="truncate">\{item\.ownerName\}<\/span>/);
+    assert.doesNotMatch(sessionItemSource, /item\.ownerKernelLabel \?\s*\(/);
+    assert.match(sessionItemSource, /item\.pinOrigin === 'system' \?\s*\(/);
+    assert.match(sessionItemSource, /item\.pinOrigin === 'user' \?\s*\(/);
+    assert.match(sessionItemSource, /item\.isFavorited \?\s*\(/);
+    assert.match(sessionItemSource, /item\.hasUnread \?\s*\(/);
+    assert.match(sessionItemSource, /item\.showStatusDot \?\s*\(/);
+    assert.doesNotMatch(sessionItemSource, /\{item\.relativeTimeLabel\}/);
     assert.match(
-      source,
-      /item\.ownerKernelLabel \?\s*\(\s*<span className=\{SESSION_KERNEL_SLOT_CLASS\} title=\{item\.ownerKernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(item\.ownerKernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
-    );
-    assert.match(source, /item\.pinOrigin === 'system' \?\s*\(/);
-    assert.match(source, /item\.pinOrigin === 'user' \?\s*\(/);
-    assert.match(source, /item\.isFavorited \?\s*\(/);
-    assert.match(source, /item\.hasUnread \?\s*\(/);
-    assert.match(source, /item\.showStatusDot \?\s*\(/);
-    assert.match(
-      source,
-      /<span[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_TIME_LABEL_CLASS,[\s\S]*'transition-opacity',[\s\S]*\)\}[\s\S]*>\s*\{item\.relativeTimeLabel\}\s*<\/span>/,
-    );
-    assert.match(source, /group-hover:opacity-0 group-focus-within:opacity-0/);
-    assert.match(
-      source,
+      sessionItemSource,
       /<button[\s\S]*type="button"[\s\S]*onKeyDown=\{\(event\) => \{[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_ROW_BUTTON_CLASS,[\s\S]*\)\}/,
     );
-    assert.match(source, /event\.key === 'Enter'/);
-    assert.match(source, /event\.key === ' '/);
-    assert.match(source, /event\.key === 'ContextMenu'/);
-    assert.match(source, /event\.shiftKey && event\.key === 'F10'/);
+    assert.match(sessionItemSource, /event\.key === 'Enter'/);
+    assert.match(sessionItemSource, /event\.key === ' '/);
+    assert.match(sessionItemSource, /event\.key === 'ContextMenu'/);
+    assert.match(sessionItemSource, /event\.shiftKey && event\.key === 'F10'/);
     assert.match(
-      source,
-      /openSessionMenuAtElement\(event\.currentTarget, item, event\.currentTarget\)/,
+      sessionItemSource,
+      /onOpenMenuAtElement\(event\.currentTarget, item\)/,
     );
     assert.match(
-      source,
+      sessionItemSource,
       /className=\{cn\(\s*'absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-all hover:bg-zinc-900\/\[0\.06\] hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white\/\[0\.08\] dark:hover:text-zinc-200',[\s\S]*\)\}/,
     );
-    assert.match(source, /aria-haspopup="menu"/);
-    assert.match(source, /aria-expanded=\{isSessionMenuOpen\}/);
+    assert.match(sessionItemSource, /aria-haspopup="menu"/);
+    assert.match(sessionItemSource, /aria-expanded=\{isSessionMenuOpen\}/);
     assert.match(
-      source,
+      sessionItemSource,
       /group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100/,
     );
     assert.match(
       source,
-      /<p[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_PREVIEW_TEXT_CLASS,[\s\S]*\)\}[\s\S]*>\s*\{previewText\}\s*<\/p>/,
+      /const sessionRecord = resolveSessionRecord\(item\.sessionId\);[\s\S]*const sessionTitleText = resolveChatSidebarSessionTitleText\(\{\s*itemDisplayTitle: item\.displayTitle,\s*session: sessionRecord,\s*\}\);/,
+    );
+    assert.doesNotMatch(sessionItemSource, /const previewText = item\.preview \?\? item\.displayTitle;/);
+    assert.match(
+      sessionItemSource,
+      /<p[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_TITLE_TEXT_CLASS,[\s\S]*\)\}[\s\S]*title=\{sessionTitleText\}[\s\S]*>\s*\{sessionTitleText\}\s*<\/p>/,
     );
     assert.match(source, /const historyTabs = \[/);
     assert.match(source, /id: 'currentAgent'/);
@@ -128,7 +156,7 @@ await runTest(
     assert.match(source, /const visibleAgentRailItems = React\.useMemo\(\(\) => \{/);
     assert.match(
       source,
-      /sidebarChrome\.showAgentRail[\s\S]*visibleAgentRailItems\.map\(renderAgentRailItem\)/s,
+      /sidebarChrome\.showAgentRail[\s\S]*visibleAgentRailItems\.map\(\(agent\) => \{/s,
     );
     assert.match(source, /placeholder=\{t\('chat\.sidebar\.agentSearchPlaceholder'\)\}/);
     assert.match(
@@ -137,25 +165,35 @@ await runTest(
     );
     assert.match(
       primitivesSource,
-      /'flex w-full items-stretch gap-3 rounded-\[0\.75rem\] px-3 py-3 text-left transition-colors disabled:cursor-wait'/,
+      /'flex w-full min-w-0 items-center gap-3 rounded-\[0\.75rem\] px-3 py-3 text-left transition-colors disabled:cursor-wait'/,
     );
+    assert.doesNotMatch(source, /agentRailEmptyPreviewLabel/);
+    assert.doesNotMatch(source, /const agentPreviewText =/);
+    assert.doesNotMatch(agentItemSource, /agent\.preview/);
+    assert.doesNotMatch(agentItemSource, /agent\.relativeTimeLabel/);
+    assert.doesNotMatch(agentItemSource, /displayTitle/);
+    assert.doesNotMatch(agentItemSource, /sessionTitleText/);
+    assert.doesNotMatch(agentItemSource, /updatedAt/);
+    assert.doesNotMatch(agentItemSource, /CHAT_SIDEBAR_PREVIEW_TEXT_CLASS/);
+    assert.doesNotMatch(agentItemSource, /SESSION_OWNER_SLOT_CLASS/);
+    assert.doesNotMatch(agentItemSource, /CHAT_SIDEBAR_ROW_BUTTON_CLASS/);
+    assert.doesNotMatch(agentItemSource, /absolute bottom-2 left-0 top-2 w-0\.5/);
+    assert.doesNotMatch(agentItemSource, /bg-primary-500\/80 opacity-100/);
+    assert.match(primitivesSource, /'relative flex h-12 w-full min-w-0 items-center gap-2\.5 rounded-lg px-2\.5 text-left transition-all disabled:cursor-wait'/);
+    assert.match(primitivesSource, /'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-\[10px\] font-semibold uppercase transition-colors'/);
+    assert.match(agentItemSource, /className=\{cn\(\s*CHAT_SIDEBAR_AGENT_NAME_CLASS,/);
+    assert.match(agentItemSource, /title=\{agent\.name\}/);
     assert.match(
-      source,
-      /const agentPreviewText = agent\.preview \?\? t\('chat\.sidebar\.agentRailEmptyPreview'\);/,
-    );
-    assert.match(source, /agent\.relativeTimeLabel \?\s*\(/);
-    assert.match(source, /<span className=\{SESSION_OWNER_SLOT_CLASS\} title=\{agent\.name\}>/);
-    assert.match(
-      source,
-      /<p[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_PREVIEW_TEXT_CLASS,[\s\S]*\)\}[\s\S]*>\s*\{agentPreviewText\}\s*<\/p>/,
+      agentItemSource,
+      /\{agent\.name\}/,
     );
     assert.match(source, /closeSessionMenu\(\);\s*setCreateAgentMenuState\(\{/);
     assert.match(
-      source,
-      /agent\.kernelLabel \?\s*\(\s*<span className=\{SESSION_KERNEL_SLOT_CLASS\} title=\{agent\.kernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(agent\.kernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
+      agentItemSource,
+      /agent\.kernelLabel \?\s*\(\s*<span className=\{CHAT_SIDEBAR_KERNEL_BADGE_CLASS\} title=\{agent\.kernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(agent\.kernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
     );
     assert.doesNotMatch(
-      source,
+      agentItemSource,
       /agent\.kernelLabel \?\s*\(\s*<span className="mt-0\.5 block truncate text-\[10px\] font-medium uppercase tracking-\[0\.12em\] text-zinc-400 dark:text-zinc-500">\s*\{agent\.kernelLabel\}\s*<\/span>\s*\) : null/,
     );
     assert.match(source, /<ChatSidebarCreateAgentMenu/);

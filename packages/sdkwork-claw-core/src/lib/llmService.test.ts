@@ -82,10 +82,10 @@ await runTest(
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
           transportKind: 'openclawGatewayWs',
-          baseUrl: 'http://127.0.0.1:18789',
+          baseUrl: 'http://127.0.0.1:21280',
           config: {
             authToken: 'test-token',
-            baseUrl: 'http://127.0.0.1:18789',
+            baseUrl: 'http://127.0.0.1:21280',
           },
         }) as any;
 
@@ -143,9 +143,129 @@ await runTest(
         prompt: 'hello',
       });
 
-      assert.equal(requestTargets.url, 'http://127.0.0.1:18789/v1/chat/completions');
+      assert.equal(requestTargets.url, 'http://127.0.0.1:21280/v1/chat/completions');
       assert.equal(requestTargets.model, 'gpt-5.4');
       assert.equal(result, 'catalog-driven text');
+    } finally {
+      storage.getStorageInfo = originalGetStorageInfo;
+      storage.listKeys = originalListKeys;
+      storage.getText = originalGetText;
+      studio.getInstance = originalGetInstance;
+      providerRoutingCatalogService.listProviderRoutingRecords =
+        originalListProviderRoutingRecords;
+      globalThis.fetch = originalFetch;
+      instanceStore.setState(initialState, true);
+    }
+  },
+);
+
+await runTest(
+  'llmService aborts a generation request using the provider routing timeout',
+  async () => {
+    const initialState = instanceStore.getState();
+    const originalGetStorageInfo = storage.getStorageInfo;
+    const originalListKeys = storage.listKeys;
+    const originalGetText = storage.getText;
+    const originalGetInstance = studio.getInstance;
+    const originalListProviderRoutingRecords =
+      providerRoutingCatalogService.listProviderRoutingRecords;
+    const originalFetch = globalThis.fetch;
+    let sawAbortSignal = false;
+
+    try {
+      instanceStore.setState({
+        ...initialState,
+        activeInstanceId: BUILT_IN_INSTANCE_ID,
+      });
+
+      storage.getStorageInfo = async () => null;
+      storage.listKeys = async () => ({
+        profileId: 'default-sqlite',
+        namespace: PROVIDER_CONFIG_CENTER_STORAGE_NAMESPACE,
+        keys: [],
+      });
+      storage.getText = async () => ({
+        profileId: 'default-sqlite',
+        namespace: PROVIDER_CONFIG_CENTER_STORAGE_NAMESPACE,
+        key: 'unused',
+        value: null,
+      });
+
+      studio.getInstance = async () =>
+        ({
+          id: BUILT_IN_INSTANCE_ID,
+          name: 'Local Built-In',
+          runtimeKind: 'openclaw',
+          deploymentMode: 'local-managed',
+          transportKind: 'openclawGatewayWs',
+          baseUrl: 'http://127.0.0.1:21280',
+          config: {
+            authToken: 'test-token',
+            baseUrl: 'http://127.0.0.1:21280',
+          },
+        }) as any;
+
+      providerRoutingCatalogService.listProviderRoutingRecords = async () => [
+        {
+          id: 'provider-config-openai-primary',
+          schemaVersion: 1,
+          name: 'Primary OpenAI',
+          enabled: true,
+          isDefault: true,
+          managedBy: 'user',
+          clientProtocol: 'openai-compatible',
+          upstreamProtocol: 'openai-compatible',
+          providerId: 'openai',
+          upstreamBaseUrl: 'https://api.openai.com/v1',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'sk-live-secret',
+          defaultModelId: 'gpt-5.4',
+          reasoningModelId: 'o4-mini',
+          embeddingModelId: 'text-embedding-3-large',
+          models: [
+            { id: 'gpt-5.4', name: 'GPT-5.4' },
+          ],
+          notes: undefined,
+          exposeTo: ['openclaw'],
+          config: {
+            temperature: 0.2,
+            topP: 1,
+            maxTokens: 8192,
+            timeoutMs: 10,
+            streaming: true,
+          },
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      ];
+
+      globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const signal = init?.signal;
+        sawAbortSignal = Boolean(signal);
+
+        return new Promise<Response>((_resolve, reject) => {
+          signal?.addEventListener('abort', () => {
+            reject(
+              signal.reason instanceof Error
+                ? signal.reason
+                : new Error('AI generation request aborted.'),
+            );
+          });
+        });
+      }) as typeof fetch;
+
+      const result = await Promise.race([
+        llmService.generateContent({ prompt: 'hello' }).then(
+          () => 'resolved',
+          (error: unknown) => (error instanceof Error ? error.message : String(error)),
+        ),
+        new Promise<string>((resolve) => {
+          setTimeout(() => resolve('hung'), 50);
+        }),
+      ]);
+
+      assert.match(result, /timed out/i);
+      assert.equal(sawAbortSignal, true);
     } finally {
       storage.getStorageInfo = originalGetStorageInfo;
       storage.listKeys = originalListKeys;

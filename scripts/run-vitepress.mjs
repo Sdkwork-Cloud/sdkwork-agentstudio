@@ -138,6 +138,7 @@ async function main() {
   const child = spawn(process.execPath, [vitepressCli, ...process.argv.slice(2)], {
     cwd: rootDir,
     stdio: 'inherit',
+    windowsHide: true,
   });
 
   child.on('error', (error) => {

@@ -1208,7 +1208,7 @@ function buildRecommendations({
       titleKey: 'dashboard.recommendations.items.expandCapabilities.title',
       descriptionKey: 'dashboard.recommendations.items.expandCapabilities.description',
       actionLabelKey: 'dashboard.recommendations.items.expandCapabilities.action',
-      actionPath: '/market',
+      actionPath: '/agents',
     });
   }
 

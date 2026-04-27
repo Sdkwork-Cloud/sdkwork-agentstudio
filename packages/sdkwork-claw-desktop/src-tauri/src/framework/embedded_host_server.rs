@@ -1,7 +1,10 @@
 use crate::framework::{
     config::AppConfig,
     paths::AppPaths,
-    ports::canonical_loopback_port_window_end,
+    ports::{
+        managed_desktop_host_fallback_port_range_end,
+        managed_desktop_host_fallback_port_range_start,
+    },
     services::{
         local_ai_proxy::LocalAiProxyService,
         storage::StorageService,
@@ -163,9 +166,12 @@ pub fn start_embedded_host_server(
         bind_host: bind_host.trim().to_string(),
         requested_port,
         fallback_range: allow_dynamic_port.then(|| {
-            PortRange::new(requested_port, canonical_loopback_port_window_end(requested_port))
+            PortRange::new(
+                managed_desktop_host_fallback_port_range_start(requested_port),
+                managed_desktop_host_fallback_port_range_end(requested_port),
+            )
         }),
-        allow_ephemeral_fallback: false,
+        allow_ephemeral_fallback: true,
     })
     .map_err(FrameworkError::Conflict)?;
 
@@ -1352,7 +1358,7 @@ mod tests {
                 .join("node_modules")
                 .join("openclaw")
                 .join("openclaw.mjs"),
-            home_dir: paths.openclaw_root_dir.clone(),
+            home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
             config_path: paths.openclaw_config_file.clone(),

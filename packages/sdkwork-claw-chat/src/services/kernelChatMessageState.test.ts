@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { Buffer } from 'node:buffer';
 import { readFileSync } from 'node:fs';
 import type { KernelChatMessage, StudioConversationAttachment } from '@sdkwork/claw-types';
 import { resolveKernelChatMessageState } from './kernelChatMessageState.ts';
@@ -35,6 +36,10 @@ function createKernelMessage(input: Partial<KernelChatMessage> = {}): KernelChat
     parts: [],
     ...input,
   };
+}
+
+function encodeUtf8AsLatin1(value: string) {
+  return Buffer.from(value, 'utf8').toString('latin1');
 }
 
 await runTest(
@@ -232,6 +237,21 @@ await runTest(
         ],
         notices: [],
       },
+    );
+  },
+);
+
+await runTest(
+  'resolveKernelChatMessageState repairs mojibake in legacy chat fields before the message list renders',
+  () => {
+    assert.equal(
+      resolveKernelChatMessageState({
+        id: 'legacy-mojibake-message',
+        role: 'assistant',
+        content: encodeUtf8AsLatin1('会话消息不应该显示乱码。'),
+        timestamp: 50,
+      }).content,
+      '会话消息不应该显示乱码。',
     );
   },
 );

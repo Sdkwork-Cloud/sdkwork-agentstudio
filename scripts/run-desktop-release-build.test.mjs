@@ -253,4 +253,9 @@ test('desktop release build cli runs the OpenClaw release-asset preflight before
     /shell:\s*plan\.shell/u,
     'run-desktop-release-build must use the resolved plan shell setting instead of reintroducing a Windows-only cmd shell wrapper at spawn time',
   );
+  assert.match(
+    source,
+    /windowsHide:\s*true/u,
+    'run-desktop-release-build must hide delegated Windows child processes so release automation does not flash terminal windows',
+  );
 });

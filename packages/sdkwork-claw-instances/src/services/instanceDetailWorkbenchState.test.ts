@@ -34,7 +34,7 @@ function createDeferred<T>() {
   };
 }
 
-function createWorkbench(id: string, port = '18789') {
+function createWorkbench(id: string, port = '21280') {
   return {
     instance: {
       id,

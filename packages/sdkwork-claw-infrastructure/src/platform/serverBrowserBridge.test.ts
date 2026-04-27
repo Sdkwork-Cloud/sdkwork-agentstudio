@@ -154,9 +154,9 @@ function createInstance(id: string): StudioInstanceRecord {
     version: '2026.04.04',
     typeLabel: 'OpenClaw',
     host: '127.0.0.1',
-    port: 18789,
-    baseUrl: 'http://127.0.0.1:18789',
-    websocketUrl: 'ws://127.0.0.1:18789',
+    port: 21280,
+    baseUrl: 'http://127.0.0.1:21280',
+    websocketUrl: 'ws://127.0.0.1:21280',
     cpu: 0,
     memory: 0,
     totalMemory: '0 GB',
@@ -167,7 +167,7 @@ function createInstance(id: string): StudioInstanceRecord {
       namespace: id,
     },
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
@@ -183,7 +183,7 @@ function createInstanceDetail(id: string): StudioInstanceDetailRecord {
   return {
     instance: createInstance(id),
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
@@ -437,7 +437,7 @@ await runTest('server browser bridge routes canonical studio reads and conversat
     assert.equal(instances.length, 1);
     assert.equal(hydrated?.id, BUILT_IN_INSTANCE_ID);
     assert.equal(hydratedDetail?.instance.id, BUILT_IN_INSTANCE_ID);
-    assert.equal(hydratedConfig?.port, '18789');
+    assert.equal(hydratedConfig?.port, '21280');
     assert.equal(logs, 'Hosted logs');
     assert.equal(conversations.length, 1);
     assert.equal(saved.id, 'conversation-1');

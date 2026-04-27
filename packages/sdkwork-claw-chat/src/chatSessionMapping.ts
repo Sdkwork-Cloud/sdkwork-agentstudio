@@ -13,6 +13,8 @@ import {
 } from '@sdkwork/claw-types';
 import {
   dedupeChatMessagesById,
+  DEFAULT_CHAT_SESSION_TITLE,
+  getChatSessionDisplayTitle,
   hasRenderableChatMessagePayload,
   isOpenClawSilentReplyText,
   mergeChatMessageSequenceIntoNativeMetadata,
@@ -28,6 +30,7 @@ import type { ChatSession, Message } from './store/useChatStore';
 const LOCAL_CHAT_PROJECTION_KERNEL_ID = 'studio-direct';
 const LOCAL_CHAT_PROJECTION_SESSION_KIND = 'direct';
 const CLAW_STUDIO_SESSION_IS_DRAFT_KEY = '__clawStudioIsDraft';
+const CLAW_STUDIO_SESSION_TITLE_SOURCE_KEY = '__clawStudioTitleSource';
 const CLAW_STUDIO_MESSAGE_TRANSPORT_TEXT_KEY = '__clawStudioTransportText';
 const CLAW_STUDIO_MESSAGE_PENDING_DELIVERY_KEY = '__clawStudioPendingDelivery';
 
@@ -64,6 +67,17 @@ function readNativeMetadataBoolean(
   key: string,
 ) {
   return typeof metadata?.[key] === 'boolean' ? (metadata[key] as boolean) : undefined;
+}
+
+function normalizeChatSessionTitleSource(
+  value: unknown,
+): ChatSession['titleSource'] | undefined {
+  return value === 'default' ||
+    value === 'preview' ||
+    value === 'explicit' ||
+    value === 'firstUser'
+    ? value
+    : undefined;
 }
 
 function cloneAttachments(
@@ -184,14 +198,20 @@ function resolvePersistedSessionKind(session: ChatSession) {
 
 function buildPersistedSessionNativeMetadata(session: ChatSession) {
   const baseMetadata = asRecord(session.kernelSession?.nativeMetadata) ?? {};
-  if (typeof session.isDraft !== 'boolean') {
-    return Object.keys(baseMetadata).length > 0 ? baseMetadata : null;
+  const titleSource = normalizeChatSessionTitleSource(session.titleSource);
+  const metadata = {
+    ...baseMetadata,
+    ...(typeof session.isDraft === 'boolean'
+      ? { [CLAW_STUDIO_SESSION_IS_DRAFT_KEY]: session.isDraft }
+      : {}),
+    ...(titleSource ? { [CLAW_STUDIO_SESSION_TITLE_SOURCE_KEY]: titleSource } : {}),
+  };
+
+  if (Object.keys(metadata).length === 0) {
+    return null;
   }
 
-  return {
-    ...baseMetadata,
-    [CLAW_STUDIO_SESSION_IS_DRAFT_KEY]: session.isDraft,
-  };
+  return metadata;
 }
 
 function buildPersistedKernelSession(session: ChatSession): KernelChatSession {
@@ -231,6 +251,24 @@ function buildPersistedKernelSession(session: ChatSession): KernelChatSession {
       : undefined,
     activeRunId: trimOptionalString(session.runId),
     nativeMetadata: buildPersistedSessionNativeMetadata(session),
+  };
+}
+
+function projectPersistableChatSessionTitle(session: ChatSession): ChatSession {
+  const displayTitle = getChatSessionDisplayTitle(session);
+  if (displayTitle === session.title) {
+    return session;
+  }
+
+  return {
+    ...session,
+    title: displayTitle,
+    titleSource:
+      session.titleSource === 'explicit'
+        ? 'explicit'
+        : displayTitle === DEFAULT_CHAT_SESSION_TITLE
+          ? 'default'
+          : 'firstUser',
   };
 }
 
@@ -434,7 +472,7 @@ export function mapStudioConversation(record: StudioConversationRecord): ChatSes
     readNativeMetadataBoolean(sessionNativeMetadata, CLAW_STUDIO_SESSION_IS_DRAFT_KEY) ??
     (kernelSession?.lifecycle === 'draft' ? true : undefined);
 
-  return {
+  return projectPersistableChatSessionTitle({
     id: record.id,
     title: record.title,
     createdAt: record.createdAt,
@@ -457,6 +495,9 @@ export function mapStudioConversation(record: StudioConversationRecord): ChatSes
             ? 'kernelAdapter'
             : 'local',
     isDraft: restoredDraftState,
+    titleSource: normalizeChatSessionTitleSource(
+      sessionNativeMetadata?.[CLAW_STUDIO_SESSION_TITLE_SOURCE_KEY],
+    ),
     sessionKind: record.kernelSession?.sessionKind ?? LOCAL_CHAT_PROJECTION_SESSION_KIND,
     agentId:
       trimOptionalString(record.kernelSession?.ref?.agentId) ??
@@ -472,7 +513,7 @@ export function mapStudioConversation(record: StudioConversationRecord): ChatSes
       latestVisibleMessage?.content ??
       sanitizePersistedOpenClawPreview(record.lastMessagePreview, kernelSession),
     kernelSession,
-  };
+  });
 }
 
 function isStudioConversationPersistableSession(session: ChatSession) {
@@ -492,10 +533,11 @@ export function mapChatSession(session: ChatSession): StudioConversationRecord {
     );
   }
 
-  const kernelSession = buildPersistedKernelSession(session);
-  const messages = dedupeChatMessagesById(session.messages).map((message) => ({
+  const persistableSession = projectPersistableChatSessionTitle(session);
+  const kernelSession = buildPersistedKernelSession(persistableSession);
+  const messages = dedupeChatMessagesById(persistableSession.messages).map((message) => ({
     id: message.id,
-    conversationId: session.id,
+    conversationId: persistableSession.id,
     role: normalizeStudioConversationRole(message.role),
     content: message.content,
     createdAt: message.timestamp,
@@ -534,13 +576,13 @@ export function mapChatSession(session: ChatSession): StudioConversationRecord {
   }));
 
   return {
-    id: session.id,
-    title: session.title,
-    primaryInstanceId: resolvePersistedConversationInstanceId(session),
-    participantInstanceIds: [resolvePersistedConversationInstanceId(session)],
-    createdAt: session.createdAt,
-    updatedAt: session.updatedAt,
-    lastSeenAt: normalizeOptionalTimestamp(session.lastSeenAt),
+    id: persistableSession.id,
+    title: persistableSession.title,
+    primaryInstanceId: resolvePersistedConversationInstanceId(persistableSession),
+    participantInstanceIds: [resolvePersistedConversationInstanceId(persistableSession)],
+    createdAt: persistableSession.createdAt,
+    updatedAt: persistableSession.updatedAt,
+    lastSeenAt: normalizeOptionalTimestamp(persistableSession.lastSeenAt),
     messageCount: messages.length,
     lastMessagePreview: kernelSession.lastMessagePreview ?? '',
     kernelSession,

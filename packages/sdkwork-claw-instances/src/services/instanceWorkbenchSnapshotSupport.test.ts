@@ -59,9 +59,9 @@ function createOpenClawDetail(
       version: '2026.4.2',
       typeLabel: 'OpenClaw Gateway',
       host: '10.0.0.8',
-      port: 18789,
-      baseUrl: 'http://10.0.0.8:18789',
-      websocketUrl: 'ws://10.0.0.8:18789',
+      port: 21280,
+      baseUrl: 'http://10.0.0.8:21280',
+      websocketUrl: 'ws://10.0.0.8:21280',
       cpu: 12,
       memory: 35,
       totalMemory: '64GB',
@@ -72,7 +72,7 @@ function createOpenClawDetail(
         namespace: instanceId,
       },
       config: {
-        port: '18789',
+        port: '21280',
         sandbox: true,
         autoUpdate: true,
         logLevel: 'info',
@@ -84,7 +84,7 @@ function createOpenClawDetail(
       lastSeenAt: 1,
     },
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
@@ -124,7 +124,7 @@ function createOpenClawDetail(
           label: 'Base URL',
           kind: 'http',
           status: 'ready',
-          url: 'http://10.0.0.8:18789',
+          url: 'http://10.0.0.8:21280',
           exposure: 'remote',
           auth: 'token',
           source: 'config',
@@ -284,8 +284,8 @@ await runTest(
         deploymentMode: 'local-managed',
         transportKind: 'openclawGatewayWs',
         isBuiltIn: true,
-        baseUrl: 'http://127.0.0.1:18789',
-        websocketUrl: 'ws://127.0.0.1:18789',
+        baseUrl: 'http://127.0.0.1:21280',
+        websocketUrl: 'ws://127.0.0.1:21280',
         storage: {
           provider: 'localFile',
           namespace: STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
@@ -299,8 +299,8 @@ await runTest(
     assert.equal(snapshot?.instance.runtimeKind, 'openclaw');
     assert.equal(snapshot?.instance.deploymentMode, 'local-managed');
     assert.equal(snapshot?.instance.transportKind, 'openclawGatewayWs');
-    assert.equal(snapshot?.instance.baseUrl, 'http://127.0.0.1:18789');
-    assert.equal(snapshot?.instance.websocketUrl, 'ws://127.0.0.1:18789');
+    assert.equal(snapshot?.instance.baseUrl, 'http://127.0.0.1:21280');
+    assert.equal(snapshot?.instance.websocketUrl, 'ws://127.0.0.1:21280');
     assert.equal(snapshot?.instance.storage?.namespace, STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID);
   },
 );

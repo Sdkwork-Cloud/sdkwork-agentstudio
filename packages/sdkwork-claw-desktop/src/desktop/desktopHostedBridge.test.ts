@@ -13,7 +13,7 @@ import {
 
 const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
 const BUILT_IN_INSTANCE_PATH =
-  `http://127.0.0.1:18797/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}`;
+  `http://127.0.0.1:21289/claw/api/v1/studio/instances/${BUILT_IN_INSTANCE_ID}`;
 
 function runTest(name: string, fn: () => Promise<void> | void) {
   return Promise.resolve()
@@ -105,7 +105,7 @@ const desktopHostedRuntime: DesktopHostedRuntimeDescriptor = {
   apiBasePath: '/claw/api/v1',
   manageBasePath: '/claw/manage/v1',
   internalBasePath: '/claw/internal/v1',
-  browserBaseUrl: 'http://127.0.0.1:18797',
+  browserBaseUrl: 'http://127.0.0.1:21289',
   browserSessionToken: 'desktop-session-token',
   lastError: null,
 };
@@ -132,17 +132,17 @@ await runTest('desktop hosted bridge forwards browser session token to manage, i
 
   assert.deepEqual(requests, [
     {
-      input: 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints',
+      input: 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints',
       method: 'GET',
       browserSessionToken: 'desktop-session-token',
     },
     {
-      input: 'http://127.0.0.1:18797/claw/internal/v1/node-sessions',
+      input: 'http://127.0.0.1:21289/claw/internal/v1/node-sessions',
       method: 'GET',
       browserSessionToken: 'desktop-session-token',
     },
     {
-      input: 'http://127.0.0.1:18797/claw/api/v1/studio/instances',
+      input: 'http://127.0.0.1:21289/claw/api/v1/studio/instances',
       method: 'GET',
       browserSessionToken: 'desktop-session-token',
     },
@@ -158,7 +158,7 @@ await runTest('desktop hosted bridge probes canonical internal and manage hosted
       browserSessionToken: readHeaderValue(init?.headers, 'x-claw-browser-session'),
     });
 
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -180,11 +180,11 @@ await runTest('desktop hosted bridge probes canonical internal and manage hosted
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
         },
       ]);
     }
@@ -198,29 +198,28 @@ await runTest('desktop hosted bridge probes canonical internal and manage hosted
   assert.equal(result.hostEndpoints[0]?.endpointId, 'claw-manage-http');
   assert.deepEqual(requests, [
     {
-      input: 'http://127.0.0.1:18797/claw/internal/v1/host-platform',
+      input: 'http://127.0.0.1:21289/claw/internal/v1/host-platform',
       method: 'GET',
       browserSessionToken: 'desktop-session-token',
     },
     {
-      input: 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints',
+      input: 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints',
       method: 'GET',
       browserSessionToken: 'desktop-session-token',
     },
   ]);
 });
 
-await runTest('desktop hosted bridge readiness probe validates hosted internal, manage, and studio instance surfaces', async () => {
-  const requests: Array<{ input: string; method: string; browserSessionToken: string | null }> = [];
-  const webSocketProbe = createMockWebSocketFactory('open');
+await runTest('desktop hosted bridge readiness probe forwards abort signal to hosted HTTP probes', async () => {
+  const abortController = new AbortController();
+  const requests: Array<{ input: string; signal: AbortSignal | null }> = [];
   const fetchImpl = async (input: string, init?: RequestInit) => {
     requests.push({
       input,
-      method: init?.method ?? 'GET',
-      browserSessionToken: readHeaderValue(init?.headers, 'x-claw-browser-session'),
+      signal: init?.signal ?? null,
     });
 
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -242,16 +241,77 @@ await runTest('desktop hosted bridge readiness probe validates hosted internal, 
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
         },
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    throw new Error(`unexpected request: ${input}`);
+  };
+
+  const result = await probeDesktopHostedRuntimeReadiness(
+    desktopHostedRuntime,
+    fetchImpl,
+    {
+      requiresBuiltInOpenClawEvidence: false,
+      signal: abortController.signal,
+    },
+  );
+
+  assert.equal(result.evidence.ready, true);
+  assert.equal(requests.length, 2);
+  assert.ok(
+    requests.every((request) => request.signal === abortController.signal),
+    'expected every readiness HTTP probe to receive the retry abort signal',
+  );
+});
+
+await runTest('desktop hosted bridge readiness probe validates hosted internal, manage, and studio instance surfaces', async () => {
+  const requests: Array<{ input: string; method: string; browserSessionToken: string | null }> = [];
+  const webSocketProbe = createMockWebSocketFactory('open');
+  const fetchImpl = async (input: string, init?: RequestInit) => {
+    requests.push({
+      input,
+      method: init?.method ?? 'GET',
+      browserSessionToken: readHeaderValue(init?.headers, 'x-claw-browser-session'),
+    });
+
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
+      return createJsonResponse({
+        mode: 'desktopCombined',
+        lifecycle: 'ready',
+        hostId: 'desktop-local',
+        displayName: 'Desktop Combined Host',
+        version: 'desktop@test',
+        desiredStateProjectionVersion: 'phase2',
+        rolloutEngineVersion: 'phase2',
+        manageBasePath: '/claw/manage/v1',
+        internalBasePath: '/claw/internal/v1',
+        stateStoreDriver: 'sqlite',
+        stateStore: {
+          activeProfileId: 'default-sqlite',
+          providers: [],
+          profiles: [],
+        },
+        capabilityKeys: [],
+        updatedAt: 1,
+      });
+    }
+
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
+      return createJsonResponse([
+        {
+          endpointId: 'claw-manage-http',
+          baseUrl: 'http://127.0.0.1:21289',
+        },
+      ]);
+    }
+
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -265,7 +325,7 @@ await runTest('desktop hosted bridge readiness probe validates hosted internal, 
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -279,7 +339,7 @@ await runTest('desktop hosted bridge readiness probe validates hosted internal, 
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -301,12 +361,13 @@ await runTest('desktop hosted bridge readiness probe validates hosted internal, 
     desktopHostedRuntime,
     fetchImpl,
     {
+      requiresBuiltInOpenClawEvidence: true,
       webSocketFactory: webSocketProbe.factory,
     },
   );
 
   assert.equal(result.hostPlatformStatus.lifecycle, 'ready');
-  assert.equal(result.descriptor.browserBaseUrl, 'http://127.0.0.1:18797');
+  assert.equal(result.descriptor.browserBaseUrl, 'http://127.0.0.1:21289');
   assert.equal(result.hostEndpoints[0]?.endpointId, 'claw-manage-http');
   assert.equal(result.instances[0]?.id, BUILT_IN_INSTANCE_ID);
   assert.equal(result.evidence.gatewayWebsocketReady, true);
@@ -321,27 +382,27 @@ await runTest('desktop hosted bridge readiness probe validates hosted internal, 
     [...requests].sort((left, right) => left.input.localeCompare(right.input)),
     [
       {
-        input: 'http://127.0.0.1:18797/claw/internal/v1/host-platform',
+        input: 'http://127.0.0.1:21289/claw/internal/v1/host-platform',
         method: 'GET',
         browserSessionToken: 'desktop-session-token',
       },
       {
-        input: 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints',
+        input: 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints',
         method: 'GET',
         browserSessionToken: 'desktop-session-token',
       },
       {
-        input: 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime',
+        input: 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime',
         method: 'GET',
         browserSessionToken: 'desktop-session-token',
       },
       {
-        input: 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway',
+        input: 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway',
         method: 'GET',
         browserSessionToken: 'desktop-session-token',
       },
       {
-        input: 'http://127.0.0.1:18797/claw/api/v1/studio/instances',
+        input: 'http://127.0.0.1:21289/claw/api/v1/studio/instances',
         method: 'GET',
         browserSessionToken: 'desktop-session-token',
       },
@@ -352,7 +413,7 @@ await runTest('desktop hosted bridge readiness probe validates hosted internal, 
 await runTest('desktop hosted bridge readiness probe rejects when the OpenClaw gateway websocket is not dialable yet', async () => {
   const webSocketProbe = createMockWebSocketFactory('error');
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -374,15 +435,15 @@ await runTest('desktop hosted bridge readiness probe rejects when the OpenClaw g
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
           websocketUrl: null,
           loopbackOnly: true,
           dynamicPort: false,
@@ -390,7 +451,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the OpenClaw g
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -404,7 +465,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the OpenClaw g
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -418,7 +479,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the OpenClaw g
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -438,6 +499,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the OpenClaw g
 
   await assert.rejects(
     () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
       webSocketFactory: webSocketProbe.factory,
       webSocketConnectTimeoutMs: 50,
     }),
@@ -481,7 +543,7 @@ await runTest('desktop hosted bridge readiness evidence resolves the built-in Op
     [
       {
         endpointId: 'claw-manage-http',
-        baseUrl: 'http://127.0.0.1:18797',
+        baseUrl: 'http://127.0.0.1:21289',
       },
     ] as any,
     {
@@ -512,15 +574,86 @@ await runTest('desktop hosted bridge readiness evidence resolves the built-in Op
         isDefault: true,
       },
     ] as any,
+    {
+      requiresBuiltInOpenClawEvidence: true,
+    },
   );
 
   assert.equal(evidence.builtInInstanceId, BUILT_IN_INSTANCE_ID);
   assert.equal(evidence.builtInInstanceReady, true);
 });
 
+await runTest('desktop hosted bridge readiness treats a degraded host lifecycle as usable when the hosted control plane and OpenClaw surfaces are ready', () => {
+  const evidence = buildDesktopHostedRuntimeReadinessEvidence(
+    desktopHostedRuntime,
+    {
+      mode: 'desktopCombined',
+      lifecycle: 'degraded',
+      hostId: 'desktop-local',
+      displayName: 'Desktop Combined Host',
+      version: 'desktop@test',
+      desiredStateProjectionVersion: 'phase2',
+      rolloutEngineVersion: 'phase2',
+      manageBasePath: '/claw/manage/v1',
+      internalBasePath: '/claw/internal/v1',
+      stateStoreDriver: 'sqlite',
+      stateStore: {
+        activeProfileId: 'default-sqlite',
+        providers: [],
+        profiles: [],
+      },
+      supportedCapabilityKeys: ['manage.openclaw.gateway.invoke'],
+      availableCapabilityKeys: ['manage.openclaw.gateway.invoke'],
+      capabilityKeys: ['manage.openclaw.gateway.invoke'],
+      updatedAt: 1,
+    } as any,
+    [
+      {
+        endpointId: 'claw-manage-http',
+        baseUrl: 'http://127.0.0.1:21289',
+      },
+    ] as any,
+    {
+      lifecycle: 'ready',
+      endpointId: 'openclaw-gateway',
+      activePort: 18871,
+      baseUrl: 'http://127.0.0.1:18871',
+      websocketUrl: 'ws://127.0.0.1:18871',
+    } as any,
+    {
+      lifecycle: 'ready',
+      endpointId: 'openclaw-gateway',
+      activePort: 18871,
+      baseUrl: 'http://127.0.0.1:18871',
+      websocketUrl: 'ws://127.0.0.1:18871',
+    } as any,
+    [
+      {
+        id: BUILT_IN_INSTANCE_ID,
+        name: 'Built-In OpenClaw Primary',
+        runtimeKind: 'openclaw',
+        deploymentMode: 'local-managed',
+        transportKind: 'openclawGatewayWs',
+        status: 'online',
+        baseUrl: 'http://127.0.0.1:18871',
+        websocketUrl: 'ws://127.0.0.1:18871',
+        isBuiltIn: true,
+        isDefault: true,
+      },
+    ] as any,
+    {
+      requiresBuiltInOpenClawEvidence: true,
+    },
+  );
+
+  assert.equal(evidence.hostLifecycle, 'degraded');
+  assert.equal(evidence.hostLifecycleReady, true);
+  assert.equal(evidence.ready, true);
+});
+
 await runTest('desktop hosted bridge readiness probe requires gateway invoke capability before declaring built-in OpenClaw ready', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -560,15 +693,15 @@ await runTest('desktop hosted bridge readiness probe requires gateway invoke cap
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
           websocketUrl: null,
           loopbackOnly: true,
           dynamicPort: false,
@@ -576,7 +709,7 @@ await runTest('desktop hosted bridge readiness probe requires gateway invoke cap
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -590,7 +723,7 @@ await runTest('desktop hosted bridge readiness probe requires gateway invoke cap
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -604,7 +737,7 @@ await runTest('desktop hosted bridge readiness probe requires gateway invoke cap
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -623,7 +756,9 @@ await runTest('desktop hosted bridge readiness probe requires gateway invoke cap
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
     (error: unknown) => {
       assert.ok(error instanceof DesktopHostedRuntimeReadinessError);
       assert.match(
@@ -638,7 +773,7 @@ await runTest('desktop hosted bridge readiness probe requires gateway invoke cap
 
 await runTest('desktop hosted bridge readiness probe selects the canonical manage endpoint instead of assuming the first published endpoint is authoritative', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -660,7 +795,7 @@ await runTest('desktop hosted bridge readiness probe selects the canonical manag
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'irrelevant-public-endpoint',
@@ -676,10 +811,10 @@ await runTest('desktop hosted bridge readiness probe selects the canonical manag
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
           websocketUrl: null,
           loopbackOnly: true,
           dynamicPort: false,
@@ -687,7 +822,7 @@ await runTest('desktop hosted bridge readiness probe selects the canonical manag
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -701,7 +836,7 @@ await runTest('desktop hosted bridge readiness probe selects the canonical manag
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -715,7 +850,7 @@ await runTest('desktop hosted bridge readiness probe selects the canonical manag
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -737,14 +872,14 @@ await runTest('desktop hosted bridge readiness probe selects the canonical manag
     {
       ...desktopHostedRuntime,
       endpointId: 'claw-manage-http',
-      activePort: 18797,
+      activePort: 21289,
     },
     fetchImpl,
   );
 
   assert.equal(result.evidence.manageEndpointId, 'claw-manage-http');
-  assert.equal(result.evidence.manageEndpointActivePort, 18797);
-  assert.equal(result.evidence.manageBaseUrl, 'http://127.0.0.1:18797');
+  assert.equal(result.evidence.manageEndpointActivePort, 21289);
+  assert.equal(result.evidence.manageBaseUrl, 'http://127.0.0.1:21289');
   assert.equal(result.evidence.manageEndpointMatchesDescriptor, true);
   assert.equal(result.evidence.manageEndpointIdMatchesDescriptor, true);
   assert.equal(result.evidence.manageEndpointActivePortMatchesDescriptor, true);
@@ -753,7 +888,7 @@ await runTest('desktop hosted bridge readiness probe selects the canonical manag
 
 await runTest('desktop hosted bridge readiness probe rejects a hosted runtime that is not ready', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'starting',
@@ -775,16 +910,16 @@ await runTest('desktop hosted bridge readiness probe rejects a hosted runtime th
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
         },
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'stopped',
@@ -798,7 +933,7 @@ await runTest('desktop hosted bridge readiness probe rejects a hosted runtime th
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'stopped',
@@ -812,7 +947,7 @@ await runTest('desktop hosted bridge readiness probe rejects a hosted runtime th
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([]);
     }
 
@@ -820,7 +955,9 @@ await runTest('desktop hosted bridge readiness probe rejects a hosted runtime th
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
     /desktop hosted runtime is not ready/i,
   );
 });
@@ -829,7 +966,7 @@ await runTest('desktop hosted bridge readiness probe accepts non-openclaw packag
   const requests: string[] = [];
   const fetchImpl = async (input: string) => {
     requests.push(input);
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -851,35 +988,18 @@ await runTest('desktop hosted bridge readiness probe accepts non-openclaw packag
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
           websocketUrl: null,
           loopbackOnly: true,
           dynamicPort: false,
-        },
-      ]);
-    }
-
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
-      return createJsonResponse([
-        {
-          id: 'hermes-remote',
-          name: 'Hermes Remote',
-          runtimeKind: 'hermes',
-          deploymentMode: 'remote',
-          transportKind: 'customHttp',
-          status: 'online',
-          baseUrl: 'https://hermes.example.com',
-          websocketUrl: null,
-          isBuiltIn: false,
-          isDefault: true,
         },
       ]);
     }
@@ -890,9 +1010,6 @@ await runTest('desktop hosted bridge readiness probe accepts non-openclaw packag
   const result = await probeDesktopHostedRuntimeReadiness(
     desktopHostedRuntime,
     fetchImpl,
-    {
-      requiresBuiltInOpenClawEvidence: false,
-    } as any,
   );
 
   assert.equal(result.evidence.hostLifecycleReady, true);
@@ -902,9 +1019,8 @@ await runTest('desktop hosted bridge readiness probe accepts non-openclaw packag
   assert.equal(result.evidence.builtInInstanceReady, false);
   assert.equal(result.evidence.ready, true);
   assert.deepEqual(requests, [
-    'http://127.0.0.1:18797/claw/internal/v1/host-platform',
-    'http://127.0.0.1:18797/claw/manage/v1/host-endpoints',
-    'http://127.0.0.1:18797/claw/api/v1/studio/instances',
+    'http://127.0.0.1:21289/claw/internal/v1/host-platform',
+    'http://127.0.0.1:21289/claw/manage/v1/host-endpoints',
   ]);
 });
 
@@ -936,10 +1052,10 @@ await runTest('desktop hosted bridge readiness evidence marks built-in instance 
       {
         endpointId: 'claw-manage-http',
         bindHost: '127.0.0.1',
-        requestedPort: 18797,
-        activePort: 18797,
+        requestedPort: 21289,
+        activePort: 21289,
         scheme: 'http',
-        baseUrl: 'http://127.0.0.1:18797',
+        baseUrl: 'http://127.0.0.1:21289',
         websocketUrl: null,
         loopbackOnly: true,
         dynamicPort: false,
@@ -979,6 +1095,9 @@ await runTest('desktop hosted bridge readiness evidence marks built-in instance 
         websocketUrl: 'ws://127.0.0.1:19999',
       } as any,
     ],
+    {
+      requiresBuiltInOpenClawEvidence: true,
+    },
   );
 
   assert.equal(evidence.gatewayWebsocketReady, true);
@@ -990,7 +1109,7 @@ await runTest('desktop hosted bridge readiness evidence marks built-in instance 
 
 await runTest('desktop hosted bridge readiness probe rejects when the built-in instance is missing hosted endpoints', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -1012,16 +1131,16 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
         },
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -1035,7 +1154,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -1049,7 +1168,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -1068,14 +1187,16 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
     /built-in openclaw instance/i,
   );
 });
 
 await runTest('desktop hosted bridge readiness probe rejects when the manage host endpoint is missing a baseUrl', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -1097,13 +1218,13 @@ await runTest('desktop hosted bridge readiness probe rejects when the manage hos
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
           baseUrl: null,
           websocketUrl: null,
@@ -1113,7 +1234,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the manage hos
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -1127,7 +1248,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the manage hos
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -1141,7 +1262,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the manage hos
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -1160,14 +1281,16 @@ await runTest('desktop hosted bridge readiness probe rejects when the manage hos
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
     /manage host endpoint baseurl/i,
   );
 });
 
 await runTest('desktop hosted bridge readiness probe rejects when the published manage host endpoint baseUrl drifts from the runtime descriptor browserBaseUrl', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -1189,7 +1312,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the published 
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
@@ -1205,7 +1328,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the published 
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -1219,7 +1342,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the published 
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -1233,7 +1356,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the published 
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -1252,14 +1375,16 @@ await runTest('desktop hosted bridge readiness probe rejects when the published 
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
     /descriptor browserbaseurl does not match the published manage host endpoint baseurl/i,
   );
 });
 
 await runTest('desktop hosted bridge readiness probe preserves a structured readiness snapshot when the canonical manage endpoint drifts from the descriptor', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -1281,7 +1406,7 @@ await runTest('desktop hosted bridge readiness probe preserves a structured read
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
@@ -1297,7 +1422,7 @@ await runTest('desktop hosted bridge readiness probe preserves a structured read
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -1311,7 +1436,7 @@ await runTest('desktop hosted bridge readiness probe preserves a structured read
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -1325,7 +1450,7 @@ await runTest('desktop hosted bridge readiness probe preserves a structured read
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -1345,7 +1470,9 @@ await runTest('desktop hosted bridge readiness probe preserves a structured read
 
   let thrownError: unknown = null;
   try {
-    await probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl);
+    await probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    });
   } catch (error) {
     thrownError = error;
   }
@@ -1362,7 +1489,7 @@ await runTest('desktop hosted bridge readiness probe preserves a structured read
 
 await runTest('desktop hosted bridge readiness probe rejects when built-in OpenClaw urls drift from the OpenClaw gateway projection', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -1384,15 +1511,15 @@ await runTest('desktop hosted bridge readiness probe rejects when built-in OpenC
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
           websocketUrl: null,
           loopbackOnly: true,
           dynamicPort: false,
@@ -1400,7 +1527,7 @@ await runTest('desktop hosted bridge readiness probe rejects when built-in OpenC
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -1414,7 +1541,7 @@ await runTest('desktop hosted bridge readiness probe rejects when built-in OpenC
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -1428,7 +1555,7 @@ await runTest('desktop hosted bridge readiness probe rejects when built-in OpenC
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -1447,14 +1574,16 @@ await runTest('desktop hosted bridge readiness probe rejects when built-in OpenC
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
     /built-in openclaw instance urls .* OpenClaw gateway projection/i,
   );
 });
 
 await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runtime and gateway endpoint ids drift', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -1476,15 +1605,15 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
           websocketUrl: null,
           loopbackOnly: true,
           dynamicPort: false,
@@ -1492,7 +1621,7 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -1506,7 +1635,7 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -1520,7 +1649,7 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -1539,14 +1668,16 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
     /openclaw runtime and gateway endpoints/i,
   );
 });
 
 await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runtime and gateway active ports drift', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -1568,15 +1699,15 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
           websocketUrl: null,
           loopbackOnly: true,
           dynamicPort: false,
@@ -1584,7 +1715,7 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -1598,7 +1729,7 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -1612,7 +1743,7 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -1631,14 +1762,16 @@ await runTest('desktop hosted bridge readiness probe rejects when OpenClaw runti
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
     /openclaw runtime and gateway endpoints with mismatched active ports/i,
   );
 });
 
 await runTest('desktop hosted bridge readiness probe rejects when the built-in OpenClaw instance is not online yet', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -1660,15 +1793,15 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in O
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
           websocketUrl: null,
           loopbackOnly: true,
           dynamicPort: false,
@@ -1676,7 +1809,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in O
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -1690,7 +1823,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in O
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -1704,7 +1837,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in O
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -1723,14 +1856,16 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in O
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
     /built-in openclaw instance is not online yet/i,
   );
 });
 
-await runTest('desktop hosted bridge readiness probe rejects when the built-in instance runtime kind drifts away from openclaw', async () => {
+await runTest('desktop hosted bridge readiness probe rejects non-OpenClaw kernels before treating them as built-in OpenClaw', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -1752,15 +1887,15 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
           websocketUrl: null,
           loopbackOnly: true,
           dynamicPort: false,
@@ -1768,7 +1903,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -1782,7 +1917,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -1796,7 +1931,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -1815,14 +1950,16 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
-    /projected a built-in instance runtimekind .* instead of "openclaw"/i,
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
+    /did not expose the built-in OpenClaw instance/i,
   );
 });
 
-await runTest('desktop hosted bridge readiness probe rejects when the built-in instance deployment mode drifts away from local-managed', async () => {
+await runTest('desktop hosted bridge readiness probe rejects non-local-managed instances before treating them as built-in OpenClaw', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -1844,15 +1981,15 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
           websocketUrl: null,
           loopbackOnly: true,
           dynamicPort: false,
@@ -1860,7 +1997,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -1874,7 +2011,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -1888,7 +2025,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -1907,14 +2044,16 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
-    /projected a built-in instance deploymentmode .* instead of "local-managed"/i,
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
+    /did not expose the built-in OpenClaw instance/i,
   );
 });
 
 await runTest('desktop hosted bridge readiness probe rejects when the built-in instance transport kind drifts away from the OpenClaw gateway transport', async () => {
   const fetchImpl = async (input: string) => {
-    if (input === 'http://127.0.0.1:18797/claw/internal/v1/host-platform') {
+    if (input === 'http://127.0.0.1:21289/claw/internal/v1/host-platform') {
       return createJsonResponse({
         mode: 'desktopCombined',
         lifecycle: 'ready',
@@ -1936,15 +2075,15 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/host-endpoints') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/host-endpoints') {
       return createJsonResponse([
         {
           endpointId: 'claw-manage-http',
           bindHost: '127.0.0.1',
-          requestedPort: 18797,
-          activePort: 18797,
+          requestedPort: 21289,
+          activePort: 21289,
           scheme: 'http',
-          baseUrl: 'http://127.0.0.1:18797',
+          baseUrl: 'http://127.0.0.1:21289',
           websocketUrl: null,
           loopbackOnly: true,
           dynamicPort: false,
@@ -1952,7 +2091,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       ]);
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/runtime') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/runtime') {
       return createJsonResponse({
         runtimeKind: 'openclaw',
         lifecycle: 'ready',
@@ -1966,7 +2105,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/manage/v1/openclaw/gateway') {
+    if (input === 'http://127.0.0.1:21289/claw/manage/v1/openclaw/gateway') {
       return createJsonResponse({
         gatewayKind: 'openclawGateway',
         lifecycle: 'ready',
@@ -1980,7 +2119,7 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
       });
     }
 
-    if (input === 'http://127.0.0.1:18797/claw/api/v1/studio/instances') {
+    if (input === 'http://127.0.0.1:21289/claw/api/v1/studio/instances') {
       return createJsonResponse([
         {
           id: BUILT_IN_INSTANCE_ID,
@@ -1999,7 +2138,9 @@ await runTest('desktop hosted bridge readiness probe rejects when the built-in i
   };
 
   await assert.rejects(
-    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl),
+    () => probeDesktopHostedRuntimeReadiness(desktopHostedRuntime, fetchImpl, {
+      requiresBuiltInOpenClawEvidence: true,
+    }),
     /projected a built-in instance transportkind .* instead of "openclawgatewayws"/i,
   );
 });
@@ -2033,7 +2174,7 @@ await runTest('desktop hosted studio bridge routes canonical instance lifecycle 
       body: typeof init?.body === 'string' ? init.body : null,
     });
 
-    if (inputText === 'http://127.0.0.1:18797/claw/api/v1/studio/instances' && method === 'POST') {
+    if (inputText === 'http://127.0.0.1:21289/claw/api/v1/studio/instances' && method === 'POST') {
       return createJsonResponse(createdInstance);
     }
 
@@ -2085,7 +2226,7 @@ await runTest('desktop hosted studio bridge routes canonical instance lifecycle 
   assert.equal(restarted?.status, 'online');
   assert.deepEqual(requests, [
     {
-      input: 'http://127.0.0.1:18797/claw/api/v1/studio/instances',
+      input: 'http://127.0.0.1:21289/claw/api/v1/studio/instances',
       method: 'POST',
       browserSessionToken: 'desktop-session-token',
       body: JSON.stringify({
@@ -2134,7 +2275,7 @@ await runTest('desktop hosted studio bridge routes canonical instance lifecycle 
 await runTest('deferred desktop hosted studio platform refreshes browser base url and session token after descriptor changes', async () => {
   let currentDescriptor: DesktopHostedRuntimeDescriptor = {
     ...desktopHostedRuntime,
-    browserBaseUrl: 'http://127.0.0.1:18797',
+    browserBaseUrl: 'http://127.0.0.1:21289',
     browserSessionToken: 'desktop-session-token-1',
   };
   const requests: Array<{ input: string; browserSessionToken: string | null }> = [];
@@ -2175,7 +2316,7 @@ await runTest('deferred desktop hosted studio platform refreshes browser base ur
 
   assert.deepEqual(requests, [
     {
-      input: 'http://127.0.0.1:18797/claw/api/v1/studio/instances',
+      input: 'http://127.0.0.1:21289/claw/api/v1/studio/instances',
       browserSessionToken: 'desktop-session-token-1',
     },
     {

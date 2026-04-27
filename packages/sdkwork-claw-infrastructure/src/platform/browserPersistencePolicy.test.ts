@@ -42,9 +42,9 @@ await runTest('browser persistence policy strips trusted instance config state',
     version: '2026.4.15',
     typeLabel: 'Built-In OpenClaw',
     host: '127.0.0.1',
-    port: 18789,
-    baseUrl: 'http://127.0.0.1:18789',
-    websocketUrl: 'ws://127.0.0.1:18789',
+    port: 21280,
+    baseUrl: 'http://127.0.0.1:21280',
+    websocketUrl: 'ws://127.0.0.1:21280',
     cpu: 0,
     memory: 0,
     totalMemory: 'Unknown',
@@ -59,14 +59,14 @@ await runTest('browser persistence policy strips trusted instance config state',
       endpoint: null,
     },
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
       corsOrigins: '*',
       workspacePath: 'C:\\kernel\\workspace',
-      baseUrl: 'http://127.0.0.1:18789',
-      websocketUrl: 'ws://127.0.0.1:18789',
+      baseUrl: 'http://127.0.0.1:21280',
+      websocketUrl: 'ws://127.0.0.1:21280',
       authToken: 'root-secret',
     },
     createdAt: 1,
@@ -76,8 +76,8 @@ await runTest('browser persistence policy strips trusted instance config state',
 
   assert.equal(sanitized.config.workspacePath, undefined);
   assert.equal(sanitized.config.authToken, undefined);
-  assert.equal(sanitized.config.baseUrl, 'http://127.0.0.1:18789');
-  assert.equal(sanitized.config.websocketUrl, 'ws://127.0.0.1:18789');
+  assert.equal(sanitized.config.baseUrl, 'http://127.0.0.1:21280');
+  assert.equal(sanitized.config.websocketUrl, 'ws://127.0.0.1:21280');
 });
 
 await runTest('browser persistence policy keeps channel counts while dropping secrets', () => {

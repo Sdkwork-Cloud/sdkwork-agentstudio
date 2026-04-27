@@ -25,6 +25,7 @@ import {
   type ChatOperationalEventPresentation,
   type KernelChatNoticePresentation,
   type OpenClawToolCard,
+  presentOpenClawToolLinkItems,
 } from '../services/index.ts';
 import { ChatMessageCodeHighlighter } from './chatMessageCodeHighlighter.tsx';
 import {
@@ -467,21 +468,12 @@ const ToolLinksPanel = memo(function ToolLinksPanel({
 }) {
   const { t } = useTranslation();
   const [expandedToolId, setExpandedToolId] = useState<string | null>(null);
-  const occurrenceByName = new Map<string, number>();
-  const linkItems = toolCards.map((toolCard, index) => {
-    const toolName = toolCard.name.trim() || 'Tool';
-    const occurrence = (occurrenceByName.get(toolName) ?? 0) + 1;
-    occurrenceByName.set(toolName, occurrence);
-    const stableToolId = toolCard.toolCallId?.trim() || `${toolCard.kind}:${toolName}:${index}`;
-
-    return {
-      ...toolCard,
-      id: stableToolId,
-      label: occurrence > 1 ? `${toolName} ${occurrence}` : toolName,
-      typeLabel: toolCard.kind === 'call'
-        ? t('chat.message.toolCall')
-        : t('chat.message.toolResult'),
-    };
+  const linkItems = presentOpenClawToolLinkItems({
+    toolCards,
+    labels: {
+      call: t('chat.message.toolCall'),
+      result: t('chat.message.toolResult'),
+    },
   });
   const expandedTool = linkItems.find((toolCard) => toolCard.id === expandedToolId) ?? null;
 

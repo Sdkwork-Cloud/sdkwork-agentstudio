@@ -93,6 +93,7 @@ function detectDirtyCheckout(repoDir) {
   const result = spawnSync('git', ['-C', repoDir, 'status', '--short'], {
     encoding: 'utf8',
     shell: false,
+    windowsHide: true,
   });
 
   if (result.error || result.status !== 0) {

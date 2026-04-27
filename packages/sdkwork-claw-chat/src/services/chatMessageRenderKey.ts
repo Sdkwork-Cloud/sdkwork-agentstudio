@@ -30,7 +30,7 @@ function resolveBaseMessageRenderKey(message: ChatMessageRenderLike, index: numb
 
   const seq = typeof message.seq === 'number' && Number.isFinite(message.seq) ? message.seq : null;
   if (seq !== null) {
-    return `msg:seq:${seq}`;
+    return `msg:seq:${seq}:${index}`;
   }
 
   const timestamp = typeof message.timestamp === 'number' ? message.timestamp : null;

@@ -12,6 +12,8 @@ use super::{
     },
     storage::StorageService,
 };
+#[cfg(windows)]
+use crate::framework::child_process::configure_hidden_child_process;
 use crate::framework::{
     config::AppConfig, paths::AppPaths, services::openclaw_runtime::ActivatedOpenClawRuntime,
     FrameworkError, Result,
@@ -341,11 +343,10 @@ fn should_exclude_path(candidate_path: &Path, excluded_paths: &[PathBuf]) -> boo
 fn create_archive_from_staging(staging_root: &Path, destination_path: &Path) -> Result<()> {
     let temp_zip_path = destination_path.with_extension(format!("{}.zip", Uuid::new_v4()));
 
-    let archive_result = if cfg!(windows) {
-        create_windows_archive_from_staging(staging_root, &temp_zip_path)
-    } else {
-        create_unix_archive_from_staging(staging_root, &temp_zip_path)
-    };
+    #[cfg(windows)]
+    let archive_result = create_windows_archive_from_staging(staging_root, &temp_zip_path);
+    #[cfg(not(windows))]
+    let archive_result = create_unix_archive_from_staging(staging_root, &temp_zip_path);
 
     if let Err(error) = archive_result {
         let _ = fs::remove_file(&temp_zip_path);
@@ -359,15 +360,16 @@ fn create_archive_from_staging(staging_root: &Path, destination_path: &Path) -> 
     Ok(())
 }
 
+#[cfg(windows)]
 fn create_windows_archive_from_staging(staging_root: &Path, destination_path: &Path) -> Result<()> {
     let archive_glob = format!("{}\\*", normalize_native_path(staging_root));
     let destination = normalize_native_path(destination_path);
-    let command = format!(
+    let script = format!(
         "$ErrorActionPreference = 'Stop'; if (Test-Path -LiteralPath '{destination}') {{ Remove-Item -LiteralPath '{destination}' -Force }}; Compress-Archive -Path '{archive_glob}' -DestinationPath '{destination}' -Force"
     );
-    let output = Command::new("powershell")
-        .args(["-NoProfile", "-Command", &command])
-        .output()?;
+    let mut command = Command::new("powershell");
+    configure_hidden_child_process(&mut command);
+    let output = command.args(["-NoProfile", "-Command", &script]).output()?;
 
     if !output.status.success() {
         return Err(FrameworkError::ProcessFailed {
@@ -380,6 +382,7 @@ fn create_windows_archive_from_staging(staging_root: &Path, destination_path: &P
     Ok(())
 }
 
+#[cfg(not(windows))]
 fn create_unix_archive_from_staging(staging_root: &Path, destination_path: &Path) -> Result<()> {
     let output = Command::new("zip")
         .args(["-q", "-r", destination_path.to_string_lossy().as_ref(), "."])
@@ -440,11 +443,11 @@ mod tests {
                 .join("0.4.0-windows-x64")
                 .join("runtime")
                 .join("openclaw.cjs"),
-            home_dir: paths.openclaw_root_dir.clone(),
+            home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
             config_path: paths.openclaw_config_file.clone(),
-            gateway_port: 18_789,
+            gateway_port: 21_280,
             gateway_auth_token: "mirror-test-token".to_string(),
         }
     }
@@ -554,6 +557,24 @@ mod tests {
                 .expect("run unzip");
             assert!(status.success(), "unzip should succeed");
         }
+    }
+
+    #[test]
+    fn openclaw_mirror_export_hides_windows_archive_child_processes() {
+        let production_source = include_str!("openclaw_mirror_export.rs")
+            .split("mod tests {")
+            .next()
+            .expect("production source");
+        let archive_source = production_source
+            .split("fn create_windows_archive_from_staging")
+            .nth(1)
+            .and_then(|tail| tail.split("fn create_unix_archive_from_staging").next())
+            .expect("windows archive source");
+
+        assert!(
+            archive_source.contains("configure_hidden_child_process(&mut command);"),
+            "PowerShell Compress-Archive must use the shared hidden child process policy"
+        );
     }
 
     #[test]

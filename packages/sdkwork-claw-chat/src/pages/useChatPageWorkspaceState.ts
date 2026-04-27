@@ -1,4 +1,5 @@
 import {
+  resolveChatSendSessionId,
   resolveChatWorkspacePresentation,
 } from '../services';
 import type {
@@ -139,6 +140,11 @@ export function useChatPageWorkspaceState({
     activeAdapterCapabilities,
     sendMode,
   });
+  const sendSessionId = resolveChatSendSessionId({
+    selectedSessionId: activeSessionId,
+    displaySessionId,
+    sendMode,
+  });
   const {
     modelCatalog,
     modelCatalogError,
@@ -177,7 +183,7 @@ export function useChatPageWorkspaceState({
   } = useChatInteractionState({
     t,
     activeInstanceId,
-    selectedSessionId: activeSessionId,
+    selectedSessionId: sendSessionId,
     displaySessionId,
     sessionControlSessionId:
       isDisplaySessionFallback ? null : selectedSession?.id ?? null,

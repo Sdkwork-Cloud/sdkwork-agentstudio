@@ -220,6 +220,7 @@ await runTest(
     assert.deepEqual(localRunCalls, [
       {
         sessionId: 'session-a',
+        sessionInstanceId: null,
         content: 'hello',
         attachments: [],
         requestText: 'hello',
@@ -231,6 +232,74 @@ await runTest(
         },
         requestSkill: { id: 'skill-a', name: 'Skill A', description: 'desc', category: 'tool' },
         requestAgent: { id: 'agent-a', name: 'Agent A', role: 'assistant', systemPrompt: 'prompt' },
+      },
+    ]);
+  },
+);
+
+await runTest(
+  'createChatComposerSendActions stores sanitized agent labels when creating new sessions',
+  async () => {
+    const createSessionCalls: Array<{
+      model: string | undefined;
+      instanceId: string | undefined;
+      options: Record<string, unknown> | undefined;
+    }> = [];
+    const actions = createChatComposerSendActions({
+      activeInstanceId: null,
+      selectedSessionId: null,
+      sendMode: 'local',
+      hasActiveChannel: true,
+      isChatSupportedRoute: true,
+      isBusy: false,
+      hasPendingInstanceRoute: false,
+      activeModel: {
+        id: 'provider/model-a',
+        name: 'Model A',
+        provider: 'provider',
+        icon: 'spark',
+      },
+      activeSkill: null,
+      activeAgent: {
+        id: 'gw-7f9d2c4b1e',
+        name: 'gw-7f9d2c4b1e(2026-04-26)',
+        description: '',
+        avatar: 'GW',
+        systemPrompt: '',
+        creator: 'OpenClaw',
+        kernelLabel: 'OpenClaw',
+      } as any,
+      sessionScopeMode: 'all',
+      sessionScopeAgentId: null,
+      newSessionModel: undefined,
+      async createSession(model, instanceId, options) {
+        createSessionCalls.push({ model, instanceId, options });
+        return 'session-a';
+      },
+      sessionRunActions: {
+        getKernelDraftSessionOptions() {
+          return undefined;
+        },
+        async sendKernelRun() {
+          return true;
+        },
+      },
+      directRunActions: {
+        async sendLocalRun() {
+          return true;
+        },
+      },
+    });
+
+    assert.equal(await actions.submit({ text: 'hello', attachments: [] }), true);
+    assert.deepEqual(createSessionCalls, [
+      {
+        model: 'Model A',
+        instanceId: undefined,
+        options: {
+          agentId: 'gw-7f9d2c4b1e',
+          agentLabel: 'OpenClaw Agent',
+        },
       },
     ]);
   },

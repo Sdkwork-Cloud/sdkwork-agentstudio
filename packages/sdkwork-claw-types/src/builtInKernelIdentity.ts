@@ -7,6 +7,10 @@ function normalizeRuntimeId(value: string | null | undefined) {
   return normalizeRequiredString(value)?.toLowerCase() ?? null;
 }
 
+export function isOpenClawRuntimeKind(value: string | null | undefined) {
+  return normalizeRuntimeId(value) === 'openclaw';
+}
+
 export function buildBuiltInKernelPrimaryInstanceId(
   runtimeId: string | null | undefined,
 ) {
@@ -20,6 +24,13 @@ export function buildBuiltInKernelPrimaryInstanceId(
 
 export const STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID =
   buildBuiltInKernelPrimaryInstanceId('openclaw') ?? 'managed-openclaw-primary';
+
+export const OPENCLAW_GATEWAY_DEFAULT_HOST = '127.0.0.1';
+export const OPENCLAW_GATEWAY_DEFAULT_PORT = 21_280;
+export const OPENCLAW_GATEWAY_DEFAULT_BASE_URL =
+  `http://${OPENCLAW_GATEWAY_DEFAULT_HOST}:${OPENCLAW_GATEWAY_DEFAULT_PORT}`;
+export const OPENCLAW_GATEWAY_DEFAULT_WEBSOCKET_URL =
+  `ws://${OPENCLAW_GATEWAY_DEFAULT_HOST}:${OPENCLAW_GATEWAY_DEFAULT_PORT}`;
 
 export function isBuiltInOpenClawInstanceId(
   value: string | null | undefined,

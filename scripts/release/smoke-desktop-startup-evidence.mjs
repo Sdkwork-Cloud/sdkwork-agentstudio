@@ -37,6 +37,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..', '..');
 const DEFAULT_RELEASE_ASSETS_DIR = path.join(rootDir, 'artifacts', 'release');
+const CANONICAL_BUILT_IN_OPENCLAW_INSTANCE_ID = 'managed-openclaw-primary';
 
 function manifestIncludesKernel(manifest, kernelId) {
   const normalizedKernelId = String(kernelId ?? '').trim().toLowerCase();
@@ -170,6 +171,11 @@ function validateDesktopStartupEvidence(
     if (!builtInInstanceId) {
       throw new Error(
         `Desktop startup evidence must preserve the built-in OpenClaw instance identity at ${evidencePath}.`,
+      );
+    }
+    if (builtInInstanceId !== CANONICAL_BUILT_IN_OPENCLAW_INSTANCE_ID) {
+      throw new Error(
+        `Desktop startup evidence must preserve the canonical managed built-in OpenClaw instance id "${CANONICAL_BUILT_IN_OPENCLAW_INSTANCE_ID}" at ${evidencePath}.`,
       );
     }
     if (String(evidence?.builtInInstance?.runtimeKind ?? '').trim() !== 'openclaw') {

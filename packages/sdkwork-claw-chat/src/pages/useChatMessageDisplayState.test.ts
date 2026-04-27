@@ -27,3 +27,18 @@ await runTest(
     assert.doesNotMatch(source, /isGatewayHistoryLoading/);
   },
 );
+
+await runTest(
+  'useChatMessageDisplayState invalidates message presentation when a selected session receives a new message collection',
+  () => {
+    assert.match(
+      source,
+      /const activeMessages = useMemo\(\s*\(\) => \(Array\.isArray\(displaySession\?\.messages\) \? displaySession\.messages : \[\]\),/s,
+    );
+    assert.match(
+      source,
+      /\[\s*displaySession\?\.id,\s*displaySession\?\.messages,\s*displaySession\?\.messages\?\.length\s*\]/s,
+    );
+    assert.doesNotMatch(source, /\[\s*displaySession\s*\]/);
+  },
+);

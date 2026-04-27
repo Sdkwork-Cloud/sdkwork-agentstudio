@@ -24,7 +24,6 @@ use crate::{
     },
     platform,
 };
-use sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_config_file_path;
 use serde_json::{Map, Value};
 use std::{
     fs,
@@ -64,6 +63,7 @@ impl OpenClawRuntimeSnapshotService {
         local_ai_proxy: &LocalAiProxyService,
     ) -> Result<DesktopOpenClawRuntimeInfo> {
         let configured_runtime = supervisor.configured_openclaw_runtime()?;
+        let openclaw_paths = paths.kernel_paths(OPENCLAW_RUNTIME_ID)?;
         let supervisor_snapshot = supervisor.snapshot()?;
         let gateway_service = supervisor_snapshot
             .services
@@ -121,8 +121,15 @@ impl OpenClawRuntimeSnapshotService {
             runtime_dir: configured_runtime
                 .as_ref()
                 .map(|runtime| path_string(&runtime.runtime_dir)),
-            home_dir: path_string(&paths.openclaw_root_dir),
-            workspace_dir: path_string(&paths.openclaw_workspace_dir),
+            home_dir: configured_runtime
+                .as_ref()
+                .map(|runtime| path_string(&runtime.home_dir))
+                .unwrap_or_else(|| path_string(&openclaw_paths.home_dir)),
+            state_dir: configured_runtime
+                .as_ref()
+                .map(|runtime| path_string(&runtime.state_dir))
+                .unwrap_or_else(|| path_string(&openclaw_paths.state_dir)),
+            workspace_dir: path_string(&openclaw_paths.workspace_dir),
             config_file: path_string(&active_openclaw_config_path(paths)),
             gateway_port: configured_runtime
                 .as_ref()
@@ -495,12 +502,7 @@ fn readable_openclaw_config_path(paths: &AppPaths) -> PathBuf {
 fn active_openclaw_config_path(paths: &AppPaths) -> PathBuf {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
-        .unwrap_or_else(|_| {
-            paths
-                .kernel_paths("openclaw")
-                .map(|kernel| kernel.config_file)
-                .unwrap_or_else(|_| build_standard_openclaw_config_file_path(&paths.user_root))
-        })
+        .expect("canonical openclaw config path")
 }
 
 fn path_string(path: &Path) -> String {

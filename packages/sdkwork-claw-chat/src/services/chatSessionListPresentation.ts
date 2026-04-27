@@ -37,6 +37,7 @@ type ChatSessionListMessageLike = {
 type ChatSessionListSessionLike = ChatRunBindingSource & {
   id: string;
   title?: string;
+  titleSource?: 'default' | 'preview' | 'explicit' | 'firstUser';
   updatedAt: number;
   lastMessagePreview?: string;
   messages?: ChatSessionListMessageLike[];

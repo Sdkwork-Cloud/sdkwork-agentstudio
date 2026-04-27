@@ -435,8 +435,12 @@ impl FrameworkServices {
         paths: &AppPaths,
         config: &AppConfig,
     ) -> Result<DesktopKernelHostInfo> {
-        self.ensure_local_ai_proxy_ready(paths, config)?;
         let configured_openclaw_runtime = self.supervisor.configured_openclaw_runtime()?;
+        if configured_openclaw_runtime.is_none() {
+            return self.desktop_kernel_host_status(paths);
+        }
+
+        self.ensure_local_ai_proxy_ready(paths, config)?;
         let native_host_running =
             native_kernel_host_is_running(paths, configured_openclaw_runtime.as_ref())?;
         if native_host_running {
@@ -466,8 +470,12 @@ impl FrameworkServices {
         paths: &AppPaths,
         config: &AppConfig,
     ) -> Result<DesktopKernelHostInfo> {
-        self.ensure_local_ai_proxy_ready(paths, config)?;
         let configured_openclaw_runtime = self.supervisor.configured_openclaw_runtime()?;
+        if configured_openclaw_runtime.is_none() {
+            return self.desktop_kernel_host_status(paths);
+        }
+
+        self.ensure_local_ai_proxy_ready(paths, config)?;
         let native_host_running =
             native_kernel_host_is_running(paths, configured_openclaw_runtime.as_ref())?;
         if (native_host_running || should_boot_desktop_kernel_via_platform_host_manager())
@@ -544,7 +552,7 @@ pub(crate) mod test_support {
 
 #[cfg(test)]
 mod tests {
-    use super::FrameworkServices;
+    use super::{FrameworkServices, LocalAiProxyLifecycle};
     use crate::framework::{
         config::AppConfig,
         kernel_host::{
@@ -583,7 +591,7 @@ mod tests {
                 .join("node_modules")
                 .join("openclaw")
                 .join("openclaw.mjs"),
-            home_dir: paths.openclaw_root_dir.clone(),
+            home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
             config_path: paths.openclaw_config_file.clone(),
@@ -614,11 +622,30 @@ mod tests {
             &cli_path,
             "import fs from 'node:fs';\n\
              import http from 'node:http';\n\
+             const args = process.argv.slice(2);\n\
              const configPath = process.env.OPENCLAW_CONFIG_PATH;\n\
              const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\n\
-             const gatewayPort = Number(config.gateway?.port ?? 18789);\n\
+             const gatewayPort = Number(config.gateway?.port ?? 21280);\n\
              const expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\n\
+             if (args[0] === 'gateway' && args[1] === 'health') {\n\
+               process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n\
+               process.exit(0);\n\
+             }\n\
+             if (args[0] !== 'gateway') {\n\
+               process.stderr.write(`unexpected args: ${args.join(' ')}`);\n\
+               process.exit(1);\n\
+             }\n\
              const server = http.createServer((req, res) => {\n\
+               if (req.url === '/health' || req.url === '/healthz') {\n\
+                 res.writeHead(200, { 'content-type': 'application/json' });\n\
+                 res.end(JSON.stringify({ ok: true, status: 'live' }));\n\
+                 return;\n\
+               }\n\
+               if (req.url === '/ready' || req.url === '/readyz') {\n\
+                 res.writeHead(200, { 'content-type': 'application/json' });\n\
+                 res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 1 }));\n\
+                 return;\n\
+               }\n\
                if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n\
                  res.writeHead(404, { 'content-type': 'application/json' });\n\
                  res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n\
@@ -649,7 +676,7 @@ mod tests {
             runtime_dir,
             node_path: resolve_test_node_executable(),
             cli_path,
-            home_dir: paths.openclaw_root_dir.clone(),
+            home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
             config_path: paths.openclaw_config_file.clone(),
@@ -696,6 +723,74 @@ mod tests {
             .find(|service| service.id == supervisor::SERVICE_ID_OPENCLAW_GATEWAY)
             .expect("gateway service");
         assert_eq!(gateway.lifecycle, "stopped");
+    }
+
+    #[test]
+    fn ensure_desktop_kernel_running_returns_status_when_openclaw_runtime_is_not_configured() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let services = FrameworkServices::new(&paths, &AppConfig::default()).expect("services");
+
+        let info = services
+            .ensure_desktop_kernel_running(&paths, &AppConfig::default())
+            .expect("generic hosted runtimes should not require a configured OpenClaw runtime");
+
+        assert_eq!(info.runtime.state, "stopped");
+        assert_eq!(info.runtime.health, "degraded");
+        assert_eq!(
+            services
+                .local_ai_proxy
+                .status()
+                .expect("local ai proxy status")
+                .lifecycle,
+            LocalAiProxyLifecycle::Stopped
+        );
+        assert!(
+            !paths.local_ai_proxy_config_file.exists(),
+            "generic hosted runtimes must not create local ai proxy config during kernel ensure"
+        );
+        assert!(
+            !paths.local_ai_proxy_snapshot_file.exists(),
+            "generic hosted runtimes must not create local ai proxy snapshot during kernel ensure"
+        );
+        assert!(
+            !paths.local_ai_proxy_token_file.exists(),
+            "generic hosted runtimes must not create local ai proxy token during kernel ensure"
+        );
+    }
+
+    #[test]
+    fn restart_desktop_kernel_returns_status_when_openclaw_runtime_is_not_configured() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let services = FrameworkServices::new(&paths, &AppConfig::default()).expect("services");
+
+        let info = services
+            .restart_desktop_kernel(&paths, &AppConfig::default())
+            .expect("generic hosted runtimes should not restart an unavailable OpenClaw runtime");
+
+        assert_eq!(info.runtime.state, "stopped");
+        assert_eq!(info.runtime.health, "degraded");
+        assert_eq!(
+            services
+                .local_ai_proxy
+                .status()
+                .expect("local ai proxy status")
+                .lifecycle,
+            LocalAiProxyLifecycle::Stopped
+        );
+        assert!(
+            !paths.local_ai_proxy_config_file.exists(),
+            "generic hosted runtimes must not create local ai proxy config during kernel restart"
+        );
+        assert!(
+            !paths.local_ai_proxy_snapshot_file.exists(),
+            "generic hosted runtimes must not create local ai proxy snapshot during kernel restart"
+        );
+        assert!(
+            !paths.local_ai_proxy_token_file.exists(),
+            "generic hosted runtimes must not create local ai proxy token during kernel restart"
+        );
     }
 
     #[cfg(not(windows))]

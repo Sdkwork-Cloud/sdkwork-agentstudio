@@ -53,7 +53,7 @@ if (kernelPlatformServiceModule) {
               lastTransitionAt: 1743000000000,
             },
             endpoint: {
-              preferredPort: 18789,
+              preferredPort: 21280,
               activePort: 18845,
               baseUrl: 'http://127.0.0.1:18845',
               websocketUrl: 'ws://127.0.0.1:18845',
@@ -156,10 +156,10 @@ if (kernelPlatformServiceModule) {
           lastTransitionAt: 1743000001000,
         },
         endpoint: {
-          preferredPort: 18789,
-          activePort: 18789,
-          baseUrl: 'http://127.0.0.1:18789',
-          websocketUrl: 'ws://127.0.0.1:18789',
+          preferredPort: 21280,
+          activePort: 21280,
+          baseUrl: 'http://127.0.0.1:21280',
+          websocketUrl: 'ws://127.0.0.1:21280',
           loopbackOnly: true,
           dynamicPort: false,
           endpointSource: 'configured',

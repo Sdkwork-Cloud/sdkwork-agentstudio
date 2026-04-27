@@ -65,6 +65,10 @@ export function resolveChatSendSessionId(params: {
   displaySessionId: string | null;
   sendMode: 'local' | 'gateway';
 }) {
+  if (params.sendMode === 'gateway' && params.displaySessionId) {
+    return params.displaySessionId;
+  }
+
   return params.selectedSessionId;
 }
 
@@ -119,7 +123,7 @@ export function resolveGatewayVisibleSessionSyncTarget(params: {
     return null;
   }
 
-  if (params.activeSessionId) {
+  if (params.activeSessionId === params.effectiveActiveSessionId) {
     return null;
   }
 

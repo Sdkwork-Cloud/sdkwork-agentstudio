@@ -56,9 +56,25 @@ export function compareChatMessagesForDisplay(
   return 0;
 }
 
+function areChatMessagesAlreadyOrderedForDisplay<T extends ChatMessageOrderLike>(
+  messages: T[],
+) {
+  for (let index = 1; index < messages.length; index += 1) {
+    if (compareChatMessagesForDisplay(messages[index - 1], messages[index]) > 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function orderChatMessagesForDisplay<T extends ChatMessageOrderLike>(
   messages: T[],
 ): T[] {
+  if (messages.length <= 1 || areChatMessagesAlreadyOrderedForDisplay(messages)) {
+    return messages;
+  }
+
   return messages
     .map((message, index) => ({
       index,
@@ -81,13 +97,17 @@ export function resolveLatestChatMessageForDisplay<T extends ChatMessageOrderLik
 export function resolveLatestChatMessageTimestamp<T extends ChatMessageOrderLike>(
   messages: T[],
 ) {
-  const timestamps = messages
-    .map((message) => resolveComparableTimestamp(message))
-    .filter((timestamp): timestamp is number => timestamp !== null);
+  let latestTimestamp: number | null = null;
 
-  if (timestamps.length === 0) {
-    return null;
+  for (const message of messages) {
+    const timestamp = resolveComparableTimestamp(message);
+    if (timestamp === null) {
+      continue;
+    }
+
+    latestTimestamp =
+      latestTimestamp === null ? timestamp : Math.max(latestTimestamp, timestamp);
   }
 
-  return Math.max(...timestamps);
+  return latestTimestamp;
 }

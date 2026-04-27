@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 function runTest(name: string, callback: () => void | Promise<void>) {
   return Promise.resolve()
@@ -14,6 +14,10 @@ function runTest(name: string, callback: () => void | Promise<void>) {
 }
 
 const sidebarSource = readFileSync(new URL('./ChatSidebar.tsx', import.meta.url), 'utf8');
+const agentItemUrl = new URL('./ChatSidebarAgentItem.tsx', import.meta.url);
+const sessionItemUrl = new URL('./ChatSidebarSessionItem.tsx', import.meta.url);
+const agentItemSource = existsSync(agentItemUrl) ? readFileSync(agentItemUrl, 'utf8') : '';
+const sessionItemSource = existsSync(sessionItemUrl) ? readFileSync(sessionItemUrl, 'utf8') : '';
 const primitivesSource = readFileSync(
   new URL('./chatSidebarItemPrimitives.ts', import.meta.url),
   'utf8',
@@ -26,53 +30,94 @@ const menuSource = readFileSync(
 await runTest(
   'ChatSidebar replaces the inline delete icon with a shared more-actions surface and opens it from both click and right-click entry points',
   () => {
-    assert.match(sidebarSource, /MoreHorizontal/);
-    assert.match(sidebarSource, /onContextMenu=\{\(event\) => \{/);
+    assert.match(sessionItemSource, /MoreHorizontal/);
+    assert.match(sessionItemSource, /onContextMenu=\{\(event\) => \{/);
     assert.match(sidebarSource, /resolveChatSidebarSessionActionsPresentation\(/);
     assert.match(sidebarSource, /<ChatSidebarSessionActionMenu/);
     assert.doesNotMatch(sidebarSource, /Trash2/);
+    assert.doesNotMatch(sessionItemSource, /Trash2/);
   },
 );
 
 await runTest(
-  'ChatSidebar renders each session item with avatar on the left, metadata in the top row, conversation info below, and a right-edge more-actions trigger',
+  'ChatSidebar renders each session item with avatar on the left, conversation title as the primary row text, and a right-edge more-actions trigger',
   () => {
+    assert.match(primitivesSource, /export const CHAT_SIDEBAR_TITLE_TEXT_CLASS =/);
+    assert.equal(existsSync(sessionItemUrl), true);
+    assert.match(sidebarSource, /import \{ ChatSidebarSessionItem \} from '\.\/ChatSidebarSessionItem';/);
     assert.match(
       primitivesSource,
       /'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-\[0\.56rem\] text-\[11px\] font-semibold uppercase transition-colors'/,
     );
-    assert.match(sidebarSource, /CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS/);
-    assert.match(sidebarSource, /CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS/);
+    assert.match(sessionItemSource, /CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS/);
+    assert.match(sessionItemSource, /CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS/);
     assert.match(
       sidebarSource,
-      /<div className="min-w-0 flex-1 overflow-hidden">[\s\S]*<div className="flex min-w-0 items-center gap-1\.5">[\s\S]*SESSION_OWNER_SLOT_CLASS[\s\S]*SESSION_KERNEL_SLOT_CLASS[\s\S]*<span[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_TIME_LABEL_CLASS,[\s\S]*'transition-opacity',[\s\S]*\)\}[\s\S]*>\s*\{item\.relativeTimeLabel\}\s*<\/span>/,
+      /const sessionTitleText = resolveChatSidebarSessionTitleText\(\{\s*itemDisplayTitle: item\.displayTitle,\s*session: sessionRecord,\s*\}\);/,
+    );
+    assert.doesNotMatch(sessionItemSource, /const previewText = item\.preview \?\? item\.displayTitle;/);
+    assert.match(sessionItemSource, /<span className=\{SESSION_OWNER_SLOT_CLASS\} title=\{item\.ownerName\}>/);
+    assert.match(sessionItemSource, /<span className="truncate">\{item\.ownerName\}<\/span>/);
+    assert.doesNotMatch(sessionItemSource, /item\.ownerKernelLabel \?\s*\(/);
+    assert.doesNotMatch(sessionItemSource, /\{item\.relativeTimeLabel\}/);
+    assert.match(
+      sessionItemSource,
+      /<p[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_TITLE_TEXT_CLASS,[\s\S]*\)\}[\s\S]*title=\{sessionTitleText\}[\s\S]*>\s*\{sessionTitleText\}\s*<\/p>/,
     );
     assert.match(
-      sidebarSource,
-      /<p[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_PREVIEW_TEXT_CLASS,[\s\S]*\)\}[\s\S]*>\s*\{previewText\}\s*<\/p>/,
-    );
-    assert.match(
-      sidebarSource,
+      sessionItemSource,
       /className=\{cn\(\s*'absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-all hover:bg-zinc-900\/\[0\.06\] hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white\/\[0\.08\] dark:hover:text-zinc-200',[\s\S]*\)\}/,
     );
-    assert.match(sidebarSource, /group-hover:opacity-0 group-focus-within:opacity-0/);
     assert.match(
-      sidebarSource,
+      sessionItemSource,
       /group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100/,
     );
-    assert.match(sidebarSource, /event\.key === 'ContextMenu'/);
-    assert.match(sidebarSource, /event\.shiftKey && event\.key === 'F10'/);
+    assert.match(sessionItemSource, /event\.key === 'ContextMenu'/);
+    assert.match(sessionItemSource, /event\.shiftKey && event\.key === 'F10'/);
     assert.match(sidebarSource, /closeCreateAgentMenu\(\);\s*setSessionMenuState\(\{/);
     assert.match(
+      sessionItemSource,
+      /onOpenMenuAtElement\(event\.currentTarget, item\)/,
+    );
+    assert.match(
+      sessionItemSource,
+      /if \(isSessionMenuOpen\) \{\s*onCloseMenu\(\);\s*return;\s*\}[\s\S]*onOpenMenuAtElement\(event\.currentTarget, item\);/,
+    );
+    assert.match(sessionItemSource, /aria-haspopup="menu"/);
+    assert.match(sessionItemSource, /aria-expanded=\{isSessionMenuOpen\}/);
+  },
+);
+
+await runTest(
+  'ChatSidebar keeps the conversation title visible when indicators are present or displayTitle is empty',
+  () => {
+    assert.match(sidebarSource, /resolveChatSidebarSessionTitleText/);
+    assert.doesNotMatch(sidebarSource, /function resolveSidebarSessionTitleText\(/);
+    assert.match(
       sidebarSource,
-      /openSessionMenuAtElement\(event\.currentTarget, item, event\.currentTarget\)/,
+      /const sessionRecord = resolveSessionRecord\(item\.sessionId\);/,
     );
     assert.match(
       sidebarSource,
-      /if \(isSessionMenuOpen\) \{\s*closeSessionMenu\(\);\s*return;\s*\}[\s\S]*openSessionMenuAtElement\(event\.currentTarget, item, event\.currentTarget\);/,
+      /const sessionTitleText = resolveChatSidebarSessionTitleText\(\{\s*itemDisplayTitle: item\.displayTitle,\s*session: sessionRecord,\s*\}\);/,
     );
-    assert.match(sidebarSource, /aria-haspopup="menu"/);
-    assert.match(sidebarSource, /aria-expanded=\{isSessionMenuOpen\}/);
+    assert.match(
+      sessionItemSource,
+      /const hasSessionHeader =\s*Boolean\(sessionOwnerName\) \|\|\s*item\.pinOrigin !== 'none' \|\|\s*item\.isFavorited \|\|\s*item\.hasUnread;/,
+    );
+    assert.match(
+      primitivesSource,
+      /'block w-full min-w-0 truncate text-\[13px\] font-medium leading-5 transition-colors'/,
+    );
+    assert.doesNotMatch(
+      primitivesSource,
+      /CHAT_SIDEBAR_TITLE_TEXT_CLASS =\s*\n\s*'min-w-0 flex-1 truncate/,
+    );
+    assert.match(
+      sessionItemSource,
+      /\{hasSessionHeader \? \([\s\S]*<div className="mb-1 flex min-h-5 min-w-0 items-center gap-1\.5">[\s\S]*sessionOwnerName \? \([\s\S]*<span className=\{SESSION_OWNER_SLOT_CLASS\} title=\{item\.ownerName\}>[\s\S]*\{item\.ownerName\}[\s\S]*<\/span>[\s\S]*item\.pinOrigin === 'system'[\s\S]*item\.pinOrigin === 'user'[\s\S]*item\.isFavorited[\s\S]*item\.hasUnread[\s\S]*<\/div>\s*\) : null\}\s*<p[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_TITLE_TEXT_CLASS,[\s\S]*\)\}[\s\S]*title=\{sessionTitleText\}[\s\S]*>\s*\{sessionTitleText\}\s*<\/p>/,
+    );
+    assert.doesNotMatch(sidebarSource, /<p[\s\S]*<\/p>\s*\{hasSessionIndicators \? \(/);
   },
 );
 
@@ -113,11 +158,14 @@ await runTest(
 await runTest(
   'ChatSidebar compresses long kernel names into a compact badge while preserving the full label as hover metadata',
   () => {
-    assert.match(sidebarSource, /resolveKernelBadgeLabel/);
+    assert.equal(existsSync(agentItemUrl), true);
+    assert.match(sidebarSource, /import \{ ChatSidebarAgentItem \} from '\.\/ChatSidebarAgentItem';/);
+    assert.match(agentItemSource, /resolveKernelBadgeLabel/);
+    assert.match(agentItemSource, /CHAT_SIDEBAR_KERNEL_BADGE_CLASS/);
     assert.match(primitivesSource, /export function resolveKernelBadgeLabel\(/);
     assert.match(
-      sidebarSource,
-      /item\.ownerKernelLabel \?\s*\(\s*<span className=\{SESSION_KERNEL_SLOT_CLASS\} title=\{item\.ownerKernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(item\.ownerKernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
+      agentItemSource,
+      /agent\.kernelLabel \?\s*\(\s*<span className=\{CHAT_SIDEBAR_KERNEL_BADGE_CLASS\} title=\{agent\.kernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(agent\.kernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
     );
   },
 );

@@ -39,9 +39,9 @@ function createInstanceDetail(
       version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
       typeLabel: 'OpenClaw Gateway',
       host: '10.0.0.8',
-      port: 18789,
-      baseUrl: 'http://10.0.0.8:18789',
-      websocketUrl: 'ws://10.0.0.8:18789',
+      port: 21280,
+      baseUrl: 'http://10.0.0.8:21280',
+      websocketUrl: 'ws://10.0.0.8:21280',
       cpu: 12,
       memory: 35,
       totalMemory: '64GB',
@@ -52,13 +52,13 @@ function createInstanceDetail(
         namespace: 'openclaw-prod',
       },
       config: {
-        port: '18789',
+        port: '21280',
         sandbox: true,
         autoUpdate: true,
         logLevel: 'info',
         corsOrigins: '*',
-        baseUrl: 'http://10.0.0.8:18789',
-        websocketUrl: 'ws://10.0.0.8:18789',
+        baseUrl: 'http://10.0.0.8:21280',
+        websocketUrl: 'ws://10.0.0.8:21280',
         authToken: 'gateway-token',
       },
       createdAt: 1,
@@ -66,13 +66,13 @@ function createInstanceDetail(
       lastSeenAt: 1,
     },
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
       corsOrigins: '*',
-      baseUrl: 'http://10.0.0.8:18789',
-      websocketUrl: 'ws://10.0.0.8:18789',
+      baseUrl: 'http://10.0.0.8:21280',
+      websocketUrl: 'ws://10.0.0.8:21280',
       authToken: 'gateway-token',
     },
     logs: '',
@@ -142,7 +142,7 @@ await runTest('invokeTool sends authenticated instance-scoped requests', async (
   const client = createOpenClawGatewayClient({
     getInstanceDetail: async () => createInstanceDetail(),
     fetchImpl: async (input, init) => {
-      assert.equal(String(input), 'http://10.0.0.8:18789/tools/invoke');
+      assert.equal(String(input), 'http://10.0.0.8:21280/tools/invoke');
       assert.equal(new Headers(init?.headers).get('Authorization'), 'Bearer gateway-token');
       assert.deepEqual(parseInvokeRequest(init), {
         tool: 'session_status',
@@ -288,6 +288,78 @@ await runTest('openClawGatewayClient prefers the desktop bridge over browser fet
     ]);
   } finally {
     globalThis.fetch = originalFetch;
+    configurePlatformBridge(originalBridge);
+  }
+});
+
+await runTest('openClawGatewayClient does not route non-OpenClaw built-in kernels through the desktop OpenClaw bridge', async () => {
+  const originalBridge = getPlatformBridge();
+  const desktopCalls: Array<{
+    instanceId: string;
+    request: OpenClawInvokeRequest<object>;
+    options: Record<string, unknown> | undefined;
+  }> = [];
+  let fetchCalled = false;
+  const baseDetail = createInstanceDetail();
+
+  configurePlatformBridge({
+    studio: {
+      ...originalBridge.studio,
+      invokeOpenClawGateway: async (instanceId, request, options) => {
+        desktopCalls.push({
+          instanceId,
+          request: request as OpenClawInvokeRequest<object>,
+          options: options as Record<string, unknown> | undefined,
+        });
+        return {
+          models: [{ id: 'bridge-should-not-run' }],
+        };
+      },
+    } as typeof originalBridge.studio,
+  });
+
+  try {
+    const client = createOpenClawGatewayClient({
+      getInstanceDetail: async () => ({
+        ...baseDetail,
+        instance: {
+          ...baseDetail.instance,
+          id: 'managed-hermes-primary',
+          name: 'Built-In Hermes Primary',
+          runtimeKind: 'hermes',
+          deploymentMode: 'local-managed',
+          transportKind: 'openclawGatewayWs',
+          isBuiltIn: true,
+          isDefault: true,
+          host: '127.0.0.1',
+          port: 24001,
+          baseUrl: 'http://127.0.0.1:24001',
+          websocketUrl: 'ws://127.0.0.1:24001',
+        },
+        config: {
+          ...baseDetail.config,
+          baseUrl: 'http://127.0.0.1:24001',
+          websocketUrl: 'ws://127.0.0.1:24001',
+          authToken: 'hermes-gateway-token',
+        },
+      }),
+      fetchImpl: async (_input, _init) => {
+        fetchCalled = true;
+        return createJsonResponse({
+          ok: true,
+          result: {
+            models: [{ id: 'hermes-via-http' }],
+          },
+        });
+      },
+    });
+
+    const models = await client.listModels('managed-hermes-primary');
+
+    assert.equal(fetchCalled, true);
+    assert.deepEqual(desktopCalls, []);
+    assert.deepEqual(models, [{ id: 'hermes-via-http' }]);
+  } finally {
     configurePlatformBridge(originalBridge);
   }
 });
@@ -451,8 +523,8 @@ await runTest('getInvokeHttpRequestInfo exposes validated request metadata', asy
   assert.deepEqual(info, {
     instanceId: 'openclaw-prod',
     runtimeKind: 'openclaw',
-    endpoint: 'http://10.0.0.8:18789',
-    url: 'http://10.0.0.8:18789/tools/invoke',
+    endpoint: 'http://10.0.0.8:21280',
+    url: 'http://10.0.0.8:21280/tools/invoke',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
@@ -472,7 +544,7 @@ await runTest('getInvokeHttpRequestInfo exposes validated request metadata', asy
     validation: {
       status: 'ok',
       message: 'OpenClaw Gateway access validated.',
-      endpoint: 'http://10.0.0.8:18789',
+      endpoint: 'http://10.0.0.8:21280',
     },
   });
   assert.deepEqual(requests, [
@@ -489,7 +561,7 @@ await runTest('validateAccess resolves the instance endpoint and bearer token wi
   const client = createOpenClawGatewayClient({
     getInstanceDetail: async () => createInstanceDetail(),
     fetchImpl: async (input, init) => {
-      assert.equal(String(input), 'http://10.0.0.8:18789/tools/invoke');
+      assert.equal(String(input), 'http://10.0.0.8:21280/tools/invoke');
       assert.equal(new Headers(init?.headers).get('Authorization'), 'Bearer gateway-token');
       assert.deepEqual(parseInvokeRequest(init), {
         tool: 'session_status',
@@ -512,7 +584,7 @@ await runTest('validateAccess resolves the instance endpoint and bearer token wi
   assert.deepEqual(result, {
     status: 'ok',
     message: 'OpenClaw Gateway access validated.',
-    endpoint: 'http://10.0.0.8:18789',
+    endpoint: 'http://10.0.0.8:21280',
   });
 });
 
@@ -526,13 +598,13 @@ await runTest('validateAccess reports missing_auth when the instance token is ab
       },
     },
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
       corsOrigins: '*',
-      baseUrl: 'http://10.0.0.8:18789',
-      websocketUrl: 'ws://10.0.0.8:18789',
+      baseUrl: 'http://10.0.0.8:21280',
+      websocketUrl: 'ws://10.0.0.8:21280',
       authToken: null,
     },
   });
@@ -547,7 +619,7 @@ await runTest('validateAccess reports missing_auth when the instance token is ab
   const result = await client.validateAccess('openclaw-prod');
 
   assert.equal(result.status, 'missing_auth');
-  assert.equal(result.endpoint, 'http://10.0.0.8:18789');
+  assert.equal(result.endpoint, 'http://10.0.0.8:21280');
 });
 
 await runTest('validateAccess classifies unauthorized responses from the gateway', async () => {

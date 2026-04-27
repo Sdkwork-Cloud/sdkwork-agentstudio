@@ -130,7 +130,7 @@ await runTest(
     let requestCounter = 0;
 
     const client = new OpenClawGatewayClient({
-      url: 'ws://127.0.0.1:18789',
+      url: 'ws://127.0.0.1:21280',
       authToken: 'shared-auth-token',
       instanceId: 'instance-alpha',
       clientId: 'claw-studio',
@@ -576,7 +576,7 @@ await runTest(
     let requestCounter = 0;
 
     const client = new OpenClawGatewayClient({
-      url: 'ws://127.0.0.1:18789',
+      url: 'ws://127.0.0.1:21280',
       createRequestId: () => `req-${++requestCounter}`,
       now: () => 1_700_000_000_000,
       webSocketFactory: (url) => {
@@ -651,7 +651,7 @@ await runTest(
     let requestCounter = 0;
 
     const client = new OpenClawGatewayClient({
-      url: 'ws://127.0.0.1:18789',
+      url: 'ws://127.0.0.1:21280',
       createRequestId: () => `req-${++requestCounter}`,
       now: () => 1_700_000_000_000,
       webSocketFactory: (url) => {
@@ -706,7 +706,7 @@ await runTest(
     let requestCounter = 0;
 
     const client = new OpenClawGatewayClient({
-      url: 'ws://127.0.0.1:18789',
+      url: 'ws://127.0.0.1:21280',
       createRequestId: () => `req-${++requestCounter}`,
       now: () => 1_700_000_000_000,
       webSocketFactory: (url) => {
@@ -803,7 +803,7 @@ await runTest(
     let requestCounter = 0;
 
     const client = new OpenClawGatewayClient({
-      url: 'ws://127.0.0.1:18789',
+      url: 'ws://127.0.0.1:21280',
       createRequestId: () => `req-${++requestCounter}`,
       now: () => 1_700_000_000_000,
       webSocketFactory: (url) => {
@@ -947,7 +947,7 @@ await runTest(
     let requestCounter = 0;
 
     const client = new OpenClawGatewayClient({
-      url: 'ws://127.0.0.1:18789',
+      url: 'ws://127.0.0.1:21280',
       authToken: 'shared-auth-token',
       instanceId: 'instance-alpha',
       reconnectBaseMs: 1,

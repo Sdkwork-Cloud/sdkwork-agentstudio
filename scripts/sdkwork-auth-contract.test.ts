@@ -207,7 +207,9 @@ runTest('sdkwork-claw-auth keeps the V5 auth entry surface locally', () => {
   assert.match(authConfigSource, /github/);
   assert.match(authConfigSource, /google/);
   assert.match(routeUtilsSource, /\/login\/oauth\/callback\/\$\{provider\}/);
-  assert.match(routeUtilsSource, /rawTarget\.startsWith\('\/login\/oauth\/callback'\)/);
+  assert.match(routeUtilsSource, /rawTarget\.split\(\/\[\?#\]\//);
+  assert.match(routeUtilsSource, /targetPathname\.startsWith\('\/login\/oauth\/callback'\)/);
+  assert.match(routeUtilsSource, /rawTarget\.startsWith\('\/\/'\)/);
   assert.match(registerSource, /resetCooldown\(\)/);
   assert.match(registerSource, /setVerificationCode\(''\)/);
   assert.match(forgotSource, /resetCooldown\(\)/);

@@ -172,6 +172,13 @@ runTest('sdkwork-claw-dashboard aggregates shared runtime data into a control-pl
   assert.doesNotMatch(serviceSource, /PRODUCT_PROFILES/);
 });
 
+runTest('sdkwork-claw-dashboard recommendations target retained workspace routes', () => {
+  const serviceSource = read('packages/sdkwork-claw-dashboard/src/services/dashboardService.ts');
+
+  assert.doesNotMatch(serviceSource, /actionPath: '\/market'/);
+  assert.match(serviceSource, /actionPath: '\/agents'/);
+});
+
 runTest('sdkwork-claw-dashboard renders a professional operator cockpit instead of a placeholder page', () => {
   const pageSource = read('packages/sdkwork-claw-dashboard/src/pages/Dashboard.tsx');
   const chartSource = read('packages/sdkwork-claw-dashboard/src/components/TokenTrendChart.tsx');

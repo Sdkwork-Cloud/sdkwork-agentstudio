@@ -1774,7 +1774,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn internal_host_platform_route_reflects_desktop_combined_runtime_lifecycle() {
+    async fn internal_host_platform_route_keeps_desktop_combined_host_ready_when_openclaw_is_stopped() {
         let provider = ManageOpenClawProviderHandle::new(Arc::new(FakeManageOpenClawProvider {
             host_endpoints: vec![HostEndpointRecord {
                 endpoint_id: "openclaw-gateway".to_string(),
@@ -1840,7 +1840,7 @@ mod tests {
         );
         assert_eq!(
             body.get("lifecycle").and_then(Value::as_str),
-            Some("stopped")
+            Some("ready")
         );
     }
 
@@ -2511,7 +2511,7 @@ mod tests {
 
         assert_eq!(
             config_body.get("port").and_then(Value::as_str),
-            Some("18789")
+            Some("21280")
         );
         assert!(logs_body.as_str().is_some());
     }

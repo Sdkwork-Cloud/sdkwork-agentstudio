@@ -231,8 +231,8 @@ await runTest('resolveRegistryQuickConnectAction sends gateway-ready openclaw in
       runtimeKind: 'openclaw',
       status: 'online',
       transportKind: 'openclawGatewayWs',
-      baseUrl: 'http://127.0.0.1:18789',
-      websocketUrl: 'ws://127.0.0.1:18789',
+      baseUrl: 'http://127.0.0.1:21280',
+      websocketUrl: 'ws://127.0.0.1:21280',
     },
   ]);
 

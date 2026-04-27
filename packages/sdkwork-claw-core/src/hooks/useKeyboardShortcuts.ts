@@ -33,7 +33,7 @@ export function useKeyboardShortcuts() {
 
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'm') {
         event.preventDefault();
-        navigate('/market');
+        navigate('/agents');
       }
     };
 

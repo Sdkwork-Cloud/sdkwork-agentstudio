@@ -122,8 +122,17 @@ export function useChatSendExecutionState({
     updateMessage,
     removeMessages,
     flushSession,
-    getSessionById: (sessionId) =>
-      useChatStore.getState().sessions.find((session) => session.id === sessionId),
+    getSessionById: (sessionId, instanceId) => {
+      const scopedInstanceId =
+        instanceId === undefined ? activeInstanceId ?? null : instanceId;
+      return useChatStore
+        .getState()
+        .sessions.find(
+          (session) =>
+            session.id === sessionId &&
+            (session.instanceId ?? null) === scopedInstanceId,
+        );
+    },
     sendMessageStream: chatService.sendMessageStream.bind(chatService),
   });
   const canStop =

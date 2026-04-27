@@ -57,6 +57,8 @@ runTest('sdkwork-claw-shell keeps retained secondary routes addressable while th
   assert.doesNotMatch(settingsSource, /id: 'nodes', label: t\('sidebar\.nodes'\)/);
   assert.doesNotMatch(settingsSource, /id: 'usage', label: t\('sidebar\.usage'\)/);
   assert.doesNotMatch(commandPaletteSource, /id: 'nav-agents'/);
+  assert.doesNotMatch(commandPaletteSource, /id: 'action-terminal'/);
+  assert.doesNotMatch(commandPaletteSource, /Terminal opened/);
   assert.match(commandPaletteSource, /id: 'nav-kernel'/);
   assert.match(commandPaletteSource, /id: 'nav-nodes'/);
   assert.match(commandPaletteSource, /id: 'nav-usage'/);

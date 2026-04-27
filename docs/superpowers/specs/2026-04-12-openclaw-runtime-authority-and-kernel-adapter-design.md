@@ -310,14 +310,14 @@ Windows requirements:
 
 macOS requirements:
 
-- support user-home managed roots and launch-agent service hosting
+- support OS-home anchored managed roots and launch-agent service hosting
 - avoid Windows-only assumptions such as `.exe` suffixes or `taskkill`
 - preserve launch-agent ownership reporting through the kernel host layer
 - handle case-sensitive and case-insensitive filesystem variants without path-match drift
 
 Linux requirements:
 
-- support user-home managed roots and systemd user service hosting
+- support OS-home anchored managed roots and systemd user service hosting
 - use signal-based process shutdown semantics instead of Windows native termination
 - preserve executable and path handling without Windows path normalization assumptions leaking upward
 - tolerate distributions where user service state and home paths differ but still resolve to the same authority contract

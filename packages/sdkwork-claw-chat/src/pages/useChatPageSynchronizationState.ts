@@ -70,7 +70,7 @@ export function useChatPageSynchronizationState({
   const activeSessionSelectionSynchronization: UseChatActiveSessionSelectionSynchronizationInput = {
     isChatSupportedRoute: workspaceState.runtime.isChatSupportedRoute,
     isSelectionTransitionPending: selection.selectionTransition !== null,
-    activeSession: workspaceState.session.selectedSession,
+    activeSession: workspaceState.session.displaySession,
     selectedAgentId: selection.selectedAgentId,
     agentOptionIds: workspaceState.presentation.sidebarAgentOptions.map((agent) => agent.id),
     setSelectedAgentId: selection.setSelectedAgentId,

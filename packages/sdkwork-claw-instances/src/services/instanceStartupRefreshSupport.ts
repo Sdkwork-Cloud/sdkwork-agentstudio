@@ -1,4 +1,5 @@
 import type { RuntimeBuiltInOpenClawStatusChangedEvent } from '@sdkwork/claw-infrastructure';
+import { isOpenClawRuntimeKind } from '@sdkwork/claw-types';
 import type { InstanceWorkbenchSnapshot } from '../types/index.ts';
 import type { Instance } from '../types/index.ts';
 
@@ -6,17 +7,18 @@ export const BUILT_IN_OPENCLAW_STARTUP_REFRESH_INTERVAL_MS = 1500;
 
 function isPendingBuiltInOpenClawStartup(instance: Pick<
   Instance,
-  'isBuiltIn' | 'deploymentMode' | 'status'
+  'isBuiltIn' | 'runtimeKind' | 'deploymentMode' | 'status'
 >) {
   return (
     instance.isBuiltIn === true &&
+    isOpenClawRuntimeKind(instance.runtimeKind) &&
     instance.deploymentMode === 'local-managed' &&
     instance.status === 'starting'
   );
 }
 
 export function hasPendingBuiltInOpenClawStartup(
-  instances: Array<Pick<Instance, 'isBuiltIn' | 'deploymentMode' | 'status'>>,
+  instances: Array<Pick<Instance, 'isBuiltIn' | 'runtimeKind' | 'deploymentMode' | 'status'>>,
 ) {
   return instances.some((instance) => isPendingBuiltInOpenClawStartup(instance));
 }
@@ -34,7 +36,7 @@ export function hasPendingBuiltInOpenClawWorkbenchStartup(
 
 export function shouldRefreshInstancesForBuiltInOpenClawStatusChange(
   instances: Array<
-    Pick<Instance, 'id' | 'isBuiltIn' | 'deploymentMode' | 'status'>
+    Pick<Instance, 'id' | 'isBuiltIn' | 'runtimeKind' | 'deploymentMode' | 'status'>
   >,
   event: Pick<RuntimeBuiltInOpenClawStatusChangedEvent, 'instanceId'>,
 ) {

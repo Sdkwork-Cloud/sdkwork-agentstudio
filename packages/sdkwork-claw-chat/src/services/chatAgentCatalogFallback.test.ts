@@ -179,3 +179,65 @@ await runTest(
     );
   },
 );
+
+await runTest(
+  'mergeChatCatalogAgentsWithSessionFallback never exposes technical agent ids or date labels as fallback agent names',
+  () => {
+    assert.deepEqual(
+      mergeChatCatalogAgentsWithSessionFallback({
+        catalogAgents: [],
+        sessions: [
+          {
+            id: 'agent:2026-04-26:main',
+            updatedAt: 300,
+            agentId: '2026-04-26',
+            agentLabel: '2026-04-26',
+            kernelSession: {
+              ref: {
+                agentId: '2026-04-26',
+                kernelId: 'openclaw',
+              },
+            },
+          },
+          {
+            id: 'agent:research-agent:main',
+            updatedAt: 200,
+            agentId: 'research-agent',
+          },
+          {
+            id: 'agent:claw-studio:session-123:main',
+            updatedAt: 100,
+            agentId: 'claw-studio:session-123',
+            kernelSession: {
+              ref: {
+                agentId: 'claw-studio:session-123',
+                kernelId: 'hermes',
+              },
+            },
+          },
+        ],
+      }).map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        avatar: agent.avatar,
+      })),
+      [
+        {
+          id: '2026-04-26',
+          name: 'OpenClaw Agent',
+          avatar: 'OP',
+        },
+        {
+          id: 'research-agent',
+          name: 'Research Agent',
+          avatar: 'RE',
+        },
+        {
+          id: 'claw-studio:session-123',
+          name: 'Hermes Agent',
+          avatar: 'HE',
+        },
+      ],
+    );
+  },
+);

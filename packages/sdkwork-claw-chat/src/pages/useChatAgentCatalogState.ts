@@ -1,10 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Agent, KernelChatAgentProfile } from '@sdkwork/claw-types';
 import {
   kernelChatAgentCatalogService,
   resolveChatAgentCatalogState,
   shouldLoadKernelChatAgentCatalog,
 } from '../services';
+import { openClawGatewaySessions } from '../store/chatStore';
 import type { ChatPageAgentCatalogMode } from './chatPageContracts';
 import { shouldLoadChatDirectAgents } from './chatHydrationPolicy';
 
@@ -39,6 +41,7 @@ export function useChatAgentCatalogState({
   selectedAgentId,
   activeSessionAgentId,
 }: UseChatAgentCatalogStateInput): UseChatAgentCatalogStateResult {
+  const queryClient = useQueryClient();
   const shouldLoadDirectAgentCatalog = shouldLoadChatDirectAgents({
     activeInstanceId,
     isRouteSupported: isChatSupportedRoute,
@@ -52,6 +55,23 @@ export function useChatAgentCatalogState({
     agentCatalogMode,
   });
   const shouldLoadAnyAgentCatalog = shouldLoadDirectAgentCatalog || shouldLoadKernelAgentCatalog;
+
+  useEffect(() => {
+    if (!activeInstanceId || !shouldLoadKernelAgentCatalog) {
+      return undefined;
+    }
+
+    return openClawGatewaySessions.subscribeAgentCatalogChanged((event) => {
+      if (event.instanceId !== activeInstanceId) {
+        return;
+      }
+
+      void queryClient.invalidateQueries({
+        queryKey: ['chat', 'kernel-agent-catalog', event.instanceId],
+      });
+    });
+  }, [activeInstanceId, queryClient, shouldLoadKernelAgentCatalog]);
+
   const {
     data: instanceAgentCatalog,
     isFetched: isAgentCatalogFetched,

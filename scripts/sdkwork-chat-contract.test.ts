@@ -562,7 +562,7 @@ await runTest('sdkwork-claw-chat derives a readable local session title from the
     assert.ok(session);
     assert.equal(
       session.title,
-      'Build an install checklist for OpenClaw across macOS and Windows, then summar...',
+      'Build an install checklist for OpenClaw across macOS and Windows, then summarize blockers',
     );
   } finally {
     chatStore.setState(initialState, true);
@@ -943,7 +943,7 @@ await runTest('sdkwork-claw-chat transport-backed session clearing and flush kee
   );
   assert.match(
     chatStoreSource,
-    /async flushSession\(id\) \{[\s\S]*const sessionInstanceId = session\.instanceId;[\s\S]*const nextAdapterSessions = listScopeAdapterSessions\(state\.sessions, sessionInstanceId\);[\s\S]*return applyAdapterInstanceScopeState\(state, sessionInstanceId, \{\s*preservedAdapterSessions: nextAdapterSessions,\s*preferredActiveSessionId: session\.id,\s*syncState: 'idle',\s*lastError: undefined,\s*\}\);/s,
+    /async flushSession\(id(?:, instanceId)?\) \{[\s\S]*const sessionInstanceId = session\.instanceId;[\s\S]*const nextAdapterSessions = listScopeAdapterSessions\(state\.sessions, sessionInstanceId\);[\s\S]*return applyAdapterInstanceScopeState\(state, sessionInstanceId, \{\s*preservedAdapterSessions: nextAdapterSessions,\s*preferredActiveSessionId: session\.id,\s*syncState: 'idle',\s*lastError: undefined,\s*\}\);/s,
   );
 });
 
@@ -952,11 +952,11 @@ await runTest('sdkwork-claw-chat transport-backed message append and edit mutati
 
   assert.match(
     chatStoreSource,
-    /addMessage\(sessionId, message\) \{[\s\S]*const nextAdapterSessions = listScopeAdapterSessions\(nextSessions, nextSession\.instanceId\);[\s\S]*applyAdapterInstanceScopeState\(state, nextSession\.instanceId, \{\s*baseSessions: nextSessions,\s*preservedAdapterSessions: nextAdapterSessions,/s,
+    /addMessage\(sessionId, message(?:, instanceId)?\) \{[\s\S]*const nextAdapterSessions = listScopeAdapterSessions\(nextSessions, nextSession\.instanceId\);[\s\S]*applyAdapterInstanceScopeState\(state, nextSession\.instanceId, \{\s*baseSessions: nextSessions,\s*preservedAdapterSessions: nextAdapterSessions,/s,
   );
   assert.match(
     chatStoreSource,
-    /updateMessage\(sessionId, messageId, content\) \{[\s\S]*const nextAdapterSessions = listScopeAdapterSessions\(nextSessions, updatedInstanceId\);[\s\S]*applyAdapterInstanceScopeState\(state, updatedInstanceId, \{\s*baseSessions: nextSessions,\s*preservedAdapterSessions: nextAdapterSessions,/s,
+    /updateMessage\(sessionId, messageId, content(?:, instanceId(?:, options)?)?\) \{[\s\S]*const nextAdapterSessions = listScopeAdapterSessions\(nextSessions, updatedInstanceId\);[\s\S]*applyAdapterInstanceScopeState\(state, updatedInstanceId, \{\s*baseSessions: nextSessions,\s*preservedAdapterSessions: nextAdapterSessions,/s,
   );
 });
 
@@ -994,7 +994,7 @@ await runTest('sdkwork-claw-chat resolves runtime chat routes for multiple claw 
     (await import(runtimeRouteModuleUrl)) as typeof import('../packages/sdkwork-claw-chat/src/services/instanceChatRouteService');
 
   const openClawRoute = resolveInstanceChatRoute({
-    id: 'local-built-in',
+    id: 'managed-openclaw-primary',
     name: 'Local Built-In',
     runtimeKind: 'openclaw',
     deploymentMode: 'local-managed',
@@ -1006,9 +1006,9 @@ await runTest('sdkwork-claw-chat resolves runtime chat routes for multiple claw 
     version: 'bundled',
     typeLabel: 'Built-In OpenClaw',
     host: '127.0.0.1',
-    port: 18789,
-    baseUrl: 'http://127.0.0.1:18789',
-    websocketUrl: 'ws://127.0.0.1:18789',
+    port: 21280,
+    baseUrl: 'http://127.0.0.1:21280',
+    websocketUrl: 'ws://127.0.0.1:21280',
     cpu: 0,
     memory: 0,
     totalMemory: 'Unknown',
@@ -1019,13 +1019,13 @@ await runTest('sdkwork-claw-chat resolves runtime chat routes for multiple claw 
       namespace: 'claw-studio',
     },
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
       corsOrigins: '*',
-      baseUrl: 'http://127.0.0.1:18789',
-      websocketUrl: 'ws://127.0.0.1:18789',
+      baseUrl: 'http://127.0.0.1:21280',
+      websocketUrl: 'ws://127.0.0.1:21280',
     },
     createdAt: 1,
     updatedAt: 1,
@@ -1261,7 +1261,7 @@ await runTest('sdkwork-claw-chat resolves runtime chat routes for multiple claw 
 
   assert.equal(openClawRoute.mode, 'instanceOpenClawGatewayWs');
   assert.equal(openClawRoute.endpoint, undefined);
-  assert.equal(openClawRoute.websocketUrl, 'ws://127.0.0.1:18789');
+  assert.equal(openClawRoute.websocketUrl, 'ws://127.0.0.1:21280');
   assert.equal(openClawRoute.runtimeKind, 'openclaw');
   assert.equal(legacyOpenClawRoute.mode, 'instanceOpenClawGatewayWs');
   assert.equal(legacyOpenClawRoute.endpoint, 'http://127.0.0.1:18795/v1/chat/completions');
@@ -1295,6 +1295,12 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
   );
   const sidebarHookSource = read('packages/sdkwork-claw-chat/src/pages/useChatSidebarState.ts');
   const chatSidebarSource = read('packages/sdkwork-claw-chat/src/components/ChatSidebar.tsx');
+  const chatSidebarAgentItemSource = read(
+    'packages/sdkwork-claw-chat/src/components/ChatSidebarAgentItem.tsx',
+  );
+  const chatSidebarSessionItemSource = read(
+    'packages/sdkwork-claw-chat/src/components/ChatSidebarSessionItem.tsx',
+  );
   const chatSidebarViewStateSource = read(
     'packages/sdkwork-claw-chat/src/services/chatSidebarViewState.ts',
   );
@@ -1409,32 +1415,61 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
   assert.match(chatSidebarSource, /'flex h-full min-h-0 w-full flex-col border-r border-zinc-200 bg-zinc-50\/50/);
   assert.match(chatSidebarSource, /<h3 className="mb-1\.5 px-3 text-\[10px\] font-medium uppercase tracking-\[0\.14em\] text-zinc-400 dark:text-zinc-500">/);
   assert.match(chatSidebarSource, /chat\.sidebar\.mainAgentBadge/);
-  assert.match(chatSidebarSource, /from '\.\/chatSidebarItemPrimitives';/);
-  assert.match(chatSidebarSource, /CHAT_SIDEBAR_ROW_BUTTON_CLASS/);
-  assert.match(chatSidebarSource, /CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS/);
-  assert.match(chatSidebarSource, /CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS/);
-  assert.match(chatSidebarSource, /CHAT_SIDEBAR_PREVIEW_TEXT_CLASS/);
-  assert.match(chatSidebarSource, /CHAT_SIDEBAR_TIME_LABEL_CLASS/);
-  assert.match(chatSidebarSource, /className="group relative"/);
+  assert.match(chatSidebarSource, /import \{ ChatSidebarAgentItem \} from '\.\/ChatSidebarAgentItem';/);
+  assert.match(chatSidebarSource, /import \{ ChatSidebarSessionItem \} from '\.\/ChatSidebarSessionItem';/);
+  assert.doesNotMatch(chatSidebarSource, /from '\.\/chatSidebarItemPrimitives';/);
+  assert.match(chatSidebarAgentItemSource, /from '\.\/chatSidebarItemPrimitives';/);
+  assert.match(chatSidebarSessionItemSource, /from '\.\/chatSidebarItemPrimitives';/);
+  assert.match(chatSidebarAgentItemSource, /CHAT_SIDEBAR_AGENT_ROW_BUTTON_CLASS/);
+  assert.match(chatSidebarAgentItemSource, /CHAT_SIDEBAR_AGENT_AVATAR_SHELL_CLASS/);
+  assert.match(chatSidebarAgentItemSource, /CHAT_SIDEBAR_AGENT_NAME_CLASS/);
+  assert.match(chatSidebarAgentItemSource, /CHAT_SIDEBAR_KERNEL_BADGE_CLASS/);
+  assert.match(chatSidebarSessionItemSource, /CHAT_SIDEBAR_ROW_BUTTON_CLASS/);
+  assert.match(chatSidebarSessionItemSource, /CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS/);
+  assert.match(chatSidebarSessionItemSource, /CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS/);
+  assert.match(chatSidebarSessionItemSource, /CHAT_SIDEBAR_TITLE_TEXT_CLASS/);
+  assert.match(chatSidebarAgentItemSource, /className="group relative"/);
+  assert.match(chatSidebarSessionItemSource, /className="group relative"/);
   assert.match(
     sidebarItemPrimitivesSource,
-    /'flex w-full items-stretch gap-3 rounded-\[0\.75rem\] px-3 py-3 text-left transition-colors disabled:cursor-wait'/,
+    /'flex w-full min-w-0 items-center gap-3 rounded-\[0\.75rem\] px-3 py-3 text-left transition-colors disabled:cursor-wait'/,
   );
   assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_ROW_BUTTON_CLASS =/);
   assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS =/);
   assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_AGENT_ROW_BUTTON_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_AGENT_AVATAR_SHELL_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_AGENT_NAME_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_KERNEL_BADGE_CLASS =/);
+  assert.match(
+    sidebarItemPrimitivesSource,
+    /'relative flex h-12 w-full min-w-0 items-center gap-2\.5 rounded-lg px-2\.5 text-left transition-all disabled:cursor-wait'/,
+  );
+  assert.match(
+    sidebarItemPrimitivesSource,
+    /'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-\[10px\] font-semibold uppercase transition-colors'/,
+  );
   assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_PRIMARY_BADGE_CLASS =/);
+  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_TITLE_TEXT_CLASS =/);
+  assert.match(
+    sidebarItemPrimitivesSource,
+    /'block w-full min-w-0 truncate text-\[13px\] font-medium leading-5 transition-colors'/,
+  );
   assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_PREVIEW_TEXT_CLASS =/);
   assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_TIME_LABEL_CLASS =/);
   assert.match(sidebarItemPrimitivesSource, /export const SESSION_OWNER_SLOT_CLASS =/);
   assert.match(sidebarItemPrimitivesSource, /export const SESSION_KERNEL_SLOT_CLASS =/);
   assert.match(sidebarItemPrimitivesSource, /export function resolveKernelBadgeLabel\(/);
-  assert.match(chatSidebarSource, /<div className="min-w-0 flex-1 overflow-hidden">/);
-  assert.match(chatSidebarSource, /<span className=\{SESSION_OWNER_SLOT_CLASS\} title=\{agent\.name\}>/);
+  assert.match(chatSidebarSessionItemSource, /<div className="min-w-0 flex-1 overflow-hidden pr-8">/);
+  assert.match(chatSidebarAgentItemSource, /<div className="flex min-w-0 flex-1 items-center gap-1\.5 pr-8">/);
+  assert.match(chatSidebarAgentItemSource, /title=\{agent\.name\}/);
+  assert.doesNotMatch(chatSidebarAgentItemSource, /SESSION_OWNER_SLOT_CLASS/);
+  assert.doesNotMatch(chatSidebarAgentItemSource, /absolute bottom-2 left-0 top-2 w-0\.5/);
   assert.match(
     chatSidebarViewStateSource,
-    /const agentRail = resolveChatSidebarAgentRailPresentation\(\{[\s\S]*agentOptions: params\.agentOptions,[\s\S]*sessions: instanceSessions,[\s\S]*activeSessionId: params\.activeSessionId,[\s\S]*isChatSupported: params\.isChatSupported,[\s\S]*sessionScopeMode: params\.sessionScopeMode,[\s\S]*selectedAgentId: effectiveSelectedAgentId,[\s\S]*primaryAgentId: params\.primaryAgentId,[\s\S]*previewLabels: params\.previewLabels,[\s\S]*relativeTimeLabels: params\.relativeTimeLabels,[\s\S]*locale: params\.locale,[\s\S]*timeZone: params\.timeZone,[\s\S]*emptyPreviewLabel: params\.agentRailEmptyPreviewLabel,[\s\S]*\}\);/s,
+    /const agentRail = resolveChatSidebarAgentRailPresentation\(\{[\s\S]*agentOptions: params\.agentOptions,[\s\S]*sessions: instanceSessions,[\s\S]*activeSessionId: params\.activeSessionId,[\s\S]*isChatSupported: params\.isChatSupported,[\s\S]*sessionScopeMode: params\.sessionScopeMode,[\s\S]*selectedAgentId: effectiveSelectedAgentId,[\s\S]*primaryAgentId: params\.primaryAgentId,[\s\S]*\}\);/s,
   );
+  assert.doesNotMatch(chatSidebarViewStateSource, /agentRailEmptyPreviewLabel/);
   assert.match(
     chatSidebarViewStateSource,
     /const sidebarChrome = resolveChatSidebarChromePresentation\(\{[\s\S]*agentRailItemCount: agentRail\.items\.length,[\s\S]*historySections: activeSidebarHistory\.sections,[\s\S]*totalHistoryItems: activeSidebarHistory\.totalItems,[\s\S]*\}\);/s,
@@ -1446,45 +1481,52 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
   assert.doesNotMatch(chatSidebarSource, /const SESSION_OWNER_SLOT_CLASS =/);
   assert.doesNotMatch(chatSidebarSource, /const SESSION_KERNEL_SLOT_CLASS =/);
   assert.doesNotMatch(chatSidebarSource, /function resolveKernelBadgeLabel\(/);
-  assert.match(chatSidebarSource, /className=\{SESSION_OWNER_SLOT_CLASS\}/);
+  assert.match(chatSidebarSessionItemSource, /<span className=\{SESSION_OWNER_SLOT_CLASS\} title=\{item\.ownerName\}>/);
+  assert.match(chatSidebarSessionItemSource, /<span className="truncate">\{item\.ownerName\}<\/span>/);
+  assert.doesNotMatch(chatSidebarSessionItemSource, /item\.ownerKernelLabel \?\s*\(/);
   assert.match(
-    chatSidebarSource,
-    /item\.ownerKernelLabel \?\s*\(\s*<span className=\{SESSION_KERNEL_SLOT_CLASS\} title=\{item\.ownerKernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(item\.ownerKernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
+    chatSidebarAgentItemSource,
+    /agent\.kernelLabel \?\s*\(\s*<span className=\{CHAT_SIDEBAR_KERNEL_BADGE_CLASS\} title=\{agent\.kernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(agent\.kernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
   );
-  assert.match(
-    chatSidebarSource,
-    /agent\.kernelLabel \?\s*\(\s*<span className=\{SESSION_KERNEL_SLOT_CLASS\} title=\{agent\.kernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(agent\.kernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
-  );
-  assert.match(
-    chatSidebarSource,
-    /const agentPreviewText = agent\.preview \?\? t\('chat\.sidebar\.agentRailEmptyPreview'\);/,
-  );
-  assert.match(chatSidebarSource, /agent\.relativeTimeLabel \?\s*\(/);
-  assert.match(chatSidebarSource, /<span className=\{SESSION_OWNER_SLOT_CLASS\} title=\{agent\.name\}>/);
-  assert.match(
-    chatSidebarSource,
-    /<p[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_PREVIEW_TEXT_CLASS,[\s\S]*\)\}[\s\S]*>\s*\{agentPreviewText\}\s*<\/p>/,
-  );
+  assert.doesNotMatch(chatSidebarAgentItemSource, /agent\.preview/);
+  assert.doesNotMatch(chatSidebarAgentItemSource, /agent\.relativeTimeLabel/);
+  assert.doesNotMatch(chatSidebarAgentItemSource, /displayTitle/);
+  assert.doesNotMatch(chatSidebarAgentItemSource, /sessionTitleText/);
+  assert.doesNotMatch(chatSidebarAgentItemSource, /updatedAt/);
+  assert.doesNotMatch(chatSidebarAgentItemSource, /CHAT_SIDEBAR_PREVIEW_TEXT_CLASS/);
   assert.doesNotMatch(
-    chatSidebarSource,
+    chatSidebarAgentItemSource,
     /agent\.kernelLabel \?\s*\(\s*<span className="mt-0\.5 block truncate text-\[10px\] font-medium uppercase tracking-\[0\.12em\] text-zinc-400 dark:text-zinc-500">\s*\{agent\.kernelLabel\}\s*<\/span>\s*\) : null/,
   );
-  assert.match(chatSidebarSource, /<div className="flex min-w-0 items-center gap-1\.5">/);
-  assert.match(chatSidebarSource, /item\.pinOrigin === 'system' \?\s*\(/);
-  assert.match(chatSidebarSource, /item\.pinOrigin === 'user' \?\s*\(/);
-  assert.match(chatSidebarSource, /item\.isFavorited \?\s*\(/);
-  assert.match(chatSidebarSource, /item\.hasUnread \?\s*\(/);
+  assert.match(chatSidebarSessionItemSource, /<div className="mb-1 flex min-h-5 min-w-0 items-center gap-1\.5">/);
+  assert.match(chatSidebarSource, /resolveChatSidebarSessionTitleText/);
+  assert.doesNotMatch(chatSidebarSource, /function resolveSidebarSessionTitleText\(/);
   assert.match(
     chatSidebarSource,
-    /<span[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_TIME_LABEL_CLASS,[\s\S]*'transition-opacity',[\s\S]*\)\}[\s\S]*>\s*\{item\.relativeTimeLabel\}\s*<\/span>/,
+    /const sessionRecord = resolveSessionRecord\(item\.sessionId\);/,
+  );
+  assert.match(
+    chatSidebarSessionItemSource,
+    /const hasSessionHeader =\s*Boolean\(sessionOwnerName\) \|\|\s*item\.pinOrigin !== 'none' \|\|\s*item\.isFavorited \|\|\s*item\.hasUnread;/,
+  );
+  assert.doesNotMatch(chatSidebarSessionItemSource, /<div className="mt-1 flex min-w-0 items-center gap-1\.5">/);
+  assert.match(chatSidebarSessionItemSource, /item\.pinOrigin === 'system' \?\s*\(/);
+  assert.match(chatSidebarSessionItemSource, /item\.pinOrigin === 'user' \?\s*\(/);
+  assert.match(chatSidebarSessionItemSource, /item\.isFavorited \?\s*\(/);
+  assert.match(chatSidebarSessionItemSource, /item\.hasUnread \?\s*\(/);
+  assert.doesNotMatch(chatSidebarSessionItemSource, /\{item\.relativeTimeLabel\}/);
+  assert.match(
+    chatSidebarSource,
+    /const sessionTitleText = resolveChatSidebarSessionTitleText\(\{\s*itemDisplayTitle: item\.displayTitle,\s*session: sessionRecord,\s*\}\);/,
+  );
+  assert.doesNotMatch(chatSidebarSessionItemSource, /const previewText = item\.preview \?\? item\.displayTitle;/);
+  assert.match(
+    chatSidebarSessionItemSource,
+    /\{hasSessionHeader \? \([\s\S]*<div className="mb-1 flex min-h-5 min-w-0 items-center gap-1\.5">[\s\S]*sessionOwnerName \? \([\s\S]*<span className=\{SESSION_OWNER_SLOT_CLASS\} title=\{item\.ownerName\}>[\s\S]*\{item\.ownerName\}[\s\S]*<\/span>[\s\S]*item\.pinOrigin === 'system'[\s\S]*item\.pinOrigin === 'user'[\s\S]*item\.isFavorited[\s\S]*item\.hasUnread[\s\S]*<\/div>\s*\) : null\}\s*<p[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_TITLE_TEXT_CLASS,[\s\S]*\)\}[\s\S]*title=\{sessionTitleText\}[\s\S]*>\s*\{sessionTitleText\}\s*<\/p>/,
   );
   assert.match(
     chatSidebarSource,
-    /<p[\s\S]*className=\{cn\(\s*CHAT_SIDEBAR_PREVIEW_TEXT_CLASS,[\s\S]*\)\}[\s\S]*>\s*\{previewText\}\s*<\/p>/,
-  );
-  assert.match(
-    chatSidebarSource,
-    /sidebarChrome\.showAgentRail[\s\S]*visibleAgentRailItems\.map\(renderAgentRailItem\)/s,
+    /sidebarChrome\.showAgentRail[\s\S]*visibleAgentRailItems\.map\(\(agent\) => \{[\s\S]*<ChatSidebarAgentItem/s,
   );
   assert.match(chatSidebarSource, /const \[agentSearchQuery, setAgentSearchQuery\] = React\.useState\(''\);/);
   assert.match(chatSidebarSource, /const visibleAgentRailItems = React\.useMemo\(\(\) => \{/);
@@ -1508,28 +1550,28 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
   assert.match(createAgentMenuSource, /\.focus\(\{ preventScroll: true \}\)/);
   assert.match(
     chatSidebarSource,
-    /sidebarChrome\.sections\.map\(\(\{ section, titleKey \}\) => \([\s\S]*renderSessionGroup\(section, t\(titleKey\)\)[\s\S]*<\/React\.Fragment>/s,
+    /sidebarChrome\.sections\.map\(\(\{ section, titleKey \}\) => \{[\s\S]*section\.items\.map\(\(item, itemIndex\) => \{[\s\S]*<ChatSidebarSessionItem/s,
   );
   assert.match(
-    chatSidebarSource,
+    chatSidebarSessionItemSource,
     /className=\{cn\(\s*'absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-all hover:bg-zinc-900\/\[0\.06\] hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white\/\[0\.08\] dark:hover:text-zinc-200',[\s\S]*\)\}/,
   );
-  assert.match(chatSidebarSource, /event\.key === 'Enter'/);
-  assert.match(chatSidebarSource, /event\.key === ' '/);
-  assert.match(chatSidebarSource, /event\.key === 'ContextMenu'/);
-  assert.match(chatSidebarSource, /event\.shiftKey && event\.key === 'F10'/);
+  assert.match(chatSidebarSessionItemSource, /event\.key === 'Enter'/);
+  assert.match(chatSidebarSessionItemSource, /event\.key === ' '/);
+  assert.match(chatSidebarSessionItemSource, /event\.key === 'ContextMenu'/);
+  assert.match(chatSidebarSessionItemSource, /event\.shiftKey && event\.key === 'F10'/);
   assert.match(
-    chatSidebarSource,
-    /openSessionMenuAtElement\(event\.currentTarget, item, event\.currentTarget\)/,
+    chatSidebarSessionItemSource,
+    /onOpenMenuAtElement\(event\.currentTarget, item\)/,
   );
   assert.match(chatSidebarSource, /closeCreateAgentMenu\(\);\s*setSessionMenuState\(\{/);
   assert.match(
-    chatSidebarSource,
-    /if \(isSessionMenuOpen\) \{\s*closeSessionMenu\(\);\s*return;\s*\}[\s\S]*openSessionMenuAtElement\(event\.currentTarget, item, event\.currentTarget\);/,
+    chatSidebarSessionItemSource,
+    /if \(isSessionMenuOpen\) \{\s*onCloseMenu\(\);\s*return;\s*\}[\s\S]*onOpenMenuAtElement\(event\.currentTarget, item\);/,
   );
-  assert.match(chatSidebarSource, /group-hover:opacity-0 group-focus-within:opacity-0/);
-  assert.match(chatSidebarSource, /aria-haspopup="menu"/);
-  assert.match(chatSidebarSource, /aria-expanded=\{isSessionMenuOpen\}/);
+  assert.doesNotMatch(chatSidebarSessionItemSource, /group-hover:opacity-0 group-focus-within:opacity-0/);
+  assert.match(chatSidebarSessionItemSource, /aria-haspopup="menu"/);
+  assert.match(chatSidebarSessionItemSource, /aria-expanded=\{isSessionMenuOpen\}/);
   assert.match(
     chatSidebarSource,
     /closeLabel=\{t\('chat\.sidebar\.dismissSessionActionsMenu'\)\}/,
@@ -1539,13 +1581,12 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
     /restoreFocusElement=\{sessionMenuState\?\.restoreFocusElement \?\? null\}/,
   );
   assert.match(
-    chatSidebarSource,
+    chatSidebarSessionItemSource,
     /group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100/,
   );
   assert.match(sessionActionMenuSource, /aria-label=\{closeLabel\}/);
   assert.match(sessionActionMenuSource, /\.focus\(\{ preventScroll: true \}\)/);
   assert.match(englishChatLocaleSource, /"agentSearchPlaceholder":\s*"Search current agents\.\.\."/);
-  assert.match(englishChatLocaleSource, /"agentRailEmptyPreview":\s*"No conversations yet"/);
   assert.match(englishChatLocaleSource, /"createButtonLabel":\s*"Create"/);
   assert.match(englishChatLocaleSource, /"newAgentOptions":\s*"Create Agent options"/);
   assert.match(englishChatLocaleSource, /"dismissCreateAgentMenu":\s*"Close create agent menu"/);
@@ -1553,7 +1594,6 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
   assert.match(englishChatLocaleSource, /"selectSessionFailed":\s*"Unable to open the selected conversation\."/);
   assert.match(englishChatLocaleSource, /"dismissSelectionError":\s*"Dismiss"/);
   assert.match(chineseChatLocaleSource, /"agentSearchPlaceholder":/);
-  assert.match(chineseChatLocaleSource, /"agentRailEmptyPreview":/);
   assert.match(chineseChatLocaleSource, /"createButtonLabel":/);
   assert.match(chineseChatLocaleSource, /"dismissCreateAgentMenu":/);
   assert.match(chineseChatLocaleSource, /"selectAgentFailed":/);

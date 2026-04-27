@@ -19,7 +19,7 @@ export function useChatMessageDisplayState({
   void chatRuntimeState;
   const activeMessages = useMemo(
     () => (Array.isArray(displaySession?.messages) ? displaySession.messages : []),
-    [displaySession],
+    [displaySession?.id, displaySession?.messages, displaySession?.messages?.length],
   );
   const isHistoryLoading = displaySession?.historyState === 'loading';
   const conversationBodyState = resolveChatConversationBodyState({

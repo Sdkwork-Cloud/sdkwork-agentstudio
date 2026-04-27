@@ -25,6 +25,8 @@ import {
   hydrateOpenClawKernelChatProjection,
   isGatewayMethodUnavailableError,
   isAnyOpenClawMainSession,
+  isReadableChatSessionTitle,
+  normalizeChatSessionTitle,
   resolveOpenClawMessagePresentation,
   sanitizeChatSessionPreviewText,
   type OpenClawMessagePresentationRole,
@@ -42,7 +44,10 @@ import {
   resolveChatMessagePrimaryPreviewText,
   resolveLatestChatMessageForDisplay,
   resolveLatestChatMessageTimestamp,
+  parseOpenClawGatewayAgentLifecycleEvent,
+  type KernelAgentLifecycleEvent,
 } from '../services/index.ts';
+import { shouldRefreshChatAgentCatalogForGatewayAgentEvent } from './openClawGatewayAgentCatalogRefreshPolicy.ts';
 
 export type OpenClawGatewayRole = OpenClawMessagePresentationRole;
 export type OpenClawGatewaySyncState = 'idle' | 'loading' | 'error';
@@ -53,6 +58,8 @@ export type OpenClawGatewayConnectionStatus =
   | 'reconnecting'
   | 'disconnected';
 type OpenClawGatewayTitleSource = 'default' | 'preview' | 'explicit' | 'firstUser';
+
+const TITLE_REPAIR_HISTORY_LIMIT = 4;
 
 export interface OpenClawGatewayMessage {
   id: string;
@@ -101,6 +108,12 @@ export interface OpenClawGatewayInstanceSnapshot {
   syncState: OpenClawGatewaySyncState;
   connectionStatus: OpenClawGatewayConnectionStatus;
   lastError?: string;
+}
+
+export interface OpenClawGatewayAgentCatalogChangedEvent {
+  instanceId: string;
+  payload: OpenClawGatewayAgentEvent | Record<string, unknown>;
+  lifecycleEvent?: KernelAgentLifecycleEvent | null;
 }
 
 export interface OpenClawGatewayClientLike {
@@ -1087,28 +1100,69 @@ function deriveSessionTitle(
   });
 }
 
+function deriveReadableSessionTitleFromMessage(message: OpenClawGatewayMessage) {
+  if (message.role === 'system' || message.role === 'tool') {
+    return null;
+  }
+
+  const title = deriveSessionTitle(
+    DEFAULT_CHAT_SESSION_TITLE,
+    message.content,
+    message.attachments ?? [],
+    true,
+  );
+  return title && title !== DEFAULT_CHAT_SESSION_TITLE ? title : null;
+}
+
+function resolveReadableSessionTitleFromMessages(messages: OpenClawGatewayMessage[]) {
+  for (const message of messages) {
+    if (message.role !== 'user') {
+      continue;
+    }
+
+    const title = deriveReadableSessionTitleFromMessage(message);
+    if (title) {
+      return title;
+    }
+  }
+
+  for (const message of messages) {
+    const title = deriveReadableSessionTitleFromMessage(message);
+    if (title) {
+      return title;
+    }
+  }
+
+  return null;
+}
+
+function resolvePersistableSessionTitleLabel(
+  session: OpenClawGatewayChatSession | null | undefined,
+) {
+  if (session?.titleSource !== 'firstUser') {
+    return null;
+  }
+
+  const title = normalizeChatSessionTitle(session.title);
+  if (!title || title === DEFAULT_CHAT_SESSION_TITLE) {
+    return null;
+  }
+
+  return title;
+}
+
 function buildSessionTitle(row: Record<string, unknown>) {
-  const preview = sanitizeChatSessionPreviewText({
-    text: typeof row.lastMessagePreview === 'string' ? row.lastMessagePreview : undefined,
-    kernelId: 'openclaw',
-  });
   return selectReadableChatSessionTitleCandidates(
     [
       typeof row.derivedTitle === 'string' ? row.derivedTitle : undefined,
       typeof row.displayName === 'string' ? row.displayName : undefined,
       typeof row.label === 'string' ? row.label : undefined,
-      preview,
-      typeof row.key === 'string' ? row.key : undefined,
     ],
     DEFAULT_CHAT_SESSION_TITLE,
   );
 }
 
 function buildSessionTitleState(row: Record<string, unknown>) {
-  const preview = sanitizeChatSessionPreviewText({
-    text: typeof row.lastMessagePreview === 'string' ? row.lastMessagePreview : undefined,
-    kernelId: 'openclaw',
-  });
   const explicitTitle = selectReadableChatSessionTitleCandidates(
     [
       typeof row.derivedTitle === 'string' ? row.derivedTitle : undefined,
@@ -1122,17 +1176,6 @@ function buildSessionTitleState(row: Record<string, unknown>) {
     return {
       title: explicitTitle,
       source: 'explicit' as const,
-    };
-  }
-
-  const previewTitle = selectReadableChatSessionTitleCandidates(
-    [preview],
-    '',
-  );
-  if (previewTitle) {
-    return {
-      title: previewTitle,
-      source: 'preview' as const,
     };
   }
 
@@ -1387,7 +1430,9 @@ function findExistingMessageIndex(
   }
 
   if (typeof candidate.seq === 'number') {
-    const seqMatchIndex = messages.findIndex((message) => message.seq === candidate.seq);
+    const seqMatchIndex = messages.findIndex(
+      (message) => message.seq === candidate.seq && message.role === candidate.role,
+    );
     if (seqMatchIndex >= 0) {
       return seqMatchIndex;
     }
@@ -1847,6 +1892,12 @@ export class OpenClawGatewaySessionStore {
   private readonly listeners = new Set<
     (instanceId: string, snapshot: OpenClawGatewayInstanceSnapshot) => void
   >();
+  private readonly agentCatalogListeners = new Set<
+    (event: OpenClawGatewayAgentCatalogChangedEvent) => void
+  >();
+  private readonly agentLifecycleListeners = new Set<
+    (event: KernelAgentLifecycleEvent) => void
+  >();
   private runCounter = 0;
 
   constructor(options: OpenClawGatewaySessionStoreOptions) {
@@ -1875,6 +1926,22 @@ export class OpenClawGatewaySessionStore {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
+    };
+  }
+
+  subscribeAgentCatalogChanged(
+    listener: (event: OpenClawGatewayAgentCatalogChangedEvent) => void,
+  ) {
+    this.agentCatalogListeners.add(listener);
+    return () => {
+      this.agentCatalogListeners.delete(listener);
+    };
+  }
+
+  subscribeAgentLifecycle(listener: (event: KernelAgentLifecycleEvent) => void) {
+    this.agentLifecycleListeners.add(listener);
+    return () => {
+      this.agentLifecycleListeners.delete(listener);
     };
   }
 
@@ -2021,7 +2088,9 @@ export class OpenClawGatewaySessionStore {
     void this.synchronizeSessionMessageSubscription(params.instanceId, state);
 
     if (session && !session.isDraft) {
-      await this.refreshSessionHistory(params.instanceId, params.sessionId);
+      await this.refreshSessionHistory(params.instanceId, params.sessionId, undefined, {
+        preserveSessionUpdatedAt: true,
+      });
     }
 
     return this.getSnapshot(params.instanceId);
@@ -2197,6 +2266,25 @@ export class OpenClawGatewaySessionStore {
     }
   }
 
+  private async persistSessionTitleLabelBestEffort(params: {
+    state: InternalInstanceState;
+    session: OpenClawGatewayChatSession;
+  }) {
+    const label = resolvePersistableSessionTitleLabel(params.session);
+    if (!label) {
+      return;
+    }
+
+    try {
+      await params.state.client.patchSession({
+        key: params.session.id,
+        label,
+      });
+    } catch (error) {
+      console.error('Failed to persist OpenClaw session title label:', error);
+    }
+  }
+
   async sendMessage(params: {
     instanceId: string;
     sessionId: string;
@@ -2231,6 +2319,8 @@ export class OpenClawGatewaySessionStore {
     const outgoingText =
       params.requestText?.trim() ||
       composeOutgoingChatText(params.content, outgoingAttachments);
+    const hadUserMessageBefore = session.messages.some((message) => message.role === 'user');
+    const isFirstUserMessage = !hadUserMessageBefore;
     const userMessage = createGatewayMessage({
       id: createMessageId('msg'),
       role: 'user',
@@ -2248,9 +2338,9 @@ export class OpenClawGatewaySessionStore {
       session.title,
       params.content,
       outgoingAttachments,
-      session.messages.length === 1,
+      isFirstUserMessage,
     );
-    if (session.messages.length === 1) {
+    if (isFirstUserMessage) {
       session.titleSource = 'firstUser';
     }
     syncGatewaySessionDerivedMessageState(session);
@@ -2272,6 +2362,12 @@ export class OpenClawGatewaySessionStore {
           : {}),
       });
       session.runId = result.runId || runId;
+      if (isFirstUserMessage) {
+        await this.persistSessionTitleLabelBestEffort({
+          state,
+          session,
+        });
+      }
       this.emit(params.instanceId);
       return {
         runId: session.runId,
@@ -2746,13 +2842,21 @@ export class OpenClawGatewaySessionStore {
         );
         if (activeSession && !activeSession.isDraft) {
           await this.refreshSessionHistory(instanceId, nextActiveSessionId, refreshVersion);
-          await this.synchronizeSessionMessageSubscription(instanceId, state, hello);
-          return this.getSnapshot(instanceId);
+          if (!this.isLatestRefresh(state, refreshVersion)) {
+            return this.getSnapshot(instanceId);
+          }
         }
       }
 
       await this.synchronizeSessionMessageSubscription(instanceId, state, hello);
       this.emit(instanceId);
+      void this.repairUnreadableSessionTitlesFromHistory(
+        instanceId,
+        state,
+        refreshVersion,
+      ).catch((error) => {
+        console.error('Failed to repair OpenClaw session titles from history:', error);
+      });
       return this.getSnapshot(instanceId);
     } catch (error) {
       state.snapshot.connectionStatus = 'disconnected';
@@ -2766,6 +2870,40 @@ export class OpenClawGatewaySessionStore {
     }
   }
 
+  private shouldRepairSessionTitleFromHistory(session: OpenClawGatewayChatSession) {
+    if (
+      session.isDraft ||
+      session.historyState === 'loading' ||
+      session.historyState === 'ready' ||
+      session.messages.some((message) => message.role === 'user')
+    ) {
+      return false;
+    }
+
+    return !isReadableChatSessionTitle(session.title);
+  }
+
+  private async repairUnreadableSessionTitlesFromHistory(
+    instanceId: string,
+    state: InternalInstanceState,
+    refreshVersion: number,
+  ) {
+    const sessionsToRepair = state.snapshot.sessions
+      .filter((session) => this.shouldRepairSessionTitleFromHistory(session))
+      .slice(0, TITLE_REPAIR_HISTORY_LIMIT);
+
+    for (const session of sessionsToRepair) {
+      if (!this.isLatestRefresh(state, refreshVersion)) {
+        return;
+      }
+
+      await this.refreshSessionHistory(instanceId, session.id, refreshVersion, {
+        preserveLastMessagePreview: true,
+        preserveSessionUpdatedAt: true,
+      });
+    }
+  }
+
   private async refreshSessionHistory(
     instanceId: string,
     sessionId: string,
@@ -2776,6 +2914,8 @@ export class OpenClawGatewaySessionStore {
       preserveLocalMessagesFromIndex?: number | null;
       preserveRunId?: string | null;
       preferRemoteTerminalAssistantMessage?: boolean;
+      preserveLastMessagePreview?: boolean;
+      preserveSessionUpdatedAt?: boolean;
     },
   ) {
     const state = await this.ensureState(instanceId);
@@ -2816,15 +2956,30 @@ export class OpenClawGatewaySessionStore {
             preserveRunId: options?.preserveRunId ?? (session.runId?.trim() || null),
             preferRemoteTerminalAssistantMessage:
               options?.preferRemoteTerminalAssistantMessage,
+            preserveLastMessagePreview: options?.preserveLastMessagePreview,
           }
         : options;
 
+      const titleSourceBeforeHistory = session.titleSource;
+      const previousUpdatedAt = session.updatedAt;
       this.applyHistory(session, history, effectiveOptions);
+      if (effectiveOptions?.preserveSessionUpdatedAt) {
+        session.updatedAt = previousUpdatedAt;
+      }
+      const shouldPersistTitleLabel =
+        titleSourceBeforeHistory !== 'firstUser' &&
+        Boolean(resolvePersistableSessionTitleLabel(session));
       state.snapshot.syncState = 'idle';
       state.snapshot.lastError = undefined;
       this.syncActiveSessionSeen(state.snapshot);
       this.sortSessions(state.snapshot);
       await this.synchronizeSessionMessageSubscription(instanceId, state);
+      if (shouldPersistTitleLabel) {
+        await this.persistSessionTitleLabelBestEffort({
+          state,
+          session,
+        });
+      }
       this.emit(instanceId);
     } catch (error) {
       state.snapshot.syncState = 'error';
@@ -2858,9 +3013,17 @@ export class OpenClawGatewaySessionStore {
       preserveLocalMessagesFromIndex?: number | null;
       preserveRunId?: string | null;
       preferRemoteTerminalAssistantMessage?: boolean;
+      preserveLastMessagePreview?: boolean;
+      preserveSessionUpdatedAt?: boolean;
     },
   ) {
     const baseTimestamp = this.now();
+    const previousLastMessagePreview = options?.preserveLastMessagePreview
+      ? sanitizeChatSessionPreviewText({
+          text: session.lastMessagePreview,
+          kernelId: 'openclaw',
+        })
+      : undefined;
     const remoteMessages = Array.isArray(history.messages)
       ? history.messages
           .map((message, index) => normalizeMessage(message, baseTimestamp + index, 'history'))
@@ -2888,15 +3051,13 @@ export class OpenClawGatewaySessionStore {
     syncGatewaySessionDerivedMessageStateWithOptions(session, {
       clearPreviewWhenMessagesEmpty: true,
     });
-    if (session.messages.length > 0) {
-      const firstUserMessage = session.messages.find((message) => message.role === 'user');
-      if (firstUserMessage && session.titleSource !== 'explicit') {
-        session.title = deriveSessionTitle(
-          DEFAULT_CHAT_SESSION_TITLE,
-          firstUserMessage.content,
-          firstUserMessage.attachments ?? [],
-          true,
-        );
+    if (previousLastMessagePreview) {
+      session.lastMessagePreview = previousLastMessagePreview;
+    }
+    if (session.messages.length > 0 && session.titleSource !== 'explicit') {
+      const titleFromMessages = resolveReadableSessionTitleFromMessages(session.messages);
+      if (titleFromMessages) {
+        session.title = titleFromMessages;
         session.titleSource = 'firstUser';
       }
     }
@@ -3084,7 +3245,23 @@ export class OpenClawGatewaySessionStore {
 
   private handleAgentEvent(instanceId: string, payload: OpenClawGatewayAgentEvent) {
     const state = this.instances.get(instanceId);
-    if (!state || !payload?.sessionKey || payload.stream !== 'tool') {
+    if (!state) {
+      return;
+    }
+
+    const lifecycleEvent = parseOpenClawGatewayAgentLifecycleEvent({
+      instanceId,
+      kernelId: 'openclaw',
+      payload,
+    });
+    if (lifecycleEvent) {
+      this.emitAgentLifecycle(lifecycleEvent);
+      this.emitAgentCatalogChanged(instanceId, payload, lifecycleEvent);
+    } else if (shouldRefreshChatAgentCatalogForGatewayAgentEvent(payload)) {
+      this.emitAgentCatalogChanged(instanceId, payload, null);
+    }
+
+    if (!payload?.sessionKey || payload.stream !== 'tool') {
       return;
     }
 
@@ -3629,6 +3806,27 @@ export class OpenClawGatewaySessionStore {
     const snapshot = this.getSnapshot(instanceId);
     for (const listener of this.listeners) {
       listener(instanceId, snapshot);
+    }
+  }
+
+  private emitAgentCatalogChanged(
+    instanceId: string,
+    payload: OpenClawGatewayAgentEvent | Record<string, unknown>,
+    lifecycleEvent?: KernelAgentLifecycleEvent | null,
+  ) {
+    const event = {
+      instanceId,
+      payload,
+      lifecycleEvent,
+    };
+    for (const listener of this.agentCatalogListeners) {
+      listener(event);
+    }
+  }
+
+  private emitAgentLifecycle(event: KernelAgentLifecycleEvent) {
+    for (const listener of this.agentLifecycleListeners) {
+      listener(event);
     }
   }
 

@@ -2729,6 +2729,422 @@ function parseBooleanFlag(value) {
   return ['1', 'true', 'yes', 'on'].includes(normalized);
 }
 
+const OPENCLAW_AGENT_PATH_MATERIALIZATION_SENTINEL =
+  'function materializeConfigAgentPaths(config, previousConfig)';
+
+const OPENCLAW_AGENT_DIR_SHAPE_GUARD_SENTINEL = 'hasCanonicalAgentDirShape';
+
+const OPENCLAW_AGENT_PATH_MATERIALIZATION_HELPERS = `function cloneConfigForAgentPaths(config) {
+\treturn structuredClone(config);
+}
+function listAgentEntriesForPathMaterialization(config) {
+\tconst list = config.agents?.list;
+\treturn Array.isArray(list) ? list.filter((entry) => Boolean(entry) && typeof entry === "object") : [];
+}
+function collectAgentIdsForPathMaterialization(config) {
+\tconst ids = new Set();
+\tif (!config) return ids;
+\tfor (const entry of listAgentEntriesForPathMaterialization(config)) ids.add(normalizeAgentId(readOptionalAgentPathString(entry.id)));
+\treturn ids;
+}
+function readOptionalAgentPathString(value) {
+\tif (typeof value === "string") return value;
+\tif (typeof value === "number" || typeof value === "boolean") return String(value);
+\treturn void 0;
+}
+function readTrimmedAgentPathString(value) {
+\treturn readOptionalAgentPathString(value)?.trim() ?? "";
+}
+function normalizeAgentPathForComparison(value) {
+\tconst normalized = path.normalize(path.resolve(value)).replace(/[\\\\/]+/g, "/");
+\treturn process.platform === "win32" || process.platform === "darwin" ? normalized.toLowerCase() : normalized;
+}
+function splitAgentPathSegments(value) {
+\treturn path.normalize(path.resolve(value)).split(/[\\\\/]+/).filter(Boolean).map((part) => part.toLowerCase());
+}
+function agentPathEquals(left, right) {
+\treturn normalizeAgentPathForComparison(left) === normalizeAgentPathForComparison(right);
+}
+function agentPathEndsWithSegments(value, expectedSegments) {
+\tconst segments = splitAgentPathSegments(value);
+\tconst expected = expectedSegments.map((segment) => segment.toLowerCase());
+\tif (segments.length < expected.length) return false;
+\treturn expected.every((segment, index) => segments[segments.length - expected.length + index] === segment);
+}
+function isAgentPathWithin(parent, child) {
+\tconst relative = path.relative(path.resolve(parent), path.resolve(child));
+\treturn Boolean(relative) && !relative.startsWith("..") && !path.isAbsolute(relative);
+}
+function isAbsoluteOrHomeAgentPath(value) {
+\treturn path.isAbsolute(value) || path.win32.isAbsolute(value) || value.startsWith("~") || value.startsWith("$HOME") || value.startsWith("$" + "{HOME}") || value.startsWith("%USERPROFILE%");
+}
+function resolveAgentPathForInspection(rawPath) {
+\ttry {
+\t\treturn resolveUserPath(rawPath);
+\t} catch {
+\t\treturn path.resolve(rawPath);
+\t}
+}
+function cloneWithAgentPathRemoved(params) {
+\tconst next = cloneConfigForAgentPaths(params.config);
+\tconst entry = next.agents?.list?.[params.agentIndex];
+\tif (entry && typeof entry === "object") {
+\t\tentry.id = params.agentId;
+\t\tdelete entry[params.remove];
+\t}
+\treturn next;
+}
+function resolveCanonicalWorkspaceForConfigWrite(params) {
+\treturn resolveAgentWorkspaceDir(cloneWithAgentPathRemoved({
+\t\tconfig: params.config,
+\t\tagentIndex: params.agentIndex,
+\t\tagentId: params.agentId,
+\t\tremove: "workspace"
+\t}), params.agentId);
+}
+function resolveCanonicalAgentDirForConfigWrite(params) {
+\treturn resolveAgentDir(cloneWithAgentPathRemoved({
+\t\tconfig: params.config,
+\t\tagentIndex: params.agentIndex,
+\t\tagentId: params.agentId,
+\t\tremove: "agentDir"
+\t}), params.agentId);
+}
+function chooseWorkspacePathForConfigWrite(params) {
+\tconst rawPath = params.rawPath.trim();
+\tif (!rawPath) return {
+\t\tvalue: params.canonicalPath,
+\t\treplaced: true
+\t};
+\tconst resolved = resolveAgentPathForInspection(rawPath);
+\tconst stateDir = resolveStateDir(process.env);
+\tconst shouldReplace = !isAbsoluteOrHomeAgentPath(rawPath) || agentPathEndsWithSegments(resolved, [
+\t\t"agents",
+\t\tparams.agentId
+\t]) || agentPathEndsWithSegments(resolved, [
+\t\t"agents",
+\t\tparams.agentId,
+\t\t"agent"
+\t]) || agentPathEndsWithSegments(resolved, [
+\t\t"workspace",
+\t\tparams.agentId
+\t]) || isAgentPathWithin(path.dirname(params.canonicalAgentDir), resolved) || params.isNewAgent && isAgentPathWithin(stateDir, resolved) && !agentPathEquals(resolved, params.canonicalPath);
+\treturn shouldReplace ? {
+\t\tvalue: params.canonicalPath,
+\t\treplaced: true
+\t} : {
+\t\tvalue: rawPath,
+\t\treplaced: false
+\t};
+}
+function chooseAgentDirPathForConfigWrite(params) {
+\tconst rawPath = params.rawPath.trim();
+\tif (!rawPath) return {
+\t\tvalue: params.canonicalPath,
+\t\treplaced: true
+\t};
+\tconst resolved = resolveAgentPathForInspection(rawPath);
+\tconst stateDir = resolveStateDir(process.env);
+\tconst hasCanonicalAgentDirShape = agentPathEndsWithSegments(resolved, [
+\t\t"agents",
+\t\tparams.agentId,
+\t\t"agent"
+\t]);
+\tconst shouldReplace = !isAbsoluteOrHomeAgentPath(rawPath) || agentPathEndsWithSegments(resolved, [
+\t\t"agents",
+\t\tparams.agentId
+\t]) || isAgentPathWithin(params.workspaceDir, resolved) || isAgentPathWithin(stateDir, resolved) && !hasCanonicalAgentDirShape || params.isNewAgent && isAgentPathWithin(stateDir, resolved) && !agentPathEquals(resolved, params.canonicalPath);
+\treturn shouldReplace ? {
+\t\tvalue: params.canonicalPath,
+\t\treplaced: true
+\t} : {
+\t\tvalue: rawPath,
+\t\treplaced: false
+\t};
+}
+function pushMaterializedAgentPath(agents, next) {
+\tconst duplicate = agents.find((agent) => agent.agentId === next.agentId);
+\tif (duplicate) {
+\t\tduplicate.workspaceDir = next.workspaceDir;
+\t\tduplicate.agentDir = next.agentDir;
+\t\treturn;
+\t}
+\tagents.push(next);
+}
+function materializeConfigAgentPaths(config, previousConfig) {
+\tif (!Array.isArray(config.agents?.list)) return {
+\t\tconfig,
+\t\tmaterializedAgents: []
+\t};
+\tconst nextConfig = cloneConfigForAgentPaths(config);
+\tconst previousAgentIds = collectAgentIdsForPathMaterialization(previousConfig);
+\tconst materializedAgents = [];
+\tconst nextList = nextConfig.agents?.list;
+\tif (!Array.isArray(nextList)) return {
+\t\tconfig: nextConfig,
+\t\tmaterializedAgents
+\t};
+\tnextList.forEach((entry, index) => {
+\t\tif (!entry || typeof entry !== "object") return;
+\t\tconst agentId = normalizeAgentId(readOptionalAgentPathString(entry.id));
+\t\tconst isNewAgent = !previousAgentIds.has(agentId);
+\t\tif (entry.id !== agentId) entry.id = agentId;
+\t\tconst canonicalWorkspace = resolveCanonicalWorkspaceForConfigWrite({
+\t\t\tconfig: nextConfig,
+\t\t\tagentIndex: index,
+\t\t\tagentId
+\t\t});
+\t\tconst canonicalAgentDir = resolveCanonicalAgentDirForConfigWrite({
+\t\t\tconfig: nextConfig,
+\t\t\tagentIndex: index,
+\t\t\tagentId
+\t\t});
+\t\tconst workspace = chooseWorkspacePathForConfigWrite({
+\t\t\trawPath: readTrimmedAgentPathString(entry.workspace),
+\t\t\tcanonicalPath: canonicalWorkspace,
+\t\t\tcanonicalAgentDir,
+\t\t\tagentId,
+\t\t\tisNewAgent
+\t\t});
+\t\tentry.workspace = workspace.value;
+\t\tconst agentDir = chooseAgentDirPathForConfigWrite({
+\t\t\trawPath: readTrimmedAgentPathString(entry.agentDir),
+\t\t\tcanonicalPath: canonicalAgentDir,
+\t\t\tworkspaceDir: resolveAgentPathForInspection(workspace.value),
+\t\t\tagentId,
+\t\t\tisNewAgent
+\t\t});
+\t\tentry.agentDir = agentDir.value;
+\t\tif (isNewAgent || workspace.replaced || agentDir.replaced) pushMaterializedAgentPath(materializedAgents, {
+\t\t\tagentId,
+\t\t\tworkspaceDir: resolveAgentPathForInspection(entry.workspace),
+\t\t\tagentDir: resolveAgentPathForInspection(entry.agentDir)
+\t\t});
+\t});
+\treturn {
+\t\tconfig: nextConfig,
+\t\tmaterializedAgents
+\t};
+}
+async function ensureConfigAgentDirectories(params) {
+\tconst skipBootstrap = Boolean(params.config.agents?.defaults?.skipBootstrap);
+\tconst seen = new Set();
+\tfor (const agent of params.materializedAgents) {
+\t\tif (seen.has(agent.agentId)) continue;
+\t\tseen.add(agent.agentId);
+\t\tawait ensureAgentWorkspace({
+\t\t\tdir: agent.workspaceDir,
+\t\t\tensureBootstrapFiles: !skipBootstrap
+\t\t});
+\t\tawait fs$1.mkdir(agent.agentDir, { recursive: true });
+\t\tawait fs$1.mkdir(resolveSessionTranscriptsDirForAgent(agent.agentId), { recursive: true });
+\t}
+}
+`;
+
+function replaceOpenClawRuntimeSnippet(source, search, replacement, label) {
+  if (!source.includes(search)) {
+    throw new Error(
+      `[openclaw-runtime-patch] Cannot apply agent path materialization patch; missing ${label}.`,
+    );
+  }
+
+  return source.replace(search, replacement);
+}
+
+function applyOpenClawAgentDirShapeGuardPatch(source) {
+  if (
+    !source.includes(OPENCLAW_AGENT_PATH_MATERIALIZATION_SENTINEL)
+    || source.includes(OPENCLAW_AGENT_DIR_SHAPE_GUARD_SENTINEL)
+  ) {
+    return source;
+  }
+
+  const oldSnippet = `\tconst shouldReplace = !isAbsoluteOrHomeAgentPath(rawPath) || agentPathEndsWithSegments(resolved, [
+\t\t"agents",
+\t\tparams.agentId
+\t]) || !agentPathEndsWithSegments(resolved, [
+\t\t"agents",
+\t\tparams.agentId,
+\t\t"agent"
+\t]) || isAgentPathWithin(params.workspaceDir, resolved) || params.isNewAgent && isAgentPathWithin(stateDir, resolved) && !agentPathEquals(resolved, params.canonicalPath);`;
+  const newSnippet = `\tconst hasCanonicalAgentDirShape = agentPathEndsWithSegments(resolved, [
+\t\t"agents",
+\t\tparams.agentId,
+\t\t"agent"
+\t]);
+\tconst shouldReplace = !isAbsoluteOrHomeAgentPath(rawPath) || agentPathEndsWithSegments(resolved, [
+\t\t"agents",
+\t\tparams.agentId
+\t]) || isAgentPathWithin(params.workspaceDir, resolved) || isAgentPathWithin(stateDir, resolved) && !hasCanonicalAgentDirShape || params.isNewAgent && isAgentPathWithin(stateDir, resolved) && !agentPathEquals(resolved, params.canonicalPath);`;
+
+  return replaceOpenClawRuntimeSnippet(
+    source,
+    oldSnippet,
+    newSnippet,
+    'agentDir shape guard replacement',
+  );
+}
+
+function applyOpenClawAgentPathMaterializationPatchToSource(source) {
+  const withShapeGuard = applyOpenClawAgentDirShapeGuardPatch(source);
+  if (withShapeGuard.includes(OPENCLAW_AGENT_PATH_MATERIALIZATION_SENTINEL)) {
+    return {
+      source: withShapeGuard,
+      patched: withShapeGuard !== source,
+    };
+  }
+
+  const loadSchemaSnippet = `function loadSchemaWithPlugins() {
+\treturn loadGatewayRuntimeConfigSchema();
+}
+`;
+  let next = replaceOpenClawRuntimeSnippet(
+    withShapeGuard,
+    loadSchemaSnippet,
+    `${loadSchemaSnippet}${OPENCLAW_AGENT_PATH_MATERIALIZATION_HELPERS}`,
+    'loadSchemaWithPlugins anchor',
+  );
+
+  const configSetSnippet = `\t\tif (!parsed) return;
+\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: parsed.config,
+\t\t\trespond
+\t\t})) return;
+\t\tawait writeConfigFile(parsed.config, writeOptions);
+\t\trespond(true, {
+\t\t\tok: true,
+\t\t\tpath: createConfigIO().configPath,
+\t\t\tconfig: redactConfigObject(parsed.config, parsed.schema.uiHints)
+\t\t}, void 0);
+\t\tqueueSharedGatewayAuthGenerationRefresh(true, parsed.config, context);`;
+  const configSetReplacement = `\t\tif (!parsed) return;
+\t\tconst prepared = materializeConfigAgentPaths(parsed.config, snapshot.config);
+\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: prepared.config,
+\t\t\trespond
+\t\t})) return;
+\t\tawait ensureConfigAgentDirectories(prepared);
+\t\tawait writeConfigFile(prepared.config, writeOptions);
+\t\trespond(true, {
+\t\t\tok: true,
+\t\t\tpath: createConfigIO().configPath,
+\t\t\tconfig: redactConfigObject(prepared.config, parsed.schema.uiHints)
+\t\t}, void 0);
+\t\tqueueSharedGatewayAuthGenerationRefresh(true, prepared.config, context);`;
+  next = replaceOpenClawRuntimeSnippet(
+    next,
+    configSetSnippet,
+    configSetReplacement,
+    'config.set materialization',
+  );
+
+  const configPatchSecretSnippet = `\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: validated.config,
+\t\t\trespond
+\t\t})) return;
+\t\tconst changedPaths = diffConfigPaths(snapshot.config, validated.config);`;
+  const configPatchSecretReplacement = `\t\tconst prepared = materializeConfigAgentPaths(validated.config, snapshot.config);
+\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: prepared.config,
+\t\t\trespond
+\t\t})) return;
+\t\tconst changedPaths = diffConfigPaths(snapshot.config, prepared.config);`;
+  next = replaceOpenClawRuntimeSnippet(
+    next,
+    configPatchSecretSnippet,
+    configPatchSecretReplacement,
+    'config.patch materialization',
+  );
+  next = next
+    .replaceAll('redactConfigObject(validated.config, schemaPatch.uiHints)', 'redactConfigObject(prepared.config, schemaPatch.uiHints)')
+    .replaceAll('didSharedGatewayAuthChange(snapshot.config, validated.config)', 'didSharedGatewayAuthChange(snapshot.config, prepared.config)')
+    .replaceAll('await writeConfigFile(validated.config, writeOptions);', 'await ensureConfigAgentDirectories(prepared);\n\t\tawait writeConfigFile(prepared.config, writeOptions);')
+    .replaceAll('nextConfig: validated.config', 'nextConfig: prepared.config')
+    .replaceAll('queueSharedGatewayAuthGenerationRefresh(true, validated.config, context)', 'queueSharedGatewayAuthGenerationRefresh(true, prepared.config, context)');
+
+  const configApplySecretSnippet = `\t\tif (!parsed) return;
+\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: parsed.config,
+\t\t\trespond
+\t\t})) return;
+\t\tconst changedPaths = diffConfigPaths(snapshot.config, parsed.config);`;
+  const configApplySecretReplacement = `\t\tif (!parsed) return;
+\t\tconst prepared = materializeConfigAgentPaths(parsed.config, snapshot.config);
+\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: prepared.config,
+\t\t\trespond
+\t\t})) return;
+\t\tconst changedPaths = diffConfigPaths(snapshot.config, prepared.config);`;
+  next = replaceOpenClawRuntimeSnippet(
+    next,
+    configApplySecretSnippet,
+    configApplySecretReplacement,
+    'config.apply materialization',
+  );
+  next = next
+    .replaceAll('didSharedGatewayAuthChange(snapshot.config, parsed.config)', 'didSharedGatewayAuthChange(snapshot.config, prepared.config)')
+    .replaceAll('await writeConfigFile(parsed.config, writeOptions);', 'await ensureConfigAgentDirectories(prepared);\n\t\tawait writeConfigFile(prepared.config, writeOptions);')
+    .replaceAll('nextConfig: parsed.config', 'nextConfig: prepared.config')
+    .replaceAll('redactConfigObject(parsed.config, parsed.schema.uiHints)', 'redactConfigObject(prepared.config, parsed.schema.uiHints)')
+    .replaceAll('queueSharedGatewayAuthGenerationRefresh(true, parsed.config, context)', 'queueSharedGatewayAuthGenerationRefresh(true, prepared.config, context)');
+
+  return {
+    source: next,
+    patched: true,
+  };
+}
+
+async function resolveOpenClawRuntimeServerImplPath(runtimeDir) {
+  const distDir = path.join(runtimeDir, 'package', 'node_modules', 'openclaw', 'dist');
+  let entries;
+  try {
+    entries = await readdir(distDir, { withFileTypes: true });
+  } catch (error) {
+    throw new Error(
+      `[openclaw-runtime-patch] Cannot inspect OpenClaw runtime dist dir ${distDir}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  const matches = entries
+    .filter((entry) => entry.isFile() && /^server[.]impl-.*[.]js$/u.test(entry.name))
+    .map((entry) => path.join(distDir, entry.name))
+    .sort();
+
+  if (matches.length !== 1) {
+    throw new Error(
+      `[openclaw-runtime-patch] Expected exactly one OpenClaw server.impl bundle in ${distDir}, found ${matches.length}.`,
+    );
+  }
+
+  return matches[0];
+}
+
+export async function applyOpenClawRuntimeAgentPathMaterializationPatch({
+  runtimeDir,
+} = {}) {
+  const normalizedRuntimeDir = String(runtimeDir ?? '').trim();
+  if (!normalizedRuntimeDir) {
+    throw new Error('[openclaw-runtime-patch] runtimeDir is required.');
+  }
+
+  const serverImplPath = await resolveOpenClawRuntimeServerImplPath(normalizedRuntimeDir);
+  const source = await readFile(serverImplPath, 'utf8');
+  const patched = applyOpenClawAgentPathMaterializationPatchToSource(source);
+  if (!patched.patched) {
+    return {
+      status: 'already-patched',
+      serverImplPath,
+    };
+  }
+
+  await writeFile(serverImplPath, patched.source, 'utf8');
+  return {
+    status: 'patched',
+    serverImplPath,
+  };
+}
+
 export async function prepareOpenClawRuntimeFromSource({
   sourceRuntimeDir,
   resourceDir = DEFAULT_RESOURCE_DIR,
@@ -2754,6 +3170,9 @@ export async function prepareOpenClawRuntimeFromSource({
     `${JSON.stringify(manifest, null, 2)}\n`,
     'utf8',
   );
+  await applyOpenClawRuntimeAgentPathMaterializationPatch({
+    runtimeDir: path.join(resourceDir, 'runtime'),
+  });
 
   return {
     manifest,
@@ -2790,6 +3209,9 @@ export async function prepareOpenClawRuntimeFromStagedDirs({
     `${JSON.stringify(manifest, null, 2)}\n`,
     'utf8',
   );
+  await applyOpenClawRuntimeAgentPathMaterializationPatch({
+    runtimeDir: path.join(resourceDir, 'runtime'),
+  });
   await validatePreparedRuntimeSource(path.join(resourceDir, 'runtime'), manifest, {
     runtimeSupplementalPackages,
   });
@@ -3002,6 +3424,9 @@ export async function prepareOpenClawRuntime({
 }
 
 async function finalizePreparedOpenClawRuntime(result) {
+  await applyOpenClawRuntimeAgentPathMaterializationPatch({
+    runtimeDir: path.join(result.resourceDir, 'runtime'),
+  });
   if (shouldSyncBundledResourceMirror({ resourceDir: result.resourceDir })) {
     const packagedArtifacts = await syncPackagedOpenClawReleaseArtifacts({
       resourceDir: result.resourceDir,
@@ -3629,6 +4054,7 @@ async function runRobocopyCopy(sourceDir, targetDir) {
       stdio: 'inherit',
       env: process.env,
       shell: false,
+      windowsHide: true,
     });
 
     child.on('error', reject);
@@ -4277,6 +4703,7 @@ async function runCommand(command, args, options = {}) {
       stdio: 'inherit',
       env: resolvedEnv,
       shell: false,
+      windowsHide: true,
     });
 
     child.on('error', reject);
@@ -4296,6 +4723,7 @@ function commandExistsSync(command, { platform = process.platform, env = process
     stdio: 'ignore',
     env,
     shell: false,
+    windowsHide: true,
   });
 
   return !result.error && (result.status === 0 || result.status === 1);
@@ -4318,6 +4746,7 @@ async function runCommandCapture(command, args, options = {}) {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: resolvedEnv,
       shell: false,
+      windowsHide: true,
     });
 
     child.stdout?.on('data', (chunk) => {

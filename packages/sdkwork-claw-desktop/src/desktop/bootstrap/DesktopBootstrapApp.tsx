@@ -27,6 +27,7 @@ import {
   getAppInfo,
   getAppPaths,
   getDesktopKernelInfo,
+  ensureDesktopKernelRunning,
   isDesktopHostedRuntimeReadinessError,
   probeDesktopHostedRuntimeReadiness,
   setAppLanguage,
@@ -65,9 +66,14 @@ import {
   type DesktopBootstrapStateActions,
 } from './desktopBootstrapRuntime';
 import {
+  planBackgroundRuntimeReadinessAutoRecovery,
+  planStartupRuntimeReadinessRetryRecovery,
+  resolveBackgroundRuntimeReadinessRecoveryMode,
   resolveBackgroundRuntimeReadinessRecoveryToastCopy,
+  runStartupRuntimeReadinessRetryRecovery,
   retryBackgroundRuntimeReadinessRecovery,
   type BackgroundRuntimeReadinessRecoveryMode,
+  type StartupRuntimeReadinessRetryRecoveryRequest,
 } from './desktopBackgroundRuntimeReadinessRecovery';
 import {
   BACKGROUND_RUNTIME_READINESS_TOAST_ID,
@@ -110,18 +116,6 @@ function resolveBuiltInOpenClawInstanceIdFromSnapshot(
   readinessSnapshot: DesktopHostedRuntimeReadinessSnapshot | null | undefined,
 ) {
   return resolveBuiltInOpenClawInstanceFromSnapshot(readinessSnapshot)?.id ?? null;
-}
-
-function resolveBackgroundRuntimeReadinessRecoveryMode(
-  includedKernelIds: readonly string[] | null | undefined,
-): BackgroundRuntimeReadinessRecoveryMode {
-  if (!includedKernelIds?.length) {
-    return 'managed-openclaw';
-  }
-
-  return includedKernelIds.includes('openclaw')
-    ? 'managed-openclaw'
-    : 'generic-hosted-runtime';
 }
 
 function resolveErrorMessage(error: unknown, language: StartupAppearanceSnapshot['language']) {
@@ -298,10 +292,15 @@ export function DesktopBootstrapApp({
   const startupEvidenceContextRef = useRef<DesktopStartupEvidenceContext | null>(null);
   const startupEvidenceSignatureRef = useRef('');
   const backgroundRuntimeReadinessNotificationSignatureRef = useRef('');
+  const backgroundRuntimeReadinessAutoRecoveryPendingSignatureRef = useRef('');
+  const backgroundRuntimeReadinessAutoRecoveryAttemptCountRef = useRef(0);
+  const backgroundRuntimeReadinessAutoRecoveryTimerRef = useRef<number | null>(null);
   const backgroundRuntimeReadinessRecoveryPendingRef = useRef(false);
   const backgroundRuntimeReadinessRecoveryInFlightRef = useRef(false);
   const backgroundRuntimeReadinessRecoveryModeRef =
-    useRef<BackgroundRuntimeReadinessRecoveryMode>('managed-openclaw');
+    useRef<BackgroundRuntimeReadinessRecoveryMode>('generic-hosted-runtime');
+  const startupRuntimeReadinessRetryRecoveryRequestRef =
+    useRef<StartupRuntimeReadinessRetryRecoveryRequest | null>(null);
   const runtimeReadinessFailureRef = useRef(false);
 
   const stage = useMemo(
@@ -528,9 +527,48 @@ export function DesktopBootstrapApp({
     );
   });
 
+  const clearBackgroundRuntimeReadinessAutoRecoveryTimer = useEffectEvent(() => {
+    if (!backgroundRuntimeReadinessAutoRecoveryTimerRef.current) {
+      backgroundRuntimeReadinessAutoRecoveryPendingSignatureRef.current = '';
+      return;
+    }
+
+    window.clearTimeout(backgroundRuntimeReadinessAutoRecoveryTimerRef.current);
+    backgroundRuntimeReadinessAutoRecoveryTimerRef.current = null;
+    backgroundRuntimeReadinessAutoRecoveryPendingSignatureRef.current = '';
+  });
+
+  const scheduleBackgroundRuntimeReadinessAutoRecovery = useEffectEvent((
+    notification: BackgroundRuntimeReadinessNotification | null,
+  ) => {
+    const recoveryPlan = planBackgroundRuntimeReadinessAutoRecovery({
+      currentRunId: bootRunIdRef.current,
+      status,
+      shouldRenderShell,
+      notification,
+      recoveryInFlight: backgroundRuntimeReadinessRecoveryInFlightRef.current,
+      attemptCount: backgroundRuntimeReadinessAutoRecoveryAttemptCountRef.current,
+      pendingSignature: backgroundRuntimeReadinessAutoRecoveryPendingSignatureRef.current,
+    });
+    if (!recoveryPlan) {
+      return;
+    }
+
+    clearBackgroundRuntimeReadinessAutoRecoveryTimer();
+    backgroundRuntimeReadinessAutoRecoveryPendingSignatureRef.current = recoveryPlan.signature;
+    backgroundRuntimeReadinessAutoRecoveryTimerRef.current = window.setTimeout(() => {
+      backgroundRuntimeReadinessAutoRecoveryTimerRef.current = null;
+      backgroundRuntimeReadinessAutoRecoveryPendingSignatureRef.current = '';
+      backgroundRuntimeReadinessAutoRecoveryAttemptCountRef.current =
+        recoveryPlan.nextAttemptCount;
+      void retryBackgroundRuntimeReadiness();
+    }, recoveryPlan.delayMs);
+  });
+
   const clearBackgroundRuntimeReadinessFailureState = useEffectEvent((options?: {
     dismissToast?: boolean;
   }) => {
+    clearBackgroundRuntimeReadinessAutoRecoveryTimer();
     const resetPlan = resolveBackgroundRuntimeReadinessToastResetPlan(
       backgroundRuntimeReadinessNotificationSignatureRef.current,
       options,
@@ -592,6 +630,7 @@ export function DesktopBootstrapApp({
           clearBackgroundRuntimeReadinessFailureState({ dismissToast: false });
         },
         restartInstance: async (instanceId) => studioRestartInstance(instanceId),
+        ensureDesktopKernelRunning: async () => ensureDesktopKernelRunning(),
         reconnectHostedRuntimeReadiness: async () => {
           await connectDesktopRuntime();
         },
@@ -619,6 +658,11 @@ export function DesktopBootstrapApp({
         },
         runId,
       );
+      setBackgroundRuntimeReadinessNotification({
+        runId,
+        message: resolveErrorMessage(error, appearance.language),
+        recoveryMode,
+      });
       toast.error(retryCopy.failedTitle, {
         id: retryToastId,
         description: resolveErrorMessage(error, appearance.language),
@@ -635,6 +679,18 @@ export function DesktopBootstrapApp({
     }
   });
 
+  const handleStartupRetry = useEffectEvent(() => {
+    startupRuntimeReadinessRetryRecoveryRequestRef.current =
+      planStartupRuntimeReadinessRetryRecovery({
+        runtimeReadinessFailed: runtimeReadinessFailureRef.current,
+        recoveryMode: backgroundRuntimeReadinessRecoveryModeRef.current,
+        instanceId: resolveBuiltInOpenClawInstanceIdFromSnapshot(
+          startupEvidenceContextRef.current?.readinessSnapshot,
+        ),
+      });
+    setRetrySeed((value) => value + 1);
+  });
+
   useEffect(() => {
     const toastPlan = resolveBackgroundRuntimeReadinessToastPlan({
       language: appearance.language,
@@ -644,6 +700,7 @@ export function DesktopBootstrapApp({
       lastShownSignature: backgroundRuntimeReadinessNotificationSignatureRef.current,
       notification: backgroundRuntimeReadinessNotification,
     });
+    scheduleBackgroundRuntimeReadinessAutoRecovery(backgroundRuntimeReadinessNotification);
     if (!toastPlan) {
       return;
     }
@@ -671,6 +728,7 @@ export function DesktopBootstrapApp({
     backgroundRuntimeReadinessNotification,
     openBackgroundRuntimeDetails,
     retryBackgroundRuntimeReadiness,
+    scheduleBackgroundRuntimeReadinessAutoRecovery,
     shouldRenderShell,
     status,
   ]);
@@ -805,6 +863,7 @@ export function DesktopBootstrapApp({
       isTauriRuntime,
       getAppInfo,
       getAppPaths,
+      blockOnReadiness: false,
       probeHostedRuntimeReadiness: async () => {
         const kernelInfo = await captureDesktopKernelInfo(runId);
         const recoveryMode = resolveBackgroundRuntimeReadinessRecoveryMode(
@@ -912,6 +971,8 @@ export function DesktopBootstrapApp({
         const builtInInstance = resolveBuiltInOpenClawInstanceFromSnapshot(readinessSnapshot);
         const shouldNotifyRecoveryReady = backgroundRuntimeReadinessRecoveryPendingRef.current;
         backgroundRuntimeReadinessRecoveryPendingRef.current = false;
+        clearBackgroundRuntimeReadinessAutoRecoveryTimer();
+        backgroundRuntimeReadinessAutoRecoveryAttemptCountRef.current = 0;
         setBackgroundRuntimeReadinessNotification(null);
         runtimeReadinessFailureRef.current = false;
         startupEvidenceContextRef.current = {
@@ -1065,7 +1126,7 @@ export function DesktopBootstrapApp({
         });
         logStartup(
           'warn',
-          'Hosted desktop runtime readiness background probe failed without a structured snapshot.',
+          'Hosted desktop runtime readiness probe failed without a structured snapshot.',
           {
             error,
           },
@@ -1091,6 +1152,9 @@ export function DesktopBootstrapApp({
 
   const runBootstrap = useEffectEvent(async () => {
     const runId = bootRunIdRef.current + 1;
+    const startupRuntimeReadinessRetryRecoveryRequest =
+      startupRuntimeReadinessRetryRecoveryRequestRef.current;
+    startupRuntimeReadinessRetryRecoveryRequestRef.current = null;
     bootRunIdRef.current = runId;
     splashHandoffRunIdRef.current = 0;
     const desktopWindow = getDesktopWindow();
@@ -1100,9 +1164,11 @@ export function DesktopBootstrapApp({
     startupEvidenceContextRef.current = null;
     startupEvidenceSignatureRef.current = '';
     backgroundRuntimeReadinessNotificationSignatureRef.current = '';
+    clearBackgroundRuntimeReadinessAutoRecoveryTimer();
+    backgroundRuntimeReadinessAutoRecoveryAttemptCountRef.current = 0;
     backgroundRuntimeReadinessRecoveryPendingRef.current = false;
     backgroundRuntimeReadinessRecoveryInFlightRef.current = false;
-    backgroundRuntimeReadinessRecoveryModeRef.current = 'managed-openclaw';
+    backgroundRuntimeReadinessRecoveryModeRef.current = 'generic-hosted-runtime';
     runtimeReadinessFailureRef.current = false;
     toast.dismiss(BACKGROUND_RUNTIME_READINESS_TOAST_ID);
     setBackgroundRuntimeReadinessNotification(null);
@@ -1147,6 +1213,38 @@ export function DesktopBootstrapApp({
         });
     }
 
+    if (startupRuntimeReadinessRetryRecoveryRequest) {
+      try {
+        logStartup(
+          'info',
+          'Recovering hosted runtime readiness before retrying desktop startup.',
+          {
+            recoveryMode: startupRuntimeReadinessRetryRecoveryRequest.recoveryMode,
+            instanceId: startupRuntimeReadinessRetryRecoveryRequest.instanceId,
+          },
+          runId,
+        );
+        await runStartupRuntimeReadinessRetryRecovery({
+          request: startupRuntimeReadinessRetryRecoveryRequest,
+          clearFailureState: () => {
+            runtimeReadinessFailureRef.current = false;
+            clearBackgroundRuntimeReadinessFailureState();
+          },
+          restartInstance: async (instanceId) => studioRestartInstance(instanceId),
+          ensureDesktopKernelRunning: async () => ensureDesktopKernelRunning(),
+        });
+      } catch (error) {
+        logStartup(
+          'warn',
+          'Hosted runtime readiness recovery before startup retry failed; continuing with the normal startup probe.',
+          {
+            error,
+          },
+          runId,
+        );
+      }
+    }
+
     await runDesktopBootstrapSequence({
       pathname: window.location.pathname,
       runId,
@@ -1173,7 +1271,9 @@ export function DesktopBootstrapApp({
       onBootstrapFailed: async (error) => {
         await persistStartupEvidence({
           status: 'failed',
-          phase: 'bootstrap-failed',
+          phase: runtimeReadinessFailureRef.current
+            ? 'runtime-readiness-failed'
+            : 'bootstrap-failed',
           error,
           runId,
         });
@@ -1214,9 +1314,7 @@ export function DesktopBootstrapApp({
         status={status}
         errorMessage={errorMessage}
         isVisible={isSplashVisible || status === 'error'}
-        onRetry={() => {
-          setRetrySeed((value) => value + 1);
-        }}
+        onRetry={handleStartupRetry}
       />
     </div>
   );

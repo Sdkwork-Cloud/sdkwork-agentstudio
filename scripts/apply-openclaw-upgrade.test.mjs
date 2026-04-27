@@ -272,3 +272,16 @@ test('workspace exposes the apply-openclaw-upgrade entrypoint and validates it i
     'check:desktop-openclaw-runtime must validate the apply-openclaw-upgrade workflow contract',
   );
 });
+
+test('apply-openclaw-upgrade hides child Node workflow windows on Windows', () => {
+  const source = readFileSync(
+    path.join(rootDir, 'scripts', 'apply-openclaw-upgrade.mjs'),
+    'utf8',
+  );
+
+  assert.match(
+    source,
+    /spawn\(process\.execPath, \[scriptRelativePath, \.\.\.args\][\s\S]*windowsHide:\s*true/,
+    'OpenClaw upgrade workflow subcommands must not show Windows console windows',
+  );
+});

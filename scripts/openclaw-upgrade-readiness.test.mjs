@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
 import {
   assessOpenClawUpgradeReadiness,
 } from './openclaw-upgrade-readiness.mjs';
+
+const rootDir = path.resolve(import.meta.dirname, '..');
 
 function createJson(filePath, value) {
   mkdirSync(path.dirname(filePath), { recursive: true });
@@ -105,6 +107,19 @@ await runTest('assessOpenClawUpgradeReadiness reports ready when local upgrade i
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
+});
+
+await runTest('OpenClaw upgrade readiness git probes hide Windows console windows', async () => {
+  const source = readFileSync(
+    path.join(rootDir, 'scripts', 'openclaw-upgrade-readiness.mjs'),
+    'utf8',
+  );
+
+  assert.match(
+    source,
+    /spawnSync\('git', \['-C', repoDir, 'status', '--short'\][\s\S]*windowsHide:\s*true/,
+    'OpenClaw upgrade readiness git probes must not show Windows console windows',
+  );
 });
 
 await runTest('assessOpenClawUpgradeReadiness reports missing local upgrade inputs honestly', async () => {

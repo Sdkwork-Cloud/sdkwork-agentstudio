@@ -3,6 +3,7 @@ import {
   sanitizeChatOperationalMessageText,
   shouldPromoteChatOperationalMessageToSystem,
 } from './chatMessageStructuredContent.ts';
+import { normalizeChatMessageTextEncoding } from './chatTextEncoding.ts';
 
 export type OpenClawMessagePresentationRole = 'user' | 'assistant' | 'system' | 'tool';
 
@@ -535,7 +536,8 @@ function normalizeUserVisibleText(
   role: OpenClawMessagePresentationRole,
   phase: string | null,
 ) {
-  if (!rawText.trim()) {
+  const normalizedRawText = normalizeChatMessageTextEncoding(rawText);
+  if (!normalizedRawText.trim()) {
     return '';
   }
 
@@ -544,21 +546,21 @@ function normalizeUserVisibleText(
       return '';
     }
 
-    return stripAssistantInternalScaffolding(rawText);
+    return stripAssistantInternalScaffolding(normalizedRawText);
   }
 
   if (role === 'user') {
     const normalized = normalizeInlineWhitespace(
-      stripMessageIdHints(stripInboundMetadata(stripEnvelope(rawText))),
+      stripMessageIdHints(stripInboundMetadata(stripEnvelope(normalizedRawText))),
     );
     return isOpenClawHiddenControlUserPayload(payload, normalized) ? '' : normalized;
   }
 
   if (role === 'system') {
-    return sanitizeChatOperationalMessageText(rawText);
+    return sanitizeChatOperationalMessageText(normalizedRawText);
   }
 
-  return rawText.trim();
+  return normalizedRawText.trim();
 }
 
 export function isOpenClawSilentReplyText(value: string) {

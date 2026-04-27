@@ -6,10 +6,9 @@ use crate::{
             HostPlatformStatusRecord, InternalNodeSessionRecord, KernelChatAgentProfile,
             KernelChatMessage, KernelChatRun, KernelChatSession, ManageRolloutListResult,
             ManageRolloutPreview, ManageRolloutRecord, PersistedKernelChatAgentRecord,
-            PreviewRolloutInput,
-            StudioConversationRecord, StudioCreateInstanceInput,
-            StudioCreateKernelAgentInput, StudioCreatedKernelAgentRecord,
-            StudioCreateKernelChatSessionInput, StudioInstanceConfig, StudioInstanceDetailRecord,
+            PreviewRolloutInput, StudioConversationRecord, StudioCreateInstanceInput,
+            StudioCreateKernelAgentInput, StudioCreateKernelChatSessionInput,
+            StudioCreatedKernelAgentRecord, StudioInstanceConfig, StudioInstanceDetailRecord,
             StudioInstanceRecord, StudioInstanceStatus, StudioKernelAgentCreationCapability,
             StudioOpenClawGatewayInvokeOptions, StudioOpenClawGatewayInvokeRequest,
             StudioPatchKernelChatSessionInput, StudioStartKernelChatRunInput,
@@ -1018,8 +1017,8 @@ pub async fn get_desktop_host_runtime(
     let state = state.inner().clone();
     Ok(
         runtime::run_blocking_async("studio.get_desktop_host_runtime", move || {
-            let desktop_host = state.context.desktop_host_snapshot();
-            let desktop_host_status = state.context.desktop_host_status();
+            let _ = state.context.ensure_desktop_host_runtime()?;
+            let (desktop_host, desktop_host_status) = state.context.desktop_host_runtime_state()?;
 
             Ok(desktop_host.map(|snapshot| {
                 let lifecycle = desktop_host_status
@@ -1061,8 +1060,8 @@ pub async fn get_host_platform_status(
     let state = state.inner().clone();
     runtime::run_blocking_async("studio.get_host_platform_status", move || {
         let config = state.config_snapshot();
-        let desktop_host = state.context.desktop_host_snapshot();
-        let desktop_host_status = state.context.desktop_host_status();
+        let _ = state.context.ensure_desktop_host_runtime()?;
+        let (desktop_host, desktop_host_status) = state.context.desktop_host_runtime_state()?;
         state.context.services.studio.get_host_platform_status(
             &state.paths,
             &config,
@@ -1141,8 +1140,8 @@ pub async fn list_node_sessions(
     let state = state.inner().clone();
     runtime::run_blocking_async("studio.list_node_sessions", move || {
         let config = state.config_snapshot();
-        let desktop_host = state.context.desktop_host_snapshot();
-        let desktop_host_status = state.context.desktop_host_status();
+        let _ = state.context.ensure_desktop_host_runtime()?;
+        let (desktop_host, desktop_host_status) = state.context.desktop_host_runtime_state()?;
         state.context.services.studio.list_node_sessions(
             &state.paths,
             &config,
@@ -1163,7 +1162,8 @@ pub async fn get_host_endpoints(
     let state = state.inner().clone();
     runtime::run_blocking_async("studio.get_host_endpoints", move || {
         let config = state.config_snapshot();
-        let desktop_host = state.context.desktop_host_snapshot();
+        let _ = state.context.ensure_desktop_host_runtime()?;
+        let (desktop_host, _desktop_host_status) = state.context.desktop_host_runtime_state()?;
         state.context.services.studio.get_host_endpoints(
             &state.paths,
             &config,
@@ -1337,6 +1337,87 @@ mod tests {
             assert!(
                 segment.contains("StudioInstanceStatus::Error"),
                 "{fn_name} should emit an error status when the manual lifecycle action fails"
+            );
+        }
+    }
+
+    #[test]
+    fn desktop_host_runtime_command_ensures_embedded_host_before_returning_descriptor() {
+        let source = include_str!("studio_commands.rs");
+        let production_source = source
+            .split("#[cfg(test)]")
+            .next()
+            .expect("production source");
+        let segment = command_source_segment(production_source, "get_desktop_host_runtime");
+
+        let ensure_index = segment
+            .find("state.context.ensure_desktop_host_runtime()")
+            .expect("get_desktop_host_runtime should self-heal the embedded desktop host first");
+        let state_index = segment
+            .find("state.context.desktop_host_runtime_state()?")
+            .expect("get_desktop_host_runtime should read the desktop host state");
+
+        assert!(
+            ensure_index < state_index,
+            "get_desktop_host_runtime must ensure the embedded host before exposing its descriptor"
+        );
+    }
+
+    #[test]
+    fn desktop_host_projection_commands_ensure_embedded_host_before_reading_shared_state() {
+        let source = include_str!("studio_commands.rs");
+        let production_source = source
+            .split("#[cfg(test)]")
+            .next()
+            .expect("production source");
+
+        for fn_name in [
+            "get_host_platform_status",
+            "list_node_sessions",
+            "get_host_endpoints",
+        ] {
+            let segment = command_source_segment(production_source, fn_name);
+            let ensure_index = segment
+                .find("state.context.ensure_desktop_host_runtime()")
+                .unwrap_or_else(|| {
+                    panic!("{fn_name} should self-heal the embedded desktop host first")
+                });
+            let state_index = segment
+                .find("state.context.desktop_host_runtime_state()?")
+                .unwrap_or_else(|| {
+                    panic!("{fn_name} should read the desktop host state after ensuring it")
+                });
+
+            assert!(
+                ensure_index < state_index,
+                "{fn_name} must ensure the embedded host before reading shared desktop host state"
+            );
+        }
+    }
+
+    #[test]
+    fn desktop_host_projection_commands_read_snapshot_and_status_atomically() {
+        let source = include_str!("studio_commands.rs");
+        let production_source = source
+            .split("#[cfg(test)]")
+            .next()
+            .expect("production source");
+
+        for fn_name in [
+            "get_desktop_host_runtime",
+            "get_host_platform_status",
+            "list_node_sessions",
+            "get_host_endpoints",
+        ] {
+            let segment = command_source_segment(production_source, fn_name);
+            assert!(
+                segment.contains("state.context.desktop_host_runtime_state()?"),
+                "{fn_name} should read the desktop host snapshot/status from one locked state projection"
+            );
+            assert!(
+                !segment.contains("state.context.desktop_host_snapshot()")
+                    && !segment.contains("state.context.desktop_host_status()"),
+                "{fn_name} should not read desktop host snapshot/status through separate lock acquisitions"
             );
         }
     }

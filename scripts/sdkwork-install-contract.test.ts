@@ -6,6 +6,13 @@ const root = process.cwd();
 const removedInstallFeaturePackage = ['sdkwork', 'claw', 'install'].join('-');
 const removedInstallWorkspacePath = ['packages', removedInstallFeaturePackage].join('/');
 const removedInstallDependencyName = ['@sdkwork', ['claw', 'install'].join('-')].join('/');
+const removedSetupPattern = new RegExp([
+  ['hub', 'installer'].join('[-_ ]?'),
+  ['hub', 'installer'].join(''),
+  ['installer', 'hub'].join('[-_ ]?'),
+  ['Hub', 'Installer'].join(''),
+  ['HUB', 'INSTALLER'].join('_'),
+].join('|'), 'i');
 const removedInstallImportPattern = new RegExp(
   removedInstallDependencyName.replace('/', '\\/'),
 );
@@ -23,6 +30,59 @@ function readJson<T>(relPath: string): T {
 
 function exists(relPath: string) {
   return fs.existsSync(path.join(root, relPath));
+}
+
+const scannedTextExtensions = new Set([
+  '.cjs',
+  '.css',
+  '.html',
+  '.json',
+  '.md',
+  '.mjs',
+  '.rs',
+  '.toml',
+  '.ts',
+  '.tsx',
+  '.txt',
+  '.yaml',
+  '.yml',
+]);
+const ignoredScanDirs = new Set([
+  '.git',
+  '.turbo',
+  'dist',
+  'node_modules',
+  'target',
+]);
+
+function shouldScanFile(absPath: string) {
+  const ext = path.extname(absPath);
+  return scannedTextExtensions.has(ext) || path.basename(absPath) === 'package.json';
+}
+
+function collectScannedFiles(relPath: string): string[] {
+  const absPath = path.join(root, relPath);
+  if (!fs.existsSync(absPath)) {
+    return [];
+  }
+
+  const stats = fs.statSync(absPath);
+  if (stats.isFile()) {
+    return shouldScanFile(absPath) ? [relPath] : [];
+  }
+
+  if (!stats.isDirectory() || ignoredScanDirs.has(path.basename(absPath))) {
+    return [];
+  }
+
+  return fs.readdirSync(absPath, { withFileTypes: true }).flatMap((entry) => {
+    const childRelPath = path.join(relPath, entry.name);
+    if (entry.isDirectory() && ignoredScanDirs.has(entry.name)) {
+      return [];
+    }
+
+    return collectScannedFiles(childRelPath);
+  });
 }
 
 function runTest(name: string, fn: () => void) {
@@ -60,6 +120,22 @@ runTest('removed install feature package stays deleted and shell remains free of
   assert.doesNotMatch(sidebarSource, /to:\s*'\/install'/);
   assert.doesNotMatch(routeSurface, /"\/install"/);
   assert.doesNotMatch(routeSurface, /"\/install\/:method"/);
+});
+
+runTest('removed setup product leaves no source, script, docs, or config residue', () => {
+  const scannedFiles = [
+    '.env.example',
+    'package.json',
+    'pnpm-lock.yaml',
+    'pnpm-workspace.yaml',
+    'config',
+    'docs',
+    'packages',
+    'scripts',
+  ].flatMap(collectScannedFiles);
+  const matches = scannedFiles.filter((relPath) => removedSetupPattern.test(read(relPath)));
+
+  assert.deepEqual(matches, []);
 });
 
 runTest('Claw Studio routes OpenClaw setup through docs or instance onboarding instead of the removed install page', () => {

@@ -29,6 +29,7 @@ export interface DesktopRuntimeConnectionOptions {
   getAppInfo: () => Promise<DesktopAppInfo | null>;
   getAppPaths: () => Promise<DesktopAppPaths | null>;
   probeHostedRuntimeReadiness: () => Promise<DesktopHostedRuntimeReadinessSnapshot>;
+  blockOnReadiness?: boolean;
   captureLocalAiProxyEvidence: () => Promise<DesktopKernelInfo['localAiProxy'] | null>;
   onBaseContext: (
     context: DesktopRuntimeConnectionBaseContext,
@@ -40,6 +41,46 @@ export interface DesktopRuntimeConnectionOptions {
     context: DesktopRuntimeConnectionFailureContext,
   ) => Promise<void> | void;
   log?: (level: StartupLogLevel, message: string, details?: unknown) => void;
+}
+
+async function notifyHostedRuntimeReadiness(
+  options: DesktopRuntimeConnectionOptions,
+  baseContext: DesktopRuntimeConnectionBaseContext,
+): Promise<void> {
+  try {
+    const readinessSnapshot = await options.probeHostedRuntimeReadiness();
+    const localAiProxy = await captureLocalAiProxyEvidence(options);
+
+    await options.onReadinessReady({
+      ...baseContext,
+      readinessSnapshot,
+      localAiProxy,
+    });
+  } catch (error) {
+    const localAiProxy = await captureLocalAiProxyEvidence(options);
+
+    await options.onReadinessFailed({
+      ...baseContext,
+      error,
+      localAiProxy,
+    });
+    throw error;
+  }
+}
+
+async function captureLocalAiProxyEvidence(
+  options: DesktopRuntimeConnectionOptions,
+): Promise<DesktopKernelInfo['localAiProxy'] | null> {
+  try {
+    return await options.captureLocalAiProxyEvidence();
+  } catch (error) {
+    options.log?.(
+      'warn',
+      'Local AI proxy evidence capture failed during desktop runtime startup; continuing with null evidence.',
+      { error },
+    );
+    return null;
+  }
 }
 
 export async function connectDesktopRuntimeDuringStartup(
@@ -66,37 +107,19 @@ export async function connectDesktopRuntimeDuringStartup(
 
   options.log?.(
     'info',
-    'Desktop runtime metadata connected. Hosted runtime readiness will continue in the background.',
+    options.blockOnReadiness === false
+      ? 'Desktop runtime metadata connected. Continuing shell launch while hosted runtime readiness is checked in the background.'
+      : 'Desktop runtime metadata connected. Waiting for hosted runtime readiness before launching the shell.',
   );
 
-  const readinessTask = (async () => {
-    try {
-      const readinessSnapshot = await options.probeHostedRuntimeReadiness();
-      const localAiProxy = await options.captureLocalAiProxyEvidence();
-
-      await options.onReadinessReady({
-        ...baseContext,
-        readinessSnapshot,
-        localAiProxy,
-      });
-    } catch (error) {
-      const localAiProxy = await options.captureLocalAiProxyEvidence();
-
-      await options.onReadinessFailed({
-        ...baseContext,
+  if (options.blockOnReadiness === false) {
+    void notifyHostedRuntimeReadiness(options, baseContext).catch((error) => {
+      options.log?.('warn', 'Hosted runtime readiness finished with a background failure.', {
         error,
-        localAiProxy,
       });
-    }
-  })();
+    });
+    return;
+  }
 
-  void readinessTask.catch((error) => {
-    options.log?.(
-      'warn',
-      'Hosted runtime readiness background handling failed unexpectedly.',
-      {
-        error,
-      },
-    );
-  });
+  await notifyHostedRuntimeReadiness(options, baseContext);
 }

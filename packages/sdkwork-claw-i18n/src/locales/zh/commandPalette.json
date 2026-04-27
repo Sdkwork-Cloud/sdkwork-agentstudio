@@ -65,10 +65,6 @@
       "title": "前往 AI 对话",
       "subtitle": "与本地模型交流"
     },
-    "codebox": {
-      "title": "前往 CodeBox",
-      "subtitle": "打开预置的 CodeBox 集成路由"
-    },
     "providerCenter": {
       "title": "前往模型配置中心",
       "subtitle": "管理 LLM、Embedding 与路由配置"
@@ -80,10 +76,6 @@
     "settings": {
       "title": "前往设置",
       "subtitle": "偏好与配置"
-    },
-    "terminal": {
-      "title": "打开终端",
-      "subtitle": "启动本地 CLI"
     },
     "guided": {
       "title": "分步安装",

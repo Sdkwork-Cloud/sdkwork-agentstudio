@@ -48,7 +48,7 @@ async fn get_host_platform_status(
 
     Ok(Json(HostPlatformStatusRecord {
         mode: state.mode.to_string(),
-        lifecycle: resolve_host_platform_lifecycle(&state, updated_at).to_string(),
+        lifecycle: "ready".to_string(),
         distribution_family: state.host_platform_distribution_family().to_string(),
         deployment_family: state.deployment_family.clone(),
         accelerator_profile: state.accelerator_profile.clone(),
@@ -66,54 +66,6 @@ async fn get_host_platform_status(
         available_capability_keys,
         updated_at,
     }))
-}
-
-fn resolve_host_platform_lifecycle(state: &ServerState, updated_at: u64) -> &'static str {
-    if state.mode != "desktopCombined" {
-        return "ready";
-    }
-
-    let runtime_lifecycle = state
-        .manage_openclaw_provider
-        .get_runtime(updated_at)
-        .ok()
-        .map(|projection| projection.lifecycle);
-    let gateway_lifecycle = state
-        .manage_openclaw_provider
-        .get_gateway(updated_at)
-        .ok()
-        .map(|projection| projection.lifecycle);
-
-    merge_hosted_openclaw_lifecycle(runtime_lifecycle.as_deref(), gateway_lifecycle.as_deref())
-}
-
-fn merge_hosted_openclaw_lifecycle(
-    runtime_lifecycle: Option<&str>,
-    gateway_lifecycle: Option<&str>,
-) -> &'static str {
-    let Some(runtime_lifecycle) = runtime_lifecycle else {
-        return "degraded";
-    };
-    let Some(gateway_lifecycle) = gateway_lifecycle else {
-        return "degraded";
-    };
-
-    if runtime_lifecycle == "ready" && gateway_lifecycle == "ready" {
-        return "ready";
-    }
-
-    for lifecycle in [runtime_lifecycle, gateway_lifecycle] {
-        match lifecycle {
-            "degraded" => return "degraded",
-            "stopping" => return "stopping",
-            "starting" => return "starting",
-            "stopped" => return "stopped",
-            "inactive" => return "inactive",
-            _ => {}
-        }
-    }
-
-    "degraded"
 }
 
 async fn list_node_sessions(

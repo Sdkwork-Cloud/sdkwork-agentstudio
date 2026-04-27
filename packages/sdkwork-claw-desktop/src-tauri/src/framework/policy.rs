@@ -7,7 +7,6 @@ use crate::framework::{
     paths::AppPaths,
     FrameworkError, Result,
 };
-use sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_config_file_path;
 use serde_json::Value;
 use std::{
     ffi::OsString,
@@ -336,7 +335,7 @@ fn canonical_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
     paths
         .kernel_paths("openclaw")
         .map(|kernel| kernel.config_file)
-        .unwrap_or_else(|_| build_standard_openclaw_config_file_path(&paths.user_root))
+        .expect("canonical openclaw config path")
 }
 
 fn resolve_openclaw_state_root(config_path: &Path) -> PathBuf {

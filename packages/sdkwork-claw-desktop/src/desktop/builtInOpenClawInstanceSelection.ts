@@ -1,4 +1,5 @@
 import {
+  isBuiltInOpenClawInstanceId,
   type StudioInstanceRecord,
 } from '@sdkwork/claw-infrastructure';
 
@@ -38,7 +39,7 @@ function isBuiltInOpenClawInstance(instance: StudioInstanceRecord): boolean {
   return (
     instance.runtimeKind === 'openclaw'
     && instance.deploymentMode === 'local-managed'
-    && instance.transportKind === 'openclawGatewayWs'
+    && (instance.isBuiltIn === true || isBuiltInOpenClawInstanceId(instance.id))
   );
 }
 
@@ -75,9 +76,14 @@ export function resolveBuiltInOpenClawInstance(
     return null;
   }
 
+  const candidates = instances.filter(isBuiltInOpenClawInstance);
+  if (candidates.length === 0) {
+    return null;
+  }
+
   const preferredInstanceId = normalizeRequiredString(options.preferredInstanceId);
   if (preferredInstanceId) {
-    const preferredInstance = instances.find(
+    const preferredInstance = candidates.find(
       (instance) => normalizeRequiredString(instance.id) === preferredInstanceId,
     );
     if (preferredInstance) {
@@ -85,19 +91,15 @@ export function resolveBuiltInOpenClawInstance(
     }
   }
 
-  const rankedByGateway = instances
+  const rankedByGateway = candidates
     .map((instance, index) => ({
       instance,
       index,
       score: calculateGatewayMatchScore(instance, options),
-      builtInOpenClawPriority: isBuiltInOpenClawInstance(instance) ? 1 : 0,
     }))
     .sort((left, right) => {
       if (right.score !== left.score) {
         return right.score - left.score;
-      }
-      if (right.builtInOpenClawPriority !== left.builtInOpenClawPriority) {
-        return right.builtInOpenClawPriority - left.builtInOpenClawPriority;
       }
       return left.index - right.index;
     });
@@ -106,20 +108,15 @@ export function resolveBuiltInOpenClawInstance(
     return rankedByGateway[0].instance;
   }
 
-  const explicitBuiltInInstance = instances.find((instance) => instance.isBuiltIn);
+  const explicitBuiltInInstance = candidates.find((instance) => instance.isBuiltIn);
   if (explicitBuiltInInstance) {
     return explicitBuiltInInstance;
   }
 
-  const defaultInstance = instances.find((instance) => instance.isDefault);
+  const defaultInstance = candidates.find((instance) => instance.isDefault);
   if (defaultInstance) {
     return defaultInstance;
   }
 
-  const builtInOpenClawInstance = instances.find(isBuiltInOpenClawInstance);
-  if (builtInOpenClawInstance) {
-    return builtInOpenClawInstance;
-  }
-
-  return instances[0] ?? null;
+  return candidates[0] ?? null;
 }

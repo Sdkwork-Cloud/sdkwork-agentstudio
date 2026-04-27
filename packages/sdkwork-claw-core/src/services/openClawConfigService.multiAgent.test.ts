@@ -63,7 +63,7 @@ function createPlatformBridgeStub(overrides: Partial<PlatformAPI> = {}): Platfor
 }
 
 await runTest(
-  'openClawConfigService resolves agent install paths with OpenClaw-compatible defaults before the config entry exists',
+  'openClawConfigService resolves agent install paths from standard roots before the config entry exists',
   async () => {
     const { configurePlatformBridge, getPlatformBridge } = await import('@sdkwork/claw-infrastructure');
     const { openClawConfigService } = await import('./openClawConfigService.ts');
@@ -73,6 +73,7 @@ await runTest(
   agents: {
     defaults: {
       workspace: "D:/OpenClaw/workspace",
+      agentDir: "D:/OpenClaw/agents",
     },
   },
 }`;
@@ -97,7 +98,7 @@ await runTest(
       assert.equal(researchPlan.workspace, 'D:/OpenClaw/.openclaw/workspace-research-crew');
       assert.equal(researchPlan.agentDir, 'D:/OpenClaw/.openclaw/agents/research-crew/agent');
       assert.equal(mainPlan.id, 'main');
-      assert.equal(mainPlan.workspace, 'D:/OpenClaw/workspace');
+      assert.equal(mainPlan.workspace, 'D:/OpenClaw/.openclaw/workspace');
       assert.equal(mainPlan.agentDir, 'D:/OpenClaw/.openclaw/agents/main/agent');
     } finally {
       configurePlatformBridge(originalBridge);
@@ -220,6 +221,13 @@ await runTest(
           !Array.isArray(snapshot.root.agents) &&
           JSON.stringify((snapshot.root.agents as Record<string, unknown>).defaults).includes('"maxChildrenPerAgent":5'),
         true,
+      );
+      assert.equal(
+        snapshot.root.agents &&
+          typeof snapshot.root.agents === 'object' &&
+          !Array.isArray(snapshot.root.agents) &&
+          JSON.stringify((snapshot.root.agents as Record<string, unknown>).defaults).includes('"workspace"'),
+        false,
       );
       assert.match(fileContent, /subagents/);
       assert.match(fileContent, /allowAgents/);

@@ -60,6 +60,7 @@ function runCommand({
     env,
     input,
     encoding: 'utf8',
+    windowsHide: true,
   });
 
   if (result.error) {
@@ -83,6 +84,7 @@ function commandExists(command, args = ['--version']) {
   const result = spawnSync(command, args, {
     encoding: 'utf8',
     timeout: DOCKER_SERVER_CAPABILITY_TIMEOUT_MS,
+    windowsHide: true,
   });
 
   if (result.error) {
@@ -125,6 +127,7 @@ function probeDockerServer({
   const result = spawnSync('docker', ['info', '--format', '{{.ServerVersion}}'], {
     encoding: 'utf8',
     timeout: timeoutMs,
+    windowsHide: true,
   });
 
   if (result.error) {

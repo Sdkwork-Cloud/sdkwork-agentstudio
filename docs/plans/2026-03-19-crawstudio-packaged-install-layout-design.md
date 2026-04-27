@@ -37,13 +37,13 @@ That layout is acceptable for a prototype, but it is not strong enough for a pro
 
 ## Naming Decision
 
-The user explicitly requested the user-home path slug `~/.sdkwork/crawstudio/`.
+The requested app user root is `~/.sdkwork/crawstudio/`.
 
-This design preserves that exact slug even though the repository and product history elsewhere still use `claw` naming. The install standard should follow the requested packaged-product contract:
+This design preserves that exact app user root even though the repository and product history elsewhere still use `claw` naming. The install standard should follow the requested packaged-product contract:
 
 - install root: `C:\Program Files\SdkWork\CrawStudio\`
 - machine state root: `C:\ProgramData\SdkWork\CrawStudio\`
-- user asset root: `C:\Users\<用户名>\.sdkwork\crawstudio\`
+- user asset root: `C:\Users\<user>\.sdkwork\crawstudio\`
 
 ## Final Layout
 

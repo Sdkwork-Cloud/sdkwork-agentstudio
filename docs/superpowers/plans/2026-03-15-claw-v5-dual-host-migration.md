@@ -123,7 +123,6 @@ assertMissingActivePackage('packages/claw-studio-shell');
 // scripts/check-sdkwork-claw-route-surface.mjs
 assertRoute('/auth');
 assertRoute('/claw-upload');
-assertRoute('/codebox');
 assertRoute('/chat');
 assertRoute('/market');
 ```
@@ -625,7 +624,6 @@ Add assertions for:
 - `/market`
 - `/settings`
 - `/docs`
-- `/codebox`
 
 - [ ] **Step 2: Run the checks to verify they fail**
 

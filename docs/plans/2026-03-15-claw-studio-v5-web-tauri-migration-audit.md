@@ -29,7 +29,6 @@ The previously missing V5 routes are now present in the current route and shell 
 
 - `/auth`
 - `/claw-upload`
-- `/codebox`
 
 ### Runtime health
 

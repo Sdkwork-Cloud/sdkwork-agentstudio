@@ -323,3 +323,44 @@ await runTest(
     assert.ok(urls.some((url) => url.pathname === '/app/v3/api/skills/7/reviews'));
   },
 );
+
+await runTest(
+  'clawHubService fails fast when skill pagination never reaches a terminal page',
+  async () => {
+    let pageCalls = 0;
+    const service = createClawHubService({
+      getSessionTokens: () => ({
+        authToken: 'auth-token',
+      }),
+      getClient: () =>
+        ({
+          skill: {
+            list: async (params?: Record<string, unknown>) => {
+              pageCalls += 1;
+              assert.equal(params?.pageSize, 100);
+
+              if (pageCalls > 25) {
+                throw new Error('ClawHub pagination should stop before requesting page 26.');
+              }
+
+              return {
+                code: '2000',
+                data: {
+                  content: Array.from({ length: 100 }, (_, index) => ({
+                    skillId: `${pageCalls}-${index}`,
+                    name: `Skill ${pageCalls}-${index}`,
+                  })),
+                },
+              };
+            },
+          },
+        }) as any,
+    });
+
+    await assert.rejects(
+      () => service.listSkills(),
+      /ClawHub skills pagination exceeded 25 pages/,
+    );
+    assert.equal(pageCalls, 25);
+  },
+);

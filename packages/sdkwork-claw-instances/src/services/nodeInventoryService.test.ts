@@ -40,7 +40,7 @@ function createKernelSnapshot(overrides: Record<string, unknown> = {}) {
       lastTransitionAt: 1_743_100_000_000,
     },
     endpoint: {
-      preferredPort: 18789,
+      preferredPort: 21280,
       activePort: 18845,
       baseUrl: 'http://127.0.0.1:18845',
       websocketUrl: 'ws://127.0.0.1:18845',

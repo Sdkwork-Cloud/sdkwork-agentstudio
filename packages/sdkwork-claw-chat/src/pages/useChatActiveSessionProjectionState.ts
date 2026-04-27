@@ -59,9 +59,13 @@ export function useChatActiveSessionProjectionState({
   activeAdapterCapabilities,
   sendMode,
 }: UseChatActiveSessionProjectionStateInput): UseChatActiveSessionProjectionStateResult {
-  const instanceSessions = sessions.filter(
-    (session) =>
-      session.instanceId === activeInstanceId || (!session.instanceId && !activeInstanceId),
+  const instanceSessions = useMemo(
+    () =>
+      sessions.filter(
+        (session) =>
+          session.instanceId === activeInstanceId || (!session.instanceId && !activeInstanceId),
+      ),
+    [activeInstanceId, sessions],
   );
 
   const workspaceProjection = useMemo(

@@ -187,6 +187,7 @@ function runCommand({
     encoding: 'utf8',
     env,
     shell,
+    windowsHide: true,
   });
   if (result.error) {
     throw result.error;
@@ -225,6 +226,7 @@ export async function extractServerArchive({
             SDKWORK_ZIP_SOURCE: archivePath,
             SDKWORK_ZIP_DESTINATION: extractDir,
           },
+          windowsHide: true,
         },
       );
       if (result.error) {
@@ -314,6 +316,7 @@ export async function stopChildProcess(child, {
     const result = runTaskkillFn('taskkill', ['/PID', String(childPid), '/T', '/F'], {
       encoding: 'utf8',
       shell: false,
+      windowsHide: true,
     });
     if (!result?.error && result?.status === 0) {
       await waitForExitFn(child, 5000, {

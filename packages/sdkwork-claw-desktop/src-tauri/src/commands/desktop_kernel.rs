@@ -267,19 +267,21 @@ mod tests {
         );
         assert!(normalize_path_suffix(&info.directories.machine_staging_dir)
             .ends_with("machine/staging"));
-        assert!(normalize_path_suffix(&info.directories.user_root).ends_with("user-home"));
-        assert!(normalize_path_suffix(&info.directories.studio_dir).ends_with("user-home/studio"));
+        assert!(normalize_path_suffix(&info.directories.user_root).ends_with("app-user-root"));
+        assert!(
+            normalize_path_suffix(&info.directories.studio_dir).ends_with("app-user-root/studio")
+        );
         assert!(normalize_path_suffix(&info.directories.storage_dir)
-            .ends_with("user-home/user/storage"));
+            .ends_with("app-user-root/user/storage"));
         assert!(normalize_path_suffix(&info.directories.plugins_dir)
             .ends_with("install/extensions/plugins"));
         assert!(info
             .directories
             .integrations_dir
             .replace('\\', "/")
-            .ends_with("user-home/user/integrations"));
+            .ends_with("app-user-root/user/integrations"));
         assert!(normalize_path_suffix(&info.directories.backups_dir)
-            .ends_with("user-home/studio/backups"));
+            .ends_with("app-user-root/studio/backups"));
         assert!(info.filesystem.supports_binary_io);
         assert!(info
             .process
@@ -355,13 +357,13 @@ mod tests {
                 .as_str()
                 .expect("active runtime config file"),
         )
-        .ends_with("user-home/.openclaw/openclaw.json"));
+        .ends_with("app-user-root/.openclaw/openclaw.json"));
         assert!(normalize_path_suffix(
             payload["activeRuntime"]["authority"]["configFile"]
                 .as_str()
                 .expect("active runtime config file"),
         )
-        .ends_with("user-home/.openclaw/openclaw.json"));
+        .ends_with("app-user-root/.openclaw/openclaw.json"));
         assert!(
             payload["activeRuntime"]["authority"]["configFilePath"].is_null(),
             "active runtime authority should not publish legacy configFilePath",
@@ -373,29 +375,31 @@ mod tests {
                 .as_str()
                 .expect("runtime home dir"),
         )
-        .ends_with("user-home/.openclaw"));
-        assert!(
-            payload["openClawRuntime"]["stateDir"].is_null(),
-            "openClawRuntime.stateDir should not be published once .openclaw is the single canonical root",
-        );
+        .ends_with("app-user-root"));
+        assert!(normalize_path_suffix(
+            payload["openClawRuntime"]["stateDir"]
+                .as_str()
+                .expect("runtime state dir"),
+        )
+        .ends_with("app-user-root/.openclaw"));
         assert!(normalize_path_suffix(
             payload["openClawRuntime"]["workspaceDir"]
                 .as_str()
                 .expect("runtime workspace dir"),
         )
-        .ends_with("user-home/.openclaw/workspace"));
+        .ends_with("app-user-root/.openclaw/workspace"));
         assert!(normalize_path_suffix(
             payload["openClawRuntime"]["configFile"]
                 .as_str()
                 .expect("runtime config file"),
         )
-        .ends_with("user-home/.openclaw/openclaw.json"));
+        .ends_with("app-user-root/.openclaw/openclaw.json"));
         assert!(normalize_path_suffix(
             payload["openClawRuntime"]["authority"]["configFile"]
                 .as_str()
                 .expect("authority config file"),
         )
-        .ends_with("user-home/.openclaw/openclaw.json"));
+        .ends_with("app-user-root/.openclaw/openclaw.json"));
         assert!(
             payload["openClawRuntime"]["authority"]["configFilePath"].is_null(),
             "openclaw runtime authority should not publish legacy configFilePath",
@@ -463,13 +467,13 @@ mod tests {
     "mode": "desktopCombined",
     "lifecycle": "ready",
     "endpointId": "desktop-host",
-    "requestedPort": 18797,
-    "activePort": 18797,
+    "requestedPort": 21289,
+    "activePort": 21289,
     "loopbackOnly": true,
     "dynamicPort": false,
     "stateStoreDriver": "sqlite",
     "stateStoreProfileId": "default-sqlite",
-    "browserBaseUrl": "http://127.0.0.1:18797"
+    "browserBaseUrl": "http://127.0.0.1:21289"
   },
   "builtInInstance": {
     "id": "managed-openclaw-primary",
@@ -478,14 +482,14 @@ mod tests {
     "runtimeKind": "openclaw",
     "deploymentMode": "local-managed",
     "transportKind": "openclawGatewayWs",
-    "baseUrl": "http://127.0.0.1:18797",
-    "websocketUrl": "ws://127.0.0.1:18797/ws",
+    "baseUrl": "http://127.0.0.1:21289",
+    "websocketUrl": "ws://127.0.0.1:21289/ws",
     "isBuiltIn": true,
     "isDefault": true,
     "status": "online"
   },
   "readinessEvidence": {
-    "manageBaseUrl": "http://127.0.0.1:18797",
+    "manageBaseUrl": "http://127.0.0.1:21289",
     "openClawRuntimeLifecycle": "ready",
     "openClawGatewayLifecycle": "ready",
     "ready": true
@@ -545,11 +549,11 @@ mod tests {
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["descriptorActivePort"],
-            18797
+            21289
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["descriptorRequestedPort"],
-            18797
+            21289
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["descriptorLoopbackOnly"],
@@ -569,11 +573,11 @@ mod tests {
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["descriptorBrowserBaseUrl"],
-            "http://127.0.0.1:18797"
+            "http://127.0.0.1:21289"
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["manageBaseUrl"],
-            "http://127.0.0.1:18797"
+            "http://127.0.0.1:21289"
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["builtInInstanceId"],
@@ -601,11 +605,11 @@ mod tests {
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["builtInInstanceBaseUrl"],
-            "http://127.0.0.1:18797"
+            "http://127.0.0.1:21289"
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["builtInInstanceWebsocketUrl"],
-            "ws://127.0.0.1:18797/ws"
+            "ws://127.0.0.1:21289/ws"
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["builtInInstanceIsBuiltIn"],

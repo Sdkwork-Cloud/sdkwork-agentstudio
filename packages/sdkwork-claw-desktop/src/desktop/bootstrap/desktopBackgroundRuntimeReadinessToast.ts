@@ -39,7 +39,7 @@ interface ResolveBackgroundRuntimeReadinessToastPlanArgs {
 export function resolveBackgroundRuntimeReadinessToastCopy(
   message: string,
   language: StartupAppearanceSnapshot['language'],
-  recoveryMode: BackgroundRuntimeReadinessRecoveryMode = 'managed-openclaw',
+  recoveryMode: BackgroundRuntimeReadinessRecoveryMode = 'generic-hosted-runtime',
 ) {
   const normalizedMessage = message.trim();
   if (recoveryMode === 'generic-hosted-runtime') {
@@ -102,7 +102,8 @@ export function resolveBackgroundRuntimeReadinessToastPlan({
     return null;
   }
 
-  const signature = `${notification.runId}:${notification.message}`;
+  const recoveryMode = notification.recoveryMode ?? 'generic-hosted-runtime';
+  const signature = `${notification.runId}:${recoveryMode}:${notification.message}`;
   if (lastShownSignature === signature) {
     return null;
   }
@@ -113,7 +114,7 @@ export function resolveBackgroundRuntimeReadinessToastPlan({
     ...resolveBackgroundRuntimeReadinessToastCopy(
       notification.message,
       language,
-      notification.recoveryMode,
+      recoveryMode,
     ),
   };
 }

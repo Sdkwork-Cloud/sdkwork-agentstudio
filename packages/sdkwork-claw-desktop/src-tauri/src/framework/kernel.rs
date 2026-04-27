@@ -272,6 +272,7 @@ pub struct DesktopOpenClawRuntimeInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub runtime_dir: Option<String>,
     pub home_dir: String,
+    pub state_dir: String,
     pub workspace_dir: String,
     pub config_file: String,
     #[serde(skip_serializing_if = "Option::is_none")]

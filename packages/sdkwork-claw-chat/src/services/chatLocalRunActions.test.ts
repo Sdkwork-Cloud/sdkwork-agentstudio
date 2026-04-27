@@ -19,7 +19,12 @@ await runTest(
   async () => {
     const pendingStates: Array<string | null> = [];
     const flushCalls: string[] = [];
-    const updateCalls: Array<{ sessionId: string; messageId: string; content: string }> = [];
+    const updateCalls: Array<{
+      sessionId: string;
+      messageId: string;
+      content: string;
+      persist: boolean | undefined;
+    }> = [];
     const sessions = [
       {
         id: 'session-a',
@@ -49,8 +54,8 @@ await runTest(
           ...message,
         });
       },
-      updateMessage(sessionId, messageId, content) {
-        updateCalls.push({ sessionId, messageId, content });
+      updateMessage(sessionId, messageId, content, _instanceId, options?: { persist?: boolean }) {
+        updateCalls.push({ sessionId, messageId, content, persist: options?.persist });
         const session = sessions.find((entry) => entry.id === sessionId);
         const targetMessage = session?.messages.find((message) => message.id === messageId);
         if (targetMessage) {
@@ -102,11 +107,13 @@ await runTest(
         sessionId: 'session-a',
         messageId: 'message-2',
         content: 'Hello',
+        persist: false,
       },
       {
         sessionId: 'session-a',
         messageId: 'message-2',
         content: 'Hello world',
+        persist: false,
       },
     ]);
     assert.equal(
@@ -204,6 +211,98 @@ await runTest(
       },
     ]);
     assert.equal(sessions[0]?.messages[0]?.content, '');
+  },
+);
+
+await runTest(
+  'createChatLocalRunActions scopes optimistic local mutations to the active instance session',
+  async () => {
+    const mutationCalls: Array<{
+      type: string;
+      sessionId: string;
+      instanceId?: string | null;
+    }> = [];
+    const sessions = new Map([
+      [
+        'instance-a::shared-session',
+        {
+          id: 'shared-session',
+          instanceId: 'instance-a',
+          messages: [],
+        },
+      ],
+      [
+        'instance-b::shared-session',
+        {
+          id: 'shared-session',
+          instanceId: 'instance-b',
+          messages: [],
+        },
+      ],
+    ]);
+
+    const resolveSessionKey = (sessionId: string, instanceId?: string | null) =>
+      `${instanceId ?? 'direct'}::${sessionId}`;
+    const actions = createChatLocalRunActions({
+      sendMode: 'local',
+      abortControllerRef: { current: null },
+      setPendingSendSessionId() {},
+      addMessage(sessionId, message, instanceId) {
+        mutationCalls.push({ type: `add:${message.role}`, sessionId, instanceId });
+        const session = sessions.get(resolveSessionKey(sessionId, instanceId));
+        if (session) {
+          session.messages.push({
+            id: `msg-${session.messages.length + 1}`,
+            role: message.role,
+          });
+        }
+      },
+      updateMessage(sessionId, _messageId, _content, instanceId) {
+        mutationCalls.push({ type: 'update', sessionId, instanceId });
+      },
+      removeMessages(sessionId, _messageIds, instanceId) {
+        mutationCalls.push({ type: 'remove', sessionId, instanceId });
+      },
+      async flushSession(sessionId, instanceId) {
+        mutationCalls.push({ type: 'flush', sessionId, instanceId });
+      },
+      getSessionById(sessionId, instanceId) {
+        return sessions.get(resolveSessionKey(sessionId, instanceId));
+      },
+      async *sendMessageStream() {
+        yield 'scoped reply';
+      },
+    });
+
+    await actions.sendLocalRun({
+      sessionId: 'shared-session',
+      sessionInstanceId: 'instance-b',
+      content: 'hello instance b',
+      attachments: [],
+      requestText: 'hello instance b',
+      requestModel: {
+        id: 'model-a',
+        name: 'Model A',
+        provider: 'test',
+        icon: '',
+      },
+    });
+
+    assert.deepEqual(
+      mutationCalls.map((call) => ({
+        type: call.type,
+        sessionId: call.sessionId,
+        instanceId: call.instanceId,
+      })),
+      [
+        { type: 'add:user', sessionId: 'shared-session', instanceId: 'instance-b' },
+        { type: 'add:assistant', sessionId: 'shared-session', instanceId: 'instance-b' },
+        { type: 'update', sessionId: 'shared-session', instanceId: 'instance-b' },
+        { type: 'flush', sessionId: 'shared-session', instanceId: 'instance-b' },
+      ],
+    );
+    assert.equal(sessions.get('instance-a::shared-session')?.messages.length, 0);
+    assert.equal(sessions.get('instance-b::shared-session')?.messages.length, 2);
   },
 );
 

@@ -6,7 +6,7 @@ import type {
   JsonObject,
   JsonValue,
 } from './openClawConfigDocumentService.ts';
-import { normalizeOpenClawLegacyManagedPath } from './openClawAgentPathStandardizationService.ts';
+import { normalizeOpenClawManagedPath } from './openClawAgentPathStandardizationService.ts';
 
 export type OpenClawAgentParamValue = string | number | boolean;
 
@@ -265,10 +265,10 @@ export function saveOpenClawAgentToConfigRoot(root: JsonObject, input: OpenClawA
   currentEntry.id = normalizedId;
   setOptionalScalar(currentEntry, 'name', input.name);
   if (input.workspace !== undefined) {
-    setOptionalScalar(currentEntry, 'workspace', normalizeOpenClawLegacyManagedPath(input.workspace));
+    setOptionalScalar(currentEntry, 'workspace', normalizeOpenClawManagedPath(input.workspace));
   }
   if (input.agentDir !== undefined) {
-    setOptionalScalar(currentEntry, 'agentDir', normalizeOpenClawLegacyManagedPath(input.agentDir));
+    setOptionalScalar(currentEntry, 'agentDir', normalizeOpenClawManagedPath(input.agentDir));
   }
   if (input.model !== undefined) {
     writeOpenClawAgentModelConfig(currentEntry, 'model', input.model);

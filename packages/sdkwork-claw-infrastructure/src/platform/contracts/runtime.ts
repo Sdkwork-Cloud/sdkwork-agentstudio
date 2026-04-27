@@ -452,6 +452,7 @@ export interface RuntimeDesktopOpenClawRuntimeInfo {
   installDir?: string | null;
   runtimeDir?: string | null;
   homeDir: string;
+  stateDir: string;
   workspaceDir: string;
   configFile: string;
   gatewayPort?: number | null;

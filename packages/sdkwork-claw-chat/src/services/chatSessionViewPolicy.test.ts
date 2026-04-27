@@ -322,7 +322,7 @@ await runTest(
   },
 );
 
-await runTest('resolveChatSendSessionId uses the selected session for gateway sends', () => {
+await runTest('resolveChatSendSessionId uses the visible session for gateway sends when the raw active session is out of scope', () => {
   assert.equal(
     resolveChatSendSessionId({
       selectedSessionId: null,
@@ -338,7 +338,7 @@ await runTest('resolveChatSendSessionId uses the selected session for gateway se
       displaySessionId: 'agent:research:main',
       sendMode: 'gateway',
     }),
-    'agent:ops:main',
+    'agent:research:main',
   );
 });
 
@@ -591,15 +591,15 @@ await runTest(
 );
 
 await runTest(
-  'resolveGatewayVisibleSessionSyncTarget keeps the raw gateway session untouched when the current one is hidden by agent scope',
+  'resolveGatewayVisibleSessionSyncTarget syncs to the visible fallback when the raw gateway session is hidden by agent scope',
   () => {
-    assert.equal(
+    assert.deepEqual(
       resolveGatewayVisibleSessionSyncTarget({
         supportsVisibleSessionSync: true,
         activeSessionId: 'agent:research:main:thread:claw-studio:session-1',
         effectiveActiveSessionId: 'agent:ops:main',
       }),
-      null,
+      'agent:ops:main',
     );
   },
 );

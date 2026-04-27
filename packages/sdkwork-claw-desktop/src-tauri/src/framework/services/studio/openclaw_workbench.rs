@@ -5,13 +5,13 @@ use super::{
     StudioWorkbenchFileRecord, StudioWorkbenchLLMProviderModelRecord,
     StudioWorkbenchLLMProviderRecord, StudioWorkbenchMemoryEntryRecord, StudioWorkbenchSkillRecord,
     StudioWorkbenchSnapshot, StudioWorkbenchTaskExecutionRecord, StudioWorkbenchTaskRecord,
-    StudioWorkbenchTaskScheduleConfig, StudioWorkbenchToolRecord, DEFAULT_INSTANCE_ID,
+    StudioWorkbenchTaskScheduleConfig, StudioWorkbenchToolRecord,
 };
 use crate::framework::{
-    paths::AppPaths, services::kernel_runtime_authority::KernelRuntimeAuthorityService,
+    paths::{normalize_openclaw_agent_id, AppPaths, OPENCLAW_DEFAULT_AGENT_ID, OPENCLAW_KERNEL_ID},
+    services::kernel_runtime_authority::KernelRuntimeAuthorityService,
     FrameworkError, Result,
 };
-use sdkwork_local_api_proxy_native::kernel::build_standard_openclaw_config_file_path;
 use serde_json::{Map, Value};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -55,7 +55,7 @@ pub(super) fn build_openclaw_workbench_snapshot(
         .collect::<BTreeMap<_, _>>();
     let cron_tasks = build_openclaw_cron_tasks_snapshot(paths, &channel_name_map)?;
     let llm_providers = build_openclaw_llm_providers(&config, &config_path);
-    let agent_contexts = collect_openclaw_agent_contexts(paths, &config);
+    let agent_contexts = collect_openclaw_agent_contexts(paths, &config)?;
     let agents = build_openclaw_agents(&agent_contexts);
     let skills = build_openclaw_skills(paths, &config, &agent_contexts)?;
     let files = build_openclaw_files(paths, &config, &agent_contexts)?;
@@ -97,7 +97,10 @@ fn build_openclaw_cron_tasks_snapshot(
     paths: &AppPaths,
     channel_name_map: &BTreeMap<String, String>,
 ) -> Result<StudioWorkbenchCronTasksSnapshot> {
-    let cron_jobs_path = paths.openclaw_root_dir.join("cron").join("jobs.json");
+    let cron_jobs_path = paths
+        .kernel_paths(OPENCLAW_KERNEL_ID)?
+        .openclaw_cron_dir()?
+        .join("jobs.json");
     let jobs_root = read_json_value(&cron_jobs_path)?;
     let jobs = array_at_path(&jobs_root, &["jobs"])
         .cloned()
@@ -244,24 +247,28 @@ fn parse_openclaw_model_ref(value: &str) -> Option<(String, String)> {
     ))
 }
 
-fn collect_openclaw_agent_contexts(paths: &AppPaths, config: &Value) -> Vec<OpenClawAgentContext> {
+fn collect_openclaw_agent_contexts(
+    paths: &AppPaths,
+    config: &Value,
+) -> Result<Vec<OpenClawAgentContext>> {
+    let openclaw_paths = paths.kernel_paths(OPENCLAW_KERNEL_ID)?;
     let default_agent_id = resolve_default_openclaw_agent_id(config);
     let mut discovered_ids = BTreeSet::from([default_agent_id.clone()]);
 
     if let Some(agent_entries) = array_at_path(config, &["agents", "list"]) {
         for agent_entry in agent_entries {
             if let Some(agent_id) = string_at_path(agent_entry, &["id"]) {
-                discovered_ids.insert(agent_id);
+                discovered_ids.insert(normalize_openclaw_agent_id(&agent_id));
             }
         }
     }
 
-    let agents_dir = paths.openclaw_root_dir.join("agents");
+    let agents_dir = openclaw_paths.openclaw_agents_dir()?;
     if let Ok(entries) = fs::read_dir(&agents_dir) {
         for entry in entries.flatten().take(MAX_SCAN_ENTRIES) {
             if entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false) {
                 if let Some(id) = entry.file_name().to_str() {
-                    discovered_ids.insert(id.trim().to_string());
+                    discovered_ids.insert(normalize_openclaw_agent_id(id));
                 }
             }
         }
@@ -271,7 +278,9 @@ fn collect_openclaw_agent_contexts(paths: &AppPaths, config: &Value) -> Vec<Open
         .cloned()
         .unwrap_or_default()
         .into_iter()
-        .filter_map(|entry| string_at_path(&entry, &["id"]).map(|id| (id, entry)))
+        .filter_map(|entry| {
+            string_at_path(&entry, &["id"]).map(|id| (normalize_openclaw_agent_id(&id), entry))
+        })
         .collect::<BTreeMap<_, _>>();
 
     let mut ordered_ids = discovered_ids.into_iter().collect::<Vec<_>>();
@@ -293,8 +302,7 @@ fn collect_openclaw_agent_contexts(paths: &AppPaths, config: &Value) -> Vec<Open
                     config_entry.and_then(|entry| string_at_path(entry, &["identity", "avatar"]))
                 })
                 .unwrap_or_else(|| "*".to_string());
-            let workspace =
-                resolve_openclaw_agent_workspace(paths, config_entry, &agent_id, &default_agent_id);
+            let workspace = resolve_openclaw_agent_workspace(paths, config_entry, &agent_id)?;
             let description = format!(
                 "{} agent backed by workspace {}.",
                 name,
@@ -302,19 +310,19 @@ fn collect_openclaw_agent_contexts(paths: &AppPaths, config: &Value) -> Vec<Open
             );
             let system_prompt = load_agent_prompt_summary(&workspace);
 
-            OpenClawAgentContext {
+            Ok(OpenClawAgentContext {
                 id: agent_id,
                 name,
                 description,
                 avatar,
                 system_prompt,
-                creator: if workspace == paths.openclaw_workspace_dir {
+                creator: if workspace == openclaw_paths.workspace_dir {
                     "Claw Studio".to_string()
                 } else {
                     "OpenClaw".to_string()
                 },
                 workspace,
-            }
+            })
         })
         .collect()
 }
@@ -362,17 +370,16 @@ fn build_openclaw_skills(
         .map(|entry| entry.to_ascii_lowercase())
         .collect::<BTreeSet<_>>();
     let mut skills_by_id = BTreeMap::new();
+    let openclaw_paths = paths.kernel_paths(OPENCLAW_KERNEL_ID)?;
 
-    let mut roots = string_vec_at_path(config, &["skills", "load", "extraDirs"])
-        .into_iter()
-        .map(|raw_dir| {
-            (
-                resolve_openclaw_user_path(paths, &raw_dir),
-                "Extra Skills".to_string(),
-                None,
-            )
-        })
-        .collect::<Vec<_>>();
+    let mut roots = Vec::new();
+    for raw_dir in string_vec_at_path(config, &["skills", "load", "extraDirs"]) {
+        roots.push((
+            resolve_openclaw_user_path(paths, &raw_dir)?,
+            "Extra Skills".to_string(),
+            None,
+        ));
+    }
     roots.extend(vec![
         (
             runtime_package.join("skills"),
@@ -380,7 +387,7 @@ fn build_openclaw_skills(
             bundled_version,
         ),
         (
-            paths.openclaw_root_dir.join("skills"),
+            openclaw_paths.openclaw_skills_dir()?,
             "Built-in OpenClaw".to_string(),
             None,
         ),
@@ -458,7 +465,9 @@ fn build_openclaw_files(
     _config: &Value,
     agent_contexts: &[OpenClawAgentContext],
 ) -> Result<Vec<StudioWorkbenchFileRecord>> {
-    let mut writable_roots = BTreeSet::from([paths.openclaw_workspace_dir.clone()]);
+    let openclaw_paths = paths.kernel_paths(OPENCLAW_KERNEL_ID)?;
+    let cron_dir = openclaw_paths.openclaw_cron_dir()?;
+    let mut writable_roots = BTreeSet::from([openclaw_paths.workspace_dir.clone()]);
     writable_roots.extend(
         agent_contexts
             .iter()
@@ -487,7 +496,7 @@ fn build_openclaw_files(
         paths,
         &writable_roots,
         &mut files,
-        &paths.openclaw_root_dir.join("cron").join("jobs.json"),
+        &cron_dir.join("jobs.json"),
         "dataset",
         "generated",
         "OpenClaw cron job store for the managed runtime.",
@@ -508,7 +517,7 @@ fn build_openclaw_files(
         "Bundled OpenClaw package manifest.",
     );
 
-    let run_logs_dir = paths.openclaw_root_dir.join("cron").join("runs");
+    let run_logs_dir = cron_dir.join("runs");
     if let Ok(entries) = fs::read_dir(&run_logs_dir) {
         for entry in entries.flatten().take(MAX_SCAN_ENTRIES) {
             let path = entry.path();
@@ -562,11 +571,12 @@ fn build_openclaw_files(
 }
 
 fn build_openclaw_memory_entries(
-    _paths: &AppPaths,
+    paths: &AppPaths,
     config: &Value,
     agent_contexts: &[OpenClawAgentContext],
     files: &[StudioWorkbenchFileRecord],
 ) -> Result<Vec<StudioWorkbenchMemoryEntryRecord>> {
+    let openclaw_workspace_dir = paths.kernel_paths(OPENCLAW_KERNEL_ID)?.workspace_dir;
     let mut entries = vec![StudioWorkbenchMemoryEntryRecord {
         id: "memory-backend".to_string(),
         title: "Memory Backend".to_string(),
@@ -597,7 +607,7 @@ fn build_openclaw_memory_entries(
                 title: format!("{} Memory", context.name),
                 r#type: "conversation".to_string(),
                 summary: summarize_markdown(&content, 220),
-                source: if context.workspace == _paths.openclaw_workspace_dir {
+                source: if context.workspace == openclaw_workspace_dir {
                     "system".to_string()
                 } else {
                     "agent".to_string()
@@ -1081,8 +1091,8 @@ pub(super) fn read_openclaw_cron_run_entries(
     job_id: &str,
 ) -> Result<Vec<StudioWorkbenchTaskExecutionRecord>> {
     let run_log_path = paths
-        .openclaw_root_dir
-        .join("cron")
+        .kernel_paths(OPENCLAW_KERNEL_ID)?
+        .openclaw_cron_dir()?
         .join("runs")
         .join(format!("{job_id}.jsonl"));
     if !run_log_path.exists() {
@@ -1516,49 +1526,45 @@ fn resolve_default_openclaw_agent_id(config: &Value) -> String {
             None
         }
     }) {
-        return default_id;
+        return normalize_openclaw_agent_id(&default_id);
     }
 
     agent_entries
         .first()
         .and_then(|entry| string_at_path(entry, &["id"]))
-        .unwrap_or_else(|| "main".to_string())
+        .map(|id| normalize_openclaw_agent_id(&id))
+        .unwrap_or_else(|| OPENCLAW_DEFAULT_AGENT_ID.to_string())
 }
 
 fn resolve_openclaw_agent_workspace(
     paths: &AppPaths,
     config_entry: Option<&Value>,
     agent_id: &str,
-    default_agent_id: &str,
-) -> PathBuf {
+) -> Result<PathBuf> {
+    let openclaw_paths = paths.kernel_paths(OPENCLAW_KERNEL_ID)?;
     if let Some(raw_workspace) =
         config_entry.and_then(|entry| string_at_path(entry, &["workspace"]))
     {
         return resolve_openclaw_user_path(paths, &raw_workspace);
     }
 
-    if agent_id == default_agent_id || agent_id == DEFAULT_INSTANCE_ID {
-        return paths.openclaw_workspace_dir.clone();
-    }
-
-    paths
-        .openclaw_root_dir
-        .join(format!("workspace-{}", agent_id.trim()))
+    openclaw_paths.openclaw_agent_workspace_dir(agent_id)
 }
 
-fn resolve_openclaw_user_path(paths: &AppPaths, raw: &str) -> PathBuf {
+fn resolve_openclaw_user_path(paths: &AppPaths, raw: &str) -> Result<PathBuf> {
+    let openclaw_paths = paths.kernel_paths(OPENCLAW_KERNEL_ID)?;
     let trimmed = raw.trim();
     if trimmed.is_empty() {
-        return paths.openclaw_workspace_dir.clone();
+        return Ok(openclaw_paths.workspace_dir);
     }
     let candidate = PathBuf::from(trimmed);
     if candidate.is_absolute() {
-        return candidate;
+        return Ok(candidate);
     }
     if let Some(stripped) = trimmed.strip_prefix("~/") {
-        return paths.user_root.join(stripped);
+        return Ok(paths.user_root.join(stripped));
     }
-    paths.openclaw_root_dir.join(trimmed)
+    Ok(openclaw_paths.state_dir.join(trimmed))
 }
 
 fn load_agent_prompt_summary(workspace: &Path) -> String {
@@ -1891,12 +1897,7 @@ fn readable_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
 fn authority_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
-        .unwrap_or_else(|_| {
-            paths
-                .kernel_paths("openclaw")
-                .map(|kernel| kernel.config_file)
-                .unwrap_or_else(|_| build_standard_openclaw_config_file_path(&paths.user_root))
-        })
+        .expect("canonical openclaw config path")
 }
 
 fn extract_frontmatter_value(content: &str, key: &str) -> Option<String> {
@@ -1995,7 +1996,11 @@ fn tool_token_matches(
 
 #[cfg(test)]
 mod tests {
-    use super::{build_openclaw_llm_providers, build_openclaw_tools, map_openclaw_cron_task};
+    use super::{
+        build_openclaw_llm_providers, build_openclaw_tools, collect_openclaw_agent_contexts,
+        map_openclaw_cron_task,
+    };
+    use crate::framework::paths::resolve_paths_for_root;
     use crate::framework::services::studio::StudioWorkbenchLLMProviderConfigRecord;
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -2067,6 +2072,40 @@ mod tests {
                 timeout_ms: 120000,
                 streaming: true,
             }
+        );
+    }
+
+    #[test]
+    fn agent_contexts_do_not_treat_non_main_default_agent_as_the_primary_workspace() {
+        let temp_dir = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp_dir.path()).expect("paths");
+
+        let contexts = collect_openclaw_agent_contexts(
+            &paths,
+            &json!({
+                "agents": {
+                    "list": [
+                        { "id": "Reviewer Team", "name": "Reviewer", "default": true },
+                        { "id": "main", "name": "Main" }
+                    ]
+                }
+            }),
+        )
+        .expect("agent contexts");
+
+        let main = contexts
+            .iter()
+            .find(|context| context.id == "main")
+            .expect("main agent");
+        let reviewer = contexts
+            .iter()
+            .find(|context| context.id == "reviewer-team")
+            .expect("canonical reviewer agent");
+
+        assert_eq!(main.workspace, paths.openclaw_workspace_dir);
+        assert_eq!(
+            reviewer.workspace,
+            paths.openclaw_root_dir.join("workspace-reviewer-team")
         );
     }
 

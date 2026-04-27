@@ -30,9 +30,9 @@ function buildInstance(
     version: '2026.4.5',
     typeLabel: 'OpenClaw Gateway',
     host: '127.0.0.1',
-    port: 18789,
-    baseUrl: 'http://127.0.0.1:18789',
-    websocketUrl: 'ws://127.0.0.1:18789',
+    port: 21280,
+    baseUrl: 'http://127.0.0.1:21280',
+    websocketUrl: 'ws://127.0.0.1:21280',
     cpu: 4,
     memory: 16,
     totalMemory: '32 GB',
@@ -43,13 +43,13 @@ function buildInstance(
       namespace: 'openclaw-default',
     },
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
       corsOrigins: '*',
-      baseUrl: 'http://127.0.0.1:18789',
-      websocketUrl: 'ws://127.0.0.1:18789',
+      baseUrl: 'http://127.0.0.1:21280',
+      websocketUrl: 'ws://127.0.0.1:21280',
       authToken: 'token',
     },
     createdAt: Date.UTC(2026, 3, 1),
@@ -308,7 +308,7 @@ await runTest(
       const firstService = createService();
       const firstSnapshot = await firstService.loadUsageSnapshot({
         instanceId: 'openclaw-default',
-        gatewayUrl: 'ws://127.0.0.1:18789',
+        gatewayUrl: 'ws://127.0.0.1:21280',
         startDate: '2026-02-16',
         endDate: '2026-02-16',
         timeZone: 'local',
@@ -356,7 +356,7 @@ await runTest(
       const secondService = createService();
       const secondSnapshot = await secondService.loadUsageSnapshot({
         instanceId: 'openclaw-default',
-        gatewayUrl: 'ws://127.0.0.1:18789',
+        gatewayUrl: 'ws://127.0.0.1:21280',
         startDate: '2026-02-16',
         endDate: '2026-02-16',
         timeZone: 'local',

@@ -92,7 +92,7 @@ await runTest('instance startup refresh support polls the registry while built-i
   );
 });
 
-await runTest('instance startup refresh support also polls the registry for future built-in local-managed kernels that are still starting', () => {
+await runTest('instance startup refresh support does not treat future built-in kernels as OpenClaw startup', () => {
   assert.equal(
     hasPendingBuiltInOpenClawStartup([
       createManagedFutureKernelLikeInstance(),
@@ -103,7 +103,7 @@ await runTest('instance startup refresh support also polls the registry for futu
         status: 'online',
       }),
     ] as any),
-    true,
+    false,
   );
 });
 
@@ -135,7 +135,7 @@ await runTest('instance startup refresh support polls the workbench while the bu
   );
 });
 
-await runTest('instance startup refresh support also polls the workbench for future built-in local-managed kernels that are still starting', () => {
+await runTest('instance startup refresh support does not poll workbench for non-OpenClaw built-in kernels', () => {
   assert.equal(
     hasPendingBuiltInOpenClawWorkbenchStartup(
       createWorkbench({
@@ -144,7 +144,7 @@ await runTest('instance startup refresh support also polls the workbench for fut
         },
       }) as any,
     ),
-    true,
+    false,
   );
 });
 
@@ -201,7 +201,7 @@ await runTest('instance startup refresh support refreshes the list when the buil
   );
 });
 
-await runTest('instance startup refresh support also refreshes the list for future built-in local-managed kernel status changes', () => {
+await runTest('instance startup refresh support ignores OpenClaw status events for future built-in kernels', () => {
   assert.equal(
     shouldRefreshInstancesForBuiltInOpenClawStatusChange(
       [
@@ -212,7 +212,7 @@ await runTest('instance startup refresh support also refreshes the list for futu
         status: 'online',
       } as any,
     ),
-    true,
+    false,
   );
 });
 
@@ -260,7 +260,7 @@ await runTest('instance startup refresh support only refreshes the active workbe
   );
 });
 
-await runTest('instance startup refresh support also refreshes the active workbench for future built-in local-managed kernel events', () => {
+await runTest('instance startup refresh support ignores active workbench refreshes for non-OpenClaw built-in kernels', () => {
   assert.equal(
     shouldRefreshWorkbenchForBuiltInOpenClawStatusChange(
       BUILT_IN_PHOENIXCLAW_INSTANCE_ID,
@@ -274,7 +274,7 @@ await runTest('instance startup refresh support also refreshes the active workbe
         status: 'online',
       } as any,
     ),
-    true,
+    false,
   );
 });
 

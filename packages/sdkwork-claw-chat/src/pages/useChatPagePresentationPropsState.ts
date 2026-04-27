@@ -64,6 +64,7 @@ export function useChatPagePresentationPropsState({
     activeMessageGroups: session.activeMessageGroups,
     messageCount: session.activeMessages.length,
     isActiveSessionGenerating: interaction.isActiveSessionGenerating,
+    activeRunId: session.activeRunBinding.runId,
     groupTimeFormatter,
   });
   const { surfaceState, inlineNoticeMessage, showComposer } = useChatConversationPaneSurfaceState({

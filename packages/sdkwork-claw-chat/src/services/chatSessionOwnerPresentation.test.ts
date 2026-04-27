@@ -103,6 +103,32 @@ await runTest(
 );
 
 await runTest(
+  'buildChatSidebarAgentOptions removes opaque id/date catalog names before sidebar items consume them',
+  () => {
+    const options = buildChatSidebarAgentOptions({
+      sessionScopeMode: 'all',
+      visibleAgents: [
+        {
+          id: 'gw-7f9d2c4b1e',
+          name: 'gw-7f9d2c4b1e(2026-04-26)',
+          avatar: 'GW',
+          kernelId: 'openclaw',
+        },
+      ],
+      mainAgentLabel: 'Main Agent',
+    });
+
+    assert.deepEqual(options[1], {
+      id: 'gw-7f9d2c4b1e',
+      name: 'OpenClaw Agent',
+      avatarLabel: 'OP',
+      kernelId: 'openclaw',
+      kernelLabel: 'OpenClaw',
+    });
+  },
+);
+
+await runTest(
   'resolveChatSessionAgentId and resolveChatSessionOwnerPresentation derive identity from the shared session binding',
   () => {
     const session = {
@@ -230,6 +256,42 @@ await runTest(
 );
 
 await runTest(
+  'resolveChatSessionOwnerPresentation sanitizes matched catalog names before rendering the session header',
+  () => {
+    assert.deepEqual(
+      resolveChatSessionOwnerPresentation({
+        session: {
+          id: 'agent:gw-7f9d2c4b1e:main',
+          updatedAt: 100,
+          agentId: 'gw-7f9d2c4b1e',
+          kernelSession: {
+            ref: {
+              agentId: 'gw-7f9d2c4b1e',
+              kernelId: 'openclaw',
+            },
+          },
+        },
+        agentOptions: [
+          {
+            id: 'gw-7f9d2c4b1e',
+            name: 'gw-7f9d2c4b1e(2026-04-26)',
+            avatarLabel: 'GW',
+            kernelId: 'openclaw',
+            kernelLabel: 'OpenClaw',
+          },
+        ],
+      }),
+      {
+        id: 'gw-7f9d2c4b1e',
+        name: 'OpenClaw Agent',
+        avatarLabel: 'OP',
+        kernelLabel: 'OpenClaw',
+      },
+    );
+  },
+);
+
+await runTest(
   'resolveChatSessionOwnerPresentation keeps kernel identity available when the catalog does not carry the agent',
   () => {
     assert.deepEqual(
@@ -249,9 +311,60 @@ await runTest(
       }),
       {
         id: 'planner',
-        name: 'planner',
+        name: 'Planner',
         avatarLabel: 'PL',
         kernelLabel: 'Hermes',
+      },
+    );
+  },
+);
+
+await runTest(
+  'resolveChatSessionOwnerPresentation never exposes technical ids or date labels as owner names',
+  () => {
+    assert.deepEqual(
+      resolveChatSessionOwnerPresentation({
+        session: {
+          id: 'agent:2026-04-26:main',
+          updatedAt: 100,
+          agentId: '2026-04-26',
+          agentLabel: '2026-04-26',
+          kernelSession: {
+            ref: {
+              agentId: '2026-04-26',
+              kernelId: 'openclaw',
+            },
+            actorBinding: {
+              agentId: '2026-04-26',
+              label: '2026-04-26',
+            },
+          },
+        },
+        agentOptions: [],
+        fallbackName: 'Main Agent',
+      }),
+      {
+        id: '2026-04-26',
+        name: 'OpenClaw Agent',
+        avatarLabel: 'OP',
+        kernelLabel: 'OpenClaw',
+      },
+    );
+
+    assert.deepEqual(
+      resolveChatSessionOwnerPresentation({
+        session: {
+          id: 'agent:research-agent:main',
+          updatedAt: 100,
+          agentId: 'research-agent',
+        },
+        agentOptions: [],
+      }),
+      {
+        id: 'research-agent',
+        name: 'Research Agent',
+        avatarLabel: 'RE',
+        kernelLabel: null,
       },
     );
   },

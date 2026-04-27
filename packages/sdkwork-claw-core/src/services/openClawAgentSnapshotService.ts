@@ -9,7 +9,7 @@ import {
 } from './openClawAgentDocumentService.ts';
 import {
   normalizeOpenClawAgentPathOverrides,
-  normalizeOpenClawLegacyManagedPath,
+  normalizeOpenClawManagedPath,
 } from './openClawAgentPathStandardizationService.ts';
 import type { JsonObject, JsonValue } from './openClawConfigDocumentService.ts';
 import { resolveOpenClawUserPathFromConfigFile } from './openClawPathResolutionService.ts';
@@ -84,9 +84,6 @@ export function buildOpenClawAgentSnapshotsFromConfigRoot(
   const defaultModel = readOpenClawAgentModelConfig(defaultsRoot.model as JsonValue | undefined);
   const defaultParams = readOpenClawAgentParams(defaultsRoot.params as JsonValue | undefined);
   const defaultAgentId = resolveOpenClawDefaultAgentId(normalizedRoot);
-  const defaultWorkspace = normalizeOpenClawLegacyManagedPath(
-    readScalar(defaultsRoot.workspace as JsonValue | undefined).trim(),
-  );
   const agentEntries = [...listOpenClawAgentEntries(normalizedRoot)].sort((left, right) => {
     const leftId = normalizeOpenClawAgentId(readScalar(left.id));
     const rightId = normalizeOpenClawAgentId(readScalar(right.id));
@@ -107,17 +104,16 @@ export function buildOpenClawAgentSnapshotsFromConfigRoot(
       readScalar(identityRoot.emoji as JsonValue | undefined).trim() ||
       readScalar(identityRoot.avatar as JsonValue | undefined).trim() ||
       '*';
-    const configuredWorkspace = normalizeOpenClawLegacyManagedPath(
+    const configuredWorkspace = normalizeOpenClawManagedPath(
       readScalar(entry.workspace as JsonValue | undefined).trim(),
     );
-    const configuredAgentDir = normalizeOpenClawLegacyManagedPath(
+    const configuredAgentDir = normalizeOpenClawManagedPath(
       readScalar(entry.agentDir as JsonValue | undefined).trim(),
     );
     const workspace =
       resolveOpenClawUserPathFromConfigFile(
         configFile,
-        configuredWorkspace ||
-          (id === defaultAgentId ? defaultWorkspace || 'workspace' : `workspace-${id}`),
+        configuredWorkspace || (id === 'main' ? 'workspace' : `workspace-${id}`),
       ) || resolveOpenClawUserPathFromConfigFile(configFile, `workspace-${id}`);
     const agentDir =
       resolveOpenClawUserPathFromConfigFile(
@@ -165,26 +161,20 @@ export function resolveOpenClawAgentPathsFromConfigRoot(input: {
 }): OpenClawResolvedAgentPaths {
   const normalizedRoot = getAgentSnapshotRoot(input.root);
   const normalizedId = normalizeOpenClawAgentId(input.agentId);
-  const defaultsRoot = readObject(readObject(normalizedRoot.agents)?.defaults) || {};
   const defaultAgentId = resolveOpenClawDefaultAgentId(normalizedRoot);
-  const defaultWorkspace = normalizeOpenClawLegacyManagedPath(
-    readScalar(defaultsRoot.workspace as JsonValue | undefined).trim(),
-  );
   const normalizedOverrides = normalizeOpenClawAgentPathOverrides({
     workspace: input.workspace?.trim() || null,
     agentDir: input.agentDir?.trim() || null,
   });
   const workspaceHint =
     normalizedOverrides.workspace ||
-    (normalizedId === defaultAgentId
-      ? defaultWorkspace || 'workspace'
-      : `workspace-${normalizedId}`);
+    (normalizedId === 'main' ? 'workspace' : `workspace-${normalizedId}`);
   const agentDirHint = normalizedOverrides.agentDir || `agents/${normalizedId}/agent`;
   const workspace =
     resolveOpenClawUserPathFromConfigFile(input.configFile, workspaceHint) ||
     resolveOpenClawUserPathFromConfigFile(
       input.configFile,
-      normalizedId === defaultAgentId ? 'workspace' : `workspace-${normalizedId}`,
+      normalizedId === 'main' ? 'workspace' : `workspace-${normalizedId}`,
     );
   const agentDir =
     resolveOpenClawUserPathFromConfigFile(input.configFile, agentDirHint) ||

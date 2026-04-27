@@ -50,9 +50,9 @@ function createOpenClawDetail(
     version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
     typeLabel: 'OpenClaw Gateway',
     host: '10.0.0.8',
-    port: 18789,
-    baseUrl: 'http://10.0.0.8:18789',
-    websocketUrl: 'ws://10.0.0.8:18789',
+    port: 21280,
+    baseUrl: 'http://10.0.0.8:21280',
+    websocketUrl: 'ws://10.0.0.8:21280',
     cpu: 12,
     memory: 35,
     totalMemory: '64GB',
@@ -63,13 +63,13 @@ function createOpenClawDetail(
       namespace: instanceId,
     },
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
       corsOrigins: '*',
-      baseUrl: 'http://10.0.0.8:18789',
-      websocketUrl: 'ws://10.0.0.8:18789',
+      baseUrl: 'http://10.0.0.8:21280',
+      websocketUrl: 'ws://10.0.0.8:21280',
       authToken: 'gateway-token',
     },
     createdAt: 1,
@@ -83,13 +83,13 @@ function createOpenClawDetail(
   return {
     instance,
     config: {
-      port: '18789',
+      port: '21280',
       sandbox: true,
       autoUpdate: true,
       logLevel: 'info',
       corsOrigins: '*',
-      baseUrl: 'http://10.0.0.8:18789',
-      websocketUrl: 'ws://10.0.0.8:18789',
+      baseUrl: 'http://10.0.0.8:21280',
+      websocketUrl: 'ws://10.0.0.8:21280',
       authToken: 'gateway-token',
       ...(configOverride || {}),
     },
@@ -279,8 +279,8 @@ await runTest(
     assert.equal(instance?.runtimeKind, 'openclaw');
     assert.equal(instance?.deploymentMode, 'remote');
     assert.equal(instance?.transportKind, 'openclawGatewayWs');
-    assert.equal(instance?.baseUrl, 'http://10.0.0.8:18789');
-    assert.equal(instance?.websocketUrl, 'ws://10.0.0.8:18789');
+    assert.equal(instance?.baseUrl, 'http://10.0.0.8:21280');
+    assert.equal(instance?.websocketUrl, 'ws://10.0.0.8:21280');
     assert.equal(instance?.storage?.provider, 'remoteApi');
     assert.equal(instance?.storage?.endpoint, 'https://gateway.example.com/claw/api');
   },
@@ -797,8 +797,8 @@ await runTest(
               isDefault: true,
               deploymentMode: 'local-managed',
               host: '127.0.0.1',
-              baseUrl: 'http://127.0.0.1:18789',
-              websocketUrl: 'ws://127.0.0.1:18789',
+              baseUrl: 'http://127.0.0.1:21280',
+              websocketUrl: 'ws://127.0.0.1:21280',
             },
             lifecycle: {
               owner: 'appManaged',

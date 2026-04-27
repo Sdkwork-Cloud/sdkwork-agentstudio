@@ -121,6 +121,11 @@ assert.match(
 );
 assert.match(
   syncModuleSource,
+  /spawnSync\(command, commandArgs,[\s\S]*windowsHide:\s*true/,
+  'sync-bundled-components command runner must hide Windows child-process windows',
+);
+assert.match(
+  syncModuleSource,
   /if \(process\.argv\[1\] && path\.resolve\(process\.argv\[1\]\) === __filename\) \{\s*main\(\)\.catch\(\(error\) => \{\s*console\.error\(error instanceof Error \? error\.message : String\(error\)\);\s*process\.exit\(1\);\s*\}\);\s*\}/s,
   'sync-bundled-components must wrap the CLI entrypoint with a top-level error handler',
 );

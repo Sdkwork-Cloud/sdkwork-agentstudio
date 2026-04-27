@@ -5,6 +5,7 @@ import path from 'node:path';
 import { createTauriCliPlan } from './run-tauri-cli.mjs';
 
 const modulePath = path.resolve(import.meta.dirname, 'run-tauri-cli.mjs');
+const moduleSource = readFileSync(modulePath, 'utf8');
 
 const defaultPlan = createTauriCliPlan({
   argv: ['dev'],
@@ -52,8 +53,13 @@ assert.throws(
   /Unable to resolve the local @tauri-apps\/cli entrypoint/,
 );
 assert.match(
-  readFileSync(modulePath, 'utf8'),
+  moduleSource,
   /if \(path\.resolve\(process\.argv\[1\] \?\? ''\) === __filename\) \{\s*try \{\s*runCli\(\);\s*\} catch \(error\) \{\s*console\.error\(error instanceof Error \? error\.message : String\(error\)\);\s*process\.exit\(1\);\s*\}\s*\}/s,
+);
+assert.match(
+  moduleSource,
+  /windowsHide:\s*true/u,
+  'run-tauri-cli must hide delegated Windows child processes so desktop dev/build launch automation does not flash terminal windows',
 );
 
 console.log('ok - tauri cli runner resolves the local workspace CLI and forwards vite mode through the tauri process environment');

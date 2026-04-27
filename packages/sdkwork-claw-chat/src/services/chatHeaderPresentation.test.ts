@@ -59,7 +59,7 @@ await runTest(
 );
 
 await runTest(
-  'presentChatHeader falls back to a readable preview while the active session still carries an opaque backend title',
+  'presentChatHeader does not promote a readable latest message preview while the active session still carries an opaque backend title',
   () => {
     assert.deepEqual(
       presentChatHeader({
@@ -79,7 +79,7 @@ await runTest(
         isActiveSessionGenerating: false,
       }),
       {
-        title: 'Summarize the current install flow issues across macOS and Windows',
+        title: 'New Conversation',
         status: 'connected',
         detailItems: ['Research Agent'],
       },

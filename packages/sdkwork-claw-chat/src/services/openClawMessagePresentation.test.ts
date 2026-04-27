@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { Buffer } from 'node:buffer';
 import {
   resolveOpenClawMessagePresentation,
 } from './openClawMessagePresentation.ts';
@@ -11,6 +12,10 @@ async function runTest(name: string, callback: () => Promise<void> | void) {
     console.error(`not ok - ${name}`);
     throw error;
   }
+}
+
+function encodeUtf8AsLatin1(value: string) {
+  return Buffer.from(value, 'utf8').toString('latin1');
 }
 
 await runTest(
@@ -156,6 +161,24 @@ await runTest(
         reasoning: null,
         toolCards: [],
       },
+    );
+  },
+);
+
+await runTest(
+  'resolveOpenClawMessagePresentation repairs UTF-8 mojibake before rendering chat text',
+  () => {
+    assert.equal(
+      resolveOpenClawMessagePresentation({
+        role: 'assistant',
+        content: [
+          {
+            type: 'text',
+            text: encodeUtf8AsLatin1('你好，OpenClaw 会话已经修复。'),
+          },
+        ],
+      }).text,
+      '你好，OpenClaw 会话已经修复。',
     );
   },
 );

@@ -4,7 +4,8 @@ use super::{
     types::{KernelHostPlatform, KernelPlatformServiceSpec},
 };
 use crate::framework::{
-    paths::AppPaths, services::openclaw_runtime::ActivatedOpenClawRuntime, FrameworkError, Result,
+    child_process::configure_hidden_child_process, paths::AppPaths,
+    services::openclaw_runtime::ActivatedOpenClawRuntime, FrameworkError, Result,
 };
 #[cfg(windows)]
 use std::ffi::OsString;
@@ -297,11 +298,7 @@ fn run_shell_command_capture(command: &KernelHostShellCommand) -> Result<std::pr
     process.stdin(Stdio::null());
     process.stdout(Stdio::piped());
     process.stderr(Stdio::piped());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        process.creation_flags(0x0800_0000);
-    }
+    configure_hidden_child_process(&mut process);
     Ok(process.output()?)
 }
 
@@ -737,7 +734,7 @@ mod tests {
                 .join("node_modules")
                 .join("openclaw")
                 .join("openclaw.mjs"),
-            home_dir: paths.openclaw_root_dir.clone(),
+            home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
             config_path: paths.openclaw_config_file.clone(),

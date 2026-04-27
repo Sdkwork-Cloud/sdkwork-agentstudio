@@ -84,7 +84,7 @@ function createConnectionOptions(
 }
 
 await runTest(
-  'connectDesktopRuntimeDuringStartup resolves after desktop metadata and leaves readiness probing in the background',
+  'connectDesktopRuntimeDuringStartup waits for hosted runtime readiness before resolving',
   async () => {
     const events: string[] = [];
     let resolveReadiness: (() => void) | undefined;
@@ -156,10 +156,10 @@ await runTest(
 
     await flushMicrotasks();
 
-    assert.equal(connectResolved, true);
+    assert.equal(connectResolved, false);
     assert.deepEqual(events, ['getAppInfo', 'getAppPaths', 'onBaseContext', 'probeReadiness']);
     assert.equal(readyPayload === null, true);
-    assert.ok(resolveReadiness, 'expected readiness probe to remain pending in the background');
+    assert.ok(resolveReadiness, 'expected startup to wait on the readiness probe');
 
     resolveReadiness();
     await connectPromise;
@@ -167,14 +167,90 @@ await runTest(
 
     assert.equal(events.includes('onReadinessReady'), true);
     const resolvedReadyPayload = readyPayload as DesktopRuntimeConnectionReadyContext | null;
-    assert.ok(resolvedReadyPayload, 'expected readiness payload after the background probe completed');
+    assert.ok(resolvedReadyPayload, 'expected readiness payload after the startup probe completed');
     assert.equal(resolvedReadyPayload.readinessSnapshot.evidence.ready, true);
     assert.equal(resolvedReadyPayload.localAiProxy?.lifecycle, 'running');
   },
 );
 
 await runTest(
-  'connectDesktopRuntimeDuringStartup keeps startup alive when hosted runtime readiness fails after metadata connection',
+  'connectDesktopRuntimeDuringStartup can launch shell while hosted runtime readiness continues in the background',
+  async () => {
+    const events: string[] = [];
+    let resolveReadiness: (() => void) | undefined;
+    let connectResolved = false;
+
+    const connectPromise = connectDesktopRuntimeDuringStartup(
+      createConnectionOptions({
+        blockOnReadiness: false,
+        probeHostedRuntimeReadiness: async () => {
+          events.push('probeReadiness');
+          await new Promise<void>((resolve) => {
+            resolveReadiness = resolve;
+          });
+          events.push('readinessResolved');
+          return {
+            descriptor: {
+              mode: 'desktopCombined',
+              lifecycle: 'ready',
+              apiBasePath: '/claw/api/v1',
+              manageBasePath: '/claw/manage/v1',
+              internalBasePath: '/claw/internal/v1',
+              browserBaseUrl: 'http://127.0.0.1:1420',
+            },
+            hostPlatformStatus: {
+              mode: 'desktopCombined',
+              lifecycle: 'ready',
+            },
+            hostEndpoints: [],
+            openClawRuntime: {
+              lifecycle: 'ready',
+            },
+            openClawGateway: {
+              lifecycle: 'ready',
+            },
+            instances: [],
+            evidence: {
+              ready: true,
+            },
+          } as any;
+        },
+        onBaseContext: async () => {
+          events.push('onBaseContext');
+        },
+        onReadinessReady: async () => {
+          events.push('onReadinessReady');
+        },
+      }),
+    ).then(() => {
+      connectResolved = true;
+      events.push('connectResolved');
+    });
+
+    await flushMicrotasks();
+
+    try {
+      assert.equal(connectResolved, true);
+      assert.deepEqual(events, ['onBaseContext', 'probeReadiness', 'connectResolved']);
+    } finally {
+      assert.ok(resolveReadiness, 'expected background readiness probe to be started');
+      resolveReadiness();
+      await connectPromise;
+      await flushMicrotasks();
+    }
+
+    assert.deepEqual(events, [
+      'onBaseContext',
+      'probeReadiness',
+      'connectResolved',
+      'readinessResolved',
+      'onReadinessReady',
+    ]);
+  },
+);
+
+await runTest(
+  'connectDesktopRuntimeDuringStartup rejects startup when hosted runtime readiness fails',
   async () => {
     const events: string[] = [];
     let rejectReadiness: ((error: Error) => void) | undefined;
@@ -198,23 +274,93 @@ await runTest(
       }),
     );
 
-    await connectPromise;
     await flushMicrotasks();
 
     assert.deepEqual(events, ['onBaseContext', 'probeReadiness']);
     assert.ok(rejectReadiness, 'expected readiness probe failure hook to be available');
 
     rejectReadiness(new Error('runtime readiness failed'));
-    await flushMicrotasks();
+    await assert.rejects(connectPromise, /runtime readiness failed/);
 
     assert.equal(events.includes('onReadinessFailed'), true);
     const resolvedFailurePayload = failurePayload as DesktopRuntimeConnectionFailureContext | null;
-    assert.ok(resolvedFailurePayload, 'expected failure payload after the background probe rejected');
+    assert.ok(resolvedFailurePayload, 'expected failure payload before startup rejects');
     assert.equal(
       resolvedFailurePayload.error instanceof Error ? resolvedFailurePayload.error.message : null,
       'runtime readiness failed',
     );
     assert.equal(resolvedFailurePayload.localAiProxy?.logPath, 'D:/proxy/proxy.log');
+  },
+);
+
+await runTest(
+  'connectDesktopRuntimeDuringStartup still reports readiness when local AI proxy evidence capture fails',
+  async () => {
+    const events: string[] = [];
+    let readyPayload: DesktopRuntimeConnectionReadyContext | null = null;
+
+    await connectDesktopRuntimeDuringStartup(
+      createConnectionOptions({
+        captureLocalAiProxyEvidence: async () => {
+          events.push('captureLocalAiProxyEvidence');
+          throw new Error('local proxy evidence unavailable');
+        },
+        onReadinessReady: async (payload) => {
+          events.push('onReadinessReady');
+          readyPayload = payload;
+        },
+      }),
+    );
+
+    assert.deepEqual(events, ['captureLocalAiProxyEvidence', 'onReadinessReady']);
+    const resolvedReadyPayload = readyPayload as DesktopRuntimeConnectionReadyContext | null;
+    assert.ok(resolvedReadyPayload, 'expected readiness payload even without local proxy evidence');
+    assert.equal(resolvedReadyPayload.readinessSnapshot.evidence.ready, true);
+    assert.equal(resolvedReadyPayload.localAiProxy, null);
+  },
+);
+
+await runTest(
+  'connectDesktopRuntimeDuringStartup preserves the readiness failure when local AI proxy evidence capture fails',
+  async () => {
+    const events: string[] = [];
+    let failurePayload: DesktopRuntimeConnectionFailureContext | null = null;
+
+    await assert.rejects(
+      () =>
+        connectDesktopRuntimeDuringStartup(
+          createConnectionOptions({
+            probeHostedRuntimeReadiness: async () => {
+              events.push('probeReadiness');
+              throw new Error('runtime readiness failed');
+            },
+            captureLocalAiProxyEvidence: async () => {
+              events.push('captureLocalAiProxyEvidence');
+              throw new Error('local proxy evidence unavailable');
+            },
+            onReadinessFailed: async (payload) => {
+              events.push('onReadinessFailed');
+              failurePayload = payload;
+            },
+          }),
+        ),
+      /runtime readiness failed/,
+    );
+
+    assert.deepEqual(events, [
+      'probeReadiness',
+      'captureLocalAiProxyEvidence',
+      'onReadinessFailed',
+    ]);
+    const resolvedFailurePayload = failurePayload as DesktopRuntimeConnectionFailureContext | null;
+    assert.ok(resolvedFailurePayload, 'expected failure payload with the original readiness error');
+    assert.equal(
+      resolvedFailurePayload.error instanceof Error
+        ? resolvedFailurePayload.error.message
+        : null,
+      'runtime readiness failed',
+    );
+    assert.equal(resolvedFailurePayload.localAiProxy, null);
   },
 );
 
