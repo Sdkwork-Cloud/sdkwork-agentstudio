@@ -6,8 +6,17 @@ import path from 'node:path';
 import {
   assessOpenClawUpgradeReadiness,
 } from './openclaw-upgrade-readiness.mjs';
+import { shiftNumericVersion } from './test-support/version-fixtures.mjs';
 
 const rootDir = path.resolve(import.meta.dirname, '..');
+const openClawReleaseConfig = JSON.parse(
+  readFileSync(path.join(rootDir, 'config', 'kernel-releases', 'openclaw.json'), 'utf8'),
+);
+const expectedNodeVersion = openClawReleaseConfig.nodeVersion;
+const currentOpenClawVersion = String(openClawReleaseConfig.stableVersion);
+const previousOpenClawVersion = shiftNumericVersion(currentOpenClawVersion, -1);
+const staleOpenClawVersion = shiftNumericVersion(currentOpenClawVersion, -2);
+const retiredOpenClawVersion = shiftNumericVersion(currentOpenClawVersion, -3);
 
 function createJson(filePath, value) {
   mkdirSync(path.dirname(filePath), { recursive: true });
@@ -25,12 +34,12 @@ function createReleaseConfig(workspaceRootDir, stableVersion) {
     stableVersion,
     supportedChannels: ['stable'],
     defaultChannel: 'stable',
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     packageName: 'openclaw',
     runtimeRequirements: {
       requiredExternalRuntimes: ['nodejs'],
       requiredExternalRuntimeVersions: {
-        nodejs: '22.16.0',
+        nodejs: expectedNodeVersion,
       },
     },
     runtimeSupplementalPackages: [],
@@ -60,44 +69,44 @@ await runTest('assessOpenClawUpgradeReadiness reports ready when local upgrade i
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'openclaw-upgrade-readiness-ready-'));
 
   try {
-    createReleaseConfig(tempRoot, '2026.4.2');
+    createReleaseConfig(tempRoot, previousOpenClawVersion);
     createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'manifest.json'), {
       schemaVersion: 1,
       runtimeId: 'openclaw',
-      openclawVersion: '2026.4.2',
-      nodeVersion: '22.16.0',
+      openclawVersion: previousOpenClawVersion,
+      nodeVersion: expectedNodeVersion,
       platform: 'windows',
       arch: 'x64',
     });
     createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'runtime', 'package', 'node_modules', 'openclaw', 'package.json'), {
       name: 'openclaw',
-      version: '2026.4.2',
+      version: previousOpenClawVersion,
     });
     createJson(path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw', 'package.json'), {
       name: 'openclaw',
-      version: '2026.4.5',
+      version: currentOpenClawVersion,
     });
     createGitHeadRepo(path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw'), {
       head: '89abcdef0123456789abcdef0123456789abcdef',
       tags: {
-        'v2026.4.5': '89abcdef0123456789abcdef0123456789abcdef',
+        [`v${currentOpenClawVersion}`]: '89abcdef0123456789abcdef0123456789abcdef',
       },
     });
     createText(
       path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw', '.git', 'status.fake'),
       '',
     );
-    createText(path.join(tempRoot, 'openclaw-2026.4.5.tgz'), 'tarball');
+    createText(path.join(tempRoot, `openclaw-${currentOpenClawVersion}.tgz`), 'tarball');
 
     const result = await assessOpenClawUpgradeReadiness({
       workspaceRootDir: tempRoot,
-      targetVersion: '2026.4.5',
+      targetVersion: currentOpenClawVersion,
     });
 
-    assert.equal(result.targetVersion, '2026.4.5');
-    assert.equal(result.configuredVersion, '2026.4.2');
-    assert.equal(result.localPreparedRuntimeVersion, '2026.4.2');
-    assert.equal(result.localUpstreamVersion, '2026.4.5');
+    assert.equal(result.targetVersion, currentOpenClawVersion);
+    assert.equal(result.configuredVersion, previousOpenClawVersion);
+    assert.equal(result.localPreparedRuntimeVersion, previousOpenClawVersion);
+    assert.equal(result.localUpstreamVersion, currentOpenClawVersion);
     assert.equal(result.localUpstreamHasTargetTag, true);
     assert.equal(result.localUpstreamDirty, false);
     assert.equal(result.localUpstreamDirtyCheck, 'fixture');
@@ -126,22 +135,22 @@ await runTest('assessOpenClawUpgradeReadiness reports missing local upgrade inpu
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'openclaw-upgrade-readiness-blocked-'));
 
   try {
-    createReleaseConfig(tempRoot, '2026.4.2');
+    createReleaseConfig(tempRoot, previousOpenClawVersion);
     createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'manifest.json'), {
       schemaVersion: 1,
       runtimeId: 'openclaw',
-      openclawVersion: '2026.4.2',
-      nodeVersion: '22.16.0',
+      openclawVersion: previousOpenClawVersion,
+      nodeVersion: expectedNodeVersion,
       platform: 'windows',
       arch: 'x64',
     });
     createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'runtime', 'package', 'node_modules', 'openclaw', 'package.json'), {
       name: 'openclaw',
-      version: '2026.4.2',
+      version: previousOpenClawVersion,
     });
     createJson(path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw', 'package.json'), {
       name: 'openclaw',
-      version: '2026.4.2',
+      version: previousOpenClawVersion,
     });
     createGitHeadRepo(path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw'));
     createText(
@@ -151,7 +160,7 @@ await runTest('assessOpenClawUpgradeReadiness reports missing local upgrade inpu
 
     const result = await assessOpenClawUpgradeReadiness({
       workspaceRootDir: tempRoot,
-      targetVersion: '2026.4.5',
+      targetVersion: currentOpenClawVersion,
     });
 
     assert.equal(result.readyToUpgrade, false);
@@ -159,12 +168,12 @@ await runTest('assessOpenClawUpgradeReadiness reports missing local upgrade inpu
     assert.equal(result.localUpstreamDirty, true);
     assert.equal(result.localUpstreamDirtyCheck, 'fixture');
     assert.equal(result.localTarballPresent, false);
-    assert.equal(result.localUpstreamVersion, '2026.4.2');
+    assert.equal(result.localUpstreamVersion, previousOpenClawVersion);
     assert.deepEqual(result.blockers, [
-      'Local OpenClaw upstream checkout is still at 2026.4.2 instead of 2026.4.5.',
-      'Local OpenClaw upstream checkout does not contain git tag v2026.4.5.',
+      `Local OpenClaw upstream checkout is still at ${previousOpenClawVersion} instead of ${currentOpenClawVersion}.`,
+      `Local OpenClaw upstream checkout does not contain git tag v${currentOpenClawVersion}.`,
       'Local OpenClaw upstream checkout has uncommitted changes and should not be hard-reset in place.',
-      'No local openclaw-2026.4.5.tgz tarball is available for an offline packaged OpenClaw upgrade.',
+      `No local openclaw-${currentOpenClawVersion}.tgz tarball is available for an offline packaged OpenClaw upgrade.`,
     ]);
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -172,12 +181,12 @@ await runTest('assessOpenClawUpgradeReadiness reports missing local upgrade inpu
 });
 
 await runTest(
-  'assessOpenClawUpgradeReadiness reports legacy source runtime residue as an upgrade blocker',
+  'assessOpenClawUpgradeReadiness reports unsupported source runtime layouts as upgrade blockers',
   async () => {
-    const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'openclaw-upgrade-readiness-legacy-source-'));
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'openclaw-upgrade-readiness-unsupported-source-'));
 
     try {
-      createReleaseConfig(tempRoot, '2026.4.9');
+      createReleaseConfig(tempRoot, previousOpenClawVersion);
       createJson(
         path.join(
           tempRoot,
@@ -191,8 +200,8 @@ await runTest(
         {
           schemaVersion: 1,
           runtimeId: 'openclaw',
-          openclawVersion: '2026.4.9',
-          nodeVersion: '22.16.0',
+          openclawVersion: previousOpenClawVersion,
+          nodeVersion: expectedNodeVersion,
           platform: 'windows',
           arch: 'x64',
         },
@@ -213,24 +222,24 @@ await runTest(
         ),
         {
           name: 'openclaw',
-          version: '2026.4.9',
+          version: previousOpenClawVersion,
         },
       );
       createJson(path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw', 'package.json'), {
         name: 'openclaw',
-        version: '2026.4.11',
+        version: currentOpenClawVersion,
       });
       createGitHeadRepo(path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw'), {
         head: '89abcdef0123456789abcdef0123456789abcdef',
         tags: {
-          'v2026.4.11': '89abcdef0123456789abcdef0123456789abcdef',
+          [`v${currentOpenClawVersion}`]: '89abcdef0123456789abcdef0123456789abcdef',
         },
       });
       createText(
         path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw', '.git', 'status.fake'),
         '',
       );
-      createText(path.join(tempRoot, 'openclaw-2026.4.11.tgz'), 'tarball');
+      createText(path.join(tempRoot, `openclaw-${currentOpenClawVersion}.tgz`), 'tarball');
       createJson(
         path.join(
           tempRoot,
@@ -244,8 +253,8 @@ await runTest(
         {
           schemaVersion: 1,
           runtimeId: 'openclaw',
-          openclawVersion: '2026.3.28',
-          nodeVersion: '22.16.0',
+          openclawVersion: retiredOpenClawVersion,
+          nodeVersion: expectedNodeVersion,
           platform: 'windows',
           arch: 'x64',
         },
@@ -266,20 +275,21 @@ await runTest(
         ),
         {
           name: 'openclaw',
-          version: '2026.3.28',
+          version: retiredOpenClawVersion,
         },
       );
 
       const result = await assessOpenClawUpgradeReadiness({
         workspaceRootDir: tempRoot,
-        targetVersion: '2026.4.11',
+        targetVersion: currentOpenClawVersion,
       });
 
       assert.equal(result.readyToUpgrade, false);
-      assert.equal(result.legacySourceRuntimeDirPresent, true);
-      assert.equal(result.legacySourceRuntimeVersion, '2026.3.28');
+      assert.equal(result.unsupportedSourceRuntimeDirPresent, true);
+      assert.equal(result.unsupportedSourceRuntimeVersion, retiredOpenClawVersion);
+      assert.equal(result.unsupportedBundledNodeRuntimeDirPresent, false);
       assert.deepEqual(result.blockers, [
-        'Legacy desktop source runtime residue is still present at packages/sdkwork-claw-desktop/src-tauri/resources/openclaw-runtime (detected version 2026.3.28). Remove it before upgrading the packaged OpenClaw runtime.',
+        `Unsupported OpenClaw runtime layout is present at packages/sdkwork-claw-desktop/src-tauri/resources/openclaw-runtime (detected version ${retiredOpenClawVersion}). Remove retired layout artifacts before upgrading the packaged OpenClaw runtime.`,
       ]);
     } finally {
       rmSync(tempRoot, { recursive: true, force: true });
@@ -293,7 +303,7 @@ await runTest(
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'openclaw-upgrade-readiness-current-baseline-'));
 
     try {
-      createReleaseConfig(tempRoot, '2026.4.2');
+      createReleaseConfig(tempRoot, currentOpenClawVersion);
       createJson(
         path.join(
           tempRoot,
@@ -307,8 +317,8 @@ await runTest(
         {
           schemaVersion: 1,
           runtimeId: 'openclaw',
-          openclawVersion: '2026.4.2',
-          nodeVersion: '22.16.0',
+          openclawVersion: currentOpenClawVersion,
+          nodeVersion: expectedNodeVersion,
           platform: 'windows',
           arch: 'x64',
         },
@@ -327,8 +337,8 @@ await runTest(
         {
           schemaVersion: 1,
           runtimeId: 'openclaw',
-          openclawVersion: '2026.4.2',
-          nodeVersion: '22.16.0',
+          openclawVersion: currentOpenClawVersion,
+          nodeVersion: expectedNodeVersion,
           platform: 'windows',
           arch: 'x64',
         },
@@ -349,17 +359,17 @@ await runTest(
         ),
         {
           name: 'openclaw',
-          version: '2026.4.2',
+          version: currentOpenClawVersion,
         },
       );
       createJson(path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw', 'package.json'), {
         name: 'openclaw',
-        version: '2026.4.2',
+        version: currentOpenClawVersion,
       });
       createGitHeadRepo(path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw'), {
         head: '0123456789abcdef0123456789abcdef01234567',
         tags: {
-          'v2026.4.1': 'fedcba9876543210fedcba9876543210fedcba98',
+          [`v${previousOpenClawVersion}`]: 'fedcba9876543210fedcba9876543210fedcba98',
         },
       });
       createText(
@@ -369,13 +379,102 @@ await runTest(
 
       const result = await assessOpenClawUpgradeReadiness({
         workspaceRootDir: tempRoot,
-        targetVersion: '2026.4.2',
+        targetVersion: currentOpenClawVersion,
       });
 
       assert.equal(result.versionSourcesAligned, true);
       assert.equal(result.readyToUpgrade, false);
       assert.deepEqual(result.blockers, [
-        'Local OpenClaw upstream checkout does not contain git tag v2026.4.2.',
+        `Local OpenClaw upstream checkout does not contain git tag v${currentOpenClawVersion}.`,
+      ]);
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+  },
+);
+
+await runTest(
+  'assessOpenClawUpgradeReadiness keeps packaged version alignment separate from missing local upgrade inputs',
+  async () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'openclaw-upgrade-readiness-missing-upstream-'));
+
+    try {
+      createReleaseConfig(tempRoot, currentOpenClawVersion);
+      createJson(
+        path.join(
+          tempRoot,
+          'packages',
+          'sdkwork-claw-desktop',
+          'src-tauri',
+          'resources',
+          'openclaw',
+          'manifest.json',
+        ),
+        {
+          schemaVersion: 1,
+          runtimeId: 'openclaw',
+          openclawVersion: currentOpenClawVersion,
+          nodeVersion: expectedNodeVersion,
+          platform: 'windows',
+          arch: 'x64',
+        },
+      );
+      createJson(
+        path.join(
+          tempRoot,
+          'packages',
+          'sdkwork-claw-desktop',
+          'src-tauri',
+          'generated',
+          'release',
+          'openclaw-resource',
+          'manifest.json',
+        ),
+        {
+          schemaVersion: 1,
+          runtimeId: 'openclaw',
+          openclawVersion: currentOpenClawVersion,
+          nodeVersion: expectedNodeVersion,
+          platform: 'windows',
+          arch: 'x64',
+        },
+      );
+      createJson(
+        path.join(
+          tempRoot,
+          'packages',
+          'sdkwork-claw-desktop',
+          'src-tauri',
+          'resources',
+          'openclaw',
+          'runtime',
+          'package',
+          'node_modules',
+          'openclaw',
+          'package.json',
+        ),
+        {
+          name: 'openclaw',
+          version: currentOpenClawVersion,
+        },
+      );
+
+      const result = await assessOpenClawUpgradeReadiness({
+        workspaceRootDir: tempRoot,
+        targetVersion: currentOpenClawVersion,
+      });
+
+      assert.equal(result.configuredVersion, currentOpenClawVersion);
+      assert.equal(result.bundledManifestVersion, currentOpenClawVersion);
+      assert.equal(result.generatedManifestVersion, currentOpenClawVersion);
+      assert.equal(result.localPreparedRuntimeVersion, currentOpenClawVersion);
+      assert.equal(result.localUpstreamVersion, null);
+      assert.equal(result.versionSourcesAligned, true);
+      assert.equal(result.readyToUpgrade, false);
+      assert.deepEqual(result.blockers, [
+        `Local OpenClaw upstream checkout is still at unknown instead of ${currentOpenClawVersion}.`,
+        `Local OpenClaw upstream checkout does not contain git tag v${currentOpenClawVersion}.`,
+        `No local openclaw-${currentOpenClawVersion}.tgz tarball is available for an offline packaged OpenClaw upgrade.`,
       ]);
     } finally {
       rmSync(tempRoot, { recursive: true, force: true });

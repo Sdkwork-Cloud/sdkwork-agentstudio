@@ -21,7 +21,8 @@ import {
   buildDesktopInstallReadyLayout,
   resolveDesktopOpenClawInstallKeyFromManifest,
 } from './release/desktop-install-ready-layout.mjs';
-import { detectLegacyOpenClawSourceRuntimeResidue } from './cleanup-legacy-openclaw-source-runtime.mjs';
+import { readZipArchiveEntries } from './release/archive-entry-safety.mjs';
+import { assertNoUnsupportedOpenClawRuntimeLayout } from './assert-openclaw-runtime-layout.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const rootDir = path.resolve(import.meta.dirname, '..');
@@ -139,79 +140,8 @@ async function ensurePathMissing(absolutePath, description) {
   throw new Error(`${description} must remain archive-only and must not exist at ${absolutePath}`);
 }
 
-async function assertLegacySourceRuntimeResidueMissing(workspaceRootDir) {
-  const {
-    legacySourceRuntimeDir,
-    legacySourceRuntimeDirPresent,
-    legacySourceRuntimeVersion,
-  } = await detectLegacyOpenClawSourceRuntimeResidue({ workspaceRootDir });
-  if (!legacySourceRuntimeDirPresent) {
-    return;
-  }
-
-  const versionSuffix = legacySourceRuntimeVersion
-    ? ` (detected version ${legacySourceRuntimeVersion})`
-    : '';
-  throw new Error(
-    `Legacy source runtime residue must be removed before verifying desktop OpenClaw release assets: ${legacySourceRuntimeDir}${versionSuffix}`,
-  );
-}
-
-function findZipEndOfCentralDirectory(buffer) {
-  const minimumRecordSize = 22;
-  const maxCommentLength = 0xffff;
-  const startOffset = Math.max(0, buffer.length - minimumRecordSize - maxCommentLength);
-
-  for (let offset = buffer.length - minimumRecordSize; offset >= startOffset; offset -= 1) {
-    if (buffer.readUInt32LE(offset) === 0x06054b50) {
-      return offset;
-    }
-  }
-
-  return -1;
-}
-
-function readZipEntriesFromBuffer(buffer, archivePath) {
-  const eocdOffset = findZipEndOfCentralDirectory(buffer);
-  if (eocdOffset < 0) {
-    throw new Error(`Unable to locate the ZIP central directory in ${archivePath}.`);
-  }
-
-  const centralDirectorySize = buffer.readUInt32LE(eocdOffset + 12);
-  const centralDirectoryOffset = buffer.readUInt32LE(eocdOffset + 16);
-  const centralDirectoryEnd = centralDirectoryOffset + centralDirectorySize;
-  if (centralDirectoryEnd > buffer.length) {
-    throw new Error(`ZIP central directory exceeds archive bounds in ${archivePath}.`);
-  }
-
-  const entries = [];
-  let offset = centralDirectoryOffset;
-  while (offset < centralDirectoryEnd) {
-    if (buffer.readUInt32LE(offset) !== 0x02014b50) {
-      throw new Error(`Invalid ZIP central directory entry at byte ${offset} in ${archivePath}.`);
-    }
-
-    const compressionMethod = buffer.readUInt16LE(offset + 10);
-    const compressedSize = buffer.readUInt32LE(offset + 20);
-    const uncompressedSize = buffer.readUInt32LE(offset + 24);
-    const fileNameLength = buffer.readUInt16LE(offset + 28);
-    const extraFieldLength = buffer.readUInt16LE(offset + 30);
-    const fileCommentLength = buffer.readUInt16LE(offset + 32);
-    const localHeaderOffset = buffer.readUInt32LE(offset + 42);
-    const fileName = buffer.toString('utf8', offset + 46, offset + 46 + fileNameLength);
-
-    entries.push({
-      fileName,
-      compressionMethod,
-      compressedSize,
-      uncompressedSize,
-      localHeaderOffset,
-    });
-
-    offset += 46 + fileNameLength + extraFieldLength + fileCommentLength;
-  }
-
-  return entries;
+async function assertUnsupportedOpenClawRuntimeLayoutMissing(workspaceRootDir) {
+  await assertNoUnsupportedOpenClawRuntimeLayout({ workspaceRootDir });
 }
 
 function readZipEntryContent(buffer, entry, archivePath) {
@@ -248,8 +178,11 @@ async function verifyPackagedRuntimeArchive({
 } = {}) {
   const archivePath = path.join(packagedResourceDir, archiveFileName);
   const archiveBuffer = await readFile(archivePath);
-  const entries = readZipEntriesFromBuffer(archiveBuffer, archivePath);
-  const entryNames = new Set(entries.map((entry) => entry.fileName));
+  const entries = readZipArchiveEntries(archivePath, {
+    context: 'Desktop OpenClaw runtime',
+  });
+  const entryNames = new Set(entries.map((entry) => entry.normalizedPath));
+  const cliRelativePath = String(manifest.cliRelativePath ?? '').replaceAll('\\', '/');
 
   assert.equal(
     entryNames.has(`runtime/${RUNTIME_SIDECAR_MANIFEST_FILENAME}`),
@@ -257,18 +190,18 @@ async function verifyPackagedRuntimeArchive({
     'packaged OpenClaw runtime archive must contain the runtime sidecar manifest',
   );
   assert.equal(
-    [...entryNames].some((entryName) => String(entryName ?? '').replaceAll('\\', '/').startsWith('runtime/node/')),
+    [...entryNames].some((entryName) => String(entryName ?? '').startsWith('runtime/node/')),
     false,
     'packaged OpenClaw runtime archive must not contain a bundled Node payload',
   );
   assert.equal(
-    entryNames.has(manifest.cliRelativePath),
+    entryNames.has(cliRelativePath),
     true,
     'packaged OpenClaw runtime archive must contain the OpenClaw CLI entrypoint',
   );
 
   const runtimeSidecarEntry = entries.find(
-    (entry) => entry.fileName === `runtime/${RUNTIME_SIDECAR_MANIFEST_FILENAME}`,
+    (entry) => entry.normalizedPath === `runtime/${RUNTIME_SIDECAR_MANIFEST_FILENAME}`,
   );
   const runtimeSidecarManifest = JSON.parse(
     readZipEntryContent(archiveBuffer, runtimeSidecarEntry, archivePath).toString('utf8'),
@@ -362,11 +295,13 @@ async function materializePackagedRuntimeArchiveIntoInstallDir({
 } = {}) {
   const archivePath = path.join(packagedResourceDir, archiveFileName);
   const archiveBuffer = await readFile(archivePath);
-  const entries = readZipEntriesFromBuffer(archiveBuffer, archivePath);
+  const entries = readZipArchiveEntries(archivePath, {
+    context: 'Desktop OpenClaw runtime',
+  });
 
   for (const entry of entries) {
-    const entryPath = resolveInstallReadyEntryPath(installDir, entry.fileName);
-    if (entry.fileName.endsWith('/')) {
+    const entryPath = resolveInstallReadyEntryPath(installDir, entry.normalizedPath);
+    if (entry.type === 'directory') {
       await mkdir(entryPath, { recursive: true });
       continue;
     }
@@ -424,7 +359,7 @@ export async function verifyDesktopOpenClawReleaseAssets({
   ),
   archiveFileName = BUNDLED_RESOURCE_RUNTIME_ARCHIVE_FILENAME,
 } = {}) {
-  await assertLegacySourceRuntimeResidueMissing(workspaceRootDir);
+  await assertUnsupportedOpenClawRuntimeLayoutMissing(workspaceRootDir);
 
   const sourceInspection = await inspectPreparedOpenClawRuntime({
     resourceDir,

@@ -1,3 +1,4 @@
+import { resolveBrowserStorage } from '@sdkwork/claw-infrastructure';
 import {
   buildDeviceAuthPayload,
   isNonRecoverableAuthError,
@@ -148,11 +149,7 @@ function resolveStorage(override: StorageLike | null | undefined) {
     return override;
   }
 
-  try {
-    return globalThis.localStorage;
-  } catch {
-    return null;
-  }
+  return resolveBrowserStorage('localStorage');
 }
 
 function base64UrlEncode(bytes: Uint8Array) {

@@ -1,13 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { Loader2, Minus, RefreshCw, Square, X } from 'lucide-react';
-import {
-  closeWindow,
-  isWindowMaximized as getIsWindowMaximized,
-  maximizeWindow,
-  minimizeWindow,
-  restoreWindow,
-  subscribeWindowMaximized,
-} from '../tauriBridge';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { AppHeader } from '@sdkwork/claw-shell';
 import type { StartupLanguage, StartupProgressModel } from './startupPresentation';
 import { getStartupCopy } from './startupPresentation';
 
@@ -34,66 +26,8 @@ function BrandIcon({ isActive }: { isActive: boolean }) {
   );
 }
 
-function WindowControlButton({
-  label,
-  onClick,
-  children,
-  intent = 'default',
-}: {
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-  intent?: 'default' | 'danger';
-}) {
-  const intentClassName =
-    intent === 'danger'
-      ? 'hover:border-red-500/45 hover:bg-red-950 hover:text-white'
-      : 'hover:border-zinc-500 hover:bg-zinc-800 hover:text-white';
-
+function getStartupWindowControlLabels(language: StartupLanguage) {
   return (
-    <button
-      type="button"
-      data-tauri-drag-region="false"
-      title={label}
-      aria-label={label}
-      onClick={onClick}
-      className={`flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 transition-colors ${intentClassName}`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function useDesktopWindowMaximized() {
-  const [isMaximized, setIsMaximized] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    let unsubscribe = () => {};
-
-    void (async () => {
-      setIsMaximized(await getIsWindowMaximized());
-      unsubscribe = await subscribeWindowMaximized((nextState) => {
-        if (!active) {
-          return;
-        }
-
-        setIsMaximized(nextState);
-      });
-    })();
-
-    return () => {
-      active = false;
-      void unsubscribe();
-    };
-  }, []);
-
-  return isMaximized;
-}
-
-function StartupWindowControls({ language }: { language: StartupLanguage }) {
-  const isMaximizedWindow = useDesktopWindowMaximized();
-  const labels =
     language === 'zh'
       ? {
           minimize: '\u6700\u5c0f\u5316\u7a97\u53e3',
@@ -106,29 +40,7 @@ function StartupWindowControls({ language }: { language: StartupLanguage }) {
           maximize: 'Maximize window',
           restore: 'Restore window',
           close: 'Hide to tray',
-        };
-
-  return (
-    <div data-tauri-drag-region="false" className="flex items-center gap-2">
-      <WindowControlButton label={labels.minimize} onClick={() => void minimizeWindow()}>
-        <Minus aria-hidden="true" className="h-4 w-4" />
-      </WindowControlButton>
-      <WindowControlButton
-        label={isMaximizedWindow ? labels.restore : labels.maximize}
-        onClick={() =>
-          void (isMaximizedWindow ? restoreWindow() : maximizeWindow())
         }
-      >
-        <Square aria-hidden="true" className="h-4 w-4" />
-      </WindowControlButton>
-      <WindowControlButton
-        label={labels.close}
-        onClick={() => void closeWindow()}
-        intent="danger"
-      >
-        <X aria-hidden="true" className="h-4 w-4" />
-      </WindowControlButton>
-    </div>
   );
 }
 
@@ -155,9 +67,10 @@ export function DesktopStartupScreen({
       <div className="absolute inset-0 bg-zinc-950" />
 
       <div className="relative flex h-full min-h-0 flex-col">
-        <div className="flex items-center justify-end px-4 pt-4 sm:px-5 sm:pt-5">
-          <StartupWindowControls language={language} />
-        </div>
+        <AppHeader
+          mode="window-controls"
+          windowControlLabels={getStartupWindowControlLabels(language)}
+        />
 
         <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-8">
           <div className="w-full max-w-[27rem] rounded-lg border border-zinc-800 bg-zinc-950 p-7 shadow-[0_24px_80px_rgba(0,0,0,0.36)]">

@@ -217,6 +217,66 @@ await runTest('settingsService keeps local preferences available even when fetch
   });
 });
 
+await runTest('settingsService reads default preferences when legacy browser storage is blocked', async () => {
+  const previousDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    get() {
+      throw new DOMException('localStorage is blocked', 'SecurityError');
+    },
+  });
+
+  const settingsService = createSettingsService({
+    getClient: () => ({
+      user: {
+        async getUserProfile() {
+          return { code: 0, data: {} };
+        },
+        async updateUserProfile() {
+          return { code: 0, data: {} };
+        },
+        async changePassword() {
+          return { code: 0, data: null };
+        },
+      },
+    }),
+    storageApi: {
+      async getText() {
+        throw new Error('platform storage unavailable');
+      },
+      async putText() {
+        throw new Error('platform storage unavailable');
+      },
+      async removeText() {
+        throw new Error('platform storage unavailable');
+      },
+      async listKeys() {
+        throw new Error('platform storage unavailable');
+      },
+    },
+  });
+
+  try {
+    const preferences = await settingsService.getPreferences();
+
+    assert.deepEqual(preferences.general, {
+      launchOnStartup: false,
+      startMinimized: false,
+      compactModelSelector: true,
+    });
+    assert.deepEqual(preferences.privacy, {
+      shareUsageData: false,
+      personalizedRecommendations: false,
+    });
+  } finally {
+    if (previousDescriptor) {
+      Object.defineProperty(globalThis, 'localStorage', previousDescriptor);
+    } else {
+      delete (globalThis as { localStorage?: unknown }).localStorage;
+    }
+  }
+});
+
 await runTest('settingsService surfaces remote profile failures instead of falling back to mock data', async () => {
   const settingsService = createTestSettingsService();
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {

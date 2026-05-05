@@ -22,6 +22,10 @@ function runTest(name, fn) {
 
 const packageJson = readJson('package.json');
 const tsconfigBasePath = path.join(root, 'tsconfig.base.json');
+const hostTsconfigPaths = [
+  'packages/sdkwork-claw-web/tsconfig.json',
+  'packages/sdkwork-claw-desktop/tsconfig.json',
+];
 
 runTest('workspace TypeScript baseline stays valid for the active toolchain when leaf configs use baseUrl', () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claw-ts-toolchain-contract-'));
@@ -69,4 +73,22 @@ runTest('automation gate executes the workspace TypeScript toolchain contract', 
     /node scripts\/typescript-toolchain-contract\.test\.mjs/,
     'package.json must run scripts/typescript-toolchain-contract.test.mjs from check:automation',
   );
+});
+
+runTest('host TypeScript configs do not compile through external sdkwork-core source internals', () => {
+  for (const tsconfigPath of hostTsconfigPaths) {
+    const tsconfig = readJson(tsconfigPath);
+    const paths = tsconfig.compilerOptions?.paths ?? {};
+
+    assert.equal(
+      Object.hasOwn(paths, '@sdkwork/core-pc-react'),
+      false,
+      `${tsconfigPath} must consume @sdkwork/core-pc-react through the package boundary`,
+    );
+    assert.equal(
+      Object.hasOwn(paths, '@sdkwork/core-pc-react/*'),
+      false,
+      `${tsconfigPath} must not force TypeScript into @sdkwork/core-pc-react subpath source internals`,
+    );
+  }
 });

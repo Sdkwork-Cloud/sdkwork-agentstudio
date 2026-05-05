@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use serde::{Deserialize, Serialize};
 
@@ -134,6 +134,7 @@ pub struct NodeSessionHelloResponse {
 #[derive(Debug)]
 pub enum NodeSessionRegistryError {
     Store(StorageError),
+    CatalogUnavailable { reason: String },
     SessionNotFound { session_id: String },
     HelloTokenInvalid { session_id: String },
     LeaseIdInvalid { session_id: String },
@@ -147,6 +148,9 @@ impl Display for NodeSessionRegistryError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             NodeSessionRegistryError::Store(error) => write!(f, "{error}"),
+            NodeSessionRegistryError::CatalogUnavailable { reason } => {
+                write!(f, "node session catalog is unavailable: {reason}")
+            }
             NodeSessionRegistryError::SessionNotFound { session_id } => {
                 write!(f, "node session was not found: {session_id}")
             }
@@ -398,11 +402,18 @@ impl NodeSessionRegistry {
         })
     }
 
+    fn lock_catalog(
+        &self,
+    ) -> Result<MutexGuard<'_, PersistedNodeSessionCatalog>, NodeSessionRegistryError> {
+        self.catalog.lock().map_err(|error| {
+            NodeSessionRegistryError::CatalogUnavailable {
+                reason: error.to_string(),
+            }
+        })
+    }
+
     pub fn list_sessions(&self) -> Result<Vec<NodeSessionRecord>, NodeSessionRegistryError> {
-        let catalog = self
-            .catalog
-            .lock()
-            .expect("node session catalog mutex should not be poisoned");
+        let catalog = self.lock_catalog()?;
         let mut sessions = catalog
             .sessions
             .iter()
@@ -425,10 +436,7 @@ impl NodeSessionRegistry {
         compatibility_preview: NodeSessionCompatibilityPreview,
         observed_at: u64,
     ) -> Result<NodeSessionHelloResponse, NodeSessionRegistryError> {
-        let mut catalog = self
-            .catalog
-            .lock()
-            .expect("node session catalog mutex should not be poisoned");
+        let mut catalog = self.lock_catalog()?;
         let sequence = catalog.next_sequence;
         catalog.next_sequence += 1;
 
@@ -492,10 +500,7 @@ impl NodeSessionRegistry {
         input: NodeSessionAdmitInput,
         observed_at: u64,
     ) -> Result<NodeSessionAdmitResponse, NodeSessionRegistryError> {
-        let mut catalog = self
-            .catalog
-            .lock()
-            .expect("node session catalog mutex should not be poisoned");
+        let mut catalog = self.lock_catalog()?;
         let session_index = catalog
             .sessions
             .iter()
@@ -571,10 +576,7 @@ impl NodeSessionRegistry {
         input: NodeSessionHeartbeatInput,
         observed_at: u64,
     ) -> Result<NodeSessionHeartbeatResponse, NodeSessionRegistryError> {
-        let mut catalog = self
-            .catalog
-            .lock()
-            .expect("node session catalog mutex should not be poisoned");
+        let mut catalog = self.lock_catalog()?;
         let session = catalog
             .sessions
             .iter_mut()
@@ -624,10 +626,7 @@ impl NodeSessionRegistry {
         desired_state: NodeSessionDesiredStateProjectionRecord,
         observed_at: u64,
     ) -> Result<NodeSessionPullDesiredStateResponse, NodeSessionRegistryError> {
-        let mut catalog = self
-            .catalog
-            .lock()
-            .expect("node session catalog mutex should not be poisoned");
+        let mut catalog = self.lock_catalog()?;
         let session = catalog
             .sessions
             .iter_mut()
@@ -687,10 +686,7 @@ impl NodeSessionRegistry {
         input: NodeSessionAckDesiredStateInput,
         observed_at: u64,
     ) -> Result<NodeSessionAckDesiredStateResponse, NodeSessionRegistryError> {
-        let mut catalog = self
-            .catalog
-            .lock()
-            .expect("node session catalog mutex should not be poisoned");
+        let mut catalog = self.lock_catalog()?;
         let session = catalog
             .sessions
             .iter_mut()
@@ -765,10 +761,7 @@ impl NodeSessionRegistry {
         input: NodeSessionCloseInput,
         observed_at: u64,
     ) -> Result<NodeSessionCloseResponse, NodeSessionRegistryError> {
-        let mut catalog = self
-            .catalog
-            .lock()
-            .expect("node session catalog mutex should not be poisoned");
+        let mut catalog = self.lock_catalog()?;
         let session = catalog
             .sessions
             .iter_mut()

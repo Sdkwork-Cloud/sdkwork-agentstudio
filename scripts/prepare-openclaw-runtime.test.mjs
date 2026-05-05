@@ -11,6 +11,7 @@ import {
   buildOpenClawManifest,
   buildOpenClawRuntimeInstallEnv,
   copyDirectoryWithWindowsFallback,
+  DEFAULT_NODE_VERSION,
   DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
   DEFAULT_OPENCLAW_VERSION,
   DEFAULT_RESOURCE_DIR,
@@ -36,6 +37,7 @@ import {
   resolveNodeRuntimeNpmCommand,
   resolveBundledResourceMirrorRoot,
   resolveDefaultOpenClawPrepareCacheDir,
+  resolveOpenClawRuntimeSystemCommand,
   resolveOpenClawPrepareCachePaths,
   resolveOpenClawTarget,
   resolvePackagedOpenClawInstallRootLayoutDir,
@@ -52,6 +54,10 @@ import {
   shouldReusePreparedOpenClawRuntime,
   validatePreparedOpenClawPackageTree,
 } from './prepare-openclaw-runtime.mjs';
+import {
+  derivePreviousNumericVersion,
+  escapeRegExp,
+} from './test-support/version-fixtures.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,11 +66,37 @@ const prepareScriptPath = path.join(rootDir, 'scripts', 'prepare-openclaw-runtim
 const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'prepare-openclaw-runtime-test-'));
 const actualNodeVersion = process.version.replace(/^v/i, '');
 const expectedOpenClawVersion = DEFAULT_OPENCLAW_VERSION;
+const prereleaseOpenClawVersion = `${expectedOpenClawVersion}-beta.1`;
+const expectedNodeVersion = DEFAULT_NODE_VERSION;
 const customRuntimeSupplementalPackages = ['@buape/carbon@0.14.0'];
 const cachedNodeRuntimeSidecarManifestRelativePath = '.sdkwork-node-runtime.json';
 const runtimeSidecarManifestRelativePath = path.join('runtime', '.sdkwork-openclaw-runtime.json');
 const trackedResourcePlaceholder = 'packages/sdkwork-claw-desktop/src-tauri/resources/openclaw/.gitkeep';
 const fakeNodeExecutableContent = 'not-a-real-node-runtime';
+
+const staleOpenClawVersion = derivePreviousNumericVersion(expectedOpenClawVersion);
+
+async function writeAlreadyPatchedOpenClawServerImpl(packageDir) {
+  const serverImplPath = path.join(
+    packageDir,
+    'node_modules',
+    'openclaw',
+    'dist',
+    'server.impl-fixture.js',
+  );
+  await mkdir(path.dirname(serverImplPath), { recursive: true });
+  await writeFile(
+    serverImplPath,
+    [
+      'function materializeConfigAgentPaths(config, previousConfig) {',
+      '  const hasCanonicalAgentDirShape = true;',
+      '  return { config, previousConfig, hasCanonicalAgentDirShape };',
+      '}',
+      '',
+    ].join('\n'),
+  );
+  return serverImplPath;
+}
 
 function resolveExpectedWindowsSystemCommand(command) {
   const normalizedCommand = String(command ?? '').trim().toLowerCase();
@@ -333,7 +365,7 @@ try {
   const target = resolveOpenClawTarget('win32', 'x64');
   const manifest = buildOpenClawManifest({
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     target,
   });
   const cliPath = path.join(sourceRuntimeDir, manifest.cliRelativePath.replace(/^runtime[\\/]/, ''));
@@ -343,6 +375,14 @@ try {
     'node_modules',
     'openclaw',
     'package.json',
+  );
+  const openclawServerImplPath = path.join(
+    sourceRuntimeDir,
+    'package',
+    'node_modules',
+    'openclaw',
+    'dist',
+    'server.impl-fixture.js',
   );
   const carbonPackageJsonPath = path.join(
     sourceRuntimeDir,
@@ -355,10 +395,21 @@ try {
 
   await mkdir(path.dirname(cliPath), { recursive: true });
   await mkdir(path.dirname(openclawPackageJsonPath), { recursive: true });
+  await mkdir(path.dirname(openclawServerImplPath), { recursive: true });
   await mkdir(path.dirname(carbonPackageJsonPath), { recursive: true });
   await mkdir(resourceDir, { recursive: true });
   await writeFile(path.join(resourceDir, '.gitkeep'), '');
   await writeFile(cliPath, 'console.log("openclaw");');
+  await writeFile(
+    openclawServerImplPath,
+    [
+      'function materializeConfigAgentPaths(config, previousConfig) {',
+      '  const hasCanonicalAgentDirShape = true;',
+      '  return { config, previousConfig, hasCanonicalAgentDirShape };',
+      '}',
+      '',
+    ].join('\n'),
+  );
   await writeFile(
     openclawPackageJsonPath,
     `${JSON.stringify({ name: 'openclaw', version: expectedOpenClawVersion }, null, 2)}\n`,
@@ -372,7 +423,7 @@ try {
     sourceRuntimeDir,
     resourceDir,
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     target,
   });
 
@@ -400,9 +451,9 @@ try {
       `Expected prepared runtime manifest requiredExternalRuntimes=[\"nodejs\"], received ${JSON.stringify(copiedManifest.requiredExternalRuntimes)}`,
     );
   }
-  if (copiedManifest.requiredExternalRuntimeVersions?.nodejs !== '22.16.0') {
+  if (copiedManifest.requiredExternalRuntimeVersions?.nodejs !== expectedNodeVersion) {
     throw new Error(
-      `Expected prepared runtime manifest requiredExternalRuntimeVersions.nodejs=22.16.0, received ${copiedManifest.requiredExternalRuntimeVersions?.nodejs}`,
+      `Expected prepared runtime manifest requiredExternalRuntimeVersions.nodejs=${expectedNodeVersion}, received ${copiedManifest.requiredExternalRuntimeVersions?.nodejs}`,
     );
   }
   if (copiedRuntimeSidecarManifest.openclawVersion !== expectedOpenClawVersion) {
@@ -421,9 +472,9 @@ try {
       `Expected runtime sidecar requiredExternalRuntimes=[\"nodejs\"], received ${JSON.stringify(copiedRuntimeSidecarManifest.requiredExternalRuntimes)}`,
     );
   }
-  if (copiedRuntimeSidecarManifest.requiredExternalRuntimeVersions?.nodejs !== '22.16.0') {
+  if (copiedRuntimeSidecarManifest.requiredExternalRuntimeVersions?.nodejs !== expectedNodeVersion) {
     throw new Error(
-      `Expected runtime sidecar requiredExternalRuntimeVersions.nodejs=22.16.0, received ${copiedRuntimeSidecarManifest.requiredExternalRuntimeVersions?.nodejs}`,
+      `Expected runtime sidecar requiredExternalRuntimeVersions.nodejs=${expectedNodeVersion}, received ${copiedRuntimeSidecarManifest.requiredExternalRuntimeVersions?.nodejs}`,
     );
   }
   if (
@@ -449,6 +500,62 @@ try {
 
   if (result.manifest.cliRelativePath !== 'runtime/package/node_modules/openclaw/openclaw.mjs') {
     throw new Error(`Unexpected cliRelativePath ${result.manifest.cliRelativePath}`);
+  }
+
+  const sourceRuntimeWithCentralConfigWriterDir = path.join(tempRoot, 'source-runtime-central-config-writer');
+  const resourceWithCentralConfigWriterDir = path.join(tempRoot, 'resource-runtime-central-config-writer');
+  const centralCliPath = path.join(
+    sourceRuntimeWithCentralConfigWriterDir,
+    manifest.cliRelativePath.replace(/^runtime[\\/]/, ''),
+  );
+  const centralOpenClawPackageJsonPath = path.join(
+    sourceRuntimeWithCentralConfigWriterDir,
+    'package',
+    'node_modules',
+    'openclaw',
+    'package.json',
+  );
+  const centralMutatePath = path.join(
+    sourceRuntimeWithCentralConfigWriterDir,
+    'package',
+    'node_modules',
+    'openclaw',
+    'dist',
+    'mutate-fixture.js',
+  );
+  await mkdir(path.dirname(centralCliPath), { recursive: true });
+  await mkdir(path.dirname(centralOpenClawPackageJsonPath), { recursive: true });
+  await mkdir(path.dirname(centralMutatePath), { recursive: true });
+  await writeFile(centralCliPath, 'console.log("openclaw");');
+  await writeFile(
+    centralOpenClawPackageJsonPath,
+    `${JSON.stringify({ name: 'openclaw', version: expectedOpenClawVersion }, null, 2)}\n`,
+  );
+  await writeFile(
+    centralMutatePath,
+    [
+      'async function replaceConfigFile(params) {',
+      '  await writeConfigFile(params.nextConfig, params.writeOptions);',
+      '  return { nextConfig: params.nextConfig };',
+      '}',
+      'async function mutateConfigFile(params) {',
+      '  const draft = structuredClone(params.nextConfig);',
+      '  return { nextConfig: draft };',
+      '}',
+      '',
+    ].join('\n'),
+  );
+  const centralWriterResult = await prepareOpenClawRuntimeFromSource({
+    sourceRuntimeDir: sourceRuntimeWithCentralConfigWriterDir,
+    resourceDir: resourceWithCentralConfigWriterDir,
+    openclawVersion: expectedOpenClawVersion,
+    nodeVersion: expectedNodeVersion,
+    target,
+  });
+  if (centralWriterResult.manifest.openclawVersion !== expectedOpenClawVersion) {
+    throw new Error(
+      `Expected centralized config writer runtime preparation to preserve version ${expectedOpenClawVersion}, received ${centralWriterResult.manifest.openclawVersion}`,
+    );
   }
 
   const mirrorWorkspaceRoot = path.join(tempRoot, 'workspace-root');
@@ -522,7 +629,7 @@ try {
   const macosTarget = resolveOpenClawTarget('macos', 'x64');
   const macosManifest = buildOpenClawManifest({
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     target: macosTarget,
   });
   const macosCliPath = path.join(
@@ -548,6 +655,7 @@ try {
   await mkdir(path.dirname(macosCliPath), { recursive: true });
   await mkdir(path.dirname(macosOpenClawPackageJsonPath), { recursive: true });
   await mkdir(path.dirname(macosCarbonPackageJsonPath), { recursive: true });
+  await writeAlreadyPatchedOpenClawServerImpl(path.join(macosSourceRuntimeDir, 'package'));
   await mkdir(macosResourceDir, { recursive: true });
   await writeFile(path.join(macosResourceDir, '.gitkeep'), '');
   await writeFile(macosCliPath, 'console.log("openclaw-macos");');
@@ -563,7 +671,7 @@ try {
     sourceRuntimeDir: macosSourceRuntimeDir,
     resourceDir: macosResourceDir,
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     target: macosTarget,
   });
 
@@ -912,7 +1020,7 @@ try {
     `${JSON.stringify(
       {
         name: '@openclaw/tlon',
-        version: '2026.4.2-beta.1',
+        version: prereleaseOpenClawVersion,
         dependencies: {
           '@aws-sdk/client-s3': '3.1020.0',
           '@aws-sdk/s3-request-presigner': '3.1020.0',
@@ -1018,6 +1126,22 @@ try {
       `Expected matrix napi binary install spec to target win32-x64-msvc, received ${matrixNapiBinaryInstallSpec}`,
     );
   }
+  const matrixRuntimeCompanionInstallSpecs = resolveRuntimePackageCompanionInstallSpecs({
+    packageJson: {
+      name: '@matrix-org/matrix-sdk-crypto-nodejs',
+      version: '0.5.1',
+      napi: {
+        name: 'matrix-sdk-crypto',
+      },
+    },
+    platform: 'win32',
+    arch: 'x64',
+  });
+  if (matrixRuntimeCompanionInstallSpecs.length !== 0) {
+    throw new Error(
+      `Expected Matrix native runtime assets to use the downloaded release binary instead of npm companion packages, received ${matrixRuntimeCompanionInstallSpecs.join(', ')}`,
+    );
+  }
   const tlonSkillScriptCompanionInstallSpec = resolveScriptCompanionPackageInstallSpec({
     packageJson: {
       name: '@tloncorp/tlon-skill',
@@ -1119,6 +1243,44 @@ try {
   ) {
     throw new Error(
       `Expected missing runtime companion install specs to include the tlon-skill linux-x64 sidecar, received ${missingRuntimeCompanionInstallSpecs.join(', ')}`,
+    );
+  }
+  const missingMatrixRuntimeCompanionInstallRoot = path.join(
+    tempRoot,
+    'missing-matrix-runtime-companion-install-root',
+  );
+  const missingMatrixRuntimeCompanionPackageJsonPath = path.join(
+    missingMatrixRuntimeCompanionInstallRoot,
+    'node_modules',
+    '@matrix-org',
+    'matrix-sdk-crypto-nodejs',
+    'package.json',
+  );
+  await mkdir(path.dirname(missingMatrixRuntimeCompanionPackageJsonPath), { recursive: true });
+  await writeFile(
+    missingMatrixRuntimeCompanionPackageJsonPath,
+    `${JSON.stringify(
+      {
+        name: '@matrix-org/matrix-sdk-crypto-nodejs',
+        version: '0.5.1',
+        napi: {
+          name: 'matrix-sdk-crypto',
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  const missingMatrixRuntimeCompanionInstallSpecs =
+    await resolveMissingRuntimeCompanionInstallSpecs({
+      packageInstallRoot: missingMatrixRuntimeCompanionInstallRoot,
+      installSpecs: ['@matrix-org/matrix-sdk-crypto-nodejs@0.5.1'],
+      platform: 'win32',
+      arch: 'x64',
+    });
+  if (missingMatrixRuntimeCompanionInstallSpecs.length !== 0) {
+    throw new Error(
+      `Expected missing Matrix runtime companions to be staged by downloaded native assets, received ${missingMatrixRuntimeCompanionInstallSpecs.join(', ')}`,
     );
   }
   const matrixDownloadedNativeRuntimeAsset = resolveDownloadedNativeRuntimeAsset({
@@ -1505,6 +1667,101 @@ try {
     );
   }
 
+  const tarResolvedHydrationInstallRoot = path.join(
+    tempRoot,
+    'tar-resolved-hydrated-bundled-plugin-runtime-install-root',
+  );
+  const tarResolvedCacheDir = path.join(
+    tempRoot,
+    'tar-resolved-hydrated-bundled-plugin-runtime-cache',
+  );
+  const tarResolvedCommandCalls = [];
+  const tarResolvedExpectedCommand = resolveOpenClawRuntimeSystemCommand(
+    'tar',
+    'win32',
+    process.env,
+  );
+  await hydrateBundledPluginRuntimeDependency({
+    hydrationTarget: bundledPluginRuntimeHydrationTarget,
+    packageInstallRoot: tarResolvedHydrationInstallRoot,
+    runtimeNpm: {
+      command: 'npm',
+      args: [],
+    },
+    baseEnv: process.env,
+    cacheDir: tarResolvedCacheDir,
+    platform: 'win32',
+    runCommandImpl: async (command, args) => {
+      tarResolvedCommandCalls.push({ command, args: [...args] });
+      if (command === 'npm' && args.includes('pack')) {
+        const packDestination = args[args.indexOf('--pack-destination') + 1];
+        await mkdir(packDestination, { recursive: true });
+        await writeFile(
+          path.join(packDestination, 'whiskeysockets-baileys-7.0.0-rc.9.tgz'),
+          'placeholder tarball',
+        );
+        return;
+      }
+
+      if (args.includes('-xf')) {
+        const extractRoot = args[args.indexOf('-C') + 1];
+        const extractedPackageDir = path.join(extractRoot, 'package');
+        await mkdir(extractedPackageDir, { recursive: true });
+        await writeFile(
+          path.join(extractedPackageDir, 'package.json'),
+          `${JSON.stringify(
+            {
+              name: '@whiskeysockets/baileys',
+              version: '7.0.0-rc.9',
+              dependencies: {
+                '@cacheable/node-cache': '^1.4.0',
+                libsignal: 'git+https://github.com/whiskeysockets/libsignal-node',
+                protobufjs: '^7.2.4',
+              },
+            },
+            null,
+            2,
+          )}\n`,
+        );
+        return;
+      }
+    },
+    cloneGitDependencyImpl: async () => {
+      const stagedGitDependencyDir = path.join(
+        tempRoot,
+        'tar-resolved-hydrated-bundled-plugin-runtime-libsignal',
+      );
+      await mkdir(stagedGitDependencyDir, { recursive: true });
+      await writeFile(
+        path.join(stagedGitDependencyDir, 'package.json'),
+        `${JSON.stringify(
+          {
+            name: '@whiskeysockets/libsignal-node',
+            version: '2.0.1',
+            dependencies: {
+              'curve25519-js': '^0.0.4',
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+      return stagedGitDependencyDir;
+    },
+    installPackageDependenciesImpl: async () => {},
+  });
+  const tarExtractionCall = tarResolvedCommandCalls.find((entry) =>
+    entry.args.includes('-xf')
+  );
+  if (!tarExtractionCall) {
+    throw new Error('Expected prepared runtime package staging to extract the packed tarball');
+  }
+  if (tarExtractionCall.command.toLowerCase() !== tarResolvedExpectedCommand.toLowerCase()) {
+    throw new Error(
+      `Expected prepared runtime package staging to resolve Windows tar through the system command resolver, received ${tarExtractionCall.command}`,
+    );
+  }
+
   const installEnv = buildOpenClawRuntimeInstallEnv({
     PATH: 'C:\\runtime\\node',
     npm_config_cache: 'D:\\workspace\\.cache\\npm-cache',
@@ -1585,6 +1842,18 @@ try {
   });
   if (windowsCacheDir.toLowerCase() !== 'c:\\.sdkwork-bc\\claw-studio\\openclaw-cache') {
     throw new Error(`Expected short Windows cache dir, received ${windowsCacheDir}`);
+  }
+  const envOverrideCacheDir = resolveDefaultOpenClawPrepareCacheDir({
+    workspaceRootDir: 'C:\\workspaces\\claw-studio',
+    platform: 'win32',
+    env: {
+      OPENCLAW_PREPARE_CACHE_DIR: 'D:\\workspace\\claw-studio\\.cache\\openclaw-cache',
+    },
+    localAppData: 'C:\\Users\\admin\\AppData\\Local',
+    homeDir: 'C:\\Users\\admin',
+  });
+  if (envOverrideCacheDir.toLowerCase() !== 'd:\\workspace\\claw-studio\\.cache\\openclaw-cache') {
+    throw new Error(`Expected OPENCLAW_PREPARE_CACHE_DIR to override the default prepare cache dir, received ${envOverrideCacheDir}`);
   }
 
   if (typeof shouldRetryOpenClawRuntimeOperationError !== 'function') {
@@ -1682,7 +1951,7 @@ try {
     `${JSON.stringify(
       {
         schemaVersion: 1,
-        nodeVersion: '22.16.0',
+        nodeVersion: expectedNodeVersion,
         platform: 'windows',
         arch: 'x64',
         nodeBinaryRelativePath: 'runtime/node/node.exe',
@@ -1699,7 +1968,7 @@ try {
   const cachedNodeInspection = await inspectCachedNodeRuntimeDir({
     nodeSourceDir: cachedNodeRuntimeDir,
     target,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
   });
   if (!cachedNodeInspection.reusable || cachedNodeInspection.reason !== 'ready') {
     throw new Error(
@@ -1712,7 +1981,7 @@ try {
     `${JSON.stringify(
       {
         schemaVersion: 1,
-        nodeVersion: '22.16.0',
+        nodeVersion: expectedNodeVersion,
         platform: 'windows',
         arch: 'x64',
         nodeRelativePath: 'runtime/node/node.exe',
@@ -1725,11 +1994,26 @@ try {
   const legacyCachedNodeInspection = await inspectCachedNodeRuntimeDir({
     nodeSourceDir: cachedNodeRuntimeDir,
     target,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
   });
-  if (legacyCachedNodeInspection.reusable || legacyCachedNodeInspection.reason !== 'invalid') {
+  if (legacyCachedNodeInspection.reusable || legacyCachedNodeInspection.reason !== 'node-sidecar-mismatch') {
     throw new Error(
       `Expected legacy cached node runtime sidecar metadata to be rejected after the hard cut, received ${JSON.stringify(legacyCachedNodeInspection)}`,
+    );
+  }
+
+  await rm(cachedNodeSidecarManifestPath);
+  const missingSidecarCachedNodeInspection = await inspectCachedNodeRuntimeDir({
+    nodeSourceDir: cachedNodeRuntimeDir,
+    target,
+    nodeVersion: expectedNodeVersion,
+  });
+  if (
+    missingSidecarCachedNodeInspection.reusable
+    || missingSidecarCachedNodeInspection.reason !== 'node-sidecar-missing'
+  ) {
+    throw new Error(
+      `Expected cached node runtime without sidecar metadata to be rejected after the hard cut, received ${JSON.stringify(missingSidecarCachedNodeInspection)}`,
     );
   }
 
@@ -1748,6 +2032,7 @@ try {
 
   await mkdir(path.dirname(missingDependencyCliPath), { recursive: true });
   await mkdir(path.dirname(missingDependencyOpenclawPackageJsonPath), { recursive: true });
+  await writeAlreadyPatchedOpenClawServerImpl(path.join(missingDependencySourceRuntimeDir, 'package'));
   await writeFile(missingDependencyCliPath, 'console.log("openclaw");');
   await writeFile(
     missingDependencyOpenclawPackageJsonPath,
@@ -1758,7 +2043,7 @@ try {
     sourceRuntimeDir: missingDependencySourceRuntimeDir,
     resourceDir: path.join(tempRoot, 'invalid-resource-runtime'),
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     runtimeSupplementalPackages: [],
     target,
   });
@@ -1769,7 +2054,7 @@ try {
       sourceRuntimeDir: missingDependencySourceRuntimeDir,
       resourceDir: path.join(tempRoot, 'invalid-resource-runtime-missing-carbon'),
       openclawVersion: expectedOpenClawVersion,
-      nodeVersion: '22.16.0',
+      nodeVersion: expectedNodeVersion,
       runtimeSupplementalPackages: customRuntimeSupplementalPackages,
       target,
     });
@@ -1808,7 +2093,7 @@ try {
   await writeFile(mismatchedVersionCliPath, 'console.log("openclaw");');
   await writeFile(
     mismatchedVersionOpenclawPackageJsonPath,
-    `${JSON.stringify({ name: 'openclaw', version: '2026.3.24' }, null, 2)}\n`,
+    `${JSON.stringify({ name: 'openclaw', version: staleOpenClawVersion }, null, 2)}\n`,
   );
   await writeFile(
     mismatchedVersionCarbonPackageJsonPath,
@@ -1826,10 +2111,10 @@ try {
       target,
     });
   } catch (error) {
-    mismatchedVersionRejected =
-      /openclaw-version-mismatch|Prepared OpenClaw package\.json version mismatch|2026\.3\.24/u.test(
-        String(error),
-      );
+    mismatchedVersionRejected = new RegExp(
+      `openclaw-version-mismatch|Prepared OpenClaw package\\.json version mismatch|${escapeRegExp(staleOpenClawVersion)}`,
+      'u',
+    ).test(String(error));
   }
   if (!mismatchedVersionRejected) {
     throw new Error('Expected prepared runtime validation to reject mismatched OpenClaw package versions');
@@ -1896,7 +2181,7 @@ try {
     `${JSON.stringify(
       {
         name: '@openclaw/amazon-bedrock-provider',
-        version: '2026.4.2-beta.1',
+        version: prereleaseOpenClawVersion,
         dependencies: {
           '@aws-sdk/client-bedrock': '3.1020.0',
         },
@@ -2076,6 +2361,7 @@ try {
   await mkdir(path.dirname(cliOnlyBuiltDependencyCarbonPackageJsonPath), { recursive: true });
   await mkdir(path.dirname(cliOnlyBuiltDependencyPackageJsonPath), { recursive: true });
   await mkdir(path.dirname(cliOnlyBuiltDependencyBinPath), { recursive: true });
+  await writeAlreadyPatchedOpenClawServerImpl(path.join(cliOnlyBuiltDependencySourceRuntimeDir, 'package'));
   await writeFile(cliOnlyBuiltDependencyCliPath, 'console.log("openclaw");');
   await writeFile(
     cliOnlyBuiltDependencyOpenclawPackageJsonPath,
@@ -2141,6 +2427,7 @@ try {
   await mkdir(path.dirname(stagedCliPath), { recursive: true });
   await mkdir(path.dirname(stagedOpenclawPackageJsonPath), { recursive: true });
   await mkdir(path.dirname(stagedCarbonPackageJsonPath), { recursive: true });
+  await writeAlreadyPatchedOpenClawServerImpl(stagedPackageDir);
   await writeFile(stagedCliPath, 'console.log(\"openclaw\");');
   await writeFile(
     stagedOpenclawPackageJsonPath,
@@ -2156,7 +2443,7 @@ try {
     packageSourceDir: stagedPackageDir,
     resourceDir: stagedResourceDir,
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     target,
   });
 
@@ -2171,7 +2458,7 @@ try {
     sourceRuntimeDir,
     resourceDir: reusableResourceDir,
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     target,
   });
 
@@ -2193,7 +2480,7 @@ try {
   const reused = await prepareOpenClawRuntime({
     resourceDir: reusableResourceDir,
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     openclawPackage: 'openclaw',
     fetchImpl: async () => {
       throw new Error('prepareOpenClawRuntime should have reused the existing runtime instead of re-preparing runtime assets');
@@ -2210,37 +2497,84 @@ try {
     throw new Error(`Expected runtime reuse to preserve existing files, received ${sentinelValue}`);
   }
 
-  const repairableResourceDir = path.join(tempRoot, 'repairable-resource-runtime');
+  const strictResourceDir = path.join(tempRoot, 'strict-resource-runtime');
   await prepareOpenClawRuntimeFromSource({
     sourceRuntimeDir,
-    resourceDir: repairableResourceDir,
+    resourceDir: strictResourceDir,
     openclawVersion: expectedOpenClawVersion,
     nodeVersion: actualNodeVersion,
     target,
   });
-  await rm(path.join(repairableResourceDir, 'manifest.json'));
+  await rm(path.join(strictResourceDir, 'manifest.json'));
+  const strictManifest = buildOpenClawManifest({
+    openclawVersion: expectedOpenClawVersion,
+    nodeVersion: actualNodeVersion,
+    target,
+  });
 
-  const repaired = await prepareOpenClawRuntime({
-    resourceDir: repairableResourceDir,
+  const strictMissingManifestInspection = await inspectPreparedOpenClawRuntime({
+    resourceDir: strictResourceDir,
+    manifest: strictManifest,
+  });
+  if (
+    strictMissingManifestInspection.reusable
+    || strictMissingManifestInspection.reason !== 'manifest-unreadable'
+  ) {
+    throw new Error(
+      `Expected prepared runtime with a missing manifest to be rejected instead of repaired, received ${JSON.stringify(strictMissingManifestInspection)}`,
+    );
+  }
+
+  let strictRebuildError = null;
+  try {
+    await prepareOpenClawRuntime({
+      resourceDir: strictResourceDir,
+      cacheDir: path.join(tempRoot, 'strict-cache'),
+      openclawVersion: expectedOpenClawVersion,
+      nodeVersion: actualNodeVersion,
+      openclawPackage: 'openclaw',
+      fetchImpl: async () => {
+        throw new Error('strict rebuild required for stale prepared runtime metadata');
+      },
+      target,
+    });
+  } catch (error) {
+    strictRebuildError = error;
+  }
+
+  if (
+    !strictRebuildError
+    || !String(strictRebuildError.message ?? strictRebuildError).includes('strict rebuild required')
+  ) {
+    throw new Error(
+      `Expected strict prepared runtime validation to rebuild instead of repairing stale metadata, received ${strictRebuildError}`,
+    );
+  }
+
+  if (existsSync(path.join(strictResourceDir, 'manifest.json'))) {
+    throw new Error('Expected strict prepared runtime validation to leave stale missing manifest unrepaired');
+  }
+
+  const rebuiltResourceDir = path.join(tempRoot, 'rebuilt-resource-runtime');
+  const rebuilt = await prepareOpenClawRuntime({
+    sourceRuntimeDir,
+    resourceDir: rebuiltResourceDir,
     openclawVersion: expectedOpenClawVersion,
     nodeVersion: actualNodeVersion,
     openclawPackage: 'openclaw',
-    fetchImpl: async () => {
-      throw new Error('prepareOpenClawRuntime should have repaired the missing manifest instead of re-preparing runtime assets');
-    },
     target,
   });
 
-  if (repaired.strategy !== 'repaired-existing-manifest') {
-    throw new Error(`Expected a repaired-existing-manifest strategy, received ${repaired.strategy}`);
+  if (rebuilt.strategy !== 'prepared-source') {
+    throw new Error(`Expected a prepared-source strategy after strict rebuild, received ${rebuilt.strategy}`);
   }
 
-  const repairedManifest = JSON.parse(
-    await readFile(path.join(repairableResourceDir, 'manifest.json'), 'utf8'),
+  const rebuiltManifest = JSON.parse(
+    await readFile(path.join(rebuiltResourceDir, 'manifest.json'), 'utf8'),
   );
-  if (repairedManifest.openclawVersion !== expectedOpenClawVersion) {
+  if (rebuiltManifest.openclawVersion !== expectedOpenClawVersion) {
     throw new Error(
-      `Expected repaired manifest to restore openclawVersion=${expectedOpenClawVersion}, received ${repairedManifest.openclawVersion}`,
+      `Expected rebuilt manifest to restore openclawVersion=${expectedOpenClawVersion}, received ${rebuiltManifest.openclawVersion}`,
     );
   }
 
@@ -2249,7 +2583,7 @@ try {
     sourceRuntimeDir,
     resourceDir: nodeResidueResourceDir,
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     target,
   });
   await mkdir(path.join(nodeResidueResourceDir, 'runtime', 'node'), { recursive: true });
@@ -2262,7 +2596,7 @@ try {
     resourceDir: nodeResidueResourceDir,
     manifest: buildOpenClawManifest({
       openclawVersion: expectedOpenClawVersion,
-      nodeVersion: '22.16.0',
+      nodeVersion: expectedNodeVersion,
       target,
     }),
   });
@@ -2279,7 +2613,7 @@ try {
   const cachePaths = resolveOpenClawPrepareCachePaths({
     cacheDir,
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     target,
   });
   await mkdir(path.dirname(cachePaths.cachedArchivePath), { recursive: true });
@@ -2291,7 +2625,7 @@ try {
     resourceDir: cachePreparedResourceDir,
     cacheDir,
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     openclawPackage: 'openclaw',
     fetchImpl: async () => {
       throw new Error('prepareOpenClawRuntime should have reused cached artifacts instead of re-preparing runtime assets');
@@ -2318,7 +2652,7 @@ try {
   );
 
   const windowsExtractor = resolveNodeArchiveExtractionCommand({
-    archivePath: 'C:\\temp\\node-v22.16.0-win-x64.zip',
+    archivePath: `C:\\temp\\node-v${expectedNodeVersion}-win-x64.zip`,
     extractRoot: 'C:\\temp\\extract-root',
     target,
     hasTarCommand: true,
@@ -2328,7 +2662,7 @@ try {
   }
 
   const windowsPowerShellExtractor = resolveNodeArchiveExtractionCommand({
-    archivePath: 'C:\\temp\\node-v22.16.0-win-x64.zip',
+    archivePath: `C:\\temp\\node-v${expectedNodeVersion}-win-x64.zip`,
     extractRoot: 'C:\\temp\\extract-root',
     target,
     hasTarCommand: false,

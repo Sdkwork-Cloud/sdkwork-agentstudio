@@ -22,6 +22,10 @@ import {
   resolveDesktopReleaseTarget,
 } from './desktop-targets.mjs';
 import {
+  readTarGzEntries,
+  readZipArchiveEntries,
+} from './archive-entry-safety.mjs';
+import {
   writeReleaseSmokeReport,
 } from './release-smoke-contract.mjs';
 import {
@@ -201,12 +205,30 @@ function runCommand({
   }
 }
 
+export function assertServerArchiveEntriesSafe(archivePath) {
+  const lowerCaseArchivePath = String(archivePath ?? '').trim().toLowerCase();
+
+  if (lowerCaseArchivePath.endsWith('.zip')) {
+    return readZipArchiveEntries(archivePath, {
+      context: 'Server release',
+    });
+  }
+  if (lowerCaseArchivePath.endsWith('.tar.gz')) {
+    return readTarGzEntries(archivePath, {
+      context: 'Server release',
+    });
+  }
+
+  throw new Error(`Unsupported server archive format: ${archivePath}`);
+}
+
 export async function extractServerArchive({
   archivePath,
   extractDir,
 } = {}) {
   mkdirSync(extractDir, { recursive: true });
   const lowerCaseArchivePath = String(archivePath ?? '').trim().toLowerCase();
+  assertServerArchiveEntriesSafe(archivePath);
 
   if (lowerCaseArchivePath.endsWith('.zip')) {
     if (process.platform === 'win32') {

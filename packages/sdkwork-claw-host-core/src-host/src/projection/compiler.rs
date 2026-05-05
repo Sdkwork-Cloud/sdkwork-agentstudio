@@ -40,7 +40,7 @@ impl ProjectionCompiler {
         let mut projections = self
             .projections
             .lock()
-            .expect("projection compiler mutex should not be poisoned");
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
 
         if let Some(existing) = projections.get(&input.node_id) {
             if existing.desired_state_hash == next_hash {
@@ -68,7 +68,7 @@ impl ProjectionCompiler {
         let mut projections = self
             .projections
             .lock()
-            .expect("projection compiler mutex should not be poisoned");
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
 
         match projections.get(&projection.node_id) {
             Some(existing)

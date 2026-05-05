@@ -8,6 +8,7 @@ mod port_governance;
 mod service;
 
 use axum::serve;
+use serde::Serialize;
 use sdkwork_claw_host_core::host_core_metadata;
 
 use crate::{
@@ -44,6 +45,22 @@ fn exit_for_cli_parse_error(error: clap::Error) -> ! {
     }
 
     std::process::exit(exit_code);
+}
+
+fn exit_for_runtime_error(context: &str, error: impl std::fmt::Display) -> ! {
+    eprintln!("{context}: {error}");
+    std::process::exit(1);
+}
+
+fn print_json_or_exit<T: Serialize>(value: &T, pretty: bool, context: &str) {
+    let serialized = if pretty {
+        serde_json::to_string_pretty(value)
+    } else {
+        serde_json::to_string(value)
+    }
+    .unwrap_or_else(|error| exit_for_runtime_error(context, error));
+
+    println!("{serialized}");
 }
 
 #[tokio::main]
@@ -114,21 +131,21 @@ async fn main() {
                     metadata.package_name, mode, active_base_url
                 );
             }
-            println!(
-                "{}",
-                serde_json::to_string(&openapi_catalog)
-                    .expect("openapi startup catalog should serialize to json")
+            print_json_or_exit(
+                &openapi_catalog,
+                false,
+                "failed to serialize openapi startup catalog",
             );
 
-            serve(listener, app)
-                .await
-                .expect("server should continue serving requests");
+            if let Err(error) = serve(listener, app).await {
+                exit_for_runtime_error("server stopped unexpectedly", error);
+            }
         }
         ClawServerCliCommand::PrintConfig(_) => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&runtime_config)
-                    .expect("runtime config should serialize to json")
+            print_json_or_exit(
+                &runtime_config,
+                true,
+                "failed to serialize runtime config",
             );
         }
         ClawServerCliCommand::Service(service_command) => match service_command {
@@ -139,10 +156,10 @@ async fn main() {
                     config_path: effective_config_path.clone(),
                     runtime_config,
                 });
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&manifest)
-                        .expect("service manifest should serialize to json")
+                print_json_or_exit(
+                    &manifest,
+                    true,
+                    "failed to serialize service manifest",
                 );
             }
             ClawServerServiceCommand::Install(args) => {
@@ -213,10 +230,10 @@ fn print_service_execution_result(
             eprintln!("{error}");
             std::process::exit(1);
         });
-    println!(
-        "{}",
-        serde_json::to_string_pretty(&result)
-            .expect("service lifecycle result should serialize to json")
+    print_json_or_exit(
+        &result,
+        true,
+        "failed to serialize service lifecycle result",
     );
 }
 
@@ -253,6 +270,72 @@ mod tests {
     use sdkwork_claw_host_core::openclaw_control_plane::{
         OpenClawControlPlane, OpenClawGatewayInvokeRequest,
     };
+
+    #[test]
+    fn server_main_production_path_has_no_panic_exits() {
+        let source = include_str!("main.rs");
+        let production_source = source.split("#[cfg(test)]").next().unwrap_or(source);
+        let forbidden_patterns = [
+            ".expect(",
+            ".unwrap(",
+            "panic!(",
+            "todo!(",
+            "unimplemented!(",
+            "unreachable!(",
+        ];
+        let mut offenders = Vec::new();
+
+        for (index, line) in production_source.lines().enumerate() {
+            for pattern in forbidden_patterns {
+                if line.contains(pattern) {
+                    offenders.push(format!("{}:{}", index + 1, line.trim()));
+                }
+            }
+        }
+
+        assert!(
+            offenders.is_empty(),
+            "claw server main production code must report startup/runtime errors instead of panicking:\n{}",
+            offenders.join("\n")
+        );
+    }
+
+    #[test]
+    fn server_service_and_http_production_paths_have_no_panic_exits() {
+        let sources = [
+            ("service.rs", include_str!("service.rs")),
+            ("http/auth.rs", include_str!("http/auth.rs")),
+            ("http/cors_policy.rs", include_str!("http/cors_policy.rs")),
+            ("http/error_response.rs", include_str!("http/error_response.rs")),
+            ("http/static_assets.rs", include_str!("http/static_assets.rs")),
+        ];
+        let forbidden_patterns = [
+            ".expect(",
+            ".unwrap(",
+            "panic!(",
+            "todo!(",
+            "unimplemented!(",
+            "unreachable!(",
+        ];
+        let mut offenders = Vec::new();
+
+        for (source_name, source) in sources {
+            let production_source = source.split("#[cfg(test)]").next().unwrap_or(source);
+            for (index, line) in production_source.lines().enumerate() {
+                for pattern in forbidden_patterns {
+                    if line.contains(pattern) {
+                        offenders.push(format!("{source_name}:{}:{}", index + 1, line.trim()));
+                    }
+                }
+            }
+        }
+
+        assert!(
+            offenders.is_empty(),
+            "claw server service/http production code must return errors or degrade safely instead of panicking:\n{}",
+            offenders.join("\n")
+        );
+    }
 
     #[derive(Debug)]
     struct FakeManageOpenClawProvider {

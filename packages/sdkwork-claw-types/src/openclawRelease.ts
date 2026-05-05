@@ -141,9 +141,9 @@ export const OPENCLAW_RELEASE: Readonly<OpenClawReleaseMetadata> = Object.freeze
 /**
  * Shared OpenClaw release constants pinned to the central release config.
  *
- * OpenClaw payload constants keep the `DEFAULT_BUNDLED_OPENCLAW_*` naming because
- * the application still ships OpenClaw code assets. Node.js is external-only, so
- * its shared constant must use `DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION`.
+ * OpenClaw payload constants use bundled naming because the application ships
+ * OpenClaw code assets. Node.js is external-only, so its shared constant uses
+ * `DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION`.
  */
 export const DEFAULT_BUNDLED_OPENCLAW_VERSION = OPENCLAW_RELEASE.stableVersion;
 export const DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION = OPENCLAW_RELEASE.nodeVersion;

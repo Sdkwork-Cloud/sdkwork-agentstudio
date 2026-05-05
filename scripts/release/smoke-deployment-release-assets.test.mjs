@@ -4,8 +4,71 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { gzipSync } from 'node:zlib';
 
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
+
+function formatTarOctal(value, width) {
+  return `${value.toString(8).padStart(width - 2, '0')}\0 `;
+}
+
+function createTarHeader({
+  name,
+  size,
+  type = '0',
+} = {}) {
+  const header = Buffer.alloc(512, 0);
+  Buffer.from(String(name ?? '').slice(0, 100), 'utf8').copy(header, 0);
+  Buffer.from(formatTarOctal(0o644, 8), 'utf8').copy(header, 100);
+  Buffer.from(formatTarOctal(0, 8), 'utf8').copy(header, 108);
+  Buffer.from(formatTarOctal(0, 8), 'utf8').copy(header, 116);
+  Buffer.from(formatTarOctal(size, 12), 'utf8').copy(header, 124);
+  Buffer.from(formatTarOctal(0, 12), 'utf8').copy(header, 136);
+  header.fill(0x20, 148, 156);
+  header.write(String(type ?? '0').slice(0, 1), 156, 1, 'utf8');
+  Buffer.from('ustar\0', 'utf8').copy(header, 257);
+  Buffer.from('00', 'utf8').copy(header, 263);
+
+  let checksum = 0;
+  for (const value of header.values()) {
+    checksum += value;
+  }
+  Buffer.from(formatTarOctal(checksum, 8), 'utf8').copy(header, 148);
+
+  return header;
+}
+
+function createTarRecord({
+  name,
+  content = '',
+  type = '0',
+} = {}) {
+  const contentBuffer = Buffer.isBuffer(content)
+    ? content
+    : Buffer.from(String(content ?? ''), 'utf8');
+  const paddingSize = (512 - (contentBuffer.length % 512)) % 512;
+
+  return Buffer.concat([
+    createTarHeader({
+      name,
+      size: contentBuffer.length,
+      type,
+    }),
+    contentBuffer,
+    Buffer.alloc(paddingSize, 0),
+  ]);
+}
+
+function writeTarGzArchive(archivePath, records) {
+  mkdirSync(path.dirname(archivePath), { recursive: true });
+  writeFileSync(
+    archivePath,
+    gzipSync(Buffer.concat([
+      ...records,
+      Buffer.alloc(1024, 0),
+    ])),
+  );
+}
 
 function writeReleaseManifest({
   releaseAssetsDir,
@@ -165,6 +228,66 @@ test('container deployment smoke validates packaged bundles and writes runtime-b
     assert.deepEqual(
       result.report.report.checks.map((check) => check.id),
       ['deployment-identity', 'runtime-profile', 'manage-credentials', 'persistent-storage', 'docker-compose-up', 'docker-compose-healthy', 'health-ready', 'host-endpoints', 'browser-shell'],
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('deployment bundle extraction rejects unsafe archive paths before extraction', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-deployment-release-assets.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-deployment-unsafe-archive-'));
+  const archivePath = path.join(tempRoot, 'claw-studio-container-unsafe.tar.gz');
+  const extractDir = path.join(tempRoot, 'extract');
+
+  try {
+    mkdirSync(extractDir, { recursive: true });
+    writeTarGzArchive(archivePath, [
+      createTarRecord({
+        name: '../escape.txt',
+        content: 'escape\n',
+      }),
+    ]);
+
+    await assert.rejects(
+      () => smoke.extractDeploymentBundle({
+        archivePath,
+        extractDir,
+      }),
+      /unsafe parent traversal path/i,
+    );
+    assert.equal(existsSync(path.join(tempRoot, 'escape.txt')), false);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('deployment bundle extraction rejects symlink archive entries before extraction', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-deployment-release-assets.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-deployment-symlink-archive-'));
+  const archivePath = path.join(tempRoot, 'claw-studio-container-symlink.tar.gz');
+  const extractDir = path.join(tempRoot, 'extract');
+
+  try {
+    mkdirSync(extractDir, { recursive: true });
+    writeTarGzArchive(archivePath, [
+      createTarRecord({
+        name: 'claw-studio-container/deploy/docker/config-link',
+        content: '/etc/passwd',
+        type: '2',
+      }),
+    ]);
+
+    await assert.rejects(
+      () => smoke.extractDeploymentBundle({
+        archivePath,
+        extractDir,
+      }),
+      /unsupported archive entry type/i,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });

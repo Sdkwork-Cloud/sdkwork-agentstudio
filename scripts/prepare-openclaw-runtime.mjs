@@ -28,7 +28,7 @@ import {
   DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
   DEFAULT_OPENCLAW_VERSION,
 } from './openclaw-release.mjs';
-import { cleanupLegacyOpenClawSourceRuntimeResidue } from './cleanup-legacy-openclaw-source-runtime.mjs';
+import { assertNoUnsupportedOpenClawRuntimeLayout } from './assert-openclaw-runtime-layout.mjs';
 export {
   DEFAULT_NODE_VERSION,
   DEFAULT_OPENCLAW_PACKAGE,
@@ -615,10 +615,16 @@ export function resolveNodeRuntimeNpmCommand(nodeRuntimeDir, platform = process.
 export function resolveDefaultOpenClawPrepareCacheDir({
   workspaceRootDir = rootDir,
   platform = process.platform,
+  env = process.env,
   localAppData = process.env.LOCALAPPDATA,
   xdgCacheHome = process.env.XDG_CACHE_HOME,
   homeDir = os.homedir(),
 } = {}) {
+  const configuredCacheDir = String(env?.OPENCLAW_PREPARE_CACHE_DIR ?? '').trim();
+  if (configuredCacheDir) {
+    return path.resolve(configuredCacheDir);
+  }
+
   if (platform === 'win32') {
     const workspaceName = sanitizePathSegment(path.win32.basename(workspaceRootDir)) || 'workspace';
     const driveRoot = path.win32.parse(workspaceRootDir).root || path.win32.parse(localAppData ?? '').root;
@@ -958,13 +964,16 @@ export function resolveRuntimePackageCompanionInstallSpecs({
   arch = process.arch,
 }) {
   const installSpecs = new Set();
-  const napiInstallSpec = resolveNapiPackageBinaryInstallSpec({
-    packageJson,
-    platform,
-    arch,
-  });
-  if (napiInstallSpec) {
-    installSpecs.add(napiInstallSpec);
+  const packageName = String(packageJson?.name ?? '').trim();
+  if (!SUPPORTED_DOWNLOADED_NATIVE_RUNTIME_ASSET_TARGETS[packageName]) {
+    const napiInstallSpec = resolveNapiPackageBinaryInstallSpec({
+      packageJson,
+      platform,
+      arch,
+    });
+    if (napiInstallSpec) {
+      installSpecs.add(napiInstallSpec);
+    }
   }
 
   const scriptCompanionInstallSpec = resolveScriptCompanionPackageInstallSpec({
@@ -1579,6 +1588,7 @@ async function stagePreparedRuntimeRegistryPackage({
   tempDir,
   runtimeNpm,
   env,
+  platform = process.platform,
   runCommandImpl = runCommand,
 }) {
   const packDir = await mkdtemp(path.join(tempDir, 'prepared-runtime-pack-'));
@@ -1601,10 +1611,14 @@ async function stagePreparedRuntimeRegistryPackage({
   }
 
   const extractRoot = await mkdtemp(path.join(tempDir, 'prepared-runtime-extract-'));
-  await runCommandImpl('tar', ['-xf', path.join(packDir, packedArchive.name), '-C', extractRoot], {
-    cwd: packageInstallRoot,
-    env,
-  });
+  await runCommandImpl(
+    resolveOpenClawRuntimeSystemCommand('tar', platform, env),
+    ['-xf', path.join(packDir, packedArchive.name), '-C', extractRoot],
+    {
+      cwd: packageInstallRoot,
+      env,
+    },
+  );
 
   const extractedEntries = await readdir(extractRoot, { withFileTypes: true });
   const packageEntry =
@@ -1672,6 +1686,7 @@ export async function hydrateBundledPluginRuntimeDependency({
     tempDir: installPaths.tempDir,
     runtimeNpm,
     env: nestedEnv,
+    platform,
     runCommandImpl,
   });
   const stagedPackageJson = JSON.parse(
@@ -2622,23 +2637,6 @@ export async function inspectPreparedOpenClawRuntime({
   try {
     existingManifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   } catch (error) {
-    if (manifest) {
-      const repairedInspection = await repairPreparedOpenClawRuntimeManifest({
-        resourceDir,
-        manifest,
-        runtimeSupplementalPackages,
-      });
-      if (repairedInspection.reusable) {
-        return repairedInspection;
-      }
-
-      return {
-        ...repairedInspection,
-        manifestPath,
-        manifestReadError: error instanceof Error ? error.message : String(error),
-      };
-    }
-
     return {
       reusable: false,
       reason: 'manifest-unreadable',
@@ -2675,29 +2673,21 @@ export async function inspectPreparedOpenClawRuntime({
   try {
     const preparedSidecarManifest = await readPreparedRuntimeSidecarManifest(runtimeDir);
     if (!preparedRuntimeSidecarManifestMatches(preparedSidecarManifest, resolvedManifest)) {
-      await writePreparedRuntimeSidecarManifest({
-        runtimeDir,
-        manifest: resolvedManifest,
-        runtimeSupplementalPackages,
-      });
       return {
-        reusable: true,
-        reason: 'repaired-sidecar',
+        reusable: false,
+        reason: 'sidecar-mismatch',
         manifestPath,
         manifest: existingManifest,
+        sidecarManifest: preparedSidecarManifest,
       };
     }
-  } catch {
-    await writePreparedRuntimeSidecarManifest({
-      runtimeDir,
-      manifest: resolvedManifest,
-      runtimeSupplementalPackages,
-    });
+  } catch (error) {
     return {
-      reusable: true,
-      reason: 'repaired-sidecar',
+      reusable: false,
+      reason: 'sidecar-unreadable',
       manifestPath,
       manifest: existingManifest,
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 
@@ -2986,7 +2976,104 @@ function applyOpenClawAgentDirShapeGuardPatch(source) {
   );
 }
 
+function applyOpenClawGatewayConfigWriteMaterializationPatch(source) {
+  const configSetSnippet = `\t\tif (!parsed) return;
+\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: parsed.config,
+\t\t\trespond
+\t\t})) return;
+\t\tconst writeResult = await commitGatewayConfigWrite({
+\t\t\tsnapshot,
+\t\t\twriteOptions,
+\t\t\tnextConfig: parsed.config,
+\t\t\tcontext
+\t\t});`;
+  const configSetReplacement = `\t\tif (!parsed) return;
+\t\tconst prepared = materializeConfigAgentPaths(parsed.config, snapshot.config);
+\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: prepared.config,
+\t\t\trespond
+\t\t})) return;
+\t\tawait ensureConfigAgentDirectories(prepared);
+\t\tconst writeResult = await commitGatewayConfigWrite({
+\t\t\tsnapshot,
+\t\t\twriteOptions,
+\t\t\tnextConfig: prepared.config,
+\t\t\tcontext
+\t\t});`;
+
+  let next = replaceOpenClawRuntimeSnippet(
+    source,
+    configSetSnippet,
+    configSetReplacement,
+    'config.set materialization via commitGatewayConfigWrite',
+  );
+  next = next.replace(
+    'config: redactConfigObject(parsed.config, parsed.schema.uiHints)',
+    'config: redactConfigObject(prepared.config, parsed.schema.uiHints)',
+  );
+
+  const configPatchSecretSnippet = `\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: validated.config,
+\t\t\trespond
+\t\t})) return;
+\t\tconst changedPaths = diffConfigPaths(snapshot.config, validated.config);`;
+  const configPatchSecretReplacement = `\t\tconst prepared = materializeConfigAgentPaths(validated.config, snapshot.config);
+\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: prepared.config,
+\t\t\trespond
+\t\t})) return;
+\t\tconst changedPaths = diffConfigPaths(snapshot.config, prepared.config);`;
+  next = replaceOpenClawRuntimeSnippet(
+    next,
+    configPatchSecretSnippet,
+    configPatchSecretReplacement,
+    'config.patch materialization via commitGatewayConfigWrite',
+  );
+  next = next
+    .replaceAll('config: redactConfigObject(validated.config, schemaPatch.uiHints)', 'config: redactConfigObject(prepared.config, schemaPatch.uiHints)')
+    .replaceAll('didSharedGatewayAuthChange(snapshot.config, validated.config)', 'didSharedGatewayAuthChange(snapshot.config, prepared.config)')
+    .replaceAll('nextConfig: validated.config', 'nextConfig: prepared.config');
+
+  const configApplySecretSnippet = `\t\tif (!parsed) return;
+\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: parsed.config,
+\t\t\trespond
+\t\t})) return;
+\t\tconst changedPaths = diffConfigPaths(snapshot.config, parsed.config);`;
+  const configApplySecretReplacement = `\t\tif (!parsed) return;
+\t\tconst prepared = materializeConfigAgentPaths(parsed.config, snapshot.config);
+\t\tif (!await ensureResolvableSecretRefsOrRespond({
+\t\t\tconfig: prepared.config,
+\t\t\trespond
+\t\t})) return;
+\t\tconst changedPaths = diffConfigPaths(snapshot.config, prepared.config);`;
+  next = replaceOpenClawRuntimeSnippet(
+    next,
+    configApplySecretSnippet,
+    configApplySecretReplacement,
+    'config.apply materialization via commitGatewayConfigWrite',
+  );
+  next = next
+    .replace('config: redactConfigObject(parsed.config, parsed.schema.uiHints)', 'config: redactConfigObject(prepared.config, parsed.schema.uiHints)')
+    .replaceAll('didSharedGatewayAuthChange(snapshot.config, parsed.config)', 'didSharedGatewayAuthChange(snapshot.config, prepared.config)')
+    .replaceAll('nextConfig: parsed.config', 'nextConfig: prepared.config');
+
+  return next;
+}
+
 function applyOpenClawAgentPathMaterializationPatchToSource(source) {
+  if (
+    source.includes('async function replaceConfigFile(params)')
+    && source.includes('async function mutateConfigFile(params)')
+    && source.includes('writeConfigFile')
+  ) {
+    return {
+      source,
+      patched: false,
+    };
+  }
+
   const withShapeGuard = applyOpenClawAgentDirShapeGuardPatch(source);
   if (withShapeGuard.includes(OPENCLAW_AGENT_PATH_MATERIALIZATION_SENTINEL)) {
     return {
@@ -3005,6 +3092,13 @@ function applyOpenClawAgentPathMaterializationPatchToSource(source) {
     `${loadSchemaSnippet}${OPENCLAW_AGENT_PATH_MATERIALIZATION_HELPERS}`,
     'loadSchemaWithPlugins anchor',
   );
+
+  if (next.includes('commitGatewayConfigWrite({')) {
+    return {
+      source: applyOpenClawGatewayConfigWriteMaterializationPatch(next),
+      patched: true,
+    };
+  }
 
   const configSetSnippet = `\t\tif (!parsed) return;
 \t\tif (!await ensureResolvableSecretRefsOrRespond({
@@ -3107,17 +3201,48 @@ async function resolveOpenClawRuntimeServerImplPath(runtimeDir) {
   }
 
   const matches = entries
-    .filter((entry) => entry.isFile() && /^server[.]impl-.*[.]js$/u.test(entry.name))
+    .filter((entry) =>
+      entry.isFile()
+      && (
+        /^server[.]impl-.*[.]js$/u.test(entry.name)
+        || /^server-methods-.*[.]js$/u.test(entry.name)
+        || /^mutate-.*[.]js$/u.test(entry.name)
+      )
+    )
     .map((entry) => path.join(distDir, entry.name))
     .sort();
 
-  if (matches.length !== 1) {
+  const centralizedConfigWriterTargets = [];
+  const legacyPatchTargets = [];
+  for (const match of matches) {
+    const source = await readFile(match, 'utf8');
+    if (
+      source.includes('async function replaceConfigFile(params)')
+      && source.includes('async function mutateConfigFile(params)')
+      && source.includes('writeConfigFile')
+    ) {
+      centralizedConfigWriterTargets.push(match);
+      continue;
+    }
+
+    if (
+      source.includes(OPENCLAW_AGENT_PATH_MATERIALIZATION_SENTINEL)
+      || source.includes('function loadSchemaWithPlugins()')
+    ) {
+      legacyPatchTargets.push(match);
+    }
+  }
+
+  const patchTargets = centralizedConfigWriterTargets.length > 0
+    ? centralizedConfigWriterTargets
+    : legacyPatchTargets;
+  if (patchTargets.length !== 1) {
     throw new Error(
-      `[openclaw-runtime-patch] Expected exactly one OpenClaw server.impl bundle in ${distDir}, found ${matches.length}.`,
+      `[openclaw-runtime-patch] Expected exactly one OpenClaw config method patch target in ${distDir}, found ${patchTargets.length}.`,
     );
   }
 
-  return matches[0];
+  return patchTargets[0];
 }
 
 export async function applyOpenClawRuntimeAgentPathMaterializationPatch({
@@ -3255,7 +3380,7 @@ export async function prepareOpenClawRuntime({
       return await finalizePreparedOpenClawRuntime({
         manifest,
         resourceDir,
-        strategy: inspection.repairedManifest ? 'repaired-existing-manifest' : 'reused-existing',
+        strategy: 'reused-existing',
       });
     }
 
@@ -3350,6 +3475,7 @@ export async function prepareOpenClawRuntime({
           'install',
           '--omit=dev',
           '--no-package-lock',
+          '--save-exact',
           '--ignore-scripts',
           ...installSpecs,
         ], {
@@ -3744,25 +3870,32 @@ export async function inspectCachedNodeRuntimeDir({
       target,
     });
 
+    let sidecarManifest;
     try {
-      const sidecarManifest = await readCachedNodeRuntimeSidecarManifest(nodeSourceDir);
-      if (cachedNodeRuntimeSidecarManifestMatches(sidecarManifest, expectedSidecarManifest)) {
-        return {
-          reusable: true,
-          reason: 'ready',
-          preparedNodeVersion: sidecarManifest.nodeVersion,
-          sidecarVerified: true,
-        };
-      }
-    } catch {
-      // Fall back to live node version inspection for legacy caches without sidecars.
+      sidecarManifest = await readCachedNodeRuntimeSidecarManifest(nodeSourceDir);
+    } catch (error) {
+      return {
+        reusable: false,
+        reason: 'node-sidecar-missing',
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
 
-    const preparedNodeVersion = await readPreparedNodeVersion(nodeExecutablePath);
+    if (!cachedNodeRuntimeSidecarManifestMatches(sidecarManifest, expectedSidecarManifest)) {
+      return {
+        reusable: false,
+        reason: 'node-sidecar-mismatch',
+        preparedNodeVersion:
+          typeof sidecarManifest?.nodeVersion === 'string' ? sidecarManifest.nodeVersion : null,
+        sidecarVerified: false,
+      };
+    }
+
     return {
-      reusable: preparedNodeVersion === nodeVersion,
-      reason: preparedNodeVersion === nodeVersion ? 'ready' : 'node-version-mismatch',
-      preparedNodeVersion,
+      reusable: true,
+      reason: 'ready',
+      preparedNodeVersion: sidecarManifest.nodeVersion,
+      sidecarVerified: true,
     };
   } catch (error) {
     return {
@@ -4087,106 +4220,6 @@ function resolveBundledNodeInstallDependencyPaths(nodeSourceDir, target) {
   }
 
   return [path.join(nodeSourceDir, 'bin', 'npm')];
-}
-
-async function repairPreparedOpenClawRuntimeManifest({
-  resourceDir,
-  manifest,
-  runtimeSupplementalPackages = DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
-}) {
-  const manifestPath = path.join(resourceDir, 'manifest.json');
-  const runtimeDir = path.join(resourceDir, 'runtime');
-
-  try {
-    await validatePreparedRuntimeSource(runtimeDir, manifest);
-  } catch (error) {
-    return {
-      reusable: false,
-      reason: 'runtime-invalid',
-      manifestPath,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-
-  let preparedSidecarManifest;
-  try {
-    preparedSidecarManifest = await readPreparedRuntimeSidecarManifest(runtimeDir);
-  } catch {
-    preparedSidecarManifest = null;
-  }
-
-  if (preparedOpenClawManifestMatches(preparedSidecarManifest, manifest)) {
-    await writePreparedRuntimeSidecarManifest({
-      runtimeDir,
-      manifest,
-      runtimeSupplementalPackages,
-    });
-    await writeFile(
-      manifestPath,
-      `${JSON.stringify(manifest, null, 2)}\n`,
-      'utf8',
-    );
-
-    return {
-      reusable: true,
-      repairedManifest: true,
-      reason: 'repaired-manifest',
-      manifestPath,
-      manifest,
-    };
-  }
-
-  if (preparedSidecarManifest && !preparedOpenClawManifestMatches(preparedSidecarManifest, manifest)) {
-    return {
-      reusable: false,
-      reason: 'manifest-mismatch',
-      manifestPath,
-      existingManifest: preparedSidecarManifest,
-    };
-  }
-
-  let preparedOpenClawVersion;
-  try {
-    preparedOpenClawVersion = await readPreparedOpenClawPackageVersion(
-      path.join(resourceDir, 'runtime', 'package', 'node_modules', 'openclaw', 'package.json'),
-    );
-  } catch (error) {
-    return {
-      reusable: false,
-      reason: 'openclaw-version-unreadable',
-      manifestPath,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-
-  if (preparedOpenClawVersion !== manifest.openclawVersion) {
-    return {
-      reusable: false,
-      reason: 'openclaw-version-mismatch',
-      manifestPath,
-      preparedOpenClawVersion,
-      expectedOpenClawVersion: manifest.openclawVersion,
-    };
-  }
-
-  await writeFile(
-    manifestPath,
-    `${JSON.stringify(manifest, null, 2)}\n`,
-    'utf8',
-  );
-  await writePreparedRuntimeSidecarManifest({
-    runtimeDir,
-    manifest,
-    runtimeSupplementalPackages,
-  });
-
-  return {
-    reusable: true,
-    repairedManifest: true,
-    reason: 'repaired-manifest',
-    manifestPath,
-    manifest,
-  };
 }
 
 async function ensureBundledResourceMirror({
@@ -4541,7 +4574,7 @@ export async function syncPackagedOpenClawReleaseArtifacts({
   runtimeSupplementalPackages = DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
   archivePlatform = process.platform,
 } = {}) {
-  await cleanupLegacyOpenClawSourceRuntimeResidue({ workspaceRootDir });
+  await assertNoUnsupportedOpenClawRuntimeLayout({ workspaceRootDir });
 
   const resolvedManifest = manifest ?? JSON.parse(
     await readFile(path.join(resourceDir, 'manifest.json'), 'utf8'),

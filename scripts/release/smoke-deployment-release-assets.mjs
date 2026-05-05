@@ -13,6 +13,10 @@ import {
   resolveDesktopReleaseTarget,
 } from './desktop-targets.mjs';
 import {
+  readTarGzEntries,
+  readZipArchiveEntries,
+} from './archive-entry-safety.mjs';
+import {
   writeReleaseSmokeReport,
 } from './release-smoke-contract.mjs';
 import {
@@ -213,6 +217,17 @@ export async function extractDeploymentBundle({
   extractDir,
 } = {}) {
   const lowerCaseArchivePath = String(archivePath ?? '').trim().toLowerCase();
+  if (lowerCaseArchivePath.endsWith('.zip')) {
+    readZipArchiveEntries(archivePath, {
+      context: 'Deployment release',
+    });
+  } else if (lowerCaseArchivePath.endsWith('.tar.gz')) {
+    readTarGzEntries(archivePath, {
+      context: 'Deployment release',
+    });
+  } else {
+    throw new Error(`Unsupported deployment archive format: ${archivePath}`);
+  }
 
   if (lowerCaseArchivePath.endsWith('.zip')) {
     runCommand({

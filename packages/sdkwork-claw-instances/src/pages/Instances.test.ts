@@ -32,6 +32,13 @@ runTest('Instances page uses left-aligned top tabs and exposes supported kernel 
   assert.match(source, /navigate\('\/docs#script'\)/);
 });
 
+runTest('Instances page reads kernel platform labels from platformSupport instead of compatibility fields', () => {
+  const source = readFileSync(resolve(import.meta.dirname, 'Instances.tsx'), 'utf8');
+
+  assert.match(source, /config\.platformSupport\?\.windows/);
+  assert.doesNotMatch(source, /config\.compatibility\?\.windows/);
+});
+
 runTest('Instances page keeps onboarding and old provisioning flows removed from the main management surface', () => {
   const source = readFileSync(resolve(import.meta.dirname, 'Instances.tsx'), 'utf8');
 

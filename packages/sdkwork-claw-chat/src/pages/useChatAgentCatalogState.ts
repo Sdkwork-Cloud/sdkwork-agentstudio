@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Agent, KernelChatAgentProfile } from '@sdkwork/claw-types';
 import {
@@ -102,7 +102,10 @@ export function useChatAgentCatalogState({
     isAgentCatalogFetched,
     isAgentCatalogFetching,
   });
-  const visibleAgentIds = visibleAgents.map((agent) => agent.id);
+  const visibleAgentIds = useMemo(
+    () => visibleAgents.map((agent) => agent.id),
+    [visibleAgents],
+  );
 
   return {
     defaultAgentId,

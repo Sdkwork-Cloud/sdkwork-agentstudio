@@ -108,6 +108,7 @@ export interface OpenClawGatewayInstanceSnapshot {
   syncState: OpenClawGatewaySyncState;
   connectionStatus: OpenClawGatewayConnectionStatus;
   lastError?: string;
+  isEmptySnapshotAuthoritative?: boolean;
 }
 
 export interface OpenClawGatewayAgentCatalogChangedEvent {
@@ -233,6 +234,7 @@ function createInitialSnapshot(): OpenClawGatewayInstanceSnapshot {
     syncState: 'idle',
     connectionStatus: 'disconnected',
     lastError: undefined,
+    isEmptySnapshotAuthoritative: false,
   };
 }
 
@@ -412,6 +414,70 @@ function normalizeTimestamp(payload: unknown, fallback: number) {
 
 function normalizeRole(payload: unknown): OpenClawGatewayRole {
   return extractMessagePresentation(payload).role;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function resolveChatPayloadMessage(payload: OpenClawGatewayChatEvent | Record<string, unknown>) {
+  if (payload.message !== undefined) {
+    return payload.message;
+  }
+
+  const record = payload as Record<string, unknown>;
+  if (
+    record.delta !== undefined ||
+    record.text !== undefined ||
+    record.content !== undefined ||
+    record.toolCards !== undefined ||
+    record.tool_calls !== undefined ||
+    record.tool_call !== undefined ||
+    record.tool_results !== undefined ||
+    record.tool_result !== undefined
+  ) {
+    return record;
+  }
+
+  return undefined;
+}
+
+function normalizeChatSendResponseEvent(params: {
+  response: unknown;
+  sessionKey: string;
+  runId: string;
+}): OpenClawGatewayChatEvent | null {
+  if (!isPlainRecord(params.response)) {
+    return null;
+  }
+
+  const state = params.response.state;
+  const normalizedState =
+    state === 'delta' || state === 'final' || state === 'aborted' || state === 'error'
+      ? state
+      : 'final';
+  const sessionKey = params.sessionKey;
+  const runId = params.runId;
+  const message = resolveChatPayloadMessage(params.response);
+  const errorMessage =
+    typeof params.response.errorMessage === 'string'
+      ? params.response.errorMessage
+      : typeof params.response.error === 'string'
+        ? params.response.error
+        : undefined;
+
+  if (message === undefined && !errorMessage) {
+    return null;
+  }
+
+  return {
+    ...params.response,
+    sessionKey,
+    runId,
+    state: normalizedState,
+    ...(message !== undefined ? { message } : {}),
+    ...(errorMessage ? { errorMessage } : {}),
+  };
 }
 
 function normalizeAttachmentKind(value: unknown): StudioConversationAttachment['kind'] {
@@ -1070,7 +1136,7 @@ function resolveGatewayChatEventMessageId(
     record.message && typeof record.message === 'object' && !Array.isArray(record.message)
       ? (record.message as Record<string, unknown>)
       : null;
-  const idCandidate = messageRecord?.id ?? messageRecord?.messageId ?? record.messageId;
+  const idCandidate = messageRecord?.id ?? messageRecord?.messageId ?? record.messageId ?? record.id;
   return typeof idCandidate === 'string' && idCandidate.trim()
     ? idCandidate.trim()
     : createMessageId(fallbackPrefix);
@@ -1300,6 +1366,9 @@ function areUserMessageAttachmentsCompatible(params: {
   );
   const pendingContentText = normalizeComparableUserMessageText(params.pendingMessage.content);
   const persistedContentText = normalizeComparableUserMessageText(params.persistedMessage.content);
+  if (pendingContentText && pendingContentText === persistedContentText) {
+    return true;
+  }
 
   return Boolean(
     (pendingTransportText &&
@@ -1988,6 +2057,7 @@ export class OpenClawGatewaySessionStore {
     }
 
     state.snapshot.sessions = [...nextSessionsById.values()];
+    state.snapshot.isEmptySnapshotAuthoritative = false;
     this.sortSessions(state.snapshot);
     state.snapshot.activeSessionId = this.resolveActiveSessionId(
       state.snapshot,
@@ -2361,7 +2431,16 @@ export class OpenClawGatewaySessionStore {
           ? { attachments: buildGatewayAttachments(outgoingAttachments) }
           : {}),
       });
-      session.runId = result.runId || runId;
+      const resolvedRunId = result.runId || runId;
+      session.runId = resolvedRunId;
+      const responseEvent = normalizeChatSendResponseEvent({
+        response: result.response,
+        sessionKey: session.id,
+        runId: resolvedRunId,
+      });
+      if (responseEvent) {
+        this.handleChatEvent(params.instanceId, responseEvent);
+      }
       if (isFirstUserMessage) {
         await this.persistSessionTitleLabelBestEffort({
           state,
@@ -2370,7 +2449,7 @@ export class OpenClawGatewaySessionStore {
       }
       this.emit(params.instanceId);
       return {
-        runId: session.runId,
+        runId: resolvedRunId,
       };
     } catch (error) {
       const errorMessage = this.toErrorMessage(error, 'Failed to send OpenClaw message.');
@@ -2495,6 +2574,8 @@ export class OpenClawGatewaySessionStore {
       state.snapshot.sessions = state.snapshot.sessions.filter(
         (session) => session.id !== params.sessionId,
       );
+      state.snapshot.isEmptySnapshotAuthoritative =
+        state.snapshot.sessions.length === 0;
       state.snapshot.activeSessionId = this.resolveActiveSessionId(
         state.snapshot,
         state.snapshot.activeSessionId === params.sessionId
@@ -2835,6 +2916,7 @@ export class OpenClawGatewaySessionStore {
       this.syncActiveSessionSeen(state.snapshot);
       state.snapshot.syncState = 'idle';
       state.snapshot.lastError = undefined;
+      state.snapshot.isEmptySnapshotAuthoritative = result.sessions.length === 0;
 
       if (options.reloadActiveHistory && nextActiveSessionId) {
         const activeSession = state.snapshot.sessions.find(
@@ -3347,12 +3429,15 @@ export class OpenClawGatewaySessionStore {
     }
 
     const timestamp = this.now();
-    const presentation = extractMessagePresentation(payload.message);
+    const messagePayload = resolveChatPayloadMessage(payload);
+    const timestampPayload = messagePayload ?? payload;
+    const messageTimestamp = normalizeTimestamp(timestampPayload, timestamp);
+    const presentation = extractMessagePresentation(messagePayload);
     const content = presentation.text;
-    const attachments = normalizeAttachments(payload.message);
+    const attachments = normalizeAttachments(messagePayload);
     const toolCards = cloneToolCards(presentation.toolCards);
     const payloadRole = presentation.role;
-    const isSilentAssistantMessage = isSilentReplyAssistantPayload(payload.message, content);
+    const isSilentAssistantMessage = isSilentReplyAssistantPayload(messagePayload, content);
     const payloadRecord = payload as Record<string, unknown>;
     const hasRenderableMessage =
       !isSilentAssistantMessage &&
@@ -3394,7 +3479,7 @@ export class OpenClawGatewaySessionStore {
           id: resolveGatewayChatEventMessageId(payload, 'system'),
           role: 'system',
           content,
-          timestamp,
+          timestamp: messageTimestamp,
           ...(typeof resolveGatewayChatEventMessageSeq(payload) === 'number'
             ? { seq: resolveGatewayChatEventMessageSeq(payload) }
             : {}),
@@ -3403,7 +3488,7 @@ export class OpenClawGatewaySessionStore {
           toolCards,
         }),
       );
-      session.updatedAt = timestamp;
+      session.updatedAt = messageTimestamp;
       session.isDraft = false;
       session.historyState = 'ready';
       applySessionOverrideFields(session, payloadRecord);
@@ -3442,14 +3527,14 @@ export class OpenClawGatewaySessionStore {
           id: createMessageId(payloadRole),
           role: payloadRole,
           content,
-          timestamp,
+          timestamp: messageTimestamp,
           runId: incomingRunId ?? undefined,
           attachments,
           reasoning: presentation.reasoning,
           toolCards,
         }),
       );
-      session.updatedAt = timestamp;
+      session.updatedAt = messageTimestamp;
       session.isDraft = false;
       session.historyState = 'ready';
       syncGatewaySessionDerivedMessageState(session);
@@ -3484,7 +3569,7 @@ export class OpenClawGatewaySessionStore {
         if (!lastMessage.content || content.length >= lastMessage.content.length) {
           lastMessage.content = content;
         }
-        lastMessage.timestamp = timestamp;
+        lastMessage.timestamp = messageTimestamp;
         if (attachments) {
           lastMessage.attachments = attachments;
         }
@@ -3498,7 +3583,7 @@ export class OpenClawGatewaySessionStore {
             id: createMessageId(payloadRole),
             role: payloadRole,
             content,
-            timestamp,
+            timestamp: messageTimestamp,
             runId: comparableRunId ?? undefined,
             attachments,
             reasoning: presentation.reasoning,
@@ -3507,7 +3592,7 @@ export class OpenClawGatewaySessionStore {
         );
       }
       session.runId = incomingRunId ?? session.runId ?? null;
-      session.updatedAt = timestamp;
+      session.updatedAt = messageTimestamp;
       session.isDraft = false;
       session.historyState = 'ready';
       applySessionOverrideFields(session, payloadRecord);
@@ -3542,7 +3627,7 @@ export class OpenClawGatewaySessionStore {
         lastMessage
       ) {
         lastMessage.content = content;
-        lastMessage.timestamp = timestamp;
+        lastMessage.timestamp = messageTimestamp;
         lastMessage.attachments = attachments;
         lastMessage.reasoning = presentation.reasoning;
         lastMessage.toolCards = toolCards;
@@ -3554,7 +3639,7 @@ export class OpenClawGatewaySessionStore {
             id: createMessageId(payloadRole),
             role: payloadRole,
             content,
-            timestamp,
+            timestamp: messageTimestamp,
             runId: terminalRunId ?? undefined,
             attachments,
             reasoning: presentation.reasoning,
@@ -3564,7 +3649,7 @@ export class OpenClawGatewaySessionStore {
       }
       session.runId = null;
       session.isDraft = false;
-      session.updatedAt = timestamp;
+      session.updatedAt = messageTimestamp;
       session.historyState = 'ready';
       applySessionOverrideFields(session, payloadRecord);
       syncGatewaySessionDerivedMessageState(session);
@@ -3598,7 +3683,7 @@ export class OpenClawGatewaySessionStore {
             targetMessage.content,
             errorMessage,
           ),
-          timestamp,
+          timestamp: messageTimestamp,
         };
         session.messages = normalizeGatewaySessionMessages(nextMessages);
       } else {
@@ -3608,13 +3693,13 @@ export class OpenClawGatewaySessionStore {
             id: createMessageId('assistant'),
             role: 'assistant',
             content: errorMessage,
-            timestamp,
+            timestamp: messageTimestamp,
             runId: failedRunId ?? undefined,
           }),
         );
       }
       session.runId = null;
-      session.updatedAt = timestamp;
+      session.updatedAt = messageTimestamp;
       session.historyState = 'error';
       syncGatewaySessionDerivedMessageState(session);
       state.snapshot.lastError =

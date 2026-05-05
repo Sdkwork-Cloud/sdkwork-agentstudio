@@ -161,6 +161,10 @@ export function useChatContextCatalogState({
         : EMPTY_CONTEXT_OPTIONS,
     [isChatSupportedRoute, t, visibleSkills],
   );
+  const visibleAgentIds = useMemo(
+    () => visibleAgentsWithKernel.map((agent) => agent.id),
+    [visibleAgentsWithKernel],
+  );
   const activeAgent = visibleAgentsWithKernel.find((agent) => agent.id === effectiveGatewayAgentId);
   const activeSkill = visibleSkills.find((skill) => skill.id === selectedSkillId);
 
@@ -168,7 +172,7 @@ export function useChatContextCatalogState({
     defaultAgentId,
     effectiveGatewayAgentId,
     hasResolvedVisibleAgents,
-    visibleAgentIds: visibleAgentsWithKernel.map((agent) => agent.id),
+    visibleAgentIds,
     isAgentSelectorLoading:
       isAgentSelectorLoading && visibleAgentsWithKernel.length === 0,
     isSkillSelectorLoading,

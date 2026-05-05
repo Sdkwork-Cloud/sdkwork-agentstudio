@@ -37,6 +37,8 @@ export {
   createBrowserSessionAwareFetch,
   SERVER_BROWSER_SESSION_HEADER_NAME,
 } from './platform/browserSessionFetch.ts';
+export { resolveBrowserStorage } from './platform/safeBrowserStorage.ts';
+export type { BrowserStorageName } from './platform/safeBrowserStorage.ts';
 export { WebInternalPlatform, DEFAULT_INTERNAL_BASE_PATH } from './platform/webInternal.ts';
 export { WebKernelPlatform } from './platform/webKernel.ts';
 export { WebManagePlatform, DEFAULT_MANAGE_BASE_PATH } from './platform/webManage.ts';

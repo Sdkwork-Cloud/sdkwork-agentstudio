@@ -81,4 +81,18 @@ describe('AppHeader', () => {
     expect(markup).not.toContain('data-slot="app-header-workspace"');
     expect(markup).not.toContain('>Workspace<');
   });
+
+  it('can render only the shared desktop window controls without workspace chrome', () => {
+    const markup = renderToStaticMarkup(
+      createElement(AppHeader, { mode: 'window-controls' }),
+    );
+
+    expect(markup).toContain('data-slot="desktop-window-controls"');
+    expect(markup).toContain('data-slot="app-header-trailing"');
+    expect(markup).not.toContain('data-slot="app-header-leading"');
+    expect(markup).not.toContain('data-slot="app-header-search"');
+    expect(markup).not.toContain('Claw Studio');
+    expect(markup).not.toContain('Mobile');
+    expect(markup).not.toContain('Log in');
+  });
 });

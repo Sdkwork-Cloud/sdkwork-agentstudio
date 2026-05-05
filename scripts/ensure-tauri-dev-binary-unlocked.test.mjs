@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process';
 
 import {
   ensureTauriDevBinaryUnlocked,
+  isMissingWindowsServiceQueryError,
   resolveTauriDevBinaryPath,
   WINDOWS_TAURI_DEV_SESSION_MARKERS,
 } from './ensure-tauri-dev-binary-unlocked.mjs';
@@ -87,6 +88,10 @@ async function waitFor(condition, timeoutMs = 5000) {
   throw new Error(`Timed out after ${timeoutMs}ms waiting for condition`);
 }
 
+function inspectNoTargetProcesses() {
+  return [];
+}
+
 if (process.platform !== 'win32') {
   console.log('ok - tauri dev binary unlock guard is only required on Windows');
   process.exit(0);
@@ -96,6 +101,22 @@ assert.equal(
   WINDOWS_TAURI_DEV_SESSION_MARKERS.includes('tauri.js'),
   true,
   'dev-session marker list should include tauri.js so stale Tauri CLI roots get terminated with their cargo descendants',
+);
+
+assert.equal(
+  isMissingWindowsServiceQueryError('[SC] OpenService FAILED 1060: The specified service does not exist as an installed service.'),
+  true,
+  'missing Windows service detection should recognize English sc.exe 1060 output',
+);
+assert.equal(
+  isMissingWindowsServiceQueryError('[SC] EnumQueryServicesStatus:OpenService localized-error 1060: localized service missing.'),
+  true,
+  'missing Windows service detection should recognize localized sc.exe 1060 output',
+);
+assert.equal(
+  isMissingWindowsServiceQueryError('[SC] ControlService FAILED 1052: control not valid'),
+  false,
+  'missing Windows service detection should not classify other service-control errors as missing services',
 );
 
 await (async () => {
@@ -121,6 +142,7 @@ await (async () => {
         inspectDevSessionProcesses() {
           return [];
         },
+        inspectTargetProcesses: inspectNoTargetProcesses,
         stopProcess() {
           throw new Error('stopProcess should not be called when no process is running');
         },
@@ -179,6 +201,7 @@ await (async () => {
           inspectDevSessionProcesses() {
             return [];
           },
+          inspectTargetProcesses: inspectNoTargetProcesses,
           stopManagedKernelService() {},
           stopProcess(pid) {
             process.kill(pid);
@@ -250,6 +273,7 @@ await (async () => {
           inspectDevSessionProcesses() {
             return [];
           },
+          inspectTargetProcesses: inspectNoTargetProcesses,
           stopManagedKernelService() {},
           stopProcess(pid) {
             process.kill(pid);
@@ -305,6 +329,7 @@ await (async () => {
         inspectDevSessionProcesses() {
           return [];
         },
+        inspectTargetProcesses: inspectNoTargetProcesses,
         stopManagedKernelService() {
           callOrder.push('service');
         },
@@ -374,8 +399,9 @@ await (async () => {
               Path: null,
               CommandLine: 'node ../../scripts/run-tauri-cli.mjs dev',
             },
-          ];
+            ];
         },
+        inspectTargetProcesses: inspectNoTargetProcesses,
         stopManagedKernelService() {},
         stopProcess(pid) {
           stoppedPids.push(pid);
@@ -426,6 +452,7 @@ await (async () => {
         inspectDevSessionProcesses() {
           return [];
         },
+        inspectTargetProcesses: inspectNoTargetProcesses,
         stopManagedKernelService() {
           serviceStopAttempts += 1;
           callOrder.push(`service-${serviceStopAttempts}`);
@@ -498,6 +525,7 @@ await (async () => {
         inspectDevSessionProcesses() {
           return [{ Id: 5678, ProcessName: 'node', Path: null, CommandLine: 'node ../../scripts/run-tauri-cli.mjs dev' }];
         },
+        inspectTargetProcesses: inspectNoTargetProcesses,
         stopManagedKernelService() {},
         stopProcess(pid) {
           stopCalls.push(pid);

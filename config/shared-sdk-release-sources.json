@@ -10,19 +10,15 @@
     },
     "core-pc-react": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-core.git",
-      "ref": "b30bab1f67a696e903a753000282018ace673e13"
+      "ref": "30da9cae505a515fbf56854844c8fcc5c397ef49"
     },
-    "im-backend-sdk": {
+    "im-sdk": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git",
-      "ref": "c71a0f115c08cb164d5a857cdac15ea6d3adc006"
+      "ref": "61ca9a3605495023ce9883f7a0bccbf8ab4bb888"
     },
-    "openchat-im-sdk": {
-      "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git",
-      "ref": "c71a0f115c08cb164d5a857cdac15ea6d3adc006"
-    },
-    "openchat-im-wukongim-adapter": {
-      "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git",
-      "ref": "c71a0f115c08cb164d5a857cdac15ea6d3adc006"
+    "rtc-sdk": {
+      "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-rtc-sdk.git",
+      "ref": "04a019dc688c671e8285989f319d465ef8d1b9a5"
     }
   }
 }

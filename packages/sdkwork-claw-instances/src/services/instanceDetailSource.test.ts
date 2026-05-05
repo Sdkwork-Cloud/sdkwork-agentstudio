@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { DEFAULT_BUNDLED_OPENCLAW_VERSION } from '@sdkwork/claw-types';
 
 function runTest(name: string, fn: () => void | Promise<void>) {
   return Promise.resolve()
@@ -98,7 +99,7 @@ await runTest(
       type: 'openclaw',
       iconType: 'server',
       status: 'online',
-      version: '2026.4.11',
+      version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
       uptime: '1m',
       ip: '127.0.0.1',
       cpu: 0,

@@ -108,3 +108,22 @@ pnpm release:finalize
 - 阅读 [API 总览](/zh-CN/reference/api-reference) 了解当前原生接口面
 - 阅读 [发布与部署](/zh-CN/core/release-and-deployment) 了解 Server、Docker、Kubernetes 的打包逻辑
 - 阅读 [命令参考](/zh-CN/reference/commands) 快速查找校验与打包命令
+## Release Readiness Gate
+
+发布前在 `pnpm release:finalize` 之后执行：
+
+```bash
+pnpm release:assert-ready
+```
+
+`pnpm release:assert-ready` 会重新读取 `release-manifest.json` 和 `SHA256SUMS.txt`，拒绝 `releaseCoverage.status=partial`、拒绝 `--allow-partial-release` 生成的清单，校验每个 artifact 与 `releaseMetadata` 的 checksum 和 size，并要求 `release-notes.md` 同时被 `releaseMetadata`、`SHA256SUMS.txt`、`release-attestations.json` 覆盖。它还会拒绝缺少、格式错误、引用的 smoke 证据文件已不在 release 资产目录中，或与引用 smoke report 内容不一致的家族级 smoke 元数据。
+## 发布证据完整性补充
+
+发布前执行 `pnpm release:assert-ready` 时，`reportRelativePath`、`manifestRelativePath`、桌面 `capturedEvidenceRelativePath` 指向的证据文件必须仍然存在，且 `reportSha256`、`manifestSha256`、`capturedEvidenceSha256` 与对应 sha256/size 绑定必须仍然匹配；否则最终发布门禁会拒绝继续。
+
+发布前门禁补充：`pnpm release:finalize` 会生成 `release-manifest.json.sha256.txt`，`pnpm release:assert-ready` 会在解析 `release-manifest.json` 前先校验该 sidecar，防止最终发布清单在 finalization 后被替换或篡改。
+## release-attestations.json
+
+发布前在 `pnpm release:finalize` 之后运行 `pnpm release:write-attestation-evidence -- --release-assets-dir artifacts/release --repository Sdkwork-Cloud/claw-studio --release-tag release-local`，再运行 `pnpm release:assert-ready`。`release-attestations.json` 记录每个 artifact 与 release metadata（包括 `release-notes.md`）的 `gh attestation verify` 结果，并要求 `relativePath`、`sha256`、`repository`、`releaseTag`、`sourceRef`、`predicateType` 与 `release-manifest.json` 一致。
+
+商业发布前的 provenance 证据还必须记录 signer workflow 约束：`gh attestation verify --signer-workflow <owner/repo/.github/workflows/release-reusable.yml>`，并在 `release-attestations.json` 中持久化 `signerWorkflow` 与 `signerWorkflowIdentity`。`pnpm release:assert-ready` 会拒绝缺少 `--signer-workflow`、`signerWorkflowIdentity` 或与 manifest 不一致的证明证据。

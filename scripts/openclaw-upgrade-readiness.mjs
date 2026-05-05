@@ -3,7 +3,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-import { detectLegacyOpenClawSourceRuntimeResidue } from './cleanup-legacy-openclaw-source-runtime.mjs';
+import { inspectUnsupportedOpenClawRuntimeLayout } from './assert-openclaw-runtime-layout.mjs';
 import { resolveKernelReleaseConfigPath } from './release/kernel-releases.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -176,11 +176,8 @@ export async function assessOpenClawUpgradeReadiness({
     'upstreams',
     'openclaw',
   );
-  const {
-    legacySourceRuntimeDir,
-    legacySourceRuntimeDirPresent,
-    legacySourceRuntimeVersion,
-  } = await detectLegacyOpenClawSourceRuntimeResidue({ workspaceRootDir });
+  const unsupportedRuntimeLayout =
+    await inspectUnsupportedOpenClawRuntimeLayout({ workspaceRootDir });
   const targetTag = `v${normalizedTargetVersion}`;
   const localTarballPath = path.join(workspaceRootDir, `openclaw-${normalizedTargetVersion}.tgz`);
 
@@ -198,17 +195,14 @@ export async function assessOpenClawUpgradeReadiness({
     bundledManifestVersion,
     generatedManifestVersion,
     localPreparedRuntimeVersion,
-    localUpstreamVersion,
   ].every((version) => version === normalizedTargetVersion);
 
   const blockers = [];
 
-  if (legacySourceRuntimeDirPresent) {
-    const legacyVersionSuffix = legacySourceRuntimeVersion
-      ? ` (detected version ${legacySourceRuntimeVersion})`
-      : '';
+  for (const violation of unsupportedRuntimeLayout.violations) {
+    const versionSuffix = violation.version ? ` (detected version ${violation.version})` : '';
     blockers.push(
-      `Legacy desktop source runtime residue is still present at ${path.relative(workspaceRootDir, legacySourceRuntimeDir).replaceAll('\\', '/')}${legacyVersionSuffix}. Remove it before upgrading the packaged OpenClaw runtime.`,
+      `Unsupported OpenClaw runtime layout is present at ${violation.relativePath}${versionSuffix}. Remove retired layout artifacts before upgrading the packaged OpenClaw runtime.`,
     );
   }
   if (localUpstreamVersion !== normalizedTargetVersion) {
@@ -241,8 +235,10 @@ export async function assessOpenClawUpgradeReadiness({
     localPreparedRuntimeVersion,
     localUpstreamVersion,
     versionSourcesAligned,
-    legacySourceRuntimeDirPresent,
-    legacySourceRuntimeVersion,
+    unsupportedSourceRuntimeDirPresent: unsupportedRuntimeLayout.sourceRuntimeDirPresent,
+    unsupportedSourceRuntimeVersion: unsupportedRuntimeLayout.sourceRuntimeVersion,
+    unsupportedBundledNodeRuntimeDirPresent:
+      unsupportedRuntimeLayout.bundledNodeRuntimeDirPresent,
     localUpstreamHasTargetTag,
     localUpstreamDirty,
     localUpstreamDirtyCheck,

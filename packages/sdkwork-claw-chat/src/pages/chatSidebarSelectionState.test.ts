@@ -25,6 +25,10 @@ const sidebarChromeSource = readFileSync(
   new URL('../components/ChatSidebarChrome.tsx', import.meta.url),
   'utf8',
 );
+const sidebarSelectionSource = readFileSync(
+  new URL('../services/chatSidebarSelection.ts', import.meta.url),
+  'utf8',
+);
 
 await runTest(
   'useChatSidebarState standardizes agent and session selection failures into explicit results and visible sidebar error state',
@@ -120,6 +124,50 @@ await runTest(
     assert.doesNotMatch(
       sidebarSource,
       /const resolveSessionRecord = \(sessionId: string\) =>\s*activeHistorySessions\.find\(\(session\) => session\.id === sessionId\) \?\? null;/,
+    );
+    assert.doesNotMatch(
+      sidebarSource,
+      /activeHistorySessions\.find\(\(session\) => session\.id === item\.sessionId\)/,
+    );
+  },
+);
+
+await runTest(
+  'useChatSidebarState keeps current-instance agent switching on the fast path before falling back to cross-instance discovery',
+  () => {
+    assert.match(
+      sidebarStateSource,
+      /resolveChatSidebarKnownAgentLinkedInstanceId,/,
+    );
+    assert.match(
+      sidebarStateSource,
+      /const knownLinkedInstanceId = resolveChatSidebarKnownAgentLinkedInstanceId\(\{\s*agentId: selection\.agentId,\s*currentActiveInstanceId,\s*agentOptions: presentation\.sidebarAgentOptions,\s*\}\);/s,
+    );
+    assert.match(
+      sidebarStateSource,
+      /const linkedInstanceId =\s*knownLinkedInstanceId !== undefined\s*\? knownLinkedInstanceId\s*: await resolveChatAgentLinkedInstanceId\(\{[\s\S]*agentId: selection\.agentId,[\s\S]*preferredInstanceId: currentActiveInstanceId,[\s\S]*\}\)\.catch\(\(\) => null\);/s,
+    );
+    assert.doesNotMatch(
+      sidebarStateSource,
+      /const linkedInstanceId = await resolveChatAgentLinkedInstanceId\(\{[\s\S]*agentId: selection\.agentId,[\s\S]*preferredInstanceId: currentActiveInstanceId,[\s\S]*\}\)\.catch\(\(\) => null\);/s,
+    );
+  },
+);
+
+await runTest(
+  'chat sidebar agent selection plans do not block current-instance agent switches on redundant hydration',
+  () => {
+    assert.match(
+      sidebarSelectionSource,
+      /export function resolveChatSidebarKnownAgentLinkedInstanceId\(/,
+    );
+    assert.match(
+      sidebarSelectionSource,
+      /shouldHydrateTargetInstance:\s*Boolean\(nextInstanceId\) &&\s*nextInstanceId !== params\.currentActiveInstanceId,/s,
+    );
+    assert.doesNotMatch(
+      sidebarSelectionSource,
+      /nextInstanceId !== params\.currentActiveInstanceId \|\|\s*params\.selection\.agentId !== null/s,
     );
   },
 );

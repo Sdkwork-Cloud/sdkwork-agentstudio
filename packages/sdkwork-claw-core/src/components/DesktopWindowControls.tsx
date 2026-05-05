@@ -6,6 +6,14 @@ import { platform } from '../platform/index.ts';
 export interface DesktopWindowControlsProps {
   variant?: 'header' | 'floating';
   className?: string;
+  labels?: DesktopWindowControlLabels;
+}
+
+export interface DesktopWindowControlLabels {
+  minimize: string;
+  maximize: string;
+  restore: string;
+  close: string;
 }
 
 function joinClasses(...values: Array<string | false | null | undefined>) {
@@ -98,11 +106,12 @@ function getButtonClassName(params: {
   );
 }
 
-export function DesktopWindowControls({
+function DesktopWindowControlsBase({
   variant = 'header',
   className,
-}: DesktopWindowControlsProps) {
-  const { t } = useTranslation();
+  labels,
+}: Required<Pick<DesktopWindowControlsProps, 'labels'>> &
+  Omit<DesktopWindowControlsProps, 'labels'>) {
   const isDesktop = platform.getPlatform() === 'desktop';
   const isWindowMaximized = useDesktopWindowMaximized(isDesktop);
 
@@ -111,8 +120,8 @@ export function DesktopWindowControls({
   }
 
   const maximizeLabel = isWindowMaximized
-    ? t('common.restoreWindow')
-    : t('common.maximizeWindow');
+    ? labels.restore
+    : labels.maximize;
 
   return (
     <div
@@ -122,8 +131,8 @@ export function DesktopWindowControls({
       <button
         type="button"
         data-tauri-drag-region="false"
-        title={t('common.minimizeWindow')}
-        aria-label={t('common.minimizeWindow')}
+        title={labels.minimize}
+        aria-label={labels.minimize}
         onClick={() => {
           void platform.minimizeWindow();
         }}
@@ -152,8 +161,8 @@ export function DesktopWindowControls({
       <button
         type="button"
         data-tauri-drag-region="false"
-        title={t('common.closeWindow')}
-        aria-label={t('common.closeWindow')}
+        title={labels.close}
+        aria-label={labels.close}
         onClick={() => {
           void platform.closeWindow();
         }}
@@ -166,4 +175,31 @@ export function DesktopWindowControls({
       </button>
     </div>
   );
+}
+
+function TranslatedDesktopWindowControls(props: Omit<DesktopWindowControlsProps, 'labels'>) {
+  const { t } = useTranslation();
+
+  return (
+    <DesktopWindowControlsBase
+      {...props}
+      labels={{
+        minimize: t('common.minimizeWindow'),
+        maximize: t('common.maximizeWindow'),
+        restore: t('common.restoreWindow'),
+        close: t('common.closeWindow'),
+      }}
+    />
+  );
+}
+
+export function DesktopWindowControls({
+  labels,
+  ...props
+}: DesktopWindowControlsProps) {
+  if (labels) {
+    return <DesktopWindowControlsBase {...props} labels={labels} />;
+  }
+
+  return <TranslatedDesktopWindowControls {...props} />;
 }

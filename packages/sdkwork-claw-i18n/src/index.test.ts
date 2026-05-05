@@ -266,6 +266,35 @@ await runTest(
   },
 );
 
+await runTest('browser language detection falls back when browser storage access is blocked', () => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      get localStorage() {
+        throw new DOMException('localStorage is blocked', 'SecurityError');
+      },
+    },
+  });
+
+  try {
+    assert.equal(
+      detectBrowserLanguage({
+        cookie: 'claw_lang=en',
+        htmlLanguage: 'en',
+        navigatorLanguage: 'zh-CN',
+      }),
+      'zh',
+    );
+  } finally {
+    if (previousWindow) {
+      Object.defineProperty(globalThis, 'window', previousWindow);
+    } else {
+      delete (globalThis as { window?: unknown }).window;
+    }
+  }
+});
+
 await runTest('request language detection falls back cleanly to the default language', () => {
   assert.equal(detectRequestLanguage('zh-CN,zh;q=0.9,en;q=0.8'), 'zh');
   assert.equal(detectRequestLanguage('zh-Hant-TW,zh;q=0.9,en;q=0.8'), 'zh-TW');

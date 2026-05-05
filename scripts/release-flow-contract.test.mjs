@@ -113,6 +113,16 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
   assert.match(reusableWorkflow, /libwayland-dev/);
   assert.match(reusableWorkflow, /libxkbcommon-dev/);
   assert.match(reusableWorkflow, /pnpm check:server/);
+  assert.match(
+    reusableWorkflow,
+    /node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-claw-desktop\/src-tauri\/Cargo\.toml/,
+    'release verification must execute Rust checks through scripts/run-cargo.mjs so Cargo dependency resolution stays locked and diagnostics stay consistent with local checks',
+  );
+  assert.doesNotMatch(
+    reusableWorkflow,
+    /(^|\s)cargo test --manifest-path packages\/sdkwork-claw-desktop\/src-tauri\/Cargo\.toml/,
+    'release workflow must not bypass the shared Cargo wrapper',
+  );
   assert.match(reusableWorkflow, /pnpm build/);
   assert.match(reusableWorkflow, /pnpm docs:build/);
   assert.match(reusableWorkflow, /package_profile_id: \$\{\{ steps\.plan\.outputs\.package_profile_id \}\}/);
@@ -121,6 +131,10 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
   assert.match(reusableWorkflow, /server_matrix: \$\{\{ steps\.plan\.outputs\.server_matrix \}\}/);
   assert.match(reusableWorkflow, /container_matrix: \$\{\{ steps\.plan\.outputs\.container_matrix \}\}/);
   assert.match(reusableWorkflow, /kubernetes_matrix: \$\{\{ steps\.plan\.outputs\.kubernetes_matrix \}\}/);
+  assert.match(reusableWorkflow, /required_target_count: \$\{\{ steps\.plan\.outputs\.required_target_count \}\}/);
+  assert.match(reusableWorkflow, /family_target_counts: \$\{\{ steps\.plan\.outputs\.family_target_counts \}\}/);
+  assert.match(reusableWorkflow, /manifest_checksum_file_name: \$\{\{ steps\.plan\.outputs\.manifest_checksum_file_name \}\}/);
+  assert.match(reusableWorkflow, /attestation_evidence_file_name: \$\{\{ steps\.plan\.outputs\.attestation_evidence_file_name \}\}/);
   assert.match(reusableWorkflow, /node scripts\/run-desktop-release-build\.mjs --profile \$\{\{ inputs\.release_profile \}\} --package-profile \$\{\{ needs\.prepare\.outputs\.package_profile_id \}\} --phase sync --target \$\{\{ matrix\.target \}\} --release/);
   assert.match(reusableWorkflow, /node scripts\/run-desktop-release-build\.mjs --profile \$\{\{ inputs\.release_profile \}\} --package-profile \$\{\{ needs\.prepare\.outputs\.package_profile_id \}\} --phase prepare-target --target \$\{\{ matrix\.target \}\}/);
   assert.match(reusableWorkflow, /if: contains\(needs\.prepare\.outputs\.package_profile_included_kernel_ids, 'openclaw'\)[\s\S]*node scripts\/run-desktop-release-build\.mjs --profile \$\{\{ inputs\.release_profile \}\} --package-profile \$\{\{ needs\.prepare\.outputs\.package_profile_id \}\} --phase prepare-openclaw --target \$\{\{ matrix\.target \}\}/);
@@ -184,13 +198,32 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
     /package-release-assets\.mjs kubernetes[\s\S]*--image-repository \$\{\{ steps\.[^.]+\.outputs\.image_repository \}\}[\s\S]*--image-tag \$\{\{ steps\.[^.]+\.outputs\.image_tag \}\}[\s\S]*--image-digest \$\{\{ steps\.[^.]+\.outputs\.image_digest \}\}/,
     'kubernetes release packaging must stamp repository, tag, and digest from the published OCI image metadata',
   );
-  assert.match(reusableWorkflow, /node scripts\/release\/package-release-assets\.mjs web --profile \$\{\{ inputs\.release_profile \}\}/);
+  assert.match(
+    reusableWorkflow,
+    /node scripts\/release\/package-release-assets\.mjs web --profile \$\{\{ inputs\.release_profile \}\}[\s\S]*node scripts\/release\/smoke-web-release-assets\.mjs --release-assets-dir artifacts\/release/,
+    'web release workflow must smoke packaged web and docs archives before attesting artifacts',
+  );
   assert.match(reusableWorkflow, /node scripts\/release\/finalize-release-assets\.mjs --profile \$\{\{ inputs\.release_profile \}\}/);
+  assert.match(
+    reusableWorkflow,
+    /Render release notes[\s\S]*node scripts\/release\/render-release-notes\.mjs --release-tag \$\{\{ needs\.prepare\.outputs\.release_tag \}\} --output release-assets\/release-notes\.md[\s\S]*Finalize release assets[\s\S]*Attest finalized release assets[\s\S]*Write finalized attestation evidence[\s\S]*node scripts\/release\/write-attestation-evidence\.mjs --profile \$\{\{ inputs\.release_profile \}\} --release-assets-dir release-assets --repository \$\{\{ github\.repository \}\} --release-tag \$\{\{ needs\.prepare\.outputs\.release_tag \}\}[\s\S]*Assert release readiness[\s\S]*node scripts\/release\/assert-release-readiness\.mjs --profile \$\{\{ inputs\.release_profile \}\} --release-assets-dir release-assets[\s\S]*Publish release assets/,
+    'release workflow must render notes before finalization, attest the finalized set, write offline attestation evidence, then assert readiness before publishing assets',
+  );
+  assert.doesNotMatch(
+    reusableWorkflow,
+    /Finalize release assets[\s\S]*--allow-partial-release[\s\S]*Assert release readiness/,
+    'GitHub release finalization must require complete release asset coverage',
+  );
   assert.match(
     reusableWorkflow,
     /node scripts\/release\/render-release-notes\.mjs --release-tag \$\{\{ needs\.prepare\.outputs\.release_tag \}\} --output release-assets\/release-notes\.md/,
   );
   assert.match(reusableWorkflow, /actions\/attest-build-provenance@v3/);
+  assert.match(
+    reusableWorkflow,
+    /Write finalized attestation evidence[\s\S]*write-attestation-evidence\.mjs/,
+    'release workflow must produce machine-readable attestation verification evidence for the readiness gate',
+  );
   assert.match(reusableWorkflow, /attestations:\s*write/);
   assert.match(reusableWorkflow, /id-token:\s*write/);
   assert.match(reusableWorkflow, /softprops\/action-gh-release@/);
@@ -229,9 +262,15 @@ test('root package exposes release helper scripts for desktop and asset packagin
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/run-desktop-release-build\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/run-claw-server-build\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/release-smoke-contract\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/release-paths\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/release-coverage\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/release-status\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/finalize-release-assets\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/assert-release-readiness\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/write-attestation-evidence\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/smoke-deployment-release-assets\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/smoke-server-release-assets\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/smoke-web-release-assets\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/smoke-desktop-installers\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/smoke-desktop-packaged-launch\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/smoke-desktop-startup-evidence\.test\.mjs/);
@@ -242,7 +281,9 @@ test('root package exposes release helper scripts for desktop and asset packagin
     rootPackage.scripts['check:automation'],
     /sdkwork-run-node scripts\/openclaw-quality-gate-contract\.test\.mjs/,
   );
+  assert.match(rootPackage.scripts['check:automation'], /sdkwork-run-node scripts\/cargo-command-standards\.test\.mjs/);
   assert.match(rootPackage.scripts['check:automation'], /sdkwork-run-pnpm check:release-flow && sdkwork-run-pnpm check:ci-flow/);
+  assert.match(rootPackage.scripts['release:write-attestation-evidence'], /sdkwork-run-node scripts\/release\/write-attestation-evidence\.mjs/);
   assert.match(rootPackage.scripts['lint'], /sdkwork-run-pnpm check:automation/);
   assert.match(rootPackage.scripts['check:shared-sdk-release-parity'], /sdkwork-run-node scripts\/check-shared-sdk-release-parity\.mjs/);
   assert.match(rootPackage.scripts['check:server'], /sdkwork-run-node scripts\/check-server-platform-foundation\.mjs/);
@@ -282,18 +323,74 @@ test('root package exposes release helper scripts for desktop and asset packagin
   );
   assert.match(rootPackage.scripts['release:desktop'], /sdkwork-run-node scripts\/run-desktop-release-build\.mjs/);
   assert.match(rootPackage.scripts['release:plan'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs plan/);
+  assert.match(rootPackage.scripts['release:status'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs status/);
   assert.match(rootPackage.scripts['release:package:desktop'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs package desktop/);
   assert.match(rootPackage.scripts['release:package:server'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs package server/);
   assert.match(rootPackage.scripts['release:package:container'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs package container/);
   assert.match(rootPackage.scripts['release:package:kubernetes'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs package kubernetes/);
   assert.match(rootPackage.scripts['release:package:web'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs package web/);
+  const localReleaseCommandSource = read('scripts/release/local-release-command.mjs');
+  assert.match(
+    localReleaseCommandSource,
+    /context\.mode === 'status'[\s\S]*collectReleaseStatusFn\(\{[\s\S]*releaseAssetsDir: context\.releaseAssetsDir[\s\S]*JSON\.stringify\(status, null, 2\)/,
+    'local release wrapper must expose a machine-readable release status diagnostic before strict finalization',
+  );
+  assert.match(
+    read('scripts/release/release-status.mjs'),
+    /releaseIssueMetadataByCode[\s\S]*recommendedAction[\s\S]*normalizeReleaseIssue[\s\S]*buildReleaseNextActions/,
+    'release status diagnostics must map issue codes to actionable remediation metadata and aggregate next actions',
+  );
+  assert.match(
+    read('scripts/release/release-status.mjs'),
+    /buildReleaseCoverage[\s\S]*buildArtifactsOutsideReleaseProfile[\s\S]*buildDuplicateReleaseTargetEntries[\s\S]*issues\.map\(normalizeReleaseIssue\)[\s\S]*blockingIssueCount[\s\S]*issueCountsBySeverity[\s\S]*issueCountsByCode[\s\S]*nextCommands[\s\S]*nextActions: buildReleaseNextActions/,
+    'release status diagnostics must reuse shared release coverage, surface actionable issue metadata, emit target-specific next packaging commands, and aggregate prioritized next actions',
+  );
+  assert.match(
+    localReleaseCommandSource,
+    /export function runLocalWebBuild/,
+    'local release wrapper must expose a canonical web/docs build prerequisite for local web packaging',
+  );
+  assert.match(
+    localReleaseCommandSource,
+    /path\.join\(rootDir, 'scripts', 'run-vite-host\.mjs'\)[\s\S]*'build'[\s\S]*'--mode'[\s\S]*'production'/,
+    'local web packaging must rebuild the production web host through the canonical Vite host runner',
+  );
+  assert.match(
+    localReleaseCommandSource,
+    /path\.join\(rootDir, 'scripts', 'check-web-performance-budget\.mjs'\)/,
+    'local web packaging must enforce the frozen web performance budget before archiving assets',
+  );
+  assert.match(
+    localReleaseCommandSource,
+    /path\.join\(rootDir, 'scripts', 'run-vitepress\.mjs'\)[\s\S]*'build'[\s\S]*'docs'/,
+    'local web packaging must rebuild docs before archiving assets',
+  );
+  assert.match(
+    localReleaseCommandSource,
+    /ensureLocalWebBuildPrerequisiteFn\(\{[\s\S]*context[\s\S]*\}\);[\s\S]*packageWebAssetsFn\(context\);[\s\S]*await smokeWebReleaseAssetsFn\(context\);/,
+    'local package:web must run the web/docs prerequisite, package assets, then smoke the real web archive',
+  );
   assert.match(rootPackage.scripts['release:smoke:desktop'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke desktop/);
   assert.match(rootPackage.scripts['release:smoke:desktop-packaged-launch'], /sdkwork-run-node scripts\/release\/smoke-desktop-packaged-launch\.mjs/);
   assert.match(rootPackage.scripts['release:smoke:desktop-startup'], /sdkwork-run-node scripts\/release\/smoke-desktop-startup-evidence\.mjs/);
   assert.match(rootPackage.scripts['release:smoke:server'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke server/);
+  assert.match(rootPackage.scripts['release:smoke:web'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke web/);
   assert.match(rootPackage.scripts['release:smoke:container'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke container/);
   assert.match(rootPackage.scripts['release:smoke:kubernetes'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs smoke kubernetes/);
   assert.match(rootPackage.scripts['release:finalize'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs finalize/);
+  assert.match(rootPackage.scripts['release:assert-ready'], /sdkwork-run-node scripts\/release\/local-release-command\.mjs assert-ready/);
+  assert.match(rootPackage.scripts['release:fixture:ready'], /sdkwork-run-node scripts\/release\/write-readiness-fixture\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/write-readiness-fixture\.mjs --help/);
+  assert.doesNotMatch(
+    rootPackage.scripts['release:finalize'],
+    /--allow-partial-release/,
+    'release:finalize must remain a strict full-matrix finalization command',
+  );
+  assert.match(
+    rootPackage.scripts['release:finalize:partial'],
+    /sdkwork-run-node scripts\/release\/local-release-command\.mjs finalize --allow-partial-release/,
+    'partial release aggregation must be an explicit local/debug command',
+  );
   assert.match(rootPackage.scripts['server:build'], /sdkwork-run-node scripts\/run-claw-server-build\.mjs/);
 });
 
@@ -668,17 +765,13 @@ test('shared sdk package preparation resolves the workspace root consistently fr
         expectedCanonicalWorkspaceRoot,
         '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript',
       ),
-      sharedImBackendSdkRoot: path.resolve(
+      sharedImSdkRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
-        '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/generated/server-openapi',
+        '../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript',
       ),
-      sharedOpenchatImSdkRoot: path.resolve(
+      sharedRtcSdkRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
-        '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/composed',
-      ),
-      sharedOpenchatImWukongimAdapterRoot: path.resolve(
-        expectedCanonicalWorkspaceRoot,
-        '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/adapter-wukongim',
+        '../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript',
       ),
       mode: 'git',
     },
@@ -1207,9 +1300,8 @@ test('git-backed shared sdk source helper parses monorepo submodule layouts and 
   assert.equal(sharedSdkReleaseConfig.sources['app-sdk'].repoUrl, helper.DEFAULT_SHARED_SDK_APP_REPO_URL);
   assert.equal(sharedSdkReleaseConfig.sources['sdk-common'].repoUrl, helper.DEFAULT_SHARED_SDK_COMMON_REPO_URL);
   assert.equal(sharedSdkReleaseConfig.sources['core-pc-react'].repoUrl, helper.DEFAULT_SHARED_SDK_CORE_REPO_URL);
-  assert.equal(sharedSdkReleaseConfig.sources['im-backend-sdk'].repoUrl, helper.DEFAULT_SHARED_IM_SDK_REPO_URL);
-  assert.equal(sharedSdkReleaseConfig.sources['openchat-im-sdk'].repoUrl, helper.DEFAULT_SHARED_IM_SDK_REPO_URL);
-  assert.equal(sharedSdkReleaseConfig.sources['openchat-im-wukongim-adapter'].repoUrl, helper.DEFAULT_SHARED_IM_SDK_REPO_URL);
+  assert.equal(sharedSdkReleaseConfig.sources['im-sdk'].repoUrl, helper.DEFAULT_SHARED_SDK_IM_REPO_URL);
+  assert.equal(sharedSdkReleaseConfig.sources['rtc-sdk'].repoUrl, helper.DEFAULT_SHARED_SDK_RTC_REPO_URL);
   assert.doesNotMatch(JSON.stringify(sharedSdkReleaseConfig), /"ref"\s*:\s*"main"/);
 
   const helperSource = read('scripts/prepare-shared-sdk-git-sources.mjs');
@@ -1219,8 +1311,10 @@ test('git-backed shared sdk source helper parses monorepo submodule layouts and 
   assert.match(helperSource, /monorepoSubmodulePath/);
   assert.match(helperSource, /shared-sdk-release-sources\.json/);
   assert.match(helperSource, /FETCH_HEAD/);
-  assert.match(helperSource, /SDKWORK_SHARED_IM_SDK_REPO_URL/);
+  assert.match(helperSource, /SDKWORK_SHARED_SDK_IM_REPO_URL/);
+  assert.match(helperSource, /SDKWORK_SHARED_SDK_RTC_REPO_URL/);
   assert.match(helperSource, /https:\/\/github\.com\/Sdkwork-Cloud\/sdkwork-im-sdk\.git/);
+  assert.match(helperSource, /https:\/\/github\.com\/Sdkwork-Cloud\/sdkwork-rtc-sdk\.git/);
 });
 
 test('git-backed shared sdk source helper can materialize pinned local git sources from the release config', async (t) => {
@@ -1235,12 +1329,12 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   const commonRepoRoot = path.join(sourceRepoRoot, 'sdkwork-sdk-commons');
   const coreRepoRoot = path.join(sourceRepoRoot, 'sdkwork-core');
   const imRepoRoot = path.join(sourceRepoRoot, 'sdkwork-im-sdk');
+  const rtcRepoRoot = path.join(sourceRepoRoot, 'sdkwork-rtc-sdk');
   const appPackageRoot = path.join(appRepoRoot, 'sdkwork-app-sdk-typescript');
   const commonPackageRoot = path.join(commonRepoRoot, 'sdkwork-sdk-common-typescript');
   const corePackageRoot = path.join(coreRepoRoot, 'sdkwork-core-pc-react');
-  const imBackendPackageRoot = path.join(imRepoRoot, 'sdkwork-im-sdk-typescript', 'generated', 'server-openapi');
-  const openchatImPackageRoot = path.join(imRepoRoot, 'sdkwork-im-sdk-typescript', 'composed');
-  const openchatImWukongimAdapterPackageRoot = path.join(imRepoRoot, 'sdkwork-im-sdk-typescript', 'adapter-wukongim');
+  const imPackageRoot = path.join(imRepoRoot, 'sdkwork-im-sdk-typescript');
+  const rtcPackageRoot = path.join(rtcRepoRoot, 'sdkwork-rtc-sdk-typescript');
 
   function runGit(args, cwd) {
     const result = spawnSync(helper.resolveSpawnCommand('git'), args, {
@@ -1259,9 +1353,8 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   mkdirSync(appPackageRoot, { recursive: true });
   mkdirSync(commonPackageRoot, { recursive: true });
   mkdirSync(corePackageRoot, { recursive: true });
-  mkdirSync(imBackendPackageRoot, { recursive: true });
-  mkdirSync(openchatImPackageRoot, { recursive: true });
-  mkdirSync(openchatImWukongimAdapterPackageRoot, { recursive: true });
+  mkdirSync(imPackageRoot, { recursive: true });
+  mkdirSync(rtcPackageRoot, { recursive: true });
   mkdirSync(path.dirname(configPath), { recursive: true });
 
   writeFileSync(
@@ -1280,18 +1373,13 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     'utf8',
   );
   writeFileSync(
-    path.join(imBackendPackageRoot, 'package.json'),
-    JSON.stringify({ name: '@sdkwork/im-backend-sdk', version: '1.0.11' }, null, 2),
+    path.join(imPackageRoot, 'package.json'),
+    JSON.stringify({ name: '@sdkwork/im-sdk', version: '0.1.0' }, null, 2),
     'utf8',
   );
   writeFileSync(
-    path.join(openchatImPackageRoot, 'package.json'),
-    JSON.stringify({ name: '@openchat/sdkwork-im-sdk', version: '1.0.11' }, null, 2),
-    'utf8',
-  );
-  writeFileSync(
-    path.join(openchatImWukongimAdapterPackageRoot, 'package.json'),
-    JSON.stringify({ name: '@openchat/sdkwork-im-wukongim-adapter', version: '1.0.11' }, null, 2),
+    path.join(rtcPackageRoot, 'package.json'),
+    JSON.stringify({ name: '@sdkwork/rtc-sdk', version: '0.1.0' }, null, 2),
     'utf8',
   );
 
@@ -1327,6 +1415,14 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   runGit(['add', '.'], imRepoRoot);
   runGit(['commit', '-m', 'seed-sdkwork-im-sdk'], imRepoRoot);
 
+  if (!runGit(['init', '--initial-branch', 'main'], rtcRepoRoot)) {
+    return;
+  }
+  runGit(['config', 'user.name', 'Codex'], rtcRepoRoot);
+  runGit(['config', 'user.email', 'sdkwork@zowalk.com'], rtcRepoRoot);
+  runGit(['add', '.'], rtcRepoRoot);
+  runGit(['commit', '-m', 'seed-sdkwork-rtc-sdk'], rtcRepoRoot);
+
   writeFileSync(
     configPath,
     JSON.stringify(
@@ -1344,16 +1440,12 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
             repoUrl: coreRepoRoot,
             ref: 'main',
           },
-          'im-backend-sdk': {
+          'im-sdk': {
             repoUrl: imRepoRoot,
             ref: 'main',
           },
-          'openchat-im-sdk': {
-            repoUrl: imRepoRoot,
-            ref: 'main',
-          },
-          'openchat-im-wukongim-adapter': {
-            repoUrl: imRepoRoot,
+          'rtc-sdk': {
+            repoUrl: rtcRepoRoot,
             ref: 'main',
           },
         },
@@ -1376,18 +1468,14 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     const preparedAppSdk = preparedSources.find((entry) => entry.id === 'app-sdk');
     const preparedSdkCommon = preparedSources.find((entry) => entry.id === 'sdk-common');
     const preparedCorePcReact = preparedSources.find((entry) => entry.id === 'core-pc-react');
-    const preparedImBackendSdk = preparedSources.find((entry) => entry.id === 'im-backend-sdk');
-    const preparedOpenchatImSdk = preparedSources.find((entry) => entry.id === 'openchat-im-sdk');
-    const preparedOpenchatImWukongimAdapter = preparedSources.find(
-      (entry) => entry.id === 'openchat-im-wukongim-adapter',
-    );
+    const preparedImSdk = preparedSources.find((entry) => entry.id === 'im-sdk');
+    const preparedRtcSdk = preparedSources.find((entry) => entry.id === 'rtc-sdk');
 
     assert.equal(preparedAppSdk?.targetRef, 'main');
     assert.equal(preparedSdkCommon?.targetRef, 'main');
     assert.equal(preparedCorePcReact?.targetRef, 'main');
-    assert.equal(preparedImBackendSdk?.targetRef, 'main');
-    assert.equal(preparedOpenchatImSdk?.targetRef, 'main');
-    assert.equal(preparedOpenchatImWukongimAdapter?.targetRef, 'main');
+    assert.equal(preparedImSdk?.targetRef, 'main');
+    assert.equal(preparedRtcSdk?.targetRef, 'main');
     assert.equal(realpathSync(preparedAppSdk.packageRoot), realpathSync(path.join(
       tempRoot,
       'spring-ai-plus-app-api',
@@ -1406,30 +1494,21 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
       'sdkwork-core',
       'sdkwork-core-pc-react',
     )));
-    assert.equal(realpathSync(preparedImBackendSdk.packageRoot), realpathSync(path.join(
+    assert.equal(realpathSync(preparedImSdk.packageRoot), realpathSync(path.join(
       tempRoot,
       'apps',
-      'openchat',
+      'craw-chat',
+      'sdks',
       'sdkwork-im-sdk',
       'sdkwork-im-sdk-typescript',
-      'generated',
-      'server-openapi',
     )));
-    assert.equal(realpathSync(preparedOpenchatImSdk.packageRoot), realpathSync(path.join(
+    assert.equal(realpathSync(preparedRtcSdk.packageRoot), realpathSync(path.join(
       tempRoot,
       'apps',
-      'openchat',
-      'sdkwork-im-sdk',
-      'sdkwork-im-sdk-typescript',
-      'composed',
-    )));
-    assert.equal(realpathSync(preparedOpenchatImWukongimAdapter.packageRoot), realpathSync(path.join(
-      tempRoot,
-      'apps',
-      'openchat',
-      'sdkwork-im-sdk',
-      'sdkwork-im-sdk-typescript',
-      'adapter-wukongim',
+      'craw-chat',
+      'sdks',
+      'sdkwork-rtc-sdk',
+      'sdkwork-rtc-sdk-typescript',
     )));
     assert.equal(
       JSON.parse(readFileSync(path.join(preparedAppSdk.packageRoot, 'package.json'), 'utf8')).name,
@@ -1444,16 +1523,12 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
       '@sdkwork/core-pc-react',
     );
     assert.equal(
-      JSON.parse(readFileSync(path.join(preparedImBackendSdk.packageRoot, 'package.json'), 'utf8')).name,
-      '@sdkwork/im-backend-sdk',
+      JSON.parse(readFileSync(path.join(preparedImSdk.packageRoot, 'package.json'), 'utf8')).name,
+      '@sdkwork/im-sdk',
     );
     assert.equal(
-      JSON.parse(readFileSync(path.join(preparedOpenchatImSdk.packageRoot, 'package.json'), 'utf8')).name,
-      '@openchat/sdkwork-im-sdk',
-    );
-    assert.equal(
-      JSON.parse(readFileSync(path.join(preparedOpenchatImWukongimAdapter.packageRoot, 'package.json'), 'utf8')).name,
-      '@openchat/sdkwork-im-wukongim-adapter',
+      JSON.parse(readFileSync(path.join(preparedRtcSdk.packageRoot, 'package.json'), 'utf8')).name,
+      '@sdkwork/rtc-sdk',
     );
     assert.equal(
       preparedAppSdk?.repoUrl,
@@ -1468,16 +1543,12 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
       coreRepoRoot,
     );
     assert.equal(
-      preparedImBackendSdk?.repoUrl,
+      preparedImSdk?.repoUrl,
       imRepoRoot,
     );
     assert.equal(
-      preparedOpenchatImSdk?.repoUrl,
-      imRepoRoot,
-    );
-    assert.equal(
-      preparedOpenchatImWukongimAdapter?.repoUrl,
-      imRepoRoot,
+      preparedRtcSdk?.repoUrl,
+      rtcRepoRoot,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -1981,6 +2052,22 @@ test('release plan resolver expands the claw-studio profile into the full deskto
   assert.equal(plan.serverMatrix.length, 6);
   assert.equal(plan.containerMatrix.length, 4);
   assert.equal(plan.kubernetesMatrix.length, 4);
+  assert.deepEqual(plan.familyTargetCounts, {
+    web: 1,
+    desktop: 10,
+    server: 6,
+    container: 4,
+    kubernetes: 4,
+  });
+  assert.equal(plan.requiredTargetCount, 25);
+  assert.equal(
+    plan.requiredTargetCount,
+    Object.values(plan.familyTargetCounts).reduce((total, count) => total + count, 0),
+  );
+  assert.equal(plan.release.manifestFileName, 'release-manifest.json');
+  assert.equal(plan.release.manifestChecksumFileName, 'release-manifest.json.sha256.txt');
+  assert.equal(plan.release.attestationEvidenceFileName, 'release-attestations.json');
+  assert.equal(plan.release.globalChecksumsFileName, 'SHA256SUMS.txt');
   assert.deepEqual(
     plan.desktopMatrix.find((entry) => entry.platform === 'linux' && entry.arch === 'x64'),
     {
@@ -2038,6 +2125,25 @@ test('release plan resolver expands the claw-studio profile into the full deskto
   assert.deepEqual(
     resolver.parseArgs(['--package-profile', 'hermes-only']).packageProfileId,
     'hermes-only',
+  );
+});
+
+test('release plan resolver exposes target counts through GitHub output', async () => {
+  const resolverPath = path.join(rootDir, 'scripts', 'release', 'resolve-release-plan.mjs');
+  const resolver = await import(pathToFileURL(resolverPath).href);
+  assert.equal(typeof resolver.buildGitHubOutputLines, 'function');
+
+  const plan = resolver.createReleasePlan({
+    profileId: 'claw-studio',
+    packageProfileId: 'dual-kernel',
+    releaseTag: 'release-2026-03-31-03',
+  });
+  const output = resolver.buildGitHubOutputLines(plan).join('\n');
+
+  assert.match(output, /^required_target_count=25$/m);
+  assert.match(
+    output,
+    /^family_target_counts=\{"web":1,"desktop":10,"server":6,"container":4,"kubernetes":4\}$/m,
   );
 });
 

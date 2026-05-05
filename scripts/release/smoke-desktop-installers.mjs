@@ -50,6 +50,10 @@ import {
 import {
   resolveCliPath,
 } from './path-inputs.mjs';
+import {
+  readTarGzEntries,
+  readZipArchiveEntries,
+} from './archive-entry-safety.mjs';
 export {
   DESKTOP_INSTALLER_SMOKE_REPORT_FILENAME,
   resolveDesktopInstallerSmokeReportPath,
@@ -301,6 +305,21 @@ function resolveMacosCompanionArtifacts(manifest) {
       String(artifact?.relativePath ?? ''),
       MACOS_COMPANION_ARCHIVE_SUFFIXES,
     ));
+}
+
+function assertMacosCompanionArchiveEntriesSafe(archivePath) {
+  const normalizedArchivePath = String(archivePath ?? '').trim().toLowerCase();
+  if (normalizedArchivePath.endsWith('.app.zip')) {
+    readZipArchiveEntries(archivePath, {
+      context: 'macOS desktop app companion',
+    });
+    return;
+  }
+  if (normalizedArchivePath.endsWith('.app.tar.gz')) {
+    readTarGzEntries(archivePath, {
+      context: 'macOS desktop app companion',
+    });
+  }
 }
 
 function resolveExpectedInstallReadyLayoutMode(releasePlatform) {
@@ -636,7 +655,8 @@ export async function smokeDesktopInstallers({
   }
 
   for (const artifact of requiredCompanionArtifacts) {
-    resolveArtifactAbsolutePath(releaseAssetsDir, artifact);
+    const absolutePath = resolveArtifactAbsolutePath(releaseAssetsDir, artifact);
+    assertMacosCompanionArchiveEntriesSafe(absolutePath);
   }
 
   const smokeReport = writeDesktopInstallerSmokeReport({

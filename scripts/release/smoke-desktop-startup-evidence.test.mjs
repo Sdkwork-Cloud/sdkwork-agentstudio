@@ -5,6 +5,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import { DEFAULT_OPENCLAW_VERSION } from '../openclaw-release.mjs';
+
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
 const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
 
@@ -147,7 +149,7 @@ function buildDesktopStartupEvidence({
     builtInInstance: {
       id: builtInInstanceId,
       name: 'OpenClaw',
-      version: '2026.4.2',
+      version: DEFAULT_OPENCLAW_VERSION,
       runtimeKind: 'openclaw',
       deploymentMode: 'local-managed',
       transportKind: 'openclawGatewayWs',
@@ -317,6 +319,118 @@ test('desktop startup smoke preserves the canonical managed built-in OpenClaw in
     });
 
     assert.equal(result.report.builtInInstanceId, BUILT_IN_INSTANCE_ID);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop startup smoke rejects unsafe artifact paths before writing reports', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-startup-evidence.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-artifact-path-'));
+  const releaseAssetsDir = path.join(tempRoot, 'release-assets');
+  const artifactRelativePath = '../desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+
+  try {
+    const manifestPath = writeDesktopManifest({
+      releaseAssetsDir,
+      platform: 'windows',
+      arch: 'x64',
+      artifacts: [
+        {
+          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          relativePath: artifactRelativePath,
+          family: 'desktop',
+          platform: 'windows',
+          arch: 'x64',
+          kind: 'installer',
+          sha256: 'synthetic',
+          size: 17,
+        },
+      ],
+    });
+    const evidencePath = smoke.resolveCapturedDesktopStartupEvidencePath({
+      releaseAssetsDir,
+      platform: 'windows',
+      arch: 'x64',
+    });
+    writeJsonFile(evidencePath, buildDesktopStartupEvidence());
+
+    assert.throws(
+      () => smoke.writeDesktopStartupSmokeReport({
+        releaseAssetsDir,
+        platform: 'windows',
+        arch: 'x64',
+        target: 'x86_64-pc-windows-msvc',
+        manifestPath,
+        capturedEvidencePath: evidencePath,
+        evidence: buildDesktopStartupEvidence(),
+        localAiProxyRuntime: {
+          lifecycle: 'running',
+          messageCaptureEnabled: true,
+          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
+          snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
+          logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+        },
+        artifactRelativePaths: [artifactRelativePath],
+      }),
+      /unsafe desktop startup smoke artifact path/,
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop startup smoke rejects captured evidence paths outside release assets before writing reports', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-startup-evidence.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-evidence-path-'));
+  const releaseAssetsDir = path.join(tempRoot, 'release-assets');
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const outsideEvidencePath = path.join(tempRoot, 'outside-desktop-startup-evidence.json');
+
+  try {
+    writeJsonFile(outsideEvidencePath, buildDesktopStartupEvidence());
+    const manifestPath = writeDesktopManifest({
+      releaseAssetsDir,
+      platform: 'windows',
+      arch: 'x64',
+      artifacts: [
+        {
+          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          relativePath: artifactRelativePath,
+          family: 'desktop',
+          platform: 'windows',
+          arch: 'x64',
+          kind: 'installer',
+          sha256: 'synthetic',
+          size: 17,
+        },
+      ],
+    });
+
+    assert.throws(
+      () => smoke.writeDesktopStartupSmokeReport({
+        releaseAssetsDir,
+        platform: 'windows',
+        arch: 'x64',
+        target: 'x86_64-pc-windows-msvc',
+        manifestPath,
+        capturedEvidencePath: outsideEvidencePath,
+        evidence: buildDesktopStartupEvidence(),
+        localAiProxyRuntime: {
+          lifecycle: 'running',
+          messageCaptureEnabled: true,
+          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
+          snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
+          logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+        },
+        artifactRelativePaths: [artifactRelativePath],
+      }),
+      /unsafe desktop startup smoke captured evidence path/,
+    );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }

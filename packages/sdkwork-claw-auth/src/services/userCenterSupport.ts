@@ -1,3 +1,5 @@
+import { resolveBrowserStorage } from './safeBrowserStorage.ts';
+
 export type UserCenterProviderKind =
   | 'builtin-local'
   | 'sdkwork-cloud-app-api'
@@ -732,11 +734,7 @@ function resolveSessionStorage(explicitStorage?: Storage) {
     return explicitStorage;
   }
 
-  if (typeof window !== 'undefined' && hasStorage(window.sessionStorage)) {
-    return window.sessionStorage;
-  }
-
-  return null;
+  return resolveBrowserStorage('sessionStorage');
 }
 
 function readStorageValue(storage: Storage | null, key: string) {
@@ -744,8 +742,12 @@ function readStorageValue(storage: Storage | null, key: string) {
     return undefined;
   }
 
-  const normalized = storage.getItem(key)?.trim();
-  return normalized || undefined;
+  try {
+    const normalized = storage.getItem(key)?.trim();
+    return normalized || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function writeStorageValue(storage: Storage | null, key: string, value?: string | null) {
@@ -753,13 +755,17 @@ function writeStorageValue(storage: Storage | null, key: string, value?: string 
     return;
   }
 
-  const normalized = normalizeOptionalString(value);
-  if (normalized) {
-    storage.setItem(key, normalized);
-    return;
-  }
+  try {
+    const normalized = normalizeOptionalString(value);
+    if (normalized) {
+      storage.setItem(key, normalized);
+      return;
+    }
 
-  storage.removeItem(key);
+    storage.removeItem(key);
+  } catch {
+    // Browser privacy modes can expose Storage but reject operations.
+  }
 }
 
 export function createUserCenterTokenStore(

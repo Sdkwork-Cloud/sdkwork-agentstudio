@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "cargo run --manifest-path src-host/Cargo.toml",
+    "dev": "sdkwork-run-node ../../scripts/run-cargo.mjs run --manifest-path src-host/Cargo.toml",
     "build": "sdkwork-run-node ../../scripts/run-claw-server-build.mjs"
   },
   "dependencies": {

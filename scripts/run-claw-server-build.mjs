@@ -6,15 +6,13 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import {
-  ensureTauriRustToolchain,
-  withRustToolchainPath,
-} from './ensure-tauri-rust-toolchain.mjs';
+import { ensureLockedCargoSubcommandArgs } from './cargo-command-standards.mjs';
 import { parseDesktopTargetTriple } from './release/desktop-targets.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
+const runCargoScriptPath = path.join(rootDir, 'scripts', 'run-cargo.mjs');
 const serverPackageDir = path.join(rootDir, 'packages', 'sdkwork-claw-server');
 const serverHostTargetDir = path.join(serverPackageDir, 'src-host', 'target');
 const SERVER_BUILD_TARGET_ENV_VAR = 'SDKWORK_SERVER_TARGET';
@@ -193,7 +191,7 @@ function createCargoBuildArgs(resolvedTargetTriple = '') {
   if (resolvedTargetTriple.length > 0) {
     args.push('--target', resolvedTargetTriple);
   }
-  return args;
+  return ensureLockedCargoSubcommandArgs(args);
 }
 
 function createTargetEnv(resolvedTargetTriple = '') {
@@ -213,10 +211,11 @@ function createNativeServerBuildPlan({
   resolvedTargetTriple = '',
 } = {}) {
   return {
-    command: 'cargo',
-    args: createCargoBuildArgs(resolvedTargetTriple),
+    command: process.execPath,
+    args: [runCargoScriptPath, ...createCargoBuildArgs(resolvedTargetTriple)],
     cwd: serverPackageDir,
     env: createTargetEnv(resolvedTargetTriple),
+    runner: 'run-cargo',
   };
 }
 
@@ -329,8 +328,6 @@ export function createServerBuildPlan({
 
 export function runServerBuild({
   spawnSyncImpl = spawnSync,
-  ensureRustToolchain = ensureTauriRustToolchain,
-  withRustToolchainPathFn = withRustToolchainPath,
   fileSystem = { rmSync },
   ...options
 } = {}) {
@@ -343,19 +340,11 @@ export function runServerBuild({
     ...options,
     env: runtimeEnv,
   });
-  const nativeCargoBuild = plan.command === 'cargo';
-  const baseEnv = nativeCargoBuild
-    ? withRustToolchainPathFn(runtimeEnv)
-    : runtimeEnv;
-
-  if (nativeCargoBuild) {
-    ensureRustToolchain();
-  }
 
   const result = spawnSyncImpl(plan.command, plan.args, {
     cwd: plan.cwd,
     env: {
-      ...baseEnv,
+      ...runtimeEnv,
       ...plan.env,
     },
     stdio: 'inherit',

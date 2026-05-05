@@ -1,5 +1,6 @@
 import { storage, type StoragePlatformAPI } from '@sdkwork/claw-infrastructure';
 import { unwrapAppSdkResponse, type AppSdkEnvelope } from '../sdk/appSdkResult.ts';
+import { resolveBrowserStorage } from '../utils/safeBrowserStorage.ts';
 
 export interface UserProfile {
   firstName: string;
@@ -113,15 +114,7 @@ function createDefaultSettingsOverlay(): SettingsOverlay {
 }
 
 function getLegacyStorage(): Storage | null {
-  if (typeof globalThis.localStorage !== 'undefined') {
-    return globalThis.localStorage;
-  }
-
-  if (typeof window !== 'undefined' && window.localStorage) {
-    return window.localStorage;
-  }
-
-  return null;
+  return resolveBrowserStorage('localStorage');
 }
 
 function parseSettingsOverlay(rawValue: string | null | undefined): SettingsOverlay | null {
@@ -143,11 +136,19 @@ function parseSettingsOverlay(rawValue: string | null | undefined): SettingsOver
 }
 
 function readLegacySettingsOverlay(): SettingsOverlay | null {
-  return parseSettingsOverlay(getLegacyStorage()?.getItem(LEGACY_SETTINGS_OVERLAY_STORAGE_KEY));
+  try {
+    return parseSettingsOverlay(getLegacyStorage()?.getItem(LEGACY_SETTINGS_OVERLAY_STORAGE_KEY));
+  } catch {
+    return null;
+  }
 }
 
 function clearLegacySettingsOverlay() {
-  getLegacyStorage()?.removeItem(LEGACY_SETTINGS_OVERLAY_STORAGE_KEY);
+  try {
+    getLegacyStorage()?.removeItem(LEGACY_SETTINGS_OVERLAY_STORAGE_KEY);
+  } catch {
+    // Ignore blocked browser storage after the platform overlay has been persisted.
+  }
 }
 
 async function readSettingsOverlay(storageApi: StoragePlatformAPI): Promise<SettingsOverlay> {
@@ -203,7 +204,11 @@ async function writeSettingsOverlay(
       throw error;
     }
 
-    legacyStorage.setItem(LEGACY_SETTINGS_OVERLAY_STORAGE_KEY, serialized);
+    try {
+      legacyStorage.setItem(LEGACY_SETTINGS_OVERLAY_STORAGE_KEY, serialized);
+    } catch {
+      throw error;
+    }
   }
 }
 

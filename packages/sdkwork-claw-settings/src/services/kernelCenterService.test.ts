@@ -1,14 +1,27 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import type { RuntimeDesktopKernelInfo } from '@sdkwork/claw-infrastructure';
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION,
+} from '@sdkwork/claw-types';
 
-const DEFAULT_RUNTIME_VERSION = '2026.4.9';
-const DEFAULT_NODE_VERSION = '22.16.0';
-const DEFAULT_BUNDLED_OPENCLAW_VERSION = DEFAULT_RUNTIME_VERSION;
+const DEFAULT_RUNTIME_VERSION = DEFAULT_BUNDLED_OPENCLAW_VERSION;
+const DEFAULT_NODE_VERSION = DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION;
 const DEFAULT_BUNDLED_OPENCLAW_NODE_VERSION = DEFAULT_NODE_VERSION;
+const FUTURE_KERNEL_RUNTIME_VERSION = shiftOpenClawVersion(DEFAULT_BUNDLED_OPENCLAW_VERSION, 1);
 const LOCAL_AI_PROXY_ROOT_BASE_URL = 'http://localhost:21280';
 const LOCAL_AI_PROXY_BASE_URL = `${LOCAL_AI_PROXY_ROOT_BASE_URL}/v1`;
 const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+
+function shiftOpenClawVersion(version: string, patchOffset: number) {
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:-(?:\d+|[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*))?$/u.exec(version);
+  assert.ok(match, `Expected numeric OpenClaw test version, received ${version}`);
+  const [, year, month, patch] = match;
+  const shiftedPatch = Number(patch) + patchOffset;
+  assert.ok(shiftedPatch >= 0, `Cannot derive OpenClaw test version before patch 0 from ${version}`);
+  return `${year}.${month}.${shiftedPatch}`;
+}
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
   try {
@@ -399,11 +412,11 @@ if (kernelCenterServiceModule) {
 
       const snapshot = createSnapshot({
         runtimeId: 'hermes',
-        runtimeVersion: '2026.4.13',
+        runtimeVersion: FUTURE_KERNEL_RUNTIME_VERSION,
         nodeVersion: null,
       });
       snapshot.raw.provenance.runtimeId = 'hermes';
-      snapshot.raw.provenance.runtimeVersion = '2026.4.13';
+      snapshot.raw.provenance.runtimeVersion = FUTURE_KERNEL_RUNTIME_VERSION;
       snapshot.raw.provenance.nodeVersion = null;
       snapshot.raw.provenance.platform = 'linux';
       snapshot.raw.provenance.arch = 'x64';
@@ -455,7 +468,7 @@ if (kernelCenterServiceModule) {
       const dashboard = await service.getDashboard();
 
       assert.equal(dashboard.provenance.installSource, 'external');
-      assert.equal(dashboard.provenance.runtimeVersion, '2026.4.13');
+      assert.equal(dashboard.provenance.runtimeVersion, FUTURE_KERNEL_RUNTIME_VERSION);
       assert.equal(dashboard.provenance.nodeVersion, null);
       assert.equal(dashboard.provenance.platformLabel, 'linux/x64');
       assert.equal(dashboard.provenance.configFile, '/srv/hermes/config.yaml');
@@ -471,11 +484,11 @@ if (kernelCenterServiceModule) {
 
       const snapshot = createSnapshot({
         runtimeId: 'hermes',
-        runtimeVersion: '2026.4.13',
+        runtimeVersion: FUTURE_KERNEL_RUNTIME_VERSION,
         nodeVersion: null,
       });
       snapshot.raw.provenance.runtimeId = 'hermes';
-      snapshot.raw.provenance.runtimeVersion = '2026.4.13';
+      snapshot.raw.provenance.runtimeVersion = FUTURE_KERNEL_RUNTIME_VERSION;
       snapshot.raw.provenance.nodeVersion = null;
       snapshot.raw.provenance.platform = 'linux';
       snapshot.raw.provenance.arch = 'x64';
@@ -494,7 +507,7 @@ if (kernelCenterServiceModule) {
               supportsLoopbackHealthProbe: false,
               healthProbeTimeoutMs: 0,
             },
-            runtimeVersion: '2026.4.13',
+            runtimeVersion: FUTURE_KERNEL_RUNTIME_VERSION,
             nodeVersion: null,
             platform: 'linux',
             arch: 'x64',
@@ -563,7 +576,7 @@ if (kernelCenterServiceModule) {
       assert.equal(dashboard.runtimeAuthority.supportsLoopbackHealthProbe, false);
       assert.equal(dashboard.runtimeAuthority.healthProbeTimeoutMs, 0);
       assert.equal(dashboard.provenance.installSource, 'external');
-      assert.equal(dashboard.provenance.runtimeVersion, '2026.4.13');
+      assert.equal(dashboard.provenance.runtimeVersion, FUTURE_KERNEL_RUNTIME_VERSION);
       assert.equal(dashboard.provenance.nodeVersion, null);
       assert.equal(dashboard.provenance.platformLabel, 'linux/x64');
       assert.equal(dashboard.provenance.configFile, '/srv/hermes/config.yaml');
@@ -579,11 +592,11 @@ if (kernelCenterServiceModule) {
 
       const snapshot = createSnapshot({
         runtimeId: 'hermes',
-        runtimeVersion: '2026.4.13',
+        runtimeVersion: FUTURE_KERNEL_RUNTIME_VERSION,
         nodeVersion: null,
       });
       snapshot.raw.provenance.runtimeId = 'hermes';
-      snapshot.raw.provenance.runtimeVersion = '2026.4.13';
+      snapshot.raw.provenance.runtimeVersion = FUTURE_KERNEL_RUNTIME_VERSION;
       snapshot.raw.provenance.nodeVersion = null;
       snapshot.raw.provenance.platform = 'linux';
       snapshot.raw.provenance.arch = 'x64';
@@ -602,7 +615,7 @@ if (kernelCenterServiceModule) {
           reason: 'Kernel attached to a healthy hermes host.',
           installKey: null,
           installSource: 'external',
-          runtimeVersion: '2026.4.13',
+          runtimeVersion: FUTURE_KERNEL_RUNTIME_VERSION,
           nodeVersion: null,
           platform: 'linux',
           arch: 'x64',
@@ -617,7 +630,7 @@ if (kernelCenterServiceModule) {
               supportsLoopbackHealthProbe: false,
               healthProbeTimeoutMs: 0,
             },
-            runtimeVersion: '2026.4.13',
+            runtimeVersion: FUTURE_KERNEL_RUNTIME_VERSION,
             nodeVersion: null,
             platform: 'linux',
             arch: 'x64',
@@ -663,7 +676,7 @@ if (kernelCenterServiceModule) {
       assert.equal(dashboard.runtimeAuthority.supportsLoopbackHealthProbe, false);
       assert.equal(dashboard.runtimeAuthority.healthProbeTimeoutMs, 0);
       assert.equal(dashboard.provenance.installSource, 'external');
-      assert.equal(dashboard.provenance.runtimeVersion, '2026.4.13');
+      assert.equal(dashboard.provenance.runtimeVersion, FUTURE_KERNEL_RUNTIME_VERSION);
       assert.equal(dashboard.provenance.nodeVersion, null);
       assert.equal(dashboard.provenance.platformLabel, 'linux/x64');
       assert.equal(dashboard.provenance.configFile, '/srv/hermes/config.yaml');
@@ -1780,7 +1793,7 @@ if (kernelCenterServiceModule) {
         provenance: {
           ...kernelInfo.host.provenance,
           runtimeId: 'hermes',
-          runtimeVersion: '2026.4.13',
+          runtimeVersion: FUTURE_KERNEL_RUNTIME_VERSION,
           nodeVersion: null,
           platform: 'linux',
           arch: 'x64',
@@ -1799,7 +1812,7 @@ if (kernelCenterServiceModule) {
             supportsLoopbackHealthProbe: false,
             healthProbeTimeoutMs: 0,
           },
-          runtimeVersion: '2026.4.13',
+          runtimeVersion: FUTURE_KERNEL_RUNTIME_VERSION,
           nodeVersion: null,
           platform: 'linux',
           arch: 'x64',
@@ -1881,7 +1894,7 @@ if (kernelCenterServiceModule) {
       assert.equal(dashboard.statusTitle, 'Running');
       assert.equal(dashboard.statusSummary, 'Kernel attached to a healthy hermes host.');
       assert.equal(dashboard.provenance.installSource, 'external');
-      assert.equal(dashboard.provenance.runtimeVersion, '2026.4.13');
+      assert.equal(dashboard.provenance.runtimeVersion, FUTURE_KERNEL_RUNTIME_VERSION);
       assert.equal(dashboard.provenance.nodeVersion, null);
       assert.equal(dashboard.provenance.platformLabel, 'linux/x64');
       assert.equal(dashboard.provenance.configFile, '/srv/hermes/config.yaml');

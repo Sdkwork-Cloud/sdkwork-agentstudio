@@ -213,16 +213,16 @@ export function CommandPalette() {
                         setIsOpen(false);
                       }}
                       onMouseEnter={() => setSelectedIndex(index)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors ${
+                      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
                         isSelected
-                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                          : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800/50'
+                          ? 'border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-500/30 dark:bg-primary-500/10 dark:text-primary-300'
+                          : 'border-transparent text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800/50'
                       }`}
                     >
                       <Icon
                         className={`h-5 w-5 ${
                           isSelected
-                            ? 'text-zinc-300 dark:text-zinc-600'
+                            ? 'text-primary-600 dark:text-primary-300'
                             : 'text-zinc-400 dark:text-zinc-500'
                         }`}
                       />
@@ -230,7 +230,7 @@ export function CommandPalette() {
                         <div
                           className={`text-sm font-medium ${
                             isSelected
-                              ? 'text-white dark:text-zinc-900'
+                              ? 'text-primary-700 dark:text-primary-200'
                               : 'text-zinc-900 dark:text-zinc-100'
                           }`}
                         >
@@ -240,7 +240,7 @@ export function CommandPalette() {
                           <div
                             className={`truncate text-xs ${
                               isSelected
-                                ? 'text-zinc-400 dark:text-zinc-500'
+                                ? 'text-primary-600/80 dark:text-primary-300/80'
                                 : 'text-zinc-500 dark:text-zinc-400'
                             }`}
                           >
@@ -249,7 +249,7 @@ export function CommandPalette() {
                         ) : null}
                       </div>
                       {isSelected ? (
-                        <kbd className="hidden rounded bg-white/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-zinc-300 dark:bg-black/10 dark:text-zinc-600 sm:block">
+                        <kbd className="hidden rounded bg-primary-100 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-primary-700 dark:bg-primary-500/15 dark:text-primary-200 sm:block">
                           Enter
                         </kbd>
                       ) : null}

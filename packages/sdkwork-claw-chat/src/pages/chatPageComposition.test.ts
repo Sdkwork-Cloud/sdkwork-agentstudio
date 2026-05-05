@@ -1192,7 +1192,7 @@ await runTest(
     );
     assert.match(
       sidebarHookSource,
-      /const linkedInstanceId = await resolveChatAgentLinkedInstanceId\(\{[\s\S]*agentId: selection\.agentId,[\s\S]*preferredInstanceId: currentActiveInstanceId,[\s\S]*\}\)\.catch\(\(\) => null\);/s,
+      /const knownLinkedInstanceId = resolveChatSidebarKnownAgentLinkedInstanceId\(\{[\s\S]*agentId: selection\.agentId,[\s\S]*currentActiveInstanceId,[\s\S]*agentOptions: presentation\.sidebarAgentOptions,[\s\S]*\}\);[\s\S]*const linkedInstanceId =\s*knownLinkedInstanceId !== undefined\s*\? knownLinkedInstanceId\s*: await resolveChatAgentLinkedInstanceId\(\{[\s\S]*agentId: selection\.agentId,[\s\S]*preferredInstanceId: currentActiveInstanceId,[\s\S]*\}\)\.catch\(\(\) => null\);/s,
     );
     assert.match(
       sidebarHookSource,
@@ -1240,7 +1240,7 @@ await runTest(
     );
     assert.match(
       workspaceStateHookSource,
-      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*activeMessages,\s*conversationBodyState,\s*activeMessageGroups,\s*\}\s*=\s*useChatSessionViewState\(\{\s*sessions,\s*activeInstanceId,\s*activeSessionId,\s*isChatSupportedRoute,\s*sessionScopeMode,\s*effectiveGatewayAgentId,\s*selectedAgentId,\s*routeMode,\s*activeAdapterCapabilities,\s*sendMode,\s*\}\);/s,
+      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*selectedSessionAgentId,\s*displaySessionAgentId,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*activeMessages,\s*conversationBodyState,\s*activeMessageGroups,\s*\}\s*=\s*useChatSessionViewState\(\{\s*sessions,\s*activeInstanceId,\s*activeSessionId,\s*isChatSupportedRoute,\s*sessionScopeMode,\s*effectiveGatewayAgentId,\s*selectedAgentId,\s*routeMode,\s*activeAdapterCapabilities,\s*sendMode,\s*\}\);/s,
     );
     assert.doesNotMatch(pageSource, /const instanceSessions = sessions\.filter\(/);
     assert.doesNotMatch(
@@ -1283,7 +1283,7 @@ await runTest(
     );
     assert.match(
       sessionViewHookSource,
-      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*\}\s*=\s*useChatActiveSessionProjectionState\(\{\s*sessions,\s*activeInstanceId,\s*activeSessionId,\s*isChatSupportedRoute,\s*sessionScopeMode,\s*effectiveGatewayAgentId,\s*selectedAgentId,\s*routeMode,\s*activeAdapterCapabilities,\s*sendMode,\s*\}\);/s,
+      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*selectedSessionAgentId,\s*displaySessionAgentId,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*\}\s*=\s*useChatActiveSessionProjectionState\(\{\s*sessions,\s*activeInstanceId,\s*activeSessionId,\s*isChatSupportedRoute,\s*sessionScopeMode,\s*effectiveGatewayAgentId,\s*selectedAgentId,\s*routeMode,\s*activeAdapterCapabilities,\s*sendMode,\s*\}\);/s,
     );
     assert.match(
       sessionViewHookSource,
@@ -1331,6 +1331,14 @@ await runTest(
     assert.match(
       activeSessionProjectionHookSource,
       /const displaySession = workspaceProjection\.displaySession;/,
+    );
+    assert.match(
+      activeSessionProjectionHookSource,
+      /const selectedSessionAgentId = workspaceProjection\.selectedSessionAgentId;/,
+    );
+    assert.match(
+      activeSessionProjectionHookSource,
+      /const displaySessionAgentId = workspaceProjection\.displaySessionAgentId;/,
     );
     assert.match(
       activeSessionProjectionHookSource,
@@ -1691,7 +1699,7 @@ await runTest(
     );
     assert.match(
       workspaceStateHookSource,
-      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*activeMessages,\s*conversationBodyState,\s*activeMessageGroups,\s*\}\s*=\s*useChatSessionViewState\(/s,
+      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*selectedSessionAgentId,\s*displaySessionAgentId,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*activeMessages,\s*conversationBodyState,\s*activeMessageGroups,\s*\}\s*=\s*useChatSessionViewState\(/s,
     );
     assert.match(
       interactionModelStateHookSource,
@@ -1994,7 +2002,7 @@ await runTest(
     );
     assert.match(
       workspaceStateHookSource,
-      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*activeMessages,\s*conversationBodyState,\s*activeMessageGroups,\s*\}\s*=\s*useChatSessionViewState\(/s,
+      /const\s*\{\s*workspaceMode,\s*isExplicitBlankWorkspace,\s*isDisplaySessionFallback,\s*selectableInstanceSessions,\s*selectedSession,\s*displaySessionId,\s*displaySession,\s*selectedSessionAgentId,\s*displaySessionAgentId,\s*activeKernelSessionState,\s*activeRunBinding,\s*chatRuntimeState,\s*isUnsupportedRoute,\s*runningRunBinding,\s*sessionSelectedModelId,\s*activeMessages,\s*conversationBodyState,\s*activeMessageGroups,\s*\}\s*=\s*useChatSessionViewState\(/s,
     );
     assert.match(
       sessionViewHookSource,
@@ -2179,7 +2187,7 @@ await runTest(
   () => {
     assert.match(
       contextSelectionSynchronizationHookSource,
-      /const contextSelectionSyncMutation = resolveChatContextSelectionSyncMutation\(\{\s*isChatSupported: isChatSupportedRoute,\s*selectedAgentId,\s*selectedSkillId,\s*hasResolvedVisibleAgents,\s*visibleAgentIds,\s*\}\);/s,
+      /const contextSelectionSyncMutation = resolveChatContextSelectionSyncMutation\(\{\s*isChatSupported: isChatSupportedRoute,\s*selectedAgentId,\s*selectedSkillId,\s*hasResolvedVisibleAgents,\s*visibleAgentIds,\s*activeSessionAgentId,\s*\}\);/s,
     );
     assert.match(
       contextSelectionSynchronizationHookSource,
@@ -2263,7 +2271,11 @@ await runTest(
     );
     assert.match(
       bootstrapSynchronizationHookSource,
-      /const bootstrapMutation = resolveChatBootstrapMutation\(\{\s*activeInstanceId,\s*routeMode,\s*sendMode,\s*syncState,\s*hasActiveModel,\s*activeSessionId: effectiveActiveSessionId,\s*sessionIds: selectableInstanceSessions\.map\(\(session\) => session\.id\),\s*selectedAgentId,\s*newSessionModel,\s*\}\);/s,
+      /const selectableSessionIds = useMemo\(\s*\(\) => selectableInstanceSessions\.map\(\(session\) => session\.id\),\s*\[selectableInstanceSessions\],\s*\);/s,
+    );
+    assert.match(
+      bootstrapSynchronizationHookSource,
+      /const bootstrapMutation = resolveChatBootstrapMutation\(\{\s*activeInstanceId,\s*routeMode,\s*sendMode,\s*syncState,\s*hasActiveModel,\s*activeSessionId: effectiveActiveSessionId,\s*sessionIds: selectableSessionIds,\s*selectedAgentId,\s*newSessionModel,\s*\}\);/s,
     );
     assert.match(
       bootstrapSynchronizationHookSource,
@@ -2305,7 +2317,11 @@ await runTest(
     );
     assert.match(
       contextCatalogHookSource,
-      /visibleAgentIds: visibleAgentsWithKernel\.map\(\(agent\) => agent\.id\),/s,
+      /const visibleAgentIds = useMemo\(\s*\(\) => visibleAgentsWithKernel\.map\(\(agent\) => agent\.id\),\s*\[visibleAgentsWithKernel\],\s*\);/s,
+    );
+    assert.match(
+      contextCatalogHookSource,
+      /visibleAgentIds,/,
     );
     assert.match(
       contextCatalogHookSource,

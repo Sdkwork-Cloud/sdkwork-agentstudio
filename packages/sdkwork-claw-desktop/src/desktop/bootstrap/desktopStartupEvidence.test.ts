@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -11,6 +12,12 @@ import {
 } from './desktopStartupEvidence.ts';
 
 const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+const DEFAULT_BUNDLED_OPENCLAW_VERSION = JSON.parse(
+  readFileSync(
+    new URL('../../../../../config/kernel-releases/openclaw.json', import.meta.url),
+    'utf8',
+  ),
+).stableVersion;
 
 test('desktop startup evidence sanitizes the embedded host descriptor and excludes the browser session token', () => {
   const descriptor = sanitizeDesktopStartupDescriptor({
@@ -191,7 +198,7 @@ test('desktop startup evidence builds a passed launch document with a sanitized 
         {
           id: BUILT_IN_INSTANCE_ID,
           name: 'Local Built-In',
-          version: '2026.4.2',
+          version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
           transportKind: 'openclawGatewayWs',
@@ -357,7 +364,7 @@ test('desktop startup evidence resolves the built-in instance from readiness evi
         {
           id: BUILT_IN_INSTANCE_ID,
           name: 'Built-In OpenClaw Primary',
-          version: '2026.4.11',
+          version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
           runtimeKind: 'openclaw',
           deploymentMode: 'local-managed',
           transportKind: 'openclawGatewayWs',

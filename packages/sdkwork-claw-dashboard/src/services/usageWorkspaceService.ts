@@ -1,4 +1,4 @@
-import { openClawGatewayClient, studio } from '@sdkwork/claw-infrastructure';
+import { openClawGatewayClient, resolveBrowserStorage, studio } from '@sdkwork/claw-infrastructure';
 import type { StudioInstanceRecord } from '@sdkwork/claw-types';
 import type {
   UsageWorkspaceAggregates,
@@ -52,9 +52,7 @@ const OFFSET_RE = /unexpected property ['"]utcoffset['"]/i;
 const INVALID_PARAMS_RE = /invalid sessions\.usage params/i;
 
 function getStorage(): Storage | null {
-  if (typeof globalThis.localStorage !== 'undefined') return globalThis.localStorage;
-  if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
-  return null;
+  return resolveBrowserStorage('localStorage');
 }
 
 function createDefaultDependencies(): UsageWorkspaceServiceDependencies {

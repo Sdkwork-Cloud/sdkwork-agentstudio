@@ -32,7 +32,7 @@ export interface DesktopHostedRuntimeDescriptor {
   webDistDir?: string | null;
 }
 
-type DesktopHostedFetch = Parameters<typeof createBrowserSessionAwareFetch>[0];
+type DesktopHostedFetch = NonNullable<Parameters<typeof createBrowserSessionAwareFetch>[0]>;
 type DesktopHostedWebSocketOpenHandler =
   | ((event: unknown) => void)
   | ((this: WebSocket, event: Event) => unknown)
@@ -326,7 +326,7 @@ export async function probeDesktopHostedRuntimeReadiness(
     signal?: AbortSignal;
   },
 ): Promise<DesktopHostedRuntimeReadinessSnapshot> {
-  const { requiresBuiltInOpenClawEvidence = false } = options ?? {};
+  const { requiresBuiltInOpenClawEvidence = true } = options ?? {};
   const normalizedDescriptor = requireDesktopHostedRuntimeDescriptor(descriptor);
   const probeFetch = createDesktopHostedProbeFetch(fetchImpl, options?.signal);
   const internal = createDesktopHostedInternalPlatform(normalizedDescriptor, probeFetch);
@@ -604,7 +604,7 @@ export function buildDesktopHostedRuntimeReadinessEvidence(
     requiresBuiltInOpenClawEvidence?: boolean;
   },
 ): DesktopHostedRuntimeReadinessEvidence {
-  const { requiresBuiltInOpenClawEvidence = false } = options ?? {};
+  const { requiresBuiltInOpenClawEvidence = true } = options ?? {};
   const manageHostEndpoint = resolveDesktopHostedManageEndpoint(descriptor, hostEndpoints);
   const manageBaseUrl = normalizeRequiredString(manageHostEndpoint?.baseUrl);
   const manageEndpointId = normalizeRequiredString(manageHostEndpoint?.endpointId);
@@ -798,7 +798,7 @@ function assertDesktopHostedRuntimeReady(
     requiresBuiltInOpenClawEvidence?: boolean;
   },
 ) {
-  const { requiresBuiltInOpenClawEvidence = false } = options ?? {};
+  const { requiresBuiltInOpenClawEvidence = true } = options ?? {};
 
   if (!evidence.hostLifecycleReady) {
     throw new Error(

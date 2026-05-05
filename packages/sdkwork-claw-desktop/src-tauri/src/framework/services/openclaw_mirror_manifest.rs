@@ -634,30 +634,26 @@ mod tests {
         OpenClawMirrorManagedPluginAssetRecord, OpenClawMirrorManagedSkillAssetRecord,
     };
     use crate::framework::{
+        openclaw_release::{bundled_openclaw_version, required_openclaw_node_version},
         paths::{resolve_paths_for_root, AppPaths},
         services::openclaw_runtime::ActivatedOpenClawRuntime,
         FrameworkError,
     };
     use std::{fs, path::Path};
 
+    fn current_openclaw_install_key() -> String {
+        format!("{}-windows-x64", bundled_openclaw_version())
+    }
+
     fn create_runtime(paths: &AppPaths) -> ActivatedOpenClawRuntime {
+        let install_key = current_openclaw_install_key();
+        let install_dir = paths.openclaw_runtime_dir.join(&install_key);
         ActivatedOpenClawRuntime {
-            install_key: "0.4.0-windows-x64".to_string(),
-            install_dir: paths.openclaw_runtime_dir.join("0.4.0-windows-x64"),
-            runtime_dir: paths
-                .openclaw_runtime_dir
-                .join("0.4.0-windows-x64")
-                .join("runtime"),
-            node_path: paths
-                .openclaw_runtime_dir
-                .join("0.4.0-windows-x64")
-                .join("runtime")
-                .join("node.exe"),
-            cli_path: paths
-                .openclaw_runtime_dir
-                .join("0.4.0-windows-x64")
-                .join("runtime")
-                .join("openclaw.cjs"),
+            install_key,
+            install_dir: install_dir.clone(),
+            runtime_dir: install_dir.join("runtime"),
+            node_path: install_dir.join("runtime").join("node.exe"),
+            cli_path: install_dir.join("runtime").join("openclaw.cjs"),
             home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
@@ -693,7 +689,8 @@ mod tests {
         let snapshot = build_managed_runtime_snapshot(&runtime).expect("runtime snapshot");
 
         assert_eq!(snapshot.runtime_id, "openclaw");
-        assert_eq!(snapshot.install_key.as_deref(), Some("0.4.0-windows-x64"));
+        let install_key = current_openclaw_install_key();
+        assert_eq!(snapshot.install_key.as_deref(), Some(install_key.as_str()));
         assert_eq!(snapshot.gateway_port, 21_280);
         assert!(snapshot.home_dir.ends_with("app-user-root"));
         assert!(snapshot.state_dir.ends_with(".openclaw"));
@@ -712,27 +709,30 @@ mod tests {
         runtime.install_key = "openclaw-nightly-windows-x64".to_string();
         runtime.install_dir = paths.openclaw_runtime_dir.join(&runtime.install_key);
         runtime.runtime_dir = runtime.install_dir.join("runtime");
+        let manifest_version = bundled_openclaw_version();
         fs::create_dir_all(&runtime.install_dir).expect("create install dir");
         fs::write(
             runtime.install_dir.join("manifest.json"),
             r#"{
   "schemaVersion": 2,
   "runtimeId": "openclaw",
-  "openclawVersion": "2026.4.11",
+  "openclawVersion": "__OPENCLAW_VERSION__",
   "requiredExternalRuntimes": ["nodejs"],
   "requiredExternalRuntimeVersions": {
-    "nodejs": "22.16.0"
+    "nodejs": "__NODE_VERSION__"
   },
   "platform": "windows",
   "arch": "x64",
   "cliRelativePath": "runtime/package/node_modules/openclaw/openclaw.mjs"
-}"#,
+}"#
+            .replace("__OPENCLAW_VERSION__", manifest_version)
+            .replace("__NODE_VERSION__", required_openclaw_node_version()),
         )
         .expect("write manifest");
 
         let snapshot = build_managed_runtime_snapshot(&runtime).expect("runtime snapshot");
 
-        assert_eq!(snapshot.openclaw_version.as_deref(), Some("2026.4.11"));
+        assert_eq!(snapshot.openclaw_version.as_deref(), Some(manifest_version));
         assert_eq!(snapshot.platform, "windows");
         assert_eq!(snapshot.arch, "x64");
     }

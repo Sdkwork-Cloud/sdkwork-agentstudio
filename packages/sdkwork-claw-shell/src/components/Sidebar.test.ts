@@ -106,12 +106,32 @@ describe('Sidebar', () => {
     expect(markup).toContain('lucide-circle-user-round h-5 w-5');
     expect(markup).toContain('min-h-[4rem] w-full max-w-[3.5rem] justify-center');
     expect(markup).toContain('px-1 py-1.5');
-    expect(markup).toContain('h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-all duration-200 bg-primary-500 text-primary-50');
+    expect(markup).toContain('h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-all duration-200 bg-primary-600 text-primary-50');
     expect(markup).toContain('fill-current stroke-[2.15px] text-primary-50');
-    expect(markup).toContain('text-white">AI Chat<');
-    expect(markup).toContain('text-zinc-500 group-hover:text-zinc-300">Networking<');
+    expect(markup).toContain('text-primary-700 dark:text-primary-400">AI Chat<');
+    expect(markup).toContain('text-zinc-600 group-hover:text-zinc-950 dark:text-zinc-500 dark:group-hover:text-zinc-300">Networking<');
     expect(markup).toContain('transition-all duration-200 mx-auto min-h-[4rem]');
     expect(markup).toContain('rounded-xl');
+  });
+
+  it('uses light sidebar chrome by default and scopes the dark gradient to dark mode', () => {
+    const markup = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        { initialEntries: ['/chat'] },
+        createElement(Sidebar),
+      ),
+    );
+
+    expect(markup).toContain('border-r border-zinc-200 bg-zinc-50/95 text-zinc-700');
+    expect(markup).toContain('dark:border-zinc-900/90 dark:bg-[linear-gradient(180deg,_#13151a_0%,_#0b0c10_100%)] dark:text-zinc-300');
+    expect(markup).not.toContain('border-r border-zinc-900/90 bg-[linear-gradient(180deg,_#13151a_0%,_#0b0c10_100%)] text-zinc-300');
+    expect(markup).toContain('hover:bg-zinc-950/[0.045] dark:hover:bg-white/[0.05]');
+    expect(markup).toContain('bg-zinc-200/80 dark:bg-white/6');
+    expect(markup).toContain('border border-zinc-200 bg-white text-zinc-700');
+    expect(markup).toContain('dark:border-white/8 dark:bg-white/[0.04] dark:text-zinc-300');
+    expect(markup).toContain('border border-zinc-200 bg-white text-zinc-700 shadow-[0_10px_24px_rgba(15,23,42,0.14)]');
+    expect(markup).toContain('dark:border-white/8 dark:bg-zinc-950 dark:text-zinc-200');
   });
 
   it('does not render a leading divider at the top of the collapsed sidebar and keeps only inter-group separators', () => {
@@ -123,11 +143,11 @@ describe('Sidebar', () => {
       ),
     );
 
-    const collapsedDividerMatches = markup.match(/mx-2 my-4 h-px bg-white\/6/g) ?? [];
+    const collapsedDividerMatches = markup.match(/mx-2 my-4 h-px bg-zinc-200\/80 dark:bg-white\/6/g) ?? [];
 
     expect(collapsedDividerMatches).toHaveLength(1);
     expect(markup).not.toMatch(
-      /scrollbar-hide[\s\S]*?<div class="mx-2 my-4 h-px bg-white\/6"><\/div><div class="space-y-1"><a aria-current="page"/,
+      /scrollbar-hide[\s\S]*?<div class="mx-2 my-4 h-px bg-zinc-200\/80 dark:bg-white\/6"><\/div><div class="space-y-1"><a aria-current="page"/,
     );
   });
 
@@ -187,7 +207,7 @@ describe('Sidebar', () => {
     );
 
     expect(markup).toMatch(
-      /h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 bg-primary-500 text-primary-50 shadow-lg shadow-primary-950\/25 ring-1 ring-primary-300\/30/,
+      /h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 bg-primary-600 text-primary-50 shadow-lg shadow-primary-950\/18 ring-1 ring-primary-300\/40 dark:bg-primary-500 dark:shadow-primary-950\/25 dark:ring-primary-300\/30/,
     );
     expect(markup).toContain('fill-current stroke-[2.15px] text-primary-50');
     expect(markup).not.toContain('justify-between rounded-2xl px-3 py-2.5 bg-white/[0.08] font-medium text-white');
@@ -207,8 +227,8 @@ describe('Sidebar', () => {
       ),
     );
 
-    expect(markup).toContain('text-[14px] tracking-tight text-white">AI Chat<');
-    expect(markup).toContain('text-[14px] tracking-tight text-zinc-500 group-hover:text-zinc-300">Channels<');
+    expect(markup).toContain('text-[14px] tracking-tight text-primary-700 dark:text-primary-400">AI Chat<');
+    expect(markup).toContain('text-[14px] tracking-tight text-zinc-600 group-hover:text-zinc-950 dark:text-zinc-500 dark:group-hover:text-zinc-300">Channels<');
   });
 
   it('does not render a top divider above the utility section', () => {

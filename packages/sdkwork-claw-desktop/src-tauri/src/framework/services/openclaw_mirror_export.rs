@@ -416,6 +416,7 @@ mod tests {
     };
     use crate::framework::{
         config::AppConfig,
+        openclaw_release::bundled_openclaw_version,
         paths::{resolve_paths_for_root, AppPaths},
         services::{
             local_ai_proxy_snapshot::LOCAL_AI_PROXY_PROVIDER_CENTER_NAMESPACE,
@@ -425,24 +426,19 @@ mod tests {
     };
     use std::{fs, io::Read, path::Path, process::Command};
 
+    fn current_openclaw_install_key() -> String {
+        format!("{}-windows-x64", bundled_openclaw_version())
+    }
+
     fn create_runtime(paths: &AppPaths) -> ActivatedOpenClawRuntime {
+        let install_key = current_openclaw_install_key();
+        let install_dir = paths.openclaw_runtime_dir.join(&install_key);
         ActivatedOpenClawRuntime {
-            install_key: "0.4.0-windows-x64".to_string(),
-            install_dir: paths.openclaw_runtime_dir.join("0.4.0-windows-x64"),
-            runtime_dir: paths
-                .openclaw_runtime_dir
-                .join("0.4.0-windows-x64")
-                .join("runtime"),
-            node_path: paths
-                .openclaw_runtime_dir
-                .join("0.4.0-windows-x64")
-                .join("runtime")
-                .join("node.exe"),
-            cli_path: paths
-                .openclaw_runtime_dir
-                .join("0.4.0-windows-x64")
-                .join("runtime")
-                .join("openclaw.cjs"),
+            install_key,
+            install_dir: install_dir.clone(),
+            runtime_dir: install_dir.join("runtime"),
+            node_path: install_dir.join("runtime").join("node.exe"),
+            cli_path: install_dir.join("runtime").join("openclaw.cjs"),
             home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),

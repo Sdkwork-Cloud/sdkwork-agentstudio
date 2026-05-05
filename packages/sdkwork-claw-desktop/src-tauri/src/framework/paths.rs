@@ -285,10 +285,6 @@ impl AppPaths {
             self.user_root.clone(),
             self.user_bin_dir.clone(),
             self.openclaw_root_dir.clone(),
-            self.openclaw_config_file
-                .parent()
-                .expect("openclaw config parent")
-                .to_path_buf(),
             self.openclaw_workspace_dir.clone(),
             self.openclaw_workspace_memory_dir.clone(),
             self.openclaw_workspace_skills_dir.clone(),
@@ -321,6 +317,9 @@ impl AppPaths {
             self.integrations_dir.clone(),
             self.backups_dir.clone(),
         ];
+        if let Some(openclaw_config_dir) = self.openclaw_config_file.parent() {
+            roots.push(openclaw_config_dir.to_path_buf());
+        }
         for runtime_id in supported_kernel_ids() {
             if let Ok(kernel) = self.kernel_paths(runtime_id) {
                 roots.push(kernel.kernel_state_dir.clone());
@@ -723,6 +722,24 @@ mod tests {
     }
 
     #[test]
+    fn managed_roots_does_not_panic_when_optional_derived_roots_are_unavailable() {
+        let production_source = include_str!("paths.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("production source");
+        let managed_roots_source = production_source
+            .split("pub fn managed_roots")
+            .nth(1)
+            .and_then(|tail| tail.split("pub fn kernel_paths").next())
+            .expect("managed roots source");
+
+        assert!(
+            !managed_roots_source.contains(".expect("),
+            "managed_roots must skip unavailable derived roots instead of panicking"
+        );
+    }
+
+    #[test]
     fn app_user_root_is_always_under_the_platform_user_home_directory() {
         let home_dir = PathBuf::from("C:/Users/alice");
         let user_root = build_user_root_from_home_dir(home_dir.as_path());
@@ -983,15 +1000,15 @@ mod tests {
     fn kernel_paths_derive_openclaw_governance_from_kernel_roots_and_config_from_user_root() {
         let root = tempfile::tempdir().expect("temp dir");
         let mut paths = resolve_paths_for_root(root.path()).expect("paths");
-        let compatibility_root = root.path().join("compatibility-only");
+        let noncanonical_root = root.path().join("noncanonical-app-paths");
 
-        paths.openclaw_kernel_dir = compatibility_root.join("kernel");
-        paths.openclaw_authority_file = compatibility_root.join("authority.json");
-        paths.openclaw_migrations_file = compatibility_root.join("migrations.json");
-        paths.openclaw_runtime_upgrades_file = compatibility_root.join("runtime-upgrades.json");
-        paths.openclaw_quarantine_dir = compatibility_root.join("quarantine");
-        paths.openclaw_root_dir = compatibility_root.join(".openclaw");
-        paths.openclaw_config_file = compatibility_root.join(".openclaw").join("openclaw.json");
+        paths.openclaw_kernel_dir = noncanonical_root.join("kernel");
+        paths.openclaw_authority_file = noncanonical_root.join("authority.json");
+        paths.openclaw_migrations_file = noncanonical_root.join("migrations.json");
+        paths.openclaw_runtime_upgrades_file = noncanonical_root.join("runtime-upgrades.json");
+        paths.openclaw_quarantine_dir = noncanonical_root.join("quarantine");
+        paths.openclaw_root_dir = noncanonical_root.join(".openclaw");
+        paths.openclaw_config_file = noncanonical_root.join(".openclaw").join("openclaw.json");
 
         let openclaw = paths
             .kernel_paths("openclaw")

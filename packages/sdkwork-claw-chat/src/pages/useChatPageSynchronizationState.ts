@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   type UseChatActiveSessionSelectionSynchronizationInput,
   useChatActiveSessionSelectionSynchronization,
@@ -32,6 +33,10 @@ export function useChatPageSynchronizationState({
     modelPreference: modelPreferenceSource,
   } = sourceState;
   const { selection } = pageUiState;
+  const activeSessionAgentOptionIds = useMemo(
+    () => workspaceState.presentation.sidebarAgentOptions.map((agent) => agent.id),
+    [workspaceState.presentation.sidebarAgentOptions],
+  );
   const runtimeSynchronization: UseChatRuntimeSynchronizationInput = {
     activeInstanceId: instanceSource.activeInstanceId,
     routeMode: workspaceState.runtime.routeMode,
@@ -47,6 +52,7 @@ export function useChatPageSynchronizationState({
     preferredModelId: workspaceState.catalog.modelCatalog?.preferredModelId ?? null,
     catalogChannels: workspaceState.catalog.catalogChannels,
     effectiveGatewayAgentId: workspaceState.runtime.effectiveGatewayAgentId,
+    activeSessionAgentId: workspaceState.session.displaySessionAgentId,
     sendMode: workspaceState.runtime.sendMode,
     supportsSessionScopeSync: workspaceState.runtime.supportsSessionScopeSync,
     activeSessionId: workspaceState.runtime.activeSessionId,
@@ -72,7 +78,7 @@ export function useChatPageSynchronizationState({
     isSelectionTransitionPending: selection.selectionTransition !== null,
     activeSession: workspaceState.session.displaySession,
     selectedAgentId: selection.selectedAgentId,
-    agentOptionIds: workspaceState.presentation.sidebarAgentOptions.map((agent) => agent.id),
+    agentOptionIds: activeSessionAgentOptionIds,
     setSelectedAgentId: selection.setSelectedAgentId,
   };
 

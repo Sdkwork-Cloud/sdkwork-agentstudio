@@ -2,10 +2,14 @@
 
 import { createHash } from 'node:crypto';
 import {
+  closeSync,
   existsSync,
   mkdirSync,
+  openSync,
   readFileSync,
+  readSync,
   readdirSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
@@ -17,6 +21,15 @@ import {
   DEFAULT_RELEASE_PROFILE_ID,
   resolveReleaseProfile,
 } from './release-profiles.mjs';
+import {
+  buildArtifactsOutsideReleaseProfile,
+  buildDuplicateReleaseTargetEntries,
+  buildReleaseCoverage,
+} from './release-coverage.mjs';
+import {
+  assertSafeReleaseRelativePath,
+  normalizeReleaseRelativePath,
+} from './release-paths.mjs';
 import {
   resolveKernelDefinition,
 } from './kernel-definitions.mjs';
@@ -32,6 +45,8 @@ import {
 } from './desktop-startup-smoke-contract.mjs';
 import {
   RELEASE_SMOKE_REPORT_FILENAME,
+  normalizeReleaseSmokeRelativePath,
+  normalizeReleaseSmokeRelativePathArray,
   normalizeReleaseSmokeChecks,
   readReleaseSmokeReport,
 } from './release-smoke-contract.mjs';
@@ -65,6 +80,8 @@ const supportedServerPlatforms = new Set(['windows', 'linux', 'macos']);
 const supportedDeploymentPlatforms = new Set(['linux']);
 const supportedArchIds = new Set(['x64', 'arm64']);
 const supportedAccelerators = new Set(['cpu', 'nvidia-cuda', 'amd-rocm']);
+const SHA256_READ_BUFFER_SIZE = 1024 * 1024;
+const RELEASE_NOTES_FILE_NAME = 'release-notes.md';
 
 function readOptionValue(argv, index, flag) {
   const next = argv[index + 1];
@@ -102,7 +119,45 @@ function listFilesRecursively(sourceDir, relativePrefix = '') {
 }
 
 function computeSha256(filePath) {
-  return createHash('sha256').update(readFileSync(filePath)).digest('hex');
+  const hash = createHash('sha256');
+  const buffer = Buffer.allocUnsafe(SHA256_READ_BUFFER_SIZE);
+  const fileDescriptor = openSync(filePath, 'r');
+
+  try {
+    let bytesRead = 0;
+    do {
+      bytesRead = readSync(fileDescriptor, buffer, 0, buffer.length, null);
+      if (bytesRead > 0) {
+        hash.update(buffer.subarray(0, bytesRead));
+      }
+    } while (bytesRead > 0);
+  } finally {
+    closeSync(fileDescriptor);
+  }
+
+  return hash.digest('hex');
+}
+
+function buildEvidenceFileMetadata(filePath, prefix) {
+  const stat = statSync(filePath);
+  if (!stat.isFile()) {
+    throw new Error(`Release evidence path is not a file: ${filePath}`);
+  }
+
+  return {
+    [`${prefix}Sha256`]: computeSha256(filePath),
+    [`${prefix}Size`]: stat.size,
+  };
+}
+
+function buildCommonSmokeEvidenceMetadata({
+  manifestPath,
+  smokeReportPath,
+}) {
+  return {
+    ...buildEvidenceFileMetadata(smokeReportPath, 'report'),
+    ...buildEvidenceFileMetadata(manifestPath, 'manifest'),
+  };
 }
 
 export function parseArgs(argv) {
@@ -111,6 +166,7 @@ export function parseArgs(argv) {
     releaseTag: '',
     repository: '',
     releaseAssetsDir: path.resolve('release-assets'),
+    allowPartialRelease: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -139,6 +195,11 @@ export function parseArgs(argv) {
         readOptionValue(argv, index, '--release-assets-dir'),
       );
       index += 1;
+      continue;
+    }
+
+    if (token === '--allow-partial-release') {
+      options.allowPartialRelease = true;
     }
   }
 
@@ -156,6 +217,13 @@ function normalizeStringArray(values) {
       .filter(Boolean)
       .sort((left, right) => left.localeCompare(right))
     : [];
+}
+
+function normalizeReleaseSmokePathArray(values) {
+  return normalizeReleaseSmokeRelativePathArray(values, {
+    contextLabel: 'Release smoke report',
+    pathLabel: 'release smoke path',
+  });
 }
 
 function cloneManifestKernelPlatformSupport(value) {
@@ -257,12 +325,13 @@ function buildDesktopInstallerSmokeMetadata({
   return {
     reportRelativePath: path.relative(releaseAssetsDir, smokeReportPath).replaceAll('\\', '/'),
     manifestRelativePath: path.relative(releaseAssetsDir, manifestPath).replaceAll('\\', '/'),
+    ...buildCommonSmokeEvidenceMetadata({ manifestPath, smokeReportPath }),
     verifiedAt: String(smokeReport?.verifiedAt ?? '').trim(),
     target: String(smokeReport?.target ?? '').trim(),
-    installableArtifactRelativePaths: normalizeStringArray(
+    installableArtifactRelativePaths: normalizeReleaseSmokePathArray(
       smokeReport?.installableArtifactRelativePaths,
     ),
-    requiredCompanionArtifactRelativePaths: normalizeStringArray(
+    requiredCompanionArtifactRelativePaths: normalizeReleaseSmokePathArray(
       smokeReport?.requiredCompanionArtifactRelativePaths,
     ),
     ...(normalizeKernelInstallReadiness(smokeReport?.kernelInstallReadiness)
@@ -290,13 +359,23 @@ function buildDesktopStartupSmokeMetadata({
   smokeReport,
 }) {
   const packageContext = normalizeDesktopStartupSmokePackageContext(smokeReport);
+  const capturedEvidenceRelativePath = normalizeReleaseSmokeRelativePath(
+    smokeReport?.capturedEvidenceRelativePath ?? '',
+    {
+      contextLabel: 'Release smoke report',
+      pathLabel: 'captured evidence path',
+    },
+  );
 
   return {
     reportRelativePath: path.relative(releaseAssetsDir, smokeReportPath).replaceAll('\\', '/'),
     manifestRelativePath: path.relative(releaseAssetsDir, manifestPath).replaceAll('\\', '/'),
-    capturedEvidenceRelativePath: String(
-      smokeReport?.capturedEvidenceRelativePath ?? '',
-    ).trim(),
+    capturedEvidenceRelativePath,
+    ...buildCommonSmokeEvidenceMetadata({ manifestPath, smokeReportPath }),
+    ...buildEvidenceFileMetadata(
+      path.join(releaseAssetsDir, capturedEvidenceRelativePath),
+      'capturedEvidence',
+    ),
     verifiedAt: String(smokeReport?.verifiedAt ?? '').trim(),
     target: String(smokeReport?.target ?? '').trim(),
     status: String(smokeReport?.status ?? '').trim(),
@@ -310,7 +389,7 @@ function buildDesktopStartupSmokeMetadata({
     localAiProxyRuntime: normalizeDesktopStartupSmokeLocalAiProxyRuntime(
       smokeReport?.localAiProxyRuntime,
     ),
-    artifactRelativePaths: normalizeStringArray(smokeReport?.artifactRelativePaths),
+    artifactRelativePaths: normalizeReleaseSmokePathArray(smokeReport?.artifactRelativePaths),
     checks: normalizeDesktopStartupSmokeChecks(smokeReport?.checks),
   };
 }
@@ -336,13 +415,39 @@ function buildServerBundleSmokeMetadata({
   return {
     reportRelativePath: path.relative(releaseAssetsDir, smokeReportPath).replaceAll('\\', '/'),
     manifestRelativePath: path.relative(releaseAssetsDir, manifestPath).replaceAll('\\', '/'),
+    ...buildCommonSmokeEvidenceMetadata({ manifestPath, smokeReportPath }),
     verifiedAt: String(smokeReport?.verifiedAt ?? '').trim(),
     target: String(smokeReport?.target ?? '').trim(),
     smokeKind: String(smokeReport?.smokeKind ?? '').trim(),
     status: String(smokeReport?.status ?? '').trim(),
-    launcherRelativePath: String(smokeReport?.launcherRelativePath ?? '').trim(),
+    launcherRelativePath: normalizeReleaseSmokeRelativePath(
+      smokeReport?.launcherRelativePath ?? '',
+      {
+        contextLabel: 'Release smoke report',
+        pathLabel: 'launcher path',
+      },
+    ),
     runtimeBaseUrl: String(smokeReport?.runtimeBaseUrl ?? '').trim(),
-    artifactRelativePaths: normalizeStringArray(smokeReport?.artifactRelativePaths),
+    artifactRelativePaths: normalizeReleaseSmokePathArray(smokeReport?.artifactRelativePaths),
+    checks: normalizeServerBundleSmokeMetadataChecks(smokeReport?.checks),
+  };
+}
+
+function buildWebArchiveSmokeMetadata({
+  releaseAssetsDir,
+  manifestPath,
+  smokeReportPath,
+  smokeReport,
+}) {
+  return {
+    reportRelativePath: path.relative(releaseAssetsDir, smokeReportPath).replaceAll('\\', '/'),
+    manifestRelativePath: path.relative(releaseAssetsDir, manifestPath).replaceAll('\\', '/'),
+    ...buildCommonSmokeEvidenceMetadata({ manifestPath, smokeReportPath }),
+    verifiedAt: String(smokeReport?.verifiedAt ?? '').trim(),
+    target: String(smokeReport?.target ?? '').trim(),
+    smokeKind: String(smokeReport?.smokeKind ?? '').trim(),
+    status: String(smokeReport?.status ?? '').trim(),
+    artifactRelativePaths: normalizeReleaseSmokePathArray(smokeReport?.artifactRelativePaths),
     checks: normalizeServerBundleSmokeMetadataChecks(smokeReport?.checks),
   };
 }
@@ -368,35 +473,77 @@ function buildDeploymentSmokeMetadata({
   return {
     reportRelativePath: path.relative(releaseAssetsDir, smokeReportPath).replaceAll('\\', '/'),
     manifestRelativePath: path.relative(releaseAssetsDir, manifestPath).replaceAll('\\', '/'),
+    ...buildCommonSmokeEvidenceMetadata({ manifestPath, smokeReportPath }),
     verifiedAt: String(smokeReport?.verifiedAt ?? '').trim(),
     target: String(smokeReport?.target ?? '').trim(),
     smokeKind: String(smokeReport?.smokeKind ?? '').trim(),
     status: String(smokeReport?.status ?? '').trim(),
     ...(launcherRelativePath.length > 0 ? { launcherRelativePath } : {}),
     ...(runtimeBaseUrl.length > 0 ? { runtimeBaseUrl } : {}),
-    artifactRelativePaths: normalizeStringArray(smokeReport?.artifactRelativePaths),
+    artifactRelativePaths: normalizeReleaseSmokePathArray(smokeReport?.artifactRelativePaths),
     checks: normalizeServerBundleSmokeMetadataChecks(smokeReport?.checks),
     ...(skippedReason.length > 0 ? { skippedReason } : {}),
     ...(capabilities && Object.keys(capabilities).length > 0 ? { capabilities } : {}),
   };
 }
 
-function listPartialManifestRecords(releaseAssetsDir, partialManifestFileName) {
+function validatePartialReleaseAssetManifest({
+  manifest,
+  manifestPath,
+  profile,
+}) {
+  const manifestProfileId = String(manifest?.profileId ?? '').trim();
+  if (manifestProfileId !== profile.id) {
+    throw new Error(
+      `Partial release asset manifest profile mismatch at ${manifestPath}: expected ${profile.id}, received ${manifestProfileId || 'missing'}.`,
+    );
+  }
+
+  for (const artifact of manifest?.artifacts ?? []) {
+    const relativePath = normalizeReleaseRelativePath(artifact?.relativePath);
+    assertSafeReleaseRelativePath(relativePath, {
+      contextLabel: `Partial release asset manifest at ${manifestPath}`,
+      artifactPathLabel: 'release artifact path',
+    });
+  }
+}
+
+function assertSafeSmokeLauncherRelativePath(smokeReport, smokeReportPath) {
+  if (!String(smokeReport?.launcherRelativePath ?? '').trim()) {
+    throw new Error(`Release smoke report is missing launcherRelativePath: ${smokeReportPath}`);
+  }
+  return normalizeReleaseSmokeRelativePath(smokeReport?.launcherRelativePath ?? '', {
+    contextLabel: `Release smoke report at ${smokeReportPath}`,
+    pathLabel: 'launcher path',
+  });
+}
+
+function listPartialManifestRecords(releaseAssetsDir, partialManifestFileName, profile) {
   return listFilesRecursively(releaseAssetsDir)
     .filter((file) => (
       file.relativePath.endsWith(`/${partialManifestFileName}`)
       || file.relativePath === partialManifestFileName
     ))
-    .map((file) => ({
-      file,
-      manifest: readPartialManifest(file.absolutePath),
-    }));
+    .map((file) => {
+      const manifest = readPartialManifest(file.absolutePath);
+      validatePartialReleaseAssetManifest({
+        manifest,
+        manifestPath: file.absolutePath,
+        profile,
+      });
+
+      return {
+        file,
+        manifest,
+      };
+    });
 }
 
 function requireDesktopInstallerSmokeReports({
   workspaceRootDir,
   releaseAssetsDir,
   partialManifestFileName,
+  profile,
   releaseTag = '',
 } = {}) {
   const desktopInstallerMetadataByManifestPath = new Map();
@@ -404,6 +551,7 @@ function requireDesktopInstallerSmokeReports({
   const partialManifestRecords = listPartialManifestRecords(
     releaseAssetsDir,
     partialManifestFileName,
+    profile,
   );
   const hasTaggedManifest = normalizedReleaseTag.length > 0
     && partialManifestRecords.some((record) => String(record.manifest?.releaseTag ?? '').trim().length > 0);
@@ -459,7 +607,7 @@ function requireDesktopInstallerSmokeReports({
       manifest,
       expectedPlatform,
     );
-    const reportedInstallableArtifactRelativePaths = normalizeStringArray(
+    const reportedInstallableArtifactRelativePaths = normalizeReleaseSmokePathArray(
       smokeReport?.installableArtifactRelativePaths,
     );
 
@@ -568,6 +716,7 @@ function requireDesktopInstallerSmokeReports({
 function requireDesktopStartupSmokeReports({
   releaseAssetsDir,
   partialManifestFileName,
+  profile,
   releaseTag = '',
 } = {}) {
   const desktopStartupMetadataByManifestPath = new Map();
@@ -575,6 +724,7 @@ function requireDesktopStartupSmokeReports({
   const partialManifestRecords = listPartialManifestRecords(
     releaseAssetsDir,
     partialManifestFileName,
+    profile,
   );
   const hasTaggedManifest = normalizedReleaseTag.length > 0
     && partialManifestRecords.some((record) => String(record.manifest?.releaseTag ?? '').trim().length > 0);
@@ -603,7 +753,7 @@ function requireDesktopStartupSmokeReports({
 
     const expectedPlatform = String(manifest?.platform ?? '').trim();
     const expectedArch = String(manifest?.arch ?? '').trim();
-    const expectedArtifactRelativePaths = normalizeStringArray(
+    const expectedArtifactRelativePaths = normalizeReleaseSmokePathArray(
       Array.isArray(manifest?.artifacts)
         ? manifest.artifacts.map((artifact) => artifact?.relativePath)
         : [],
@@ -678,9 +828,13 @@ function requireDesktopStartupSmokeReports({
       );
     }
 
-    const capturedEvidenceRelativePath = String(
+    const capturedEvidenceRelativePath = normalizeReleaseSmokeRelativePath(
       smokeReport?.capturedEvidenceRelativePath ?? '',
-    ).trim();
+      {
+        contextLabel: `Desktop startup smoke report at ${smokeReportPath}`,
+        pathLabel: 'captured evidence path',
+      },
+    );
     if (!capturedEvidenceRelativePath) {
       throw new Error(
         `Desktop startup smoke report is missing capturedEvidenceRelativePath: ${smokeReportPath}`,
@@ -737,7 +891,7 @@ function requireDesktopStartupSmokeReports({
       );
     }
 
-    const reportedArtifactRelativePaths = normalizeStringArray(
+    const reportedArtifactRelativePaths = normalizeReleaseSmokePathArray(
       smokeReport?.artifactRelativePaths,
     );
     if (
@@ -789,6 +943,7 @@ function requireDesktopStartupSmokeReports({
 function requireServerBundleSmokeReports({
   releaseAssetsDir,
   partialManifestFileName,
+  profile,
   releaseTag = '',
 } = {}) {
   const serverBundleSmokeMetadataByManifestPath = new Map();
@@ -796,6 +951,7 @@ function requireServerBundleSmokeReports({
   const partialManifestRecords = listPartialManifestRecords(
     releaseAssetsDir,
     partialManifestFileName,
+    profile,
   );
   const hasTaggedManifest = normalizedReleaseTag.length > 0
     && partialManifestRecords.some((record) => String(record.manifest?.releaseTag ?? '').trim().length > 0);
@@ -816,7 +972,7 @@ function requireServerBundleSmokeReports({
 
     const expectedPlatform = String(manifest?.platform ?? '').trim();
     const expectedArch = String(manifest?.arch ?? '').trim();
-    const expectedArtifactRelativePaths = normalizeStringArray(
+    const expectedArtifactRelativePaths = normalizeReleaseSmokePathArray(
       Array.isArray(manifest?.artifacts)
         ? manifest.artifacts.map((artifact) => artifact?.relativePath)
         : [],
@@ -865,7 +1021,7 @@ function requireServerBundleSmokeReports({
       );
     }
 
-    const reportedArtifactRelativePaths = normalizeStringArray(
+    const reportedArtifactRelativePaths = normalizeReleaseSmokePathArray(
       smokeReport?.artifactRelativePaths,
     );
     if (
@@ -878,11 +1034,7 @@ function requireServerBundleSmokeReports({
         `Server bundle smoke report does not match the current artifact set: ${smokeReportPath}`,
       );
     }
-    if (String(smokeReport?.launcherRelativePath ?? '').trim().length === 0) {
-      throw new Error(
-        `Server bundle smoke report is missing launcherRelativePath: ${smokeReportPath}`,
-      );
-    }
+    assertSafeSmokeLauncherRelativePath(smokeReport, smokeReportPath);
     if (String(smokeReport?.runtimeBaseUrl ?? '').trim().length === 0) {
       throw new Error(
         `Server bundle smoke report is missing runtimeBaseUrl: ${smokeReportPath}`,
@@ -917,6 +1069,137 @@ function requireServerBundleSmokeReports({
   return serverBundleSmokeMetadataByManifestPath;
 }
 
+function requireWebArchiveSmokeReports({
+  releaseAssetsDir,
+  partialManifestFileName,
+  profile,
+  releaseTag = '',
+} = {}) {
+  const webArchiveSmokeMetadataByManifestPath = new Map();
+  const normalizedReleaseTag = String(releaseTag ?? '').trim();
+  const partialManifestRecords = listPartialManifestRecords(
+    releaseAssetsDir,
+    partialManifestFileName,
+    profile,
+  );
+  const hasTaggedManifest = normalizedReleaseTag.length > 0
+    && partialManifestRecords.some((record) => String(record.manifest?.releaseTag ?? '').trim().length > 0);
+
+  for (const record of partialManifestRecords) {
+    const manifest = record.manifest;
+    const manifestReleaseTag = String(manifest?.releaseTag ?? '').trim();
+    if (hasTaggedManifest && manifestReleaseTag !== normalizedReleaseTag) {
+      continue;
+    }
+
+    const manifestDir = path.dirname(record.file.absolutePath);
+    const relativeManifestDir = path.relative(releaseAssetsDir, manifestDir).replaceAll('\\', '/');
+    const [family] = relativeManifestDir.split('/');
+    if (family !== 'web') {
+      continue;
+    }
+
+    const expectedPlatform = String(manifest?.platform ?? '').trim() || 'web';
+    const expectedArch = String(manifest?.arch ?? '').trim() || 'any';
+    const expectedArtifactRelativePaths = normalizeReleaseSmokePathArray(
+      Array.isArray(manifest?.artifacts)
+        ? manifest.artifacts.map((artifact) => artifact?.relativePath)
+        : [],
+    );
+    const smokeReportPath = path.join(
+      manifestDir,
+      RELEASE_SMOKE_REPORT_FILENAME,
+    );
+
+    if (!existsSync(smokeReportPath)) {
+      throw new Error(`Missing web archive smoke report: ${smokeReportPath}`);
+    }
+
+    const smokeReport = readReleaseSmokeReport(smokeReportPath);
+    if (String(smokeReport?.family ?? '').trim() !== 'web') {
+      throw new Error(
+        `Web archive smoke report family mismatch at ${smokeReportPath}: expected web, received ${smokeReport?.family ?? 'unknown'}`,
+      );
+    }
+    if (String(smokeReport?.platform ?? '').trim() !== expectedPlatform) {
+      throw new Error(
+        `Web archive smoke report platform mismatch at ${smokeReportPath}: expected ${expectedPlatform}, received ${smokeReport?.platform ?? 'unknown'}`,
+      );
+    }
+    if (String(smokeReport?.arch ?? '').trim() !== expectedArch) {
+      throw new Error(
+        `Web archive smoke report architecture mismatch at ${smokeReportPath}: expected ${expectedArch}, received ${smokeReport?.arch ?? 'unknown'}`,
+      );
+    }
+    if (String(smokeReport?.status ?? '').trim() !== 'passed') {
+      throw new Error(
+        `Web archive smoke report must pass before finalization: ${smokeReportPath}`,
+      );
+    }
+    if (String(smokeReport?.smokeKind ?? '').trim() !== 'web-archive-content') {
+      throw new Error(
+        `Web archive smoke report must describe web-archive-content verification: ${smokeReportPath}`,
+      );
+    }
+    if (
+      path.resolve(String(smokeReport?.manifestPath ?? '').trim() || manifestDir)
+      !== path.resolve(record.file.absolutePath)
+    ) {
+      throw new Error(
+        `Web archive smoke report manifest path mismatch at ${smokeReportPath}`,
+      );
+    }
+
+    const reportedArtifactRelativePaths = normalizeReleaseSmokePathArray(
+      smokeReport?.artifactRelativePaths,
+    );
+    if (
+      expectedArtifactRelativePaths.length !== reportedArtifactRelativePaths.length
+      || expectedArtifactRelativePaths.some(
+        (relativePath, index) => relativePath !== reportedArtifactRelativePaths[index],
+      )
+    ) {
+      throw new Error(
+        `Web archive smoke report does not match the current artifact set: ${smokeReportPath}`,
+      );
+    }
+
+    const checks = normalizeReleaseSmokeChecks(smokeReport?.checks);
+    const passedChecks = new Map(
+      checks.map((check) => [check.id, check.status]),
+    );
+    for (const requiredCheckId of [
+      'artifact-checksum',
+      'web-index',
+      'web-assets',
+      'docs-index',
+      'docs-404',
+      'docs-search-index',
+      'public-doc-boundary',
+    ]) {
+      if (passedChecks.get(requiredCheckId) !== 'passed') {
+        throw new Error(
+          `Web archive smoke report is missing a passing ${requiredCheckId} check: ${smokeReportPath}`,
+        );
+      }
+    }
+
+    webArchiveSmokeMetadataByManifestPath.set(
+      record.file.absolutePath,
+      {
+        webArchiveSmoke: buildWebArchiveSmokeMetadata({
+          releaseAssetsDir,
+          manifestPath: record.file.absolutePath,
+          smokeReportPath,
+          smokeReport,
+        }),
+      },
+    );
+  }
+
+  return webArchiveSmokeMetadataByManifestPath;
+}
+
 function titleCaseReleaseFamily(family) {
   const normalizedFamily = String(family ?? '').trim().toLowerCase();
   if (!normalizedFamily) {
@@ -929,6 +1212,7 @@ function titleCaseReleaseFamily(family) {
 function requireDeploymentSmokeReports({
   releaseAssetsDir,
   partialManifestFileName,
+  profile,
   releaseTag = '',
 } = {}) {
   const deploymentSmokeMetadataByManifestPath = new Map();
@@ -936,6 +1220,7 @@ function requireDeploymentSmokeReports({
   const partialManifestRecords = listPartialManifestRecords(
     releaseAssetsDir,
     partialManifestFileName,
+    profile,
   );
   const hasTaggedManifest = normalizedReleaseTag.length > 0
     && partialManifestRecords.some((record) => String(record.manifest?.releaseTag ?? '').trim().length > 0);
@@ -962,7 +1247,7 @@ function requireDeploymentSmokeReports({
       ?? relativeManifestDir.split('/')[3]
       ?? '',
     ).trim();
-    const expectedArtifactRelativePaths = normalizeStringArray(
+    const expectedArtifactRelativePaths = normalizeReleaseSmokePathArray(
       Array.isArray(manifest?.artifacts)
         ? manifest.artifacts.map((artifact) => artifact?.relativePath)
         : [],
@@ -1019,7 +1304,7 @@ function requireDeploymentSmokeReports({
       );
     }
 
-    const reportedArtifactRelativePaths = normalizeStringArray(
+    const reportedArtifactRelativePaths = normalizeReleaseSmokePathArray(
       smokeReport?.artifactRelativePaths,
     );
     if (
@@ -1033,11 +1318,7 @@ function requireDeploymentSmokeReports({
       );
     }
     if (smokeStatus === 'passed') {
-      if (String(smokeReport?.launcherRelativePath ?? '').trim().length === 0) {
-        throw new Error(
-          `${familyLabel} deployment smoke report is missing launcherRelativePath: ${smokeReportPath}`,
-        );
-      }
+      assertSafeSmokeLauncherRelativePath(smokeReport, smokeReportPath);
       if (
         family === 'container'
         && String(smokeReport?.runtimeBaseUrl ?? '').trim().length === 0
@@ -1086,6 +1367,7 @@ function requireDeploymentSmokeReports({
 function buildArtifactIndex(
   releaseAssetsDir,
   partialManifestFileName,
+  profile,
   releaseTag = '',
   artifactMetadataByManifestPath = new Map(),
 ) {
@@ -1104,10 +1386,19 @@ function buildArtifactIndex(
   const assetFilesByRelativePath = new Map(
     assetFiles.map((file) => [file.relativePath, file]),
   );
-  const partialManifestRecords = partialManifestFiles.map((file) => ({
-    file,
-    manifest: readPartialManifest(file.absolutePath),
-  }));
+  const partialManifestRecords = partialManifestFiles.map((file) => {
+    const manifest = readPartialManifest(file.absolutePath);
+    validatePartialReleaseAssetManifest({
+      manifest,
+      manifestPath: file.absolutePath,
+      profile,
+    });
+
+    return {
+      file,
+      manifest,
+    };
+  });
   const normalizedReleaseTag = String(releaseTag ?? '').trim();
   const hasTaggedManifest = normalizedReleaseTag.length > 0
     && partialManifestRecords.some((record) => String(record.manifest?.releaseTag ?? '').trim().length > 0);
@@ -1118,15 +1409,17 @@ function buildArtifactIndex(
     const partialManifestReleaseTag = String(partialManifest?.releaseTag ?? '').trim();
     if (hasTaggedManifest && partialManifestReleaseTag !== normalizedReleaseTag) {
       for (const artifact of partialManifest.artifacts ?? []) {
-        if (typeof artifact?.relativePath === 'string' && artifact.relativePath.trim().length > 0) {
-          assetFilesByRelativePath.delete(artifact.relativePath);
+        const relativePath = normalizeReleaseRelativePath(artifact?.relativePath);
+        if (relativePath.length > 0) {
+          assetFilesByRelativePath.delete(relativePath);
         }
       }
       continue;
     }
 
     for (const artifact of partialManifest.artifacts ?? []) {
-      const assetFile = assetFilesByRelativePath.get(artifact.relativePath);
+      const relativePath = normalizeReleaseRelativePath(artifact?.relativePath);
+      const assetFile = assetFilesByRelativePath.get(relativePath);
       if (!assetFile) {
         continue;
       }
@@ -1161,6 +1454,41 @@ function buildArtifactIndex(
   }
 
   return artifacts.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+}
+
+function assertArtifactsWithinActiveReleaseProfile({
+  artifacts,
+  profile,
+}) {
+  const outOfProfileArtifactPaths = buildArtifactsOutsideReleaseProfile({
+    profile,
+    artifacts,
+  });
+
+  if (outOfProfileArtifactPaths.length > 0) {
+    throw new Error(
+      `Finalized release would contain artifacts outside the active release profile: ${outOfProfileArtifactPaths.join(', ')}`,
+    );
+  }
+}
+
+function assertNoDuplicateArtifactsForReleaseTargets({
+  artifacts,
+  profile,
+}) {
+  const duplicateTargetEntries = buildDuplicateReleaseTargetEntries({
+    profile,
+    artifacts,
+  });
+
+  if (duplicateTargetEntries.length > 0) {
+    throw new Error(
+      [
+        'Finalized release would contain multiple artifacts for the same release target:',
+        ...duplicateTargetEntries.map((entry) => `${entry.target}=[${entry.artifactPaths.join(', ')}]`),
+      ].join(' '),
+    );
+  }
 }
 
 function normalizeArtifactRecord(artifact, relativePath) {
@@ -1305,17 +1633,123 @@ function isFallbackArtifactEligible(relativePath, releaseTag = '') {
   return false;
 }
 
+function assertReleaseCoverageComplete({
+  profile,
+  releaseCoverage,
+}) {
+  if (releaseCoverage.status === 'complete') {
+    return;
+  }
+
+  throw new Error(
+    [
+      `Incomplete release asset coverage for profile "${profile.id}".`,
+      `Missing targets: ${releaseCoverage.missingTargets.join(', ')}`,
+      'Run every release matrix packaging job before finalization, or pass --allow-partial-release only for explicit local/debug aggregation.',
+    ].join(' '),
+  );
+}
+
 function writeGlobalChecksumManifest({
   releaseAssetsDir,
   fileName,
-  artifacts,
+  subjects,
 }) {
   const outputPath = path.join(releaseAssetsDir, fileName);
-  const checksumLines = artifacts
-    .map((artifact) => `${artifact.sha256}  ${artifact.relativePath}`)
+  const checksumLines = subjects
+    .map((subject) => `${subject.sha256}  ${subject.relativePath}`)
     .join('\n');
 
   writeFileSync(outputPath, `${checksumLines}\n`, 'utf8');
+}
+
+function removePackagingChecksumSidecars({
+  releaseAssetsDir,
+  subjects,
+}) {
+  for (const subject of subjects) {
+    const relativePath = normalizeReleaseRelativePath(subject?.relativePath);
+    if (!relativePath) {
+      continue;
+    }
+
+    assertSafeReleaseRelativePath(relativePath, {
+      contextLabel: 'Release finalizer checksum sidecar cleanup',
+      artifactPathLabel: 'release subject path',
+    });
+    rmSync(path.join(releaseAssetsDir, `${relativePath}.sha256.txt`), { force: true });
+  }
+}
+
+function assertReleaseTopLevelFileName(fileName, label) {
+  if (
+    !fileName
+    || fileName === '.'
+    || fileName === '..'
+    || fileName.includes('\0')
+    || fileName.includes(':')
+    || fileName.includes('/')
+    || fileName.includes('\\')
+    || path.posix.isAbsolute(fileName)
+    || path.win32.isAbsolute(fileName)
+    || path.posix.basename(fileName) !== fileName
+    || path.win32.basename(fileName) !== fileName
+  ) {
+    throw new Error(`Invalid ${label}: ${fileName || 'missing'}`);
+  }
+}
+
+function buildReleaseMetadata({
+  releaseAssetsDir,
+}) {
+  assertReleaseTopLevelFileName(RELEASE_NOTES_FILE_NAME, 'required release metadata file name');
+  const releaseNotesPath = path.join(releaseAssetsDir, RELEASE_NOTES_FILE_NAME);
+
+  if (!existsSync(releaseNotesPath)) {
+    throw new Error(`Missing required release metadata file: ${RELEASE_NOTES_FILE_NAME}`);
+  }
+
+  const releaseNotesStat = statSync(releaseNotesPath);
+  if (!releaseNotesStat.isFile()) {
+    throw new Error(`Required release metadata file is not a file: ${RELEASE_NOTES_FILE_NAME}`);
+  }
+
+  return [
+    {
+      kind: 'release-notes',
+      purpose: 'github-release-body',
+      relativePath: RELEASE_NOTES_FILE_NAME,
+      sha256: computeSha256(releaseNotesPath),
+      size: releaseNotesStat.size,
+      required: true,
+    },
+  ];
+}
+
+function writeFileChecksumSidecar({
+  sourcePath,
+  sourceFileName,
+  sidecarPath,
+}) {
+  writeFileSync(
+    sidecarPath,
+    `${computeSha256(sourcePath)}  ${sourceFileName}\n`,
+    'utf8',
+  );
+}
+
+function removeStaleFinalizedReleaseOutputs({
+  releaseAssetsDir,
+  profile,
+}) {
+  for (const fileName of [
+    profile.release.manifestFileName,
+    profile.release.manifestChecksumFileName,
+    profile.release.attestationEvidenceFileName,
+    profile.release.globalChecksumsFileName,
+  ].filter(Boolean)) {
+    rmSync(path.join(releaseAssetsDir, fileName), { force: true });
+  }
 }
 
 function writeReleaseManifest({
@@ -1324,6 +1758,8 @@ function writeReleaseManifest({
   profile,
   releaseTag,
   repository,
+  releaseCoverage,
+  releaseMetadata,
   artifacts,
 }) {
   const outputPath = path.join(releaseAssetsDir, fileName);
@@ -1337,6 +1773,10 @@ function writeReleaseManifest({
       generatedAt: new Date().toISOString(),
       checksumFileName: profile.release.globalChecksumsFileName,
       attestationEnabled: profile.release.enableArtifactAttestations,
+      attestationEvidenceFileName: profile.release.attestationEvidenceFileName,
+      attestationPredicateType: profile.release.attestationPredicateType,
+      releaseCoverage,
+      releaseMetadata,
       verification: repository
         ? {
             checksumCommand: `sha256sum -c ${profile.release.globalChecksumsFileName}`,
@@ -1347,6 +1787,8 @@ function writeReleaseManifest({
     }, null, 2)}\n`,
     'utf8',
   );
+
+  return outputPath;
 }
 
 export function finalizeReleaseAssets({
@@ -1355,6 +1797,7 @@ export function finalizeReleaseAssets({
   repository = '',
   releaseAssetsDir = path.resolve('release-assets'),
   workspaceRootDir = rootDir,
+  allowPartialRelease = false,
 } = {}) {
   const profile = resolveReleaseProfile(profileId);
   const normalizedReleaseTag = String(releaseTag ?? '').trim();
@@ -1367,25 +1810,39 @@ export function finalizeReleaseAssets({
   }
 
   mkdirSync(releaseAssetsDir, { recursive: true });
+  removeStaleFinalizedReleaseOutputs({
+    releaseAssetsDir,
+    profile,
+  });
   const desktopInstallerMetadataByManifestPath = requireDesktopInstallerSmokeReports({
     workspaceRootDir,
     releaseAssetsDir,
     partialManifestFileName: profile.release.partialManifestFileName,
+    profile,
     releaseTag: normalizedReleaseTag,
   });
   const serverBundleSmokeMetadataByManifestPath = requireServerBundleSmokeReports({
     releaseAssetsDir,
     partialManifestFileName: profile.release.partialManifestFileName,
+    profile,
+    releaseTag: normalizedReleaseTag,
+  });
+  const webArchiveSmokeMetadataByManifestPath = requireWebArchiveSmokeReports({
+    releaseAssetsDir,
+    partialManifestFileName: profile.release.partialManifestFileName,
+    profile,
     releaseTag: normalizedReleaseTag,
   });
   const desktopStartupMetadataByManifestPath = requireDesktopStartupSmokeReports({
     releaseAssetsDir,
     partialManifestFileName: profile.release.partialManifestFileName,
+    profile,
     releaseTag: normalizedReleaseTag,
   });
   const deploymentSmokeMetadataByManifestPath = requireDeploymentSmokeReports({
     releaseAssetsDir,
     partialManifestFileName: profile.release.partialManifestFileName,
+    profile,
     releaseTag: normalizedReleaseTag,
   });
   const artifactMetadataByManifestPath = new Map();
@@ -1393,6 +1850,15 @@ export function finalizeReleaseAssets({
     artifactMetadataByManifestPath.set(manifestPath, metadata);
   }
   for (const [manifestPath, metadata] of serverBundleSmokeMetadataByManifestPath.entries()) {
+    artifactMetadataByManifestPath.set(
+      manifestPath,
+      {
+        ...(artifactMetadataByManifestPath.get(manifestPath) ?? {}),
+        ...metadata,
+      },
+    );
+  }
+  for (const [manifestPath, metadata] of webArchiveSmokeMetadataByManifestPath.entries()) {
     artifactMetadataByManifestPath.set(
       manifestPath,
       {
@@ -1422,25 +1888,59 @@ export function finalizeReleaseAssets({
   const artifacts = buildArtifactIndex(
     releaseAssetsDir,
     profile.release.partialManifestFileName,
+    profile,
     normalizedReleaseTag,
     artifactMetadataByManifestPath,
   );
   if (artifacts.length === 0) {
     throw new Error(`No release assets found under ${releaseAssetsDir}`);
   }
+  assertArtifactsWithinActiveReleaseProfile({
+    artifacts,
+    profile,
+  });
+  assertNoDuplicateArtifactsForReleaseTargets({
+    artifacts,
+    profile,
+  });
+  const releaseCoverage = buildReleaseCoverage({
+    profile,
+    artifacts,
+    allowPartialRelease,
+  });
+  if (!allowPartialRelease) {
+    assertReleaseCoverageComplete({
+      profile,
+      releaseCoverage,
+    });
+  }
+  const releaseMetadata = buildReleaseMetadata({
+    releaseAssetsDir,
+  });
+  removePackagingChecksumSidecars({
+    releaseAssetsDir,
+    subjects: [...artifacts, ...releaseMetadata],
+  });
 
   writeGlobalChecksumManifest({
     releaseAssetsDir,
     fileName: profile.release.globalChecksumsFileName,
-    artifacts,
+    subjects: [...artifacts, ...releaseMetadata],
   });
-  writeReleaseManifest({
+  const manifestPath = writeReleaseManifest({
     releaseAssetsDir,
     fileName: profile.release.manifestFileName,
     profile,
     releaseTag: normalizedReleaseTag,
     repository: String(repository ?? '').trim(),
+    releaseCoverage,
+    releaseMetadata,
     artifacts,
+  });
+  writeFileChecksumSidecar({
+    sourcePath: manifestPath,
+    sourceFileName: profile.release.manifestFileName,
+    sidecarPath: path.join(releaseAssetsDir, profile.release.manifestChecksumFileName),
   });
 }
 

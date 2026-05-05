@@ -8,18 +8,21 @@ const __filename = fileURLToPath(import.meta.url);
 export const SHARED_SDK_APP_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_APP_REPO_URL';
 export const SHARED_SDK_COMMON_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_COMMON_REPO_URL';
 export const SHARED_SDK_CORE_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_CORE_REPO_URL';
-export const SHARED_IM_SDK_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_IM_SDK_REPO_URL';
+export const SHARED_SDK_IM_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_IM_REPO_URL';
+export const SHARED_SDK_RTC_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_RTC_REPO_URL';
 export const SHARED_SDK_APP_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_APP_GIT_REF';
 export const SHARED_SDK_COMMON_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_COMMON_GIT_REF';
 export const SHARED_SDK_CORE_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_CORE_GIT_REF';
-export const SHARED_IM_SDK_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_IM_SDK_GIT_REF';
+export const SHARED_SDK_IM_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_IM_GIT_REF';
+export const SHARED_SDK_RTC_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_RTC_GIT_REF';
 export const SHARED_SDK_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_GIT_REF';
 export const SHARED_SDK_GIT_FORCE_SYNC_ENV_VAR = 'SDKWORK_SHARED_SDK_GIT_FORCE_SYNC';
 export const SHARED_SDK_RELEASE_CONFIG_PATH_ENV_VAR = 'SDKWORK_SHARED_SDK_RELEASE_CONFIG_PATH';
 export const DEFAULT_SHARED_SDK_APP_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-app.git';
 export const DEFAULT_SHARED_SDK_COMMON_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-commons.git';
 export const DEFAULT_SHARED_SDK_CORE_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-core.git';
-export const DEFAULT_SHARED_IM_SDK_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git';
+export const DEFAULT_SHARED_SDK_IM_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git';
+export const DEFAULT_SHARED_SDK_RTC_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-rtc-sdk.git';
 export const DEFAULT_SHARED_SDK_RELEASE_CONFIG_PATH = 'config/shared-sdk-release-sources.json';
 
 function resolveGitCommand() {
@@ -144,37 +147,26 @@ function createSourceSpecs(workspaceRootDir) {
       defaultRepoUrl: DEFAULT_SHARED_SDK_CORE_REPO_URL,
     },
     {
-      id: 'im-backend-sdk',
-      label: '@sdkwork/im-backend-sdk',
-      repoRoot: path.resolve(workspaceRootDir, '../openchat'),
-      packageContainerDirName: 'sdkwork-im-sdk',
-      packageDirName: path.join('sdkwork-im-sdk-typescript', 'generated', 'server-openapi'),
+      id: 'im-sdk',
+      label: '@sdkwork/im-sdk',
+      repoRoot: path.resolve(workspaceRootDir, '../craw-chat/sdks/sdkwork-im-sdk'),
+      packageContainerDirName: '',
+      packageDirName: 'sdkwork-im-sdk-typescript',
       monorepoSubmodulePath: '',
-      repoUrlEnvVar: SHARED_IM_SDK_REPO_URL_ENV_VAR,
-      refEnvVar: SHARED_IM_SDK_GIT_REF_ENV_VAR,
-      defaultRepoUrl: DEFAULT_SHARED_IM_SDK_REPO_URL,
+      repoUrlEnvVar: SHARED_SDK_IM_REPO_URL_ENV_VAR,
+      refEnvVar: SHARED_SDK_IM_GIT_REF_ENV_VAR,
+      defaultRepoUrl: DEFAULT_SHARED_SDK_IM_REPO_URL,
     },
     {
-      id: 'openchat-im-sdk',
-      label: '@openchat/sdkwork-im-sdk',
-      repoRoot: path.resolve(workspaceRootDir, '../openchat'),
-      packageContainerDirName: 'sdkwork-im-sdk',
-      packageDirName: path.join('sdkwork-im-sdk-typescript', 'composed'),
+      id: 'rtc-sdk',
+      label: '@sdkwork/rtc-sdk',
+      repoRoot: path.resolve(workspaceRootDir, '../craw-chat/sdks/sdkwork-rtc-sdk'),
+      packageContainerDirName: '',
+      packageDirName: 'sdkwork-rtc-sdk-typescript',
       monorepoSubmodulePath: '',
-      repoUrlEnvVar: SHARED_IM_SDK_REPO_URL_ENV_VAR,
-      refEnvVar: SHARED_IM_SDK_GIT_REF_ENV_VAR,
-      defaultRepoUrl: DEFAULT_SHARED_IM_SDK_REPO_URL,
-    },
-    {
-      id: 'openchat-im-wukongim-adapter',
-      label: '@openchat/sdkwork-im-wukongim-adapter',
-      repoRoot: path.resolve(workspaceRootDir, '../openchat'),
-      packageContainerDirName: 'sdkwork-im-sdk',
-      packageDirName: path.join('sdkwork-im-sdk-typescript', 'adapter-wukongim'),
-      monorepoSubmodulePath: '',
-      repoUrlEnvVar: SHARED_IM_SDK_REPO_URL_ENV_VAR,
-      refEnvVar: SHARED_IM_SDK_GIT_REF_ENV_VAR,
-      defaultRepoUrl: DEFAULT_SHARED_IM_SDK_REPO_URL,
+      repoUrlEnvVar: SHARED_SDK_RTC_REPO_URL_ENV_VAR,
+      refEnvVar: SHARED_SDK_RTC_GIT_REF_ENV_VAR,
+      defaultRepoUrl: DEFAULT_SHARED_SDK_RTC_REPO_URL,
     },
   ];
 }

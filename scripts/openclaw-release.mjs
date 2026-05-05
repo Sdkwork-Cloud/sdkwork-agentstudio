@@ -150,19 +150,16 @@ if (!OPENCLAW_RELEASE.packageName) {
   throw new Error(`openclaw release config missing packageName: ${releaseConfigPath}`);
 }
 
-export const DEFAULT_OPENCLAW_VERSION =
-  process.env.OPENCLAW_VERSION ?? OPENCLAW_RELEASE.stableVersion;
-export const DEFAULT_NODE_VERSION =
-  process.env.OPENCLAW_NODE_VERSION ?? OPENCLAW_RELEASE.nodeVersion;
-export const DEFAULT_OPENCLAW_PACKAGE =
-  process.env.OPENCLAW_PACKAGE_NAME ?? OPENCLAW_RELEASE.packageName;
+export const DEFAULT_OPENCLAW_VERSION = OPENCLAW_RELEASE.stableVersion;
+export const DEFAULT_NODE_VERSION = OPENCLAW_RELEASE.nodeVersion;
+export const DEFAULT_OPENCLAW_PACKAGE = OPENCLAW_RELEASE.packageName;
 export const DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES =
   OPENCLAW_RELEASE.runtimeSupplementalPackages;
 export const DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGE_EXCEPTIONS =
   OPENCLAW_RELEASE.runtimeSupplementalPackageExceptions;
 
 /**
- * Bundled aliases — aligned with packages/sdkwork-claw-types/src/openclawRelease.ts naming.
+ * Bundled aliases aligned with packages/sdkwork-claw-types/src/openclawRelease.ts naming.
  * OpenClaw payload constants keep the `BUNDLED_` prefix in script-facing aliases.
  * Node.js uses `DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION` because it is external-only.
  */

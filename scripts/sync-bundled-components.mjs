@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { withRustToolchainPath } from './ensure-tauri-rust-toolchain.mjs';
+import { withRustToolchainPath } from './ensure-native-rust-toolchain.mjs';
 import { buildNonInteractiveInstallEnv, shouldUseWindowsCommandShell } from './desktop-build-helpers.mjs';
 import { DEFAULT_OPENCLAW_VERSION } from './openclaw-release.mjs';
 import {
@@ -151,12 +151,7 @@ export function createBundleManifest({
   };
 }
 
-export function resolvePinnedOpenClawVersion({ env = process.env } = {}) {
-  const configuredVersion = env.OPENCLAW_VERSION;
-  if (typeof configuredVersion === 'string' && configuredVersion.trim().length > 0) {
-    return configuredVersion.trim();
-  }
-
+export function resolvePinnedOpenClawVersion() {
   return DEFAULT_OPENCLAW_VERSION;
 }
 
@@ -208,9 +203,9 @@ export function removeDirectoryWithRetriesSync(
   throw lastError;
 }
 
-function resolveComponentDesiredVersion(component, { env = process.env } = {}) {
+function resolveComponentDesiredVersion(component) {
   if (component?.id === 'openclaw') {
-    return resolvePinnedOpenClawVersion({ env });
+    return resolvePinnedOpenClawVersion();
   }
 
   return null;
@@ -993,16 +988,14 @@ export function resolveComponentRepositoryDir({
 }
 
 function installPnpmWorkspace(cwd) {
-  if (!fs.existsSync(path.join(cwd, 'node_modules'))) {
-    const installEnv = buildNonInteractiveInstallEnv(commandEnv);
-    try {
-      runCommand(pnpmCmd, ['install', '--frozen-lockfile'], { cwd, env: installEnv });
-    } catch (error) {
-      console.warn(
-        `[bundled-components] retrying pnpm install without frozen lockfile in ${path.relative(rootDir, cwd) || cwd}`,
-      );
-      runCommand(pnpmCmd, ['install', '--lockfile=false', '--force'], { cwd, env: installEnv });
-    }
+  const installEnv = buildNonInteractiveInstallEnv(commandEnv);
+  try {
+    runCommand(pnpmCmd, ['install', '--frozen-lockfile'], { cwd, env: installEnv });
+  } catch (error) {
+    console.warn(
+      `[bundled-components] retrying pnpm install without frozen lockfile in ${path.relative(rootDir, cwd) || cwd}`,
+    );
+    runCommand(pnpmCmd, ['install', '--lockfile=false', '--force'], { cwd, env: installEnv });
   }
 }
 

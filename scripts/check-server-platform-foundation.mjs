@@ -105,8 +105,8 @@ if (
 ) {
   failures.push('Root package check:server script must execute cargo through the shared Rust toolchain launcher.');
 }
-if (serverPackage?.scripts?.dev !== 'cargo run --manifest-path src-host/Cargo.toml') {
-  failures.push('Server package dev script must run the native Rust host entry.');
+if (serverPackage?.scripts?.dev !== 'sdkwork-run-node ../../scripts/run-cargo.mjs run --manifest-path src-host/Cargo.toml') {
+  failures.push('Server package dev script must run the native Rust host entry through the shared Cargo launcher.');
 }
 if (serverPackage?.scripts?.build !== 'sdkwork-run-node ../../scripts/run-claw-server-build.mjs') {
   failures.push('Server package build script must use the shared server build helper.');

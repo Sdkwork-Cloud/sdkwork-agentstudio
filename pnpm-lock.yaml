@@ -38,6 +38,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
+      markdown-it:
+        specifier: ^14.1.1
+        version: 14.1.1
       typescript:
         specifier: ~6.0.2
         version: 6.0.2
@@ -88,15 +91,36 @@ importers:
         specifier: ^4.0.0
         version: 4.5.4(@types/node@20.19.39)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0))
 
+  ../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript:
+    dependencies:
+      '@sdkwork/sdk-common':
+        specifier: ^1.0.2
+        version: link:../../../../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+      ws:
+        specifier: ^8.18.1
+        version: 8.20.0
+
+  ../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript:
+    dependencies:
+      '@sdkwork/im-sdk':
+        specifier: ^0.1.1
+        version: link:../../sdkwork-im-sdk/sdkwork-im-sdk-typescript
+      '@volcengine/rtc':
+        specifier: ^4.68.3
+        version: 4.68.3
+
   ../sdkwork-core/sdkwork-core-pc-react:
     dependencies:
       '@sdkwork/app-sdk':
-        specifier: workspace:*
+        specifier: ^1.0.34
         version: link:../../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript
+      '@sdkwork/im-sdk':
+        specifier: ^0.1.1
+        version: link:../../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript
+      '@sdkwork/rtc-sdk':
+        specifier: ^0.1.1
+        version: link:../../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript
     devDependencies:
-      '@testing-library/dom':
-        specifier: ^10.4.1
-        version: 10.4.1
       '@testing-library/react':
         specifier: ^16.3.2
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -2861,6 +2885,9 @@ packages:
   '@volar/typescript@2.4.28':
     resolution: {integrity: sha512-Ja6yvWrbis2QtN4ClAKreeUZPVYMARDYZl9LMEv1iQ1QdepB6wn0jTRxA9MftYmYa4DQ4k/DaSZpFPUfxl8giw==}
 
+  '@volcengine/rtc@4.68.3':
+    resolution: {integrity: sha512-oW7UfpAFlE3++N4ZWAfAcJohhKtJbSC5RcKjOHzXVOR3E9urzm/5ErsurfyVcX/oPxsDh8239sRD2I6ZSJCq6A==}
+
   '@vue/compiler-core@3.5.32':
     resolution: {integrity: sha512-4x74Tbtqnda8s/NSD6e1Dr5p1c8HdMU5RWSjMSUzb8RTcUQqevDCxVAitcLBKT+ie3o0Dl9crc/S/opJM7qBGQ==}
 
@@ -3282,6 +3309,9 @@ packages:
   esutils@2.0.3:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
+
+  eventemitter3@4.0.7:
+    resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
 
   expect-type@1.3.0:
     resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
@@ -4716,6 +4746,18 @@ packages:
   wrap-ansi@6.2.0:
     resolution: {integrity: sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==}
     engines: {node: '>=8'}
+
+  ws@8.20.0:
+    resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
 
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
@@ -6466,6 +6508,10 @@ snapshots:
       path-browserify: 1.0.1
       vscode-uri: 3.1.0
 
+  '@volcengine/rtc@4.68.3':
+    dependencies:
+      eventemitter3: 4.0.7
+
   '@vue/compiler-core@3.5.32':
     dependencies:
       '@babel/parser': 7.29.2
@@ -6946,6 +6992,8 @@ snapshots:
       '@types/estree': 1.0.8
 
   esutils@2.0.3: {}
+
+  eventemitter3@4.0.7: {}
 
   expect-type@1.3.0: {}
 
@@ -8639,6 +8687,8 @@ snapshots:
       ansi-styles: 4.3.0
       string-width: 4.2.3
       strip-ansi: 6.0.1
+
+  ws@8.20.0: {}
 
   xml-name-validator@5.0.0: {}
 

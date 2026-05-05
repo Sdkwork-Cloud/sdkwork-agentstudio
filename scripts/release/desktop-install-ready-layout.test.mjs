@@ -5,11 +5,15 @@ import {
   buildDesktopInstallReadyLayout,
   normalizeDesktopInstallReadyLayout,
 } from './desktop-install-ready-layout.mjs';
+import { resolveKernelReleaseConfig } from './kernel-releases.mjs';
+
+const openClawReleaseConfig = resolveKernelReleaseConfig('openclaw');
+const openClawInstallKey = `${openClawReleaseConfig.stableVersion}-windows-x64`;
 
 test('normalizeDesktopInstallReadyLayout strips legacy bundled node entry fields', () => {
   const normalizedLayout = normalizeDesktopInstallReadyLayout({
     mode: 'archive-extract-ready',
-    installKey: '2026.4.13-windows-x64',
+    installKey: openClawInstallKey,
     reuseOnFirstLaunch: true,
     requiresArchiveExtractionOnFirstLaunch: false,
     manifestRelativePath: 'manifest.json',
@@ -20,7 +24,7 @@ test('normalizeDesktopInstallReadyLayout strips legacy bundled node entry fields
 
   assert.deepEqual(normalizedLayout, {
     mode: 'archive-extract-ready',
-    installKey: '2026.4.13-windows-x64',
+    installKey: openClawInstallKey,
     reuseOnFirstLaunch: true,
     requiresArchiveExtractionOnFirstLaunch: false,
     manifestRelativePath: 'manifest.json',
@@ -34,7 +38,7 @@ test('buildDesktopInstallReadyLayout emits only packaged OpenClaw startup paths'
   const installReadyLayout = buildDesktopInstallReadyLayout({
     mode: 'archive-extract-ready',
     manifest: {
-      openclawVersion: '2026.4.13',
+      openclawVersion: openClawReleaseConfig.stableVersion,
       platform: 'windows',
       arch: 'x64',
       cliRelativePath: 'runtime/package/node_modules/openclaw/openclaw.mjs',

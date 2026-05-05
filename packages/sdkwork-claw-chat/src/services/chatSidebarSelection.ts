@@ -3,6 +3,10 @@ import {
   type InstanceDirectoryItem,
   resolvePreferredActiveInstanceId,
 } from '@sdkwork/claw-core';
+import {
+  findChatSidebarAgentOption,
+  type ChatSidebarAgentOption,
+} from './chatSessionOwnerPresentation.ts';
 
 export interface ChatSidebarAgentSelection {
   agentId: string | null;
@@ -23,6 +27,15 @@ export interface ChatSidebarSelectionPlan {
   shouldSetActiveSession: boolean;
 }
 
+function normalizeOptionalString(value: string | null | undefined) {
+  if (typeof value !== 'string') {
+    return value ?? null;
+  }
+
+  const normalized = value.trim();
+  return normalized || null;
+}
+
 function resolveFallbackInstanceId(params: {
   instances: InstanceDirectoryItem[];
   currentActiveInstanceId: string | null;
@@ -33,6 +46,29 @@ function resolveFallbackInstanceId(params: {
     activeInstanceId: params.currentActiveInstanceId,
     preferredInstanceId: params.preferredInstanceId ?? null,
   });
+}
+
+export function resolveChatSidebarKnownAgentLinkedInstanceId(params: {
+  agentId: string | null;
+  currentActiveInstanceId: string | null;
+  agentOptions: ChatSidebarAgentOption[];
+}): string | null | undefined {
+  const currentActiveInstanceId = normalizeOptionalString(
+    params.currentActiveInstanceId,
+  );
+  const normalizedAgentId = normalizeOptionalString(params.agentId);
+
+  if (!normalizedAgentId) {
+    return currentActiveInstanceId ?? null;
+  }
+
+  if (!currentActiveInstanceId) {
+    return undefined;
+  }
+
+  return findChatSidebarAgentOption(params.agentOptions, normalizedAgentId)
+    ? currentActiveInstanceId
+    : undefined;
 }
 
 export function resolveChatSidebarAgentSelectionPlan(params: {
@@ -51,8 +87,7 @@ export function resolveChatSidebarAgentSelectionPlan(params: {
     nextInstanceId,
     shouldHydrateTargetInstance:
       Boolean(nextInstanceId) &&
-      (nextInstanceId !== params.currentActiveInstanceId ||
-        params.selection.agentId !== null),
+      nextInstanceId !== params.currentActiveInstanceId,
     shouldSetActiveInstance:
       nextInstanceId !== null && nextInstanceId !== params.currentActiveInstanceId,
     nextSelectedAgentId: params.selection.agentId,

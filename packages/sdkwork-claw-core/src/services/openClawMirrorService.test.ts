@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict';
-import type {
-  OpenClawMirrorExportPreview,
-  OpenClawMirrorExportRequest,
-  OpenClawMirrorExportResult,
-  OpenClawMirrorImportPreview,
-  OpenClawMirrorImportRequest,
-  OpenClawMirrorImportResult,
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION,
+  type OpenClawMirrorExportPreview,
+  type OpenClawMirrorExportRequest,
+  type OpenClawMirrorExportResult,
+  type OpenClawMirrorImportPreview,
+  type OpenClawMirrorImportRequest,
+  type OpenClawMirrorImportResult,
 } from '@sdkwork/claw-types';
+
+const DEFAULT_OPENCLAW_INSTALL_KEY = `${DEFAULT_BUNDLED_OPENCLAW_VERSION}-windows-x64`;
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
   try {
@@ -25,9 +29,9 @@ function createPreview(
     mode: 'full-private',
     runtime: {
       runtimeId: 'openclaw',
-      installKey: '0.4.0-windows-x64',
-      openclawVersion: '0.4.0',
-      nodeVersion: '22.14.0',
+      installKey: DEFAULT_OPENCLAW_INSTALL_KEY,
+      openclawVersion: DEFAULT_BUNDLED_OPENCLAW_VERSION,
+      nodeVersion: DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION,
       platform: 'windows',
       arch: 'x64',
       homeDir: 'C:/Users/admin',
@@ -65,9 +69,9 @@ function createPreview(
       createdAt: '2026-04-03T08:00:00.000Z',
       runtime: {
         runtimeId: 'openclaw',
-        installKey: '0.4.0-windows-x64',
-        openclawVersion: '0.4.0',
-        nodeVersion: '22.14.0',
+        installKey: DEFAULT_OPENCLAW_INSTALL_KEY,
+        openclawVersion: DEFAULT_BUNDLED_OPENCLAW_VERSION,
+        nodeVersion: DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION,
         platform: 'windows',
         arch: 'x64',
       },
@@ -127,9 +131,9 @@ function createImportPreview(
     components: createPreview().manifest.components,
     detectedRuntime: {
       runtimeId: 'openclaw',
-      installKey: '0.4.0-windows-x64',
-      openclawVersion: '0.4.0',
-      nodeVersion: '22.14.0',
+      installKey: DEFAULT_OPENCLAW_INSTALL_KEY,
+      openclawVersion: DEFAULT_BUNDLED_OPENCLAW_VERSION,
+      nodeVersion: DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION,
       platform: 'windows',
       arch: 'x64',
     },
@@ -275,7 +279,7 @@ await runTest(
 
     assert.deepEqual(calls, ['inspect', `export:${request.destinationPath}`]);
     assert.equal(inspected?.mode, 'full-private');
-    assert.equal(inspected?.runtime.openclawVersion, '0.4.0');
+    assert.equal(inspected?.runtime.openclawVersion, DEFAULT_BUNDLED_OPENCLAW_VERSION);
     assert.equal(inspected?.runtime.configFile, 'C:/Users/admin/.openclaw/openclaw.json');
     assert.equal(exported.fileName, 'openclaw-full-private.ocmirror');
     assert.equal(exported.components.length, 3);

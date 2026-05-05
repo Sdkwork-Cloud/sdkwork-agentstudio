@@ -181,6 +181,8 @@ export interface ChatPageWorkspaceSessionState {
   selectedSession: ChatSession | null;
   displaySessionId: string | null;
   displaySession: ChatSession | null;
+  selectedSessionAgentId: string | null;
+  displaySessionAgentId: string | null;
   activeKernelSessionState: ChatPageKernelSessionState;
   activeRunBinding: ChatRunBinding;
   chatRuntimeState: ChatRuntimeState;

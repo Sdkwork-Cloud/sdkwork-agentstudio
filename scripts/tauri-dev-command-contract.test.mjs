@@ -34,7 +34,7 @@ const nodeScriptRunner = 'sdkwork-run-node';
 const bundledSyncDevCommand = `${nodeScriptRunner} ../../scripts/sync-bundled-components.mjs --dev --no-fetch`;
 const bundledSyncBuildCommand = `${nodeScriptRunner} ../../scripts/sync-bundled-components.mjs --no-fetch --release`;
 const staleTargetGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-tauri-target-clean.mjs src-tauri`;
-const rustToolchainGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-tauri-rust-toolchain.mjs`;
+const rustToolchainGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-native-rust-toolchain.mjs`;
 const devBinaryUnlockGuardCommand =
   `${nodeScriptRunner} ../../scripts/ensure-tauri-dev-binary-unlocked.mjs src-tauri sdkwork-claw-desktop`;
 const devPortGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-tauri-dev-port-free.mjs 127.0.0.1 1426`;

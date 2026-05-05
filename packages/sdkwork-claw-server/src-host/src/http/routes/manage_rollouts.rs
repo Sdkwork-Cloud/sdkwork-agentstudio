@@ -298,7 +298,8 @@ fn map_rollout_error(error: RolloutControlPlaneError, now_ms: u64) -> Response {
             InternalErrorResolution::OperatorAction,
             now_ms,
         ),
-        RolloutControlPlaneError::Store(_) => categorized_error_response(
+        RolloutControlPlaneError::Store(_)
+        | RolloutControlPlaneError::CatalogUnavailable { .. } => categorized_error_response(
             "dependency_unavailable",
             InternalErrorCategory::Dependency,
             "The rollout control-plane store is temporarily unavailable.",

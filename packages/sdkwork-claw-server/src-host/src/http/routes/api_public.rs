@@ -142,10 +142,12 @@ async fn list_public_studio_instances(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .list_instances()
-        .map(Json)
-        .map_err(|error| studio_public_api_projection_error(&state, "list studio instances", error))
+    run_blocking_studio_public_api_call(&state, "list studio instances", move || {
+        provider.list_instances()
+    })
+    .await?
+    .map(Json)
+    .map_err(|error| studio_public_api_projection_error(&state, "list studio instances", error))
 }
 
 async fn create_public_studio_instance(
@@ -155,7 +157,12 @@ async fn create_public_studio_instance(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider.create_instance(input).map(Json).map_err(|error| {
+    run_blocking_studio_public_api_call(&state, "create the requested studio instance", move || {
+        provider.create_instance(input)
+    })
+    .await?
+    .map(Json)
+    .map_err(|error| {
         studio_public_api_projection_error(&state, "create the requested studio instance", error)
     })
 }
@@ -167,10 +174,13 @@ async fn get_public_studio_instance(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .get_instance(id.as_str())
-        .map(|record| Json(record.unwrap_or(Value::Null)))
-        .map_err(|error| studio_public_api_projection_error(&state, "get studio instance", error))
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(&state, "get studio instance", move || {
+        provider.get_instance(instance_id.as_str())
+    })
+    .await?
+    .map(|record| Json(record.unwrap_or(Value::Null)))
+    .map_err(|error| studio_public_api_projection_error(&state, "get studio instance", error))
 }
 
 async fn put_public_studio_instance(
@@ -181,16 +191,15 @@ async fn put_public_studio_instance(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .update_instance(id.as_str(), input)
-        .map(Json)
-        .map_err(|error| {
-            studio_public_api_projection_error(
-                &state,
-                "update the requested studio instance",
-                error,
-            )
-        })
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(&state, "update the requested studio instance", move || {
+        provider.update_instance(instance_id.as_str(), input)
+    })
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_projection_error(&state, "update the requested studio instance", error)
+    })
 }
 
 async fn delete_public_studio_instance(
@@ -200,16 +209,15 @@ async fn delete_public_studio_instance(
 ) -> Result<Json<bool>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .delete_instance(id.as_str())
-        .map(Json)
-        .map_err(|error| {
-            studio_public_api_projection_error(
-                &state,
-                "delete the requested studio instance",
-                error,
-            )
-        })
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(&state, "delete the requested studio instance", move || {
+        provider.delete_instance(instance_id.as_str())
+    })
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_projection_error(&state, "delete the requested studio instance", error)
+    })
 }
 
 async fn post_public_studio_instance_action(
@@ -233,15 +241,42 @@ async fn post_public_studio_instance_action(
     };
 
     let response = match action {
-        "start" => provider.start_instance(instance_id).map_err(|error| {
-            studio_public_api_lifecycle_error_response(&state, instance_id, "start", error)
-        })?,
-        "stop" => provider.stop_instance(instance_id).map_err(|error| {
-            studio_public_api_lifecycle_error_response(&state, instance_id, "stop", error)
-        })?,
-        "restart" => provider.restart_instance(instance_id).map_err(|error| {
-            studio_public_api_lifecycle_error_response(&state, instance_id, "restart", error)
-        })?,
+        "start" => {
+            let requested_instance_id = instance_id.to_string();
+            run_blocking_studio_public_api_call(
+                &state,
+                "start the requested studio instance",
+                move || provider.start_instance(requested_instance_id.as_str()),
+            )
+            .await?
+            .map_err(|error| {
+                studio_public_api_lifecycle_error_response(&state, instance_id, "start", error)
+            })?
+        }
+        "stop" => {
+            let requested_instance_id = instance_id.to_string();
+            run_blocking_studio_public_api_call(
+                &state,
+                "stop the requested studio instance",
+                move || provider.stop_instance(requested_instance_id.as_str()),
+            )
+            .await?
+            .map_err(|error| {
+                studio_public_api_lifecycle_error_response(&state, instance_id, "stop", error)
+            })?
+        }
+        "restart" => {
+            let requested_instance_id = instance_id.to_string();
+            run_blocking_studio_public_api_call(
+                &state,
+                "restart the requested studio instance",
+                move || provider.restart_instance(requested_instance_id.as_str()),
+            )
+            .await?
+            .map_err(|error| {
+                studio_public_api_lifecycle_error_response(&state, instance_id, "restart", error)
+            })?
+        }
         _ => {
             return Err(studio_public_api_unknown_instance_action_response(
                 &state,
@@ -260,16 +295,21 @@ async fn list_public_studio_conversations(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .list_conversations(id.as_str())
-        .map(Json)
-        .map_err(|error| {
-            studio_public_api_projection_error(
-                &state,
-                "list studio conversations for the requested instance",
-                error,
-            )
-        })
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "list studio conversations for the requested instance",
+        move || provider.list_conversations(instance_id.as_str()),
+    )
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_projection_error(
+            &state,
+            "list studio conversations for the requested instance",
+            error,
+        )
+    })
 }
 
 async fn get_public_studio_instance_detail(
@@ -279,16 +319,21 @@ async fn get_public_studio_instance_detail(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .get_instance_detail(id.as_str())
-        .map(|record| Json(record.unwrap_or(Value::Null)))
-        .map_err(|error| {
-            studio_public_api_projection_error(
-                &state,
-                "get the studio instance detail projection",
-                error,
-            )
-        })
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "get the studio instance detail projection",
+        move || provider.get_instance_detail(instance_id.as_str()),
+    )
+    .await?
+    .map(|record| Json(record.unwrap_or(Value::Null)))
+    .map_err(|error| {
+        studio_public_api_projection_error(
+            &state,
+            "get the studio instance detail projection",
+            error,
+        )
+    })
 }
 
 async fn get_public_studio_instance_config(
@@ -298,16 +343,21 @@ async fn get_public_studio_instance_config(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .get_instance_config(id.as_str())
-        .map(|record| Json(record.unwrap_or(Value::Null)))
-        .map_err(|error| {
-            studio_public_api_projection_error(
-                &state,
-                "get the studio instance config projection",
-                error,
-            )
-        })
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "get the studio instance config projection",
+        move || provider.get_instance_config(instance_id.as_str()),
+    )
+    .await?
+    .map(|record| Json(record.unwrap_or(Value::Null)))
+    .map_err(|error| {
+        studio_public_api_projection_error(
+            &state,
+            "get the studio instance config projection",
+            error,
+        )
+    })
 }
 
 async fn put_public_studio_instance_config(
@@ -318,16 +368,21 @@ async fn put_public_studio_instance_config(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .update_instance_config(id.as_str(), config)
-        .map(|record| Json(record.unwrap_or(Value::Null)))
-        .map_err(|error| {
-            studio_public_api_projection_error(
-                &state,
-                "update the requested studio instance config projection",
-                error,
-            )
-        })
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "update the requested studio instance config projection",
+        move || provider.update_instance_config(instance_id.as_str(), config),
+    )
+    .await?
+    .map(|record| Json(record.unwrap_or(Value::Null)))
+    .map_err(|error| {
+        studio_public_api_projection_error(
+            &state,
+            "update the requested studio instance config projection",
+            error,
+        )
+    })
 }
 
 async fn list_public_studio_kernel_chat_agent_profiles(
@@ -668,16 +723,17 @@ async fn get_public_studio_instance_logs(
 ) -> Result<Json<String>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .get_instance_logs(id.as_str())
-        .map(Json)
-        .map_err(|error| {
-            studio_public_api_projection_error(
-                &state,
-                "get the studio instance logs projection",
-                error,
-            )
-        })
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "get the studio instance logs projection",
+        move || provider.get_instance_logs(instance_id.as_str()),
+    )
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_projection_error(&state, "get the studio instance logs projection", error)
+    })
 }
 
 async fn post_public_studio_instance_openclaw_gateway_invoke(
@@ -688,12 +744,17 @@ async fn post_public_studio_instance_openclaw_gateway_invoke(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .invoke_openclaw_gateway(id.as_str(), payload.request, payload.options)
-        .map(Json)
-        .map_err(|error| {
-            studio_public_api_openclaw_gateway_error_response(&state, id.as_str(), error)
-        })
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "invoke the requested OpenClaw gateway",
+        move || {
+            provider.invoke_openclaw_gateway(instance_id.as_str(), payload.request, payload.options)
+        },
+    )
+    .await?
+    .map(Json)
+    .map_err(|error| studio_public_api_openclaw_gateway_error_response(&state, id.as_str(), error))
 }
 
 async fn post_public_studio_instance_task(
@@ -704,17 +765,22 @@ async fn post_public_studio_instance_task(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .create_instance_task(id.as_str(), payload)
-        .map(|_| Json(Value::Null))
-        .map_err(|error| {
-            studio_public_api_workbench_error_response(
-                &state,
-                id.as_str(),
-                "create the requested studio workbench task",
-                error,
-            )
-        })
+    let instance_id = id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "create the requested studio workbench task",
+        move || provider.create_instance_task(instance_id.as_str(), payload),
+    )
+    .await?
+    .map(|_| Json(Value::Null))
+    .map_err(|error| {
+        studio_public_api_workbench_error_response(
+            &state,
+            id.as_str(),
+            "create the requested studio workbench task",
+            error,
+        )
+    })
 }
 
 async fn put_public_studio_instance_task(
@@ -725,17 +791,25 @@ async fn put_public_studio_instance_task(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .update_instance_task(id.as_str(), task_id.as_str(), payload)
-        .map(|_| Json(Value::Null))
-        .map_err(|error| {
-            studio_public_api_workbench_error_response(
-                &state,
-                id.as_str(),
-                "update the requested studio workbench task",
-                error,
-            )
-        })
+    let instance_id = id.clone();
+    let requested_task_id = task_id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "update the requested studio workbench task",
+        move || {
+            provider.update_instance_task(instance_id.as_str(), requested_task_id.as_str(), payload)
+        },
+    )
+    .await?
+    .map(|_| Json(Value::Null))
+    .map_err(|error| {
+        studio_public_api_workbench_error_response(
+            &state,
+            id.as_str(),
+            "update the requested studio workbench task",
+            error,
+        )
+    })
 }
 
 async fn delete_public_studio_instance_task(
@@ -745,17 +819,23 @@ async fn delete_public_studio_instance_task(
 ) -> Result<Json<bool>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .delete_instance_task(id.as_str(), task_id.as_str())
-        .map(Json)
-        .map_err(|error| {
-            studio_public_api_workbench_error_response(
-                &state,
-                id.as_str(),
-                "delete the requested studio workbench task",
-                error,
-            )
-        })
+    let instance_id = id.clone();
+    let requested_task_id = task_id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "delete the requested studio workbench task",
+        move || provider.delete_instance_task(instance_id.as_str(), requested_task_id.as_str()),
+    )
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_workbench_error_response(
+            &state,
+            id.as_str(),
+            "delete the requested studio workbench task",
+            error,
+        )
+    })
 }
 
 async fn get_public_studio_instance_task_executions(
@@ -765,17 +845,25 @@ async fn get_public_studio_instance_task_executions(
 ) -> Result<Json<Value>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .list_instance_task_executions(id.as_str(), task_id.as_str())
-        .map(Json)
-        .map_err(|error| {
-            studio_public_api_workbench_error_response(
-                &state,
-                id.as_str(),
-                "list the requested studio workbench task executions",
-                error,
-            )
-        })
+    let instance_id = id.clone();
+    let requested_task_id = task_id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "list the requested studio workbench task executions",
+        move || {
+            provider.list_instance_task_executions(instance_id.as_str(), requested_task_id.as_str())
+        },
+    )
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_workbench_error_response(
+            &state,
+            id.as_str(),
+            "list the requested studio workbench task executions",
+            error,
+        )
+    })
 }
 
 async fn post_public_studio_instance_task_action(
@@ -792,31 +880,51 @@ async fn post_public_studio_instance_task_action(
         } else {
             parse_task_action_body::<StudioTaskCloneInput>(&state, &body, "clone studio task")?
         };
-        return provider
-            .clone_instance_task(id.as_str(), task_id, input.name)
-            .map(|_| Json(Value::Null))
-            .map_err(|error| {
-                studio_public_api_workbench_error_response(
-                    &state,
-                    id.as_str(),
-                    "clone the requested studio workbench task",
-                    error,
+        let instance_id = id.clone();
+        let requested_task_id = task_id.to_string();
+        return run_blocking_studio_public_api_call(
+            &state,
+            "clone the requested studio workbench task",
+            move || {
+                provider.clone_instance_task(
+                    instance_id.as_str(),
+                    requested_task_id.as_str(),
+                    input.name,
                 )
-            });
+            },
+        )
+        .await?
+        .map(|_| Json(Value::Null))
+        .map_err(|error| {
+            studio_public_api_workbench_error_response(
+                &state,
+                id.as_str(),
+                "clone the requested studio workbench task",
+                error,
+            )
+        });
     }
 
     if let Some(task_id) = task_id_action.strip_suffix(":run") {
-        return provider
-            .run_instance_task_now(id.as_str(), task_id)
-            .map(Json)
-            .map_err(|error| {
-                studio_public_api_workbench_error_response(
-                    &state,
-                    id.as_str(),
-                    "run the requested studio workbench task immediately",
-                    error,
-                )
-            });
+        let instance_id = id.clone();
+        let requested_task_id = task_id.to_string();
+        return run_blocking_studio_public_api_call(
+            &state,
+            "run the requested studio workbench task immediately",
+            move || {
+                provider.run_instance_task_now(instance_id.as_str(), requested_task_id.as_str())
+            },
+        )
+        .await?
+        .map(Json)
+        .map_err(|error| {
+            studio_public_api_workbench_error_response(
+                &state,
+                id.as_str(),
+                "run the requested studio workbench task immediately",
+                error,
+            )
+        });
     }
 
     if let Some(task_id) = task_id_action.strip_suffix(":status") {
@@ -825,17 +933,29 @@ async fn post_public_studio_instance_task_action(
             &body,
             "update studio task status",
         )?;
-        return provider
-            .update_instance_task_status(id.as_str(), task_id, input.status)
-            .map(|_| Json(Value::Null))
-            .map_err(|error| {
-                studio_public_api_workbench_error_response(
-                    &state,
-                    id.as_str(),
-                    "update the requested studio workbench task status",
-                    error,
+        let instance_id = id.clone();
+        let requested_task_id = task_id.to_string();
+        return run_blocking_studio_public_api_call(
+            &state,
+            "update the requested studio workbench task status",
+            move || {
+                provider.update_instance_task_status(
+                    instance_id.as_str(),
+                    requested_task_id.as_str(),
+                    input.status,
                 )
-            });
+            },
+        )
+        .await?
+        .map(|_| Json(Value::Null))
+        .map_err(|error| {
+            studio_public_api_workbench_error_response(
+                &state,
+                id.as_str(),
+                "update the requested studio workbench task status",
+                error,
+            )
+        });
     }
 
     Err(studio_public_api_unknown_task_action_response(
@@ -852,17 +972,29 @@ async fn put_public_studio_instance_file_content(
 ) -> Result<Json<bool>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .update_instance_file_content(id.as_str(), file_id.as_str(), input.content)
-        .map(Json)
-        .map_err(|error| {
-            studio_public_api_workbench_error_response(
-                &state,
-                id.as_str(),
-                "update the requested studio workbench file content",
-                error,
+    let instance_id = id.clone();
+    let requested_file_id = file_id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "update the requested studio workbench file content",
+        move || {
+            provider.update_instance_file_content(
+                instance_id.as_str(),
+                requested_file_id.as_str(),
+                input.content,
             )
-        })
+        },
+    )
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_workbench_error_response(
+            &state,
+            id.as_str(),
+            "update the requested studio workbench file content",
+            error,
+        )
+    })
 }
 
 async fn put_public_studio_instance_llm_provider_config(
@@ -873,17 +1005,29 @@ async fn put_public_studio_instance_llm_provider_config(
 ) -> Result<Json<bool>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .update_instance_llm_provider_config(id.as_str(), provider_id.as_str(), input)
-        .map(Json)
-        .map_err(|error| {
-            studio_public_api_workbench_error_response(
-                &state,
-                id.as_str(),
-                "update the requested studio llm provider configuration",
-                error,
+    let instance_id = id.clone();
+    let requested_provider_id = provider_id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "update the requested studio llm provider configuration",
+        move || {
+            provider.update_instance_llm_provider_config(
+                instance_id.as_str(),
+                requested_provider_id.as_str(),
+                input,
             )
-        })
+        },
+    )
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_workbench_error_response(
+            &state,
+            id.as_str(),
+            "update the requested studio llm provider configuration",
+            error,
+        )
+    })
 }
 
 async fn put_public_studio_conversation(
@@ -898,16 +1042,21 @@ async fn put_public_studio_conversation(
         object.insert("id".to_string(), Value::String(id.clone()));
     }
 
-    provider
-        .put_conversation(id.as_str(), record)
-        .map(Json)
-        .map_err(|error| {
-            studio_public_api_projection_error(
-                &state,
-                "upsert the requested studio conversation projection",
-                error,
-            )
-        })
+    let conversation_id = id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "upsert the requested studio conversation projection",
+        move || provider.put_conversation(conversation_id.as_str(), record),
+    )
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_projection_error(
+            &state,
+            "upsert the requested studio conversation projection",
+            error,
+        )
+    })
 }
 
 async fn delete_public_studio_conversation(
@@ -917,16 +1066,21 @@ async fn delete_public_studio_conversation(
 ) -> Result<Json<bool>, Response> {
     authorize_public_studio_request(&headers, &state)?;
     let provider = require_studio_public_api_provider(&state)?;
-    provider
-        .delete_conversation(id.as_str())
-        .map(Json)
-        .map_err(|error| {
-            studio_public_api_projection_error(
-                &state,
-                "delete the requested studio conversation projection",
-                error,
-            )
-        })
+    let conversation_id = id.clone();
+    run_blocking_studio_public_api_call(
+        &state,
+        "delete the requested studio conversation projection",
+        move || provider.delete_conversation(conversation_id.as_str()),
+    )
+    .await?
+    .map(Json)
+    .map_err(|error| {
+        studio_public_api_projection_error(
+            &state,
+            "delete the requested studio conversation projection",
+            error,
+        )
+    })
 }
 
 fn require_studio_public_api_provider(

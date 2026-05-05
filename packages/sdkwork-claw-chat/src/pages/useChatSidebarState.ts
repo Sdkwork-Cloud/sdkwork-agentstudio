@@ -16,6 +16,7 @@ import {
   resolveChatAgentLinkedInstanceId,
   resolveChatSidebarAgentCreatedSelectionPlan,
   resolveChatSidebarAgentSelectionPlan,
+  resolveChatSidebarKnownAgentLinkedInstanceId,
   resolveChatSidebarSessionSelectionPlan,
   type ChatSidebarAgentOption,
 } from '../services';
@@ -249,10 +250,18 @@ export function useChatSidebarState({
 
     try {
       const currentActiveInstanceId = resolveCurrentInstanceId();
-      const linkedInstanceId = await resolveChatAgentLinkedInstanceId({
+      const knownLinkedInstanceId = resolveChatSidebarKnownAgentLinkedInstanceId({
         agentId: selection.agentId,
-        preferredInstanceId: currentActiveInstanceId,
-      }).catch(() => null);
+        currentActiveInstanceId,
+        agentOptions: presentation.sidebarAgentOptions,
+      });
+      const linkedInstanceId =
+        knownLinkedInstanceId !== undefined
+          ? knownLinkedInstanceId
+          : await resolveChatAgentLinkedInstanceId({
+              agentId: selection.agentId,
+              preferredInstanceId: currentActiveInstanceId,
+            }).catch(() => null);
       const plan = resolveChatSidebarAgentSelectionPlan({
         selection,
         currentActiveInstanceId,

@@ -58,10 +58,12 @@ import {
   sanitizeBrowserWorkbenchRegistryDocument,
   sanitizeBrowserWorkbenchSnapshot,
 } from './browserPersistencePolicy.ts';
+import { resolveBrowserStorage } from './safeBrowserStorage.ts';
 
 const INSTANCE_STORAGE_KEY = 'claw-studio:studio:instances:v1';
 const CONVERSATION_STORAGE_KEY = 'claw-studio:studio:conversations:v1';
 const WORKBENCH_STORAGE_KEY = 'claw-studio:studio:workbench:v1';
+const fallbackStorage = new Map<string, string>();
 const DEFAULT_INSTANCE_ID = STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID;
 const DEFAULT_OPENCLAW_PROVIDER_ID = 'openai';
 const DEFAULT_OPENCLAW_AGENT_FILE_ID = '/workspace/main/AGENTS.md';
@@ -443,11 +445,33 @@ function now() {
 }
 
 function getStorage() {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return null;
-  }
+  const browserStorage = resolveBrowserStorage('localStorage');
 
-  return window.localStorage;
+  return {
+    getItem(key: string) {
+      try {
+        return browserStorage?.getItem(key) ?? fallbackStorage.get(key) ?? null;
+      } catch {
+        return fallbackStorage.get(key) ?? null;
+      }
+    },
+    setItem(key: string, value: string) {
+      fallbackStorage.set(key, value);
+      try {
+        browserStorage?.setItem(key, value);
+      } catch {
+        // Keep the in-memory fallback authoritative for this browser session.
+      }
+    },
+    removeItem(key: string) {
+      fallbackStorage.delete(key);
+      try {
+        browserStorage?.removeItem(key);
+      } catch {
+        // Ignore blocked browser storage cleanup.
+      }
+    },
+  };
 }
 
 function createDefaultStorageBinding(): StudioStorageBinding {

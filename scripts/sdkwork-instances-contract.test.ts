@@ -4945,10 +4945,17 @@ runTest('OpenClaw test fixtures use the canonical user-root config path outside 
   );
 });
 
-runTest('sdkwork-claw-core OpenClaw config tests avoid managed-config helper naming outside explicit legacy paths', () => {
-  const testSource = read('packages/sdkwork-claw-core/src/services/openClawConfigService.test.ts');
+runTest('OpenClaw config tests avoid managed-config helper naming and legacy config directories', () => {
+  const testSource = [
+    read('packages/sdkwork-claw-core/src/services/openClawConfigService.test.ts'),
+    read('packages/sdkwork-claw-instances/src/services/instanceDetailDerivedState.test.ts'),
+    read('packages/sdkwork-claw-instances/src/services/instanceDetailWorkbenchState.test.ts'),
+    read('packages/sdkwork-claw-instances/src/services/instanceWorkbenchNormalization.test.ts'),
+  ].join('\n');
 
   assert.doesNotMatch(testSource, /createInstanceDetailWithManagedConfig/);
   assert.doesNotMatch(testSource, /createBuiltInManagedOpenClawDetailWithLegacyConfigPath/);
   assert.doesNotMatch(testSource, /Managed OpenClaw workspace directory\./);
+  assert.doesNotMatch(testSource, /managed-config/);
+  assert.doesNotMatch(testSource, /DriftedManagedConfig|drifted managed-config|driftedManagedConfig/);
 });

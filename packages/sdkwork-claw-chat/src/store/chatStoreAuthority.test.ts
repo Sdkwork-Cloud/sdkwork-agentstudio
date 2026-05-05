@@ -7,6 +7,7 @@ import type {
 import {
   createKernelChatAuthority,
   createKernelChatSessionRef,
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
 } from '@sdkwork/claw-types';
 import type {
   KernelChatRun,
@@ -57,7 +58,7 @@ function createGatewaySnapshotInstance(instanceId: string): StudioInstanceRecord
     isBuiltIn: true,
     isDefault: true,
     iconType: 'server',
-    version: '2026.4.2',
+    version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
     typeLabel: 'Built-In OpenClaw',
     host: '127.0.0.1',
     port: 18797,

@@ -1,3 +1,5 @@
+import { resolveBrowserStorage } from '@sdkwork/claw-infrastructure';
+
 const DESKTOP_STARTUP_EVIDENCE_PATH = 'diagnostics/desktop-startup-evidence.json';
 const DESKTOP_STARTUP_FATAL_ERROR_STORAGE_KEY = 'claw.desktop.startupFatalError';
 const TAURI_WRITE_TEXT_FILE_COMMAND = 'write_text_file';
@@ -143,7 +145,7 @@ function defaultWriteBrowserFallback(document: DesktopStartupFatalEvidenceDocume
   }
 
   try {
-    window.localStorage.setItem(
+    resolveBrowserStorage('localStorage')?.setItem(
       DESKTOP_STARTUP_FATAL_ERROR_STORAGE_KEY,
       serializeDesktopStartupFatalEvidence(document),
     );

@@ -621,7 +621,14 @@ async function findMetadataEntries(globalStoreRootDir, damagedPackages) {
     }
   }
 
-  await walkIndexDir(indexRootDir);
+  try {
+    await walkIndexDir(indexRootDir);
+  } catch (error) {
+    if (!(error && typeof error === 'object' && error.code === 'ENOENT')) {
+      throw error;
+    }
+  }
+
   return metadataEntries;
 }
 

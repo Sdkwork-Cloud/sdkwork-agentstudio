@@ -7,9 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { assessOpenClawUpgradeReadiness } from './openclaw-upgrade-readiness.mjs';
 import {
-  projectLegacyOpenClawReleaseConfig,
   resolveKernelReleaseConfigPath,
-  resolveLegacyOpenClawReleaseConfigPath,
 } from './release/kernel-releases.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -139,9 +137,34 @@ function assertAppliedVersionState(versionState, targetVersion) {
   }
 }
 
+function hasUnsupportedRuntimeLayout(readiness) {
+  return Boolean(
+    readiness?.unsupportedSourceRuntimeDirPresent
+      || readiness?.unsupportedBundledNodeRuntimeDirPresent,
+  );
+}
+
+async function runOpenClawUpgradeVerification({
+  workspaceRootDir,
+  targetVersion,
+  runNodeScriptFn,
+}) {
+  await runNodeScriptFn({
+    workspaceRootDir,
+    scriptRelativePath: 'scripts/verify-desktop-openclaw-release-assets.mjs',
+    args: [],
+  });
+  await runNodeScriptFn({
+    workspaceRootDir,
+    scriptRelativePath: 'scripts/openclaw-upgrade-rollback-evidence.mjs',
+    args: ['--target-version', targetVersion],
+  });
+}
+
 export async function applyOpenClawUpgrade({
   workspaceRootDir = rootDir,
   targetVersion,
+  fast = false,
   assessOpenClawUpgradeReadinessFn = assessOpenClawUpgradeReadiness,
   runNodeScriptFn = runNodeScript,
   readVersionStateFn = readOpenClawVersionState,
@@ -155,6 +178,25 @@ export async function applyOpenClawUpgrade({
     workspaceRootDir,
     targetVersion: normalizedTargetVersion,
   });
+
+  if (fast && readiness?.versionSourcesAligned && !hasUnsupportedRuntimeLayout(readiness)) {
+    await runOpenClawUpgradeVerification({
+      workspaceRootDir,
+      targetVersion: normalizedTargetVersion,
+      runNodeScriptFn,
+    });
+    const versionState = await readVersionStateFn({ workspaceRootDir });
+    assertAppliedVersionState(versionState, normalizedTargetVersion);
+
+    return {
+      workspaceRootDir,
+      targetVersion: normalizedTargetVersion,
+      workflowMode: 'fast-already-aligned',
+      readiness,
+      versionState,
+    };
+  }
+
   if (!readiness?.readyToUpgrade) {
     throw new Error(
       `OpenClaw upgrade to ${normalizedTargetVersion} is blocked:\n${formatBlockers(readiness?.blockers)}`,
@@ -162,9 +204,6 @@ export async function applyOpenClawUpgrade({
   }
 
   const kernelReleaseConfigPath = resolveKernelReleaseConfigPath('openclaw', {
-    workspaceRootDir,
-  });
-  const legacyReleaseConfigPath = resolveLegacyOpenClawReleaseConfigPath({
     workspaceRootDir,
   });
   const originalReleaseConfigText = await readFile(kernelReleaseConfigPath, 'utf8');
@@ -175,10 +214,6 @@ export async function applyOpenClawUpgrade({
   };
 
   await writeJsonFile(kernelReleaseConfigPath, nextReleaseConfig);
-  await writeJsonFile(
-    legacyReleaseConfigPath,
-    projectLegacyOpenClawReleaseConfig(nextReleaseConfig),
-  );
 
   try {
     await runNodeScriptFn({
@@ -191,15 +226,10 @@ export async function applyOpenClawUpgrade({
       scriptRelativePath: 'scripts/prepare-openclaw-runtime.mjs',
       args: [],
     });
-    await runNodeScriptFn({
+    await runOpenClawUpgradeVerification({
       workspaceRootDir,
-      scriptRelativePath: 'scripts/verify-desktop-openclaw-release-assets.mjs',
-      args: [],
-    });
-    await runNodeScriptFn({
-      workspaceRootDir,
-      scriptRelativePath: 'scripts/openclaw-upgrade-rollback-evidence.mjs',
-      args: ['--target-version', normalizedTargetVersion],
+      targetVersion: normalizedTargetVersion,
+      runNodeScriptFn,
     });
 
     const versionState = await readVersionStateFn({ workspaceRootDir });
@@ -208,15 +238,12 @@ export async function applyOpenClawUpgrade({
     return {
       workspaceRootDir,
       targetVersion: normalizedTargetVersion,
+      workflowMode: 'full',
       readiness,
       versionState,
     };
   } catch (error) {
     await writeFile(kernelReleaseConfigPath, originalReleaseConfigText, 'utf8');
-    await writeJsonFile(
-      legacyReleaseConfigPath,
-      projectLegacyOpenClawReleaseConfig(JSON.parse(originalReleaseConfigText)),
-    );
     throw new Error(
       `OpenClaw upgrade application failed after restored config/kernel-releases/openclaw.json: ${error instanceof Error ? error.message : String(error)}`,
     );
@@ -225,11 +252,17 @@ export async function applyOpenClawUpgrade({
 
 function parseCliOptions(argv) {
   const options = {
+    fast: false,
     targetVersion: '',
   };
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
+    if (token === '--fast') {
+      options.fast = true;
+      continue;
+    }
+
     if (token === '--target-version') {
       const value = argv[index + 1];
       if (!value || value.startsWith('--')) {
@@ -252,10 +285,11 @@ function parseCliOptions(argv) {
 export async function main(argv = process.argv.slice(2)) {
   const options = parseCliOptions(argv);
   if (!options.targetVersion) {
-    throw new Error('Usage: node scripts/apply-openclaw-upgrade.mjs <target-version>');
+    throw new Error('Usage: node scripts/apply-openclaw-upgrade.mjs [--fast] <target-version>');
   }
 
   const result = await applyOpenClawUpgrade({
+    fast: options.fast,
     targetVersion: options.targetVersion,
   });
   console.log(JSON.stringify(result, null, 2));

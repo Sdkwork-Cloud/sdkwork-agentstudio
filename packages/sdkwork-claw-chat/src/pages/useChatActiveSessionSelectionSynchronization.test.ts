@@ -35,7 +35,7 @@ await runTest(
     );
     assert.match(
       pageSynchronizationSource,
-      /const activeSessionSelectionSynchronization: UseChatActiveSessionSelectionSynchronizationInput = \{[\s\S]*isChatSupportedRoute: workspaceState\.runtime\.isChatSupportedRoute,[\s\S]*activeSession: workspaceState\.session\.displaySession,[\s\S]*selectedAgentId: selection\.selectedAgentId,[\s\S]*agentOptionIds: workspaceState\.presentation\.sidebarAgentOptions\.map\(\(agent\) => agent\.id\),[\s\S]*setSelectedAgentId: selection\.setSelectedAgentId,[\s\S]*\};/s,
+      /const activeSessionSelectionSynchronization: UseChatActiveSessionSelectionSynchronizationInput = \{[\s\S]*isChatSupportedRoute: workspaceState\.runtime\.isChatSupportedRoute,[\s\S]*activeSession: workspaceState\.session\.displaySession,[\s\S]*selectedAgentId: selection\.selectedAgentId,[\s\S]*agentOptionIds: activeSessionAgentOptionIds,[\s\S]*setSelectedAgentId: selection\.setSelectedAgentId,[\s\S]*\};/s,
     );
     assert.match(
       pageSynchronizationSource,
@@ -52,15 +52,45 @@ await runTest(
     assert.doesNotMatch(synchronizationHookSource, /interface ActiveSessionLike \{/);
     assert.match(
       synchronizationHookSource,
-      /const activeSessionBinding = resolveChatSessionBinding\(activeSession\);/,
+      /const activeSessionBinding = useMemo\(\s*\(\) => resolveChatSessionBinding\(activeSession\),\s*\[activeSession\],\s*\);/s,
     );
     assert.match(
       synchronizationHookSource,
-      /const activeSessionSelectionSyncMutation =\s*resolveChatActiveSessionSelectionSyncMutation\(\{\s*isChatSupported: isChatSupportedRoute,\s*selectedAgentId,\s*activeSessionBinding,\s*agentOptionIds,\s*\}\);/s,
+      /const activeSessionSelectionSyncMutation = useMemo\(\s*\(\) =>\s*resolveChatActiveSessionSelectionSyncMutation\(\{\s*isChatSupported: isChatSupportedRoute,\s*selectedAgentId,\s*activeSessionBinding,\s*agentOptionIds,\s*\}\),[\s\S]*\);/s,
     );
     assert.match(
       synchronizationHookSource,
       /if \(\s*activeSessionSelectionSyncMutation &&\s*activeSessionSelectionSyncMutation\.nextSelectedAgentId !== selectedAgentId\s*\) \{\s*setSelectedAgentId\(activeSessionSelectionSyncMutation\.nextSelectedAgentId\);\s*\}/s,
+    );
+  },
+);
+
+await runTest(
+  'chat page keeps agent selection synchronization dependencies stable across selection loading renders',
+  () => {
+    assert.match(
+      pageSynchronizationSource,
+      /import \{ useMemo \} from 'react';/,
+    );
+    assert.match(
+      pageSynchronizationSource,
+      /const activeSessionAgentOptionIds = useMemo\(\s*\(\) => workspaceState\.presentation\.sidebarAgentOptions\.map\(\(agent\) => agent\.id\),\s*\[workspaceState\.presentation\.sidebarAgentOptions\],\s*\);/s,
+    );
+    assert.match(
+      pageSynchronizationSource,
+      /agentOptionIds: activeSessionAgentOptionIds,/,
+    );
+    assert.doesNotMatch(
+      pageSynchronizationSource,
+      /agentOptionIds: workspaceState\.presentation\.sidebarAgentOptions\.map\(\(agent\) => agent\.id\),/,
+    );
+    assert.match(
+      synchronizationHookSource,
+      /const activeSessionBinding = useMemo\(\s*\(\) => resolveChatSessionBinding\(activeSession\),\s*\[activeSession\],\s*\);/s,
+    );
+    assert.match(
+      synchronizationHookSource,
+      /const activeSessionSelectionSyncMutation = useMemo\(\s*\(\) =>\s*resolveChatActiveSessionSelectionSyncMutation\(\{/s,
     );
   },
 );

@@ -4,7 +4,7 @@ use std::path::{Component, Path, PathBuf};
 use axum::{
     body::Body,
     extract::State,
-    http::{header, StatusCode, Uri},
+    http::{header, HeaderValue, StatusCode, Uri},
     response::{Html, IntoResponse, Response},
     routing::get,
     Json, Router,
@@ -293,11 +293,15 @@ fn resolve_browser_relative_path(request_path: &str) -> Option<PathBuf> {
 
 fn serve_static_file(path: PathBuf) -> Response {
     match fs::read(&path) {
-        Ok(body) => Response::builder()
-            .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, content_type_for_path(&path))
-            .body(Body::from(body))
-            .expect("static asset response should build"),
+        Ok(body) => {
+            let mut response = Response::new(Body::from(body));
+            *response.status_mut() = StatusCode::OK;
+            response.headers_mut().insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static(content_type_for_path(&path)),
+            );
+            response
+        }
         Err(_) => StatusCode::NOT_FOUND.into_response(),
     }
 }

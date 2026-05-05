@@ -33,10 +33,12 @@ runTest('TaskStudioTabs renders compact top tabs with counts and active emphasis
   assert.match(markup, /rounded-\[0\.875rem\]/);
   assert.match(markup, /p-1/);
   assert.match(markup, /h-9 min-w-\[9rem\]/);
-  assert.match(markup, /rounded-\[0\.75rem\] px-3 text-left text-\[13px\]/);
+  assert.match(markup, /rounded-\[0\.75rem\] border border-transparent px-3 text-left text-\[13px\]/);
   assert.match(markup, /rounded-full px-1\.5 py-0\.5 text-\[11px\]/);
   assert.doesNotMatch(markup, /rounded-\[1rem\]/);
-  assert.match(markup, /bg-zinc-950 text-white/);
+  assert.match(markup, /border-primary-200 bg-primary-50 text-primary-700/);
+  assert.match(markup, /dark:border-primary-500\/30 dark:bg-primary-500\/10 dark:text-primary-300/);
+  assert.doesNotMatch(markup, /bg-zinc-950 text-white/);
   assert.doesNotMatch(markup, /inline-flex w-full/);
   assert.doesNotMatch(markup, /flex-1 items-center/);
   assert.match(markup, />12</);

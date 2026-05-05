@@ -629,7 +629,9 @@ await runTest('sdkwork-claw-chat keeps active session state isolated per instanc
   assert.match(chatPageWorkspaceSource, /sendKernelMessage/);
   assert.match(chatPageWorkspaceSource, /abortSession/);
   assert.match(chatSidebarSource, /resolveChatSidebarViewState/);
-  assert.match(chatSidebarSource, /activeHistorySessions\.find\(\(session\) => session\.id === item\.sessionId\)/);
+  assert.match(chatSidebarSource, /new Map\(activeHistorySessions\.map\(\(session\) => \[session\.id, session\]\)\)/);
+  assert.match(chatSidebarSource, /activeHistorySessionById\.get\(sessionId\) \?\? null/);
+  assert.doesNotMatch(chatSidebarSource, /activeHistorySessions\.find\(\(session\) => session\.id === item\.sessionId\)/);
   assert.doesNotMatch(chatSidebarSource, /\{session\.title\}/);
 });
 

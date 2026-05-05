@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID } from '@sdkwork/claw-types';
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
+} from '@sdkwork/claw-types';
 import { createEmptyOpenClawConfigSnapshot } from './openClawConfigWorkbenchSupport.ts';
 
 function runTest(name: string, fn: () => void | Promise<void>) {
@@ -56,7 +59,7 @@ function createOpenClawDetail(
       isBuiltIn: false,
       isDefault: false,
       iconType: 'server',
-      version: '2026.4.2',
+      version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
       typeLabel: 'OpenClaw Gateway',
       host: '10.0.0.8',
       port: 21280,

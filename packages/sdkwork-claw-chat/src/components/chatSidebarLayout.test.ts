@@ -182,6 +182,14 @@ await runTest(
     assert.match(primitivesSource, /'relative flex h-12 w-full min-w-0 items-center gap-2\.5 rounded-lg px-2\.5 text-left transition-all disabled:cursor-wait'/);
     assert.match(primitivesSource, /'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-\[10px\] font-semibold uppercase transition-colors'/);
     assert.match(agentItemSource, /className=\{cn\(\s*CHAT_SIDEBAR_AGENT_NAME_CLASS,/);
+    assert.match(
+      agentItemSource,
+      /\{isAgentPending \? \(\s*<Loader2 className="ml-auto h-3\.5 w-3\.5 shrink-0 animate-spin text-zinc-500 dark:text-zinc-300" \/>\s*\) : null\}/,
+    );
+    assert.doesNotMatch(
+      agentItemSource,
+      /\{isAgentPending \? \(\s*<Loader2 className="h-3\.5 w-3\.5 animate-spin" \/>\s*\) : \(\s*<MoreHorizontal/,
+    );
     assert.match(agentItemSource, /title=\{agent\.name\}/);
     assert.match(
       agentItemSource,
@@ -243,5 +251,31 @@ await runTest(
     assert.match(createMenuSource, /horizontalStrategy: 'anchor-start'/);
     assert.match(createMenuSource, /verticalStrategy: 'anchor-bottom'/);
     assert.match(createMenuSource, /offsetY: 10/);
+  },
+);
+
+await runTest(
+  'ChatSidebar memoizes expensive view-state projection so selection loading chrome does not rebuild sidebar history',
+  () => {
+    assert.match(
+      source,
+      /const sidebarViewState = React\.useMemo\(\s*\(\) =>\s*resolveChatSidebarViewState\(\{/s,
+    );
+    assert.match(
+      source,
+      /const\s*\{\s*currentAgentName,\s*agentRail,\s*activeSidebarHistory,\s*activeHistorySessions,\s*sidebarChrome,\s*historyTabState,\s*\}\s*=\s*sidebarViewState;/s,
+    );
+    assert.match(
+      source,
+      /previewLabels = React\.useMemo\(/,
+    );
+    assert.match(
+      source,
+      /relativeTimeLabels = React\.useMemo\(/,
+    );
+    assert.doesNotMatch(
+      source,
+      /const\s*\{\s*currentAgentName,[\s\S]*\}\s*=\s*resolveChatSidebarViewState\(\{/s,
+    );
   },
 );

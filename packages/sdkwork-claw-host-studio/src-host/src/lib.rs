@@ -4903,8 +4903,8 @@ fn dedupe_id(base: &str, existing: &BTreeSet<String>) -> String {
 fn unix_timestamp_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("system time should be after unix epoch")
-        .as_millis() as u64
+        .map(|duration| duration.as_millis() as u64)
+        .unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -4924,6 +4924,35 @@ mod tests {
         fs,
         sync::{Arc, Mutex},
     };
+
+    #[test]
+    fn host_studio_production_path_has_no_panic_exits() {
+        let source = include_str!("lib.rs");
+        let production_source = source.split("#[cfg(test)]").next().unwrap_or(source);
+        let forbidden_patterns = [
+            ".expect(",
+            ".unwrap(",
+            "panic!(",
+            "todo!(",
+            "unimplemented!(",
+            "unreachable!(",
+        ];
+        let mut offenders = Vec::new();
+
+        for (index, line) in production_source.lines().enumerate() {
+            for pattern in forbidden_patterns {
+                if line.contains(pattern) {
+                    offenders.push(format!("{}:{}", index + 1, line.trim()));
+                }
+            }
+        }
+
+        assert!(
+            offenders.is_empty(),
+            "host-studio production code must avoid panic exits on runtime boundaries:\n{}",
+            offenders.join("\n")
+        );
+    }
 
     #[test]
     fn default_provider_exposes_canonical_built_in_instance_projection() {

@@ -22,9 +22,8 @@
 2. That run completed with `conclusion=failure` on April 7, 2026.
 3. The GitHub Release REST lookup for `release-2026-04-07-04` returned `404 Not Found`, proving that no release object was published for that tag.
 4. Earlier failure annotations for that run identified the missing packages:
-   - `@sdkwork/im-backend-sdk`
-   - `@openchat/sdkwork-im-sdk`
-   - `@openchat/sdkwork-im-wukongim-adapter`
+   - `@sdkwork/im-sdk`
+   - `@sdkwork/rtc-sdk`
 
 ### Shared SDK parity evidence
 
@@ -79,7 +78,8 @@ node scripts/check-shared-sdk-release-parity.mjs
 git -C ../sdkwork-core status --short -- sdkwork-core-pc-react
 git -C ../../spring-ai-plus-app-api/sdkwork-sdk-app status --short -- sdkwork-app-sdk-typescript
 git -C ../../sdk/sdkwork-sdk-commons status --short -- sdkwork-sdk-common-typescript
-git -C ../openchat/sdkwork-im-sdk status --short -- sdkwork-im-sdk-typescript/generated/server-openapi sdkwork-im-sdk-typescript/composed sdkwork-im-sdk-typescript/adapter-wukongim
+git -C ../craw-chat/sdks/sdkwork-im-sdk status --short -- sdkwork-im-sdk-typescript
+git -C ../craw-chat/sdks/sdkwork-rtc-sdk status --short -- sdkwork-rtc-sdk-typescript
 ```
 
 Observed result:

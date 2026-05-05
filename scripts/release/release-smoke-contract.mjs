@@ -5,10 +5,15 @@ import {
   normalizeDesktopArch,
   normalizeDesktopPlatform,
 } from './desktop-targets.mjs';
+import {
+  assertSafeReleaseRelativePath,
+  normalizeReleaseRelativePath,
+} from './release-paths.mjs';
 
 export const RELEASE_SMOKE_REPORT_FILENAME = 'release-smoke-report.json';
 
 const SUPPORTED_RELEASE_SMOKE_FAMILIES = new Set([
+  'web',
   'server',
   'container',
   'kubernetes',
@@ -33,6 +38,38 @@ function normalizeStringArray(values) {
     : [];
 }
 
+export function normalizeReleaseSmokeRelativePath(value, {
+  contextLabel,
+  pathLabel,
+  allowEmpty = false,
+} = {}) {
+  const relativePath = normalizeReleaseRelativePath(value);
+  if (!relativePath && allowEmpty) {
+    return '';
+  }
+
+  assertSafeReleaseRelativePath(relativePath, {
+    contextLabel,
+    artifactPathLabel: pathLabel,
+  });
+
+  return relativePath;
+}
+
+export function normalizeReleaseSmokeRelativePathArray(values, {
+  contextLabel,
+  pathLabel,
+} = {}) {
+  return Array.isArray(values)
+    ? values
+      .map((value) => normalizeReleaseSmokeRelativePath(value, {
+        contextLabel,
+        pathLabel,
+      }))
+      .sort((left, right) => left.localeCompare(right))
+    : [];
+}
+
 export function normalizeReleaseSmokeFamily(family) {
   const normalizedFamily = String(family ?? '').trim().toLowerCase();
   if (!SUPPORTED_RELEASE_SMOKE_FAMILIES.has(normalizedFamily)) {
@@ -53,7 +90,7 @@ export function normalizeReleaseSmokeStatus(status) {
 
 export function normalizeReleaseSmokeAccelerator(accelerator, family) {
   const normalizedFamily = normalizeReleaseSmokeFamily(family);
-  if (normalizedFamily === 'server') {
+  if (normalizedFamily === 'web' || normalizedFamily === 'server') {
     return '';
   }
 
@@ -63,6 +100,24 @@ export function normalizeReleaseSmokeAccelerator(accelerator, family) {
   }
 
   return normalizedAccelerator;
+}
+
+function normalizeReleaseSmokePlatform(platform, family) {
+  const normalizedFamily = normalizeReleaseSmokeFamily(family);
+  if (normalizedFamily === 'web') {
+    return 'web';
+  }
+
+  return normalizeDesktopPlatform(platform);
+}
+
+function normalizeReleaseSmokeArch(arch, family) {
+  const normalizedFamily = normalizeReleaseSmokeFamily(family);
+  if (normalizedFamily === 'web') {
+    return 'any';
+  }
+
+  return normalizeDesktopArch(arch);
 }
 
 export function normalizeReleaseSmokeChecks(values) {
@@ -85,8 +140,16 @@ export function resolveReleaseSmokeReportPath({
   accelerator = '',
 } = {}) {
   const normalizedFamily = normalizeReleaseSmokeFamily(family);
-  const normalizedPlatform = normalizeDesktopPlatform(platform);
-  const normalizedArch = normalizeDesktopArch(arch);
+  const normalizedPlatform = normalizeReleaseSmokePlatform(platform, normalizedFamily);
+  const normalizedArch = normalizeReleaseSmokeArch(arch, normalizedFamily);
+
+  if (normalizedFamily === 'web') {
+    return path.join(
+      releaseAssetsDir,
+      normalizedFamily,
+      RELEASE_SMOKE_REPORT_FILENAME,
+    );
+  }
 
   if (normalizedFamily === 'server') {
     return path.join(
@@ -128,8 +191,8 @@ export function buildReleaseSmokeReport({
   const normalizedFamily = normalizeReleaseSmokeFamily(family);
   const report = {
     family: normalizedFamily,
-    platform: normalizeDesktopPlatform(platform),
-    arch: normalizeDesktopArch(arch),
+    platform: normalizeReleaseSmokePlatform(platform, normalizedFamily),
+    arch: normalizeReleaseSmokeArch(arch, normalizedFamily),
     target: String(target ?? '').trim(),
     smokeKind: String(smokeKind ?? '').trim(),
     status: normalizeReleaseSmokeStatus(status),
@@ -137,13 +200,20 @@ export function buildReleaseSmokeReport({
     manifestPath: String(manifestPath ?? '').trim().length > 0
       ? path.resolve(manifestPath)
       : '',
-    artifactRelativePaths: normalizeStringArray(artifactRelativePaths),
-    launcherRelativePath: String(launcherRelativePath ?? '').trim(),
+    artifactRelativePaths: normalizeReleaseSmokeRelativePathArray(artifactRelativePaths, {
+      contextLabel: 'Release smoke report',
+      pathLabel: 'release smoke artifact path',
+    }),
+    launcherRelativePath: normalizeReleaseSmokeRelativePath(launcherRelativePath, {
+      contextLabel: 'Release smoke report',
+      pathLabel: 'release smoke launcher path',
+      allowEmpty: true,
+    }),
     runtimeBaseUrl: String(runtimeBaseUrl ?? '').trim(),
     checks: normalizeReleaseSmokeChecks(checks),
   };
 
-  if (normalizedFamily !== 'server') {
+  if (normalizedFamily !== 'web' && normalizedFamily !== 'server') {
     report.accelerator = normalizeReleaseSmokeAccelerator(accelerator, normalizedFamily);
   }
   if (String(skippedReason ?? '').trim().length > 0) {

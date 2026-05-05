@@ -19,6 +19,15 @@ test('release smoke contract resolves report paths and persists normalized smoke
   assert.equal(
     contract.resolveReleaseSmokeReportPath({
       releaseAssetsDir: 'D:/synthetic/release-assets',
+      family: 'web',
+      platform: 'web',
+      arch: 'any',
+    }).replaceAll('\\', '/'),
+    'D:/synthetic/release-assets/web/release-smoke-report.json',
+  );
+  assert.equal(
+    contract.resolveReleaseSmokeReportPath({
+      releaseAssetsDir: 'D:/synthetic/release-assets',
       family: 'server',
       platform: 'linux',
       arch: 'x64',
@@ -89,6 +98,95 @@ test('release smoke contract resolves report paths and persists normalized smoke
     ]);
 
     assert.deepEqual(contract.readReleaseSmokeReport(result.reportPath), report);
+
+    const webResult = contract.writeReleaseSmokeReport({
+      releaseAssetsDir,
+      family: 'web',
+      platform: 'web',
+      arch: 'any',
+      smokeKind: 'web-archive-content',
+      status: 'passed',
+      manifestPath: path.join(releaseAssetsDir, 'web', 'release-asset-manifest.json'),
+      artifactRelativePaths: [
+        'claw-studio-web-assets-release-local.tar.gz',
+      ],
+      checks: [
+        {
+          id: 'web-index',
+          status: 'passed',
+          detail: 'web/dist/index.html is present in the archive',
+        },
+      ],
+    });
+    const webReport = JSON.parse(readFileSync(webResult.reportPath, 'utf8'));
+    assert.equal(webReport.family, 'web');
+    assert.equal(webReport.platform, 'web');
+    assert.equal(webReport.arch, 'any');
+    assert.equal(webReport.smokeKind, 'web-archive-content');
+    assert.deepEqual(webReport.artifactRelativePaths, [
+      'claw-studio-web-assets-release-local.tar.gz',
+    ]);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('release smoke contract rejects unsafe artifact and launcher paths before writing reports', async () => {
+  const contractPath = path.join(rootDir, 'scripts', 'release', 'release-smoke-contract.mjs');
+  const contract = await import(pathToFileURL(contractPath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-smoke-paths-'));
+  const releaseAssetsDir = path.join(tempRoot, 'release-assets');
+
+  try {
+    assert.throws(
+      () => contract.writeReleaseSmokeReport({
+        releaseAssetsDir,
+        family: 'server',
+        platform: 'linux',
+        arch: 'x64',
+        smokeKind: 'bundle-runtime',
+        status: 'passed',
+        artifactRelativePaths: [
+          '../server/linux/x64/claw-studio-server-release-local-linux-x64.tar.gz',
+        ],
+        launcherRelativePath: 'bin/claw-server',
+      }),
+      /unsafe release smoke artifact path/,
+    );
+
+    assert.throws(
+      () => contract.writeReleaseSmokeReport({
+        releaseAssetsDir,
+        family: 'server',
+        platform: 'linux',
+        arch: 'x64',
+        smokeKind: 'bundle-runtime',
+        status: 'passed',
+        artifactRelativePaths: [
+          'server/linux/x64/claw-studio-server-release-local-linux-x64.tar.gz',
+        ],
+        launcherRelativePath: '../bin/claw-server',
+      }),
+      /unsafe release smoke launcher path/,
+    );
+
+    assert.throws(
+      () => contract.writeReleaseSmokeReport({
+        releaseAssetsDir,
+        family: 'container',
+        platform: 'linux',
+        arch: 'x64',
+        accelerator: 'cpu',
+        smokeKind: 'live-deployment',
+        status: 'passed',
+        artifactRelativePaths: [
+          'container/linux/x64/cpu/claw-studio-container-bundle-release-local-linux-x64-cpu.tar.gz',
+        ],
+        launcherRelativePath: './deploy/docker/docker-compose.yml',
+      }),
+      /non-canonical release smoke launcher path/,
+    );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }

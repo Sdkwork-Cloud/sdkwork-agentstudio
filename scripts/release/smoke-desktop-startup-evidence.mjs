@@ -24,6 +24,10 @@ import {
 import {
   resolveCliPath,
 } from './path-inputs.mjs';
+import {
+  normalizeReleaseSmokeRelativePath,
+  normalizeReleaseSmokeRelativePathArray,
+} from './release-smoke-contract.mjs';
 
 export {
   CAPTURED_DESKTOP_STARTUP_EVIDENCE_RELATIVE_PATH,
@@ -325,6 +329,16 @@ export function writeDesktopStartupSmokeReport({
     arch,
   });
   mkdirSync(path.dirname(reportPath), { recursive: true });
+  const capturedEvidenceRelativePath = normalizeReleaseSmokeRelativePath(
+    path.relative(
+      releaseAssetsDir,
+      capturedEvidencePath,
+    ),
+    {
+      contextLabel: 'Desktop startup smoke report',
+      pathLabel: 'desktop startup smoke captured evidence path',
+    },
+  );
 
   const report = {
     platform: normalizeDesktopPlatform(platform),
@@ -334,10 +348,7 @@ export function writeDesktopStartupSmokeReport({
     phase: 'shell-mounted',
     verifiedAt: new Date().toISOString(),
     manifestPath: path.resolve(manifestPath),
-    capturedEvidenceRelativePath: path.relative(
-      releaseAssetsDir,
-      capturedEvidencePath,
-    ).replaceAll('\\', '/'),
+    capturedEvidenceRelativePath,
     packageProfileId: normalizeManifestString(evidence?.bundledComponents?.packageProfileId),
     includedKernelIds: normalizeManifestStringArray(
       evidence?.bundledComponents?.includedKernelIds,
@@ -349,8 +360,12 @@ export function writeDesktopStartupSmokeReport({
     builtInInstanceId: String(evidence?.builtInInstance?.id ?? '').trim(),
     builtInInstanceStatus: String(evidence?.builtInInstance?.status ?? '').trim(),
     localAiProxyRuntime,
-    artifactRelativePaths: [...artifactRelativePaths].sort((left, right) =>
-      left.localeCompare(right),
+    artifactRelativePaths: normalizeReleaseSmokeRelativePathArray(
+      artifactRelativePaths,
+      {
+        contextLabel: 'Desktop startup smoke report',
+        pathLabel: 'desktop startup smoke artifact path',
+      },
     ),
     checks: buildDesktopStartupSmokeChecks({
       requiresBuiltInOpenClawEvidence,

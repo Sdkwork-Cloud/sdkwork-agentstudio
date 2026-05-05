@@ -97,6 +97,24 @@ await runTest(
 );
 
 await runTest(
+  'resolveChatActiveSessionSelectionSyncMutation keeps a selected active-session agent when the catalog is temporarily incomplete',
+  () => {
+    assert.equal(
+      resolveChatActiveSessionSelectionSyncMutation({
+        isChatSupported: true,
+        selectedAgentId: 'research',
+        activeSessionBinding: {
+          sessionId: 'agent:research:main',
+          agentId: 'research',
+        },
+        agentOptionIds: [null, 'ops'],
+      }),
+      null,
+    );
+  },
+);
+
+await runTest(
   'chatActiveSessionSelectionPolicy reuses the shared session selection binding instead of redefining session identity',
   () => {
     const source = readFileSync(new URL('./chatActiveSessionSelectionPolicy.ts', import.meta.url), 'utf8');

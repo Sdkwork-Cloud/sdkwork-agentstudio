@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { DEFAULT_BUNDLED_OPENCLAW_VERSION } from '@sdkwork/claw-types';
 import { InstanceDetailHeader } from './InstanceDetailHeader.tsx';
 
 const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
@@ -30,7 +31,7 @@ await runTest(
           ip: '127.0.0.1',
           uptime: '2h',
           type: 'builtin',
-          version: '2026.4.8',
+          version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
         } as any}
         canSetActive
         canOpenControlPage
@@ -77,7 +78,7 @@ await runTest(
           ip: '127.0.0.1',
           uptime: '9m',
           type: 'builtin',
-          version: '2026.4.14',
+          version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
         } as any}
         canSetActive={false}
         canOpenControlPage

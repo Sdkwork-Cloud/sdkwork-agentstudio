@@ -46,7 +46,7 @@ pub(super) fn build_openclaw_workbench_snapshot(
         return Ok(None);
     }
 
-    let config_path = readable_openclaw_config_file_path(paths);
+    let config_path = readable_openclaw_config_file_path(paths)?;
     let config = read_json5_object(&config_path)?;
     let channels = build_openclaw_channels(&config);
     let channel_name_map = channels
@@ -474,18 +474,19 @@ fn build_openclaw_files(
             .map(|context| context.workspace.clone()),
     );
     let mut files = Vec::new();
+    let authority_config_path = authority_openclaw_config_file_path(paths)?;
     push_file_record(
-        paths,
         &writable_roots,
+        &authority_config_path,
         &mut files,
-        &authority_openclaw_config_file_path(paths),
+        &authority_config_path,
         "config",
         "synced",
         "OpenClaw configuration file.",
     );
     push_file_record(
-        paths,
         &writable_roots,
+        &authority_config_path,
         &mut files,
         &paths.logs_dir.join("openclaw-gateway.log"),
         "log",
@@ -493,8 +494,8 @@ fn build_openclaw_files(
         "Bundled gateway log emitted by the managed runtime.",
     );
     push_file_record(
-        paths,
         &writable_roots,
+        &authority_config_path,
         &mut files,
         &cron_dir.join("jobs.json"),
         "dataset",
@@ -502,8 +503,8 @@ fn build_openclaw_files(
         "OpenClaw cron job store for the managed runtime.",
     );
     push_file_record(
-        paths,
         &writable_roots,
+        &authority_config_path,
         &mut files,
         &paths
             .openclaw_runtime_dir
@@ -523,8 +524,8 @@ fn build_openclaw_files(
             let path = entry.path();
             if path.extension().and_then(OsStr::to_str) == Some("jsonl") {
                 push_file_record(
-                    paths,
                     &writable_roots,
+                    &authority_config_path,
                     &mut files,
                     &path,
                     "dataset",
@@ -555,8 +556,8 @@ fn build_openclaw_files(
             };
             let description = format!("{} bootstrap file for {}.", file_name, context.name);
             push_file_record(
-                paths,
                 &writable_roots,
+                &authority_config_path,
                 &mut files,
                 &context.workspace.join(file_name),
                 category,
@@ -1824,8 +1825,8 @@ fn token_estimate(text: &str) -> u32 {
 }
 
 fn push_file_record(
-    paths: &AppPaths,
     writable_roots: &BTreeSet<PathBuf>,
+    authority_config_path: &Path,
     files: &mut Vec<StudioWorkbenchFileRecord>,
     path: &Path,
     category: &str,
@@ -1853,7 +1854,11 @@ fn push_file_record(
         status: file_status.to_string(),
         description: description.to_string(),
         content,
-        is_readonly: !is_openclaw_workbench_file_writable(paths, writable_roots, path),
+        is_readonly: !is_openclaw_workbench_file_writable(
+            authority_config_path,
+            writable_roots,
+            path,
+        ),
     });
 }
 
@@ -1875,11 +1880,11 @@ fn is_openclaw_workbench_bootstrap_file(path: &Path) -> bool {
 }
 
 fn is_openclaw_workbench_file_writable(
-    paths: &AppPaths,
+    authority_config_path: &Path,
     writable_roots: &BTreeSet<PathBuf>,
     path: &Path,
 ) -> bool {
-    if path == authority_openclaw_config_file_path(paths) {
+    if path == authority_config_path {
         return true;
     }
 
@@ -1890,14 +1895,13 @@ fn is_openclaw_workbench_file_writable(
     writable_roots.iter().any(|root| path.starts_with(root))
 }
 
-fn readable_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
+fn readable_openclaw_config_file_path(paths: &AppPaths) -> Result<PathBuf> {
     authority_openclaw_config_file_path(paths)
 }
 
-fn authority_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
+fn authority_openclaw_config_file_path(paths: &AppPaths) -> Result<PathBuf> {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
-        .expect("canonical openclaw config path")
 }
 
 fn extract_frontmatter_value(content: &str, key: &str) -> Option<String> {

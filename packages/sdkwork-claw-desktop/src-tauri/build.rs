@@ -13,6 +13,7 @@ const OPENCLAW_RELEASE_CONFIG_RELATIVE_PATH: &str = "../../../config/kernel-rele
 #[serde(rename_all = "camelCase")]
 struct OpenClawReleaseConfig {
     stable_version: String,
+    node_version: String,
 }
 
 fn main() {
@@ -57,6 +58,10 @@ fn export_openclaw_release_env(manifest_dir: &Path) {
     println!(
         "cargo:rustc-env=SDKWORK_BUNDLED_OPENCLAW_VERSION={}",
         release_config.stable_version
+    );
+    println!(
+        "cargo:rustc-env=SDKWORK_REQUIRED_OPENCLAW_NODE_VERSION={}",
+        release_config.node_version
     );
 }
 

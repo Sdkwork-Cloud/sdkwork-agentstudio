@@ -127,6 +127,23 @@ await runTest(
 );
 
 await runTest(
+  'resolveChatContextSelectionSyncMutation keeps the active session agent selected when the catalog is temporarily missing it',
+  () => {
+    assert.equal(
+      resolveChatContextSelectionSyncMutation({
+        isChatSupported: true,
+        selectedAgentId: 'research',
+        selectedSkillId: 'skill-a',
+        hasResolvedVisibleAgents: true,
+        visibleAgentIds: ['ops'],
+        activeSessionAgentId: 'research',
+      }),
+      null,
+    );
+  },
+);
+
+await runTest(
   'resolveChatAgentCatalogState prefers kernel agents and default kernel agent identity in kernel-catalog mode',
   () => {
     assert.deepEqual(

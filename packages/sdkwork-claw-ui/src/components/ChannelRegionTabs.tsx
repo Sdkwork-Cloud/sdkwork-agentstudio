@@ -45,7 +45,7 @@ export function ChannelRegionTabs({
             className={cn(
               triggerClassName,
               isActive
-                ? 'bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-800 text-white shadow-[0_16px_36px_-24px_rgba(15,23,42,0.95)] ring-1 ring-white/10 dark:from-zinc-100 dark:via-zinc-100 dark:to-zinc-200 dark:text-zinc-950 dark:ring-zinc-950/10'
+                ? 'border-primary-200 bg-primary-50 text-primary-700 shadow-[0_16px_36px_-26px_rgba(37,99,235,0.38)] dark:border-primary-500/30 dark:bg-primary-500/10 dark:text-primary-300 dark:shadow-[0_16px_36px_-26px_rgba(59,130,246,0.22)]'
                 : 'text-zinc-600 hover:border-zinc-200 hover:bg-zinc-50/90 hover:text-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-100',
             )}
           >
@@ -62,7 +62,7 @@ export function ChannelRegionTabs({
                   className={cn(
                     'mt-0.5 line-clamp-2 text-[10.5px] leading-4',
                     isActive
-                      ? 'text-white/72 dark:text-zinc-700'
+                      ? 'text-primary-600/80 dark:text-primary-300/80'
                       : 'text-zinc-500 dark:text-zinc-400',
                   )}
                 >
@@ -75,7 +75,7 @@ export function ChannelRegionTabs({
                 countClassName,
                 'mt-0.5 shrink-0 self-start',
                 isActive
-                  ? 'bg-white/15 text-white dark:bg-zinc-950/10 dark:text-zinc-950'
+                  ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200'
                   : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300',
               )}
             >

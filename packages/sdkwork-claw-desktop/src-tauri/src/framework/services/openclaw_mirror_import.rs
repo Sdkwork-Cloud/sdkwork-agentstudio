@@ -285,19 +285,19 @@ fn rebase_restored_managed_runtime_config(
         )));
     }
 
-    set_nested_string(&mut config_root, &["gateway", "mode"], "local");
-    set_nested_string(&mut config_root, &["gateway", "bind"], "loopback");
-    set_nested_u16(&mut config_root, &["gateway", "port"], runtime.gateway_port);
-    set_nested_string(&mut config_root, &["gateway", "auth", "mode"], "token");
+    set_nested_string(&mut config_root, &["gateway", "mode"], "local")?;
+    set_nested_string(&mut config_root, &["gateway", "bind"], "loopback")?;
+    set_nested_u16(&mut config_root, &["gateway", "port"], runtime.gateway_port)?;
+    set_nested_string(&mut config_root, &["gateway", "auth", "mode"], "token")?;
     set_nested_string(
         &mut config_root,
         &["gateway", "auth", "token"],
         runtime.gateway_auth_token.as_str(),
-    );
+    )?;
     remove_nested_value(&mut config_root, &["agents", "defaults", "workspace"]);
     remove_nested_value(&mut config_root, &["agents", "defaults", "agentDir"]);
 
-    let agent_entries = ensure_array_path(&mut config_root, &["agents", "list"]);
+    let agent_entries = ensure_array_path(&mut config_root, &["agents", "list"])?;
     let main_index = agent_entries
         .iter()
         .position(|entry| {
@@ -498,28 +498,30 @@ fn looks_like_absolute_path(raw: &str) -> bool {
         )
 }
 
-fn set_nested_string(root: &mut Value, path: &[&str], value: &str) {
+fn set_nested_string(root: &mut Value, path: &[&str], value: &str) -> Result<()> {
     if path.is_empty() {
-        return;
+        return Ok(());
     }
 
-    let parent = ensure_object_path(root, &path[..path.len() - 1]);
+    let parent = ensure_object_path(root, &path[..path.len() - 1])?;
     parent.insert(
         path[path.len() - 1].to_string(),
         Value::String(value.to_string()),
     );
+    Ok(())
 }
 
-fn set_nested_u16(root: &mut Value, path: &[&str], value: u16) {
+fn set_nested_u16(root: &mut Value, path: &[&str], value: u16) -> Result<()> {
     if path.is_empty() {
-        return;
+        return Ok(());
     }
 
-    let parent = ensure_object_path(root, &path[..path.len() - 1]);
+    let parent = ensure_object_path(root, &path[..path.len() - 1])?;
     parent.insert(
         path[path.len() - 1].to_string(),
         Value::Number(serde_json::Number::from(u64::from(value))),
     );
+    Ok(())
 }
 
 fn remove_nested_value(root: &mut Value, path: &[&str]) -> bool {
@@ -547,15 +549,17 @@ fn remove_nested_value(root: &mut Value, path: &[&str]) -> bool {
 fn ensure_object_path<'a>(
     root: &'a mut Value,
     path: &[&str],
-) -> &'a mut serde_json::Map<String, Value> {
+) -> Result<&'a mut serde_json::Map<String, Value>> {
     let mut current = root;
     for segment in path {
         if !current.is_object() {
             *current = Value::Object(serde_json::Map::new());
         }
-        let object = current
-            .as_object_mut()
-            .expect("value should be object after normalization");
+        let object = current.as_object_mut().ok_or_else(|| {
+            FrameworkError::ValidationFailed(
+                "failed to normalize OpenClaw mirror config path to a JSON object".to_string(),
+            )
+        })?;
         let child = object
             .entry((*segment).to_string())
             .or_insert_with(|| Value::Object(serde_json::Map::new()));
@@ -569,13 +573,21 @@ fn ensure_object_path<'a>(
         *current = Value::Object(serde_json::Map::new());
     }
 
-    current
-        .as_object_mut()
-        .expect("value should be object after normalization")
+    current.as_object_mut().ok_or_else(|| {
+        FrameworkError::ValidationFailed(
+            "failed to resolve OpenClaw mirror config path as a JSON object".to_string(),
+        )
+    })
 }
 
-fn ensure_array_path<'a>(root: &'a mut Value, path: &[&str]) -> &'a mut Vec<Value> {
-    let parent = ensure_object_path(root, &path[..path.len() - 1]);
+fn ensure_array_path<'a>(root: &'a mut Value, path: &[&str]) -> Result<&'a mut Vec<Value>> {
+    if path.is_empty() {
+        return Err(FrameworkError::ValidationFailed(
+            "cannot normalize an empty OpenClaw mirror config path as an array".to_string(),
+        ));
+    }
+
+    let parent = ensure_object_path(root, &path[..path.len() - 1])?;
     let key = path[path.len() - 1];
     if !matches!(parent.get(key), Some(Value::Array(_))) {
         parent.insert(key.to_string(), Value::Array(Vec::new()));
@@ -584,7 +596,11 @@ fn ensure_array_path<'a>(root: &'a mut Value, path: &[&str]) -> &'a mut Vec<Valu
     parent
         .get_mut(key)
         .and_then(Value::as_array_mut)
-        .expect("value should be array after normalization")
+        .ok_or_else(|| {
+            FrameworkError::ValidationFailed(
+                "failed to resolve OpenClaw mirror config path as a JSON array".to_string(),
+            )
+        })
 }
 
 fn get_nested_array_mut<'a>(root: &'a mut Value, path: &[&str]) -> Option<&'a mut Vec<Value>> {
@@ -955,13 +971,21 @@ fn build_post_restore_verification(
     gateway_running_after_import: bool,
     checked_at: &str,
 ) -> OpenClawMirrorImportVerification {
-    let config_text = fs::read_to_string(&readable_openclaw_config_path(paths)).ok();
+    let readable_config_path = readable_openclaw_config_path(paths);
+    let config_path_label = readable_config_path
+        .as_ref()
+        .map(|path| normalize_path(path))
+        .unwrap_or_else(|error| format!("unresolved OpenClaw config path ({error})"));
+    let config_text = readable_config_path
+        .as_ref()
+        .ok()
+        .and_then(|path| fs::read_to_string(path).ok());
     let config_root = config_text
         .as_deref()
         .and_then(|content| serde_json::from_str::<Value>(content).ok());
 
     let mut checks = vec![
-        verify_openclaw_config_file(paths, config_root.as_ref()),
+        verify_openclaw_config_file(&config_path_label, config_root.as_ref()),
         verify_managed_state(paths),
         verify_managed_workspace(paths),
         verify_openclaw_skill_assets(
@@ -996,10 +1020,9 @@ fn build_post_restore_verification(
 }
 
 fn verify_openclaw_config_file(
-    paths: &AppPaths,
+    config_path: &str,
     config_root: Option<&Value>,
 ) -> OpenClawMirrorImportVerificationCheck {
-    let config_path = normalize_path(&active_openclaw_config_path(paths));
     if config_root.is_some() {
         verification_check(
             "openclaw-config-file",
@@ -1017,14 +1040,13 @@ fn verify_openclaw_config_file(
     }
 }
 
-fn readable_openclaw_config_path(paths: &AppPaths) -> PathBuf {
+fn readable_openclaw_config_path(paths: &AppPaths) -> Result<PathBuf> {
     active_openclaw_config_path(paths)
 }
 
-fn active_openclaw_config_path(paths: &AppPaths) -> PathBuf {
+fn active_openclaw_config_path(paths: &AppPaths) -> Result<PathBuf> {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
-        .expect("canonical openclaw config path")
 }
 
 fn verify_managed_state(paths: &AppPaths) -> OpenClawMirrorImportVerificationCheck {
@@ -1931,14 +1953,14 @@ fn validate_manifest(manifest: &OpenClawMirrorManifestRecord) -> Result<()> {
             }
         }
 
+        let expected_relative_path = if metadata_id == RUNTIME_SNAPSHOT_METADATA_ID {
+            PRIVATE_RUNTIME_SNAPSHOT_FILE_NAME
+        } else {
+            PRIVATE_MANAGED_ASSETS_FILE_NAME
+        };
+
         return Err(FrameworkError::ValidationFailed(format!(
-            "openclaw mirror metadata file {} must use relative path {}",
-            metadata_id,
-            match metadata_id {
-                RUNTIME_SNAPSHOT_METADATA_ID => PRIVATE_RUNTIME_SNAPSHOT_FILE_NAME,
-                MANAGED_ASSETS_METADATA_ID => PRIVATE_MANAGED_ASSETS_FILE_NAME,
-                _ => unreachable!(),
-            }
+            "openclaw mirror metadata file {metadata_id} must use relative path {expected_relative_path}"
         )));
     }
 
@@ -2581,6 +2603,7 @@ mod tests {
     };
     use crate::framework::{
         config::AppConfig,
+        openclaw_release::bundled_openclaw_version,
         paths::{resolve_paths_for_root, AppPaths},
         services::{
             local_ai_proxy::LocalAiProxyService,
@@ -2615,24 +2638,48 @@ mod tests {
             .expect("canonical openclaw config path")
     }
 
+    #[test]
+    fn openclaw_mirror_import_production_path_has_no_panic_exits() {
+        let source = include_str!("openclaw_mirror_import.rs");
+        let production_source = source.split("#[cfg(test)]").next().unwrap_or(source);
+        let forbidden_patterns = [
+            ".expect(",
+            ".unwrap(",
+            "panic!(",
+            "todo!(",
+            "unimplemented!(",
+            "unreachable!(",
+        ];
+        let mut offenders = Vec::new();
+
+        for (index, line) in production_source.lines().enumerate() {
+            for pattern in forbidden_patterns {
+                if line.contains(pattern) {
+                    offenders.push(format!("{}:{}", index + 1, line.trim()));
+                }
+            }
+        }
+
+        assert!(
+            offenders.is_empty(),
+            "OpenClaw mirror import production code must return structured errors instead of panicking:\n{}",
+            offenders.join("\n")
+        );
+    }
+
+    fn current_openclaw_install_key() -> String {
+        format!("{}-windows-x64", bundled_openclaw_version())
+    }
+
     fn create_archive_runtime(paths: &AppPaths) -> ActivatedOpenClawRuntime {
+        let install_key = current_openclaw_install_key();
+        let install_dir = paths.openclaw_runtime_dir.join(&install_key);
         ActivatedOpenClawRuntime {
-            install_key: "0.4.0-windows-x64".to_string(),
-            install_dir: paths.openclaw_runtime_dir.join("0.4.0-windows-x64"),
-            runtime_dir: paths
-                .openclaw_runtime_dir
-                .join("0.4.0-windows-x64")
-                .join("runtime"),
-            node_path: paths
-                .openclaw_runtime_dir
-                .join("0.4.0-windows-x64")
-                .join("runtime")
-                .join("node.exe"),
-            cli_path: paths
-                .openclaw_runtime_dir
-                .join("0.4.0-windows-x64")
-                .join("runtime")
-                .join("openclaw.cjs"),
+            install_key,
+            install_dir: install_dir.clone(),
+            runtime_dir: install_dir.join("runtime"),
+            node_path: install_dir.join("runtime").join("node.exe"),
+            cli_path: install_dir.join("runtime").join("openclaw.cjs"),
             home_dir: paths.user_root.clone(),
             state_dir: paths.openclaw_root_dir.clone(),
             workspace_dir: paths.openclaw_workspace_dir.clone(),
@@ -4499,7 +4546,11 @@ mod tests {
             &archive_path,
             label,
             PRIVATE_RUNTIME_SNAPSHOT_FILE_NAME,
-            "{\n  \"runtimeId\": \"openclaw\",\n  \"installKey\": \"0.4.0-windows-x64\",\n  \"openclawVersion\": \"0.4.0\",\n  \"nodeVersion\": null,\n  \"platform\": \"windows\",\n  \"arch\": \"x64\",\n  \"homeDir\": \"D:/tampered/home/.openclaw\",\n  \"stateDir\": \"D:/tampered/home/.openclaw\",\n  \"workspaceDir\": \"D:/tampered/home/.openclaw/workspace\",\n  \"configFile\": \"D:/tampered/home/.openclaw/openclaw.json\",\n  \"gatewayPort\": 19999\n}\n",
+            &format!(
+                "{{\n  \"runtimeId\": \"openclaw\",\n  \"installKey\": \"{}\",\n  \"openclawVersion\": \"{}\",\n  \"nodeVersion\": null,\n  \"platform\": \"windows\",\n  \"arch\": \"x64\",\n  \"homeDir\": \"D:/tampered/home/.openclaw\",\n  \"stateDir\": \"D:/tampered/home/.openclaw\",\n  \"workspaceDir\": \"D:/tampered/home/.openclaw/workspace\",\n  \"configFile\": \"D:/tampered/home/.openclaw/openclaw.json\",\n  \"gatewayPort\": 19999\n}}\n",
+                current_openclaw_install_key(),
+                bundled_openclaw_version(),
+            ),
         );
 
         let error = inspect_openclaw_mirror_import(&corrupted_archive_path)

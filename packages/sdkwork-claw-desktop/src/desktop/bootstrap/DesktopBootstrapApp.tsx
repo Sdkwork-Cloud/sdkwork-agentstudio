@@ -20,7 +20,10 @@ import {
 } from '@sdkwork/claw-shell';
 import type { DistributionId } from '@sdkwork/claw-distribution';
 import { getDistributionManifest } from '@sdkwork/claw-distribution';
-import type { RuntimeLanguagePreference } from '@sdkwork/claw-infrastructure';
+import {
+  resolveBrowserStorage,
+  type RuntimeLanguagePreference,
+} from '@sdkwork/claw-infrastructure';
 import { toast } from 'sonner';
 import { getDesktopWindow, isTauriRuntime } from '../runtime';
 import {
@@ -234,7 +237,7 @@ export function readInitialStartupAppearance() {
   let storageValue: string | null = null;
 
   try {
-    storageValue = window.localStorage.getItem(APP_STORAGE_KEY);
+    storageValue = resolveBrowserStorage('localStorage')?.getItem(APP_STORAGE_KEY) ?? null;
   } catch {
     storageValue = null;
   }

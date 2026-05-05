@@ -381,7 +381,7 @@ impl ServerState {
 
 #[allow(dead_code)]
 pub fn build_server_state() -> ServerState {
-    try_build_server_state().expect("server state should initialize")
+    server_state_or_exit(try_build_server_state(), "server state should initialize")
 }
 
 pub fn build_server_state_from_runtime_contract(
@@ -390,13 +390,25 @@ pub fn build_server_state_from_runtime_contract(
     executable_path: PathBuf,
     bound_endpoint: ServerBoundEndpointContext,
 ) -> ServerState {
-    try_build_server_state_from_runtime_contract(
-        config,
-        effective_config_path,
-        executable_path,
-        bound_endpoint,
+    server_state_or_exit(
+        try_build_server_state_from_runtime_contract(
+            config,
+            effective_config_path,
+            executable_path,
+            bound_endpoint,
+        ),
+        "server state should initialize from runtime config",
     )
-    .expect("server state should initialize from runtime config")
+}
+
+fn server_state_or_exit(result: Result<ServerState, String>, context: &str) -> ServerState {
+    match result {
+        Ok(state) => state,
+        Err(error) => {
+            eprintln!("{context}: {error}");
+            std::process::exit(1);
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -486,8 +498,10 @@ fn try_build_server_state_from_runtime_contract(
 
 #[cfg_attr(not(test), allow(dead_code))]
 pub fn build_server_state_with_rollout_data_dir(rollout_data_dir: PathBuf) -> ServerState {
-    try_build_server_state_with_rollout_data_dir(rollout_data_dir)
-        .expect("server state should initialize from rollout data dir")
+    server_state_or_exit(
+        try_build_server_state_with_rollout_data_dir(rollout_data_dir),
+        "server state should initialize from rollout data dir",
+    )
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
@@ -502,8 +516,10 @@ pub fn build_server_state_with_overrides(
     rollout_data_dir: PathBuf,
     overrides: ServerStateOverrides,
 ) -> ServerState {
-    try_build_server_state_with_overrides(rollout_data_dir, overrides)
-        .expect("server state should initialize from overrides")
+    server_state_or_exit(
+        try_build_server_state_with_overrides(rollout_data_dir, overrides),
+        "server state should initialize from overrides",
+    )
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
@@ -1028,8 +1044,8 @@ fn build_server_state_store_snapshot(
 fn unix_timestamp_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("system time should be after unix epoch")
-        .as_millis() as u64
+        .map(|duration| duration.as_millis() as u64)
+        .unwrap_or_default()
 }
 
 fn build_server_openclaw_control_plane(
@@ -1074,6 +1090,35 @@ mod tests {
         try_build_server_state_from_runtime_contract, try_build_server_state_with_overrides,
         ServerBoundEndpointContext, ServerStateOverrides,
     };
+
+    #[test]
+    fn server_bootstrap_production_path_has_no_panic_exits() {
+        let source = include_str!("bootstrap.rs");
+        let production_source = source.split("#[cfg(test)]").next().unwrap_or(source);
+        let forbidden_patterns = [
+            ".expect(",
+            ".unwrap(",
+            "panic!(",
+            "todo!(",
+            "unimplemented!(",
+            "unreachable!(",
+        ];
+        let mut offenders = Vec::new();
+
+        for (index, line) in production_source.lines().enumerate() {
+            for pattern in forbidden_patterns {
+                if line.contains(pattern) {
+                    offenders.push(format!("{}:{}", index + 1, line.trim()));
+                }
+            }
+        }
+
+        assert!(
+            offenders.is_empty(),
+            "server bootstrap production code must report startup errors instead of panicking:\n{}",
+            offenders.join("\n")
+        );
+    }
 
     #[test]
     fn resolve_server_web_dist_dir_prefers_explicit_value() {

@@ -152,6 +152,7 @@ mod tests {
     use super::sync_bundled_installation_from_dir;
     use crate::framework::{
         layout::{ActiveState, ComponentsState, InventoryState, UpgradesState},
+        openclaw_release::required_openclaw_node_version,
         paths::resolve_paths_for_root,
     };
     use std::path::Path;
@@ -187,7 +188,7 @@ mod tests {
         assert!(paths
             .runtimes_dir
             .join("node")
-            .join("22.16.0")
+            .join(required_openclaw_node_version())
             .join("node.exe")
             .exists());
         assert!(paths
@@ -246,15 +247,18 @@ mod tests {
         );
         assert_eq!(
             inventory.runtime_packages.get("node"),
-            Some(&vec!["22.16.0".to_string()])
+            Some(&vec![required_openclaw_node_version().to_string()])
         );
         assert_eq!(
             active
                 .runtimes
                 .get("node")
-                .and_then(|entry| entry.active_version.as_deref()),
-            Some("22.16.0")
+                .and_then(|entry| entry.active_runtime_install_key()),
+            Some(required_openclaw_node_version())
         );
+        let node_runtime = active.runtimes.get("node").expect("node active runtime");
+        assert!(node_runtime.active_version.is_none());
+        assert!(node_runtime.fallback_version.is_none());
     }
 
     fn seed_fake_bundle_tree(bundle_root: &Path) {
@@ -264,7 +268,10 @@ mod tests {
             .join("codex")
             .join("1.2.3")
             .join("bin");
-        let runtime_dir = bundle_root.join("runtimes").join("node").join("22.16.0");
+        let runtime_dir = bundle_root
+            .join("runtimes")
+            .join("node")
+            .join(required_openclaw_node_version());
 
         std::fs::create_dir_all(&component_dir).expect("component dir");
         std::fs::create_dir_all(&module_dir).expect("module dir");

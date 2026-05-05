@@ -15,13 +15,13 @@ const currentWorkspaceRoot = path.resolve(process.cwd());
 const canonicalWorkspaceRoot = currentWorkspaceRoot.includes(`${path.sep}.worktrees${path.sep}`)
   ? path.resolve(currentWorkspaceRoot, '..', '..')
   : currentWorkspaceRoot;
-const expectedCorePcReactRoot = path.resolve(
-  canonicalWorkspaceRoot,
-  '../sdkwork-core/sdkwork-core-pc-react/src/index.ts',
-);
 const expectedCorePcReactAppRoot = path.resolve(
   canonicalWorkspaceRoot,
   '../sdkwork-core/sdkwork-core-pc-react/src/app/index.ts',
+);
+const expectedCorePcReactRuntimeRoot = path.resolve(
+  currentWorkspaceRoot,
+  'scripts/shims/core-pc-react-runtime-node.ts',
 );
 const worktreeRoot = path.resolve(
   canonicalWorkspaceRoot,
@@ -39,7 +39,7 @@ test('resolveWorkspacePackageEntry maps @sdkwork workspace packages into the cur
   );
   assert.equal(
     resolveWorkspacePackageEntry('@sdkwork/core-pc-react', packagesRoot),
-    expectedCorePcReactRoot,
+    null,
   );
   assert.equal(
     resolveWorkspacePackageEntry('@sdkwork/core-pc-react/app', packagesRoot),
@@ -57,9 +57,9 @@ test('resolveWorkspacePackageAliases creates direct aliases for local @sdkwork/c
   const aliases = resolveWorkspacePackageAliases(packagesRoot);
   const infrastructureAlias = aliases.find((entry) => entry.find === '@sdkwork/claw-infrastructure');
   const i18nAlias = aliases.find((entry) => entry.find === '@sdkwork/claw-i18n');
-  const corePcReactRootAlias = aliases.find((entry) => entry.find === '@sdkwork/core-pc-react');
   const corePcReactAppAlias = aliases.find((entry) => entry.find === '@sdkwork/core-pc-react/app');
   const corePcReactEnvAlias = aliases.find((entry) => entry.find === '@sdkwork/core-pc-react/env');
+  const corePcReactImAlias = aliases.find((entry) => entry.find === '@sdkwork/core-pc-react/im');
   const corePcReactRuntimeAlias = aliases.find((entry) => entry.find === '@sdkwork/core-pc-react/runtime');
 
   assert.ok(infrastructureAlias);
@@ -77,12 +77,17 @@ test('resolveWorkspacePackageAliases creates direct aliases for local @sdkwork/c
     corePcReactAppAlias?.replacement,
     expectedCorePcReactAppRoot,
   );
-  assert.ok(corePcReactRootAlias);
   assert.ok(corePcReactEnvAlias);
   assert.ok(corePcReactRuntimeAlias);
-  assert.ok(aliases.indexOf(corePcReactAppAlias) < aliases.indexOf(corePcReactRootAlias));
-  assert.ok(aliases.indexOf(corePcReactEnvAlias) < aliases.indexOf(corePcReactRootAlias));
-  assert.ok(aliases.indexOf(corePcReactRuntimeAlias) < aliases.indexOf(corePcReactRootAlias));
+  assert.equal(
+    corePcReactRuntimeAlias?.replacement,
+    expectedCorePcReactRuntimeRoot,
+  );
+  assert.equal(corePcReactImAlias, undefined);
+  assert.equal(
+    aliases.some((entry) => entry.find === '@sdkwork/core-pc-react'),
+    false,
+  );
   assert.equal(
     aliases.some((entry) => entry.find === '@sdkwork/craw-chat-backend-sdk'),
     false,

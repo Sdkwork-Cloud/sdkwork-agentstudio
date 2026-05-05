@@ -1203,6 +1203,7 @@ function queuePersistGatewaySnapshotMirror(params: {
       const syncedSessions = await syncGatewayMirrorSessions({
         instanceId: params.instanceId,
         snapshotSessions: params.snapshot.sessions as ChatSession[],
+        isEmptySnapshotAuthoritative: params.snapshot.isEmptySnapshotAuthoritative,
         persistedSessions: knownPersistedSessions,
         listPersistedSessions: (instanceId) => studioConversationService.listConversations(instanceId),
         putPersistedSession: (session) => studioConversationService.putConversation(session),
@@ -1637,7 +1638,7 @@ function resolveGatewaySnapshotActiveSessionId(params: {
 }) {
   if (params.snapshot.activeSessionId === null) {
     const shouldPreserveFallbackSelection =
-      params.snapshot.syncState !== 'idle' &&
+      !params.snapshot.isEmptySnapshotAuthoritative &&
       params.snapshot.sessions.length === 0 &&
       params.resolvedScopeSessions.length > 0;
 
@@ -1668,6 +1669,7 @@ function applyOpenClawSnapshot(
     existingSessions: listScopeSessions(state.sessions, instanceId),
     snapshotSessions: snapshot.sessions as ChatSession[],
     syncState: snapshot.syncState,
+    isEmptySnapshotAuthoritative: snapshot.isEmptySnapshotAuthoritative,
   });
   return {
     sessions: replaceInstanceSessions(state.sessions, instanceId, resolvedScopeSessions),

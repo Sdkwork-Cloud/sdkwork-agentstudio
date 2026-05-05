@@ -1,11 +1,11 @@
 {
   "kernelId": "openclaw",
-  "stableVersion": "2026.4.14",
+  "stableVersion": "2026.5.4-beta.1",
   "supportedChannels": [
     "stable"
   ],
   "defaultChannel": "stable",
-  "nodeVersion": "22.16.0",
+  "nodeVersion": "24.15.0",
   "packageName": "openclaw",
   "_comment_runtimeSupplementalPackages": "Keep empty unless OpenClaw requires extra runtime packages beyond its own stable dependency graph.",
   "runtimeSupplementalPackages": [],
@@ -15,12 +15,9 @@
     "requiredExternalRuntimes": [
       "nodejs"
     ],
-    "requiredExternalRuntimeVersions": {
-      "nodejs": "22.16.0"
-    },
     "optionalExternalRuntimes": []
   },
-  "compatibility": {
+  "platformSupport": {
     "packageProfileIds": [
       "openclaw-only",
       "dual-kernel"
@@ -32,8 +29,7 @@
   "releaseSource": {
     "kind": "githubRelease",
     "repositoryUrl": "https://github.com/openclaw/openclaw",
-    "tagPrefix": "v",
-    "releaseUrl": "https://github.com/openclaw/openclaw/releases/tag/v2026.4.14"
+    "tagPrefix": "v"
   },
   "releaseVerification": {
     "manifestVersionField": "openclawVersion",

@@ -33,17 +33,13 @@ export function createSharedSdkPackageContext({
       canonicalWorkspaceRoot,
       '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript',
     ),
-    sharedImBackendSdkRoot: path.resolve(
+    sharedImSdkRoot: path.resolve(
       canonicalWorkspaceRoot,
-      '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/generated/server-openapi',
+      '../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript',
     ),
-    sharedOpenchatImSdkRoot: path.resolve(
+    sharedRtcSdkRoot: path.resolve(
       canonicalWorkspaceRoot,
-      '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/composed',
-    ),
-    sharedOpenchatImWukongimAdapterRoot: path.resolve(
-      canonicalWorkspaceRoot,
-      '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/adapter-wukongim',
+      '../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript',
     ),
     mode: resolveSharedSdkMode(env),
   };
@@ -117,9 +113,7 @@ function hasRequiredSharedSdkSources(context) {
 }
 
 function hasOptionalSharedImSdkSources(context) {
-  return exists(context.sharedImBackendSdkRoot)
-    && exists(context.sharedOpenchatImSdkRoot)
-    && exists(context.sharedOpenchatImWukongimAdapterRoot);
+  return exists(context.sharedImSdkRoot) && exists(context.sharedRtcSdkRoot);
 }
 
 function readPackageManifest(packageRoot) {
@@ -311,48 +305,33 @@ export function prepareSharedSdkPackages({
 
   if (!hasOptionalSharedImSdkSources(context)) {
     console.log(
-      '[prepare-shared-sdk-packages] Skipping optional openchat shared IM SDK preparation because the source roots are absent in this workspace.',
+      '[prepare-shared-sdk-packages] Skipping optional shared IM/RTC SDK preparation because the source roots are absent in this workspace.',
     );
     return context;
   }
 
-  assertPackageRootExists(context.sharedImBackendSdkRoot, '@sdkwork/im-backend-sdk');
-  assertPackageRootExists(context.sharedOpenchatImWukongimAdapterRoot, '@openchat/sdkwork-im-wukongim-adapter');
-  assertPackageRootExists(context.sharedOpenchatImSdkRoot, '@openchat/sdkwork-im-sdk');
+  assertPackageRootExists(context.sharedImSdkRoot, '@sdkwork/im-sdk');
+  assertPackageRootExists(context.sharedRtcSdkRoot, '@sdkwork/rtc-sdk');
 
-  const needsSharedImBackendSdkBuild = shouldBuildPackage(context.sharedImBackendSdkRoot);
-  ensurePackageDependencyLinks(context.sharedImBackendSdkRoot, context.workspaceRoot, {
+  const needsSharedImSdkBuild = shouldBuildPackage(context.sharedImSdkRoot);
+  ensurePackageDependencyLinks(context.sharedImSdkRoot, context.workspaceRoot, {
     includeDependencies: true,
-    includeDevDependencies: needsSharedImBackendSdkBuild,
+    includeDevDependencies: needsSharedImSdkBuild,
     localPackageRoots: {
       '@sdkwork/sdk-common': context.sharedSdkCommonRoot,
     },
   });
-  ensurePackageBuilt('@sdkwork/im-backend-sdk', context.sharedImBackendSdkRoot, context.workspaceRoot);
+  ensurePackageBuilt('@sdkwork/im-sdk', context.sharedImSdkRoot, context.workspaceRoot);
 
-  const needsSharedOpenchatImWukongimAdapterBuild = shouldBuildPackage(
-    context.sharedOpenchatImWukongimAdapterRoot,
-  );
-  ensurePackageDependencyLinks(context.sharedOpenchatImWukongimAdapterRoot, context.workspaceRoot, {
+  const needsSharedRtcSdkBuild = shouldBuildPackage(context.sharedRtcSdkRoot);
+  ensurePackageDependencyLinks(context.sharedRtcSdkRoot, context.workspaceRoot, {
     includeDependencies: true,
-    includeDevDependencies: needsSharedOpenchatImWukongimAdapterBuild,
-  });
-  ensurePackageBuilt(
-    '@openchat/sdkwork-im-wukongim-adapter',
-    context.sharedOpenchatImWukongimAdapterRoot,
-    context.workspaceRoot,
-  );
-
-  const needsSharedOpenchatImSdkBuild = shouldBuildPackage(context.sharedOpenchatImSdkRoot);
-  ensurePackageDependencyLinks(context.sharedOpenchatImSdkRoot, context.workspaceRoot, {
-    includeDependencies: true,
-    includeDevDependencies: needsSharedOpenchatImSdkBuild,
+    includeDevDependencies: needsSharedRtcSdkBuild,
     localPackageRoots: {
-      '@sdkwork/im-backend-sdk': context.sharedImBackendSdkRoot,
-      '@openchat/sdkwork-im-wukongim-adapter': context.sharedOpenchatImWukongimAdapterRoot,
+      '@sdkwork/im-sdk': context.sharedImSdkRoot,
     },
   });
-  ensurePackageBuilt('@openchat/sdkwork-im-sdk', context.sharedOpenchatImSdkRoot, context.workspaceRoot);
+  ensurePackageBuilt('@sdkwork/rtc-sdk', context.sharedRtcSdkRoot, context.workspaceRoot);
 
   return context;
 }

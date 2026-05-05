@@ -224,6 +224,7 @@ mod tests {
             config::AppConfig,
             context::FrameworkContext,
             logging::init_logger,
+            openclaw_release::bundled_openclaw_version,
             paths::resolve_paths_for_root,
             services::local_ai_proxy_observability::{
                 LocalAiProxyMessageLogsQuery, LocalAiProxyRequestLogsQuery,
@@ -454,9 +455,7 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let diagnostics_dir = paths.data_dir.join("diagnostics");
         fs::create_dir_all(&diagnostics_dir).expect("create diagnostics dir");
-        fs::write(
-            diagnostics_dir.join("desktop-startup-evidence.json"),
-            r#"{
+        let startup_evidence = r#"{
   "version": 1,
   "status": "passed",
   "phase": "shell-mounted",
@@ -478,7 +477,7 @@ mod tests {
   "builtInInstance": {
     "id": "managed-openclaw-primary",
     "name": "Local Built-In",
-    "version": "2026.4.2",
+    "version": "__OPENCLAW_VERSION__",
     "runtimeKind": "openclaw",
     "deploymentMode": "local-managed",
     "transportKind": "openclawGatewayWs",
@@ -499,7 +498,11 @@ mod tests {
     "cause": "socket timeout"
   }
 }
-"#,
+"#
+        .replace("__OPENCLAW_VERSION__", bundled_openclaw_version());
+        fs::write(
+            diagnostics_dir.join("desktop-startup-evidence.json"),
+            startup_evidence,
         )
         .expect("write startup evidence");
         let logger = init_logger(&paths).expect("logger");
@@ -589,7 +592,7 @@ mod tests {
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["builtInInstanceVersion"],
-            "2026.4.2"
+            bundled_openclaw_version()
         );
         assert_eq!(
             payload["desktopStartupEvidence"]["builtInInstanceRuntimeKind"],

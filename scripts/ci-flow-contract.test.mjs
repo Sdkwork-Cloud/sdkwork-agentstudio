@@ -59,7 +59,17 @@ test('repository exposes a mainline CI workflow for push and pull request verifi
   assert.match(workflow, /pnpm docs:build/);
   assert.match(
     workflow,
-    /cargo test --manifest-path packages\/sdkwork-claw-desktop\/src-tauri\/Cargo\.toml/,
+    /pnpm release:fixture:ready/,
+    'ci workflow must prove the finalized release readiness gate has a complete default-profile success path',
+  );
+  assert.match(
+    workflow,
+    /node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-claw-desktop\/src-tauri\/Cargo\.toml/,
+  );
+  assert.doesNotMatch(
+    workflow,
+    /(^|\s)cargo test --manifest-path packages\/sdkwork-claw-desktop\/src-tauri\/Cargo\.toml/,
+    'ci workflow must execute Rust checks through scripts/run-cargo.mjs so Cargo dependency resolution stays locked and diagnostic behavior stays consistent',
   );
   assert.match(workflow, /Run Windows server checks[\s\S]*pnpm check:server/);
   assert.match(workflow, /Run Windows server build[\s\S]*pnpm server:build/);

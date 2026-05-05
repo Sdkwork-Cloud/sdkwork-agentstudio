@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import type { StudioInstanceDetailRecord } from '@sdkwork/claw-types';
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  type StudioInstanceDetailRecord,
+} from '@sdkwork/claw-types';
 import type { Instance } from '../types/index.ts';
 import {
   buildInstanceActionCapabilities,
@@ -27,7 +30,7 @@ function createInstance(overrides: Partial<Instance> = {}): Instance {
     type: 'OpenClaw Gateway',
     iconType: 'server',
     status: 'offline',
-    version: '2026.4.5',
+    version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
     uptime: '-',
     ip: '127.0.0.1',
     cpu: 0,
@@ -63,7 +66,7 @@ function createDetail(
       isBuiltIn: false,
       isDefault: false,
       iconType: 'server',
-      version: '2026.4.5',
+      version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
       typeLabel: 'OpenClaw Gateway',
       host: '127.0.0.1',
       port: 21280,

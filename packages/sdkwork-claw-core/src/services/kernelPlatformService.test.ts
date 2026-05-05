@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION,
+} from '@sdkwork/claw-types';
 
-const DEFAULT_RUNTIME_VERSION = 'v2026.4.11';
-const DEFAULT_NODE_VERSION = '22.0.0';
+const DEFAULT_RUNTIME_VERSION = `v${DEFAULT_BUNDLED_OPENCLAW_VERSION}`;
+const DEFAULT_NODE_VERSION = DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION;
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
   try {

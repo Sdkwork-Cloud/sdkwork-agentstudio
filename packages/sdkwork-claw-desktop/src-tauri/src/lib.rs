@@ -10,7 +10,8 @@ pub fn run() {
     if internal_cli::maybe_handle_internal_cli_action() {
         return;
     }
-    app::bootstrap::build()
-        .run(tauri::generate_context!())
-        .expect("failed to run claw studio desktop");
+    if let Err(error) = app::bootstrap::build().run(tauri::generate_context!()) {
+        eprintln!("failed to run claw studio desktop: {error}");
+        std::process::exit(1);
+    }
 }

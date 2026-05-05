@@ -1,3 +1,5 @@
+import { resolveBrowserStorage } from '../platform/safeBrowserStorage.ts';
+
 const AUTH_SESSION_STORAGE_KEY = 'claw-studio-auth-session';
 
 export interface AuthSession {
@@ -8,15 +10,7 @@ export interface AuthSession {
 }
 
 function getStorage(): Storage | null {
-  if (typeof globalThis.localStorage !== 'undefined') {
-    return globalThis.localStorage;
-  }
-
-  if (typeof window !== 'undefined' && window.localStorage) {
-    return window.localStorage;
-  }
-
-  return null;
+  return resolveBrowserStorage('localStorage');
 }
 
 export function readAuthSession(): AuthSession | null {
@@ -25,7 +19,13 @@ export function readAuthSession(): AuthSession | null {
     return null;
   }
 
-  const rawValue = storage.getItem(AUTH_SESSION_STORAGE_KEY);
+  let rawValue: string | null = null;
+  try {
+    rawValue = storage.getItem(AUTH_SESSION_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+
   if (!rawValue) {
     return null;
   }
@@ -53,7 +53,11 @@ export function writeAuthSession(session: AuthSession) {
     return;
   }
 
-  storage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify(session));
+  try {
+    storage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify(session));
+  } catch {
+    // Ignore blocked or full browser storage so auth bootstrap can keep running.
+  }
 }
 
 export function clearAuthSession() {
@@ -62,7 +66,11 @@ export function clearAuthSession() {
     return;
   }
 
-  storage.removeItem(AUTH_SESSION_STORAGE_KEY);
+  try {
+    storage.removeItem(AUTH_SESSION_STORAGE_KEY);
+  } catch {
+    // Ignore blocked browser storage during sign-out cleanup.
+  }
 }
 
 export { AUTH_SESSION_STORAGE_KEY };

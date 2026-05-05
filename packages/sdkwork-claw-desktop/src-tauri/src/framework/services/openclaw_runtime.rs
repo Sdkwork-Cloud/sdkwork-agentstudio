@@ -922,8 +922,8 @@ fn ensure_built_in_openclaw_state(
 
     let mut config = imported_config.root;
     sanitize_legacy_provider_runtime_config(&mut config);
-    set_nested_string(&mut config, &["gateway", "mode"], "local");
-    set_nested_string(&mut config, &["gateway", "bind"], "loopback");
+    set_nested_string(&mut config, &["gateway", "mode"], "local")?;
+    set_nested_string(&mut config, &["gateway", "bind"], "loopback")?;
     let configured_port = get_nested_u16(&config, &["gateway", "port"]).filter(|port| *port > 0);
     let requested_port =
         resolve_requested_managed_gateway_port(configured_port, bundled_openclaw_version);
@@ -931,15 +931,15 @@ fn ensure_built_in_openclaw_state(
     let gateway_auth_token = get_nested_string(&config, &["gateway", "auth", "token"])
         .filter(|value| !value.trim().is_empty())
         .unwrap_or_else(generate_gateway_auth_token);
-    set_nested_u16(&mut config, &["gateway", "port"], gateway_port);
-    set_nested_string(&mut config, &["gateway", "auth", "mode"], "token");
+    set_nested_u16(&mut config, &["gateway", "port"], gateway_port)?;
+    set_nested_string(&mut config, &["gateway", "auth", "mode"], "token")?;
     set_nested_string(
         &mut config,
         &["gateway", "auth", "token"],
         gateway_auth_token.as_str(),
-    );
-    ensure_managed_control_ui_allowed_origins(&mut config);
-    ensure_nested_string_array_contains(&mut config, &["gateway", "tools", "allow"], "cron");
+    )?;
+    ensure_managed_control_ui_allowed_origins(&mut config)?;
+    ensure_nested_string_array_contains(&mut config, &["gateway", "tools", "allow"], "cron")?;
     ensure_built_in_main_agent_paths(&mut config, &openclaw_paths)?;
     remove_nested_key(&mut config, &["meta", "lastTouchedVersion"]);
     remove_nested_key(&mut config, &["meta", "lastTouchedAt"]);
@@ -1032,14 +1032,15 @@ fn sanitize_legacy_provider_runtime_config(config: &mut Value) {
     }
 }
 
-fn ensure_managed_control_ui_allowed_origins(config: &mut Value) {
+fn ensure_managed_control_ui_allowed_origins(config: &mut Value) -> Result<()> {
     for origin in TAURI_CONTROL_UI_ALLOWED_ORIGINS {
         ensure_nested_string_array_contains(
             config,
             &["gateway", "controlUi", "allowedOrigins"],
             origin,
-        );
+        )?;
     }
+    Ok(())
 }
 
 fn ensure_built_in_main_agent_paths(
@@ -1053,17 +1054,11 @@ fn ensure_built_in_main_agent_paths(
         *config = Value::Object(Map::new());
     }
 
-    let root = config.as_object_mut().expect("openclaw config object");
+    let root = ensure_json_object_mut(config, "openclaw config root")?;
     let agents_root = root
         .entry("agents".to_string())
         .or_insert_with(|| Value::Object(Map::new()));
-    if !agents_root.is_object() {
-        *agents_root = Value::Object(Map::new());
-    }
-
-    let agents_root = agents_root
-        .as_object_mut()
-        .expect("openclaw agents root object");
+    let agents_root = ensure_json_object_mut(agents_root, "openclaw agents root")?;
     if agents_root
         .get("defaults")
         .and_then(Value::as_object)
@@ -1074,11 +1069,8 @@ fn ensure_built_in_main_agent_paths(
     let list = agents_root
         .entry("list".to_string())
         .or_insert_with(|| Value::Array(Vec::new()));
-    if !list.is_array() {
-        *list = Value::Array(Vec::new());
-    }
 
-    let list = list.as_array_mut().expect("openclaw agents list");
+    let list = ensure_json_array_mut(list, "openclaw agents list")?;
     let main_index = list.iter().position(|entry| {
         entry
             .get("id")
@@ -1099,14 +1091,8 @@ fn ensure_built_in_main_agent_paths(
         }
     };
 
-    if !list[main_index].is_object() {
-        list[main_index] = Value::Object(Map::new());
-    }
-
     {
-        let main = list[main_index]
-            .as_object_mut()
-            .expect("openclaw main agent object");
+        let main = ensure_json_object_mut(&mut list[main_index], "openclaw main agent")?;
         main.insert(
             "id".to_string(),
             Value::String(OPENCLAW_DEFAULT_AGENT_ID.to_string()),
@@ -1212,64 +1198,82 @@ fn copy_directory_recursive(source: &Path, target: &Path) -> Result<()> {
     Ok(())
 }
 
-fn set_nested_string(value: &mut Value, path: &[&str], next: &str) {
-    set_nested_value(value, path, Value::String(next.to_string()));
+fn set_nested_string(value: &mut Value, path: &[&str], next: &str) -> Result<()> {
+    set_nested_value(value, path, Value::String(next.to_string()))
 }
 
-fn set_nested_u16(value: &mut Value, path: &[&str], next: u16) {
-    set_nested_value(value, path, Value::Number(Number::from(next)));
+fn set_nested_u16(value: &mut Value, path: &[&str], next: u16) -> Result<()> {
+    set_nested_value(value, path, Value::Number(Number::from(next)))
 }
 
-fn ensure_nested_string_array_contains(value: &mut Value, path: &[&str], item: &str) {
+fn ensure_nested_string_array_contains(value: &mut Value, path: &[&str], item: &str) -> Result<()> {
+    if path.is_empty() {
+        return Err(FrameworkError::ValidationFailed(
+            "nested string array path must not be empty".to_string(),
+        ));
+    }
+
     let mut current = value;
     for segment in &path[..path.len() - 1] {
-        let object = current.as_object_mut().expect("nested config objects");
+        let object = ensure_json_object_mut(current, "nested config object")?;
         current = object
             .entry((*segment).to_string())
             .or_insert_with(|| Value::Object(Map::new()));
-        if !current.is_object() {
-            *current = Value::Object(Map::new());
-        }
     }
 
-    let entry = current
-        .as_object_mut()
-        .expect("nested config objects")
+    let entry = ensure_json_object_mut(current, "nested config object")?
         .entry(path[path.len() - 1].to_string())
         .or_insert_with(|| Value::Array(Vec::new()));
-    if !entry.is_array() {
-        *entry = Value::Array(Vec::new());
-    }
 
-    let items = entry.as_array_mut().expect("nested config arrays");
+    let items = ensure_json_array_mut(entry, "nested config array")?;
     if items.iter().any(|value| value.as_str() == Some(item)) {
-        return;
+        return Ok(());
     }
 
     items.push(Value::String(item.to_string()));
+    Ok(())
 }
 
-fn set_nested_value(value: &mut Value, path: &[&str], next: Value) {
+fn set_nested_value(value: &mut Value, path: &[&str], next: Value) -> Result<()> {
     if path.is_empty() {
         *value = next;
-        return;
+        return Ok(());
     }
 
     let mut current = value;
     for segment in &path[..path.len() - 1] {
-        let object = current.as_object_mut().expect("nested config objects");
+        let object = ensure_json_object_mut(current, "nested config object")?;
         current = object
             .entry((*segment).to_string())
             .or_insert_with(|| Value::Object(Map::new()));
-        if !current.is_object() {
-            *current = Value::Object(Map::new());
-        }
     }
 
-    current
-        .as_object_mut()
-        .expect("nested config objects")
+    ensure_json_object_mut(current, "nested config object")?
         .insert(path[path.len() - 1].to_string(), next);
+    Ok(())
+}
+
+fn ensure_json_object_mut<'a>(
+    value: &'a mut Value,
+    label: &str,
+) -> Result<&'a mut Map<String, Value>> {
+    if !value.is_object() {
+        *value = Value::Object(Map::new());
+    }
+
+    value.as_object_mut().ok_or_else(|| {
+        FrameworkError::Internal(format!("{label} must be a JSON object after normalization"))
+    })
+}
+
+fn ensure_json_array_mut<'a>(value: &'a mut Value, label: &str) -> Result<&'a mut Vec<Value>> {
+    if !value.is_array() {
+        *value = Value::Array(Vec::new());
+    }
+
+    value.as_array_mut().ok_or_else(|| {
+        FrameworkError::Internal(format!("{label} must be a JSON array after normalization"))
+    })
 }
 
 fn remove_nested_key(value: &mut Value, path: &[&str]) {
@@ -1354,6 +1358,7 @@ mod tests {
     };
     use crate::framework::{
         layout::{ActiveState, KernelAuthorityState, KernelMigrationState},
+        openclaw_release::required_openclaw_node_version,
         paths::resolve_paths_for_root,
         services::{
             local_ai_proxy::OPENCLAW_LOCAL_PROXY_TOKEN_ENV_VAR,
@@ -1365,6 +1370,24 @@ mod tests {
     use zip::{write::FileOptions, CompressionMethod, ZipWriter};
 
     const TEST_BUNDLED_OPENCLAW_VERSION: &str = env!("SDKWORK_BUNDLED_OPENCLAW_VERSION");
+
+    #[test]
+    fn openclaw_activation_config_normalization_helpers_do_not_panic_in_production() {
+        let production_source = include_str!("openclaw_runtime.rs")
+            .split("mod tests {")
+            .next()
+            .expect("production source");
+        let config_normalization_source = production_source
+            .split("fn ensure_built_in_main_agent_paths")
+            .nth(1)
+            .and_then(|tail| tail.split("fn remove_nested_key").next())
+            .expect("activation config normalization source");
+
+        assert!(
+            !config_normalization_source.contains(".expect("),
+            "OpenClaw activation config normalization must propagate malformed-shape errors instead of panicking"
+        );
+    }
 
     struct ScopedPathGuard {
         _env_lock: MutexGuard<'static, ()>,
@@ -1562,9 +1585,15 @@ mod tests {
             active
                 .runtimes
                 .get(OPENCLAW_RUNTIME_ID)
-                .and_then(|entry| entry.active_version.as_deref()),
+                .and_then(|entry| entry.active_runtime_install_key()),
             Some(expected_install_key.as_str())
         );
+        let openclaw_runtime = active
+            .runtimes
+            .get(OPENCLAW_RUNTIME_ID)
+            .expect("openclaw active runtime");
+        assert!(openclaw_runtime.active_version.is_none());
+        assert!(openclaw_runtime.fallback_version.is_none());
     }
 
     #[test]
@@ -1829,7 +1858,7 @@ mod tests {
             &stray_config_path,
             r#"{
   meta: {
-    lastTouchedVersion: "2026.4.9",
+    lastTouchedVersion: "__OPENCLAW_VERSION__",
     lastTouchedAt: "2026-04-09T12:00:00Z",
   },
   gateway: {
@@ -1841,7 +1870,8 @@ mod tests {
     },
   },
 }
-"#,
+"#
+            .replace("__OPENCLAW_VERSION__", TEST_BUNDLED_OPENCLAW_VERSION),
         )
         .expect("seed stray config");
 
@@ -1949,7 +1979,7 @@ mod tests {
                 .required_external_runtime_versions
                 .get("nodejs")
                 .map(String::as_str),
-            Some("22.16.0")
+            Some(required_openclaw_node_version())
         );
     }
 
@@ -2103,13 +2133,15 @@ mod tests {
 
     #[test]
     fn staged_install_directory_keeps_the_full_install_key_prefix() {
-        let install_dir = std::path::PathBuf::from("D:/runtime/openclaw/2026.4.2-windows-x64");
+        let install_key = format!("{TEST_BUNDLED_OPENCLAW_VERSION}-windows-x64");
+        let install_dir = std::path::PathBuf::from(format!("D:/runtime/openclaw/{install_key}"));
 
         let staged_dir = staged_runtime_install_dir(&install_dir, 123);
+        let expected_staging_name = format!("{install_key}.staging-123");
 
         assert_eq!(
             staged_dir.file_name().and_then(|value| value.to_str()),
-            Some("2026.4.2-windows-x64.staging-123")
+            Some(expected_staging_name.as_str())
         );
     }
 
@@ -3063,14 +3095,17 @@ mod tests {
         .expect("openclaw package json");
         fs::write(
             &bundled_plugin_package_json_path,
-            r#"{
+            format!(
+                r#"{{
   "name": "@openclaw/amazon-bedrock-provider",
-  "version": "2026.4.2-beta.1",
-  "dependencies": {
+  "version": "{}-beta.1",
+  "dependencies": {{
     "@aws-sdk/client-bedrock": "3.1020.0"
-  }
-}
+  }}
+}}
 "#,
+                TEST_BUNDLED_OPENCLAW_VERSION,
+            ),
         )
         .expect("bundled plugin package json");
         fs::write(
@@ -3100,7 +3135,7 @@ mod tests {
             required_external_runtimes: vec!["nodejs".to_string()],
             required_external_runtime_versions: std::collections::BTreeMap::from([(
                 "nodejs".to_string(),
-                "22.16.0".to_string(),
+                required_openclaw_node_version().to_string(),
             )]),
             platform: platform.to_string(),
             arch: arch.to_string(),

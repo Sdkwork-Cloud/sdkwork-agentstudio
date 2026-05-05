@@ -241,7 +241,7 @@ function buildMissingRustToolchainMessageWithContext(inspections, options = {}) 
     guidanceLines.push(
       'The current Node process also could not launch standard Windows shells.',
       'This is a broader child-process restriction than a Rust toolchain problem.',
-      'Claw Studio desktop commands will keep failing until Node is allowed to spawn Windows executables.',
+      'Claw Studio native commands will keep failing until Node is allowed to spawn Windows executables.',
     );
   }
 
@@ -259,7 +259,7 @@ function buildMissingRustToolchainMessageWithContext(inspections, options = {}) 
   }
 
   return [
-    'Rust/Cargo toolchain is required for Claw Studio desktop development and builds.',
+    'Rust/Cargo toolchain is required for Claw Studio native desktop and server development, checks, and builds.',
     ...(summaryLines.length > 0 ? summaryLines : ['Unavailable command(s): cargo, rustc']),
     ...(detailLines.length > 0 ? ['', 'Detected issue(s):', ...detailLines] : []),
     '',
@@ -307,7 +307,7 @@ export function withRustToolchainPath(baseEnv = process.env, options = {}) {
   return env;
 }
 
-export function ensureTauriRustToolchain({
+export function ensureNativeRustToolchain({
   inspectCommand = inspectCommandAvailability,
   requiredCommands = ['cargo', 'rustc'],
   env = process.env,
@@ -357,8 +357,8 @@ export function ensureTauriRustToolchain({
 }
 
 function main() {
-  ensureTauriRustToolchain();
-  console.log('ok - tauri rust toolchain available');
+  ensureNativeRustToolchain();
+  console.log('ok - native Rust toolchain available');
 }
 
 if (path.resolve(process.argv[1] ?? '') === __filename) {

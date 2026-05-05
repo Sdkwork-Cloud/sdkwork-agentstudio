@@ -26,6 +26,10 @@ test('release profiles expose a reusable claw-studio release matrix with standar
 
   assert.equal(profile.id, 'claw-studio');
   assert.equal(profile.release.manifestFileName, 'release-manifest.json');
+  assert.equal(profile.release.manifestChecksumFileName, 'release-manifest.json.sha256.txt');
+  assert.equal(profile.release.attestationEvidenceFileName, 'release-attestations.json');
+  assert.equal(profile.release.attestationPredicateType, 'https://slsa.dev/provenance/v1');
+  assert.equal(profile.release.attestationSignerWorkflowPath, '.github/workflows/release-reusable.yml');
   assert.equal(profile.release.globalChecksumsFileName, 'SHA256SUMS.txt');
   assert.equal(profile.release.enableArtifactAttestations, true);
   assert.equal(matrix.length, 6);

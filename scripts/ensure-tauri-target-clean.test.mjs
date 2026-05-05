@@ -12,6 +12,7 @@ import {
   DEFAULT_NODE_VERSION,
   DEFAULT_OPENCLAW_VERSION,
 } from './openclaw-release.mjs';
+import { derivePreviousNumericVersion } from './test-support/version-fixtures.mjs';
 
 const modulePath = path.resolve(import.meta.dirname, 'ensure-tauri-target-clean.mjs');
 
@@ -51,6 +52,9 @@ function writeJson(filePath, value) {
   mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
+
+const staleOpenClawVersion = derivePreviousNumericVersion(DEFAULT_OPENCLAW_VERSION);
+const staleNodeVersion = derivePreviousNumericVersion(DEFAULT_NODE_VERSION);
 
 {
   const removedPaths = [];
@@ -163,8 +167,8 @@ withTempDir((tempDir) => {
   writeJson(path.join(targetDir, 'dev', 'debug', 'resources', 'openclaw-runtime', 'manifest.json'), {
     schemaVersion: 1,
     runtimeId: 'openclaw',
-    openclawVersion: '2026.3.24',
-    nodeVersion: '22.16.0',
+    openclawVersion: staleOpenClawVersion,
+    nodeVersion: staleNodeVersion,
     platform: 'windows',
     arch: 'x64',
     cliRelativePath: 'runtime/package/node_modules/openclaw/openclaw.mjs',
@@ -198,7 +202,7 @@ withTempDir((tempDir) => {
   writeJson(path.join(srcTauriDir, 'resources', 'openclaw', 'manifest.json'), sourceManifest);
   writeJson(path.join(targetDir, 'dev', 'debug', 'resources', 'openclaw', 'manifest.json'), {
     ...sourceManifest,
-    openclawVersion: '2026.3.24',
+    openclawVersion: staleOpenClawVersion,
   });
 
   const result = ensureTauriTargetClean(srcTauriDir);
@@ -232,7 +236,7 @@ withTempDir((tempDir) => {
     {
       schemaVersion: 1,
       runtimeId: 'openclaw',
-      openclawVersion: '2026.3.24',
+      openclawVersion: staleOpenClawVersion,
       nodeVersion: DEFAULT_NODE_VERSION,
       platform: 'windows',
       arch: 'x64',
@@ -263,7 +267,7 @@ withTempDir((tempDir) => {
   writeJson(path.join(targetDir, 'dev', 'debug', 'resources', 'openclaw', 'manifest.json'), {
     schemaVersion: 1,
     runtimeId: 'openclaw',
-    openclawVersion: '2026.3.24',
+    openclawVersion: staleOpenClawVersion,
     nodeVersion: DEFAULT_NODE_VERSION,
     platform: 'windows',
     arch: 'x64',

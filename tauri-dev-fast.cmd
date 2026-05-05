@@ -9,7 +9,7 @@ if not exist "%SDKWORK_WINDOWS_MIRROR_BASE_DIR%" mkdir "%SDKWORK_WINDOWS_MIRROR_
 
 pushd "%ROOT%\packages\sdkwork-claw-desktop" || exit /b 1
 
-call ..\..\sdkwork-run-node.cmd ..\..\scripts\ensure-tauri-rust-toolchain.mjs
+call ..\..\sdkwork-run-node.cmd ..\..\scripts\ensure-native-rust-toolchain.mjs
 if errorlevel 1 goto :end
 
 call ..\..\sdkwork-run-node.cmd ..\..\scripts\prepare-openclaw-runtime.mjs

@@ -49,7 +49,7 @@ function createWorkbench(id: string, port = '21280') {
   } as InstanceWorkbenchSnapshot;
 }
 
-function createDriftedManagedConfigWorkbench(id: string) {
+function createDriftedConfigPathWorkbench(id: string) {
   const workbench = createWorkbench(id) as any;
   workbench.detail = {
     instance: {
@@ -75,7 +75,7 @@ function createDriftedManagedConfigWorkbench(id: string) {
           mode: 'managedFile',
           readonly: false,
           target:
-            'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json',
+            'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/noncanonical-config/openclaw.json',
         },
         {
           id: 'workspace-root',
@@ -91,7 +91,7 @@ function createDriftedManagedConfigWorkbench(id: string) {
         id: 'config-file',
         kind: 'configFile',
         location:
-          'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json',
+          'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/noncanonical-config/openclaw.json',
       },
       {
         id: 'workspace-root',
@@ -102,14 +102,14 @@ function createDriftedManagedConfigWorkbench(id: string) {
   };
   workbench.kernelConfig = {
     configFile:
-      'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json',
-    configRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config',
+      'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/noncanonical-config/openclaw.json',
+    configRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/noncanonical-config',
     userRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw',
     standardConfigFile: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw/openclaw.json',
     standardStateRoot: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw',
     format: 'json',
     access: 'localFs',
-    provenance: 'legacyConfigDirectory',
+    provenance: 'kernelAuthority',
     writable: true,
     resolved: true,
     schemaVersion: null,
@@ -163,9 +163,9 @@ await runAsyncTest(
 );
 
 await runAsyncTest(
-  'startLoadInstanceDetailWorkbench normalizes drifted managed-config workbench paths before syncing page state',
+  'startLoadInstanceDetailWorkbench normalizes drifted config workbench paths before syncing page state',
   async () => {
-    const nextWorkbench = createDriftedManagedConfigWorkbench('instance-1');
+    const nextWorkbench = createDriftedConfigPathWorkbench('instance-1');
     const captured = {
       workbench: null as InstanceWorkbenchSnapshot | null,
       config: null as InstanceConfig | null,

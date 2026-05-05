@@ -9,19 +9,21 @@ const RESOLVABLE_SOURCE_EXTENSIONS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.js
 const EXTRA_WORKSPACE_PACKAGE_CONFIGS: Array<{
   packageName: string;
   relativePackageDir: string;
-  entryBySubpath: Record<string, string>;
+  entryBySubpath: Record<string, string | {
+    path: string;
+    relativeTo: 'package' | 'workspace';
+  }>;
 }> = [
   {
     packageName: '@sdkwork/core-pc-react',
     relativePackageDir: '../../sdkwork-core/sdkwork-core-pc-react',
     entryBySubpath: {
-      '.': 'src/index.ts',
       './app': 'src/app/index.ts',
       './env': 'src/env/index.ts',
-      './hooks': 'src/hooks/index.ts',
-      './im': 'src/im/index.ts',
-      './preferences': 'src/preferences/index.ts',
-      './runtime': 'src/runtime/index.ts',
+      './runtime': {
+        path: 'scripts/shims/core-pc-react-runtime-node.ts',
+        relativeTo: 'workspace',
+      },
     },
   },
 ];
@@ -117,14 +119,21 @@ function resolveExtraWorkspacePackagePath(
     return null;
   }
 
-  const relativeSourcePath = config.entryBySubpath[subpath];
-  if (!relativeSourcePath) {
+  const entry = config.entryBySubpath[subpath];
+  if (!entry) {
     return null;
   }
 
+  const relativeSourcePath = typeof entry === 'string' ? entry : entry.path;
+  const baseDir = typeof entry === 'string' || entry.relativeTo === 'package'
+    ? path.resolve(
+      resolveCanonicalPackagesRootDir(packagesRootDir),
+      config.relativePackageDir,
+    )
+    : path.resolve(packagesRootDir, '..');
+
   return path.resolve(
-    resolveCanonicalPackagesRootDir(packagesRootDir),
-    config.relativePackageDir,
+    baseDir,
     relativeSourcePath,
   );
 }
@@ -207,18 +216,23 @@ export function resolveWorkspacePackageAliases(packagesRootDir: string) {
     }));
 
   const extraAliases = EXTRA_WORKSPACE_PACKAGE_CONFIGS.flatMap((config) => {
-    const canonicalPackagesRootDir = resolveCanonicalPackagesRootDir(packagesRootDir);
     return Object.entries(config.entryBySubpath)
-      .map(([subpath, relativeSourcePath]) => ({
-        find: subpath === '.'
-          ? config.packageName
-          : `${config.packageName}${subpath.slice(1)}`,
-        replacement: path.resolve(
-          canonicalPackagesRootDir,
-          config.relativePackageDir,
-          relativeSourcePath,
-        ),
-      }));
+      .map(([subpath]) => {
+        const replacement = resolveExtraWorkspacePackagePath(
+          config.packageName,
+          subpath,
+          packagesRootDir,
+        );
+        return replacement
+          ? {
+              find: subpath === '.'
+                ? config.packageName
+                : `${config.packageName}${subpath.slice(1)}`,
+              replacement,
+            }
+          : null;
+      })
+      .filter(Boolean);
   });
 
   return [...localAliases, ...extraAliases]

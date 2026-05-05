@@ -63,6 +63,7 @@ class MockGatewayClient implements OpenClawGatewayClientLike {
   subscribeError: Error | null = null;
   subscribeSessionMessagesError: Error | null = null;
   unsubscribeSessionMessagesError: Error | null = null;
+  nextSendResult: { runId?: string; response?: unknown } | null = null;
   shouldFailDelete = false;
   shouldFailReset = false;
   private connectHello: {
@@ -212,8 +213,13 @@ class MockGatewayClient implements OpenClawGatewayClientLike {
     if (this.sendError) {
       throw this.sendError;
     }
+    const nextSendResult = this.nextSendResult;
+    this.nextSendResult = null;
     return {
-      runId: 'run-1',
+      runId: nextSendResult?.runId ?? 'run-1',
+      ...(nextSendResult && 'response' in nextSendResult
+        ? { response: nextSendResult.response }
+        : {}),
     };
   }
 
@@ -763,6 +769,140 @@ await runTest(
       [{ role: 'user', content: 'user message' }],
     );
     assert.deepEqual(client.historyCalls, []);
+  },
+);
+
+await runTest(
+  'openclaw gateway session store displays a chat.send response in the current session',
+  async () => {
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-a.json',
+        count: 0,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [],
+      },
+      {},
+    );
+
+    const store = new OpenClawGatewaySessionStore({
+      getClient() {
+        return client;
+      },
+      now: () => 420,
+      createSessionKey(instanceId) {
+        return `claw-studio:${instanceId}:draft-send-response`;
+      },
+    });
+
+    await store.hydrateInstance('instance-a');
+    const draft = store.createDraftSession('instance-a', 'OpenClaw A');
+    client.nextSendResult = {
+      runId: 'run-rpc-1',
+      response: {
+        runId: 'run-other',
+        sessionKey: 'claw-studio:instance-a:other-session',
+        role: 'assistant',
+        content: [{ type: 'text', text: 'rpc reply visible in current session' }],
+      },
+    };
+
+    await store.sendMessage({
+      instanceId: 'instance-a',
+      sessionId: draft.id,
+      content: 'user message',
+      model: 'OpenClaw A',
+    });
+
+    const snapshot = store.getSnapshot('instance-a');
+    const session = snapshot.sessions.find((entry) => entry.id === draft.id);
+    assert.equal(snapshot.activeSessionId, draft.id);
+    assert.ok(session);
+    assert.equal(session?.runId, null);
+    assert.deepEqual(
+      session?.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
+      [
+        { role: 'user', content: 'user message' },
+        { role: 'assistant', content: 'rpc reply visible in current session' },
+      ],
+    );
+  },
+);
+
+await runTest(
+  'openclaw gateway session store streams top-level chat delta text into the current session',
+  async () => {
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-a.json',
+        count: 0,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [],
+      },
+      {},
+    );
+
+    const store = new OpenClawGatewaySessionStore({
+      getClient() {
+        return client;
+      },
+      now: () => 421,
+      createSessionKey(instanceId) {
+        return `claw-studio:${instanceId}:draft-top-level-delta`;
+      },
+    });
+
+    await store.hydrateInstance('instance-a');
+    const draft = store.createDraftSession('instance-a', 'OpenClaw A');
+    await store.sendMessage({
+      instanceId: 'instance-a',
+      sessionId: draft.id,
+      content: 'user message',
+      model: 'OpenClaw A',
+    });
+
+    client.emitChat({
+      runId: 'run-1',
+      sessionKey: draft.id,
+      state: 'delta',
+      delta: 'partial reply',
+    });
+
+    client.emitChat({
+      runId: 'run-1',
+      sessionKey: draft.id,
+      state: 'delta',
+      delta: 'partial reply completed',
+    });
+
+    const snapshot = store.getSnapshot('instance-a');
+    const session = snapshot.sessions.find((entry) => entry.id === draft.id);
+    assert.equal(snapshot.activeSessionId, draft.id);
+    assert.ok(session);
+    assert.equal(session?.runId, 'run-1');
+    assert.deepEqual(
+      session?.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
+      [
+        { role: 'user', content: 'user message' },
+        { role: 'assistant', content: 'partial reply completed' },
+      ],
+    );
   },
 );
 
@@ -5971,6 +6111,114 @@ await runTest(
           role: 'user',
           senderLabel: 'Iris',
           content: 'keep just one local user turn',
+        },
+      ],
+    );
+  },
+);
+
+await runTest(
+  'openclaw gateway session store deduplicates text-only user echoes for local attachment sends',
+  async () => {
+    const sessionId = 'claw-studio:instance-a:session-user-attachment-echo-dedup';
+    const client = new MockGatewayClient(
+      {
+        ts: 1,
+        path: 'sessions-a.json',
+        count: 1,
+        defaults: {
+          modelProvider: null,
+          model: null,
+          contextTokens: null,
+        },
+        sessions: [
+          {
+            key: sessionId,
+            label: 'User Attachment Echo Dedup',
+            updatedAt: 704,
+            kind: 'direct',
+            model: 'OpenClaw A',
+          },
+        ],
+      },
+      {
+        [sessionId]: {
+          thinkingLevel: 'attachment-echo-dedup-start',
+          messages: [],
+        },
+      },
+    );
+    client.setConnectHello({
+      type: 'hello-ok',
+      protocol: 3,
+      features: {
+        methods: [
+          'sessions.subscribe',
+          'sessions.list',
+          'chat.history',
+          'chat.send',
+          'sessions.messages.subscribe',
+          'sessions.messages.unsubscribe',
+        ],
+        events: ['chat', 'sessions.changed', 'session.message'],
+      },
+    });
+
+    const store = new OpenClawGatewaySessionStore({
+      getClient() {
+        return client;
+      },
+      now: () => 705,
+    });
+
+    await store.hydrateInstance('instance-a');
+    await waitFor(() => client.subscribeSessionMessagesCalls.includes(sessionId));
+
+    const attachment = {
+      id: 'attachment-screenshot',
+      kind: 'image' as const,
+      name: 'screenshot.png',
+      url: 'https://cdn.example.com/screenshot.png',
+    };
+
+    await store.sendMessage({
+      instanceId: 'instance-a',
+      sessionId,
+      content: 'please inspect this screenshot',
+      model: 'OpenClaw A',
+      attachments: [attachment],
+    });
+
+    client.emitSessionMessage({
+      sessionKey: sessionId,
+      messageId: 'msg-remote-user-attachment-echo',
+      senderLabel: 'Iris',
+      message: {
+        id: 'msg-remote-user-attachment-echo',
+        role: 'user',
+        senderLabel: 'Iris',
+        content: [{ type: 'text', text: 'please inspect this screenshot' }],
+        timestamp: 706,
+      },
+    });
+
+    const session = store.getSnapshot('instance-a').sessions.find((entry) => entry.id === sessionId);
+    assert.ok(session);
+    assert.deepEqual(
+      session?.messages.map((message) => ({
+        id: message.id,
+        role: message.role,
+        senderLabel: message.senderLabel ?? null,
+        content: message.content,
+        attachments: message.attachments ?? [],
+      })),
+      [
+        {
+          id: 'msg-remote-user-attachment-echo',
+          role: 'user',
+          senderLabel: 'Iris',
+          content: 'please inspect this screenshot',
+          attachments: [attachment],
         },
       ],
     );

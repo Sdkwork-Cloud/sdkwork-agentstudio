@@ -1,4 +1,16 @@
 import assert from 'node:assert/strict';
+import { DEFAULT_BUNDLED_OPENCLAW_VERSION } from '@sdkwork/claw-types';
+
+const FUTURE_KERNEL_RUNTIME_VERSION = shiftOpenClawVersion(DEFAULT_BUNDLED_OPENCLAW_VERSION, 1);
+
+function shiftOpenClawVersion(version: string, patchOffset: number) {
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:-(?:\d+|[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*))?$/u.exec(version);
+  assert.ok(match, `Expected numeric OpenClaw test version, received ${version}`);
+  const [, year, month, patch] = match;
+  const shiftedPatch = Number(patch) + patchOffset;
+  assert.ok(shiftedPatch >= 0, `Cannot derive OpenClaw test version before patch 0 from ${version}`);
+  return `${year}.${month}.${shiftedPatch}`;
+}
 
 function runTest(name: string, fn: () => void | Promise<void>) {
   return Promise.resolve()
@@ -50,7 +62,7 @@ await runTest(
         type: 'Built-in OpenClaw Runtime',
         iconType: 'box',
         status: 'online',
-        version: '2026.4.2',
+        version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
         uptime: '3h',
         ip: '127.0.0.1',
         cpu: 6,
@@ -102,7 +114,7 @@ await runTest(
         type: 'Remote OpenClaw',
         iconType: 'server',
         status: 'online',
-        version: '2026.4.2',
+        version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
         uptime: '10h',
         ip: 'gateway.example.com',
         cpu: 10,
@@ -155,7 +167,7 @@ await runTest(
         type: 'Hermes Agent',
         iconType: 'server',
         status: 'online',
-        version: '2026.4.13',
+        version: FUTURE_KERNEL_RUNTIME_VERSION,
         uptime: '1h',
         ip: '127.0.0.1',
         cpu: 8,
@@ -201,7 +213,7 @@ await runTest(
         type: 'PhoenixClaw Runtime',
         iconType: 'server',
         status: 'online',
-        version: '2026.4.20',
+        version: FUTURE_KERNEL_RUNTIME_VERSION,
         uptime: '30m',
         ip: 'future.example.com',
         cpu: 6,
@@ -243,7 +255,7 @@ await runTest(
         type: 'Phoenix Claw Runtime',
         iconType: 'server',
         status: 'online',
-        version: '2026.4.20',
+        version: FUTURE_KERNEL_RUNTIME_VERSION,
         uptime: '30m',
         ip: 'future.example.com',
         cpu: 6,
@@ -282,7 +294,7 @@ await runTest(
         type: 'Built-in OpenClaw Runtime',
         iconType: 'box',
         status: 'syncing',
-        version: '2026.4.2',
+        version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
         uptime: '30s',
         ip: '127.0.0.1',
         cpu: 6,
@@ -316,7 +328,7 @@ await runTest(
       type: 'Nova Kernel Runtime',
       iconType: 'server',
       status: 'online',
-      version: '2026.4.20',
+      version: FUTURE_KERNEL_RUNTIME_VERSION,
       uptime: '10m',
       ip: 'future.example.com',
       cpu: 4,
@@ -338,7 +350,7 @@ await runTest(
       type: 'Remote Linux Service',
       iconType: 'server',
       status: 'offline',
-      version: '2026.4.20',
+      version: FUTURE_KERNEL_RUNTIME_VERSION,
       uptime: '0m',
       ip: 'future.example.com',
       cpu: 0,

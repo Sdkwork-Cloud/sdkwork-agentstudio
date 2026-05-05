@@ -38,6 +38,7 @@ export interface UseChatRuntimeSynchronizationInput {
   newSessionModel?: string;
   selectedAgentId: string | null | undefined;
   selectedSkillId: string | null;
+  activeSessionAgentId?: string | null;
   isSelectionTransitionPending: boolean;
   hasResolvedVisibleAgents: boolean;
   visibleAgentIds: string[];
@@ -81,6 +82,7 @@ export function useChatRuntimeSynchronization({
   newSessionModel,
   selectedAgentId,
   selectedSkillId,
+  activeSessionAgentId,
   isSelectionTransitionPending,
   hasResolvedVisibleAgents,
   visibleAgentIds,
@@ -98,6 +100,7 @@ export function useChatRuntimeSynchronization({
     isSelectionTransitionPending,
     selectedAgentId,
     selectedSkillId,
+    activeSessionAgentId,
     hasResolvedVisibleAgents,
     visibleAgentIds,
     setSelectedAgentId,

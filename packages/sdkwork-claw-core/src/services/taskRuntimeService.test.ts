@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { OpenClawGatewayAccessError } from '@sdkwork/claw-infrastructure';
-import type { StudioInstanceDetailRecord } from '@sdkwork/claw-types';
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  type StudioInstanceDetailRecord,
+} from '@sdkwork/claw-types';
 import { createTaskRuntimeService } from './taskRuntimeService.ts';
 
 function runTest(name: string, fn: () => Promise<void> | void) {
@@ -38,7 +41,8 @@ function createDetail(input: {
       isBuiltIn: input.isBuiltIn ?? runtimeKind === 'openclaw',
       isDefault: false,
       iconType: 'server',
-      version: '2026.4.5',
+      version:
+        runtimeKind === 'openclaw' ? DEFAULT_BUNDLED_OPENCLAW_VERSION : 'custom-runtime-fixture',
       typeLabel: 'Fixture',
       host: '127.0.0.1',
       port: 18080,

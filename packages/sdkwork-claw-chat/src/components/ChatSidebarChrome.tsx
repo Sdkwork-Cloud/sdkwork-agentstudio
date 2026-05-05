@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { CreateKernelAgentResult } from '@sdkwork/claw-core';
+import { resolveBrowserStorage } from '@sdkwork/claw-infrastructure';
 import { cn } from '@sdkwork/claw-ui';
 import type {
   ChatAgentCreationFollowUpResult,
@@ -21,12 +22,10 @@ const CHAT_SIDEBAR_XL_DEFAULT_WIDTH = 320;
 const CHAT_SIDEBAR_CONVERSATION_MIN_WIDTH = 560;
 
 function readStoredSidebarWidth() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
   try {
-    const rawValue = window.localStorage.getItem(CHAT_SIDEBAR_WIDTH_STORAGE_KEY);
+    const rawValue = resolveBrowserStorage('localStorage')?.getItem(
+      CHAT_SIDEBAR_WIDTH_STORAGE_KEY,
+    );
     if (!rawValue) {
       return null;
     }
@@ -39,12 +38,11 @@ function readStoredSidebarWidth() {
 }
 
 function persistSidebarWidth(width: number) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
   try {
-    window.localStorage.setItem(CHAT_SIDEBAR_WIDTH_STORAGE_KEY, String(width));
+    resolveBrowserStorage('localStorage')?.setItem(
+      CHAT_SIDEBAR_WIDTH_STORAGE_KEY,
+      String(width),
+    );
   } catch {
     // Ignore persistence failures and keep the in-memory width.
   }

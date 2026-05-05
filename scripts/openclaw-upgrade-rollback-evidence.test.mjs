@@ -4,7 +4,15 @@ import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import { shiftNumericVersion } from './test-support/version-fixtures.mjs';
+
 const rootDir = path.resolve(import.meta.dirname, '..');
+const openClawReleaseConfig = JSON.parse(
+  readFileSync(path.join(rootDir, 'config', 'kernel-releases', 'openclaw.json'), 'utf8'),
+);
+const expectedNodeVersion = openClawReleaseConfig.nodeVersion;
+const currentOpenClawVersion = String(openClawReleaseConfig.stableVersion);
+const nextOpenClawVersion = shiftNumericVersion(currentOpenClawVersion, 1);
 
 function createReadJsonFileStub() {
   return async (filePath) => {
@@ -13,15 +21,15 @@ function createReadJsonFileStub() {
     if (normalizedPath.endsWith('/config/kernel-releases/openclaw.json')) {
       return {
         kernelId: 'openclaw',
-        stableVersion: '2026.4.2',
+        stableVersion: currentOpenClawVersion,
         supportedChannels: ['stable'],
         defaultChannel: 'stable',
-        nodeVersion: '22.16.0',
+        nodeVersion: expectedNodeVersion,
         packageName: 'openclaw',
         runtimeRequirements: {
           requiredExternalRuntimes: ['nodejs'],
           requiredExternalRuntimeVersions: {
-            nodejs: '22.16.0',
+            nodejs: expectedNodeVersion,
           },
         },
       };
@@ -31,8 +39,8 @@ function createReadJsonFileStub() {
       return {
         schemaVersion: 1,
         runtimeId: 'openclaw',
-        openclawVersion: '2026.4.2',
-        nodeVersion: '22.16.0',
+        openclawVersion: currentOpenClawVersion,
+        nodeVersion: expectedNodeVersion,
         platform: 'windows',
         arch: 'x64',
       };
@@ -42,8 +50,8 @@ function createReadJsonFileStub() {
       return {
         schemaVersion: 1,
         runtimeId: 'openclaw',
-        openclawVersion: '2026.4.2',
-        nodeVersion: '22.16.0',
+        openclawVersion: currentOpenClawVersion,
+        nodeVersion: expectedNodeVersion,
         platform: 'windows',
         arch: 'x64',
       };
@@ -71,15 +79,15 @@ test('upgrade rollback evidence summarizes explicit upgrade and rollback readine
 
   const result = await evidence.buildOpenClawUpgradeRollbackEvidence({
     workspaceRootDir: 'D:/synthetic/workspace',
-    targetVersion: '2026.4.5',
-    rollbackVersion: '2026.4.2',
+    targetVersion: nextOpenClawVersion,
+    rollbackVersion: currentOpenClawVersion,
     target: {
       platformId: 'windows',
       archId: 'x64',
     },
     readJsonFileFn: createReadJsonFileStub(),
     assessOpenClawUpgradeReadinessFn: async () => ({
-      targetVersion: '2026.4.5',
+      targetVersion: nextOpenClawVersion,
       readyToUpgrade: true,
       blockers: [],
     }),
@@ -90,14 +98,14 @@ test('upgrade rollback evidence summarizes explicit upgrade and rollback readine
     }),
     verifyDesktopOpenClawReleaseAssetsFn: async () => ({
       manifest: {
-        openclawVersion: '2026.4.2',
+        openclawVersion: currentOpenClawVersion,
       },
       packagedResourceDir: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/generated/release/openclaw-resource',
     }),
   });
 
-  assert.equal(result.baselineVersion, '2026.4.2');
-  assert.equal(result.targetVersion, '2026.4.5');
+  assert.equal(result.baselineVersion, currentOpenClawVersion);
+  assert.equal(result.targetVersion, nextOpenClawVersion);
   assert.equal(result.upgradeReady, true);
   assert.equal(result.rollbackReady, true);
   assert.match(
@@ -127,7 +135,7 @@ test('upgrade rollback evidence turns packaged release verification failures int
 
   const result = await evidence.buildOpenClawUpgradeRollbackEvidence({
     workspaceRootDir: 'D:/synthetic/workspace',
-    rollbackVersion: '2026.4.2',
+    rollbackVersion: currentOpenClawVersion,
     target: {
       platformId: 'windows',
       archId: 'x64',

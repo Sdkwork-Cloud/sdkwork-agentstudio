@@ -18,6 +18,10 @@ import {
   getLanguageFromCookieString,
   parseCookieValue,
 } from './detectLanguage.ts';
+import {
+  resolveBrowserStorage,
+  writeBrowserStorageValue,
+} from './safeBrowserStorage.ts';
 
 export * from './config.ts';
 export * from './detectLanguage.ts';
@@ -135,9 +139,7 @@ function persistLanguage(language: SupportedLanguage) {
     document.cookie = `${languageCookieName}=${encodeURIComponent(language)}; Path=/; SameSite=Lax`;
   }
 
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(languageStorageKey, language);
-  }
+  writeBrowserStorageValue(resolveBrowserStorage('localStorage'), languageStorageKey, language);
 }
 
 export async function ensureI18n(initialLanguage = resolveInitialLanguage()) {
@@ -175,7 +177,7 @@ export async function ensureI18n(initialLanguage = resolveInitialLanguage()) {
             lookupQuerystring: languageQueryParameter,
             lookupCookie: languageCookieName,
             lookupLocalStorage: languageStorageKey,
-            caches: ['localStorage', 'cookie'],
+            caches: ['cookie'],
           },
         });
 

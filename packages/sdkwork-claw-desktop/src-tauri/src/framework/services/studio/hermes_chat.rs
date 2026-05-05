@@ -2051,7 +2051,7 @@ mod tests {
             "isBuiltIn": true,
             "isDefault": false,
             "iconType": "server",
-            "version": "2026.4.21",
+            "version": "main",
             "typeLabel": "Hermes Agent",
             "host": "127.0.0.1",
             "port": 19540,

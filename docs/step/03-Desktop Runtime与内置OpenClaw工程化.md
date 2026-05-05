@@ -6,7 +6,7 @@
 | --- | --- |
 | 执行模式 | 强串行 |
 | 前置 | `02` |
-| 主写入范围 | `packages/sdkwork-claw-desktop/src-tauri` `packages/sdkwork-claw-desktop/src/desktop` `config/openclaw-release.json` `scripts/prepare-openclaw-runtime.mjs` `scripts/sync-bundled-components.mjs` `scripts/openclaw-release.mjs` |
+| 主写入范围 | `packages/sdkwork-claw-desktop/src-tauri` `packages/sdkwork-claw-desktop/src/desktop` `config/kernel-releases/openclaw.json` `scripts/prepare-openclaw-runtime.mjs` `scripts/sync-bundled-components.mjs` `scripts/openclaw-release.mjs` |
 | 执行输入 | `02`、`03`、`10`、`12` 架构文档；现有 OpenClaw 版本源、manifest、Runtime 脚本 |
 | 本步非目标 | 不做业务 UI 大改；不扩展外部供应商直连逻辑 |
 | 最小输出 | 稳定启动链、单一版本源、可升级可回滚的 Runtime 工程链 |
@@ -16,7 +16,7 @@
 - 固化启动顺序：`configure_openclaw_gateway -> ensure_local_ai_proxy_ready -> project_managed_openclaw_provider`。
 - OpenClaw、Gateway、Local Proxy、Kernel 是四个独立生命周期面，不允许继续混写成单体服务文件。
 - `src-tauri/src/plugins/mod.rs` 只负责宿主插件注册，不承载 OpenClaw 业务生命周期或配置投影逻辑。
-- 升级必须以 `config/openclaw-release.json` 为单一版本源，以 manifest 与 readiness/verify 脚本为证据。
+- 升级必须以 `config/kernel-releases/openclaw.json` 为单一版本源，以 manifest 与 readiness/verify 脚本为证据。
 
 ## 3. 实施落地规划
 

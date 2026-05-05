@@ -85,7 +85,7 @@ describe('createAppSdkClientConfig', () => {
 
     const config = createAppSdkClientConfig();
 
-    expect(config.env).toBe(process.env.VITEST ? 'test' : 'development');
+    expect(config.env).toBe('development');
     expect(config.baseUrl).toBe('https://api-org.sdkwork.com');
     expect(config.accessToken).toBe('organization-access-token');
     expect(config.platform).toBe('desktop');

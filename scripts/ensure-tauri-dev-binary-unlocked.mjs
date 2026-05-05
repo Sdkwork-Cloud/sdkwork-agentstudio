@@ -157,6 +157,10 @@ function doesWindowsProcessExist(pid) {
   return result.status === 0 && result.stdout.trim().toLowerCase() === 'true';
 }
 
+export function isMissingWindowsServiceQueryError(output) {
+  return /\b1060\b/.test(String(output || ''));
+}
+
 function readWindowsServiceState(serviceName) {
   const result = spawnSync('sc.exe', ['query', serviceName], {
     encoding: 'utf8',
@@ -165,7 +169,7 @@ function readWindowsServiceState(serviceName) {
   const output = `${result.stdout || ''}\n${result.stderr || ''}`;
 
   if (result.status !== 0) {
-    if (/FAILED\s+1060/i.test(output)) {
+    if (isMissingWindowsServiceQueryError(output)) {
       return 'MISSING';
     }
 

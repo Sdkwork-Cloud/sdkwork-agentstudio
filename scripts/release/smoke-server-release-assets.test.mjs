@@ -4,8 +4,73 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { gzipSync } from 'node:zlib';
+
+import { createStoredZipArchive } from '../test-support/archive-fixtures.mjs';
 
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
+
+function formatTarOctal(value, width) {
+  return `${value.toString(8).padStart(width - 2, '0')}\0 `;
+}
+
+function createTarHeader({
+  name,
+  size,
+  type = '0',
+} = {}) {
+  const header = Buffer.alloc(512, 0);
+  Buffer.from(String(name ?? '').slice(0, 100), 'utf8').copy(header, 0);
+  Buffer.from(formatTarOctal(0o644, 8), 'utf8').copy(header, 100);
+  Buffer.from(formatTarOctal(0, 8), 'utf8').copy(header, 108);
+  Buffer.from(formatTarOctal(0, 8), 'utf8').copy(header, 116);
+  Buffer.from(formatTarOctal(size, 12), 'utf8').copy(header, 124);
+  Buffer.from(formatTarOctal(0, 12), 'utf8').copy(header, 136);
+  header.fill(0x20, 148, 156);
+  header.write(String(type ?? '0').slice(0, 1), 156, 1, 'utf8');
+  Buffer.from('ustar\0', 'utf8').copy(header, 257);
+  Buffer.from('00', 'utf8').copy(header, 263);
+
+  let checksum = 0;
+  for (const value of header.values()) {
+    checksum += value;
+  }
+  Buffer.from(formatTarOctal(checksum, 8), 'utf8').copy(header, 148);
+
+  return header;
+}
+
+function createTarRecord({
+  name,
+  content = '',
+  type = '0',
+} = {}) {
+  const contentBuffer = Buffer.isBuffer(content)
+    ? content
+    : Buffer.from(String(content ?? ''), 'utf8');
+  const paddingSize = (512 - (contentBuffer.length % 512)) % 512;
+
+  return Buffer.concat([
+    createTarHeader({
+      name,
+      size: contentBuffer.length,
+      type,
+    }),
+    contentBuffer,
+    Buffer.alloc(paddingSize, 0),
+  ]);
+}
+
+function writeTarGzArchive(archivePath, records) {
+  mkdirSync(path.dirname(archivePath), { recursive: true });
+  writeFileSync(
+    archivePath,
+    gzipSync(Buffer.concat([
+      ...records,
+      Buffer.alloc(1024, 0),
+    ])),
+  );
+}
 
 function writeSyntheticServerRuntime({
   serverTargetDir,
@@ -216,6 +281,133 @@ test('server bundle smoke can extract Windows zip bundles produced by the releas
     assert.equal(
       manifest.artifacts[0].relativePath,
       `server/windows/x64/claw-studio-server-${releaseTag}-windows-x64.zip`,
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('server bundle smoke rejects unsafe tar entries before extraction', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-server-release-assets.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-unsafe-tar-smoke-'));
+  const archivePath = path.join(tempRoot, 'claw-studio-server-unsafe-linux-x64.tar.gz');
+  const extractDir = path.join(tempRoot, 'extract');
+
+  try {
+    writeTarGzArchive(archivePath, [
+      createTarRecord({
+        name: '../escape.txt',
+        content: 'escape\n',
+      }),
+    ]);
+
+    await assert.rejects(
+      () => smoke.extractServerArchive({
+        archivePath,
+        extractDir,
+      }),
+      /unsafe parent traversal path/i,
+    );
+    assert.equal(existsSync(path.join(tempRoot, 'escape.txt')), false);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('server bundle smoke rejects symlink tar entries before extraction', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-server-release-assets.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-symlink-tar-smoke-'));
+  const archivePath = path.join(tempRoot, 'claw-studio-server-symlink-linux-x64.tar.gz');
+  const extractDir = path.join(tempRoot, 'extract');
+
+  try {
+    writeTarGzArchive(archivePath, [
+      createTarRecord({
+        name: 'claw-studio-server/bin/claw-server-link',
+        content: '/usr/bin/env',
+        type: '2',
+      }),
+    ]);
+
+    await assert.rejects(
+      () => smoke.extractServerArchive({
+        archivePath,
+        extractDir,
+      }),
+      /unsupported archive entry type/i,
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('server bundle smoke rejects duplicate normalized zip entries before extraction', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-server-release-assets.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-duplicate-zip-smoke-'));
+  const archivePath = path.join(tempRoot, 'claw-studio-server-duplicate-windows-x64.zip');
+  const extractDir = path.join(tempRoot, 'extract');
+
+  try {
+    mkdirSync(path.dirname(archivePath), { recursive: true });
+    writeFileSync(
+      archivePath,
+      createStoredZipArchive([
+        {
+          name: 'claw-studio-server/bin/claw-server.exe',
+          content: 'first\n',
+        },
+        {
+          name: 'claw-studio-server\\bin\\claw-server.exe',
+          content: 'second\n',
+        },
+      ]),
+    );
+
+    await assert.rejects(
+      () => smoke.extractServerArchive({
+        archivePath,
+        extractDir,
+      }),
+      /duplicate archive entry/i,
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('server bundle smoke rejects symlink zip entries before extraction', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-server-release-assets.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-symlink-zip-smoke-'));
+  const archivePath = path.join(tempRoot, 'claw-studio-server-symlink-windows-x64.zip');
+  const extractDir = path.join(tempRoot, 'extract');
+
+  try {
+    mkdirSync(path.dirname(archivePath), { recursive: true });
+    writeFileSync(
+      archivePath,
+      createStoredZipArchive([
+        {
+          name: 'claw-studio-server/bin/claw-server-link',
+          content: 'bin/claw-server.exe',
+          externalAttributes: 0o120777 << 16,
+        },
+      ]),
+    );
+
+    await assert.rejects(
+      () => smoke.extractServerArchive({
+        archivePath,
+        extractDir,
+      }),
+      /unsupported archive entry type/i,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });

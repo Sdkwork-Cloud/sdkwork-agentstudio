@@ -7,6 +7,34 @@ import type {
   PlatformSaveFileOptions,
   PlatformSelectFileOptions,
 } from './types.ts';
+import { resolveBrowserStorage } from './safeBrowserStorage.ts';
+
+const volatileWebStorage = new Map<string, string>();
+
+function getWebStorageValue(key: string): string | null {
+  const storage = resolveBrowserStorage('localStorage');
+
+  try {
+    const value = storage?.getItem(key);
+    if (value !== null && typeof value !== 'undefined') {
+      return value;
+    }
+  } catch {
+    // Fall back to volatile session storage below.
+  }
+
+  return volatileWebStorage.get(key) ?? null;
+}
+
+function setWebStorageValue(key: string, value: string): void {
+  volatileWebStorage.set(key, value);
+
+  try {
+    resolveBrowserStorage('localStorage')?.setItem(key, value);
+  } catch {
+    // Keep the volatile value authoritative for this browser session.
+  }
+}
 
 function deriveFileNameFromUrl(url: string) {
   try {
@@ -42,20 +70,20 @@ export class WebPlatform implements PlatformAPI {
   }
 
   async getDeviceId(): Promise<string> {
-    let id = localStorage.getItem('device_id');
+    let id = getWebStorageValue('device_id');
     if (!id) {
       id = 'web-device-' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('device_id', id);
+      setWebStorageValue('device_id', id);
     }
     return id;
   }
 
   async setStorage(key: string, value: string): Promise<void> {
-    localStorage.setItem(key, value);
+    setWebStorageValue(key, value);
   }
 
   async getStorage(key: string): Promise<string | null> {
-    return localStorage.getItem(key);
+    return getWebStorageValue(key);
   }
 
   async copy(text: string): Promise<void> {

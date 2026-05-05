@@ -19,6 +19,28 @@ const INSTANCE_STORAGE_KEY = 'claw-studio:studio:instances:v1';
 const WORKBENCH_STORAGE_KEY = 'claw-studio:studio:workbench:v1';
 const BUILT_IN_INSTANCE_ID = STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID;
 
+function derivePreviousNumericVersion(version: string) {
+  const match = String(version).match(
+    /^(\d+)\.(\d+)\.(\d+)(?:-(?:\d+|[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*))?$/u,
+  );
+  assert.ok(match, `Expected numeric OpenClaw test version, received ${version}`);
+
+  const major = Number.parseInt(match[1], 10);
+  const minor = Number.parseInt(match[2], 10);
+  const patch = Number.parseInt(match[3], 10);
+
+  if (patch > 0) {
+    return `${major}.${minor}.${patch - 1}`;
+  }
+  if (minor > 0) {
+    return `${major}.${minor - 1}.0`;
+  }
+  assert.ok(major > 0, `Expected a previous numeric version to exist for ${version}`);
+  return `${major - 1}.0.0`;
+}
+
+const staleOpenClawVersion = derivePreviousNumericVersion(DEFAULT_BUNDLED_OPENCLAW_VERSION);
+
 interface MockedWindowStorageContext {
   storage: Map<string, string>;
   readJson(key: string): unknown;
@@ -53,6 +75,22 @@ async function withMockedWindowStorage(
         return value ? JSON.parse(value) : null;
       },
     });
+  } finally {
+    (globalThis as typeof globalThis & { window?: unknown }).window = originalWindow;
+  }
+}
+
+async function withBlockedWindowStorage(fn: () => Promise<void>) {
+  const originalWindow = (globalThis as typeof globalThis & { window?: unknown }).window;
+
+  (globalThis as typeof globalThis & { window?: unknown }).window = {
+    get localStorage() {
+      throw new DOMException('localStorage is blocked', 'SecurityError');
+    },
+  };
+
+  try {
+    await fn();
   } finally {
     (globalThis as typeof globalThis & { window?: unknown }).window = originalWindow;
   }
@@ -407,6 +445,40 @@ await runTest('web studio creates the browser fallback built-in OpenClaw instanc
   });
 });
 
+await runTest('web studio keeps browser fallback state in memory when localStorage is blocked', async () => {
+  await withBlockedWindowStorage(async () => {
+    const platform = new WebStudioPlatform();
+
+    const created = await platform.createInstance({
+      name: 'Blocked Storage Runtime',
+      description: 'Runtime created while localStorage is unavailable.',
+      runtimeKind: 'openclaw',
+      deploymentMode: 'remote',
+      transportKind: 'openclawGatewayWs',
+      iconType: 'server',
+      typeLabel: 'OpenClaw Gateway',
+      host: 'openclaw.example.com',
+      port: 443,
+      baseUrl: 'https://openclaw.example.com',
+      websocketUrl: 'wss://openclaw.example.com/ws',
+      config: {
+        port: '443',
+        sandbox: true,
+        autoUpdate: false,
+        logLevel: 'info',
+        corsOrigins: '*',
+        baseUrl: 'https://openclaw.example.com',
+        websocketUrl: 'wss://openclaw.example.com/ws',
+      },
+    });
+
+    const instances = await platform.listInstances();
+
+    assert.ok(instances.some((instance) => instance.id === BUILT_IN_INSTANCE_ID));
+    assert.ok(instances.some((instance) => instance.id === created.id));
+  });
+});
+
 await runTest('web studio preserves an explicitly configured OpenClaw responses endpoint without inventing chat completions', async () => {
   const originalWindow = (globalThis as typeof globalThis & { window?: unknown }).window;
   const storage = new Map<string, string>();
@@ -676,7 +748,7 @@ await runTest('web studio normalizes stored built-in OpenClaw metadata to the ca
             isBuiltIn: true,
             isDefault: true,
             iconType: 'server',
-            version: '2026.3.24',
+            version: staleOpenClawVersion,
             typeLabel: 'Built-In OpenClaw',
             host: '127.0.0.1',
             port: 19991,
@@ -772,7 +844,7 @@ await runTest(
               isBuiltIn: true,
               isDefault: true,
               iconType: 'server',
-              version: '2026.3.24',
+              version: staleOpenClawVersion,
               typeLabel: 'Built-In OpenClaw',
               host: '127.0.0.1',
               port: 18871,

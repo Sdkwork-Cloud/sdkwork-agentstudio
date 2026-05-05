@@ -109,8 +109,8 @@ function resolveKernelPlatformLabel(
   config: KernelReleaseConfig,
   t: (key: string) => string,
 ) {
-  const windowsCompatibility = String(config.compatibility?.windows ?? '').trim();
-  return windowsCompatibility === 'wsl2OrRemoteOnly'
+  const windowsPlatformSupport = String(config.platformSupport?.windows ?? '').trim();
+  return windowsPlatformSupport === 'wsl2OrRemoteOnly'
     ? t('instances.list.supportedKernels.platforms.wsl2OrRemoteOnly')
     : t('instances.list.supportedKernels.platforms.native');
 }

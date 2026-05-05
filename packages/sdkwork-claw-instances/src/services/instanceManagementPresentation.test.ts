@@ -440,7 +440,7 @@ await runTest(
         transportKind: 'customHttp',
         isBuiltIn: false,
         isDefault: false,
-        version: '2026.4.14',
+        version: 'custom-runtime-1',
         typeLabel: 'Custom Remote Runtime',
         host: '10.0.0.42',
         port: 8080,

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { DEFAULT_OPENCLAW_VERSION } from '../openclaw-release.mjs';
 import {
   normalizeKernelExternalRuntimePolicy,
   readKernelExternalRuntimePolicy,
@@ -8,6 +9,8 @@ import {
   writeKernelExternalRuntimePolicy,
   writeKernelInstallReadiness,
 } from './kernel-install-readiness.mjs';
+
+const currentOpenClawInstallKey = `${DEFAULT_OPENCLAW_VERSION}-windows-x64`;
 
 function buildHermesExternalRuntimePolicy() {
   return {
@@ -28,7 +31,7 @@ test('kernel install readiness preserves Hermes external-runtime policy alongsid
     writeKernelInstallReadiness(null, 'openclaw', {
       installReadyLayout: {
         mode: 'archive-extract-ready',
-        installKey: '2026.4.2-windows-x64',
+        installKey: currentOpenClawInstallKey,
       },
     }),
     'hermes',
@@ -37,7 +40,7 @@ test('kernel install readiness preserves Hermes external-runtime policy alongsid
 
   assert.deepEqual(readKernelInstallReadyLayout(readiness, 'openclaw'), {
     mode: 'archive-extract-ready',
-    installKey: '2026.4.2-windows-x64',
+    installKey: currentOpenClawInstallKey,
   });
   assert.deepEqual(readKernelExternalRuntimePolicy(readiness, 'hermes'), buildHermesExternalRuntimePolicy());
 });

@@ -1036,7 +1036,7 @@ mod tests {
         context::FrameworkContext,
         layout::ActiveState,
         logging::init_logger,
-        openclaw_release::bundled_openclaw_version,
+        openclaw_release::{bundled_openclaw_version, required_openclaw_node_version},
         paths::resolve_paths_for_root,
         services::{
             local_ai_proxy::config::default_local_ai_proxy_public_host,
@@ -1589,7 +1589,7 @@ mod tests {
             active
                 .runtimes
                 .get("openclaw")
-                .and_then(|entry| entry.active_version.as_deref()),
+                .and_then(|entry| entry.active_runtime_install_key()),
             Some(
                 format!(
                     "{}-{}-{}",
@@ -1600,6 +1600,12 @@ mod tests {
                 .as_str()
             )
         );
+        let openclaw_runtime = active
+            .runtimes
+            .get("openclaw")
+            .expect("openclaw active runtime");
+        assert!(openclaw_runtime.active_version.is_none());
+        assert!(openclaw_runtime.fallback_version.is_none());
         assert_eq!(
             openclaw_config["models"]["providers"]["sdkwork-local-proxy"]["apiKey"],
             "${SDKWORK_LOCAL_PROXY_TOKEN}"
@@ -1973,7 +1979,7 @@ setInterval(() => {}, 1000);
             required_external_runtimes: vec!["nodejs".to_string()],
             required_external_runtime_versions: std::collections::BTreeMap::from([(
                 "nodejs".to_string(),
-                "22.16.0".to_string(),
+                required_openclaw_node_version().to_string(),
             )]),
             platform: normalized_openclaw_platform().to_string(),
             arch: normalized_openclaw_arch().to_string(),
@@ -2012,7 +2018,7 @@ setInterval(() => {}, 1000);
             required_external_runtimes: vec!["nodejs".to_string()],
             required_external_runtime_versions: std::collections::BTreeMap::from([(
                 "nodejs".to_string(),
-                "22.16.0".to_string(),
+                required_openclaw_node_version().to_string(),
             )]),
             platform: normalized_openclaw_platform().to_string(),
             arch: normalized_openclaw_arch().to_string(),
@@ -2117,7 +2123,7 @@ setInterval(() => {}, 1000);
             required_external_runtimes: vec!["nodejs".to_string()],
             required_external_runtime_versions: std::collections::BTreeMap::from([(
                 "nodejs".to_string(),
-                "22.16.0".to_string(),
+                required_openclaw_node_version().to_string(),
             )]),
             platform: normalized_openclaw_platform().to_string(),
             arch: normalized_openclaw_arch().to_string(),
@@ -2156,7 +2162,7 @@ setInterval(() => {}, 1000);
             required_external_runtimes: vec!["nodejs".to_string()],
             required_external_runtime_versions: std::collections::BTreeMap::from([(
                 "nodejs".to_string(),
-                "22.16.0".to_string(),
+                required_openclaw_node_version().to_string(),
             )]),
             platform: normalized_openclaw_platform().to_string(),
             arch: normalized_openclaw_arch().to_string(),

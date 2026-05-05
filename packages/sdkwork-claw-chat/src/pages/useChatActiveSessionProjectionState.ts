@@ -39,6 +39,8 @@ export interface UseChatActiveSessionProjectionStateResult {
   selectedSession: ChatSession | null;
   displaySessionId: string | null;
   displaySession: ChatSession | null;
+  selectedSessionAgentId: string | null;
+  displaySessionAgentId: string | null;
   activeKernelSessionState: ChatPageKernelSessionState;
   activeRunBinding: ChatRunBinding;
   chatRuntimeState: ChatRuntimeState;
@@ -91,6 +93,8 @@ export function useChatActiveSessionProjectionState({
   const selectedSession = workspaceProjection.selectedSession;
   const displaySessionId = workspaceProjection.displaySessionId;
   const displaySession = workspaceProjection.displaySession;
+  const selectedSessionAgentId = workspaceProjection.selectedSessionAgentId;
+  const displaySessionAgentId = workspaceProjection.displaySessionAgentId;
   const activeKernelSessionState = resolveKernelChatSessionState(displaySession);
   const activeRunBinding = resolveChatRunBinding(displaySession);
   const chatRuntimeState = resolveChatRuntimeState({
@@ -117,6 +121,8 @@ export function useChatActiveSessionProjectionState({
     selectedSession,
     displaySessionId,
     displaySession,
+    selectedSessionAgentId,
+    displaySessionAgentId,
     activeKernelSessionState,
     activeRunBinding,
     chatRuntimeState,

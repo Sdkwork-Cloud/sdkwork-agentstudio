@@ -480,6 +480,28 @@ mod tests {
     };
 
     #[test]
+    fn local_ai_proxy_openclaw_projection_production_path_has_no_panic_exits() {
+        let source = include_str!("local_ai_proxy/projection.rs");
+        let production_source = source.split("#[cfg(test)]").next().unwrap_or(source);
+        let forbidden_patterns = [".expect(", ".unwrap(", "panic!(", "todo!(", "unimplemented!("];
+        let mut offenders = Vec::new();
+
+        for (index, line) in production_source.lines().enumerate() {
+            for pattern in forbidden_patterns {
+                if line.contains(pattern) {
+                    offenders.push(format!("{}:{}", index + 1, line.trim()));
+                }
+            }
+        }
+
+        assert!(
+            offenders.is_empty(),
+            "local ai proxy OpenClaw projection production code must propagate errors instead of panicking:\n{}",
+            offenders.join("\n")
+        );
+    }
+
+    #[test]
     fn local_ai_proxy_binds_only_to_loopback() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");

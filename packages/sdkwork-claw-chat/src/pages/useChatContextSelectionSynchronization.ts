@@ -8,6 +8,7 @@ export interface UseChatContextSelectionSynchronizationInput {
   selectedSkillId: string | null;
   hasResolvedVisibleAgents: boolean;
   visibleAgentIds: string[];
+  activeSessionAgentId?: string | null;
   setSelectedAgentId: (agentId: string | null | undefined) => void;
   setSelectedSkillId: (skillId: string | null) => void;
 }
@@ -19,6 +20,7 @@ export function useChatContextSelectionSynchronization({
   selectedSkillId,
   hasResolvedVisibleAgents,
   visibleAgentIds,
+  activeSessionAgentId,
   setSelectedAgentId,
   setSelectedSkillId,
 }: UseChatContextSelectionSynchronizationInput) {
@@ -28,6 +30,7 @@ export function useChatContextSelectionSynchronization({
     selectedSkillId,
     hasResolvedVisibleAgents,
     visibleAgentIds,
+    activeSessionAgentId,
   });
 
   useEffect(() => {

@@ -10,6 +10,7 @@ import type {
   StoragePutTextRequest,
   StoragePutTextResult,
 } from './contracts/storage.ts';
+import { resolveBrowserStorage } from './safeBrowserStorage.ts';
 
 const STORAGE_KEY_PREFIX = 'sdkwork-claw:storage';
 const WEB_PROFILE_ID = 'web-local';
@@ -17,21 +18,75 @@ const WEB_NAMESPACE = 'sdkwork-claw';
 const fallbackStorage = new Map<string, string>();
 
 function getStorageAdapter() {
-  if (typeof globalThis !== 'undefined' && 'localStorage' in globalThis && globalThis.localStorage) {
-    return globalThis.localStorage;
+  const browserStorage = resolveBrowserStorage('localStorage');
+
+  if (!browserStorage) {
+    return {
+      getItem: (key: string) => fallbackStorage.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        fallbackStorage.set(key, value);
+      },
+      removeItem: (key: string) => {
+        fallbackStorage.delete(key);
+      },
+      key: (index: number) => Array.from(fallbackStorage.keys())[index] ?? null,
+      get length() {
+        return fallbackStorage.size;
+      },
+    };
   }
 
   return {
-    getItem: (key: string) => fallbackStorage.get(key) ?? null,
+    getItem: (key: string) => {
+      try {
+        return browserStorage.getItem(key) ?? fallbackStorage.get(key) ?? null;
+      } catch {
+        return fallbackStorage.get(key) ?? null;
+      }
+    },
     setItem: (key: string, value: string) => {
       fallbackStorage.set(key, value);
+      try {
+        browserStorage.setItem(key, value);
+      } catch {
+        // Keep the fallback value authoritative for this browser session.
+      }
     },
     removeItem: (key: string) => {
       fallbackStorage.delete(key);
+      try {
+        browserStorage.removeItem(key);
+      } catch {
+        // Ignore blocked browser storage cleanup.
+      }
     },
-    key: (index: number) => Array.from(fallbackStorage.keys())[index] ?? null,
+    key: (index: number) => {
+      const keys = new Set(fallbackStorage.keys());
+      try {
+        for (let storageIndex = 0; storageIndex < browserStorage.length; storageIndex += 1) {
+          const key = browserStorage.key(storageIndex);
+          if (key) {
+            keys.add(key);
+          }
+        }
+      } catch {
+        // Fall back to the in-memory key set.
+      }
+      return Array.from(keys)[index] ?? null;
+    },
     get length() {
-      return fallbackStorage.size;
+      const keys = new Set(fallbackStorage.keys());
+      try {
+        for (let storageIndex = 0; storageIndex < browserStorage.length; storageIndex += 1) {
+          const key = browserStorage.key(storageIndex);
+          if (key) {
+            keys.add(key);
+          }
+        }
+      } catch {
+        // Fall back to the in-memory key set.
+      }
+      return keys.size;
     },
   };
 }

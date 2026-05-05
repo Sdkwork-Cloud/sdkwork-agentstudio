@@ -6,6 +6,10 @@ import {
   type AppLanguage,
   normalizeLanguage,
 } from './config.ts';
+import {
+  readBrowserStorageValue,
+  resolveBrowserStorage,
+} from './safeBrowserStorage.ts';
 
 export interface ResolveLanguageOptions {
   appStoreLanguage?: string | null;
@@ -118,7 +122,7 @@ export function resolveLanguage(options: ResolveLanguageOptions = {}): AppLangua
 export function detectBrowserLanguage(options: BrowserLanguageOptions = {}) {
   const storage =
     options.storage ??
-    (typeof window !== 'undefined' ? window.localStorage : null);
+    resolveBrowserStorage('localStorage');
   const cookie =
     options.cookie ??
     (typeof document !== 'undefined' ? document.cookie : undefined);
@@ -130,10 +134,10 @@ export function detectBrowserLanguage(options: BrowserLanguageOptions = {}) {
     (typeof navigator !== 'undefined' ? navigator.language : undefined);
 
   const appStoreLanguage = storage
-    ? getAppStoreLanguageFromSnapshot(storage.getItem(APP_STORE_STORAGE_KEY))
+    ? getAppStoreLanguageFromSnapshot(readBrowserStorageValue(storage, APP_STORE_STORAGE_KEY))
     : undefined;
 
-  const detectorLanguage = storage?.getItem(I18N_STORAGE_KEY);
+  const detectorLanguage = readBrowserStorageValue(storage, I18N_STORAGE_KEY);
   const cookieLanguage = getLanguageFromCookieString(cookie);
 
   return resolveLanguage({

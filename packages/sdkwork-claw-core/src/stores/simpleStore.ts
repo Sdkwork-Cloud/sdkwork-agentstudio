@@ -1,3 +1,5 @@
+import { resolveBrowserStorage } from '../utils/safeBrowserStorage.ts';
+
 export interface StateStorage {
   getItem(name: string): string | null;
   setItem(name: string, value: string): void;
@@ -42,21 +44,7 @@ export interface SimplePersistOptions<T extends object, P = Partial<T>> {
 }
 
 function resolveDefaultStateStorage(): StateStorage | undefined {
-  if (typeof globalThis === 'undefined') {
-    return undefined;
-  }
-
-  const candidate = (globalThis as { localStorage?: unknown }).localStorage;
-  if (!candidate || typeof candidate !== 'object') {
-    return undefined;
-  }
-
-  const storage = candidate as Partial<StateStorage>;
-  if (typeof storage.getItem !== 'function' || typeof storage.setItem !== 'function') {
-    return undefined;
-  }
-
-  return storage as StateStorage;
+  return resolveBrowserStorage('localStorage') ?? undefined;
 }
 
 function resolveNextState<T extends object>(

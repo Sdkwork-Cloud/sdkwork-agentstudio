@@ -1,3 +1,8 @@
+import {
+  isStorageLike,
+  resolveBrowserStorage,
+} from '../utils/safeBrowserStorage.ts';
+
 export interface UserCenterStoragePlan {
   namespace: string;
   authTokenKey: string;
@@ -21,42 +26,16 @@ function normalizeTokenValue(value?: string | null): string | undefined {
   return normalized || undefined;
 }
 
-function hasStorage(value: unknown): value is Storage {
-  return Boolean(
-    value
-    && typeof value === 'object'
-    && typeof (value as Storage).getItem === 'function'
-    && typeof (value as Storage).setItem === 'function'
-    && typeof (value as Storage).removeItem === 'function',
-  );
-}
-
 function resolveSessionStorage(explicitStorage?: Storage): Storage | null {
-  if (hasStorage(explicitStorage)) {
+  if (isStorageLike(explicitStorage)) {
     return explicitStorage;
   }
 
-  if (hasStorage(globalThis.sessionStorage)) {
-    return globalThis.sessionStorage;
-  }
-
-  if (typeof window !== 'undefined' && hasStorage(window.sessionStorage)) {
-    return window.sessionStorage;
-  }
-
-  return null;
+  return resolveBrowserStorage('sessionStorage');
 }
 
 function resolveLocalStorage(): Storage | null {
-  if (hasStorage(globalThis.localStorage)) {
-    return globalThis.localStorage;
-  }
-
-  if (typeof window !== 'undefined' && hasStorage(window.localStorage)) {
-    return window.localStorage;
-  }
-
-  return null;
+  return resolveBrowserStorage('localStorage');
 }
 
 function readStorageValue(storage: Storage | null, key: string): string | undefined {

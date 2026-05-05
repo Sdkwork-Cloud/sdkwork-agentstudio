@@ -194,6 +194,63 @@ export function ChatSidebar({
       return undefined;
     }
   }, []);
+  const fallbackMainAgentName = t('chat.sidebar.mainAgent');
+  const previewLabels = React.useMemo(
+    () => ({
+      you: t('chat.sidebar.previewYou'),
+      system: t('chat.sidebar.previewSystem'),
+      tool: t('chat.sidebar.previewTool'),
+      attachment: t('chat.sidebar.previewAttachment'),
+      attachments: t('chat.sidebar.previewAttachments'),
+    }),
+    [t],
+  );
+  const relativeTimeLabels = React.useMemo(
+    () => ({
+      yesterday: t('chat.sidebar.relativeTimeYesterday'),
+      daysAgo: (count: number) => t('chat.sidebar.relativeTimeDaysAgo', { count }),
+    }),
+    [t],
+  );
+  const sidebarViewState = React.useMemo(
+    () =>
+      resolveChatSidebarViewState({
+        sessions,
+        activeSessionId,
+        activeInstanceId,
+        isChatSupported,
+        sessionScopeMode,
+        sessionScopeAgentId,
+        selectedAgentId,
+        primaryAgentId,
+        agentOptions: filteredAgentOptions,
+        historyViewMode,
+        fallbackMainAgentName,
+        previewLabels,
+        relativeTimeLabels,
+        sessionPreferencesBySessionKey,
+        locale: i18n.resolvedLanguage,
+        timeZone,
+      }),
+    [
+      activeInstanceId,
+      activeSessionId,
+      fallbackMainAgentName,
+      filteredAgentOptions,
+      historyViewMode,
+      i18n.resolvedLanguage,
+      isChatSupported,
+      previewLabels,
+      primaryAgentId,
+      relativeTimeLabels,
+      selectedAgentId,
+      sessionPreferencesBySessionKey,
+      sessions,
+      sessionScopeAgentId,
+      sessionScopeMode,
+      timeZone,
+    ],
+  );
   const {
     currentAgentName,
     agentRail,
@@ -201,33 +258,7 @@ export function ChatSidebar({
     activeHistorySessions,
     sidebarChrome,
     historyTabState,
-  } = resolveChatSidebarViewState({
-    sessions,
-    activeSessionId,
-    activeInstanceId,
-    isChatSupported,
-    sessionScopeMode,
-    sessionScopeAgentId,
-    selectedAgentId,
-    primaryAgentId,
-    agentOptions: filteredAgentOptions,
-    historyViewMode,
-    fallbackMainAgentName: t('chat.sidebar.mainAgent'),
-    previewLabels: {
-      you: t('chat.sidebar.previewYou'),
-      system: t('chat.sidebar.previewSystem'),
-      tool: t('chat.sidebar.previewTool'),
-      attachment: t('chat.sidebar.previewAttachment'),
-      attachments: t('chat.sidebar.previewAttachments'),
-    },
-    relativeTimeLabels: {
-      yesterday: t('chat.sidebar.relativeTimeYesterday'),
-      daysAgo: (count) => t('chat.sidebar.relativeTimeDaysAgo', { count }),
-    },
-    sessionPreferencesBySessionKey,
-    locale: i18n.resolvedLanguage,
-    timeZone,
-  });
+  } = sidebarViewState;
   const sessionActionMenu = React.useMemo(() => {
     if (!sessionMenuState) {
       return null;
@@ -450,8 +481,7 @@ export function ChatSidebar({
       return;
     }
 
-    const selectedSession =
-      activeHistorySessions.find((session) => session.id === item.sessionId) ?? null;
+    const selectedSession = resolveSessionRecord(item.sessionId);
     const selectedInstanceId = selectedSession?.instanceId ?? null;
     void onSessionSelect?.({
       sessionId: item.sessionId,

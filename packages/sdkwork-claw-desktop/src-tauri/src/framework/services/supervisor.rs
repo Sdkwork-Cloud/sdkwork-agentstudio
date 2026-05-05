@@ -49,8 +49,6 @@ const DEFAULT_OPENCLAW_GATEWAY_START_RETRY_DELAY_MS: u64 = 250;
 const DEFAULT_OPENCLAW_GATEWAY_HEALTH_PROBE_INTERVAL_MS: u64 = 500;
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_CONNECT_TIMEOUT_MS: u64 = 200;
 const DEFAULT_OPENCLAW_GATEWAY_START_HTTP_READY_IO_TIMEOUT_MS: u64 = 4_000;
-const DEFAULT_OPENCLAW_GATEWAY_START_HTTP_INVOKE_IO_TIMEOUT_MS: u64 = 8_000;
-const DEFAULT_OPENCLAW_GATEWAY_START_HEALTH_PROBE_TIMEOUT_MS: u64 = 5_000;
 const DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HTTP_IO_TIMEOUT_MS: u64 = 1_000;
 const DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HEALTH_PROBE_TIMEOUT_MS: u64 = 1_000;
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_LIVE_PATH: &str = "/healthz";
@@ -916,7 +914,7 @@ fn terminate_managed_process(child: &mut Child, timeout_ms: u64) -> Result<Optio
 fn wait_for_gateway_ready(
     child: &mut Child,
     runtime: &ActivatedOpenClawRuntime,
-    paths: &AppPaths,
+    _paths: &AppPaths,
     timeout_ms: u64,
 ) -> Result<()> {
     let deadline = Instant::now() + Duration::from_millis(timeout_ms);
@@ -935,7 +933,7 @@ fn wait_for_gateway_ready(
         }
 
         let include_health_probe = Instant::now() >= next_health_probe_at;
-        let readiness = probe_gateway_ready(runtime, paths, include_health_probe);
+        let readiness = probe_gateway_ready(runtime, include_health_probe);
         if readiness.is_ready() {
             return Ok(());
         }
@@ -974,7 +972,6 @@ fn should_retry_openclaw_gateway_spawn_error(error: &std::io::Error) -> bool {
 
 fn probe_gateway_ready(
     runtime: &ActivatedOpenClawRuntime,
-    paths: &AppPaths,
     include_health_probe: bool,
 ) -> GatewayProbeStatus {
     let http_ready_probe = probe_gateway_http_ready(
@@ -988,20 +985,8 @@ fn probe_gateway_ready(
         return http_ready_probe;
     }
 
-    let invoke_probe = probe_gateway_invoke_ready(
-        runtime,
-        DEFAULT_OPENCLAW_GATEWAY_START_HTTP_INVOKE_IO_TIMEOUT_MS,
-    );
-    if invoke_probe.is_ready() {
-        return invoke_probe;
-    }
-
     if !include_health_probe {
-        return GatewayProbeStatus::Pending(format!(
-            "{}; {}",
-            http_ready_probe.detail(),
-            invoke_probe.detail()
-        ));
+        return GatewayProbeStatus::Pending(http_ready_probe.detail());
     }
 
     let http_live_probe = probe_gateway_http_live(
@@ -1012,21 +997,10 @@ fn probe_gateway_ready(
         return http_live_probe;
     }
 
-    let health_probe = probe_gateway_cli_health_ready(
-        runtime,
-        paths,
-        DEFAULT_OPENCLAW_GATEWAY_START_HEALTH_PROBE_TIMEOUT_MS,
-    );
-    if health_probe.is_ready() {
-        return health_probe;
-    }
-
     GatewayProbeStatus::Pending(format!(
-        "{}; {}; {}; {}",
+        "{}; {}",
         http_ready_probe.detail(),
-        invoke_probe.detail(),
-        http_live_probe.detail(),
-        health_probe.detail()
+        http_live_probe.detail()
     ))
 }
 
@@ -1169,11 +1143,11 @@ fn probe_gateway_http_status(
         }
     };
 
-    if status_line.starts_with("HTTP/1.1 200") || status_line.starts_with("HTTP/1.0 200") {
+    let code = parse_http_status_code(status_line.as_str()).unwrap_or_default();
+    if (200..=299).contains(&code) {
         return GatewayProbeStatus::Ready;
     }
 
-    let code = parse_http_status_code(status_line.as_str()).unwrap_or_default();
     GatewayProbeStatus::HttpStatus {
         code,
         detail: format!("{label} returned {}", status_line),
@@ -1182,80 +1156,6 @@ fn probe_gateway_http_status(
 
 fn parse_http_status_code(status_line: &str) -> Option<u16> {
     status_line.split_whitespace().nth(1)?.parse::<u16>().ok()
-}
-
-fn probe_gateway_invoke_ready(
-    runtime: &ActivatedOpenClawRuntime,
-    io_timeout_ms: u64,
-) -> GatewayProbeStatus {
-    let loopback = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, runtime.gateway_port));
-    let mut stream = match TcpStream::connect_timeout(
-        &loopback,
-        Duration::from_millis(DEFAULT_OPENCLAW_GATEWAY_HTTP_CONNECT_TIMEOUT_MS),
-    ) {
-        Ok(stream) => stream,
-        Err(error) => {
-            return GatewayProbeStatus::Pending(format!(
-                "invoke probe could not connect to {}: {}",
-                loopback, error
-            ));
-        }
-    };
-
-    if stream
-        .set_read_timeout(Some(Duration::from_millis(io_timeout_ms)))
-        .is_err()
-        || stream
-            .set_write_timeout(Some(Duration::from_millis(io_timeout_ms)))
-            .is_err()
-    {
-        return GatewayProbeStatus::Pending(format!(
-            "invoke probe could not configure socket timeouts for {}",
-            loopback
-        ));
-    }
-
-    let payload = r#"{"tool":"cron","action":"status","args":{}}"#;
-    let request = format!(
-        "POST /tools/invoke HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nAuthorization: Bearer {token}\r\nContent-Type: application/json\r\nAccept: application/json\r\nConnection: close\r\nContent-Length: {length}\r\n\r\n{payload}",
-        port = runtime.gateway_port,
-        token = runtime.gateway_auth_token,
-        length = payload.len(),
-    );
-
-    if let Err(error) = stream.write_all(request.as_bytes()) {
-        return GatewayProbeStatus::Pending(format!(
-            "invoke probe write failed for {}: {}",
-            loopback, error
-        ));
-    }
-    if let Err(error) = stream.flush() {
-        return GatewayProbeStatus::Pending(format!(
-            "invoke probe flush failed for {}: {}",
-            loopback, error
-        ));
-    }
-
-    let status_line = match read_http_status_line(&mut stream) {
-        Ok(Some(status_line)) => status_line,
-        Ok(None) => {
-            return GatewayProbeStatus::Pending(
-                "invoke probe returned an empty response".to_string(),
-            )
-        }
-        Err(error) => {
-            return GatewayProbeStatus::Pending(format!(
-                "invoke probe read failed for {}: {}",
-                loopback, error
-            ));
-        }
-    };
-
-    if status_line.starts_with("HTTP/1.1 200") || status_line.starts_with("HTTP/1.0 200") {
-        return GatewayProbeStatus::Ready;
-    }
-
-    GatewayProbeStatus::Pending(format!("invoke probe returned {}", status_line))
 }
 
 fn read_http_status_line(stream: &mut TcpStream) -> std::io::Result<Option<String>> {
@@ -1458,9 +1358,10 @@ fn reap_stale_openclaw_gateway_processes(paths: &AppPaths) -> Result<()> {
         })
         .unwrap_or_else(|| "configured gateway port unavailable".to_string());
 
+    let runtime_dir = built_in_openclaw_runtime_dir(paths)?;
     Err(FrameworkError::Timeout(format!(
         "stale openclaw gateway processes did not stop within 5000ms under {} ({port_diagnostic}; remaining processes: {})",
-        built_in_openclaw_runtime_dir(paths).display(),
+        runtime_dir.display(),
         if remaining_processes.is_empty() {
             "none".to_string()
         } else {
@@ -1490,7 +1391,7 @@ fn is_stale_openclaw_termination_access_denied(error: &FrameworkError) -> bool {
 }
 
 fn configured_openclaw_gateway_port(paths: &AppPaths) -> Option<u16> {
-    let config_path = readable_openclaw_config_file_path(paths);
+    let config_path = readable_openclaw_config_file_path(paths).ok()?;
     if !config_path.exists() {
         return None;
     }
@@ -1504,17 +1405,13 @@ fn configured_openclaw_gateway_port(paths: &AppPaths) -> Option<u16> {
         .filter(|port| *port > 0)
 }
 
-fn readable_openclaw_config_file_path(paths: &AppPaths) -> PathBuf {
+fn readable_openclaw_config_file_path(paths: &AppPaths) -> Result<PathBuf> {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
-        .expect("canonical openclaw config path")
 }
 
-fn built_in_openclaw_runtime_dir(paths: &AppPaths) -> PathBuf {
-    paths
-        .kernel_paths("openclaw")
-        .map(|kernel| kernel.runtime_dir)
-        .expect("canonical openclaw runtime path")
+fn built_in_openclaw_runtime_dir(paths: &AppPaths) -> Result<PathBuf> {
+    paths.kernel_paths("openclaw").map(|kernel| kernel.runtime_dir)
 }
 
 fn is_loopback_port_accepting(port: u16) -> bool {
@@ -1523,7 +1420,10 @@ fn is_loopback_port_accepting(port: u16) -> bool {
 }
 
 fn describe_stale_openclaw_gateway_processes(paths: &AppPaths) -> Vec<String> {
-    let owned_runtime_roots = openclaw_owned_runtime_roots(paths);
+    let owned_runtime_roots = match openclaw_owned_runtime_roots(paths) {
+        Ok(roots) => roots,
+        Err(_) => return Vec::new(),
+    };
     let current_process_id = std::process::id();
     let mut system = System::new_all();
     system.refresh_processes(ProcessesToUpdate::All, true);
@@ -1556,7 +1456,7 @@ fn describe_stale_openclaw_gateway_processes(paths: &AppPaths) -> Vec<String> {
 }
 
 fn find_stale_openclaw_gateway_process_ids(paths: &AppPaths) -> Result<Vec<u32>> {
-    let owned_runtime_roots = openclaw_owned_runtime_roots(paths);
+    let owned_runtime_roots = openclaw_owned_runtime_roots(paths)?;
     let current_process_id = std::process::id();
     let mut system = System::new_all();
     system.refresh_processes(ProcessesToUpdate::All, true);
@@ -1586,11 +1486,11 @@ fn find_stale_openclaw_gateway_process_ids(paths: &AppPaths) -> Result<Vec<u32>>
         .collect())
 }
 
-fn openclaw_owned_runtime_roots(paths: &AppPaths) -> Vec<PathBuf> {
+fn openclaw_owned_runtime_roots(paths: &AppPaths) -> Result<Vec<PathBuf>> {
     KernelRuntimeAuthorityService::new()
         .contract("openclaw", paths)
         .map(|contract| contract.owned_runtime_roots)
-        .unwrap_or_else(|_| vec![built_in_openclaw_runtime_dir(paths)])
+        .or_else(|_| built_in_openclaw_runtime_dir(paths).map(|runtime_dir| vec![runtime_dir]))
 }
 
 fn command_matches_built_in_openclaw_gateway<S>(
@@ -1803,6 +1703,7 @@ mod tests {
     #[cfg(windows)]
     use super::{managed_process_creation_flags, CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW};
     use crate::framework::{
+        openclaw_release::bundled_openclaw_version,
         paths::resolve_paths_for_root,
         services::{
             kernel_runtime_authority::KernelRuntimeAuthorityService,
@@ -2076,7 +1977,7 @@ mod tests {
     }
 
     #[test]
-    fn supervisor_accepts_gateway_http_liveness_before_invoke_readiness() {
+    fn supervisor_accepts_gateway_http_liveness_before_readyz_readiness() {
         let service = SupervisorService::new();
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
@@ -2088,7 +1989,7 @@ mod tests {
 
         service
             .start_openclaw_gateway(&paths)
-            .expect("gateway should accept /healthz liveness while invoke readiness warms");
+            .expect("gateway should accept /healthz liveness while /readyz warms");
 
         let running = service.snapshot().expect("running snapshot");
         let openclaw = running
@@ -2209,7 +2110,7 @@ mod tests {
     }
 
     #[test]
-    fn wait_for_gateway_ready_accepts_the_allowlisted_cron_status_probe() {
+    fn wait_for_gateway_ready_rejects_tools_invoke_without_current_http_readiness() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
@@ -2232,16 +2133,22 @@ mod tests {
         let _ = force_process_shutdown(&mut gateway);
         let _ = gateway.wait();
 
-        readiness.expect("gateway should become ready via the allowlisted cron.status probe");
+        let error =
+            readiness.expect_err("gateway without /readyz or /healthz should not become ready");
+        assert!(
+            error.to_string().contains("ready probe returned HTTP/1.1 404")
+                || error.to_string().contains("live probe returned HTTP/1.1 404"),
+            "unexpected readiness error: {error}"
+        );
     }
 
     #[test]
-    fn wait_for_gateway_ready_accepts_a_successful_invoke_status_before_connection_close() {
+    fn wait_for_gateway_ready_accepts_readyz_status_before_connection_close() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  setTimeout(() => {\n    process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n    process.exit(0);\n  }, 1200);\n} else {\n  const server = http.createServer((req, res) => {\n    if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n      res.writeHead(404, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n      return;\n    }\n    if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n      res.writeHead(401, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n      return;\n    }\n    let body = '';\n    req.setEncoding('utf8');\n    req.on('data', (chunk) => { body += chunk; });\n    req.on('end', () => {\n      const payload = body.trim() ? JSON.parse(body) : {};\n      const responseBody = JSON.stringify({ ok: true, result: { method: payload.action ? `${payload.tool}.${payload.action}` : payload.tool ?? 'unknown' } });\n      res.writeHead(200, { 'content-type': 'application/json' });\n      res.flushHeaders();\n      res.write(responseBody.slice(0, 20));\n      setTimeout(() => {\n        res.end(responseBody.slice(20));\n      }, 600);\n    });\n  });\n  server.listen(gatewayPort, '127.0.0.1');\n  setInterval(() => {}, 1000);\n}\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst server = http.createServer((req, res) => {\n  if (req.url !== '/readyz') {\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n    return;\n  }\n  const responseBody = JSON.stringify({ ready: true, failing: [], uptimeMs: 600 });\n  res.writeHead(200, { 'content-type': 'application/json' });\n  res.flushHeaders();\n  res.write(responseBody.slice(0, 20));\n  setTimeout(() => {\n    res.end(responseBody.slice(20));\n  }, 600);\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
                 .to_string(),
         );
 
@@ -2260,12 +2167,41 @@ mod tests {
         let _ = gateway.wait();
 
         readiness.expect(
-            "gateway should become ready once /tools/invoke returns HTTP 200 even before the connection closes",
+            "gateway should become ready once /readyz returns HTTP 200 even before the connection closes",
         );
     }
 
     #[test]
-    fn wait_for_gateway_ready_accepts_gateway_health_when_http_tools_invoke_is_unavailable() {
+    fn wait_for_gateway_ready_accepts_successful_empty_readyz_response() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let runtime = fake_gateway_runtime_with_script(
+            &paths,
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst server = http.createServer((req, res) => {\n  if (req.url !== '/readyz') {\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n    return;\n  }\n  res.writeHead(204);\n  res.end();\n});\nserver.listen(gatewayPort, '127.0.0.1');\nsetInterval(() => {}, 1000);\n"
+                .to_string(),
+        );
+
+        let mut gateway = Command::new(&runtime.node_path);
+        configure_command_for_managed_process(&mut gateway);
+        gateway.arg(&runtime.cli_path);
+        gateway.arg("gateway");
+        gateway.current_dir(&runtime.runtime_dir);
+        gateway.envs(runtime.managed_env());
+        let mut gateway = gateway.spawn().expect("spawn gateway");
+
+        wait_for_test_loopback_listener(runtime.gateway_port, 5_000);
+        let readiness = wait_for_gateway_ready(&mut gateway, &runtime, &paths, 1_500);
+
+        let _ = force_process_shutdown(&mut gateway);
+        let _ = gateway.wait();
+
+        readiness.expect(
+            "gateway should become ready once /readyz returns any successful 2xx status",
+        );
+    }
+
+    #[test]
+    fn wait_for_gateway_ready_rejects_cli_health_without_current_http_readiness() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
@@ -2288,13 +2224,17 @@ mod tests {
         let _ = force_process_shutdown(&mut gateway);
         let _ = gateway.wait();
 
-        readiness.expect(
-            "gateway should become ready via upstream gateway health even when /tools/invoke stays unavailable",
+        let error =
+            readiness.expect_err("gateway without /readyz or /healthz should not become ready");
+        assert!(
+            error.to_string().contains("ready probe returned HTTP/1.1 404")
+                || error.to_string().contains("live probe returned HTTP/1.1 404"),
+            "unexpected readiness error: {error}"
         );
     }
 
     #[test]
-    fn wait_for_gateway_ready_accepts_http_healthz_when_readyz_and_invoke_are_unavailable() {
+    fn wait_for_gateway_ready_accepts_http_healthz_when_readyz_is_unavailable() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
@@ -2318,7 +2258,7 @@ mod tests {
         let _ = gateway.wait();
 
         readiness.expect(
-            "gateway startup should accept lightweight /healthz liveness when /readyz and /tools/invoke are unavailable",
+            "gateway startup should accept lightweight /healthz liveness when /readyz is unavailable",
         );
     }
 
@@ -2352,7 +2292,7 @@ mod tests {
     }
 
     #[test]
-    fn wait_for_gateway_ready_accepts_readyz_when_legacy_probes_are_stuck() {
+    fn wait_for_gateway_ready_retries_readyz_without_blocking_on_nonstandard_probes() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
@@ -2376,7 +2316,7 @@ mod tests {
         let _ = gateway.wait();
 
         readiness.expect(
-            "gateway should become ready once /readyz returns HTTP 200 even if the legacy invoke and health probes are still unavailable",
+            "gateway should become ready once /readyz returns HTTP 200 without waiting on nonstandard probes",
         );
     }
 
@@ -2447,7 +2387,7 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let runtime = fake_gateway_runtime_with_script(
             &paths,
-            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst expectedAuthorization = `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`;\nif (args[0] === 'gateway' && args[1] === 'health') {\n  process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n  process.exit(0);\n}\nconst server = http.createServer((req, res) => {\n  if (req.url !== '/tools/invoke' || req.method !== 'POST') {\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n    return;\n  }\n  if ((req.headers.authorization ?? '') !== expectedAuthorization) {\n    res.writeHead(401, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unauthorized' } }));\n    return;\n  }\n  res.writeHead(200, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: true, result: { method: 'health' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1', () => {\n  setTimeout(() => {\n    server.close(() => {});\n  }, 300);\n});\nsetInterval(() => {}, 1000);\n"
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nconst server = http.createServer((req, res) => {\n  if (req.url === '/readyz') {\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 1 }));\n    return;\n  }\n  if (req.url === '/healthz') {\n    res.writeHead(200, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: true, status: 'live' }));\n    return;\n  }\n  res.writeHead(404, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n});\nserver.listen(gatewayPort, '127.0.0.1', () => {\n  setTimeout(() => {\n    server.close(() => {});\n  }, 300);\n});\nsetInterval(() => {}, 1000);\n"
                 .to_string(),
         );
 
@@ -2826,7 +2766,8 @@ mod tests {
     }
 
     #[test]
-    fn configured_gateway_port_uses_canonical_config_file_path_when_compatibility_field_drifts() {
+    fn configured_gateway_port_uses_canonical_config_file_path_when_noncanonical_app_path_field_drifts(
+    ) {
         let root = tempfile::tempdir().expect("temp dir");
         let mut paths = resolve_paths_for_root(root.path()).expect("paths");
         let openclaw = paths
@@ -2837,11 +2778,11 @@ mod tests {
         fs::remove_file(&openclaw.authority_file).expect("remove canonical authority state");
         paths.openclaw_authority_file = root
             .path()
-            .join("compatibility-only")
+            .join("noncanonical-app-paths")
             .join("authority.json");
         paths.openclaw_config_file = root
             .path()
-            .join("compatibility-only")
+            .join("noncanonical-app-paths")
             .join(".openclaw")
             .join("openclaw.json");
 
@@ -2865,17 +2806,18 @@ mod tests {
     }
 
     #[test]
-    fn built_in_openclaw_runtime_dir_uses_canonical_runtime_path_when_compatibility_field_drifts() {
+    fn built_in_openclaw_runtime_dir_uses_canonical_runtime_path_when_noncanonical_app_path_field_drifts(
+    ) {
         let root = tempfile::tempdir().expect("temp dir");
         let mut paths = resolve_paths_for_root(root.path()).expect("paths");
         let openclaw = paths
             .kernel_paths("openclaw")
             .expect("openclaw kernel paths");
 
-        paths.openclaw_runtime_dir = root.path().join("compatibility-only").join("runtime");
+        paths.openclaw_runtime_dir = root.path().join("noncanonical-app-paths").join("runtime");
 
         assert_eq!(
-            super::built_in_openclaw_runtime_dir(&paths),
+            super::built_in_openclaw_runtime_dir(&paths).expect("canonical runtime path"),
             openclaw.runtime_dir
         );
     }
@@ -2913,6 +2855,24 @@ mod tests {
             .expect("production source");
 
         assert!(!production_source.contains(".active_openclaw_config_path("));
+    }
+
+    #[test]
+    fn supervisor_startup_path_helpers_do_not_panic_on_kernel_path_resolution() {
+        let production_source = include_str!("supervisor.rs")
+            .split("mod tests {")
+            .next()
+            .expect("production source");
+        let startup_path_source = production_source
+            .split("fn configured_openclaw_gateway_port")
+            .nth(1)
+            .and_then(|tail| tail.split("fn command_matches_built_in_openclaw_gateway").next())
+            .expect("startup path helper source");
+
+        assert!(
+            !startup_path_source.contains(".expect("),
+            "OpenClaw startup path helpers must propagate kernel path errors instead of panicking"
+        );
     }
 
     #[test]
@@ -2958,7 +2918,7 @@ mod tests {
             "C:\\Program Files\\nodejs\\node.exe".to_string(),
             paths
                 .openclaw_runtime_dir
-                .join("2026.3.28-windows-x64")
+                .join(format!("{}-windows-x64", bundled_openclaw_version()))
                 .join("runtime")
                 .join("package")
                 .join("node_modules")

@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import type { StudioInstanceDetailRecord } from '@sdkwork/claw-types';
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  type StudioInstanceDetailRecord,
+} from '@sdkwork/claw-types';
 import {
   hasReadyOpenClawGateway,
   hasWritableOpenClawConfigRoute,
@@ -47,7 +50,7 @@ function createDetail(overrides: DetailOverrides = {}): StudioInstanceDetailReco
       isBuiltIn: false,
       isDefault: false,
       iconType: 'server',
-      version: '2026.4.5',
+      version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
       typeLabel: 'OpenClaw Gateway',
       host: '10.0.0.8',
       port: 21280,

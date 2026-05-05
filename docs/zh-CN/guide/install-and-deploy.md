@@ -240,3 +240,22 @@ kubectl get svc
 ## 当前服务管理器边界
 
 当前原生 Server 运行时已经内建 `systemd`、`launchd` 和 `Windows Service` 风格的服务生命周期支持。非 service 安装应优先使用 `./bin/claw-server` 或 `.\bin\claw-server.exe` 作为打包后的规范入口，`start-claw-server.sh` 与 `start-claw-server.cmd` 仅作为本地运维便捷包装脚本存在。`./bin/claw-server service *`、`.\bin\claw-server.exe service *` 与逻辑命令面 `claw-server service *` 共享同一套受管服务入口。真正的安装、启动与停止仍然通过宿主操作系统自己的服务管理器完成，因此需要对应的平台权限。
+## Release Readiness Gate
+
+在发布前，`pnpm release:finalize` 之后必须执行：
+
+```bash
+pnpm release:assert-ready
+```
+
+该命令会重新读取最终 `release-manifest.json` 与 `SHA256SUMS.txt`，拒绝 partial coverage 或 `--allow-partial-release` 清单，验证每个 artifact 与 `releaseMetadata` 的 checksum 与 size，要求 `release-notes.md` 同时被 `releaseMetadata`、`SHA256SUMS.txt`、`release-attestations.json` 覆盖，并拒绝缺少、格式错误、引用的 smoke 证据文件已不在 release 资产目录中，或与引用 smoke report 内容不一致的家族级 smoke 元数据。
+## 发布证据完整性补充
+
+`pnpm release:finalize` 会记录 smoke evidence 的 `reportSha256` / `reportSize`、`manifestSha256` / `manifestSize`，桌面启动 smoke 还会记录 `capturedEvidenceSha256` / `capturedEvidenceSize`。部署发布前的 `pnpm release:assert-ready` 会重新校验这些 sha256/size 绑定和 smoke report 内容，防止证据文件在 finalization 后被替换。
+
+发布完整性补充：`pnpm release:finalize` 会为顶层 `release-manifest.json` 生成 `release-manifest.json.sha256.txt`；部署或发布前的 `pnpm release:assert-ready` 会先校验该 sidecar，再继续校验 `SHA256SUMS.txt`、artifact checksum/size 与 smoke evidence。
+## release-attestations.json
+
+发布前在 `pnpm release:finalize` 之后运行 `pnpm release:write-attestation-evidence -- --release-assets-dir artifacts/release --repository Sdkwork-Cloud/claw-studio --release-tag release-local`，再运行 `pnpm release:assert-ready`。`release-attestations.json` 记录每个 artifact 与 release metadata（包括 `release-notes.md`）的 `gh attestation verify` 结果，并要求 `relativePath`、`sha256`、`repository`、`releaseTag`、`sourceRef`、`predicateType` 与 `release-manifest.json` 一致。
+
+部署发布必须把 artifact 证明绑定到指定发布 workflow：`gh attestation verify --signer-workflow <owner/repo/.github/workflows/release-reusable.yml>`。`release-attestations.json` 会记录 `signerWorkflow` 与 `signerWorkflowIdentity`，`pnpm release:assert-ready` 会拒绝未绑定 signer workflow identity 或命令中缺少 `--signer-workflow` 的证明证据。

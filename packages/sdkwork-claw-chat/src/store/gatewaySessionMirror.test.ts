@@ -68,6 +68,29 @@ await runTest(
 );
 
 await runTest(
+  'gatewaySessionMirror preserves an existing gateway cache when an idle empty snapshot is not explicitly authoritative',
+  () => {
+    const existingSessions = [
+      createSession({
+        id: 'agent:research:main',
+        authorityKind: 'gateway',
+        transport: 'openclawGateway',
+        updatedAt: 40,
+      }),
+    ];
+
+    const resolvedSessions = resolveGatewayMirrorScopeSessions({
+      existingSessions,
+      snapshotSessions: [],
+      syncState: 'idle',
+      isEmptySnapshotAuthoritative: false,
+    });
+
+    assert.deepEqual(resolvedSessions, existingSessions);
+  },
+);
+
+await runTest(
   'gatewaySessionMirror preserves a persisted first-user title when a live gateway list returns only id/date metadata',
   async () => {
     const putCalls: ReturnType<typeof createSession>[] = [];
@@ -134,6 +157,7 @@ await runTest(
       existingSessions,
       snapshotSessions: [],
       syncState: 'idle',
+      isEmptySnapshotAuthoritative: true,
     });
 
     assert.deepEqual(resolvedSessions, []);
@@ -245,5 +269,37 @@ await runTest(
     ]).map((session) => session.id), ['agent:research:main']);
     assert.deepEqual(putCalls, ['agent:research:main']);
     assert.deepEqual(deleteCalls, ['agent:ops:main']);
+  },
+);
+
+await runTest(
+  'gatewaySessionMirror skips stale persisted deletions for non-authoritative empty snapshots',
+  async () => {
+    const putCalls: string[] = [];
+    const deleteCalls: string[] = [];
+
+    const syncedSessions = await syncGatewayMirrorSessions({
+      instanceId: 'instance-openclaw-1',
+      snapshotSessions: [],
+      isEmptySnapshotAuthoritative: false,
+      listPersistedSessions: async () => [
+        createSession({
+          id: 'agent:research:main',
+          authorityKind: 'gateway',
+          transport: 'openclawGateway',
+          updatedAt: 30,
+        }),
+      ],
+      putPersistedSession: async (session) => {
+        putCalls.push(session.id);
+      },
+      deletePersistedSession: async (sessionId) => {
+        deleteCalls.push(sessionId);
+      },
+    });
+
+    assert.deepEqual(syncedSessions.map((session) => session.id), ['agent:research:main']);
+    assert.deepEqual(putCalls, []);
+    assert.deepEqual(deleteCalls, []);
   },
 );

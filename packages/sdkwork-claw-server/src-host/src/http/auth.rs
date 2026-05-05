@@ -151,11 +151,9 @@ fn unauthorized_response(realm: &'static str, now_ms: u64) -> Response {
         InternalErrorResolution::ReAuthenticate,
         now_ms,
     );
-    response.headers_mut().insert(
-        WWW_AUTHENTICATE,
-        HeaderValue::from_str(&format!("Basic realm=\"{realm}\""))
-            .expect("basic auth challenge should be a valid header"),
-    );
+    if let Ok(header_value) = HeaderValue::from_str(&format!("Basic realm=\"{realm}\"")) {
+        response.headers_mut().insert(WWW_AUTHENTICATE, header_value);
+    }
     response
 }
 
@@ -169,10 +167,10 @@ fn browser_session_unauthorized_response(now_ms: u64) -> Response {
         InternalErrorResolution::ReAuthenticate,
         now_ms,
     );
-    response.headers_mut().insert(
-        WWW_AUTHENTICATE,
+    if let Ok(header_value) =
         HeaderValue::from_str(&format!("Bearer realm=\"{BROWSER_SESSION_REALM}\""))
-            .expect("browser session auth challenge should be a valid header"),
-    );
+    {
+        response.headers_mut().insert(WWW_AUTHENTICATE, header_value);
+    }
     response
 }

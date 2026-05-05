@@ -3,7 +3,7 @@ use axum::http::{
     HeaderMap, Method,
 };
 
-use crate::{bootstrap::ServerState, http::auth::BROWSER_SESSION_HEADER_NAME};
+use crate::bootstrap::ServerState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CorsSurface {
@@ -90,10 +90,7 @@ pub fn append_cors_headers(headers: &mut HeaderMap, origin: &HeaderValue) {
     );
     headers.insert(
         header::ACCESS_CONTROL_ALLOW_HEADERS,
-        HeaderValue::from_str(&format!(
-            "authorization, content-type, accept, {BROWSER_SESSION_HEADER_NAME}"
-        ))
-        .expect("allow-headers value should be valid"),
+        HeaderValue::from_static("authorization, content-type, accept, x-claw-browser-session"),
     );
     headers.insert(
         header::ACCESS_CONTROL_EXPOSE_HEADERS,

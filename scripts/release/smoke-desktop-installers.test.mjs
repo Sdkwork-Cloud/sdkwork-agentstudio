@@ -5,7 +5,14 @@ import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import { DEFAULT_OPENCLAW_VERSION } from '../openclaw-release.mjs';
+import { createStoredZipArchive } from '../test-support/archive-fixtures.mjs';
+
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
+
+function openClawInstallKey(platform, arch) {
+  return `${DEFAULT_OPENCLAW_VERSION}-${platform}-${arch}`;
+}
 
 function writeJsonFile(filePath, value) {
   mkdirSync(path.dirname(filePath), { recursive: true });
@@ -16,6 +23,13 @@ function writeArtifactFile(releaseAssetsDir, relativePath) {
   const absolutePath = path.join(releaseAssetsDir, relativePath);
   mkdirSync(path.dirname(absolutePath), { recursive: true });
   writeFileSync(absolutePath, 'synthetic desktop artifact\n', 'utf8');
+  return absolutePath;
+}
+
+function writeZipArtifactFile(releaseAssetsDir, relativePath, entries) {
+  const absolutePath = path.join(releaseAssetsDir, relativePath);
+  mkdirSync(path.dirname(absolutePath), { recursive: true });
+  writeFileSync(absolutePath, createStoredZipArchive(entries));
   return absolutePath;
 }
 
@@ -300,7 +314,7 @@ test('desktop installer smoke uses the default local planner when no installer f
       verifyDesktopOpenClawReleaseAssetsFn: async () => ({
         installReadyLayout: buildInstallReadyLayout({
           mode: 'archive-extract-ready',
-          installKey: '2026.4.7-windows-x64',
+          installKey: openClawInstallKey('windows', 'x64'),
         }),
       }),
       readDesktopOpenClawInstallerContractFn: async () => buildInstallerContract('windows'),
@@ -476,7 +490,7 @@ test('desktop installer smoke creates dry-run install plans for Windows installe
         return {
           installReadyLayout: buildInstallReadyLayout({
             mode: 'archive-extract-ready',
-            installKey: '2026.4.2-windows-x64',
+            installKey: openClawInstallKey('windows', 'x64'),
           }),
         };
       },
@@ -532,7 +546,7 @@ test('desktop installer smoke creates dry-run install plans for Windows installe
           externalRuntimePolicy: buildOpenClawExternalRuntimePolicy(),
           installReadyLayout: buildInstallReadyLayout({
             mode: 'archive-extract-ready',
-            installKey: '2026.4.2-windows-x64',
+            installKey: openClawInstallKey('windows', 'x64'),
           }),
         },
       },
@@ -590,7 +604,7 @@ test('desktop installer smoke plans every Linux installable artifact through loc
       verifyDesktopOpenClawReleaseAssetsFn: async () => ({
         installReadyLayout: buildInstallReadyLayout({
           mode: 'archive-extract-ready',
-          installKey: '2026.4.2-linux-x64',
+          installKey: openClawInstallKey('linux', 'x64'),
         }),
       }),
       detectFormatFn(source) {
@@ -723,7 +737,7 @@ test('desktop installer smoke rejects install-ready layout evidence whose mode d
         verifyDesktopOpenClawReleaseAssetsFn: async () => ({
           installReadyLayout: buildInstallReadyLayout({
             mode: 'staged-layout',
-            installKey: '2026.4.2-windows-x64',
+            installKey: openClawInstallKey('windows', 'x64'),
           }),
         }),
         detectFormatFn(source) {
@@ -753,7 +767,12 @@ test('desktop installer smoke requires a macOS dmg plan target and a bundled app
 
   try {
     writeArtifactFile(releaseAssetsDir, dmgRelativePath);
-    writeArtifactFile(releaseAssetsDir, archiveRelativePath);
+    writeZipArtifactFile(releaseAssetsDir, archiveRelativePath, [
+      {
+        name: 'Claw Studio.app/Contents/MacOS/claw-studio',
+        content: 'synthetic app binary\n',
+      },
+    ]);
     writeDesktopManifest({
       releaseAssetsDir,
       platform: 'macos',
@@ -790,7 +809,7 @@ test('desktop installer smoke requires a macOS dmg plan target and a bundled app
       verifyDesktopOpenClawReleaseAssetsFn: async () => ({
         installReadyLayout: buildInstallReadyLayout({
           mode: 'staged-layout',
-          installKey: '2026.4.2-macos-arm64',
+          installKey: openClawInstallKey('macos', 'arm64'),
         }),
       }),
       detectFormatFn(source) {
@@ -822,6 +841,85 @@ test('desktop installer smoke requires a macOS dmg plan target and a bundled app
     assert.equal(result.installPlans.length, 1);
     assert.equal(result.requiredCompanionArtifacts.length, 1);
     assert.equal(result.requiredCompanionArtifacts[0].relativePath, archiveRelativePath);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop installer smoke rejects unsafe macOS app archive companion entries', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-installers.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-macos-unsafe-app-'));
+  const releaseAssetsDir = path.join(tempRoot, 'release-assets');
+  const dmgRelativePath = 'desktop/macos/arm64/dmg/Claw Studio_0.1.0_aarch64.dmg';
+  const archiveRelativePath = 'desktop/macos/arm64/macos/Claw Studio_0.1.0_arm64.app.zip';
+
+  try {
+    writeArtifactFile(releaseAssetsDir, dmgRelativePath);
+    writeZipArtifactFile(releaseAssetsDir, archiveRelativePath, [
+      {
+        name: 'Claw Studio.app/Contents/MacOS/claw-studio',
+        content: 'synthetic app binary\n',
+      },
+      {
+        name: 'Claw Studio.app/Contents/MacOS/claw-studio-link',
+        content: 'claw-studio',
+        externalAttributes: 0o120777 << 16,
+      },
+    ]);
+    writeDesktopManifest({
+      releaseAssetsDir,
+      platform: 'macos',
+      arch: 'arm64',
+      packageProfileId: 'hermes-only',
+      kernelInstallContracts: undefined,
+      artifacts: [
+        {
+          name: 'Claw Studio_0.1.0_aarch64.dmg',
+          relativePath: dmgRelativePath,
+          family: 'desktop',
+          platform: 'macos',
+          arch: 'arm64',
+          kind: 'installer',
+          sha256: 'dmg',
+          size: 20,
+        },
+        {
+          name: 'Claw Studio_0.1.0_arm64.app.zip',
+          relativePath: archiveRelativePath,
+          family: 'desktop',
+          platform: 'macos',
+          arch: 'arm64',
+          kind: 'archive',
+          sha256: 'zip',
+          size: readFileSync(path.join(releaseAssetsDir, archiveRelativePath)).length,
+        },
+      ],
+    });
+
+    await assert.rejects(
+      () => smoke.smokeDesktopInstallers({
+        releaseAssetsDir,
+        platform: 'macos',
+        arch: 'arm64',
+        verifyDesktopOpenClawReleaseAssetsFn: async () => {
+          throw new Error('hermes-only package must not invoke OpenClaw verification');
+        },
+        readDesktopOpenClawInstallerContractFn: async () => {
+          throw new Error('hermes-only package must not read an OpenClaw installer contract');
+        },
+        detectFormatFn(source) {
+          return path.extname(source).slice(1).toLowerCase();
+        },
+        createInstallPlanFn: async (request) => ({
+          request,
+          steps: [],
+          notes: [],
+        }),
+      }),
+      /unsupported archive entry type/i,
+    );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -863,7 +961,7 @@ test('desktop installer smoke rejects a macOS release manifest that is missing t
         verifyDesktopOpenClawReleaseAssetsFn: async () => ({
           installReadyLayout: buildInstallReadyLayout({
             mode: 'staged-layout',
-            installKey: '2026.4.2-macos-x64',
+            installKey: openClawInstallKey('macos', 'x64'),
           }),
         }),
         detectFormatFn(source) {
@@ -929,7 +1027,7 @@ test('desktop installer smoke rejects manifests whose persisted OpenClaw install
         verifyDesktopOpenClawReleaseAssetsFn: async () => ({
           installReadyLayout: buildInstallReadyLayout({
             mode: 'archive-extract-ready',
-            installKey: '2026.4.2-windows-x64',
+            installKey: openClawInstallKey('windows', 'x64'),
           }),
         }),
         detectFormatFn(source) {
@@ -962,7 +1060,7 @@ test('desktop installer smoke rejects manifests whose persisted OpenClaw install
         verifyDesktopOpenClawReleaseAssetsFn: async () => ({
           installReadyLayout: buildInstallReadyLayout({
             mode: 'archive-extract-ready',
-            installKey: '2026.4.2-windows-x64',
+            installKey: openClawInstallKey('windows', 'x64'),
           }),
         }),
         detectFormatFn(source) {

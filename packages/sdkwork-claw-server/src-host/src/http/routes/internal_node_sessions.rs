@@ -360,7 +360,8 @@ fn map_rollout_error(error: RolloutControlPlaneError, now_ms: u64) -> Response {
             StatusCode::CONFLICT,
             now_ms,
         ),
-        RolloutControlPlaneError::Store(_) => envelope_error_response(
+        RolloutControlPlaneError::Store(_)
+        | RolloutControlPlaneError::CatalogUnavailable { .. } => envelope_error_response(
             InternalErrorEnvelope::new(
                 "dependency_unavailable",
                 InternalErrorCategory::Dependency,
@@ -377,13 +378,14 @@ fn map_rollout_error(error: RolloutControlPlaneError, now_ms: u64) -> Response {
 
 fn map_node_session_registry_error(error: NodeSessionRegistryError, now_ms: u64) -> Response {
     match error {
-        NodeSessionRegistryError::Store(_) => categorized_error_response(
-            "internal_failure",
-            InternalErrorCategory::System,
+        NodeSessionRegistryError::Store(_)
+        | NodeSessionRegistryError::CatalogUnavailable { .. } => categorized_error_response(
+            "dependency_unavailable",
+            InternalErrorCategory::Dependency,
             "The node session store is unavailable.",
-            StatusCode::INTERNAL_SERVER_ERROR,
-            false,
-            InternalErrorResolution::OperatorAction,
+            StatusCode::SERVICE_UNAVAILABLE,
+            true,
+            InternalErrorResolution::WaitAndRetry,
             now_ms,
         ),
         NodeSessionRegistryError::SessionNotFound { .. } => categorized_error_response(

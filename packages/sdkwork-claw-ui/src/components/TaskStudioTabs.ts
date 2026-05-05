@@ -23,7 +23,7 @@ export function TaskStudioTabs({
   const railClassName =
     'inline-flex w-fit max-w-full flex-wrap items-center gap-1 rounded-[0.875rem] border border-zinc-200/80 bg-white/80 p-1 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40';
   const triggerClassName =
-    'inline-flex h-9 min-w-[9rem] shrink-0 items-center justify-between gap-2 rounded-[0.75rem] px-3 text-left text-[13px] font-semibold transition-colors';
+    'inline-flex h-9 min-w-[9rem] shrink-0 items-center justify-between gap-2 rounded-[0.75rem] border border-transparent px-3 text-left text-[13px] font-semibold transition-colors';
   const countClassName = 'rounded-full px-1.5 py-0.5 text-[11px] font-semibold';
 
   return (
@@ -51,7 +51,7 @@ export function TaskStudioTabs({
             className: cn(
               triggerClassName,
               isActive
-                ? 'bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950'
+                ? 'border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-500/30 dark:bg-primary-500/10 dark:text-primary-300'
                 : 'text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900',
             ),
           },
@@ -63,7 +63,7 @@ export function TaskStudioTabs({
                   className: cn(
                     countClassName,
                     isActive
-                      ? 'bg-white/15 text-white dark:bg-zinc-950/10 dark:text-zinc-950'
+                      ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200'
                       : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300',
                   ),
                 },

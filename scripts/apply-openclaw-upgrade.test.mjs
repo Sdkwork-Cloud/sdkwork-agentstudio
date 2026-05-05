@@ -5,7 +5,19 @@ import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import {
+  REMOVED_OPENCLAW_RELEASE_CONFIG_ENTRY,
+  resolveRemovedOpenClawWorkspaceEntry,
+} from './test-support/openclaw-retired-upgrade-entries.mjs';
+import { shiftNumericVersion } from './test-support/version-fixtures.mjs';
+
 const rootDir = path.resolve(import.meta.dirname, '..');
+const openClawReleaseConfig = JSON.parse(
+  readFileSync(path.join(rootDir, 'config', 'kernel-releases', 'openclaw.json'), 'utf8'),
+);
+const expectedNodeVersion = openClawReleaseConfig.nodeVersion;
+const currentOpenClawVersion = String(openClawReleaseConfig.stableVersion);
+const previousOpenClawVersion = shiftNumericVersion(currentOpenClawVersion, -1);
 
 function createJson(filePath, value) {
   mkdirSync(path.dirname(filePath), { recursive: true });
@@ -18,17 +30,81 @@ function createReleaseConfig(workspaceRootDir, stableVersion) {
     stableVersion,
     supportedChannels: ['stable'],
     defaultChannel: 'stable',
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     packageName: 'openclaw',
     runtimeRequirements: {
       requiredExternalRuntimes: ['nodejs'],
-      requiredExternalRuntimeVersions: {
-        nodejs: '22.16.0',
-      },
     },
     runtimeSupplementalPackages: [],
     runtimeSupplementalPackageExceptions: [],
+    releaseSource: {
+      kind: 'githubRelease',
+      repositoryUrl: 'https://github.com/openclaw/openclaw',
+      tagPrefix: 'v',
+    },
   });
+}
+
+function resolveRemovedOpenClawReleaseConfigPath(workspaceRootDir) {
+  return resolveRemovedOpenClawWorkspaceEntry(
+    workspaceRootDir,
+    REMOVED_OPENCLAW_RELEASE_CONFIG_ENTRY,
+  );
+}
+
+function writeRuntimeVersionState(workspaceRootDir, version) {
+  createJson(
+    path.join(
+      workspaceRootDir,
+      'packages',
+      'sdkwork-claw-desktop',
+      'src-tauri',
+      'resources',
+      'openclaw',
+      'runtime',
+      'package',
+      'node_modules',
+      'openclaw',
+      'package.json',
+    ),
+    {
+      name: 'openclaw',
+      version,
+    },
+  );
+  createJson(
+    path.join(
+      workspaceRootDir,
+      'packages',
+      'sdkwork-claw-desktop',
+      'src-tauri',
+      'resources',
+      'openclaw',
+      'manifest.json',
+    ),
+    {
+      schemaVersion: 1,
+      runtimeId: 'openclaw',
+      openclawVersion: version,
+    },
+  );
+  createJson(
+    path.join(
+      workspaceRootDir,
+      'packages',
+      'sdkwork-claw-desktop',
+      'src-tauri',
+      'generated',
+      'release',
+      'openclaw-resource',
+      'manifest.json',
+    ),
+    {
+      schemaVersion: 1,
+      runtimeId: 'openclaw',
+      openclawVersion: version,
+    },
+  );
 }
 
 test('applyOpenClawUpgrade refuses to mutate release config when readiness is blocked', async () => {
@@ -39,16 +115,16 @@ test('applyOpenClawUpgrade refuses to mutate release config when readiness is bl
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'apply-openclaw-upgrade-blocked-'));
   try {
-    createReleaseConfig(tempRoot, '2026.4.9');
+    createReleaseConfig(tempRoot, previousOpenClawVersion);
 
     await assert.rejects(
       upgrade.applyOpenClawUpgrade({
         workspaceRootDir: tempRoot,
-        targetVersion: '2026.4.11',
+        targetVersion: currentOpenClawVersion,
         assessOpenClawUpgradeReadinessFn: async () => ({
-          targetVersion: '2026.4.11',
+          targetVersion: currentOpenClawVersion,
           readyToUpgrade: false,
-          blockers: ['No local openclaw-2026.4.11.tgz tarball is available for an offline packaged OpenClaw upgrade.'],
+          blockers: [`No local openclaw-${currentOpenClawVersion}.tgz tarball is available for an offline packaged OpenClaw upgrade.`],
         }),
       }),
       /offline packaged OpenClaw upgrade/i,
@@ -57,11 +133,11 @@ test('applyOpenClawUpgrade refuses to mutate release config when readiness is bl
     const releaseConfig = JSON.parse(
       readFileSync(path.join(tempRoot, 'config', 'kernel-releases', 'openclaw.json'), 'utf8'),
     );
-    assert.equal(releaseConfig.stableVersion, '2026.4.9');
+    assert.equal(releaseConfig.stableVersion, previousOpenClawVersion);
     assert.equal(
-      existsSync(path.join(tempRoot, 'config', 'openclaw-release.json')),
+      existsSync(resolveRemovedOpenClawReleaseConfigPath(tempRoot)),
       false,
-      'applyOpenClawUpgrade must not synthesize the legacy compatibility projection when readiness blocks the upgrade before mutation starts',
+      'applyOpenClawUpgrade must not synthesize the removed release config projection when readiness blocks the upgrade before mutation starts',
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -74,66 +150,15 @@ test('applyOpenClawUpgrade updates the release baseline and runs sync, prepare, 
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'apply-openclaw-upgrade-success-'));
   try {
-    createReleaseConfig(tempRoot, '2026.4.9');
-    createJson(
-      path.join(
-        tempRoot,
-        'packages',
-        'sdkwork-claw-desktop',
-        'src-tauri',
-        'resources',
-        'openclaw',
-        'runtime',
-        'package',
-        'node_modules',
-        'openclaw',
-        'package.json',
-      ),
-      {
-        name: 'openclaw',
-        version: '2026.4.9',
-      },
-    );
-    createJson(
-      path.join(
-        tempRoot,
-        'packages',
-        'sdkwork-claw-desktop',
-        'src-tauri',
-        'resources',
-        'openclaw',
-        'manifest.json',
-      ),
-      {
-        schemaVersion: 1,
-        runtimeId: 'openclaw',
-        openclawVersion: '2026.4.9',
-      },
-    );
-    createJson(
-      path.join(
-        tempRoot,
-        'packages',
-        'sdkwork-claw-desktop',
-        'src-tauri',
-        'generated',
-        'release',
-        'openclaw-resource',
-        'manifest.json',
-      ),
-      {
-        schemaVersion: 1,
-        runtimeId: 'openclaw',
-        openclawVersion: '2026.4.9',
-      },
-    );
+    createReleaseConfig(tempRoot, previousOpenClawVersion);
+    writeRuntimeVersionState(tempRoot, previousOpenClawVersion);
 
     const calls = [];
     const result = await upgrade.applyOpenClawUpgrade({
       workspaceRootDir: tempRoot,
-      targetVersion: '2026.4.11',
+      targetVersion: currentOpenClawVersion,
       assessOpenClawUpgradeReadinessFn: async () => ({
-        targetVersion: '2026.4.11',
+        targetVersion: currentOpenClawVersion,
         readyToUpgrade: true,
         blockers: [],
       }),
@@ -141,58 +166,7 @@ test('applyOpenClawUpgrade updates the release baseline and runs sync, prepare, 
         calls.push(scriptRelativePath);
 
         if (scriptRelativePath === 'scripts/prepare-openclaw-runtime.mjs') {
-          createJson(
-            path.join(
-              tempRoot,
-              'packages',
-              'sdkwork-claw-desktop',
-              'src-tauri',
-              'resources',
-              'openclaw',
-              'manifest.json',
-            ),
-            {
-              schemaVersion: 1,
-              runtimeId: 'openclaw',
-              openclawVersion: '2026.4.11',
-            },
-          );
-          createJson(
-            path.join(
-              tempRoot,
-              'packages',
-              'sdkwork-claw-desktop',
-              'src-tauri',
-              'generated',
-              'release',
-              'openclaw-resource',
-              'manifest.json',
-            ),
-            {
-              schemaVersion: 1,
-              runtimeId: 'openclaw',
-              openclawVersion: '2026.4.11',
-            },
-          );
-          createJson(
-            path.join(
-              tempRoot,
-              'packages',
-              'sdkwork-claw-desktop',
-              'src-tauri',
-              'resources',
-              'openclaw',
-              'runtime',
-              'package',
-              'node_modules',
-              'openclaw',
-              'package.json',
-            ),
-            {
-              name: 'openclaw',
-              version: '2026.4.11',
-            },
-          );
+          writeRuntimeVersionState(tempRoot, currentOpenClawVersion);
         }
       },
     });
@@ -203,18 +177,109 @@ test('applyOpenClawUpgrade updates the release baseline and runs sync, prepare, 
       'scripts/verify-desktop-openclaw-release-assets.mjs',
       'scripts/openclaw-upgrade-rollback-evidence.mjs',
     ]);
-    assert.equal(result.versionState.configuredVersion, '2026.4.11');
-    assert.equal(result.versionState.preparedRuntimeVersion, '2026.4.11');
-    assert.equal(result.versionState.bundledManifestVersion, '2026.4.11');
-    assert.equal(result.versionState.generatedManifestVersion, '2026.4.11');
+    assert.equal(result.versionState.configuredVersion, currentOpenClawVersion);
+    assert.equal(result.versionState.preparedRuntimeVersion, currentOpenClawVersion);
+    assert.equal(result.versionState.bundledManifestVersion, currentOpenClawVersion);
+    assert.equal(result.versionState.generatedManifestVersion, currentOpenClawVersion);
     const releaseConfig = JSON.parse(
       readFileSync(path.join(tempRoot, 'config', 'kernel-releases', 'openclaw.json'), 'utf8'),
     );
-    assert.equal(releaseConfig.stableVersion, '2026.4.11');
-    const legacyReleaseConfig = JSON.parse(
-      readFileSync(path.join(tempRoot, 'config', 'openclaw-release.json'), 'utf8'),
+    assert.equal(releaseConfig.stableVersion, currentOpenClawVersion);
+    assert.equal(
+      Object.hasOwn(releaseConfig.releaseSource, 'releaseUrl'),
+      false,
+      'applyOpenClawUpgrade must not write a derived releaseUrl back into the release config',
     );
-    assert.equal(legacyReleaseConfig.stableVersion, '2026.4.11');
+    assert.equal(
+      existsSync(resolveRemovedOpenClawReleaseConfigPath(tempRoot)),
+      false,
+      'applyOpenClawUpgrade must not create the removed release config projection after a successful upgrade',
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('applyOpenClawUpgrade fast mode skips sync and prepare when target runtime state is already aligned', async () => {
+  const modulePath = path.join(rootDir, 'scripts', 'apply-openclaw-upgrade.mjs');
+  const upgrade = await import(pathToFileURL(modulePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'apply-openclaw-upgrade-fast-aligned-'));
+  try {
+    createReleaseConfig(tempRoot, currentOpenClawVersion);
+    writeRuntimeVersionState(tempRoot, currentOpenClawVersion);
+
+    const calls = [];
+    const result = await upgrade.applyOpenClawUpgrade({
+      workspaceRootDir: tempRoot,
+      targetVersion: currentOpenClawVersion,
+      fast: true,
+      assessOpenClawUpgradeReadinessFn: async () => ({
+        targetVersion: currentOpenClawVersion,
+        readyToUpgrade: false,
+        versionSourcesAligned: true,
+        blockers: [
+          `Local OpenClaw upstream checkout does not contain git tag v${currentOpenClawVersion}.`,
+        ],
+      }),
+      runNodeScriptFn: async ({ scriptRelativePath, args }) => {
+        calls.push({ scriptRelativePath, args });
+      },
+    });
+
+    assert.deepEqual(calls, [
+      { scriptRelativePath: 'scripts/verify-desktop-openclaw-release-assets.mjs', args: [] },
+      {
+        scriptRelativePath: 'scripts/openclaw-upgrade-rollback-evidence.mjs',
+        args: ['--target-version', currentOpenClawVersion],
+      },
+    ]);
+    assert.equal(result.workflowMode, 'fast-already-aligned');
+    assert.equal(result.versionState.configuredVersion, currentOpenClawVersion);
+    assert.equal(result.versionState.preparedRuntimeVersion, currentOpenClawVersion);
+    assert.equal(result.versionState.bundledManifestVersion, currentOpenClawVersion);
+    assert.equal(result.versionState.generatedManifestVersion, currentOpenClawVersion);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('applyOpenClawUpgrade fast mode falls back to the full workflow when target runtime state is not aligned', async () => {
+  const modulePath = path.join(rootDir, 'scripts', 'apply-openclaw-upgrade.mjs');
+  const upgrade = await import(pathToFileURL(modulePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'apply-openclaw-upgrade-fast-fallback-'));
+  try {
+    createReleaseConfig(tempRoot, previousOpenClawVersion);
+    writeRuntimeVersionState(tempRoot, previousOpenClawVersion);
+
+    const calls = [];
+    const result = await upgrade.applyOpenClawUpgrade({
+      workspaceRootDir: tempRoot,
+      targetVersion: currentOpenClawVersion,
+      fast: true,
+      assessOpenClawUpgradeReadinessFn: async () => ({
+        targetVersion: currentOpenClawVersion,
+        readyToUpgrade: true,
+        versionSourcesAligned: false,
+        blockers: [],
+      }),
+      runNodeScriptFn: async ({ scriptRelativePath }) => {
+        calls.push(scriptRelativePath);
+
+        if (scriptRelativePath === 'scripts/prepare-openclaw-runtime.mjs') {
+          writeRuntimeVersionState(tempRoot, currentOpenClawVersion);
+        }
+      },
+    });
+
+    assert.deepEqual(calls, [
+      'scripts/sync-bundled-components.mjs',
+      'scripts/prepare-openclaw-runtime.mjs',
+      'scripts/verify-desktop-openclaw-release-assets.mjs',
+      'scripts/openclaw-upgrade-rollback-evidence.mjs',
+    ]);
+    assert.equal(result.workflowMode, 'full');
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -226,14 +291,14 @@ test('applyOpenClawUpgrade restores the previous release baseline if a downstrea
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'apply-openclaw-upgrade-rollback-'));
   try {
-    createReleaseConfig(tempRoot, '2026.4.9');
+    createReleaseConfig(tempRoot, previousOpenClawVersion);
 
     await assert.rejects(
       upgrade.applyOpenClawUpgrade({
         workspaceRootDir: tempRoot,
-        targetVersion: '2026.4.11',
+        targetVersion: currentOpenClawVersion,
         assessOpenClawUpgradeReadinessFn: async () => ({
-          targetVersion: '2026.4.11',
+          targetVersion: currentOpenClawVersion,
           readyToUpgrade: true,
           blockers: [],
         }),
@@ -249,11 +314,17 @@ test('applyOpenClawUpgrade restores the previous release baseline if a downstrea
     const releaseConfig = JSON.parse(
       readFileSync(path.join(tempRoot, 'config', 'kernel-releases', 'openclaw.json'), 'utf8'),
     );
-    assert.equal(releaseConfig.stableVersion, '2026.4.9');
-    const legacyReleaseConfig = JSON.parse(
-      readFileSync(path.join(tempRoot, 'config', 'openclaw-release.json'), 'utf8'),
+    assert.equal(releaseConfig.stableVersion, previousOpenClawVersion);
+    assert.equal(
+      Object.hasOwn(releaseConfig.releaseSource, 'releaseUrl'),
+      false,
+      'applyOpenClawUpgrade must preserve the canonical release config shape when restoring a failed upgrade',
     );
-    assert.equal(legacyReleaseConfig.stableVersion, '2026.4.9');
+    assert.equal(
+      existsSync(resolveRemovedOpenClawReleaseConfigPath(tempRoot)),
+      false,
+      'applyOpenClawUpgrade must not create the removed release config projection while restoring a failed upgrade',
+    );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -265,6 +336,10 @@ test('workspace exposes the apply-openclaw-upgrade entrypoint and validates it i
   assert.equal(
     packageJson.scripts['openclaw:upgrade:apply'],
     'sdkwork-run-node scripts/apply-openclaw-upgrade.mjs',
+  );
+  assert.equal(
+    packageJson.scripts['openclaw:upgrade:fast'],
+    'sdkwork-run-node scripts/apply-openclaw-upgrade.mjs --fast',
   );
   assert.match(
     packageJson.scripts['check:desktop-openclaw-runtime'],

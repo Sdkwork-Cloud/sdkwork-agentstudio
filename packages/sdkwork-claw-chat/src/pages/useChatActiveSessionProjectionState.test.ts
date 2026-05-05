@@ -72,5 +72,9 @@ await runTest(
       activeSessionProjectionHookSource,
       /resolveChatWorkspaceProjection\(\{\s*sessions: instanceSessions,\s*activeSessionId,\s*isChatSupported: isChatSupportedRoute,\s*sessionScopeMode,\s*sessionScopeAgentId: effectiveGatewayAgentId,\s*selectedAgentId,\s*\}\)/s,
     );
+    assert.match(
+      activeSessionProjectionHookSource,
+      /const displaySessionAgentId = workspaceProjection\.displaySessionAgentId;/,
+    );
   },
 );

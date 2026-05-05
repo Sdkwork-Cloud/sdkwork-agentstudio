@@ -59,6 +59,47 @@ mod tests {
     use crate::storage::StorageError;
 
     #[test]
+    fn host_core_runtime_production_paths_have_no_panic_exits() {
+        let sources = [
+            (
+                "internal/node_sessions.rs",
+                include_str!("internal/node_sessions.rs"),
+            ),
+            ("projection/compiler.rs", include_str!("projection/compiler.rs")),
+            (
+                "rollout/control_plane.rs",
+                include_str!("rollout/control_plane.rs"),
+            ),
+        ];
+        let forbidden_patterns = [
+            ".expect(",
+            ".unwrap(",
+            "panic!(",
+            "todo!(",
+            "unimplemented!(",
+            "unreachable!(",
+        ];
+        let mut offenders = Vec::new();
+
+        for (source_name, source) in sources {
+            let production_source = source.split("#[cfg(test)]").next().unwrap_or(source);
+            for (index, line) in production_source.lines().enumerate() {
+                for pattern in forbidden_patterns {
+                    if line.contains(pattern) {
+                        offenders.push(format!("{source_name}:{}:{}", index + 1, line.trim()));
+                    }
+                }
+            }
+        }
+
+        assert!(
+            offenders.is_empty(),
+            "host-core runtime production code must avoid panic exits on shared-state and time boundaries:\n{}",
+            offenders.join("\n")
+        );
+    }
+
+    #[test]
     fn internal_error_envelope_preserves_retry_guidance() {
         let envelope = InternalErrorEnvelope::new(
             "projection_version_unsupported",

@@ -53,8 +53,15 @@ runTest('desktop shell keeps title-bar window controls in the shared desktop bri
   assert.match(controlsSource, /isWindowMaximized/);
   assert.match(headerSource, /DesktopWindowControls/);
   assert.match(headerSource, /variant="header"/);
-  assert.match(startupSource, /restoreWindow/);
-  assert.match(startupSource, /isWindowMaximized/);
+  assert.match(headerSource, /mode\?: 'default' \| 'auth' \| 'window-controls'/);
+  assert.match(startupSource, /import \{ AppHeader \} from '@sdkwork\/claw-shell';/);
+  assert.match(startupSource, /<AppHeader\s+mode="window-controls"/);
+  assert.match(startupSource, /windowControlLabels=\{getStartupWindowControlLabels\(language\)\}/);
+  assert.doesNotMatch(startupSource, /StartupWindowControls/);
+  assert.doesNotMatch(startupSource, /WindowControlButton/);
+  assert.doesNotMatch(startupSource, /from '\.\.\/tauriBridge'/);
+  assert.doesNotMatch(startupSource, /restoreWindow/);
+  assert.doesNotMatch(startupSource, /isWindowMaximized/);
 });
 
 runTest('desktop startup keeps the initial window at the configured default size', () => {

@@ -53,6 +53,17 @@ export function createReleasePlan({
     throw new Error('releaseTag is required to resolve a release plan.');
   }
 
+  const desktopMatrix = buildDesktopReleaseMatrix(profile.id);
+  const serverMatrix = buildServerReleaseMatrix(profile.id);
+  const containerMatrix = buildContainerReleaseMatrix(profile.id);
+  const kubernetesMatrix = buildKubernetesReleaseMatrix(profile.id);
+  const targetSummary = buildReleasePlanTargetSummary({
+    desktopMatrix,
+    serverMatrix,
+    containerMatrix,
+    kubernetesMatrix,
+  });
+
   return {
     profileId: profile.id,
     productName: profile.productName,
@@ -68,10 +79,38 @@ export function createReleasePlan({
     release: {
       ...profile.release,
     },
-    desktopMatrix: buildDesktopReleaseMatrix(profile.id),
-    serverMatrix: buildServerReleaseMatrix(profile.id),
-    containerMatrix: buildContainerReleaseMatrix(profile.id),
-    kubernetesMatrix: buildKubernetesReleaseMatrix(profile.id),
+    ...targetSummary,
+    desktopMatrix,
+    serverMatrix,
+    containerMatrix,
+    kubernetesMatrix,
+  };
+}
+
+export function buildReleasePlanTargetSummary({
+  desktopMatrix = [],
+  serverMatrix = [],
+  containerMatrix = [],
+  kubernetesMatrix = [],
+} = {}) {
+  const familyTargetCounts = {
+    web: 1,
+    desktop: desktopMatrix.reduce(
+      (total, entry) => total + (Array.isArray(entry?.bundles) ? entry.bundles.length : 0),
+      0,
+    ),
+    server: serverMatrix.length,
+    container: containerMatrix.length,
+    kubernetes: kubernetesMatrix.length,
+  };
+  const requiredTargetCount = Object.values(familyTargetCounts).reduce(
+    (total, count) => total + count,
+    0,
+  );
+
+  return {
+    familyTargetCounts,
+    requiredTargetCount,
   };
 }
 
@@ -119,13 +158,8 @@ export function parseArgs(argv) {
   return options;
 }
 
-function writeGitHubOutput(plan) {
-  const githubOutputPath = String(process.env.GITHUB_OUTPUT ?? '').trim();
-  if (!githubOutputPath) {
-    throw new Error('GITHUB_OUTPUT is required when --github-output is set.');
-  }
-
-  const outputLines = [
+export function buildGitHubOutputLines(plan) {
+  return [
     `profile_id=${plan.profileId}`,
     `product_name=${plan.productName}`,
     `default_package_profile_id=${plan.defaultPackageProfileId}`,
@@ -136,12 +170,25 @@ function writeGitHubOutput(plan) {
     `git_ref=${plan.gitRef}`,
     `release_name=${plan.releaseName}`,
     `manifest_file_name=${plan.release.manifestFileName}`,
+    `manifest_checksum_file_name=${plan.release.manifestChecksumFileName}`,
+    `attestation_evidence_file_name=${plan.release.attestationEvidenceFileName}`,
     `global_checksums_file_name=${plan.release.globalChecksumsFileName}`,
+    `required_target_count=${plan.requiredTargetCount}`,
+    `family_target_counts=${JSON.stringify(plan.familyTargetCounts)}`,
     `desktop_matrix=${JSON.stringify(plan.desktopMatrix)}`,
     `server_matrix=${JSON.stringify(plan.serverMatrix)}`,
     `container_matrix=${JSON.stringify(plan.containerMatrix)}`,
     `kubernetes_matrix=${JSON.stringify(plan.kubernetesMatrix)}`,
   ];
+}
+
+function writeGitHubOutput(plan) {
+  const githubOutputPath = String(process.env.GITHUB_OUTPUT ?? '').trim();
+  if (!githubOutputPath) {
+    throw new Error('GITHUB_OUTPUT is required when --github-output is set.');
+  }
+
+  const outputLines = buildGitHubOutputLines(plan);
   fs.appendFileSync(githubOutputPath, `${outputLines.join('\n')}\n`, 'utf8');
 }
 

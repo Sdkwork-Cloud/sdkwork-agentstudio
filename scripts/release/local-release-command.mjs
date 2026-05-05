@@ -26,6 +26,8 @@ import {
   resolveExistingDesktopBundleRoot,
 } from './package-release-assets.mjs';
 import { finalizeReleaseAssets } from './finalize-release-assets.mjs';
+import { assertReleaseReadiness } from './assert-release-readiness.mjs';
+import { collectReleaseStatus } from './release-status.mjs';
 import {
   buildDesktopReleaseEnv,
   buildDesktopTargetTriple,
@@ -45,6 +47,9 @@ import {
 import {
   smokeServerReleaseAssets,
 } from './smoke-server-release-assets.mjs';
+import {
+  smokeWebReleaseAssets,
+} from './smoke-web-release-assets.mjs';
 import {
   smokeDeploymentReleaseAssets,
 } from './smoke-deployment-release-assets.mjs';
@@ -68,6 +73,9 @@ const serverBuildTargetDir = path.join(
   'src-host',
   'target',
 );
+const webPackageDir = path.join(rootDir, 'packages', 'sdkwork-claw-web');
+const webDistDir = path.join(webPackageDir, 'dist');
+const docsDistDir = path.join(rootDir, 'docs', '.vitepress', 'dist');
 
 const LOCAL_RELEASE_TAG = 'release-local';
 const RELEASE_PROFILE_ENV_VAR = 'SDKWORK_RELEASE_PROFILE';
@@ -217,7 +225,7 @@ export function runLocalDesktopBuild({
   spawnSyncImpl = spawnSync,
 } = {}) {
   const args = [
-    'scripts/run-desktop-release-build.mjs',
+    path.join(rootDir, 'scripts', 'run-desktop-release-build.mjs'),
     '--profile',
     String(profileId ?? '').trim() || DEFAULT_RELEASE_PROFILE_ID,
   ];
@@ -230,6 +238,7 @@ export function runLocalDesktopBuild({
     cwd: rootDir,
     stdio: 'inherit',
     shell: false,
+    windowsHide: true,
   });
 
   if (result?.error) {
@@ -243,6 +252,104 @@ export function runLocalDesktopBuild({
       `Desktop release build exited with code ${result?.status ?? 'unknown'}`,
     );
   }
+}
+
+function runRequiredLocalBuildStep({
+  label,
+  command,
+  args,
+  cwd = rootDir,
+  spawnSyncImpl = spawnSync,
+} = {}) {
+  const result = spawnSyncImpl(command, args, {
+    cwd,
+    stdio: 'inherit',
+    shell: false,
+    windowsHide: true,
+  });
+
+  if (result?.error) {
+    throw result.error;
+  }
+  if (result?.signal) {
+    throw new Error(`${label} exited with signal ${result.signal}`);
+  }
+  if ((result?.status ?? 1) !== 0) {
+    throw new Error(`${label} exited with code ${result?.status ?? 'unknown'}`);
+  }
+}
+
+export function runLocalWebBuild({
+  spawnSyncImpl = spawnSync,
+} = {}) {
+  const steps = [
+    {
+      label: 'Shared SDK preparation',
+      args: [path.join(rootDir, 'scripts', 'prepare-shared-sdk-packages.mjs')],
+      cwd: rootDir,
+    },
+    {
+      label: 'Web release build',
+      args: [
+        path.join(rootDir, 'scripts', 'run-vite-host.mjs'),
+        'build',
+        '--mode',
+        'production',
+      ],
+      cwd: webPackageDir,
+    },
+    {
+      label: 'Web performance budget check',
+      args: [path.join(rootDir, 'scripts', 'check-web-performance-budget.mjs')],
+      cwd: rootDir,
+    },
+    {
+      label: 'Docs release build',
+      args: [path.join(rootDir, 'scripts', 'run-vitepress.mjs'), 'build', 'docs'],
+      cwd: rootDir,
+    },
+  ];
+
+  for (const step of steps) {
+    runRequiredLocalBuildStep({
+      label: step.label,
+      command: process.execPath,
+      args: step.args,
+      cwd: step.cwd,
+      spawnSyncImpl,
+    });
+  }
+}
+
+export function ensureLocalWebBuildPrerequisite({
+  context,
+  fileExists = existsSync,
+  webBuildDir = webDistDir,
+  docsBuildDir = docsDistDir,
+  runWebBuildFn = runLocalWebBuild,
+} = {}) {
+  const normalizedMode = String(context?.mode ?? '').trim().toLowerCase();
+  if (normalizedMode !== 'package:web') {
+    return null;
+  }
+
+  runWebBuildFn();
+  if (!(typeof webBuildDir === 'string' && webBuildDir.length > 0 && fileExists(webBuildDir))) {
+    throw new Error(
+      `Web release build completed without producing the canonical web dist directory at ${webBuildDir}.`,
+    );
+  }
+  if (!(typeof docsBuildDir === 'string' && docsBuildDir.length > 0 && fileExists(docsBuildDir))) {
+    throw new Error(
+      `Web release build completed without producing the canonical docs dist directory at ${docsBuildDir}.`,
+    );
+  }
+
+  return {
+    webBuildDir,
+    docsBuildDir,
+    built: true,
+  };
 }
 
 export function ensureLocalDesktopBuildPrerequisite({
@@ -304,9 +411,14 @@ function resolveMode(command, family) {
   const normalizedFamily = String(family ?? '').trim().toLowerCase();
 
   if (!normalizedCommand) {
-    throw new Error('A local release command is required: plan, package <family>, or finalize.');
+    throw new Error('A local release command is required: plan, status, package <family>, smoke <family>, finalize, or assert-ready.');
   }
-  if (normalizedCommand === 'plan' || normalizedCommand === 'finalize') {
+  if (
+    normalizedCommand === 'plan'
+    || normalizedCommand === 'status'
+    || normalizedCommand === 'finalize'
+    || normalizedCommand === 'assert-ready'
+  ) {
     return normalizedCommand;
   }
   if (normalizedCommand === 'package') {
@@ -319,10 +431,11 @@ function resolveMode(command, family) {
     if (
       normalizedFamily !== 'desktop'
       && normalizedFamily !== 'server'
+      && normalizedFamily !== 'web'
       && normalizedFamily !== 'container'
       && normalizedFamily !== 'kubernetes'
     ) {
-      throw new Error('A release family is required for "smoke": desktop, server, container, or kubernetes.');
+      throw new Error('A release family is required for "smoke": desktop, server, web, container, or kubernetes.');
     }
     return `smoke:${normalizedFamily}`;
   }
@@ -354,6 +467,7 @@ export function parseArgs(argv) {
     imageDigest: '',
     repository: '',
     startupEvidencePath: '',
+    allowPartialRelease: false,
   };
   const startIndex =
     command === 'package' || command === 'smoke'
@@ -451,6 +565,11 @@ export function parseArgs(argv) {
     if (token === '--startup-evidence-path') {
       options.startupEvidencePath = readOptionValue(tokens, index, '--startup-evidence-path');
       index += 1;
+      continue;
+    }
+
+    if (token === '--allow-partial-release') {
+      options.allowPartialRelease = true;
     }
   }
 
@@ -504,7 +623,7 @@ export function resolveLocalReleaseContext({
     firstNonEmpty(
       cliOverrides.releaseAssetsDir,
       env?.[RELEASE_ASSETS_DIR_ENV_VAR],
-      path.join('artifacts', 'release'),
+      outputDir,
     ),
     cwd,
   );
@@ -637,6 +756,27 @@ export function resolveLocalReleaseContext({
     };
   }
 
+  if (normalizedMode === 'smoke:web') {
+    return {
+      mode: normalizedMode,
+      profileId,
+      packageProfileId,
+      releaseTag,
+      gitRef,
+      outputDir,
+      releaseAssetsDir,
+      repository,
+      platform: 'web',
+      arch: 'any',
+      target: '',
+      accelerator,
+      imageRepository,
+      imageTag,
+      imageDigest,
+      startupEvidencePath: '',
+    };
+  }
+
   return {
     mode: normalizedMode,
     profileId,
@@ -678,14 +818,20 @@ export async function runLocalReleaseCommand(options = {}) {
   const packageWebAssetsFn = options.packageWebAssetsFn ?? packageWebAssets;
   const ensureLocalDesktopBuildPrerequisiteFn =
     options.ensureLocalDesktopBuildPrerequisiteFn ?? ensureLocalDesktopBuildPrerequisite;
+  const ensureLocalWebBuildPrerequisiteFn =
+    options.ensureLocalWebBuildPrerequisiteFn ?? ensureLocalWebBuildPrerequisite;
   const smokeDesktopInstallersFn = options.smokeDesktopInstallersFn ?? smokeDesktopInstallers;
   const smokeDesktopStartupEvidenceFn =
     options.smokeDesktopStartupEvidenceFn ?? smokeDesktopStartupEvidence;
   const smokeDesktopPackagedLaunchFn =
     options.smokeDesktopPackagedLaunchFn ?? smokeDesktopPackagedLaunch;
   const smokeServerReleaseAssetsFn = options.smokeServerReleaseAssetsFn ?? smokeServerReleaseAssets;
+  const smokeWebReleaseAssetsFn = options.smokeWebReleaseAssetsFn ?? smokeWebReleaseAssets;
   const smokeDeploymentReleaseAssetsFn = options.smokeDeploymentReleaseAssetsFn ?? smokeDeploymentReleaseAssets;
   const createReleasePlanFn = options.createReleasePlanFn ?? createReleasePlan;
+  const finalizeReleaseAssetsFn = options.finalizeReleaseAssetsFn ?? finalizeReleaseAssets;
+  const assertReleaseReadinessFn = options.assertReleaseReadinessFn ?? assertReleaseReadiness;
+  const collectReleaseStatusFn = options.collectReleaseStatusFn ?? collectReleaseStatus;
 
   if (context.mode === 'plan') {
     const plan = createReleasePlanFn({
@@ -745,7 +891,29 @@ export async function runLocalReleaseCommand(options = {}) {
   }
 
   if (context.mode === 'package:web') {
+    ensureLocalWebBuildPrerequisiteFn({
+      context,
+      fileExists: options.fileExists,
+      webBuildDir: options.webBuildDir,
+      docsBuildDir: options.docsBuildDir,
+      runWebBuildFn: options.runWebBuildFn,
+    });
     packageWebAssetsFn(context);
+    await smokeWebReleaseAssetsFn(context);
+    return context;
+  }
+
+  if (context.mode === 'status') {
+    const status = collectReleaseStatusFn({
+      profileId: context.profileId,
+      packageProfileId: context.packageProfileId,
+      releaseTag: context.releaseTag,
+      gitRef: context.gitRef,
+      repository: context.repository,
+      releaseAssetsDir: context.releaseAssetsDir,
+      createReleasePlanFn,
+    });
+    process.stdout.write(`${JSON.stringify(status, null, 2)}\n`);
     return context;
   }
 
@@ -764,6 +932,11 @@ export async function runLocalReleaseCommand(options = {}) {
     return context;
   }
 
+  if (context.mode === 'smoke:web') {
+    await smokeWebReleaseAssetsFn(context);
+    return context;
+  }
+
   if (context.mode === 'smoke:container' || context.mode === 'smoke:kubernetes') {
     await smokeDeploymentReleaseAssetsFn({
       ...context,
@@ -773,10 +946,19 @@ export async function runLocalReleaseCommand(options = {}) {
   }
 
   if (context.mode === 'finalize') {
-    finalizeReleaseAssets({
+    finalizeReleaseAssetsFn({
       profileId: context.profileId,
       releaseTag: context.releaseTag,
       repository: context.repository,
+      releaseAssetsDir: context.releaseAssetsDir,
+      allowPartialRelease: Boolean(options.allowPartialRelease),
+    });
+    return context;
+  }
+
+  if (context.mode === 'assert-ready') {
+    assertReleaseReadinessFn({
+      profileId: context.profileId,
       releaseAssetsDir: context.releaseAssetsDir,
     });
     return context;

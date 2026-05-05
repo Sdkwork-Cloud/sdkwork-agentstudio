@@ -1010,6 +1010,9 @@ await runTest('desktop hosted bridge readiness probe accepts non-openclaw packag
   const result = await probeDesktopHostedRuntimeReadiness(
     desktopHostedRuntime,
     fetchImpl,
+    {
+      requiresBuiltInOpenClawEvidence: false,
+    },
   );
 
   assert.equal(result.evidence.hostLifecycleReady, true);

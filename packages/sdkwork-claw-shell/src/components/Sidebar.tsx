@@ -56,17 +56,17 @@ function getSidebarNavToneClasses(isActive: boolean) {
     return {
       item: 'font-medium',
       iconBadge:
-        'bg-primary-500 text-primary-50 shadow-lg shadow-primary-950/25 ring-1 ring-primary-300/30',
+        'bg-primary-600 text-primary-50 shadow-lg shadow-primary-950/18 ring-1 ring-primary-300/40 dark:bg-primary-500 dark:shadow-primary-950/25 dark:ring-primary-300/30',
       icon: 'fill-current stroke-[2.15px] text-primary-50',
-      label: 'text-primary-400',
+      label: 'text-primary-700 dark:text-primary-400',
     };
   }
 
   return {
     item: '',
-    iconBadge: 'bg-transparent group-hover:bg-white/[0.04]',
-    icon: 'text-zinc-500 group-hover:text-zinc-300',
-    label: 'text-zinc-500 group-hover:text-zinc-300',
+    iconBadge: 'bg-transparent group-hover:bg-zinc-950/[0.045] dark:group-hover:bg-white/[0.04]',
+    icon: 'text-zinc-500 group-hover:text-zinc-950 dark:text-zinc-500 dark:group-hover:text-zinc-300',
+    label: 'text-zinc-600 group-hover:text-zinc-950 dark:text-zinc-500 dark:group-hover:text-zinc-300',
   };
 }
 
@@ -272,7 +272,7 @@ export function Sidebar() {
       onMouseLeave={() => setIsSidebarHovered(false)}
     >
       <div
-        className="flex h-full w-full flex-col overflow-hidden border-r border-zinc-900/90 bg-[linear-gradient(180deg,_#13151a_0%,_#0b0c10_100%)] text-zinc-300 shadow-[18px_0_50px_rgba(9,9,11,0.16)]"
+        className="flex h-full w-full flex-col overflow-hidden border-r border-zinc-200 bg-zinc-50/95 text-zinc-700 shadow-[18px_0_50px_rgba(15,23,42,0.08)] dark:border-zinc-900/90 dark:bg-[linear-gradient(180deg,_#13151a_0%,_#0b0c10_100%)] dark:text-zinc-300 dark:shadow-[18px_0_50px_rgba(9,9,11,0.16)]"
       >
         <nav
           className={`scrollbar-hide flex-1 space-y-5 overflow-x-hidden overflow-y-auto ${
@@ -286,7 +286,7 @@ export function Sidebar() {
                   {group.section}
                 </div>
               ) : groupIndex > 0 ? (
-                <div className="mx-2 my-4 h-px bg-white/6" />
+                <div className="mx-2 my-4 h-px bg-zinc-200/80 dark:bg-white/6" />
               ) : null}
               <div className="space-y-1">
                 {group.items.map((item) => (
@@ -306,7 +306,7 @@ export function Sidebar() {
                         isSidebarCollapsed
                           ? 'mx-auto min-h-[4rem] w-full max-w-[3.5rem] justify-center rounded-xl px-1 py-1.5'
                           : 'justify-between rounded-2xl px-3 py-2.5'
-                      } hover:bg-white/[0.05] ${tone.item}`;
+                      } hover:bg-zinc-950/[0.045] dark:hover:bg-white/[0.05] ${tone.item}`;
                     }}
                   >
                     {({ isActive }) => {
@@ -343,7 +343,7 @@ export function Sidebar() {
                             </div>
                           )}
                           {!isSidebarCollapsed && item.badge ? (
-                            <span className="rounded-full border border-primary-500/20 bg-primary-500/15 px-1.5 py-0.5 text-[10px] font-bold text-primary-300">
+                            <span className="rounded-full border border-primary-500/25 bg-primary-50 px-1.5 py-0.5 text-[10px] font-bold text-primary-700 dark:border-primary-500/20 dark:bg-primary-500/15 dark:text-primary-300">
                               {item.badge}
                             </span>
                           ) : null}
@@ -375,7 +375,7 @@ export function Sidebar() {
                   isSidebarCollapsed
                     ? 'mx-auto min-h-[4rem] w-full max-w-[3.5rem] justify-center rounded-xl px-1 py-1.5'
                     : 'gap-3 rounded-2xl px-3 py-2.5'
-                } hover:bg-white/[0.05] ${tone.item}`;
+                } hover:bg-zinc-950/[0.045] dark:hover:bg-white/[0.05] ${tone.item}`;
               }}
             >
               {({ isActive }) => {
@@ -419,13 +419,13 @@ export function Sidebar() {
           <div ref={userMenuRef} className="relative">
             {isUserMenuOpen ? (
               <div
-                className={`absolute z-40 rounded-[20px] border border-white/10 bg-zinc-950/96 p-2 shadow-[0_20px_48px_rgba(9,9,11,0.34)] backdrop-blur-xl ${
+                className={`absolute z-40 rounded-[20px] border border-zinc-200 bg-white/96 p-2 shadow-[0_20px_48px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/96 dark:shadow-[0_20px_48px_rgba(9,9,11,0.34)] ${
                   isSidebarCollapsed ? 'bottom-0 left-full ml-3 w-64' : 'bottom-full left-0 right-0 mb-2'
                 }`}
               >
-                <div className="mb-2 rounded-2xl border border-white/8 bg-white/[0.04] p-3">
+                <div className="mb-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 dark:border-white/8 dark:bg-white/[0.04]">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary-500/15 text-sm font-bold text-primary-200">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary-50 text-sm font-bold text-primary-700 dark:bg-primary-500/15 dark:text-primary-200">
                       {user?.avatarUrl ? (
                         <img
                           src={user.avatarUrl}
@@ -437,13 +437,13 @@ export function Sidebar() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-white">
+                      <div className="truncate text-sm font-semibold text-zinc-950 dark:text-white">
                         {user?.displayName}
                       </div>
-                      <div className="truncate text-xs text-zinc-400">{user?.email}</div>
+                      <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">{user?.email}</div>
                     </div>
                   </div>
-                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
                     {t('sidebar.userMenu.signedIn')}
                   </div>
                 </div>
@@ -456,7 +456,7 @@ export function Sidebar() {
                   onFocus={() => scheduleSidebarRoutePrefetch(accountSettingsTarget)}
                   onBlur={() => cancelSidebarRoutePrefetch(accountSettingsTarget)}
                   onClick={handleOpenAccountSettings}
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-zinc-300 transition-colors hover:bg-white/[0.06] hover:text-white"
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/[0.06] dark:hover:text-white"
                 >
                   <Settings2 className="h-4 w-4 text-zinc-500" />
                   <span>{t('sidebar.userMenu.profileSettings')}</span>
@@ -467,7 +467,7 @@ export function Sidebar() {
                   onClick={() => {
                     void handleSignOut();
                   }}
-                  className="mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-rose-300 transition-colors hover:bg-rose-500/10 hover:text-rose-200"
+                  className="mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm text-rose-700 transition-colors hover:bg-rose-50 hover:text-rose-800 dark:text-rose-300 dark:hover:bg-rose-500/10 dark:hover:text-rose-200"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>{t('sidebar.userMenu.logout')}</span>
@@ -480,7 +480,7 @@ export function Sidebar() {
               data-slot="sidebar-user-control"
               title={isSidebarCollapsed ? userMenuTitle : undefined}
               onClick={handleUserControlClick}
-              className={`group relative flex w-full items-center border border-white/8 bg-white/[0.04] text-zinc-300 transition-all duration-200 hover:bg-white/[0.07] hover:text-white ${
+              className={`group relative flex w-full items-center border border-zinc-200 bg-white text-zinc-700 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-950 dark:border-white/8 dark:bg-white/[0.04] dark:text-zinc-300 dark:hover:bg-white/[0.07] dark:hover:text-white ${
                 isSidebarCollapsed
                   ? 'mx-auto min-h-[4.75rem] max-w-[3.5rem] justify-center rounded-xl px-1 py-2'
                   : 'gap-3 rounded-2xl px-2.5 py-2.5'
@@ -490,7 +490,7 @@ export function Sidebar() {
                 <CollapsedSidebarStack
                   label={isAuthenticated ? user?.displayName || t('sidebar.account') : t('sidebar.userMenu.guest')}
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/[0.08] text-sm font-semibold text-white">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-zinc-100 text-sm font-semibold text-zinc-700 dark:bg-white/[0.08] dark:text-white">
                     {isAuthenticated && user?.avatarUrl ? (
                       <img
                         src={user.avatarUrl}
@@ -500,12 +500,12 @@ export function Sidebar() {
                     ) : isAuthenticated ? (
                       user?.initials
                     ) : (
-                      <CircleUserRound className="h-5 w-5 text-zinc-300" />
+                      <CircleUserRound className="h-5 w-5 text-zinc-500 dark:text-zinc-300" />
                     )}
                   </div>
                 </CollapsedSidebarStack>
               ) : (
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/[0.08] text-sm font-semibold text-white">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-zinc-100 text-sm font-semibold text-zinc-700 dark:bg-white/[0.08] dark:text-white">
                   {isAuthenticated && user?.avatarUrl ? (
                     <img
                       src={user.avatarUrl}
@@ -515,7 +515,7 @@ export function Sidebar() {
                   ) : isAuthenticated ? (
                     user?.initials
                   ) : (
-                    <CircleUserRound className="h-4 w-4 text-zinc-300" />
+                    <CircleUserRound className="h-4 w-4 text-zinc-500 dark:text-zinc-300" />
                   )}
                 </div>
               )}
@@ -523,7 +523,7 @@ export function Sidebar() {
               {!isSidebarCollapsed ? (
                 <>
                   <div className="min-w-0 flex-1 text-left">
-                    <div className="truncate text-sm font-semibold text-white">
+                    <div className="truncate text-sm font-semibold text-zinc-950 dark:text-white">
                       {isAuthenticated ? user?.displayName : t('sidebar.userMenu.guest')}
                     </div>
                     <div className="truncate text-xs text-zinc-500">
@@ -538,7 +538,7 @@ export function Sidebar() {
                       }`}
                     />
                   ) : (
-                    <LogIn className="h-4 w-4 shrink-0 text-zinc-500 transition-colors group-hover:text-zinc-300" />
+                    <LogIn className="h-4 w-4 shrink-0 text-zinc-500 transition-colors group-hover:text-zinc-700 dark:group-hover:text-zinc-300" />
                   )}
                 </>
               ) : null}
@@ -552,9 +552,9 @@ export function Sidebar() {
         data-slot="sidebar-edge-control"
         title={isSidebarCollapsed ? t('common.expandSidebar') : t('common.collapseSidebar')}
         onClick={toggleSidebar}
-        className={`absolute right-0 top-1/2 z-30 flex h-8 w-8 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border border-white/8 bg-zinc-950 text-zinc-200 shadow-[0_10px_24px_rgba(9,9,11,0.26)] transition-all duration-200 dark:bg-zinc-900 ${
+        className={`absolute right-0 top-1/2 z-30 flex h-8 w-8 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-[0_10px_24px_rgba(15,23,42,0.14)] transition-all duration-200 dark:border-white/8 dark:bg-zinc-950 dark:text-zinc-200 dark:shadow-[0_10px_24px_rgba(9,9,11,0.26)] ${
           showEdgeAffordances
-            ? 'opacity-100 hover:scale-105 hover:bg-zinc-900'
+            ? 'opacity-100 hover:scale-105 hover:bg-zinc-100 dark:hover:bg-zinc-900'
             : 'pointer-events-none opacity-0'
         }`}
       >

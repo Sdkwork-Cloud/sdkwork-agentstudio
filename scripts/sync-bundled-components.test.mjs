@@ -3,12 +3,20 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { derivePreviousNumericVersion } from './test-support/version-fixtures.mjs';
 
 const rootDir = path.resolve(import.meta.dirname, '..');
 const syncModulePath = path.join(rootDir, 'scripts', 'sync-bundled-components.mjs');
 const syncModuleSource = readFileSync(syncModulePath, 'utf8');
 const syncModule = await import(pathToFileURL(syncModulePath).href);
 const expectedOpenClawVersion = syncModule.resolvePinnedOpenClawVersion({ env: {} });
+const openClawReleaseConfig = JSON.parse(
+  readFileSync(path.join(rootDir, 'config', 'kernel-releases', 'openclaw.json'), 'utf8'),
+);
+const expectedNodeVersion = openClawReleaseConfig.nodeVersion;
+
+const staleOpenClawVersion = derivePreviousNumericVersion(expectedOpenClawVersion);
+
 assert.equal(
   typeof syncModule.createTauriBundleOverlayConfig,
   'function',
@@ -138,6 +146,16 @@ assert.match(
   syncModuleSource,
   /installMissingBundledPluginRuntimeDeps/,
   'sync-bundled-components must hydrate missing bundled plugin runtime dependencies after staging npm installs so dev bundles survive plugin dependency additions',
+);
+assert.doesNotMatch(
+  syncModuleSource,
+  /findMissingDirectPackageDependencies|did not hydrate direct dependencies/,
+  'sync-bundled-components must delegate upstream dependency hydration to pnpm install instead of inspecting node_modules directly',
+);
+assert.match(
+  syncModuleSource,
+  /runCommand\(pnpmCmd,\s*\['install',\s*'--frozen-lockfile'\]/,
+  'sync-bundled-components must run pnpm install before building OpenClaw so package-manager state, not custom node_modules probing, hydrates new dependencies',
 );
 const overlay = syncModule.createTauriBundleOverlayConfig({
   workspaceRootDir: 'D:\\workspace\\claw-studio',
@@ -353,6 +371,15 @@ assert.equal(
   expectedOpenClawVersion,
   'sync-bundled-components must stay aligned with the bundled OpenClaw runtime version pin',
 );
+assert.equal(
+  syncModule.resolvePinnedOpenClawVersion({
+    env: {
+      OPENCLAW_VERSION: `${expectedOpenClawVersion}-override`,
+    },
+  }),
+  expectedOpenClawVersion,
+  'sync-bundled-components must ignore OPENCLAW_VERSION so config/kernel-releases/openclaw.json remains the only OpenClaw version source',
+);
 assert.match(
   syncModuleSource,
   /inspectCachedNodeRuntimeDir/,
@@ -446,14 +473,14 @@ assert.doesNotMatch(
   const readyResult = await syncModule.ensureBuildTimeNodeRuntimeCacheReady({
     cacheDir: 'D:\\workspace\\.cache\\openclaw-runtime-cache',
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     target: readyTarget,
     inspectCachedNodeRuntimeDirImpl: async (params) => {
       inspectCalls.push(params);
       return {
         reusable: true,
         reason: 'ready',
-        preparedNodeVersion: '22.16.0',
+        preparedNodeVersion: expectedNodeVersion,
       };
     },
     prepareOpenClawRuntimeImpl: async (params) => {
@@ -463,12 +490,12 @@ assert.doesNotMatch(
 
   assert.equal(
     readyResult.nodeSourceDir,
-    'D:\\workspace\\.cache\\openclaw-runtime-cache\\node\\windows-x64-node-v22.16.0',
+    `D:\\workspace\\.cache\\openclaw-runtime-cache\\node\\windows-x64-node-v${expectedNodeVersion}`,
     'sync-bundled-components must stage the bundled node runtime from the prepared OpenClaw node cache root',
   );
   assert.equal(
     readyResult.nodeBinaryPath,
-    'D:\\workspace\\.cache\\openclaw-runtime-cache\\node\\windows-x64-node-v22.16.0\\node.exe',
+    `D:\\workspace\\.cache\\openclaw-runtime-cache\\node\\windows-x64-node-v${expectedNodeVersion}\\node.exe`,
     'sync-bundled-components must resolve the staged build-time Node binary from the prepared cache instead of process.execPath',
   );
   assert.equal(
@@ -498,14 +525,14 @@ assert.doesNotMatch(
     {
       reusable: true,
       reason: 'ready',
-      preparedNodeVersion: '22.16.0',
+      preparedNodeVersion: expectedNodeVersion,
     },
   ];
 
   const refreshedResult = await syncModule.ensureBuildTimeNodeRuntimeCacheReady({
     cacheDir: 'D:\\workspace\\.cache\\openclaw-runtime-cache',
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     target: {
       platformId: 'windows',
       archId: 'x64',
@@ -532,7 +559,7 @@ assert.doesNotMatch(
   );
   assert.equal(
     prepareCalls[0].nodeVersion,
-    '22.16.0',
+    expectedNodeVersion,
     'sync-bundled-components must prepare the build-time Node runtime using the shared pinned Node version',
   );
   assert.equal(
@@ -548,7 +575,7 @@ assert.doesNotMatch(
       syncModule.ensureBuildTimeNodeRuntimeCacheReady({
         cacheDir: 'D:\\workspace\\.cache\\openclaw-runtime-cache',
         openclawVersion: expectedOpenClawVersion,
-        nodeVersion: '22.16.0',
+        nodeVersion: expectedNodeVersion,
         target: {
           platformId: 'windows',
           archId: 'x64',
@@ -583,7 +610,7 @@ assert.doesNotMatch(
       syncModule.ensureBuildTimeNodeRuntimeCacheReady({
         cacheDir: 'D:\\workspace\\.cache\\openclaw-runtime-cache',
         openclawVersion: expectedOpenClawVersion,
-        nodeVersion: '22.16.0',
+        nodeVersion: expectedNodeVersion,
         target: {
           platformId: 'windows',
           archId: 'x64',
@@ -609,7 +636,7 @@ assert.doesNotMatch(
           preparedNodeVersion: '22.20.0',
         }),
       }),
-    /22\.16\.0.*22\.20\.0|22\.20\.0.*22\.16\.0/,
+    new RegExp(`${expectedNodeVersion.replaceAll('.', '\\.')}.*22\\.20\\.0|22\\.20\\.0.*${expectedNodeVersion.replaceAll('.', '\\.')}`),
     'sync-bundled-components must fail loudly when the prepared build-time Node cache still does not match the pinned OpenClaw runtime version after preparation',
   );
 }
@@ -618,7 +645,7 @@ assert.doesNotMatch(
   const preparedRoots = syncModule.resolvePreparedOpenClawPackageRoots({
     cacheDir: 'D:\\workspace\\.cache\\openclaw-runtime-cache',
     openclawVersion: expectedOpenClawVersion,
-    nodeVersion: '22.16.0',
+    nodeVersion: expectedNodeVersion,
     target: {
       platformId: 'windows',
       archId: 'x64',
@@ -645,8 +672,8 @@ assert.equal(
     componentId: 'openclaw',
     noFetch: true,
     desiredVersion: expectedOpenClawVersion,
-    currentVersion: '2026.3.24',
-    currentTags: ['v2026.3.24'],
+    currentVersion: staleOpenClawVersion,
+    currentTags: [`v${staleOpenClawVersion}`],
   }),
   true,
   'sync-bundled-components must refresh stale OpenClaw checkouts even when --no-fetch is enabled',
@@ -826,7 +853,7 @@ assert.match(
     path.join(packageRoot, 'dist', 'build-info.json'),
     `${JSON.stringify(
       {
-        version: '2026.3.24',
+        version: staleOpenClawVersion,
         commit: '685f17460d69966be32f5409055c51a82bc0ad7e',
       },
       null,
@@ -838,7 +865,7 @@ assert.match(
     path.join(packageRoot, 'dist', 'cli-startup-metadata.json'),
     `${JSON.stringify(
       {
-        rootHelpText: '\n馃 OpenClaw 2026.3.24 (685f174)\n',
+        rootHelpText: `\n馃 OpenClaw ${staleOpenClawVersion} (685f174)\n`,
       },
       null,
       2,
@@ -897,7 +924,7 @@ assert.match(
     path.join(packageRoot, 'dist', 'cli-startup-metadata.json'),
     `${JSON.stringify(
       {
-        rootHelpText: '\nOpenClaw 2026.4.14 (213a704)\n',
+        rootHelpText: `\nOpenClaw ${expectedOpenClawVersion} (213a704)\n`,
       },
       null,
       2,
@@ -1057,7 +1084,10 @@ assert.match(
     () =>
       syncModule.writeJsonWithWindowsLockFallback(
         targetPath,
-        { version: 1, components: [{ id: 'openclaw', bundledVersion: '2026.4.2+newcommit' }] },
+        {
+          version: 1,
+          components: [{ id: 'openclaw', bundledVersion: `${expectedOpenClawVersion}+newcommit` }],
+        },
         {
           writeFileImpl: () => {
             const error = new Error('component-registry.json is locked');

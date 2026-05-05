@@ -3,6 +3,14 @@ import { Suspense, createElement, lazy } from 'react';
 export interface DesktopWindowControlsProps {
   variant?: 'header' | 'floating';
   className?: string;
+  labels?: DesktopWindowControlLabels;
+}
+
+export interface DesktopWindowControlLabels {
+  minimize: string;
+  maximize: string;
+  restore: string;
+  close: string;
 }
 
 const LazyDesktopWindowControls = lazy(async () => {

@@ -20,7 +20,7 @@ assertHiddenWindowsChildProcess(
 
 assertHiddenWindowsChildProcess(
   'scripts/run-vitepress.mjs',
-  /spawn\(process\.execPath, \[vitepressCli, \.\.\.process\.argv\.slice\(2\)\],[\s\S]*windowsHide:\s*true/,
+  /spawn\(process\.execPath, \[vitepressCli, \.\.\.cliArgs\],[\s\S]*windowsHide:\s*true/,
   'run-vitepress must not open a new Windows console window when launching VitePress',
 );
 

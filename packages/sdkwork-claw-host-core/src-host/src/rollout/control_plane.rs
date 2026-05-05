@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
@@ -33,6 +33,7 @@ pub struct PreviewRolloutInput {
 #[derive(Debug)]
 pub enum RolloutControlPlaneError {
     Store(StorageError),
+    CatalogUnavailable { reason: String },
     RolloutNotFound {
         rollout_id: String,
     },
@@ -49,6 +50,9 @@ impl Display for RolloutControlPlaneError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             RolloutControlPlaneError::Store(error) => write!(f, "{error}"),
+            RolloutControlPlaneError::CatalogUnavailable { reason } => {
+                write!(f, "rollout catalog is unavailable: {reason}")
+            }
             RolloutControlPlaneError::RolloutNotFound { rollout_id } => {
                 write!(f, "rollout was not found: {rollout_id}")
             }
@@ -105,11 +109,18 @@ impl RolloutControlPlane {
         })
     }
 
+    fn lock_catalog(
+        &self,
+    ) -> Result<MutexGuard<'_, PersistedRolloutCatalog>, RolloutControlPlaneError> {
+        self.catalog.lock().map_err(|error| {
+            RolloutControlPlaneError::CatalogUnavailable {
+                reason: error.to_string(),
+            }
+        })
+    }
+
     pub fn active_rollout_id(&self) -> Result<String, RolloutControlPlaneError> {
-        let catalog = self
-            .catalog
-            .lock()
-            .expect("rollout catalog mutex should not be poisoned");
+        let catalog = self.lock_catalog()?;
         resolve_active_rollout_id(&catalog).ok_or_else(|| {
             RolloutControlPlaneError::RolloutNotFound {
                 rollout_id: "active".to_string(),
@@ -118,10 +129,7 @@ impl RolloutControlPlane {
     }
 
     pub fn list_rollouts(&self) -> Result<ManageRolloutListResult, RolloutControlPlaneError> {
-        let catalog = self
-            .catalog
-            .lock()
-            .expect("rollout catalog mutex should not be poisoned");
+        let catalog = self.lock_catalog()?;
         let mut items = catalog
             .rollouts
             .iter()
@@ -140,10 +148,7 @@ impl RolloutControlPlane {
         &self,
         input: PreviewRolloutInput,
     ) -> Result<ManageRolloutPreview, RolloutControlPlaneError> {
-        let mut catalog = self
-            .catalog
-            .lock()
-            .expect("rollout catalog mutex should not be poisoned");
+        let mut catalog = self.lock_catalog()?;
         let rollout_index = catalog
             .rollouts
             .iter()
@@ -259,10 +264,7 @@ impl RolloutControlPlane {
             return Ok(None);
         }
 
-        let catalog = self
-            .catalog
-            .lock()
-            .expect("rollout catalog mutex should not be poisoned");
+        let catalog = self.lock_catalog()?;
         let rollout = catalog
             .rollouts
             .iter()
@@ -293,10 +295,7 @@ impl RolloutControlPlane {
         &self,
         rollout_id: &str,
     ) -> Result<ManageRolloutRecord, RolloutControlPlaneError> {
-        let mut catalog = self
-            .catalog
-            .lock()
-            .expect("rollout catalog mutex should not be poisoned");
+        let mut catalog = self.lock_catalog()?;
         let rollout_index = catalog
             .rollouts
             .iter()
@@ -466,9 +465,9 @@ fn render_wave_list_response(preview: &ManageRolloutPreview) -> ManageRolloutWav
                 });
                 items.len() - 1
             };
-        let wave = items
-            .get_mut(wave_index)
-            .expect("wave index should resolve to a mutable record");
+        let Some(wave) = items.get_mut(wave_index) else {
+            continue;
+        };
 
         wave.target_count += 1;
 
@@ -685,8 +684,8 @@ fn seed_rollout_catalog() -> PersistedRolloutCatalog {
 fn now_timestamp_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("system time should be after unix epoch")
-        .as_millis() as u64
+        .map(|duration| duration.as_millis() as u64)
+        .unwrap_or_default()
 }
 
 fn resolve_active_rollout_id(catalog: &PersistedRolloutCatalog) -> Option<String> {

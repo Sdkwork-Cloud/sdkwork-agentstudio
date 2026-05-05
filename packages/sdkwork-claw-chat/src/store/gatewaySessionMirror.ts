@@ -36,11 +36,13 @@ export interface ResolveGatewayMirrorScopeSessionsInput<T extends GatewayMirrorS
   existingSessions: T[];
   snapshotSessions: T[];
   syncState: 'idle' | 'loading' | 'error';
+  isEmptySnapshotAuthoritative?: boolean;
 }
 
 export interface SyncGatewayMirrorSessionsInput<T extends GatewayMirrorSessionLike> {
   instanceId: string;
   snapshotSessions: T[];
+  isEmptySnapshotAuthoritative?: boolean;
   persistedSessions?: T[];
   listPersistedSessions: (instanceId: string) => Promise<T[]>;
   putPersistedSession: (session: T) => Promise<unknown>;
@@ -195,7 +197,9 @@ export function resolveGatewayMirrorScopeSessions<T extends GatewayMirrorSession
   }
 
   if (input.syncState === 'idle') {
-    return [];
+    return input.isEmptySnapshotAuthoritative
+      ? []
+      : filterGatewayMirrorSessions(input.existingSessions);
   }
 
   return filterGatewayMirrorSessions(input.existingSessions);
@@ -208,6 +212,10 @@ export async function syncGatewayMirrorSessions<T extends GatewayMirrorSessionLi
   const persistedSessions = filterGatewayMirrorSessions(
     input.persistedSessions ?? (await input.listPersistedSessions(input.instanceId)),
   );
+  if (nextSessions.length === 0 && !input.isEmptySnapshotAuthoritative) {
+    return persistedSessions;
+  }
+
   const mergedSessions = mergeGatewayMirrorSessionsWithPersisted(nextSessions, persistedSessions);
   const nextSessionIds = new Set(mergedSessions.map((session) => session.id));
 

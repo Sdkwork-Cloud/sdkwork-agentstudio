@@ -15,11 +15,45 @@ import {
   resolvePackagedOpenClawResourceDir,
   syncPackagedOpenClawReleaseArtifacts,
 } from './prepare-openclaw-runtime.mjs';
+import { resolveKernelReleaseConfig } from './release/kernel-releases.mjs';
+import { createStoredZipArchive } from './test-support/archive-fixtures.mjs';
+import { shiftNumericVersion } from './test-support/version-fixtures.mjs';
 
 const rootDir = path.resolve(import.meta.dirname, '..');
 const fakeNodeExecutableContent = 'synthetic-node-runtime';
-const expectedOpenClawVersion = '2026.4.14';
-const expectedNodeVersion = '22.16.0';
+const releaseConfig = resolveKernelReleaseConfig('openclaw');
+const expectedOpenClawVersion = releaseConfig.stableVersion;
+const expectedNodeVersion = releaseConfig.nodeVersion;
+const retiredOpenClawVersion = shiftNumericVersion(expectedOpenClawVersion, -1);
+
+function buildRuntimeArchiveEntries(sourceRoot, extraEntries = []) {
+  const manifest = JSON.parse(readFileSync(path.join(sourceRoot, 'manifest.json'), 'utf8'));
+  const sidecarManifest = {
+    ...manifest,
+    runtimeIntegrity: {
+      schemaVersion: 1,
+      files: [
+        {
+          relativePath: manifest.cliRelativePath,
+          sha256: 'synthetic',
+          size: 1,
+        },
+      ],
+    },
+  };
+
+  return [
+    {
+      name: 'runtime/.sdkwork-openclaw-runtime.json',
+      content: `${JSON.stringify(sidecarManifest, null, 2)}\n`,
+    },
+    {
+      name: manifest.cliRelativePath,
+      content: 'console.log("synthetic runtime archive cli");\n',
+    },
+    ...extraEntries,
+  ];
+}
 
 function buildExpectedInstallReadyLayout(manifest, mode) {
   return {
@@ -60,6 +94,14 @@ async function setupPreparedReleaseAssets({
     'openclaw',
     'package.json',
   );
+  const openclawServerImplPath = path.join(
+    sourceRuntimeDir,
+    'package',
+    'node_modules',
+    'openclaw',
+    'dist',
+    'server.impl-fixture.js',
+  );
   const carbonPackageJsonPath = path.join(
     sourceRuntimeDir,
     'package',
@@ -71,6 +113,7 @@ async function setupPreparedReleaseAssets({
 
   mkdirSync(path.dirname(cliPath), { recursive: true });
   mkdirSync(path.dirname(openclawPackageJsonPath), { recursive: true });
+  mkdirSync(path.dirname(openclawServerImplPath), { recursive: true });
   mkdirSync(path.dirname(carbonPackageJsonPath), { recursive: true });
   mkdirSync(resourceDir, { recursive: true });
   if (includeBundledNode) {
@@ -82,6 +125,17 @@ async function setupPreparedReleaseAssets({
     writeFileSync(nodePath, fakeNodeExecutableContent, 'utf8');
   }
   writeFileSync(cliPath, 'console.log("openclaw");\n', 'utf8');
+  writeFileSync(
+    openclawServerImplPath,
+    [
+      'function materializeConfigAgentPaths(config, previousConfig) {',
+      '  const hasCanonicalAgentDirShape = true;',
+      '  return { config, previousConfig, hasCanonicalAgentDirShape };',
+      '}',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
   writeFileSync(
     openclawPackageJsonPath,
     `${JSON.stringify({ name: 'openclaw', version: expectedOpenClawVersion }, null, 2)}\n`,
@@ -259,7 +313,7 @@ test('desktop OpenClaw release asset verifier rejects packaged resource roots th
   }
 });
 
-test('desktop OpenClaw release asset verifier rejects legacy source runtime residue under src-tauri/resources/openclaw-runtime', async () => {
+test('desktop OpenClaw release asset verifier rejects unsupported source runtime layouts under src-tauri/resources/openclaw-runtime', async () => {
   const modulePath = path.join(rootDir, 'scripts', 'verify-desktop-openclaw-release-assets.mjs');
   const verifier = await import(pathToFileURL(modulePath).href);
 
@@ -269,7 +323,7 @@ test('desktop OpenClaw release asset verifier rejects legacy source runtime resi
   });
 
   try {
-    const legacyRuntimeRoot = path.join(
+    const unsupportedRuntimeRoot = path.join(
       fixture.workspaceRootDir,
       'packages',
       'sdkwork-claw-desktop',
@@ -278,15 +332,15 @@ test('desktop OpenClaw release asset verifier rejects legacy source runtime resi
       'openclaw-runtime',
     );
     mkdirSync(
-      path.join(legacyRuntimeRoot, 'runtime', 'package', 'node_modules', 'openclaw'),
+      path.join(unsupportedRuntimeRoot, 'runtime', 'package', 'node_modules', 'openclaw'),
       { recursive: true },
     );
     writeFileSync(
-      path.join(legacyRuntimeRoot, 'manifest.json'),
+      path.join(unsupportedRuntimeRoot, 'manifest.json'),
       `${JSON.stringify({
         schemaVersion: 1,
         runtimeId: 'openclaw',
-        openclawVersion: '2026.3.28',
+        openclawVersion: retiredOpenClawVersion,
         nodeVersion: expectedNodeVersion,
         platform: 'windows',
         arch: 'x64',
@@ -295,14 +349,14 @@ test('desktop OpenClaw release asset verifier rejects legacy source runtime resi
     );
     writeFileSync(
       path.join(
-        legacyRuntimeRoot,
+        unsupportedRuntimeRoot,
         'runtime',
         'package',
         'node_modules',
         'openclaw',
         'package.json',
       ),
-      `${JSON.stringify({ name: 'openclaw', version: '2026.3.28' }, null, 2)}\n`,
+      `${JSON.stringify({ name: 'openclaw', version: retiredOpenClawVersion }, null, 2)}\n`,
       'utf8',
     );
 
@@ -312,7 +366,10 @@ test('desktop OpenClaw release asset verifier rejects legacy source runtime resi
         resourceDir: fixture.resourceDir,
         target: fixture.target,
       }),
-      /legacy source runtime residue|openclaw-runtime|2026\.3\.28/i,
+      new RegExp(
+        `Unsupported OpenClaw runtime layout|openclaw-runtime|${retiredOpenClawVersion.replaceAll('.', '\\.')}`,
+        'i',
+      ),
     );
   } finally {
     rmSync(fixture.tempRoot, { recursive: true, force: true });
@@ -339,6 +396,79 @@ test('desktop OpenClaw release asset verifier rejects invalid archive payloads',
         target: fixture.target,
       }),
       /archive|extract|runtime/i,
+    );
+  } finally {
+    rmSync(fixture.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop OpenClaw release asset verifier rejects duplicate normalized runtime archive entries', async () => {
+  const modulePath = path.join(rootDir, 'scripts', 'verify-desktop-openclaw-release-assets.mjs');
+  const verifier = await import(pathToFileURL(modulePath).href);
+
+  const fixture = await setupPreparedReleaseAssets({
+    platform: 'linux',
+    arch: 'x64',
+    createArchiveImpl: async ({ archivePath, sourceRoot }) => {
+      await writeFile(
+        archivePath,
+        createStoredZipArchive(buildRuntimeArchiveEntries(sourceRoot, [
+          {
+            name: 'runtime/package/node_modules/openclaw/duplicate.js',
+            content: 'first\n',
+          },
+          {
+            name: 'runtime\\package\\node_modules\\openclaw\\duplicate.js',
+            content: 'second\n',
+          },
+        ])),
+      );
+    },
+  });
+
+  try {
+    await assert.rejects(
+      verifier.verifyDesktopOpenClawReleaseAssets({
+        workspaceRootDir: fixture.workspaceRootDir,
+        resourceDir: fixture.resourceDir,
+        target: fixture.target,
+      }),
+      /duplicate archive entry/i,
+    );
+  } finally {
+    rmSync(fixture.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop OpenClaw release asset verifier rejects symlink runtime archive entries', async () => {
+  const modulePath = path.join(rootDir, 'scripts', 'verify-desktop-openclaw-release-assets.mjs');
+  const verifier = await import(pathToFileURL(modulePath).href);
+
+  const fixture = await setupPreparedReleaseAssets({
+    platform: 'linux',
+    arch: 'x64',
+    createArchiveImpl: async ({ archivePath, sourceRoot }) => {
+      await writeFile(
+        archivePath,
+        createStoredZipArchive(buildRuntimeArchiveEntries(sourceRoot, [
+          {
+            name: 'runtime/package/node_modules/openclaw/symlink',
+            content: 'openclaw.mjs',
+            externalAttributes: 0o120777 << 16,
+          },
+        ])),
+      );
+    },
+  });
+
+  try {
+    await assert.rejects(
+      verifier.verifyDesktopOpenClawReleaseAssets({
+        workspaceRootDir: fixture.workspaceRootDir,
+        resourceDir: fixture.resourceDir,
+        target: fixture.target,
+      }),
+      /unsupported archive entry type/i,
     );
   } finally {
     rmSync(fixture.tempRoot, { recursive: true, force: true });

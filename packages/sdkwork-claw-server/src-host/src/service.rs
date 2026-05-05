@@ -424,11 +424,9 @@ pub fn execute_server_service_lifecycle_with_runtime<R: ServerServiceRuntime>(
     let mut artifact_written = false;
     let mut written_files = Vec::new();
     if let Some(manifest) = plan.manifest.as_ref() {
-        runtime.write_text_file(
-            &manifest.config_file,
-            &serde_json::to_string_pretty(&manifest.runtime_config)
-                .expect("service install config should serialize"),
-        )?;
+        let runtime_config = serde_json::to_string_pretty(&manifest.runtime_config)
+            .map_err(|error| format!("failed to serialize service install config: {error}"))?;
+        runtime.write_text_file(&manifest.config_file, &runtime_config)?;
         written_files.push(manifest.config_file.clone());
         runtime.write_text_file(&manifest.service_config_path, &manifest.artifact_content)?;
         written_files.push(manifest.service_config_path.clone());
@@ -861,7 +859,12 @@ fn build_windows_service_manifest(
         "stdoutLogPath": normalize_path_for_manifest(stdout_log_path),
         "stderrLogPath": normalize_path_for_manifest(stderr_log_path),
     }))
-    .expect("windows service manifest should serialize")
+    .unwrap_or_else(|error| {
+        let escaped_error = serde_json::Value::String(format!(
+            "failed to serialize windows service manifest: {error}"
+        ));
+        format!("{{\"error\":{escaped_error}}}")
+    })
 }
 
 fn render_windows_command_line(executable_path: &Path, runtime_args: &[String]) -> String {

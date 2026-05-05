@@ -1,14 +1,26 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION,
   buildBuiltInKernelPrimaryInstanceId,
   STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
 } from '@sdkwork/claw-types';
 
-const DEFAULT_RUNTIME_VERSION = 'v2026.4.11';
-const DEFAULT_NODE_VERSION = '22.0.0';
+const DEFAULT_RUNTIME_VERSION = `v${DEFAULT_BUNDLED_OPENCLAW_VERSION}`;
+const DEFAULT_NODE_VERSION = DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION;
+const FUTURE_KERNEL_RUNTIME_VERSION = shiftOpenClawVersion(DEFAULT_BUNDLED_OPENCLAW_VERSION, 1);
 const BUILT_IN_PHOENIXCLAW_INSTANCE_ID =
   buildBuiltInKernelPrimaryInstanceId('phoenixclaw') ?? 'managed-phoenixclaw-primary';
+
+function shiftOpenClawVersion(version: string, patchOffset: number) {
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:-(?:\d+|[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*))?$/u.exec(version);
+  assert.ok(match, `Expected numeric OpenClaw test version, received ${version}`);
+  const [, year, month, patch] = match;
+  const shiftedPatch = Number(patch) + patchOffset;
+  assert.ok(shiftedPatch >= 0, `Cannot derive OpenClaw test version before patch 0 from ${version}`);
+  return `${year}.${month}.${shiftedPatch}`;
+}
 
 async function runTest(name: string, callback: () => Promise<void> | void) {
   try {
@@ -252,7 +264,7 @@ if (nodeInventoryServiceModule) {
           getStatus: async () =>
             createKernelSnapshot({
               runtimeId: 'phoenixclaw',
-              runtimeVersion: '2026.4.13',
+              runtimeVersion: FUTURE_KERNEL_RUNTIME_VERSION,
               baseUrl: 'http://127.0.0.1:9540',
               websocketUrl: null,
             }),
@@ -278,7 +290,7 @@ if (nodeInventoryServiceModule) {
               description: 'Packaged future built-in kernel.',
               runtimeKind: 'phoenixclaw',
               transportKind: 'phoenixSocket',
-              version: '2026.4.13',
+              version: FUTURE_KERNEL_RUNTIME_VERSION,
               typeLabel: 'PhoenixClaw Runtime',
               port: 9540,
               baseUrl: 'http://127.0.0.1:9540',
@@ -321,7 +333,7 @@ if (nodeInventoryServiceModule) {
           getStatus: async () =>
             createKernelSnapshot({
               runtimeId: 'phoenixclaw',
-              runtimeVersion: '2026.4.13',
+              runtimeVersion: FUTURE_KERNEL_RUNTIME_VERSION,
               baseUrl: 'http://127.0.0.1:9540',
               websocketUrl: null,
             }),

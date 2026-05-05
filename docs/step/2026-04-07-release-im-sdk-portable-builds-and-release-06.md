@@ -21,16 +21,15 @@
 1. A fresh workspace clone under `D:\\temp\\claw-release-repro` reproduced the release-only failure path instead of relying on the existing multi-repo local environment.
 2. Before any fixes, `pnpm prepare:shared-sdk` in that clean room failed on Windows because `resolveWorkspaceInstalledPackageRoot()` could not find `@typescript-eslint/eslint-plugin` once pnpm shortened the `.pnpm` directory name.
 3. After fixing that resolver, the same clean room advanced to the GitHub-matching failure: `pnpm lint` reported missing modules for:
-   - `@sdkwork/im-backend-sdk`
-   - `@openchat/sdkwork-im-sdk`
-   - `@openchat/sdkwork-im-wukongim-adapter`
+   - `@sdkwork/im-sdk`
+   - `@sdkwork/rtc-sdk`
 4. Direct inspection showed those packages existed in the workspace, but their `package.json` files pointed `types` and runtime exports at `dist/*`, and those `dist` outputs were absent because `prepare:shared-sdk` had never built them.
 
 ### IM package portability evidence
 
-1. After extending `prepare-shared-sdk-packages.mjs` to build the IM package chain, the next clean-room failure moved into `@openchat/sdkwork-im-wukongim-adapter`.
-2. That package failed with `Cannot find module ...\\apps\\openchat\\node_modules\\vite\\bin\\vite.js`, proving the build script depended on one specific monorepo directory layout instead of package-local tool resolution.
-3. Updating the IM TypeScript package scripts to `vite build` and `tsc -p tsconfig.build.json --noEmit`, plus explicit `devDependencies`, made both packages build successfully in the Claw Studio workspace.
+1. After extending `prepare-shared-sdk-packages.mjs` to build the IM and RTC package chain, the next clean-room failure moved into the IM SDK package-local tooling.
+2. That package failed when resolving build tools from one specific monorepo directory layout instead of package-local metadata.
+3. Updating the IM TypeScript package scripts to resolve local tooling, plus explicit `devDependencies`, made the package build successfully in the Claw Studio workspace.
 4. The portable IM SDK fix was committed and pushed to `Sdkwork-Cloud/sdkwork-im-sdk` as `c71a0f115c08cb164d5a857cdac15ea6d3adc006`.
 
 ### Pin verification evidence
@@ -46,9 +45,8 @@
 - Extended `scripts/prepare-shared-sdk-packages.mjs` to:
   - expose IM package roots in the shared SDK context
   - repair package-local dependency links for the IM packages
-  - build `@sdkwork/im-backend-sdk`
-  - build `@openchat/sdkwork-im-wukongim-adapter`
-  - build `@openchat/sdkwork-im-sdk`
+  - build `@sdkwork/im-sdk`
+  - build `@sdkwork/rtc-sdk`
 - Hardened `resolveWorkspaceInstalledPackageRoot()` so it can recover packages from shortened `.pnpm` virtual-store directory names.
 - Added and updated regression coverage in:
   - `scripts/release-flow-contract.test.mjs`
@@ -58,8 +56,7 @@
 
 ### External IM SDK repository
 
-- Updated `sdkwork-im-sdk-typescript/adapter-wukongim/package.json` to use portable `vite` and `tsc` scripts plus explicit build `devDependencies`.
-- Updated `sdkwork-im-sdk-typescript/composed/package.json` with the same portable build/tooling model.
+- Updated `sdkwork-im-sdk-typescript/package.json` to use portable package-local build scripts plus explicit build `devDependencies`.
 - Published the minimal fix on `main` with commit:
   - `c71a0f115c08cb164d5a857cdac15ea6d3adc006`
 

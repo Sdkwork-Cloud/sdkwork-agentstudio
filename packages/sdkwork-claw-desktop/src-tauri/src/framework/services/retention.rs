@@ -292,6 +292,7 @@ mod tests {
     use super::RetentionService;
     use crate::framework::{
         layout::{ActiveState, ActiveStateEntry, PinnedState, RetentionState},
+        openclaw_release::bundled_openclaw_version,
         paths::resolve_paths_for_root,
     };
 
@@ -447,8 +448,10 @@ mod tests {
         active.runtimes.insert(
             "python".to_string(),
             ActiveStateEntry {
-                active_version: Some("3.11.3".to_string()),
-                fallback_version: Some("3.11.2".to_string()),
+                active_install_key: Some("3.11.3".to_string()),
+                fallback_install_key: Some("3.11.2".to_string()),
+                active_version_label: Some("3.11.3".to_string()),
+                fallback_version_label: Some("3.11.2".to_string()),
                 ..ActiveStateEntry::default()
             },
         );
@@ -490,8 +493,8 @@ mod tests {
         active.runtimes.insert(
             "node".to_string(),
             ActiveStateEntry {
-                active_version: Some("22.0.3".to_string()),
-                fallback_version: None,
+                active_install_key: Some("22.0.3".to_string()),
+                active_version_label: Some("22.0.3".to_string()),
                 ..ActiveStateEntry::default()
             },
         );
@@ -524,6 +527,11 @@ mod tests {
     fn prunes_runtime_packages_using_explicit_install_keys_when_version_labels_differ() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let pruned_version = openclaw_fixture_version(-2);
+        let fallback_version = openclaw_fixture_version(-1);
+        let active_version_label = format!("{}-beta.1", bundled_openclaw_version());
+        let pruned_install_key = format!("{pruned_version}-windows-x64");
+        let fallback_install_key = format!("{fallback_version}-windows-x64");
         let package_dir = paths
             .machine_store_dir
             .join("runtimes")
@@ -531,8 +539,8 @@ mod tests {
             .join("packages");
         std::fs::create_dir_all(&package_dir).expect("package dir");
         for version in [
-            "2026.4.8-windows-x64",
-            "2026.4.9-windows-x64",
+            pruned_install_key.as_str(),
+            fallback_install_key.as_str(),
             "openclaw-nightly-windows-x64",
         ] {
             std::fs::write(package_dir.join(format!("{version}.pkg")), version).expect("package");
@@ -542,12 +550,11 @@ mod tests {
         active.runtimes.insert(
             "openclaw".to_string(),
             ActiveStateEntry {
-                active_version: Some("2026.4.11-beta.1".to_string()),
-                fallback_version: Some("2026.4.9".to_string()),
                 active_install_key: Some("openclaw-nightly-windows-x64".to_string()),
-                fallback_install_key: Some("2026.4.9-windows-x64".to_string()),
-                active_version_label: Some("2026.4.11-beta.1".to_string()),
-                fallback_version_label: Some("2026.4.9".to_string()),
+                fallback_install_key: Some(fallback_install_key.clone()),
+                active_version_label: Some(active_version_label),
+                fallback_version_label: Some(fallback_version),
+                ..ActiveStateEntry::default()
             },
         );
 
@@ -567,7 +574,22 @@ mod tests {
         assert!(package_dir
             .join("openclaw-nightly-windows-x64.pkg")
             .exists());
-        assert!(package_dir.join("2026.4.9-windows-x64.pkg").exists());
-        assert!(!package_dir.join("2026.4.8-windows-x64.pkg").exists());
+        assert!(package_dir.join(format!("{fallback_install_key}.pkg")).exists());
+        assert!(!package_dir.join(format!("{pruned_install_key}.pkg")).exists());
+    }
+
+    fn openclaw_fixture_version(patch_offset: i32) -> String {
+        let numeric_version = bundled_openclaw_version()
+            .split('-')
+            .next()
+            .expect("openclaw numeric version prefix");
+        let parts = numeric_version
+            .split('.')
+            .map(|part| part.parse::<i32>().expect("numeric openclaw version part"))
+            .collect::<Vec<_>>();
+        assert_eq!(parts.len(), 3);
+        let shifted_patch = parts[2] + patch_offset;
+        assert!(shifted_patch >= 0);
+        format!("{}.{}.{}", parts[0], parts[1], shifted_patch)
     }
 }

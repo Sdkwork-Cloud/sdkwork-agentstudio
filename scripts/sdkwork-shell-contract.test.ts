@@ -149,9 +149,26 @@ runTest('sdkwork-claw-shell keeps sidebar labels color-aligned with sidebar icon
   assert.match(sidebarSource, /labelClassName=\{tone\.label\}/);
   assert.match(sidebarSource, /className=\{`h-5 w-5 shrink-0 transition-colors \$\{tone\.icon\}`\}/);
   assert.match(sidebarSource, /className=\{`text-\[14px\] tracking-tight \$\{tone\.label\}`\}/);
-  assert.match(sidebarSource, /text-primary-400/);
-  assert.match(sidebarSource, /text-zinc-500 group-hover:text-zinc-300/);
+  assert.match(sidebarSource, /text-primary-700 dark:text-primary-400/);
+  assert.match(sidebarSource, /text-zinc-600 group-hover:text-zinc-950 dark:text-zinc-500 dark:group-hover:text-zinc-300/);
   assert.doesNotMatch(sidebarSource, /labelClassName=\{isActive \? 'text-primary-200' : undefined\}/);
+});
+
+runTest('sdkwork-claw-shell keeps sidebar light by default and scopes deep chrome to dark mode', () => {
+  const sidebarSource = read('packages/sdkwork-claw-shell/src/components/Sidebar.tsx');
+
+  assert.match(sidebarSource, /border-r border-zinc-200 bg-zinc-50\/95 text-zinc-700/);
+  assert.match(
+    sidebarSource,
+    /dark:border-zinc-900\/90 dark:bg-\[linear-gradient\(180deg,_#13151a_0%,_#0b0c10_100%\)\] dark:text-zinc-300/,
+  );
+  assert.doesNotMatch(
+    sidebarSource,
+    /border-r border-zinc-900\/90 bg-\[linear-gradient\(180deg,_#13151a_0%,_#0b0c10_100%\)\] text-zinc-300/,
+  );
+  assert.match(sidebarSource, /hover:bg-zinc-950\/\[0\.045\] dark:hover:bg-white\/\[0\.05\]/);
+  assert.match(sidebarSource, /border border-zinc-200 bg-white text-zinc-700/);
+  assert.match(sidebarSource, /dark:border-white\/8 dark:bg-white\/\[0\.04\] dark:text-zinc-300/);
 });
 
 runTest('sdkwork-claw-shell binds dark variants to the theme manager dark class and exposes the full theme color catalog', () => {

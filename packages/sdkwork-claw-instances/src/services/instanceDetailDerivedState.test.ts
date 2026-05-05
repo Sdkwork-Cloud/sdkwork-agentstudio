@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { DEFAULT_BUNDLED_OPENCLAW_VERSION } from '@sdkwork/claw-types';
 import { buildInstanceDetailDerivedState } from './instanceDetailDerivedState.ts';
 
 function runTest(name: string, callback: () => void | Promise<void>) {
@@ -21,7 +22,7 @@ function createWorkbench() {
       type: 'OpenClaw',
       iconType: 'server',
       status: 'online',
-      version: '2026.4.8',
+      version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
       uptime: '2h',
       ip: '127.0.0.1',
       cpu: 12,
@@ -354,11 +355,11 @@ await runTest(
 );
 
 await runTest(
-  'buildInstanceDetailDerivedState reconstructs canonical built-in OpenClaw config metadata from drifted managed-config detail targets',
+  'buildInstanceDetailDerivedState reconstructs canonical built-in OpenClaw config metadata from drifted detail targets',
   () => {
     const workbench = createWorkbench();
-    const driftedManagedConfigPath =
-      'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json';
+    const driftedConfigFilePath =
+      'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/noncanonical-config/openclaw.json';
     const canonicalConfigFilePath =
       'C:/Users/admin/.sdkwork/crawstudio/.openclaw/openclaw.json';
     const canonicalWorkspacePath =
@@ -371,7 +372,7 @@ await runTest(
         scope: 'config',
         mode: 'managedFile',
         readonly: false,
-        target: driftedManagedConfigPath,
+        target: driftedConfigFilePath,
       },
       {
         id: 'workspace-root',
@@ -385,7 +386,7 @@ await runTest(
       {
         id: 'config-file',
         kind: 'configFile',
-        location: driftedManagedConfigPath,
+        location: driftedConfigFilePath,
       },
       {
         id: 'workspace-root',
@@ -442,8 +443,8 @@ await runTest(
   'buildInstanceDetailDerivedState rewrites stale workbench kernelConfig paths from canonical detail projection',
   () => {
     const workbench = createWorkbench();
-    const driftedManagedConfigPath =
-      'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json';
+    const driftedConfigFilePath =
+      'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/noncanonical-config/openclaw.json';
     const canonicalConfigFilePath =
       'C:/Users/admin/.sdkwork/crawstudio/.openclaw/openclaw.json';
     const canonicalWorkspacePath =
@@ -451,8 +452,8 @@ await runTest(
 
     workbench.kernelConfig = {
       ...workbench.kernelConfig,
-      configFile: driftedManagedConfigPath,
-      configRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config',
+      configFile: driftedConfigFilePath,
+      configRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/noncanonical-config',
       userRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw',
       standardConfigFile: canonicalConfigFilePath,
       standardStateRoot: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw',
@@ -464,7 +465,7 @@ await runTest(
         scope: 'config',
         mode: 'managedFile',
         readonly: false,
-        target: driftedManagedConfigPath,
+        target: driftedConfigFilePath,
       },
       {
         id: 'workspace-root',
@@ -478,7 +479,7 @@ await runTest(
       {
         id: 'config-file',
         kind: 'configFile',
-        location: driftedManagedConfigPath,
+        location: driftedConfigFilePath,
       },
       {
         id: 'workspace-root',

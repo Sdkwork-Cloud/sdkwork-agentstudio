@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -98,6 +105,46 @@ assert.equal(
   ).version,
   '6.0.2',
   'run-workspace-tsc must link the TypeScript package that matches the current workspace version contract',
+);
+
+const concurrentPlan = runner.createWorkspaceTscPlan({
+  argv: ['--pretty', 'false'],
+  cwd: 'D:\\workspace\\claw-studio',
+  execPath: 'node.exe',
+  rootDir: tempWorkspaceRoot,
+});
+
+assert.match(
+  String(concurrentPlan.args[0] ?? ''),
+  /node_modules[\\/]typescript[\\/]lib[\\/]_tsc\.js$/,
+  'run-workspace-tsc must reuse the stable workspace-local TypeScript package when it already exists',
+);
+assert.deepEqual(
+  readdirSync(path.join(tempWorkspaceRoot, 'node_modules'))
+    .filter((entry) => entry.startsWith('typescript.stage-')),
+  [],
+  'run-workspace-tsc must not create a new stage directory when the stable local TypeScript package is already materialized',
+);
+
+assert.match(
+  moduleSource,
+  /const lockRelease = acquireTypescriptPackageMaterializeLock\(directPackageDir\);/s,
+  'run-workspace-tsc must acquire a materialization lock before replacing node_modules/typescript',
+);
+assert.match(
+  moduleSource,
+  /try \{\s*if \(hasStableLocalPackageDir\(directPackageDir\)\) \{\s*return directPackageDir;\s*\}/s,
+  'run-workspace-tsc must re-check the stable local TypeScript package after acquiring the lock',
+);
+assert.match(
+  moduleSource,
+  /finally \{\s*lockRelease\(\);\s*\}/s,
+  'run-workspace-tsc must always release the TypeScript materialization lock',
+);
+assert.match(
+  moduleSource,
+  /\.stage-\$\{process\.pid\}-\$\{Date\.now\(\)\}/s,
+  'run-workspace-tsc must use process-unique staging paths for concurrent invocations',
 );
 
 assert.equal(

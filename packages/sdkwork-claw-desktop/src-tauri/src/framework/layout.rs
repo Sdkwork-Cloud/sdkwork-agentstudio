@@ -50,39 +50,37 @@ impl LayoutState {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ActiveStateEntry {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub active_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fallback_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub active_install_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fallback_install_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub active_version_label: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fallback_version_label: Option<String>,
 }
 
 impl ActiveStateEntry {
     pub fn active_runtime_install_key(&self) -> Option<&str> {
-        self.active_install_key
-            .as_deref()
-            .or(self.active_version.as_deref())
+        self.active_install_key.as_deref()
     }
 
     pub fn fallback_runtime_install_key(&self) -> Option<&str> {
-        self.fallback_install_key
-            .as_deref()
-            .or(self.fallback_version.as_deref())
+        self.fallback_install_key.as_deref()
     }
 
     #[allow(dead_code)]
     pub fn active_runtime_version_label(&self) -> Option<&str> {
-        self.active_version_label
-            .as_deref()
-            .or(self.active_version.as_deref())
+        self.active_version_label.as_deref()
     }
 
     #[allow(dead_code)]
     pub fn fallback_runtime_version_label(&self) -> Option<&str> {
-        self.fallback_version_label
-            .as_deref()
-            .or(self.fallback_version.as_deref())
+        self.fallback_version_label.as_deref()
     }
 
     pub fn set_runtime_state(
@@ -97,8 +95,8 @@ impl ActiveStateEntry {
         self.active_version_label = active_version_label.or_else(|| active_install_key.clone());
         self.fallback_version_label =
             fallback_version_label.or_else(|| fallback_install_key.clone());
-        self.active_version = active_install_key;
-        self.fallback_version = fallback_install_key;
+        self.active_version = None;
+        self.fallback_version = None;
     }
 }
 
@@ -353,7 +351,7 @@ impl Default for UpgradesState {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(default, deny_unknown_fields, rename_all = "camelCase")]
 pub struct KernelAuthorityState {
     pub layout_version: u32,
     pub runtime_id: String,
@@ -363,7 +361,6 @@ pub struct KernelAuthorityState {
     pub fallback_version_label: Option<String>,
     pub config_file_path: Option<String>,
     pub owned_runtime_roots: Vec<String>,
-    pub legacy_runtime_roots: Vec<String>,
     pub quarantined_paths: Vec<String>,
     pub last_activation_at: Option<String>,
     pub last_error: Option<String>,
@@ -380,7 +377,6 @@ impl Default for KernelAuthorityState {
             fallback_version_label: None,
             config_file_path: None,
             owned_runtime_roots: Vec::new(),
-            legacy_runtime_roots: Vec::new(),
             quarantined_paths: Vec::new(),
             last_activation_at: None,
             last_error: None,
@@ -519,7 +515,10 @@ pub fn initialize_machine_state(paths: &AppPaths) -> Result<()> {
     for runtime_id in crate::framework::paths::supported_kernel_ids() {
         let runtime_id = *runtime_id;
         let kernel = paths.kernel_paths(runtime_id)?;
-        write_json_if_missing(&kernel.authority_file, &KernelAuthorityState::default())?;
+        write_kernel_authority_json_if_missing(
+            &kernel.authority_file,
+            &KernelAuthorityState::default(),
+        )?;
         write_json_if_missing(&kernel.migrations_file, &KernelMigrationState::default())?;
         write_json_if_missing(
             &kernel.runtime_upgrades_file,
@@ -620,6 +619,39 @@ where
     Ok(())
 }
 
+fn write_kernel_authority_json_if_missing(path: &Path, value: &KernelAuthorityState) -> Result<()> {
+    if path.exists() {
+        let parsed = read_kernel_authority_json_file(path)?;
+        write_json_file(path, &parsed)?;
+        return Ok(());
+    }
+
+    write_json_file(path, value)?;
+    Ok(())
+}
+
+fn read_kernel_authority_json_file(path: &Path) -> Result<KernelAuthorityState> {
+    let content = fs::read_to_string(path)?;
+    match serde_json::from_str::<KernelAuthorityState>(&content) {
+        Ok(state) => Ok(state),
+        Err(error) => {
+            let mut root = match serde_json::from_str::<serde_json::Value>(&content) {
+                Ok(root) => root,
+                Err(_) => return Err(error.into()),
+            };
+            let Some(object) = root.as_object_mut() else {
+                return Err(error.into());
+            };
+
+            if object.remove("legacyRuntimeRoots").is_none() {
+                return Err(error.into());
+            }
+
+            serde_json::from_value::<KernelAuthorityState>(root).map_err(Into::into)
+        }
+    }
+}
+
 fn read_json_file<T>(path: &Path) -> Result<T>
 where
     T: DeserializeOwned,
@@ -641,8 +673,8 @@ where
 mod tests {
     use super::{
         initialize_machine_state, set_active_runtime_version, sync_component_registry_state,
-        ActiveState, InventoryState, KernelAuthorityState, KernelMigrationState, LayoutState,
-        PinnedState, RetentionState, RuntimeUpgradesState, UpgradesState,
+        ActiveState, ActiveStateEntry, InventoryState, KernelAuthorityState, KernelMigrationState,
+        LayoutState, PinnedState, RetentionState, RuntimeUpgradesState, UpgradesState,
     };
     use crate::framework::{
         components::{
@@ -843,6 +875,78 @@ mod tests {
     }
 
     #[test]
+    fn initialize_machine_state_removes_retired_legacy_runtime_roots_from_existing_authority_state()
+    {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let openclaw = paths
+            .kernel_paths("openclaw")
+            .expect("openclaw kernel paths");
+        std::fs::create_dir_all(openclaw.authority_file.parent().expect("authority parent"))
+            .expect("create authority parent");
+        std::fs::write(
+            &openclaw.authority_file,
+            r#"{
+  "layoutVersion": 1,
+  "runtimeId": "openclaw",
+  "activeInstallKey": "openclaw-nightly-windows-x64",
+  "fallbackInstallKey": null,
+  "activeVersionLabel": "2026.4.28",
+  "fallbackVersionLabel": null,
+  "configFilePath": null,
+  "ownedRuntimeRoots": ["D:/managed/openclaw"],
+  "legacyRuntimeRoots": ["D:/legacy/openclaw"],
+  "quarantinedPaths": [],
+  "lastActivationAt": null,
+  "lastError": null
+}"#,
+        )
+        .expect("write legacy authority");
+
+        initialize_machine_state(&paths).expect("initialize machine state");
+
+        let authority_json = serde_json::from_str::<Value>(
+            &std::fs::read_to_string(&openclaw.authority_file).expect("authority file"),
+        )
+        .expect("authority json value");
+        let authority = serde_json::from_value::<KernelAuthorityState>(authority_json.clone())
+            .expect("canonical authority state");
+
+        assert_eq!(
+            authority.active_install_key.as_deref(),
+            Some("openclaw-nightly-windows-x64")
+        );
+        assert_eq!(authority.owned_runtime_roots, vec!["D:/managed/openclaw"]);
+        assert_eq!(authority_json.get("legacyRuntimeRoots"), None);
+    }
+
+    #[test]
+    fn kernel_authority_state_rejects_retired_legacy_runtime_roots_field() {
+        let error = serde_json::from_str::<KernelAuthorityState>(
+            r#"{
+  "layoutVersion": 1,
+  "runtimeId": "openclaw",
+  "activeInstallKey": null,
+  "fallbackInstallKey": null,
+  "activeVersionLabel": null,
+  "fallbackVersionLabel": null,
+  "configFilePath": null,
+  "ownedRuntimeRoots": [],
+  "legacyRuntimeRoots": [],
+  "quarantinedPaths": [],
+  "lastActivationAt": null,
+  "lastError": null
+}"#,
+        )
+        .expect_err("retired legacyRuntimeRoots authority field must be rejected");
+
+        assert!(
+            error.to_string().contains("legacyRuntimeRoots"),
+            "unexpected authority parse error: {error}"
+        );
+    }
+
+    #[test]
     fn sync_component_registry_state_backfills_bundle_defined_components_into_machine_state() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
@@ -890,7 +994,7 @@ mod tests {
     }
 
     #[test]
-    fn tracks_active_runtime_versions_with_fallback_history() {
+    fn tracks_active_runtime_install_keys_without_version_aliases() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
 
@@ -908,14 +1012,8 @@ mod tests {
             .get("openclaw")
             .expect("openclaw active runtime");
 
-        assert_eq!(
-            openclaw.active_version.as_deref(),
-            Some("2026.3.23-2-windows-x64")
-        );
-        assert_eq!(
-            openclaw.fallback_version.as_deref(),
-            Some("2026.3.20-windows-x64")
-        );
+        assert!(openclaw.active_version.is_none());
+        assert!(openclaw.fallback_version.is_none());
         assert_eq!(
             openclaw.active_install_key.as_deref(),
             Some("2026.3.23-2-windows-x64")
@@ -932,5 +1030,22 @@ mod tests {
             openclaw.fallback_version_label.as_deref(),
             Some("2026.3.20-windows-x64")
         );
+    }
+
+    #[test]
+    fn runtime_install_key_helpers_ignore_retired_version_alias_fields() {
+        let entry = ActiveStateEntry {
+            active_version: Some("retired-active-version-alias".to_string()),
+            fallback_version: Some("retired-fallback-version-alias".to_string()),
+            active_install_key: None,
+            fallback_install_key: None,
+            active_version_label: None,
+            fallback_version_label: None,
+        };
+
+        assert_eq!(entry.active_runtime_install_key(), None);
+        assert_eq!(entry.fallback_runtime_install_key(), None);
+        assert_eq!(entry.active_runtime_version_label(), None);
+        assert_eq!(entry.fallback_runtime_version_label(), None);
     }
 }

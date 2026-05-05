@@ -26,13 +26,14 @@ pub(super) fn project_managed_openclaw_provider(
         )
     })?;
     let default_model_id = resolve_default_route_model_id(route)?;
-    let mut root = read_openclaw_config_root(&readable_openclaw_config_path(paths))?;
+    let readable_config_path = readable_openclaw_config_path(paths)?;
+    let mut root = read_openclaw_config_root(&readable_config_path)?;
     let overwrite_defaults =
         should_overwrite_managed_provider_defaults(&root, OPENCLAW_LOCAL_PROXY_PROVIDER_ID);
     let provider_root = ensure_json_object_mut(
         &mut root,
         &["models", "providers", OPENCLAW_LOCAL_PROXY_PROVIDER_ID],
-    );
+    )?;
     let existing_models = provider_root
         .get("models")
         .and_then(Value::as_array)
@@ -66,7 +67,7 @@ pub(super) fn project_managed_openclaw_provider(
         OPENCLAW_LOCAL_PROXY_PROVIDER_ID,
         &default_model_id,
         route,
-    );
+    )?;
 
     if overwrite_defaults {
         write_managed_provider_defaults(
@@ -74,10 +75,11 @@ pub(super) fn project_managed_openclaw_provider(
             OPENCLAW_LOCAL_PROXY_PROVIDER_ID,
             &default_model_id,
             route.reasoning_model_id.as_deref(),
-        );
+        )?;
     }
 
-    write_openclaw_config_root(&active_openclaw_config_path(paths), &root)
+    let active_config_path = active_openclaw_config_path(paths)?;
+    write_openclaw_config_root(&active_config_path, &root)
 }
 
 fn read_openclaw_config_root(path: &Path) -> Result<Value> {
@@ -108,14 +110,13 @@ fn write_openclaw_config_root(path: &Path, root: &Value) -> Result<()> {
     Ok(())
 }
 
-fn readable_openclaw_config_path(paths: &AppPaths) -> PathBuf {
+fn readable_openclaw_config_path(paths: &AppPaths) -> Result<PathBuf> {
     active_openclaw_config_path(paths)
 }
 
-fn active_openclaw_config_path(paths: &AppPaths) -> PathBuf {
+fn active_openclaw_config_path(paths: &AppPaths) -> Result<PathBuf> {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
-        .expect("canonical openclaw config path")
 }
 
 fn resolve_default_route_model_id(route: &LocalAiProxyRouteSnapshot) -> Result<String> {
@@ -162,8 +163,8 @@ fn write_managed_provider_defaults(
     provider_id: &str,
     default_model_id: &str,
     reasoning_model_id: Option<&str>,
-) {
-    let defaults_model = ensure_json_object_mut(root, &["agents", "defaults", "model"]);
+) -> Result<()> {
+    let defaults_model = ensure_json_object_mut(root, &["agents", "defaults", "model"])?;
     defaults_model.insert(
         "primary".to_string(),
         Value::String(build_openclaw_model_ref(provider_id, default_model_id)),
@@ -176,10 +177,11 @@ fn write_managed_provider_defaults(
                 .filter(|value| !value.is_empty())
                 .filter(|value| *value != default_model_id)
                 .map(|value| Value::String(build_openclaw_model_ref(provider_id, value)))
-                .into_iter()
-                .collect(),
+            .into_iter()
+            .collect(),
         ),
     );
+    Ok(())
 }
 
 fn write_managed_provider_runtime_config(
@@ -187,13 +189,13 @@ fn write_managed_provider_runtime_config(
     provider_id: &str,
     default_model_id: &str,
     route: &LocalAiProxyRouteSnapshot,
-) {
+) -> Result<()> {
     let model_ref = build_openclaw_model_ref(provider_id, default_model_id);
     if let Some(params) = build_managed_provider_runtime_params(route) {
         let model_root =
-            ensure_json_object_mut(root, &["agents", "defaults", "models", model_ref.as_str()]);
+            ensure_json_object_mut(root, &["agents", "defaults", "models", model_ref.as_str()])?;
         model_root.insert("params".to_string(), Value::Object(params));
-        return;
+        return Ok(());
     }
 
     if let Some(model_root) =
@@ -202,6 +204,7 @@ fn write_managed_provider_runtime_config(
     {
         model_root.remove("params");
     }
+    Ok(())
 }
 
 fn build_managed_provider_runtime_params(
@@ -331,16 +334,21 @@ fn build_openclaw_provider_models(
 fn ensure_json_object_mut<'a>(
     root: &'a mut Value,
     path: &[&str],
-) -> &'a mut serde_json::Map<String, Value> {
+) -> Result<&'a mut serde_json::Map<String, Value>> {
     if !root.is_object() {
         *root = Value::Object(serde_json::Map::new());
     }
 
     let mut current = root;
     for segment in path {
-        let object = current
-            .as_object_mut()
-            .expect("json object root should stay object");
+        if !current.is_object() {
+            *current = Value::Object(serde_json::Map::new());
+        }
+        let object = current.as_object_mut().ok_or_else(|| {
+            FrameworkError::ValidationFailed(
+                "failed to normalize OpenClaw config path to a JSON object".to_string(),
+            )
+        })?;
         current = object
             .entry((*segment).to_string())
             .or_insert_with(|| Value::Object(serde_json::Map::new()));
@@ -349,9 +357,15 @@ fn ensure_json_object_mut<'a>(
         }
     }
 
-    current
-        .as_object_mut()
-        .expect("json object path should resolve to object")
+    if !current.is_object() {
+        *current = Value::Object(serde_json::Map::new());
+    }
+
+    current.as_object_mut().ok_or_else(|| {
+        FrameworkError::ValidationFailed(
+            "failed to resolve OpenClaw config path as a JSON object".to_string(),
+        )
+    })
 }
 
 fn get_nested_value_mut<'a>(root: &'a mut Value, path: &[&str]) -> Option<&'a mut Value> {

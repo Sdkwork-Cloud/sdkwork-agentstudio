@@ -14,6 +14,11 @@ import { pathToFileURL } from 'node:url';
 
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
 const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+const openClawReleaseConfig = JSON.parse(
+  readFileSync(path.join(rootDir, 'config', 'kernel-releases', 'openclaw.json'), 'utf8'),
+);
+const DEFAULT_BUNDLED_OPENCLAW_VERSION = openClawReleaseConfig.stableVersion;
+const DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION = openClawReleaseConfig.nodeVersion;
 
 function writeJsonFile(filePath, value) {
   mkdirSync(path.dirname(filePath), { recursive: true });
@@ -124,7 +129,7 @@ function buildDesktopStartupEvidence({
     builtInInstance: {
       id: BUILT_IN_INSTANCE_ID,
       name: 'OpenClaw',
-      version: '2026.4.2',
+      version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
       runtimeKind: 'openclaw',
       deploymentMode: 'local-managed',
       transportKind: 'openclawGatewayWs',
@@ -216,7 +221,7 @@ test('desktop packaged launch smoke prefers the root desktop executable over nes
     'bundled',
     'modules',
     'openclaw-helper',
-    '2026.4.14',
+    DEFAULT_BUNDLED_OPENCLAW_VERSION,
     'bin',
     'openclaw-helper.exe',
   );
@@ -226,7 +231,7 @@ test('desktop packaged launch smoke prefers the root desktop executable over nes
     'bundled',
     'runtimes',
     'node',
-    '22.16.0',
+    DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION,
     'node.exe',
   );
 

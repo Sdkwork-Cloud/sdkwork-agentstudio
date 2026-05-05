@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import type { StudioInstanceRecord } from '@sdkwork/claw-types';
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  type StudioInstanceRecord,
+} from '@sdkwork/claw-types';
 import { createUsageWorkspaceService } from './usageWorkspaceService.ts';
 
 function runTest(name: string, fn: () => Promise<void> | void) {
@@ -27,7 +30,7 @@ function buildInstance(
     isBuiltIn: false,
     isDefault: true,
     iconType: 'server',
-    version: '2026.4.5',
+    version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
     typeLabel: 'OpenClaw Gateway',
     host: '127.0.0.1',
     port: 21280,
@@ -75,6 +78,24 @@ function createStorageMock() {
     clear() {
       values.clear();
     },
+  };
+}
+
+function installThrowingLocalStorage() {
+  const previousDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    get() {
+      throw new DOMException('localStorage is blocked', 'SecurityError');
+    },
+  });
+
+  return () => {
+    if (previousDescriptor) {
+      Object.defineProperty(globalThis, 'localStorage', previousDescriptor);
+    } else {
+      delete (globalThis as { localStorage?: unknown }).localStorage;
+    }
   };
 }
 
@@ -168,6 +189,32 @@ await runTest(
     );
     assert.equal(result.instances[0]?.runtimeKind, 'hermes');
     assert.equal(result.defaultInstanceId, 'gateway-hermes');
+  },
+);
+
+await runTest(
+  'usageWorkspaceService starts with an in-memory compatibility cache when browser storage is blocked',
+  async () => {
+    const restore = installThrowingLocalStorage();
+
+    try {
+      const service = createUsageWorkspaceService({
+        studioApi: {
+          listInstances: async () => [buildInstance()],
+        },
+        gatewayApi: {
+          getGatewaySessionUsage: async () => ({ sessions: [], totals: {}, aggregates: {} }),
+          getUsageCost: async () => ({ daily: [], totals: {} }),
+          getGatewaySessionUsageTimeseries: async () => ({ points: [] }),
+          getGatewaySessionUsageLogs: async () => ({ logs: [] }),
+        },
+      });
+
+      const result = await service.listUsageInstances();
+      assert.deepEqual(result.instances.map((instance) => instance.id), ['openclaw-default']);
+    } finally {
+      restore();
+    }
   },
 );
 

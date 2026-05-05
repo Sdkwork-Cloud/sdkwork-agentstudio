@@ -593,6 +593,7 @@ mod tests {
         PREPARE_BUNDLED_OPENCLAW_RUNTIME_FLAG, RUN_OPENCLAW_CLI_FLAG,
     };
     use crate::framework::{
+        openclaw_release::required_openclaw_node_version,
         paths::resolve_paths_for_root,
         services::{
             kernel_runtime_authority::KernelRuntimeAuthorityService,
@@ -1038,7 +1039,7 @@ mod tests {
             required_external_runtimes: vec!["nodejs".to_string()],
             required_external_runtime_versions: std::collections::BTreeMap::from([(
                 "nodejs".to_string(),
-                "22.16.0".to_string(),
+                required_openclaw_node_version().to_string(),
             )]),
             platform: platform.to_string(),
             arch: arch.to_string(),

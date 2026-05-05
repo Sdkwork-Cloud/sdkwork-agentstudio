@@ -59,9 +59,9 @@ pub fn envelope_error_response(
     let envelope = envelope.with_transport_context(correlation_id.clone(), now_ms.to_string());
     let mut response = (status, Json(envelope)).into_response();
     let header_name = HeaderName::from_static("x-claw-correlation-id");
-    let header_value = axum::http::HeaderValue::from_str(&correlation_id)
-        .expect("error correlation id should be a valid header value");
-    response.headers_mut().insert(header_name, header_value);
+    if let Ok(header_value) = axum::http::HeaderValue::from_str(&correlation_id) {
+        response.headers_mut().insert(header_name, header_value);
+    }
     response
 }
 

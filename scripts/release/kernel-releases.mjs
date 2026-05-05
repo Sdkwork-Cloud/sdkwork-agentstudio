@@ -31,6 +31,127 @@ function normalizeStringArray(value, fieldName, kernelId) {
   return [...new Set(normalized)];
 }
 
+function normalizeOptionalStringArray(value) {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return [
+    ...new Set(
+      value
+        .map((entry) => String(entry ?? '').trim())
+        .filter(Boolean),
+    ),
+  ];
+}
+
+function isPlainRecord(value) {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function normalizeRuntimeVersionMap(value) {
+  if (!isPlainRecord(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([runtimeId, version]) => [
+        String(runtimeId ?? '').trim(),
+        String(version ?? '').trim(),
+      ])
+      .filter(([runtimeId, version]) => runtimeId && version),
+  );
+}
+
+function normalizeRequiredString(value, fieldName, kernelId) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized) {
+    throw new Error(`Kernel release "${kernelId}" is missing ${fieldName}.`);
+  }
+
+  return normalized;
+}
+
+function normalizePlatformSupport(value, kernelId) {
+  if (!isPlainRecord(value)) {
+    throw new Error(`Kernel release "${kernelId}" must define platformSupport.`);
+  }
+
+  const packageProfileIds = normalizeStringArray(
+    value.packageProfileIds,
+    'platformSupport.packageProfileIds',
+    kernelId,
+  );
+
+  return Object.freeze({
+    packageProfileIds: Object.freeze(packageProfileIds),
+    windows: normalizeRequiredString(value.windows, 'platformSupport.windows', kernelId),
+    macos: normalizeRequiredString(value.macos, 'platformSupport.macos', kernelId),
+    linux: normalizeRequiredString(value.linux, 'platformSupport.linux', kernelId),
+  });
+}
+
+function deriveRuntimeRequirements(config, kernelId) {
+  if (!isPlainRecord(config?.runtimeRequirements)) {
+    return cloneJsonValue(config?.runtimeRequirements);
+  }
+
+  const runtimeRequirements = cloneJsonValue(config.runtimeRequirements);
+  if (
+    isPlainRecord(runtimeRequirements.requiredExternalRuntimeVersions)
+    && Object.hasOwn(runtimeRequirements.requiredExternalRuntimeVersions, 'nodejs')
+  ) {
+    throw new Error(
+      `Kernel release "${kernelId}" must derive runtimeRequirements.requiredExternalRuntimeVersions.nodejs from nodeVersion.`,
+    );
+  }
+
+  const requiredExternalRuntimes = normalizeOptionalStringArray(
+    runtimeRequirements.requiredExternalRuntimes,
+  );
+  const optionalExternalRuntimes = normalizeOptionalStringArray(
+    runtimeRequirements.optionalExternalRuntimes,
+  );
+  const nodeVersion = String(config?.nodeVersion ?? '').trim();
+
+  if (requiredExternalRuntimes) {
+    runtimeRequirements.requiredExternalRuntimes = requiredExternalRuntimes;
+  }
+  if (optionalExternalRuntimes) {
+    runtimeRequirements.optionalExternalRuntimes = optionalExternalRuntimes;
+  }
+  if (nodeVersion && requiredExternalRuntimes?.includes('nodejs')) {
+    runtimeRequirements.requiredExternalRuntimeVersions = {
+      ...normalizeRuntimeVersionMap(runtimeRequirements.requiredExternalRuntimeVersions),
+      nodejs: nodeVersion,
+    };
+  }
+
+  return runtimeRequirements;
+}
+
+function deriveReleaseSource(config, stableVersion, kernelId) {
+  if (!isPlainRecord(config?.releaseSource)) {
+    return cloneJsonValue(config?.releaseSource);
+  }
+
+  const releaseSource = cloneJsonValue(config.releaseSource);
+  const repositoryUrl = String(releaseSource.repositoryUrl ?? '').trim();
+  if (releaseSource.kind === 'githubRelease' && Object.hasOwn(releaseSource, 'releaseUrl')) {
+    throw new Error(
+      `Kernel release "${kernelId}" must derive releaseSource.releaseUrl from releaseSource and stableVersion.`,
+    );
+  }
+
+  if (releaseSource.kind === 'githubRelease' && repositoryUrl) {
+    const tagPrefix = String(releaseSource.tagPrefix ?? '').trim();
+    releaseSource.releaseUrl = `${repositoryUrl.replace(/\/+$/u, '')}/releases/tag/${tagPrefix}${stableVersion}`;
+  }
+
+  return releaseSource;
+}
+
 function validateKernelReleaseConfig(config, filePath) {
   const kernelId = String(config?.kernelId ?? '').trim();
   const stableVersion = String(config?.stableVersion ?? '').trim();
@@ -56,13 +177,22 @@ function validateKernelReleaseConfig(config, filePath) {
       `Kernel release "${kernelId}" defaultChannel "${defaultChannel}" must be listed in supportedChannels.`,
     );
   }
+  if (Object.hasOwn(config, 'compatibility')) {
+    throw new Error(
+      `Kernel release "${kernelId}" must use platformSupport instead of compatibility.`,
+    );
+  }
 
+  const normalizedConfig = cloneJsonValue(config);
   return Object.freeze({
-    ...cloneJsonValue(config),
+    ...normalizedConfig,
     kernelId,
     stableVersion,
     supportedChannels: Object.freeze(supportedChannels),
     defaultChannel,
+    platformSupport: normalizePlatformSupport(normalizedConfig.platformSupport, kernelId),
+    runtimeRequirements: deriveRuntimeRequirements(normalizedConfig, kernelId),
+    releaseSource: deriveReleaseSource(normalizedConfig, stableVersion, kernelId),
   });
 }
 
@@ -120,12 +250,6 @@ export function resolveKernelReleaseConfigPath(
   return path.join(workspaceRootDir, 'config', 'kernel-releases', `${normalizedKernelId}.json`);
 }
 
-export function resolveLegacyOpenClawReleaseConfigPath({
-  workspaceRootDir = rootDir,
-} = {}) {
-  return path.join(workspaceRootDir, 'config', 'openclaw-release.json');
-}
-
 export function loadKernelReleaseConfigs({
   workspaceRootDir = rootDir,
   readFileImpl = (targetPath) => readFileSync(targetPath, 'utf8'),
@@ -169,18 +293,4 @@ export function resolveKernelReleaseConfig(
   return cloneKernelReleaseConfig(
     validateKernelReleaseConfig(readJson(filePath, readFileImpl), filePath),
   );
-}
-
-export function projectLegacyOpenClawReleaseConfig(releaseConfig) {
-  return {
-    stableVersion: String(releaseConfig?.stableVersion ?? '').trim(),
-    nodeVersion: String(releaseConfig?.nodeVersion ?? '').trim(),
-    packageName: String(releaseConfig?.packageName ?? '').trim(),
-    runtimeSupplementalPackages: Array.isArray(releaseConfig?.runtimeSupplementalPackages)
-      ? releaseConfig.runtimeSupplementalPackages.map((entry) => String(entry ?? '').trim()).filter(Boolean)
-      : [],
-    runtimeSupplementalPackageExceptions: Array.isArray(releaseConfig?.runtimeSupplementalPackageExceptions)
-      ? cloneJsonValue(releaseConfig.runtimeSupplementalPackageExceptions)
-      : [],
-  };
 }

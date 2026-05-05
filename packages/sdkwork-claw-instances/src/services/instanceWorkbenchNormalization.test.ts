@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { DEFAULT_BUNDLED_OPENCLAW_VERSION } from '@sdkwork/claw-types';
 import type { InstanceWorkbenchSnapshot } from '../types/index.ts';
 import { normalizeInstanceWorkbenchSnapshot } from './instanceWorkbenchNormalization.ts';
 
@@ -22,7 +23,7 @@ function createWorkbench(): InstanceWorkbenchSnapshot {
       type: 'OpenClaw',
       iconType: 'server',
       status: 'online',
-      version: '2026.4.8',
+      version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
       uptime: '2h',
       ip: '127.0.0.1',
       cpu: 12,
@@ -49,7 +50,7 @@ function createWorkbench(): InstanceWorkbenchSnapshot {
         isBuiltIn: true,
         isDefault: true,
         iconType: 'server',
-        version: '2026.4.8',
+        version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
         typeLabel: 'OpenClaw',
         host: '127.0.0.1',
         port: 3456,
@@ -133,7 +134,7 @@ function createWorkbench(): InstanceWorkbenchSnapshot {
             scope: 'config',
             mode: 'managedFile',
             readonly: false,
-            target: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json',
+            target: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/noncanonical-config/openclaw.json',
           },
           {
             id: 'workspace-root',
@@ -148,7 +149,7 @@ function createWorkbench(): InstanceWorkbenchSnapshot {
         {
           id: 'config-file',
           kind: 'configFile',
-          location: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json',
+          location: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/noncanonical-config/openclaw.json',
         },
         {
           id: 'workspace-root',
@@ -163,14 +164,14 @@ function createWorkbench(): InstanceWorkbenchSnapshot {
     } as any,
     kernelConfig: {
       configFile:
-        'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config/openclaw.json',
-      configRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/managed-config',
+        'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/noncanonical-config/openclaw.json',
+      configRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw/noncanonical-config',
       userRoot: 'C:/ProgramData/SdkWork/CrawStudio/state/kernels/openclaw',
       standardConfigFile: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw/openclaw.json',
       standardStateRoot: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw',
       format: 'json',
       access: 'localFs',
-      provenance: 'legacyConfigDirectory',
+      provenance: 'kernelAuthority',
       writable: true,
       resolved: true,
       schemaVersion: null,

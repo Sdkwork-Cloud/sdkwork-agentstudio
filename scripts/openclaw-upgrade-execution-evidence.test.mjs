@@ -4,6 +4,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import { DEFAULT_OPENCLAW_VERSION } from './openclaw-release.mjs';
+
 const rootDir = path.resolve(import.meta.dirname, '..');
 
 test('desktop openclaw runtime check includes upgrade execution evidence contract', () => {
@@ -85,7 +87,7 @@ test('upgrade execution evidence summarizes release sync, target clean, prepare,
       assert.equal(target.archId, 'x64');
       return {
         manifest: {
-          openclawVersion: '2026.4.5',
+          openclawVersion: DEFAULT_OPENCLAW_VERSION,
         },
         packagedResourceDir:
           'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/generated/release/openclaw-resource',
@@ -170,7 +172,7 @@ test('upgrade execution evidence turns target clean drift into execution blocker
     }),
     verifyDesktopOpenClawReleaseAssetsFn: async () => ({
       manifest: {
-        openclawVersion: '2026.4.5',
+        openclawVersion: DEFAULT_OPENCLAW_VERSION,
       },
       packagedResourceDir:
         'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/generated/release/openclaw-resource',

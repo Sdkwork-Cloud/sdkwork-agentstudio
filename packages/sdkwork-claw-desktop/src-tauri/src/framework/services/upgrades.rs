@@ -369,6 +369,7 @@ mod tests {
             initialize_machine_state, ActiveState, ComponentsState, InventoryState,
             RuntimeUpgradesState, UpgradesState,
         },
+        openclaw_release::{bundled_openclaw_version, required_openclaw_node_version},
         paths::resolve_paths_for_root,
         services::openclaw_runtime::BundledOpenClawManifest,
     };
@@ -485,10 +486,11 @@ mod tests {
     fn upgrade_activation_promotes_runtime_version_into_current_and_updates_state() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let previous_node_version = previous_openclaw_node_version();
         seed_runtime_layout(root.path());
 
         let receipt = ComponentUpgradeService::new()
-            .activate_runtime_version(&paths, "node", "22.16.0")
+            .activate_runtime_version(&paths, "node", required_openclaw_node_version())
             .expect("runtime activation");
 
         let active = serde_json::from_str::<ActiveState>(
@@ -501,8 +503,11 @@ mod tests {
         .expect("inventory json");
 
         assert_eq!(receipt.runtime_id, "node");
-        assert_eq!(receipt.activated_version, "22.16.0");
-        assert_eq!(receipt.fallback_version.as_deref(), Some("20.10.0"));
+        assert_eq!(receipt.activated_version, required_openclaw_node_version());
+        assert_eq!(
+            receipt.fallback_version.as_deref(),
+            Some(previous_node_version.as_str())
+        );
         assert_eq!(
             std::fs::read_to_string(
                 paths
@@ -518,19 +523,25 @@ mod tests {
             active
                 .runtimes
                 .get("node")
-                .and_then(|entry| entry.active_version.as_deref()),
-            Some("22.16.0")
+                .and_then(|entry| entry.active_runtime_install_key()),
+            Some(required_openclaw_node_version())
         );
         assert_eq!(
             active
                 .runtimes
                 .get("node")
-                .and_then(|entry| entry.fallback_version.as_deref()),
-            Some("20.10.0")
+                .and_then(|entry| entry.fallback_runtime_install_key()),
+            Some(previous_node_version.as_str())
         );
+        let node_runtime = active.runtimes.get("node").expect("node active runtime");
+        assert!(node_runtime.active_version.is_none());
+        assert!(node_runtime.fallback_version.is_none());
         assert_eq!(
             inventory.runtime_packages.get("node"),
-            Some(&vec!["20.10.0".to_string(), "22.16.0".to_string()])
+            Some(&vec![
+                previous_node_version,
+                required_openclaw_node_version().to_string(),
+            ])
         );
     }
 
@@ -538,8 +549,10 @@ mod tests {
     fn runtime_upgrade_activation_updates_runtime_upgrade_state_and_receipt() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
-        let previous_install_key = openclaw_install_key("2026.3.28");
-        let next_install_key = openclaw_install_key("2026.4.9");
+        let previous_version = openclaw_fixture_version(-1);
+        let next_version = bundled_openclaw_version().to_string();
+        let previous_install_key = openclaw_install_key(&previous_version);
+        let next_install_key = openclaw_install_key(&next_version);
         seed_openclaw_runtime_layout(root.path());
 
         let receipt = ComponentUpgradeService::new()
@@ -559,7 +572,7 @@ mod tests {
                 .runtimes
                 .get("openclaw")
                 .and_then(|entry| entry.last_applied_version.as_deref()),
-            Some("2026.4.9")
+            Some(next_version.as_str())
         );
         assert_eq!(
             runtime_upgrades
@@ -581,13 +594,13 @@ mod tests {
             runtime_upgrades_value
                 .pointer("/runtimes/openclaw/activeVersionLabel")
                 .and_then(serde_json::Value::as_str),
-            Some("2026.4.9")
+            Some(next_version.as_str())
         );
         assert_eq!(
             runtime_upgrades_value
                 .pointer("/runtimes/openclaw/fallbackVersionLabel")
                 .and_then(serde_json::Value::as_str),
-            Some("2026.3.28")
+            Some(previous_version.as_str())
         );
         assert!(receipt
             .receipt_file
@@ -598,7 +611,8 @@ mod tests {
     fn openclaw_runtime_upgrade_rejects_incomplete_runtime_before_switching_current() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
-        let next_install_key = openclaw_install_key("2026.4.9");
+        let previous_version = openclaw_fixture_version(-1);
+        let next_install_key = openclaw_install_key(bundled_openclaw_version());
         seed_openclaw_runtime_layout(root.path());
         fs::remove_file(
             paths
@@ -622,7 +636,7 @@ mod tests {
                     .join("runtime.txt")
             )
             .expect("current openclaw runtime"),
-            "runtime-2026.3.28"
+            format!("runtime-{previous_version}")
         );
     }
 
@@ -630,7 +644,8 @@ mod tests {
     fn openclaw_runtime_upgrade_rolls_back_current_runtime_when_authority_write_fails() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
-        let next_install_key = openclaw_install_key("2026.4.9");
+        let previous_version = openclaw_fixture_version(-1);
+        let next_install_key = openclaw_install_key(bundled_openclaw_version());
         seed_openclaw_runtime_layout(root.path());
         fs::remove_file(&paths.openclaw_authority_file).expect("remove authority file");
         fs::create_dir(&paths.openclaw_authority_file).expect("block authority file path");
@@ -649,7 +664,7 @@ mod tests {
                     .join("runtime.txt")
             )
             .expect("restored current openclaw runtime"),
-            "runtime-2026.3.28"
+            format!("runtime-{previous_version}")
         );
     }
 
@@ -746,8 +761,15 @@ mod tests {
         let install_root = root.join("install");
         let machine_state = root.join("machine").join("state");
         let current_dir = install_root.join("runtimes").join("node").join("current");
-        let version_1_dir = install_root.join("runtimes").join("node").join("20.10.0");
-        let version_2_dir = install_root.join("runtimes").join("node").join("22.16.0");
+        let previous_node_version = previous_openclaw_node_version();
+        let version_1_dir = install_root
+            .join("runtimes")
+            .join("node")
+            .join(&previous_node_version);
+        let version_2_dir = install_root
+            .join("runtimes")
+            .join("node")
+            .join(required_openclaw_node_version());
 
         std::fs::create_dir_all(&current_dir).expect("current dir");
         std::fs::create_dir_all(&version_1_dir).expect("v1 dir");
@@ -764,11 +786,14 @@ mod tests {
   "modules": {},
   "runtimes": {
     "node": {
-      "activeVersion": "20.10.0",
-      "fallbackVersion": null
+      "activeInstallKey": "__PREVIOUS_NODE_VERSION__",
+      "fallbackInstallKey": null,
+      "activeVersionLabel": "__PREVIOUS_NODE_VERSION__",
+      "fallbackVersionLabel": null
     }
   }
-}"#,
+}"#
+            .replace("__PREVIOUS_NODE_VERSION__", &previous_node_version),
         )
         .expect("active state");
         std::fs::write(
@@ -777,9 +802,11 @@ mod tests {
   "layoutVersion": 1,
   "modulePackages": {},
   "runtimePackages": {
-    "node": ["20.10.0", "22.16.0"]
+    "node": ["__PREVIOUS_NODE_VERSION__", "__NODE_VERSION__"]
   }
-}"#,
+}"#
+            .replace("__PREVIOUS_NODE_VERSION__", &previous_node_version)
+            .replace("__NODE_VERSION__", required_openclaw_node_version()),
         )
         .expect("inventory state");
     }
@@ -788,8 +815,10 @@ mod tests {
         let install_root = root.join("install");
         let machine_state = root.join("machine").join("state");
         let paths = resolve_paths_for_root(root).expect("paths");
-        let previous_install_key = openclaw_install_key("2026.3.28");
-        let next_install_key = openclaw_install_key("2026.4.9");
+        let previous_version = openclaw_fixture_version(-1);
+        let next_version = bundled_openclaw_version().to_string();
+        let previous_install_key = openclaw_install_key(&previous_version);
+        let next_install_key = openclaw_install_key(&next_version);
         let current_dir = install_root
             .join("runtimes")
             .join("openclaw")
@@ -807,9 +836,13 @@ mod tests {
         fs::create_dir_all(&machine_state).expect("machine state");
         initialize_machine_state(&paths).expect("initialize machine state");
 
-        fs::write(current_dir.join("runtime.txt"), "runtime-2026.3.28").expect("current runtime");
-        seed_complete_openclaw_runtime_install(&version_1_dir, "2026.3.28");
-        seed_complete_openclaw_runtime_install(&version_2_dir, "2026.4.9");
+        fs::write(
+            current_dir.join("runtime.txt"),
+            format!("runtime-{previous_version}"),
+        )
+        .expect("current runtime");
+        seed_complete_openclaw_runtime_install(&version_1_dir, &previous_version);
+        seed_complete_openclaw_runtime_install(&version_2_dir, &next_version);
         fs::write(
             machine_state.join("active.json"),
             serde_json::to_string_pretty(&serde_json::json!({
@@ -817,10 +850,10 @@ mod tests {
                 "modules": {},
                 "runtimes": {
                     "openclaw": {
-                        "activeVersion": previous_install_key.clone(),
                         "activeInstallKey": previous_install_key.clone(),
-                        "activeVersionLabel": "2026.3.28",
-                        "fallbackVersion": serde_json::Value::Null,
+                        "activeVersionLabel": previous_version,
+                        "fallbackInstallKey": serde_json::Value::Null,
+                        "fallbackVersionLabel": serde_json::Value::Null,
                     }
                 }
             }))
@@ -929,7 +962,7 @@ mod tests {
             required_external_runtimes: vec!["nodejs".to_string()],
             required_external_runtime_versions: std::collections::BTreeMap::from([(
                 "nodejs".to_string(),
-                "22.16.0".to_string(),
+                required_openclaw_node_version().to_string(),
             )]),
             platform: current_openclaw_test_platform().to_string(),
             arch: current_openclaw_test_arch().to_string(),
@@ -997,6 +1030,37 @@ mod tests {
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>()
+    }
+
+    fn openclaw_fixture_version(patch_offset: i32) -> String {
+        let numeric_version = bundled_openclaw_version()
+            .split('-')
+            .next()
+            .expect("openclaw numeric version prefix");
+        let parts = numeric_version
+            .split('.')
+            .map(|part| part.parse::<i32>().expect("numeric openclaw version part"))
+            .collect::<Vec<_>>();
+        assert_eq!(parts.len(), 3);
+        let shifted_patch = parts[2] + patch_offset;
+        assert!(shifted_patch >= 0);
+        format!("{}.{}.{}", parts[0], parts[1], shifted_patch)
+    }
+
+    fn previous_openclaw_node_version() -> String {
+        let parts = required_openclaw_node_version()
+            .split('.')
+            .map(|part| part.parse::<i32>().expect("numeric node version part"))
+            .collect::<Vec<_>>();
+        assert_eq!(parts.len(), 3);
+        if parts[2] > 0 {
+            return format!("{}.{}.{}", parts[0], parts[1], parts[2] - 1);
+        }
+        if parts[1] > 0 {
+            return format!("{}.{}.0", parts[0], parts[1] - 1);
+        }
+        assert!(parts[0] > 0);
+        format!("{}.0.0", parts[0] - 1)
     }
 
     fn openclaw_install_key(version: &str) -> String {

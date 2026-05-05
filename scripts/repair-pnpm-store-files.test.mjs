@@ -689,6 +689,34 @@ try {
   assert.equal(backupReport.restored.length, 0);
   assert.equal(await readFile(path.join(backupHealthyPackageRoot, 'index.js'), 'utf8'), backupIndexContent);
 
+  const missingIndexWorkspaceRootDir = path.join(tempRoot, 'workspace-missing-index');
+  const missingIndexPnpmStoreDir = path.join(missingIndexWorkspaceRootDir, 'node_modules', '.pnpm');
+  const missingIndexGlobalStoreRootDir = path.join(tempRoot, 'global-store-missing-index', 'v10');
+  await mkdir(missingIndexPnpmStoreDir, { recursive: true });
+  await mkdir(missingIndexGlobalStoreRootDir, { recursive: true });
+
+  const missingIndexPackageRoot = await createStorePackage(
+    missingIndexPnpmStoreDir,
+    'missing-index-package@1.0.0',
+    'missing-index-package',
+    '1.0.0',
+    {
+      main: 'index.js',
+    },
+  );
+  await rm(path.join(missingIndexPackageRoot, 'index.js'), { force: true });
+
+  const missingIndexReport = await repairPnpmStoreFiles({
+    workspaceRootDir: missingIndexWorkspaceRootDir,
+    pnpmStoreDir: missingIndexPnpmStoreDir,
+    globalStoreRootDir: missingIndexGlobalStoreRootDir,
+    logger: () => {},
+  });
+
+  assert.equal(missingIndexReport.damagedPackages.length, 1);
+  assert.equal(missingIndexReport.restored.length, 0);
+  assert.equal(missingIndexReport.skipped.length, 1);
+
   console.log('ok - pnpm store file repair restores missing package files from the local pnpm content store');
 } finally {
   await rm(tempRoot, { recursive: true, force: true });

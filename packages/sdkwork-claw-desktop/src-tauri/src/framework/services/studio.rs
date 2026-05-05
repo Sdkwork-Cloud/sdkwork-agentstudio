@@ -5439,26 +5439,6 @@ fn read_openclaw_authority_state(paths: &AppPaths) -> Option<KernelAuthorityStat
         .and_then(|content| serde_json::from_str::<KernelAuthorityState>(&content).ok())
 }
 
-fn normalize_legacy_active_version_label(value: &str) -> Option<String> {
-    let trimmed = value.trim();
-    if trimmed.is_empty() {
-        return None;
-    }
-
-    let mut segments = trimmed.rsplitn(3, '-');
-    let arch = segments.next();
-    let platform = segments.next();
-    let version = segments.next();
-    if matches!(platform, Some("windows" | "linux" | "darwin" | "macos"))
-        && arch.is_some()
-        && version.is_some()
-    {
-        return version.map(str::to_string);
-    }
-
-    Some(trimmed.to_string())
-}
-
 fn resolve_installed_openclaw_manifest_version(
     paths: &AppPaths,
     install_key: &str,
@@ -5517,17 +5497,26 @@ fn resolve_latest_installed_openclaw_version(paths: &AppPaths) -> Option<String>
         .max_by(|left, right| compare_version_like(left, right))
 }
 
+fn current_display_version_label(label: Option<&str>, manifest_version: &str) -> Option<String> {
+    let trimmed = label?.trim();
+    if trimmed == manifest_version {
+        return Some(trimmed.to_string());
+    }
+
+    None
+}
+
 fn resolve_built_in_openclaw_display_version(paths: &AppPaths) -> String {
     if let Some(authority) = read_openclaw_authority_state(paths) {
         if let Some(install_key) = authority.active_install_key.as_deref() {
             if let Some(manifest_version) =
                 resolve_installed_openclaw_manifest_version(paths, install_key)
             {
-                return authority
-                    .active_version_label
-                    .as_deref()
-                    .and_then(normalize_legacy_active_version_label)
-                    .unwrap_or(manifest_version);
+                return current_display_version_label(
+                    authority.active_version_label.as_deref(),
+                    &manifest_version,
+                )
+                .unwrap_or(manifest_version);
             }
         }
     }
@@ -5538,23 +5527,11 @@ fn resolve_built_in_openclaw_display_version(paths: &AppPaths) -> String {
                 if let Some(manifest_version) =
                     resolve_installed_openclaw_manifest_version(paths, install_key)
                 {
-                    return entry
-                        .active_version_label
-                        .as_deref()
-                        .and_then(normalize_legacy_active_version_label)
-                        .or_else(|| {
-                            entry
-                                .active_install_key
-                                .as_deref()
-                                .and_then(normalize_legacy_active_version_label)
-                        })
-                        .or_else(|| {
-                            entry
-                                .active_version
-                                .as_deref()
-                                .and_then(normalize_legacy_active_version_label)
-                        })
-                        .unwrap_or(manifest_version);
+                    return current_display_version_label(
+                        entry.active_version_label.as_deref(),
+                        &manifest_version,
+                    )
+                    .unwrap_or(manifest_version);
                 }
             }
         }
@@ -7290,6 +7267,7 @@ mod tests {
         StudioUpdateInstanceLlmProviderConfigInput, StudioWorkbenchLLMProviderConfigRecord,
         DEFAULT_INSTANCE_ID,
     };
+    use crate::framework::openclaw_release::required_openclaw_node_version;
     use crate::framework::{
         config::AppConfig,
         install_records::{
@@ -7326,10 +7304,10 @@ mod tests {
         time::Duration,
     };
 
-    fn legacy_managed_config_file_path(paths: &crate::framework::paths::AppPaths) -> PathBuf {
+    fn stale_authority_config_file_path(paths: &crate::framework::paths::AppPaths) -> PathBuf {
         paths
             .openclaw_kernel_dir
-            .join("managed-config")
+            .join("stale-config")
             .join("openclaw.json")
     }
 
@@ -7392,15 +7370,31 @@ mod tests {
   "openclawVersion": "{openclaw_version}",
   "requiredExternalRuntimes": ["nodejs"],
   "requiredExternalRuntimeVersions": {{
-    "nodejs": "22.16.0"
+    "nodejs": "{}"
   }},
   "platform": "windows",
   "arch": "x64",
   "cliRelativePath": "runtime/package/node_modules/openclaw/openclaw.mjs"
-}}"#
+}}"#,
+                required_openclaw_node_version()
             ),
         )
         .expect("write manifest");
+    }
+
+    fn openclaw_fixture_version(patch_offset: i32) -> String {
+        let numeric_version = bundled_openclaw_version()
+            .split('-')
+            .next()
+            .expect("openclaw numeric version prefix");
+        let parts = numeric_version
+            .split('.')
+            .map(|part| part.parse::<i32>().expect("numeric openclaw version part"))
+            .collect::<Vec<_>>();
+        assert_eq!(parts.len(), 3);
+        let shifted_patch = parts[2] + patch_offset;
+        assert!(shifted_patch >= 0);
+        format!("{}.{}.{}", parts[0], parts[1], shifted_patch)
     }
 
     fn openclaw_config_file_path(paths: &crate::framework::paths::AppPaths) -> std::path::PathBuf {
@@ -7665,7 +7659,7 @@ mod tests {
     }
 
     #[test]
-    fn built_in_display_version_keeps_active_runtime_version_when_newer_runtime_is_only_staged() {
+    fn built_in_display_version_keeps_active_runtime_install_when_newer_runtime_is_only_staged() {
         let (_root, paths, _config, _storage, _service) = studio_context();
         let latest_version = crate::framework::openclaw_release::bundled_openclaw_version();
         let stale_version = "0.0.1";
@@ -7687,7 +7681,8 @@ mod tests {
   "modules": {{}},
   "runtimes": {{
     "openclaw": {{
-      "activeVersion": "{stale_version}-windows-x64"
+      "activeInstallKey": "{stale_version}-windows-x64",
+      "activeVersionLabel": "{stale_version}"
     }}
   }}
 }}"#
@@ -7702,7 +7697,7 @@ mod tests {
     }
 
     #[test]
-    fn built_in_display_version_keeps_active_runtime_version_when_bundled_release_is_newer() {
+    fn built_in_display_version_keeps_active_runtime_install_when_bundled_release_is_newer() {
         let (_root, paths, _config, _storage, _service) = studio_context();
         let stale_version = "0.0.1";
         write_openclaw_manifest(
@@ -7718,7 +7713,8 @@ mod tests {
   "modules": {{}},
   "runtimes": {{
     "openclaw": {{
-      "activeVersion": "{stale_version}-windows-x64"
+      "activeInstallKey": "{stale_version}-windows-x64",
+      "activeVersionLabel": "{stale_version}"
     }}
   }}
 }}"#
@@ -7735,23 +7731,25 @@ mod tests {
     #[test]
     fn built_in_display_version_prefers_authority_version_label_over_install_key_parsing() {
         let (_root, paths, _config, _storage, _service) = studio_context();
-        write_openclaw_manifest(&paths, "openclaw-nightly-windows-x64", "2026.4.11-beta.1");
+        let version = format!("{}-beta.1", bundled_openclaw_version());
+        write_openclaw_manifest(&paths, "openclaw-nightly-windows-x64", &version);
         fs::write(
             &paths.openclaw_authority_file,
-            r#"{
+            format!(
+                r#"{{
   "layoutVersion": 1,
   "runtimeId": "openclaw",
   "activeInstallKey": "openclaw-nightly-windows-x64",
   "fallbackInstallKey": null,
-  "activeVersionLabel": "2026.4.11-beta.1",
+  "activeVersionLabel": "{version}",
   "fallbackVersionLabel": null,
   "configFilePath": null,
   "ownedRuntimeRoots": [],
-  "legacyRuntimeRoots": [],
   "quarantinedPaths": [],
   "lastActivationAt": null,
   "lastError": null
-}"#,
+}}"#
+            ),
         )
         .expect("write authority state");
         fs::write(
@@ -7761,7 +7759,7 @@ mod tests {
   "modules": {},
   "runtimes": {
     "openclaw": {
-      "activeVersion": "openclaw-nightly-windows-x64"
+      "activeInstallKey": "openclaw-nightly-windows-x64"
     }
   }
 }"#,
@@ -7770,26 +7768,55 @@ mod tests {
 
         assert_eq!(
             super::resolve_built_in_openclaw_display_version(&paths),
-            "2026.4.11-beta.1".to_string()
+            version
         );
     }
 
     #[test]
-    fn built_in_display_version_reads_canonical_authority_and_runtime_paths_when_compatibility_fields_drift(
+    fn built_in_display_version_uses_manifest_when_authority_label_is_not_current_metadata() {
+        let (_root, paths, _config, _storage, _service) = studio_context();
+        let version = bundled_openclaw_version();
+        write_openclaw_manifest(&paths, "openclaw-nightly-windows-x64", version);
+        fs::write(
+            &paths.openclaw_authority_file,
+            r#"{
+  "layoutVersion": 1,
+  "runtimeId": "openclaw",
+  "activeInstallKey": "openclaw-nightly-windows-x64",
+  "fallbackInstallKey": null,
+  "activeVersionLabel": "openclaw-nightly-windows-x64",
+  "fallbackVersionLabel": null,
+  "configFilePath": null,
+  "ownedRuntimeRoots": [],
+  "quarantinedPaths": [],
+  "lastActivationAt": null,
+  "lastError": null
+}"#,
+        )
+        .expect("write authority state");
+
+        assert_eq!(
+            super::resolve_built_in_openclaw_display_version(&paths),
+            version.to_string()
+        );
+    }
+
+    #[test]
+    fn built_in_display_version_reads_canonical_authority_and_runtime_paths_when_noncanonical_app_path_fields_drift(
     ) {
         let (root, mut paths, _config, _storage, _service) = studio_context();
         let install_key = "openclaw-nightly-windows-x64";
-        let version = "2026.4.11-beta.1";
+        let version = format!("{}-beta.1", bundled_openclaw_version());
         let openclaw = paths
             .kernel_paths("openclaw")
             .expect("openclaw kernel paths");
 
-        write_openclaw_manifest(&paths, install_key, version);
+        write_openclaw_manifest(&paths, install_key, &version);
         paths.openclaw_authority_file = root
             .path()
-            .join("compatibility-only")
+            .join("noncanonical-app-paths")
             .join("authority.json");
-        paths.openclaw_runtime_dir = root.path().join("compatibility-only").join("runtime");
+        paths.openclaw_runtime_dir = root.path().join("noncanonical-app-paths").join("runtime");
         fs::write(
             &openclaw.authority_file,
             format!(
@@ -7802,7 +7829,6 @@ mod tests {
   "fallbackVersionLabel": null,
   "configFilePath": null,
   "ownedRuntimeRoots": [],
-  "legacyRuntimeRoots": [],
   "quarantinedPaths": [],
   "lastActivationAt": null,
   "lastError": null
@@ -7818,7 +7844,8 @@ mod tests {
   "modules": {{}},
   "runtimes": {{
     "openclaw": {{
-      "activeVersion": "{install_key}"
+      "activeInstallKey": "{install_key}",
+      "activeVersionLabel": "{version}"
     }}
   }}
 }}"#
@@ -7828,32 +7855,35 @@ mod tests {
 
         assert_eq!(
             super::resolve_built_in_openclaw_display_version(&paths),
-            version.to_string()
+            version
         );
     }
 
     #[test]
-    fn built_in_display_version_falls_back_to_legacy_active_state_version_label() {
+    fn built_in_display_version_uses_active_state_version_label_when_authority_is_missing() {
         let (_root, paths, _config, _storage, _service) = studio_context();
-        write_openclaw_manifest(&paths, "openclaw-nightly-windows-x64", "2026.4.11-beta.1");
+        let version = format!("{}-beta.1", bundled_openclaw_version());
+        write_openclaw_manifest(&paths, "openclaw-nightly-windows-x64", &version);
         fs::write(
             &paths.active_file,
-            r#"{
+            format!(
+                r#"{{
   "layoutVersion": 1,
-  "modules": {},
-  "runtimes": {
-    "openclaw": {
-      "activeVersion": "openclaw-nightly-windows-x64",
-      "activeVersionLabel": "2026.4.11-beta.1"
-    }
-  }
-}"#,
+  "modules": {{}},
+  "runtimes": {{
+    "openclaw": {{
+      "activeInstallKey": "openclaw-nightly-windows-x64",
+      "activeVersionLabel": "{version}"
+    }}
+  }}
+}}"#
+            ),
         )
         .expect("write active file");
 
         assert_eq!(
             super::resolve_built_in_openclaw_display_version(&paths),
-            "2026.4.11-beta.1".to_string()
+            version
         );
     }
 
@@ -7861,7 +7891,7 @@ mod tests {
     fn built_in_display_version_ignores_missing_active_runtime_and_uses_latest_current_install() {
         let (_root, paths, _config, _storage, _service) = studio_context();
         let latest_version = crate::framework::openclaw_release::bundled_openclaw_version();
-        let stale_version = "2026.3.28";
+        let stale_version = openclaw_fixture_version(-1);
         write_openclaw_manifest(
             &paths,
             &format!("{latest_version}-windows-x64"),
@@ -7875,7 +7905,7 @@ mod tests {
   "modules": {{}},
   "runtimes": {{
     "openclaw": {{
-      "activeVersion": "{stale_version}-windows-x64",
+      "activeInstallKey": "{stale_version}-windows-x64",
       "activeVersionLabel": "{stale_version}"
     }}
   }}
@@ -7896,20 +7926,23 @@ mod tests {
         let (_root, paths, _config, _storage, _service) = studio_context();
         fs::write(
             &paths.openclaw_authority_file,
-            r#"{
+            format!(
+                r#"{{
   "layoutVersion": 1,
   "runtimeId": "openclaw",
-  "activeInstallKey": "2026.3.28-windows-x64",
+  "activeInstallKey": "{}-windows-x64",
   "fallbackInstallKey": null,
-  "activeVersionLabel": "2026.3.28",
+  "activeVersionLabel": "{}",
   "fallbackVersionLabel": null,
   "configFilePath": null,
   "ownedRuntimeRoots": [],
-  "legacyRuntimeRoots": [],
   "quarantinedPaths": [],
   "lastActivationAt": null,
   "lastError": null
-}"#,
+}}"#,
+                openclaw_fixture_version(-1),
+                openclaw_fixture_version(-1)
+            ),
         )
         .expect("write authority state");
 
@@ -7920,21 +7953,24 @@ mod tests {
     }
 
     #[test]
-    fn read_active_openclaw_install_key_prefers_explicit_install_key_over_legacy_version_field() {
+    fn read_active_openclaw_install_key_prefers_explicit_install_key_over_version_alias() {
         let (_root, paths, _config, _storage, _service) = studio_context();
+        let version = format!("{}-beta.1", bundled_openclaw_version());
         fs::write(
             &paths.active_file,
-            r#"{
+            format!(
+                r#"{{
   "layoutVersion": 1,
-  "modules": {},
-  "runtimes": {
-    "openclaw": {
-      "activeVersion": "2026.4.11-beta.1",
+  "modules": {{}},
+  "runtimes": {{
+    "openclaw": {{
+      "activeVersion": "{version}",
       "activeInstallKey": "openclaw-nightly-windows-x64",
-      "activeVersionLabel": "2026.4.11-beta.1"
-    }
-  }
-}"#,
+      "activeVersionLabel": "{version}"
+    }}
+  }}
+}}"#
+            ),
         )
         .expect("write active file");
 
@@ -8322,7 +8358,7 @@ mod tests {
                 is_built_in: true,
                 is_default: true,
                 icon_type: StudioInstanceIconType::Server,
-                version: "2026.3.24".to_string(),
+                version: openclaw_fixture_version(-1),
                 type_label: "Built-In OpenClaw".to_string(),
                 host: "127.0.0.1".to_string(),
                 port: Some(18871),
@@ -8585,30 +8621,30 @@ mod tests {
     }
 
     #[test]
-    fn built_in_instance_ignores_legacy_authority_config_file_path_when_reading_http_auth() {
+    fn built_in_instance_ignores_stale_authority_config_file_path_when_reading_http_auth() {
         let (_root, paths, config, storage, service) = studio_context();
-        let legacy_authority_config_file_path = legacy_managed_config_file_path(&paths);
+        let stale_config_file_path = stale_authority_config_file_path(&paths);
         let canonical_config_file_path = paths.openclaw_config_file.clone();
         fs::create_dir_all(
-            legacy_authority_config_file_path
+            stale_config_file_path
                 .parent()
-                .expect("legacy config file parent"),
+                .expect("stale config file parent"),
         )
-        .expect("legacy config file dir");
+        .expect("stale config file dir");
         fs::write(
-            &legacy_authority_config_file_path,
+            &stale_config_file_path,
             r#"{
   gateway: {
     port: 19877,
     auth: {
       mode: "token",
-      token: "legacy-token",
+      token: "stale-token",
     },
   },
 }
 "#,
         )
-        .expect("seed legacy config file");
+        .expect("seed stale config file");
         fs::write(
             &canonical_config_file_path,
             r#"{
@@ -8629,9 +8665,7 @@ mod tests {
         )
         .expect("authority state json");
         authority["configFilePath"] = Value::String(
-            legacy_authority_config_file_path
-                .to_string_lossy()
-                .into_owned(),
+            stale_config_file_path.to_string_lossy().into_owned(),
         );
         fs::write(
             &paths.openclaw_authority_file,
@@ -9737,10 +9771,10 @@ mod tests {
     }
 
     #[test]
-    fn built_in_instance_detail_keeps_canonical_config_targets_when_authority_path_is_legacy() {
+    fn built_in_instance_detail_keeps_canonical_config_targets_when_authority_path_is_stale() {
         let (_root, paths, config, storage, service) = studio_context();
         let (supervisor, _server) = configured_openclaw_supervisor(&paths);
-        let legacy_config_file_path = legacy_managed_config_file_path(&paths);
+        let stale_config_file_path = stale_authority_config_file_path(&paths);
         let canonical_config_file_path = paths.openclaw_config_file.clone();
         let authority_file = paths
             .kernel_paths("openclaw")
@@ -9766,7 +9800,7 @@ mod tests {
         .expect("seed canonical config file");
 
         let mut authority = super::read_openclaw_authority_state(&paths).expect("authority state");
-        authority.config_file_path = Some(legacy_config_file_path.to_string_lossy().into_owned());
+        authority.config_file_path = Some(stale_config_file_path.to_string_lossy().into_owned());
         fs::write(
             &authority_file,
             format!(
@@ -9774,7 +9808,7 @@ mod tests {
                 serde_json::to_string_pretty(&authority).expect("serialize authority")
             ),
         )
-        .expect("write legacy authority file");
+        .expect("write stale authority file");
 
         let detail = service
             .get_instance_detail_with_supervisor(
@@ -9800,7 +9834,7 @@ mod tests {
     }
 
     #[test]
-    fn built_in_instance_detail_reports_canonical_runtime_directory_when_compatibility_field_drifts(
+    fn built_in_instance_detail_reports_canonical_runtime_directory_when_noncanonical_app_path_field_drifts(
     ) {
         let (root, mut paths, config, storage, service) = studio_context();
         let openclaw = paths
@@ -9808,7 +9842,7 @@ mod tests {
             .expect("openclaw kernel paths");
         let (supervisor, _server) = configured_openclaw_supervisor(&paths);
 
-        paths.openclaw_runtime_dir = root.path().join("compatibility-only").join("runtime");
+        paths.openclaw_runtime_dir = root.path().join("noncanonical-app-paths").join("runtime");
 
         let detail = service
             .get_instance_detail_with_supervisor(

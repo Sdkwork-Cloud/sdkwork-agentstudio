@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict';
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION,
+} from '@sdkwork/claw-types';
 
 import { createExtensionService } from './extensionService.ts';
 
@@ -242,8 +246,8 @@ function createKernelPlatformStub({
         provenance: {
           runtimeId: 'openclaw',
           installKey: 'bundled',
-          openclawVersion: '2026.4.1',
-          nodeVersion: '22.16.0',
+          openclawVersion: DEFAULT_BUNDLED_OPENCLAW_VERSION,
+          nodeVersion: DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION,
           platform: 'windows',
           arch: 'x64',
           installSource: 'bundled',
@@ -279,7 +283,7 @@ await runTest('getExtensions merges bundled and local plugin directories with re
         kind: 'file',
         content: createPackageManifest({
           name: '@openclaw/openai-provider',
-          version: '2026.4.1',
+          version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
           description: 'OpenClaw OpenAI provider plugins',
           openclaw: { extensions: ['./index.js'] },
         }),
@@ -292,7 +296,7 @@ await runTest('getExtensions merges bundled and local plugin directories with re
         kind: 'file',
         content: createPackageManifest({
           name: '@openclaw/line',
-          version: '2026.4.1',
+          version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
           description: 'OpenClaw LINE channel plugin',
           openclaw: {
             extensions: ['./index.js'],
@@ -312,7 +316,7 @@ await runTest('getExtensions merges bundled and local plugin directories with re
         kind: 'file',
         content: createPackageManifest({
           name: '@openclaw/openai-provider',
-          version: '2026.4.1',
+          version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
           description: 'OpenClaw OpenAI provider plugins',
           openclaw: { extensions: ['./index.js'] },
         }),
@@ -401,7 +405,7 @@ await runTest('installExtension copies the bundled plugin package into the real 
         kind: 'file',
         content: createPackageManifest({
           name: '@openclaw/line',
-          version: '2026.4.1',
+          version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
           description: 'OpenClaw LINE channel plugin',
           openclaw: {
             extensions: ['./index.js'],

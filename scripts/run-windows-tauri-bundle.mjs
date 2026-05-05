@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { resolveDesktopCargoTargetDir } from './desktop-cargo-target.mjs';
-import { withRustToolchainPath } from './ensure-tauri-rust-toolchain.mjs';
+import { withRustToolchainPath } from './ensure-native-rust-toolchain.mjs';
 import { buildDesktopReleaseEnv, parseDesktopTargetTriple } from './release/desktop-targets.mjs';
 import { createTauriCliPlan } from './run-tauri-cli.mjs';
 import {

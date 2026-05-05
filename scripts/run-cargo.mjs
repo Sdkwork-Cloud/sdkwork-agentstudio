@@ -5,55 +5,20 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import {
-  ensureTauriRustToolchain,
+  buildCargoFailureMessage,
+  normalizeCargoInvocationArgs,
+} from './cargo-command-standards.mjs';
+import {
+  ensureNativeRustToolchain,
   withRustToolchainPath,
-} from './ensure-tauri-rust-toolchain.mjs';
+} from './ensure-native-rust-toolchain.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const CARGO_PATH_VALUE_FLAGS = new Set(['--manifest-path', '--target-dir']);
 
-function normalizeCargoPathValue(value, cwd = process.cwd()) {
-  const normalizedValue = String(value ?? '').trim();
-  if (!normalizedValue || path.isAbsolute(normalizedValue)) {
-    return value;
-  }
-
-  return path.resolve(cwd, normalizedValue);
-}
-
-export function normalizeCargoInvocationArgs(cargoArgs, {
-  cwd = process.cwd(),
-} = {}) {
-  const normalizedArgs = [];
-  const args = Array.isArray(cargoArgs) ? cargoArgs : [];
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === '--') {
-      normalizedArgs.push(...args.slice(index));
-      break;
-    }
-
-    if (CARGO_PATH_VALUE_FLAGS.has(arg)) {
-      normalizedArgs.push(arg);
-      if (index + 1 < args.length) {
-        normalizedArgs.push(normalizeCargoPathValue(args[index + 1], cwd));
-        index += 1;
-      }
-      continue;
-    }
-
-    const equalsFlag = [...CARGO_PATH_VALUE_FLAGS].find((flag) => arg.startsWith(`${flag}=`));
-    if (equalsFlag) {
-      normalizedArgs.push(`${equalsFlag}=${normalizeCargoPathValue(arg.slice(equalsFlag.length + 1), cwd)}`);
-      continue;
-    }
-
-    normalizedArgs.push(arg);
-  }
-
-  return normalizedArgs;
-}
+export {
+  buildCargoFailureMessage,
+  normalizeCargoInvocationArgs,
+};
 
 function main() {
   const cwd = process.cwd();
@@ -64,19 +29,30 @@ function main() {
     process.exit(1);
   }
 
-  ensureTauriRustToolchain();
+  ensureNativeRustToolchain();
 
   const env = withRustToolchainPath(process.env);
   const result = spawnSync('cargo', cargoArgs, {
     cwd,
     env,
-    stdio: 'inherit',
+    stdio: ['inherit', 'inherit', 'pipe'],
+    encoding: 'utf8',
     shell: false,
     windowsHide: true,
   });
 
   if (result.error) {
     throw result.error;
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if ((result.status ?? 1) !== 0 || result.signal) {
+    console.error(buildCargoFailureMessage({
+      status: result.status,
+      signal: result.signal,
+      stderr: result.stderr,
+    }));
   }
 
   process.exit(result.status ?? 1);

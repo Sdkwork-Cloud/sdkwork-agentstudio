@@ -4,7 +4,7 @@
 
 **Goal:** Eliminate the remaining Rust runtime regression failures so the desktop kernel/runtime integration is commercially shippable at the library-test level.
 
-**Architecture:** Keep the current OpenClaw managed-runtime authority model intact and fix only the two proven regression paths: mirror import should reject malformed archives before doctor execution, and runtime reinstall should deterministically restore bundled payloads after integrity mismatch. The repair is bounded to Rust desktop services plus targeted tests, with no OpenChat scope.
+**Architecture:** Keep the current OpenClaw managed-runtime authority model intact and fix only the two proven regression paths: mirror import should reject malformed archives before doctor execution, and runtime reinstall should deterministically restore bundled payloads after integrity mismatch. The repair is bounded to Rust desktop services plus targeted tests, with no retired chat SDK scope.
 
 **Tech Stack:** Rust, Tauri desktop host, Cargo tests, existing OpenClaw runtime/mirror services
 

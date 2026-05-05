@@ -519,7 +519,7 @@ export function ChatNewAgentDialog({
                       className={cn(
                         'rounded-2xl border px-4 py-3 text-left transition-all',
                         isSelected
-                          ? 'border-zinc-950 bg-zinc-950 text-white shadow-lg dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950'
+                          ? 'border-primary-200 bg-primary-50 text-primary-700 shadow-lg shadow-primary-950/8 dark:border-primary-500/30 dark:bg-primary-500/10 dark:text-primary-300 dark:shadow-primary-950/18'
                           : 'border-zinc-200 bg-white text-zinc-900 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-zinc-700',
                       )}
                     >
@@ -530,10 +530,10 @@ export function ChatNewAgentDialog({
                             'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]',
                             option.supported
                               ? isSelected
-                                ? 'bg-white/15 text-white dark:bg-zinc-950/10 dark:text-zinc-950'
+                                ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200'
                                 : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200'
                               : isSelected
-                                ? 'bg-white/15 text-white dark:bg-zinc-950/10 dark:text-zinc-950'
+                                ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200'
                                 : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200',
                           )}
                         >

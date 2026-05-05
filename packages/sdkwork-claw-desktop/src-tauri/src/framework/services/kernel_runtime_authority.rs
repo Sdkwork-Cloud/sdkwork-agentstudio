@@ -98,11 +98,6 @@ impl KernelRuntimeAuthorityService {
         let contract = self.contract(&normalized_runtime_id, paths)?;
         if normalized_runtime_id == OPENCLAW_KERNEL_ID || normalized_runtime_id == HERMES_KERNEL_ID
         {
-            let _ = reconcile_runtime_authority_config_file_path(
-                &normalized_runtime_id,
-                &state_paths.authority_file,
-                &contract.config_file_path,
-            );
             return Ok(contract.config_file_path);
         }
         let authority =
@@ -159,7 +154,6 @@ impl KernelRuntimeAuthorityService {
             .iter()
             .map(|root| path_string(root))
             .collect();
-        authority.legacy_runtime_roots.clear();
         authority.last_error = None;
 
         migrations.runtime_id = normalized_runtime_id.to_string();
@@ -216,7 +210,6 @@ impl KernelRuntimeAuthorityService {
             .iter()
             .map(|root| path_string(root))
             .collect();
-        authority.legacy_runtime_roots.clear();
         authority.last_error = last_error.map(str::to_string);
         runtime_upgrade_entry.last_attempted_at = Some(attempted_at);
         if let Some(last_error) = last_error {
@@ -367,28 +360,6 @@ impl KernelRuntimeAdapter for HermesKernelAdapter {
 
 fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
-}
-
-fn reconcile_runtime_authority_config_file_path(
-    runtime_id: &str,
-    authority_file: &Path,
-    config_file_path: &Path,
-) -> Result<()> {
-    if !authority_file.is_file() {
-        return Ok(());
-    }
-
-    let mut authority = read_runtime_authority_state(runtime_id, authority_file)?;
-    let canonical_path = path_string(config_file_path);
-    if authority.config_file_path.as_deref() == Some(canonical_path.as_str())
-        && authority.legacy_runtime_roots.is_empty()
-    {
-        return Ok(());
-    }
-
-    authority.config_file_path = Some(canonical_path);
-    authority.legacy_runtime_roots.clear();
-    write_json_file(authority_file, &authority)
 }
 
 fn normalize_runtime_id(runtime_id: &str) -> String {
@@ -614,18 +585,37 @@ mod tests {
         path_string, read_json_file, write_json_file, KernelAuthorityState,
         KernelRuntimeAuthorityService,
     };
-    use crate::framework::{layout::initialize_machine_state, paths::resolve_paths_for_root};
+    use crate::framework::{
+        layout::initialize_machine_state,
+        openclaw_release::{bundled_openclaw_version, required_openclaw_node_version},
+        paths::resolve_paths_for_root,
+    };
     use serde_json::Value;
     use std::{
         fs,
         path::{Path, PathBuf},
     };
 
-    fn legacy_managed_config_file_path(paths: &crate::framework::paths::AppPaths) -> PathBuf {
+    fn stale_authority_config_file_path(paths: &crate::framework::paths::AppPaths) -> PathBuf {
         paths
             .openclaw_kernel_dir
-            .join("managed-config")
+            .join("stale-config")
             .join("openclaw.json")
+    }
+
+    fn openclaw_fixture_version(patch_offset: i32) -> String {
+        let numeric_version = bundled_openclaw_version()
+            .split('-')
+            .next()
+            .expect("openclaw numeric version prefix");
+        let parts = numeric_version
+            .split('.')
+            .map(|part| part.parse::<i32>().expect("numeric openclaw version part"))
+            .collect::<Vec<_>>();
+        assert_eq!(parts.len(), 3);
+        let shifted_patch = parts[2] + patch_offset;
+        assert!(shifted_patch >= 0);
+        format!("{}.{}.{}", parts[0], parts[1], shifted_patch)
     }
 
     fn strip_test_module(source: &str) -> String {
@@ -760,7 +750,7 @@ mod tests {
         let forbidden_patterns = [
             "paths.openclaw_config_file.clone()",
             "paths.openclaw_config_file.is_file()",
-            "managed-config",
+            concat!("managed", "-", "config"),
         ];
         let mut rust_sources = Vec::new();
         let mut offenders = Vec::new();
@@ -789,13 +779,13 @@ mod tests {
 
         assert!(
             offenders.is_empty(),
-            "Production code should use canonical kernel config authority instead of compatibility OpenClaw config shortcuts:\n{}",
+            "Production code should use canonical kernel config authority instead of OpenClaw config shortcuts:\n{}",
             offenders.join("\n")
         );
     }
 
     #[test]
-    fn source_tree_does_not_fallback_from_kernel_paths_to_openclaw_compatibility_fields() {
+    fn source_tree_does_not_fallback_from_kernel_paths_to_noncanonical_openclaw_app_paths_fields() {
         let src_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
         let forbidden_patterns = [
             concat!("unwrap_or_else(|_| paths.", "openclaw_runtime_dir.clone())"),
@@ -836,7 +826,7 @@ mod tests {
 
         assert!(
             offenders.is_empty(),
-            "Production code must fail through canonical kernel path resolution instead of silently falling back to OpenClaw compatibility fields:\n{}",
+            "Production code must fail through canonical kernel path resolution instead of silently falling back to noncanonical OpenClaw AppPaths fields:\n{}",
             offenders.join("\n")
         );
     }
@@ -907,18 +897,18 @@ mod tests {
     }
 
     #[test]
-    fn active_config_file_path_uses_canonical_hermes_path_when_authority_is_legacy() {
+    fn active_config_file_path_uses_canonical_hermes_path_when_authority_points_to_stale_path() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let hermes_kernel = paths.kernel_paths("hermes").expect("hermes kernel paths");
-        let legacy_managed_config_path = paths
+        let stale_config_path = paths
             .kernels_state_dir
             .join("hermes")
             .join("config")
             .join("hermes.json");
         let mut authority = read_json_file::<KernelAuthorityState>(&hermes_kernel.authority_file)
             .expect("authority state");
-        authority.config_file_path = Some(path_string(&legacy_managed_config_path));
+        authority.config_file_path = Some(path_string(&stale_config_path));
         write_json_file(&hermes_kernel.authority_file, &authority).expect("write authority");
 
         let resolved = KernelRuntimeAuthorityService::new()
@@ -962,13 +952,16 @@ mod tests {
     }
 
     #[test]
-    fn active_config_file_path_uses_canonical_openclaw_path_when_authority_is_legacy() {
+    fn active_config_file_path_uses_canonical_openclaw_path_without_repairing_authority_state() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
-        let legacy_managed_config_path = legacy_managed_config_file_path(&paths);
+        let stale_config_path = paths
+            .user_root
+            .join("stale-openclaw-root")
+            .join("openclaw.json");
         let mut authority = read_json_file::<KernelAuthorityState>(&paths.openclaw_authority_file)
             .expect("authority state");
-        authority.config_file_path = Some(path_string(&legacy_managed_config_path));
+        authority.config_file_path = Some(path_string(&stale_config_path));
         write_json_file(&paths.openclaw_authority_file, &authority).expect("write authority");
 
         let resolved = KernelRuntimeAuthorityService::new()
@@ -976,53 +969,38 @@ mod tests {
             .expect("resolve config file path");
 
         assert_eq!(resolved, paths.openclaw_config_file);
-    }
 
-    #[test]
-    fn active_config_file_path_repairs_legacy_openclaw_authority_path_on_disk() {
-        let root = tempfile::tempdir().expect("temp dir");
-        let paths = resolve_paths_for_root(root.path()).expect("paths");
-        let legacy_managed_config_path = legacy_managed_config_file_path(&paths);
-        let mut authority = read_json_file::<KernelAuthorityState>(&paths.openclaw_authority_file)
-            .expect("authority state");
-        authority.config_file_path = Some(path_string(&legacy_managed_config_path));
-        write_json_file(&paths.openclaw_authority_file, &authority).expect("write authority");
-
-        KernelRuntimeAuthorityService::new()
-            .active_config_file_path("openclaw", &paths)
-            .expect("resolve config file path");
-
-        let repaired_authority =
+        let persisted_authority =
             read_json_file::<KernelAuthorityState>(&paths.openclaw_authority_file)
                 .expect("reloaded authority state");
         assert_eq!(
-            repaired_authority.config_file_path.as_deref(),
-            Some(paths.openclaw_config_file.to_string_lossy().as_ref())
+            persisted_authority.config_file_path.as_deref(),
+            Some(stale_config_path.to_string_lossy().as_ref())
         );
     }
 
     #[test]
-    fn import_or_default_openclaw_config_ignores_legacy_authority_managed_config() {
+    fn import_or_default_openclaw_config_ignores_stale_authority_config_file() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let config_file_path = paths.openclaw_config_file.clone();
-        let legacy_managed_config_path = legacy_managed_config_file_path(&paths);
+        let stale_config_path = stale_authority_config_file_path(&paths);
 
         fs::create_dir_all(
-            legacy_managed_config_path
+            stale_config_path
                 .parent()
-                .expect("legacy config parent"),
+                .expect("stale config parent"),
         )
-        .expect("legacy config dir");
+        .expect("stale config dir");
         fs::write(
-            &legacy_managed_config_path,
+            &stale_config_path,
             "{\n  commands: {\n    ownerDisplay: \"compact\",\n  },\n}\n",
         )
-        .expect("seed legacy config");
+        .expect("seed stale config");
 
         let mut authority = read_json_file::<KernelAuthorityState>(&paths.openclaw_authority_file)
             .expect("authority state");
-        authority.config_file_path = Some(path_string(&legacy_managed_config_path));
+        authority.config_file_path = Some(path_string(&stale_config_path));
         write_json_file(&paths.openclaw_authority_file, &authority).expect("write authority");
 
         if config_file_path.exists() {
@@ -1042,10 +1020,12 @@ mod tests {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         initialize_machine_state(&paths).expect("initialize machine state");
-        let install_key = "2026.4.11-beta.1-windows-x64";
-        let fallback_install_key = "2026.4.9-windows-x64";
-        let install_dir = paths.openclaw_runtime_dir.join(install_key);
-        let fallback_install_dir = paths.openclaw_runtime_dir.join(fallback_install_key);
+        let active_version_label = format!("{}-beta.1", bundled_openclaw_version());
+        let fallback_version_label = openclaw_fixture_version(-1);
+        let install_key = format!("{active_version_label}-windows-x64");
+        let fallback_install_key = format!("{fallback_version_label}-windows-x64");
+        let install_dir = paths.openclaw_runtime_dir.join(&install_key);
+        let fallback_install_dir = paths.openclaw_runtime_dir.join(&fallback_install_key);
         fs::create_dir_all(&install_dir).expect("create install dir");
         fs::create_dir_all(&fallback_install_dir).expect("create fallback install dir");
         fs::write(
@@ -1053,15 +1033,17 @@ mod tests {
             r#"{
   "schemaVersion": 2,
   "runtimeId": "openclaw",
-  "openclawVersion": "2026.4.11-beta.1",
+  "openclawVersion": "__OPENCLAW_VERSION__",
   "requiredExternalRuntimes": ["nodejs"],
   "requiredExternalRuntimeVersions": {
-    "nodejs": "22.16.0"
+    "nodejs": "__NODE_VERSION__"
   },
   "platform": "windows",
   "arch": "x64",
   "cliRelativePath": "runtime/package/node_modules/openclaw/openclaw.mjs"
-}"#,
+}"#
+            .replace("__OPENCLAW_VERSION__", &active_version_label)
+            .replace("__NODE_VERSION__", required_openclaw_node_version()),
         )
         .expect("write install manifest");
         fs::write(
@@ -1069,15 +1051,17 @@ mod tests {
             r#"{
   "schemaVersion": 2,
   "runtimeId": "openclaw",
-  "openclawVersion": "2026.4.9",
+  "openclawVersion": "__OPENCLAW_VERSION__",
   "requiredExternalRuntimes": ["nodejs"],
   "requiredExternalRuntimeVersions": {
-    "nodejs": "22.16.0"
+    "nodejs": "__NODE_VERSION__"
   },
   "platform": "windows",
   "arch": "x64",
   "cliRelativePath": "runtime/package/node_modules/openclaw/openclaw.mjs"
-}"#,
+}"#
+            .replace("__OPENCLAW_VERSION__", &fallback_version_label)
+            .replace("__NODE_VERSION__", required_openclaw_node_version()),
         )
         .expect("write fallback manifest");
         fs::write(
@@ -1088,17 +1072,23 @@ mod tests {
   "modules": {{}},
   "runtimes": {{
     "openclaw": {{
-      "activeVersion": "{install_key}",
-      "fallbackVersion": "{fallback_install_key}"
+      "activeInstallKey": "{}",
+      "fallbackInstallKey": "{}",
+      "activeVersionLabel": "{}",
+      "fallbackVersionLabel": "{}"
     }}
   }}
-}}"#
+}}"#,
+                install_key,
+                fallback_install_key,
+                active_version_label,
+                fallback_version_label
             ),
         )
         .expect("write active state");
 
         KernelRuntimeAuthorityService::new()
-            .record_activation_result("openclaw", &paths, install_key, None)
+            .record_activation_result("openclaw", &paths, &install_key, None)
             .expect("record activation");
 
         let authority = serde_json::from_str::<Value>(
@@ -1117,55 +1107,65 @@ mod tests {
 
         assert_eq!(
             authority.get("activeVersionLabel").and_then(Value::as_str),
-            Some("2026.4.11-beta.1")
+            Some(active_version_label.as_str())
         );
         assert_eq!(
             authority
                 .get("fallbackVersionLabel")
                 .and_then(Value::as_str),
-            Some("2026.4.9")
+            Some(fallback_version_label.as_str())
         );
         assert_eq!(
             active
                 .pointer("/runtimes/openclaw/activeInstallKey")
                 .and_then(Value::as_str),
-            Some(install_key)
+            Some(install_key.as_str())
         );
         assert_eq!(
             active
                 .pointer("/runtimes/openclaw/fallbackInstallKey")
                 .and_then(Value::as_str),
-            Some(fallback_install_key)
+            Some(fallback_install_key.as_str())
         );
         assert_eq!(
             active
                 .pointer("/runtimes/openclaw/activeVersionLabel")
                 .and_then(Value::as_str),
-            Some("2026.4.11-beta.1")
+            Some(active_version_label.as_str())
         );
         assert_eq!(
             active
                 .pointer("/runtimes/openclaw/fallbackVersionLabel")
                 .and_then(Value::as_str),
-            Some("2026.4.9")
+            Some(fallback_version_label.as_str())
+        );
+        assert_eq!(
+            active.pointer("/runtimes/openclaw/activeVersion"),
+            None,
+            "runtime active state must not publish retired activeVersion aliases",
+        );
+        assert_eq!(
+            active.pointer("/runtimes/openclaw/fallbackVersion"),
+            None,
+            "runtime active state must not publish retired fallbackVersion aliases",
         );
         assert_eq!(
             runtime_upgrades
                 .pointer("/runtimes/openclaw/lastAppliedVersion")
                 .and_then(Value::as_str),
-            Some("2026.4.11-beta.1")
+            Some(active_version_label.as_str())
         );
         assert_eq!(
             runtime_upgrades
                 .pointer("/runtimes/openclaw/activeVersionLabel")
                 .and_then(Value::as_str),
-            Some("2026.4.11-beta.1")
+            Some(active_version_label.as_str())
         );
         assert_eq!(
             runtime_upgrades
                 .pointer("/runtimes/openclaw/fallbackVersionLabel")
                 .and_then(Value::as_str),
-            Some("2026.4.9")
+            Some(fallback_version_label.as_str())
         );
     }
 
@@ -1174,10 +1174,12 @@ mod tests {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         initialize_machine_state(&paths).expect("initialize machine state");
-        let active_install_key = "2026.4.9-windows-x64";
-        let attempted_install_key = "2026.4.11-windows-x64";
-        let active_install_dir = paths.openclaw_runtime_dir.join(active_install_key);
-        let attempted_install_dir = paths.openclaw_runtime_dir.join(attempted_install_key);
+        let active_version_label = openclaw_fixture_version(-1);
+        let attempted_version_label = bundled_openclaw_version().to_string();
+        let active_install_key = format!("{active_version_label}-windows-x64");
+        let attempted_install_key = format!("{attempted_version_label}-windows-x64");
+        let active_install_dir = paths.openclaw_runtime_dir.join(&active_install_key);
+        let attempted_install_dir = paths.openclaw_runtime_dir.join(&attempted_install_key);
         fs::create_dir_all(&active_install_dir).expect("create active install dir");
         fs::create_dir_all(&attempted_install_dir).expect("create attempted install dir");
         fs::write(
@@ -1185,15 +1187,17 @@ mod tests {
             r#"{
   "schemaVersion": 2,
   "runtimeId": "openclaw",
-  "openclawVersion": "2026.4.9",
+  "openclawVersion": "__OPENCLAW_VERSION__",
   "requiredExternalRuntimes": ["nodejs"],
   "requiredExternalRuntimeVersions": {
-    "nodejs": "22.16.0"
+    "nodejs": "__NODE_VERSION__"
   },
   "platform": "windows",
   "arch": "x64",
   "cliRelativePath": "runtime/package/node_modules/openclaw/openclaw.mjs"
-}"#,
+}"#
+            .replace("__OPENCLAW_VERSION__", &active_version_label)
+            .replace("__NODE_VERSION__", required_openclaw_node_version()),
         )
         .expect("write active manifest");
         fs::write(
@@ -1201,15 +1205,17 @@ mod tests {
             r#"{
   "schemaVersion": 2,
   "runtimeId": "openclaw",
-  "openclawVersion": "2026.4.11",
+  "openclawVersion": "__OPENCLAW_VERSION__",
   "requiredExternalRuntimes": ["nodejs"],
   "requiredExternalRuntimeVersions": {
-    "nodejs": "22.16.0"
+    "nodejs": "__NODE_VERSION__"
   },
   "platform": "windows",
   "arch": "x64",
   "cliRelativePath": "runtime/package/node_modules/openclaw/openclaw.mjs"
-}"#,
+}"#
+            .replace("__OPENCLAW_VERSION__", &attempted_version_label)
+            .replace("__NODE_VERSION__", required_openclaw_node_version()),
         )
         .expect("write attempted manifest");
         fs::write(
@@ -1220,11 +1226,10 @@ mod tests {
   "runtimeId": "openclaw",
   "activeInstallKey": "{active_install_key}",
   "fallbackInstallKey": null,
-  "activeVersionLabel": "2026.4.9",
+  "activeVersionLabel": "{active_version_label}",
   "fallbackVersionLabel": null,
   "configFilePath": null,
   "ownedRuntimeRoots": [],
-  "legacyRuntimeRoots": [],
   "quarantinedPaths": [],
   "lastActivationAt": "2026-04-14T00:00:00Z",
   "lastError": null
@@ -1237,7 +1242,7 @@ mod tests {
             .record_activation_result(
                 "openclaw",
                 &paths,
-                attempted_install_key,
+                &attempted_install_key,
                 Some("simulated startup failure"),
             )
             .expect("record failure");
@@ -1254,11 +1259,11 @@ mod tests {
 
         assert_eq!(
             authority.get("activeInstallKey").and_then(Value::as_str),
-            Some(active_install_key)
+            Some(active_install_key.as_str())
         );
         assert_eq!(
             authority.get("activeVersionLabel").and_then(Value::as_str),
-            Some("2026.4.9")
+            Some(active_version_label.as_str())
         );
         assert_eq!(
             authority.get("lastActivationAt").and_then(Value::as_str),
@@ -1272,7 +1277,7 @@ mod tests {
             runtime_upgrades
                 .pointer("/runtimes/openclaw/lastAttemptedVersion")
                 .and_then(Value::as_str),
-            Some("2026.4.11")
+            Some(attempted_version_label.as_str())
         );
         assert_eq!(
             runtime_upgrades

@@ -1,8 +1,21 @@
 import assert from 'node:assert/strict';
-import type { StudioInstanceRecord } from '@sdkwork/claw-types';
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  type StudioInstanceRecord,
+} from '@sdkwork/claw-types';
 import { isBuiltInLocalInstance, mapInstanceNode } from './nodeInventoryTopology.ts';
 
 const BUILT_IN_INSTANCE_ID = 'managed-openclaw-primary';
+const FUTURE_KERNEL_RUNTIME_VERSION = shiftOpenClawVersion(DEFAULT_BUNDLED_OPENCLAW_VERSION, 1);
+
+function shiftOpenClawVersion(version: string, patchOffset: number) {
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:-(?:\d+|[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*))?$/u.exec(version);
+  assert.ok(match, `Expected numeric OpenClaw test version, received ${version}`);
+  const [, year, month, patch] = match;
+  const shiftedPatch = Number(patch) + patchOffset;
+  assert.ok(shiftedPatch >= 0, `Cannot derive OpenClaw test version before patch 0 from ${version}`);
+  return `${year}.${month}.${shiftedPatch}`;
+}
 
 function runTest(name: string, callback: () => void | Promise<void>) {
   return Promise.resolve()
@@ -28,7 +41,7 @@ function createInstance(overrides: Partial<StudioInstanceRecord> = {}): StudioIn
     isBuiltIn: true,
     isDefault: true,
     iconType: 'server',
-    version: '2026.4.5',
+    version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
     typeLabel: 'OpenClaw Gateway',
     host: '127.0.0.1',
     port: 18845,
@@ -95,7 +108,7 @@ await runTest(
         description: 'Managed future kernel with external runtimes.',
         runtimeKind: 'phoenixclaw',
         transportKind: 'phoenixSocket',
-        version: '2026.4.13',
+        version: FUTURE_KERNEL_RUNTIME_VERSION,
         typeLabel: 'PhoenixClaw Runtime',
         port: 9540,
         baseUrl: 'http://127.0.0.1:9540',

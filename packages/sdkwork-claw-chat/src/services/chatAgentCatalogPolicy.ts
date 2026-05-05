@@ -37,6 +37,7 @@ export interface ResolveChatContextSelectionSyncMutationInput {
   selectedSkillId: string | null;
   hasResolvedVisibleAgents: boolean;
   visibleAgentIds: string[];
+  activeSessionAgentId?: string | null;
 }
 
 export interface ChatContextSelectionSyncMutation {
@@ -128,6 +129,7 @@ export function resolveChatContextSelectionSyncMutation(
   if (
     typeof params.selectedAgentId === 'string' &&
     params.hasResolvedVisibleAgents &&
+    params.selectedAgentId !== params.activeSessionAgentId &&
     !params.visibleAgentIds.includes(params.selectedAgentId)
   ) {
     return {

@@ -70,8 +70,9 @@ impl OpenClawRuntimeSnapshotService {
             .iter()
             .find(|service| service.id == SERVICE_ID_OPENCLAW_GATEWAY);
         let local_ai_proxy_status = local_ai_proxy.status()?;
-        let (config_root, config_error) =
-            load_openclaw_config_root(&readable_openclaw_config_path(paths));
+        let readable_config_path = readable_openclaw_config_path(paths)?;
+        let active_config_path = active_openclaw_config_path(paths)?;
+        let (config_root, config_error) = load_openclaw_config_root(&readable_config_path);
         let provider_projection = build_provider_projection(
             &config_root,
             config_error.as_deref(),
@@ -130,7 +131,7 @@ impl OpenClawRuntimeSnapshotService {
                 .map(|runtime| path_string(&runtime.state_dir))
                 .unwrap_or_else(|| path_string(&openclaw_paths.state_dir)),
             workspace_dir: path_string(&openclaw_paths.workspace_dir),
-            config_file: path_string(&active_openclaw_config_path(paths)),
+            config_file: path_string(&active_config_path),
             gateway_port: configured_runtime
                 .as_ref()
                 .map(|runtime| runtime.gateway_port),
@@ -495,14 +496,13 @@ fn load_openclaw_config_root(path: &Path) -> (Value, Option<String>) {
     }
 }
 
-fn readable_openclaw_config_path(paths: &AppPaths) -> PathBuf {
+fn readable_openclaw_config_path(paths: &AppPaths) -> Result<PathBuf> {
     active_openclaw_config_path(paths)
 }
 
-fn active_openclaw_config_path(paths: &AppPaths) -> PathBuf {
+fn active_openclaw_config_path(paths: &AppPaths) -> Result<PathBuf> {
     KernelRuntimeAuthorityService::new()
         .active_config_file_path("openclaw", paths)
-        .expect("canonical openclaw config path")
 }
 
 fn path_string(path: &Path) -> String {
@@ -527,6 +527,28 @@ mod tests {
 
     fn default_local_ai_proxy_v1_base_url() -> String {
         format!("{}/v1", default_local_ai_proxy_root_base_url())
+    }
+
+    #[test]
+    fn openclaw_runtime_snapshot_production_path_has_no_panic_exits() {
+        let source = include_str!("openclaw_runtime_snapshot.rs");
+        let production_source = source.split("#[cfg(test)]").next().unwrap_or(source);
+        let forbidden_patterns = [".expect(", ".unwrap(", "panic!(", "todo!(", "unimplemented!("];
+        let mut offenders = Vec::new();
+
+        for (index, line) in production_source.lines().enumerate() {
+            for pattern in forbidden_patterns {
+                if line.contains(pattern) {
+                    offenders.push(format!("{}:{}", index + 1, line.trim()));
+                }
+            }
+        }
+
+        assert!(
+            offenders.is_empty(),
+            "OpenClaw runtime snapshot production code must propagate errors instead of panicking:\n{}",
+            offenders.join("\n")
+        );
     }
 
     fn create_running_local_ai_proxy_status(client_protocol: &str) -> LocalAiProxyServiceStatus {

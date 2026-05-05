@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { ChatSessionBindingSource } from '../services';
 import {
   resolveChatActiveSessionSelectionSyncMutation,
@@ -22,14 +22,25 @@ export function useChatActiveSessionSelectionSynchronization({
   agentOptionIds,
   setSelectedAgentId,
 }: UseChatActiveSessionSelectionSynchronizationInput) {
-  const activeSessionBinding = resolveChatSessionBinding(activeSession);
-  const activeSessionSelectionSyncMutation =
-    resolveChatActiveSessionSelectionSyncMutation({
-      isChatSupported: isChatSupportedRoute,
-      selectedAgentId,
+  const activeSessionBinding = useMemo(
+    () => resolveChatSessionBinding(activeSession),
+    [activeSession],
+  );
+  const activeSessionSelectionSyncMutation = useMemo(
+    () =>
+      resolveChatActiveSessionSelectionSyncMutation({
+        isChatSupported: isChatSupportedRoute,
+        selectedAgentId,
+        activeSessionBinding,
+        agentOptionIds,
+      }),
+    [
       activeSessionBinding,
       agentOptionIds,
-    });
+      isChatSupportedRoute,
+      selectedAgentId,
+    ],
+  );
 
   useEffect(() => {
     if (isSelectionTransitionPending) {

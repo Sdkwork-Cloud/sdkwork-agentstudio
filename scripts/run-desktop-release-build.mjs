@@ -6,7 +6,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { withRustToolchainPath } from './ensure-tauri-rust-toolchain.mjs';
+import { withRustToolchainPath } from './ensure-native-rust-toolchain.mjs';
 import { normalizeViteMode } from './run-vite-host.mjs';
 import { withSupportedWindowsCmakeGenerator } from './desktop-build-helpers.mjs';
 import { resolveExistingDesktopBundleRoot } from './release/package-release-assets.mjs';

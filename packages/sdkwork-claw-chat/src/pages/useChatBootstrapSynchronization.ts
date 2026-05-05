@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { InstanceChatRouteMode } from '../services';
 import { resolveChatBootstrapMutation } from '../services';
 import type {
@@ -43,6 +43,11 @@ export function useChatBootstrapSynchronization({
   createSession,
   setActiveSession,
 }: UseChatBootstrapSynchronizationInput) {
+  const selectableSessionIds = useMemo(
+    () => selectableInstanceSessions.map((session) => session.id),
+    [selectableInstanceSessions],
+  );
+
   useEffect(() => {
     if (isSelectionTransitionPending) {
       return;
@@ -55,7 +60,7 @@ export function useChatBootstrapSynchronization({
       syncState,
       hasActiveModel,
       activeSessionId: effectiveActiveSessionId,
-      sessionIds: selectableInstanceSessions.map((session) => session.id),
+      sessionIds: selectableSessionIds,
       selectedAgentId,
       newSessionModel,
     });
@@ -79,8 +84,8 @@ export function useChatBootstrapSynchronization({
     isSelectionTransitionPending,
     newSessionModel,
     routeMode,
+    selectableSessionIds,
     selectedAgentId,
-    selectableInstanceSessions,
     sendMode,
     setActiveSession,
     syncState,

@@ -144,7 +144,10 @@ runTest('sdkwork-claw-tasks shared manager binds cron agent selection to the con
   );
   assert.match(managerSource, /agentIdDefaultOption/);
   assert.match(managerSource, /agentIdCatalogHelp/);
-  assert.match(coreServiceSource, /readOpenClawConfigSnapshot\(configPath\)\.catch\(\(\) => null\)/);
+  assert.match(
+    coreServiceSource,
+    /readOpenClawConfigSnapshot\(configPath\)[\s\S]*\.catch\(\(\) => null\)/,
+  );
   assert.match(coreServiceSource, /buildTaskAgentSelectState/);
 });
 

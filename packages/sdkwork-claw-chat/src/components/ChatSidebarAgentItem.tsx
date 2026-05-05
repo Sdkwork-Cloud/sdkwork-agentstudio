@@ -146,11 +146,7 @@ export function ChatSidebarAgentItem({
           aria-expanded={isAgentMenuOpen}
           aria-controls={isAgentMenuOpen ? 'chat-sidebar-agent-actions-menu' : undefined}
         >
-          {isAgentPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <MoreHorizontal className="h-4 w-4" />
-          )}
+          <MoreHorizontal className="h-4 w-4" />
         </button>
       ) : null}
     </div>

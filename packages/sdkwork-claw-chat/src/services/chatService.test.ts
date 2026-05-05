@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { instanceStore } from '@sdkwork/claw-core';
 import { configurePlatformBridge, getPlatformBridge } from '@sdkwork/claw-infrastructure';
-import type {
-  StudioInstanceDetailRecord,
-  StudioInstanceRecord,
+import {
+  DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  type StudioInstanceDetailRecord,
+  type StudioInstanceRecord,
 } from '@sdkwork/claw-types';
 import { chatService, createChatService } from './chatService.ts';
 
@@ -31,7 +32,7 @@ function createGatewaySnapshotInstance(instanceId: string): StudioInstanceRecord
     isBuiltIn: true,
     isDefault: true,
     iconType: 'server',
-    version: '2026.4.2',
+    version: DEFAULT_BUNDLED_OPENCLAW_VERSION,
     typeLabel: 'Built-In OpenClaw',
     host: '127.0.0.1',
     port: 18797,
@@ -74,7 +75,7 @@ function createHttpSnapshotInstance(instanceId: string): StudioInstanceRecord {
     isBuiltIn: false,
     isDefault: false,
     iconType: 'server',
-    version: '2026.4.2',
+    version: 'custom-http-fixture',
     typeLabel: 'Custom HTTP',
     host: '127.0.0.1',
     port: 18080,

@@ -5,12 +5,12 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 
 import {
   buildMissingRustToolchainMessage,
-  ensureTauriRustToolchain,
+  ensureNativeRustToolchain,
   withRustToolchainPath,
-} from './ensure-tauri-rust-toolchain.mjs';
+} from './ensure-native-rust-toolchain.mjs';
 
 const successfulChecks = [];
-const successResult = ensureTauriRustToolchain({
+const successResult = ensureNativeRustToolchain({
   inspectCommand(command, args) {
     successfulChecks.push({ command, args });
     return {
@@ -31,7 +31,7 @@ assert.deepEqual(
 );
 assert.equal(successResult.length, 2, 'Rust toolchain guard should return successful inspections');
 
-const fakeRustHome = mkdtempSync(path.join(os.tmpdir(), 'tauri-rust-toolchain-'));
+const fakeRustHome = mkdtempSync(path.join(os.tmpdir(), 'native-rust-toolchain-'));
 const fakeRustBinDir = path.join(fakeRustHome, '.cargo', 'bin');
 mkdirSync(fakeRustBinDir, { recursive: true });
 writeFileSync(path.join(fakeRustBinDir, 'cargo.exe'), '', 'utf8');
@@ -51,7 +51,7 @@ assert.match(
 );
 
 const fallbackChecks = [];
-const fallbackResult = ensureTauriRustToolchain({
+const fallbackResult = ensureNativeRustToolchain({
   env: {
     PATH: 'C:\\Windows\\System32',
     USERPROFILE: fakeRustHome,
@@ -79,7 +79,7 @@ assert.ok(
 
 let missingToolError;
 try {
-  ensureTauriRustToolchain({
+  ensureNativeRustToolchain({
     inspectCommand(command) {
       if (command === 'cargo') {
         return {
@@ -104,7 +104,7 @@ try {
 assert.ok(missingToolError instanceof Error, 'Missing cargo should fail the Rust toolchain guard');
 assert.match(
   missingToolError.message,
-  /Rust\/Cargo toolchain is required for Claw Studio desktop development and builds\./,
+  /Rust\/Cargo toolchain is required for Claw Studio native desktop and server development, checks, and builds\./,
 );
 assert.match(missingToolError.message, /Missing command\(s\): cargo/);
 assert.match(missingToolError.message, /Install Rust via rustup: https:\/\/rustup\.rs\//);
@@ -157,7 +157,7 @@ assert.match(
 
 let blockedNodeProcessError;
 try {
-  ensureTauriRustToolchain({
+  ensureNativeRustToolchain({
     platform: 'win32',
     inspectCommand(command) {
       if (
@@ -199,11 +199,11 @@ assert.match(
 );
 assert.match(
   blockedNodeProcessError.message,
-  /will keep failing until Node is allowed to spawn Windows executables/i,
+  /native commands will keep failing until Node is allowed to spawn Windows executables/i,
 );
 assert.match(
   blockedNodeProcessError.message,
   /broader child-process restriction than a Rust toolchain problem[\s\S]*Confirm the executable locations[\s\S]*Then verify in the same terminal:/i,
 );
 
-console.log('ok - tauri rust toolchain guard reports actionable errors and passes when cargo and rustc exist');
+console.log('ok - native Rust toolchain guard reports actionable errors and passes when cargo and rustc exist');

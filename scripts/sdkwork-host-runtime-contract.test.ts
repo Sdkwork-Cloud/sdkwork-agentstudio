@@ -53,6 +53,22 @@ function exists(relPath: string) {
   return fs.existsSync(path.join(root, relPath));
 }
 
+function walkFiles(dir: string, predicate: (file: string) => boolean, result: string[] = []) {
+  for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+    const relPath = path.join(dir, entry.name).replace(/\\/g, '/');
+    if (entry.isDirectory()) {
+      walkFiles(relPath, predicate, result);
+      continue;
+    }
+
+    if (entry.isFile() && predicate(relPath)) {
+      result.push(relPath);
+    }
+  }
+
+  return result;
+}
+
 function readGeneratedTauriBundleOverlay() {
   const relativePath = 'packages/sdkwork-claw-desktop/src-tauri/generated/tauri.bundle.overlay.json';
   if (exists(relativePath)) {
@@ -115,8 +131,45 @@ runTest('sdkwork-claw-web bootstraps shell runtime before mounting the React tre
   assert.doesNotMatch(mainSource, /@sdkwork\/claw-i18n/);
   assert.match(
     mainSource,
-    /await bootstrapShellRuntime\([\s\S]*?\);[\s\S]*createRoot\(document\.getElementById\('root'\)!\)\.render/,
+    /await bootstrapShellRuntime\([\s\S]*?\);[\s\S]*createRoot\(resolveWebRootElement\(\)\)\.render/,
   );
+});
+
+runTest('sdkwork-claw-web reports startup errors instead of leaving an unhandled blank screen', () => {
+  const mainSource = read('packages/sdkwork-claw-web/src/main.tsx');
+
+  assert.doesNotMatch(mainSource, /document\.getElementById\('root'\)!\)/);
+  assert.match(mainSource, /function resolveWebRootElement\(\): HTMLElement/);
+  assert.match(mainSource, /function reportWebStartupFatalError\(error: unknown\)/);
+  assert.match(mainSource, /function installWebStartupFatalErrorListeners\(\)/);
+  assert.match(mainSource, /window\.addEventListener\('error', handleError\)/);
+  assert.match(mainSource, /window\.addEventListener\('unhandledrejection', handleUnhandledRejection\)/);
+  assert.match(mainSource, /void mountApp\(\)\.catch\(reportWebStartupFatalError\);/);
+});
+
+runTest('production browser storage access goes through safe storage adapters', () => {
+  const sourceFiles = walkFiles('packages', (relPath) => {
+    if (!/^packages\/[^/]+\/src\//.test(relPath)) {
+      return false;
+    }
+
+    if (!/\.(?:ts|tsx|js|mjs)$/.test(relPath)) {
+      return false;
+    }
+
+    if (/\.(?:test|spec)\.(?:ts|tsx|js|mjs)$/.test(relPath)) {
+      return false;
+    }
+
+    return !relPath.endsWith('/safeBrowserStorage.ts');
+  });
+  const unsafeStorageAccessPattern =
+    /\b(?:window|globalThis)\.(?:localStorage|sessionStorage)\b|\b(?:localStorage|sessionStorage)\.(?:getItem|setItem|removeItem|clear|key)\b/;
+  const offenders = sourceFiles.filter((relPath) =>
+    unsafeStorageAccessPattern.test(read(relPath)),
+  );
+
+  assert.deepEqual(offenders, []);
 });
 
 runTest('built-in OpenClaw hosts derive a real version label instead of the bundled placeholder', () => {
@@ -160,6 +213,15 @@ runTest('sdkwork-claw-desktop contains the Tauri runtime package surface', () =>
   );
   assert.equal(pkg.dependencies?.['@sdkwork/claw-core'], undefined);
   assert.doesNotMatch(desktopLockImporter, /'@sdkwork\/claw-core':/);
+});
+
+runTest('desktop Tauri entry point reports startup errors without panicking', () => {
+  const desktopLibSource = read('packages/sdkwork-claw-desktop/src-tauri/src/lib.rs');
+
+  assert.doesNotMatch(desktopLibSource, /\.run\([\s\S]*?\)\s*\.expect\(/);
+  assert.match(desktopLibSource, /if let Err\(error\) = app::bootstrap::build\(\)[\s\S]*?\.run\(/);
+  assert.match(desktopLibSource, /eprintln!\("failed to run claw studio desktop: \{error\}"\);/);
+  assert.match(desktopLibSource, /std::process::exit\(1\);/);
 });
 
 runTest('sdkwork-claw-server and sdkwork-claw-host-core expose the shared server host foundation', () => {
@@ -275,6 +337,9 @@ runTest('shared kernel-platform types keep runtime, transport, console, and acti
   const desktopBootstrapAppSource = read(
     'packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
   );
+  const desktopBackgroundRuntimeReadinessRecoverySource = read(
+    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopBackgroundRuntimeReadinessRecovery.ts',
+  );
   const knownRuntimeKindAlias = extractTypeAlias(typesSource, 'KnownStudioRuntimeKind');
   const runtimeKindAlias = extractTypeAlias(typesSource, 'StudioRuntimeKind');
   const knownTransportKindAlias = extractTypeAlias(
@@ -351,8 +416,8 @@ runTest('shared kernel-platform types keep runtime, transport, console, and acti
     /requiresBuiltInOpenClawEvidence = true/,
   );
   assert.match(
-    desktopBootstrapAppSource,
-    /function resolveBackgroundRuntimeReadinessRecoveryMode\([\s\S]*includedKernelIds[\s\S]*return includedKernelIds\.includes\('openclaw'\)[\s\S]*'managed-openclaw'[\s\S]*'generic-hosted-runtime'/,
+    desktopBackgroundRuntimeReadinessRecoverySource,
+    /function resolveBackgroundRuntimeReadinessRecoveryMode\([\s\S]*includedKernelIds[\s\S]*normalizeKernelId\(kernelId\) === 'openclaw'[\s\S]*'managed-openclaw'[\s\S]*'generic-hosted-runtime'/,
   );
   assert.match(
     desktopBootstrapAppSource,
@@ -1041,7 +1106,7 @@ runTest('desktop runtime authority internals use config_file_path terminology in
   assert.doesNotMatch(kernelRuntimeTypesSource, /pub managed_config_path: PathBuf,/);
   assert.match(authorityServiceProductionSource, /pub fn active_config_file_path\(/);
   assert.doesNotMatch(authorityServiceProductionSource, /pub fn active_managed_config_path\(/);
-  assert.match(
+  assert.doesNotMatch(
     authorityServiceProductionSource,
     /fn reconcile_runtime_authority_config_file_path\(/,
   );
@@ -1082,7 +1147,7 @@ runTest('desktop kernel path models use config_dir and config_file terminology i
   assert.doesNotMatch(pathsSource, /kernel\.managed_config_dir/);
   assert.doesNotMatch(pathsSource, /kernel\.managed_config_file/);
 
-  assert.match(bootstrapSource, /\.map\(\|kernel\| kernel\.config_file\)/);
+  assert.match(bootstrapSource, /KernelRuntimeAuthorityService::new\(\)[\s\S]*\.active_config_file_path\("openclaw", paths\)/);
   assert.doesNotMatch(bootstrapSource, /\.map\(\|kernel\| kernel\.managed_config_file\)/);
   assert.match(internalCliSource, /\.map\(\|kernel\| kernel\.config_file\)/);
   assert.doesNotMatch(internalCliSource, /\.map\(\|kernel\| kernel\.managed_config_file\)/);
@@ -1190,15 +1255,19 @@ runTest('desktop openclaw helpers use config file terminology in supervisor and 
   );
 
   assert.match(supervisorSource, /fn configured_openclaw_gateway_port\(paths: &AppPaths\)/);
-  assert.match(supervisorSource, /fn built_in_openclaw_runtime_dir\(paths: &AppPaths\) -> PathBuf/);
+  assert.match(supervisorSource, /fn built_in_openclaw_runtime_dir\(paths: &AppPaths\) -> Result<PathBuf>/);
   assert.match(supervisorSource, /fn command_matches_built_in_openclaw_gateway<S>\(/);
   assert.match(supervisorSource, /fn readable_openclaw_config_file_path\(paths: &AppPaths\)/);
-  assert.match(supervisorSource, /fn default_openclaw_config_file_path\(paths: &AppPaths\)/);
+  assert.match(
+    supervisorSource,
+    /fn readable_openclaw_config_file_path\(paths: &AppPaths\) -> Result<PathBuf> \{[\s\S]*\.active_config_file_path\("openclaw", paths\)/,
+  );
   assert.doesNotMatch(supervisorSource, /fn configured_managed_openclaw_gateway_port\(/);
   assert.doesNotMatch(supervisorSource, /fn managed_openclaw_runtime_dir\(/);
   assert.doesNotMatch(supervisorSource, /fn command_matches_managed_openclaw_gateway\(/);
   assert.doesNotMatch(supervisorSource, /fn readable_managed_openclaw_config_path\(/);
   assert.doesNotMatch(supervisorSource, /fn default_managed_openclaw_config_path\(/);
+  assert.doesNotMatch(supervisorSource, /fn default_openclaw_config_file_path\(/);
 
   assert.match(studioSource, /fn read_openclaw_config\(paths: &AppPaths\) -> Result<Value>/);
   assert.match(studioSource, /fn openclaw_config_target\(paths: &AppPaths\) -> String/);
@@ -1228,28 +1297,63 @@ runTest('desktop openclaw helpers use config file terminology in supervisor and 
 
   assert.match(
     openclawWorkbenchSource,
-    /fn readable_openclaw_config_file_path\(paths: &AppPaths\) -> PathBuf/,
+    /fn readable_openclaw_config_file_path\(paths: &AppPaths\) -> Result<PathBuf>/,
   );
   assert.match(
     openclawWorkbenchSource,
-    /fn authority_openclaw_config_file_path\(paths: &AppPaths\) -> PathBuf/,
+    /fn authority_openclaw_config_file_path\(paths: &AppPaths\) -> Result<PathBuf>/,
   );
   assert.doesNotMatch(openclawWorkbenchSource, /fn readable_managed_openclaw_config_path\(/);
   assert.doesNotMatch(openclawWorkbenchSource, /fn authority_managed_openclaw_config_path\(/);
 });
 
-runTest('desktop OpenClaw legacy config path compatibility stays quarantined to drift handling and tests', () => {
+runTest('desktop OpenClaw config path resolution has no legacy repair side effects', () => {
   const authorityServiceSource = read(
     'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs',
   );
   const authorityServiceProductionSource = stripRustTestModule(authorityServiceSource);
 
   assert.match(authorityServiceSource, /\#\[cfg\(test\)\]\s*mod tests \{/);
-  assert.match(authorityServiceSource, /fn legacy_managed_config_file_path\(/);
-  assert.match(authorityServiceProductionSource, /fn reconcile_runtime_authority_config_file_path\(/);
+  assert.doesNotMatch(authorityServiceSource, /fn active_config_file_path_repairs_legacy_openclaw_authority_path_on_disk\(/);
+  assert.doesNotMatch(authorityServiceSource, /fn reconcile_runtime_authority_config_file_path\(/);
+  assert.doesNotMatch(authorityServiceSource, /active_config_file_path_repairs_legacy/);
+  assert.doesNotMatch(authorityServiceProductionSource, /reconcile_runtime_authority_config_file_path/);
   assert.doesNotMatch(authorityServiceProductionSource, /managed-config/);
-  assert.doesNotMatch(authorityServiceProductionSource, /fn legacy_managed_config_file_path\(/);
   assert.doesNotMatch(authorityServiceProductionSource, /fn resolve_legacy_openclaw_config_source_path\(/);
+});
+
+runTest('desktop OpenClaw test fixtures use noncanonical drift wording instead of legacy compatibility layouts', () => {
+  const desktopOpenClawTestSources = [
+    read('packages/sdkwork-claw-desktop/src-tauri/src/framework/paths.rs'),
+    read('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs'),
+    read('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs'),
+    read('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/supervisor.rs'),
+  ].join('\n');
+
+  assert.doesNotMatch(desktopOpenClawTestSources, /legacy_managed_config_file_path/);
+  assert.doesNotMatch(desktopOpenClawTestSources, /managed-config/);
+  assert.doesNotMatch(desktopOpenClawTestSources, /compatibility-only/);
+  assert.doesNotMatch(desktopOpenClawTestSources, /compatibility_fields?_drift/);
+  assert.doesNotMatch(desktopOpenClawTestSources, /authority_(?:is|path_is)_legacy/);
+  assert.doesNotMatch(desktopOpenClawTestSources, /legacy_(?:authority_)?config_file_path/);
+});
+
+runTest('desktop OpenClaw startup readiness uses current HTTP probes instead of legacy invoke fallbacks', () => {
+  const supervisorSource = read(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/supervisor.rs',
+  );
+
+  assert.match(supervisorSource, /fn probe_gateway_http_ready\(/);
+  assert.match(supervisorSource, /fn probe_gateway_http_live\(/);
+  assert.doesNotMatch(supervisorSource, /fn probe_gateway_invoke_ready\(/);
+  assert.doesNotMatch(supervisorSource, /DEFAULT_OPENCLAW_GATEWAY_START_HTTP_INVOKE_IO_TIMEOUT_MS/);
+  assert.doesNotMatch(supervisorSource, /DEFAULT_OPENCLAW_GATEWAY_START_HEALTH_PROBE_TIMEOUT_MS/);
+  assert.doesNotMatch(supervisorSource, /probe_gateway_cli_health_ready\(\s*runtime,\s*paths,\s*DEFAULT_OPENCLAW_GATEWAY_START_HEALTH_PROBE_TIMEOUT_MS/);
+  assert.doesNotMatch(supervisorSource, /wait_for_gateway_ready_accepts_the_allowlisted_cron_status_probe/);
+  assert.doesNotMatch(supervisorSource, /wait_for_gateway_ready_accepts_a_successful_invoke_status_before_connection_close/);
+  assert.doesNotMatch(supervisorSource, /wait_for_gateway_ready_accepts_readyz_when_legacy_probes_are_stuck/);
+  assert.doesNotMatch(supervisorSource, /invoke_readiness/);
+  assert.doesNotMatch(supervisorSource, /readyz_and_invoke/);
 });
 
 runTest('desktop rust test helpers use config file terminology for openclaw config paths', () => {
@@ -1669,6 +1773,35 @@ runTest('server readiness and public workbench routes stay bound to live runtime
     serverMainSource,
     /public_studio_workbench_mutation_routes_reject_built_in_mutations_without_live_runtime_authority/,
   );
+});
+
+runTest('server public studio API keeps provider calls out of async route contexts', () => {
+  const apiPublicSource = read(
+    'packages/sdkwork-claw-server/src-host/src/http/routes/api_public.rs',
+  );
+  const directProviderCallLines: string[] = [];
+  let insideBlockingProviderCall = false;
+
+  apiPublicSource.split(/\r?\n/).forEach((line, index) => {
+    if (line.includes('run_blocking_studio_public_api_call(')) {
+      insideBlockingProviderCall = true;
+    }
+
+    if (/\bprovider\s*\./.test(line) && !insideBlockingProviderCall) {
+      directProviderCallLines.push(`${index + 1}: ${line.trim()}`);
+    }
+
+    if (insideBlockingProviderCall && line.trim() === '.await?') {
+      insideBlockingProviderCall = false;
+    }
+  });
+
+  assert.equal(
+    apiPublicSource.includes('tokio::task::spawn_blocking(call)'),
+    true,
+    'expected public studio API provider calls to use spawn_blocking through run_blocking_studio_public_api_call',
+  );
+  assert.deepEqual(directProviderCallLines, []);
 });
 
 runTest('sdkwork hosts persist app language through a host callback while the shared runtime bridge exposes the desktop command', () => {

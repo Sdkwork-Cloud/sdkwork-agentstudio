@@ -8,7 +8,7 @@
 
 - 当前产品是基于 Tauri + React + TypeScript + Rust 的桌面应用，并保留 Web Host 预览能力。
 - 桌面版内置 OpenClaw 运行时，`Kernel Center` 可展示 `openclawVersion`、内置组件数量与默认启动组件。
-- 当前仓库内置 OpenClaw 基线版本为 `2026.4.8`，Node 运行时基线为 `22.16.0`，版本源来自 `config/openclaw-release.json`，桌面资源基线来自 `src-tauri/resources/openclaw/manifest.json`。
+- 当前仓库内置 OpenClaw 基线版本和外部 Node.js 运行时要求都来自 `config/kernel-releases/openclaw.json`，桌面资源基线来自 `src-tauri/resources/openclaw/manifest.json`。
 - OpenClaw Gateway 在桌面启动链路中被配置为托管组件，Local AI Proxy 作为独立本地服务被确保就绪。
 - 内置 OpenClaw 的所有大模型相关 API 访问必须统一经本地 `Proxy API Gateway`，不允许绕过本地代理直接从 OpenClaw 访问外部模型供应商。
 - Rust Host 当前已发布 `/claw/health/*`、`/claw/api/v1/*`、`/claw/openapi/*`、`/claw/internal/v1/*`、`/claw/manage/v1/*` 五类原生 HTTP API 面。

@@ -5,6 +5,7 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  rmdirSync,
   realpathSync,
   renameSync,
   rmSync,
@@ -236,6 +237,41 @@ function clearTargetPath(targetPath) {
   }
 }
 
+function sleepSync(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
+function acquireTypescriptPackageMaterializeLock(targetPackageDir) {
+  const lockDir = `${targetPackageDir}.lock`;
+  const startedAt = Date.now();
+  const timeoutMs = 30_000;
+
+  mkdirSync(path.dirname(lockDir), { recursive: true });
+
+  while (true) {
+    try {
+      mkdirSync(lockDir);
+      return () => {
+        try {
+          rmdirSync(lockDir);
+        } catch {
+          // Best-effort cleanup; a later invocation can still detect a stable package.
+        }
+      };
+    } catch (error) {
+      if (Date.now() - startedAt > timeoutMs) {
+        throw new Error(
+          `Timed out waiting for workspace TypeScript package materialization lock at ${lockDir}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+
+      sleepSync(50);
+    }
+  }
+}
+
 function materializeTypescriptPackageForCli(sourcePackageDir, targetPackageDir) {
   mkdirSync(targetPackageDir, { recursive: true });
 
@@ -289,13 +325,22 @@ function ensureWorkspaceTypescriptPackageDir(rootDir) {
     ? realpathOrNull(directPackageDir) ?? preferredCandidate.packageDir
     : preferredCandidate.packageDir;
 
-  mkdirSync(path.dirname(directPackageDir), { recursive: true });
-  const stagedPackageDir = `${directPackageDir}.stage-${Date.now()}`;
-  clearTargetPath(stagedPackageDir);
-  materializeTypescriptPackageForCli(sourcePackageDir, stagedPackageDir);
-  clearTargetPath(directPackageDir);
-  renameSync(stagedPackageDir, directPackageDir);
-  return directPackageDir;
+  const lockRelease = acquireTypescriptPackageMaterializeLock(directPackageDir);
+  try {
+    if (hasStableLocalPackageDir(directPackageDir)) {
+      return directPackageDir;
+    }
+
+    mkdirSync(path.dirname(directPackageDir), { recursive: true });
+    const stagedPackageDir = `${directPackageDir}.stage-${process.pid}-${Date.now()}`;
+    clearTargetPath(stagedPackageDir);
+    materializeTypescriptPackageForCli(sourcePackageDir, stagedPackageDir);
+    clearTargetPath(directPackageDir);
+    renameSync(stagedPackageDir, directPackageDir);
+    return directPackageDir;
+  } finally {
+    lockRelease();
+  }
 }
 
 function resolveWorkspaceTsc(rootDir = DEFAULT_WORKSPACE_ROOT_DIR) {
