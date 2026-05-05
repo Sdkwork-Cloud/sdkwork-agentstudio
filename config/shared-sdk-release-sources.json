@@ -18,7 +18,7 @@
     },
     "im-sdk": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git",
-      "ref": "043e3015bb7b114496cbc6db3e5df078c5ad2c8e"
+      "ref": "12abdbd638d499194e89cf966ed0aa4cd103f19b"
     },
     "rtc-sdk": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-rtc-sdk.git",

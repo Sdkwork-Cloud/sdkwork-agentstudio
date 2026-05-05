@@ -4165,14 +4165,29 @@
       "tag": "release-2026-05-05-178",
       "title": "Claw Studio release-2026-05-05-178",
       "date": "2026-05-05",
-      "status": "pending",
-      "summary": "Release candidate that carries forward release-2026-05-05-174 through release-2026-05-05-177, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.90.0 toolchain after reproducing a rustc 1.91.1 windows-sys release compile failure, stabilizes Windows Cargo release bundling, synchronizes the @sdkwork/claw-ui qrcode lockfile entry, exposes cross-platform sdkwork-run-node/sdkwork-run-pnpm wrappers, and provides an explicit generator root for clean-room IM/RTC SDK release-source builds.",
+      "status": "failed",
+      "summary": "Release candidate that carried forward release-2026-05-05-174 through release-2026-05-05-177 and provided an explicit generator root for clean-room IM/RTC SDK release-source builds, but failed before publication because the pinned IM SDK TypeScript package did not declare compilerOptions.rootDir for TS 6 clean-room single-package builds.",
       "notesFile": "release-2026-05-05-178.md",
       "carryForward": [
         "release-2026-05-05-174",
         "release-2026-05-05-175",
         "release-2026-05-05-176",
         "release-2026-05-05-177"
+      ]
+    },
+    {
+      "tag": "release-2026-05-05-179",
+      "title": "Claw Studio release-2026-05-05-179",
+      "date": "2026-05-05",
+      "status": "pending",
+      "summary": "Release candidate that carries forward release-2026-05-05-174 through release-2026-05-05-178, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.90.0 toolchain, exposes cross-platform sdkwork-run-node/sdkwork-run-pnpm wrappers, provides an explicit generator root for clean-room IM/RTC SDK release-source builds, and updates the IM SDK GitHub pin to a source-level TS 6 rootDir fix.",
+      "notesFile": "release-2026-05-05-179.md",
+      "carryForward": [
+        "release-2026-05-05-174",
+        "release-2026-05-05-175",
+        "release-2026-05-05-176",
+        "release-2026-05-05-177",
+        "release-2026-05-05-178"
       ]
     }
   ]

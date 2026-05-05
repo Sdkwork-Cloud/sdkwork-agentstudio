@@ -1257,6 +1257,16 @@ test('shared sdk package preparation exposes a generator root for relocated IM a
   }
 });
 
+test('shared sdk release pins include the IM TypeScript rootDir clean-room build fix', () => {
+  const releaseSources = JSON.parse(read('config/shared-sdk-release-sources.json'));
+
+  assert.equal(
+    releaseSources.sources?.['im-sdk']?.ref,
+    '12abdbd638d499194e89cf966ed0aa4cd103f19b',
+    'the IM SDK release pin must include the TypeScript root tsconfig fix required by TS 6 clean-room package builds',
+  );
+});
+
 test('git-backed shared sdk source detection resolves origin from nested directories inside an existing git checkout', async () => {
   const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-git-sources.mjs');
   const helper = await import(pathToFileURL(helperPath).href);
