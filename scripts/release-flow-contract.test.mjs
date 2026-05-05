@@ -1,6 +1,6 @@
 ﻿import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, symlinkSync } from 'node:fs';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -1222,6 +1222,7 @@ test('git-backed shared sdk source helper parses monorepo submodule layouts and 
   assert.equal(helper.DEFAULT_SHARED_SDK_APP_REPO_URL, 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-app.git');
   assert.equal(helper.DEFAULT_SHARED_SDK_COMMON_REPO_URL, 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-commons.git');
   assert.equal(helper.DEFAULT_SHARED_SDK_CORE_REPO_URL, 'https://github.com/Sdkwork-Cloud/sdkwork-core.git');
+  assert.equal(helper.DEFAULT_SHARED_SDK_APPBASE_REPO_URL, 'https://github.com/Sdkwork-Cloud/sdkwork-appbase.git');
   assert.equal(helper.DEFAULT_SHARED_SDK_RELEASE_CONFIG_PATH, 'config/shared-sdk-release-sources.json');
   assert.match(
     read('scripts/prepare-shared-sdk-git-sources.mjs'),
@@ -1300,6 +1301,7 @@ test('git-backed shared sdk source helper parses monorepo submodule layouts and 
   assert.equal(sharedSdkReleaseConfig.sources['app-sdk'].repoUrl, helper.DEFAULT_SHARED_SDK_APP_REPO_URL);
   assert.equal(sharedSdkReleaseConfig.sources['sdk-common'].repoUrl, helper.DEFAULT_SHARED_SDK_COMMON_REPO_URL);
   assert.equal(sharedSdkReleaseConfig.sources['core-pc-react'].repoUrl, helper.DEFAULT_SHARED_SDK_CORE_REPO_URL);
+  assert.equal(sharedSdkReleaseConfig.sources['local-api-proxy'].repoUrl, helper.DEFAULT_SHARED_SDK_APPBASE_REPO_URL);
   assert.equal(sharedSdkReleaseConfig.sources['im-sdk'].repoUrl, helper.DEFAULT_SHARED_SDK_IM_REPO_URL);
   assert.equal(sharedSdkReleaseConfig.sources['rtc-sdk'].repoUrl, helper.DEFAULT_SHARED_SDK_RTC_REPO_URL);
   assert.doesNotMatch(JSON.stringify(sharedSdkReleaseConfig), /"ref"\s*:\s*"main"/);
@@ -1313,8 +1315,10 @@ test('git-backed shared sdk source helper parses monorepo submodule layouts and 
   assert.match(helperSource, /FETCH_HEAD/);
   assert.match(helperSource, /SDKWORK_SHARED_SDK_IM_REPO_URL/);
   assert.match(helperSource, /SDKWORK_SHARED_SDK_RTC_REPO_URL/);
+  assert.match(helperSource, /SDKWORK_SHARED_SDK_APPBASE_REPO_URL/);
   assert.match(helperSource, /https:\/\/github\.com\/Sdkwork-Cloud\/sdkwork-im-sdk\.git/);
   assert.match(helperSource, /https:\/\/github\.com\/Sdkwork-Cloud\/sdkwork-rtc-sdk\.git/);
+  assert.match(helperSource, /https:\/\/github\.com\/Sdkwork-Cloud\/sdkwork-appbase\.git/);
 });
 
 test('git-backed shared sdk source helper can materialize pinned local git sources from the release config', async (t) => {
@@ -1328,11 +1332,13 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   const appRepoRoot = path.join(sourceRepoRoot, 'sdkwork-sdk-app');
   const commonRepoRoot = path.join(sourceRepoRoot, 'sdkwork-sdk-commons');
   const coreRepoRoot = path.join(sourceRepoRoot, 'sdkwork-core');
+  const appbaseRepoRoot = path.join(sourceRepoRoot, 'sdkwork-appbase');
   const imRepoRoot = path.join(sourceRepoRoot, 'sdkwork-im-sdk');
   const rtcRepoRoot = path.join(sourceRepoRoot, 'sdkwork-rtc-sdk');
   const appPackageRoot = path.join(appRepoRoot, 'sdkwork-app-sdk-typescript');
   const commonPackageRoot = path.join(commonRepoRoot, 'sdkwork-sdk-common-typescript');
   const corePackageRoot = path.join(coreRepoRoot, 'sdkwork-core-pc-react');
+  const localApiProxyPackageRoot = path.join(appbaseRepoRoot, 'packages', 'pc-react', 'intelligence', 'sdkwork-local-api-proxy');
   const imPackageRoot = path.join(imRepoRoot, 'sdkwork-im-sdk-typescript');
   const rtcPackageRoot = path.join(rtcRepoRoot, 'sdkwork-rtc-sdk-typescript');
 
@@ -1353,6 +1359,7 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   mkdirSync(appPackageRoot, { recursive: true });
   mkdirSync(commonPackageRoot, { recursive: true });
   mkdirSync(corePackageRoot, { recursive: true });
+  mkdirSync(localApiProxyPackageRoot, { recursive: true });
   mkdirSync(imPackageRoot, { recursive: true });
   mkdirSync(rtcPackageRoot, { recursive: true });
   mkdirSync(path.dirname(configPath), { recursive: true });
@@ -1370,6 +1377,11 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   writeFileSync(
     path.join(corePackageRoot, 'package.json'),
     JSON.stringify({ name: '@sdkwork/core-pc-react', version: '0.1.0' }, null, 2),
+    'utf8',
+  );
+  writeFileSync(
+    path.join(localApiProxyPackageRoot, 'package.json'),
+    JSON.stringify({ name: '@sdkwork/local-api-proxy', version: '0.1.0' }, null, 2),
     'utf8',
   );
   writeFileSync(
@@ -1407,6 +1419,14 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   runGit(['add', '.'], coreRepoRoot);
   runGit(['commit', '-m', 'seed-core-pc-react'], coreRepoRoot);
 
+  if (!runGit(['init', '--initial-branch', 'main'], appbaseRepoRoot)) {
+    return;
+  }
+  runGit(['config', 'user.name', 'Codex'], appbaseRepoRoot);
+  runGit(['config', 'user.email', 'sdkwork@zowalk.com'], appbaseRepoRoot);
+  runGit(['add', '.'], appbaseRepoRoot);
+  runGit(['commit', '-m', 'seed-local-api-proxy'], appbaseRepoRoot);
+
   if (!runGit(['init', '--initial-branch', 'main'], imRepoRoot)) {
     return;
   }
@@ -1440,6 +1460,10 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
             repoUrl: coreRepoRoot,
             ref: 'main',
           },
+          'local-api-proxy': {
+            repoUrl: appbaseRepoRoot,
+            ref: 'main',
+          },
           'im-sdk': {
             repoUrl: imRepoRoot,
             ref: 'main',
@@ -1468,12 +1492,14 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     const preparedAppSdk = preparedSources.find((entry) => entry.id === 'app-sdk');
     const preparedSdkCommon = preparedSources.find((entry) => entry.id === 'sdk-common');
     const preparedCorePcReact = preparedSources.find((entry) => entry.id === 'core-pc-react');
+    const preparedLocalApiProxy = preparedSources.find((entry) => entry.id === 'local-api-proxy');
     const preparedImSdk = preparedSources.find((entry) => entry.id === 'im-sdk');
     const preparedRtcSdk = preparedSources.find((entry) => entry.id === 'rtc-sdk');
 
     assert.equal(preparedAppSdk?.targetRef, 'main');
     assert.equal(preparedSdkCommon?.targetRef, 'main');
     assert.equal(preparedCorePcReact?.targetRef, 'main');
+    assert.equal(preparedLocalApiProxy?.targetRef, 'main');
     assert.equal(preparedImSdk?.targetRef, 'main');
     assert.equal(preparedRtcSdk?.targetRef, 'main');
     assert.equal(realpathSync(preparedAppSdk.packageRoot), realpathSync(path.join(
@@ -1493,6 +1519,15 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
       'apps',
       'sdkwork-core',
       'sdkwork-core-pc-react',
+    )));
+    assert.equal(realpathSync(preparedLocalApiProxy.packageRoot), realpathSync(path.join(
+      tempRoot,
+      'apps',
+      'sdkwork-appbase',
+      'packages',
+      'pc-react',
+      'intelligence',
+      'sdkwork-local-api-proxy',
     )));
     assert.equal(realpathSync(preparedImSdk.packageRoot), realpathSync(path.join(
       tempRoot,
@@ -1523,6 +1558,10 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
       '@sdkwork/core-pc-react',
     );
     assert.equal(
+      JSON.parse(readFileSync(path.join(preparedLocalApiProxy.packageRoot, 'package.json'), 'utf8')).name,
+      '@sdkwork/local-api-proxy',
+    );
+    assert.equal(
       JSON.parse(readFileSync(path.join(preparedImSdk.packageRoot, 'package.json'), 'utf8')).name,
       '@sdkwork/im-sdk',
     );
@@ -1541,6 +1580,10 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     assert.equal(
       preparedCorePcReact?.repoUrl,
       coreRepoRoot,
+    );
+    assert.equal(
+      preparedLocalApiProxy?.repoUrl,
+      appbaseRepoRoot,
     );
     assert.equal(
       preparedImSdk?.repoUrl,
@@ -1564,6 +1607,110 @@ test('shared sdk release parity hashing treats LF and CRLF text sources as the s
     helper.hashBufferForParity(Buffer.from('export const value = 1;\n', 'utf8')),
     helper.hashBufferForParity(Buffer.from('export const value = 1;\r\n', 'utf8')),
   );
+});
+
+test('shared sdk release parity compares every git materialized release source', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'check-shared-sdk-release-parity.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+
+  assert.ok(Array.isArray(helper.paritySources));
+  assert.deepEqual(
+    helper.paritySources.map((entry) => entry.id).sort(),
+    [
+      'app-sdk',
+      'core-pc-react',
+      'im-sdk',
+      'local-api-proxy',
+      'rtc-sdk',
+      'sdk-common',
+    ],
+  );
+});
+
+test('shared sdk release parity ignores generated directory symlinks before hashing', async (t) => {
+  const helperPath = path.join(rootDir, 'scripts', 'check-shared-sdk-release-parity.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-parity-symlink-'));
+
+  try {
+    const root = path.join(tempRoot, 'sdk');
+    const generatedDist = path.join(root, 'generated', 'server-openapi', 'dist');
+    const composedDir = path.join(root, 'composed');
+    mkdirSync(generatedDist, { recursive: true });
+    mkdirSync(composedDir, { recursive: true });
+    writeFileSync(path.join(generatedDist, 'index.d.ts'), 'export type Generated = true;\n');
+
+    const linkedGeneratedDir = path.join(composedDir, '.generated');
+    try {
+      symlinkSync(generatedDist, linkedGeneratedDir, 'junction');
+    } catch (error) {
+      if (error?.code === 'EPERM' || error?.code === 'EACCES') {
+        t.skip(`directory symlink creation is unavailable in this environment: ${error.code}`);
+        return;
+      }
+
+      throw error;
+    }
+
+    assert.equal(typeof helper.walkSnapshot, 'function');
+    const snapshot = helper.walkSnapshot(root);
+    assert.equal(
+      snapshot.has('composed/.generated/index.d.ts'),
+      false,
+      'generated directory symlinks point at local build outputs and must not be hashed as files',
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('shared sdk release parity ignores package manager cache directories', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'check-shared-sdk-release-parity.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-parity-cache-'));
+
+  try {
+    const root = path.join(tempRoot, 'sdk');
+    const cacheDir = path.join(root, 'generated', 'server-openapi', '.npm-cache', '_cacache');
+    mkdirSync(cacheDir, { recursive: true });
+    writeFileSync(path.join(cacheDir, 'blob'), 'cache-only\n');
+    writeFileSync(path.join(root, 'package.json'), '{"name":"sdk"}\n');
+
+    assert.equal(typeof helper.walkSnapshot, 'function');
+    const snapshot = helper.walkSnapshot(root);
+    assert.equal(snapshot.has('package.json'), true);
+    assert.equal(
+      [...snapshot.keys()].some((entry) => entry.includes('.npm-cache')),
+      false,
+      'release parity must not compare local npm cache payloads',
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('shared sdk release parity ignores native build output directories', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'check-shared-sdk-release-parity.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-parity-native-build-'));
+
+  try {
+    const root = path.join(tempRoot, 'sdk');
+    mkdirSync(path.join(root, 'native', 'tauri-rust', 'target', 'debug'), { recursive: true });
+    writeFileSync(path.join(root, 'native', 'tauri-rust', 'target', 'debug', 'lib.rlib'), 'build-only\n');
+    writeFileSync(path.join(root, 'native', 'tauri-rust', 'Cargo.toml'), '[package]\nname = "sdk"\n');
+
+    assert.equal(typeof helper.walkSnapshot, 'function');
+    const snapshot = helper.walkSnapshot(root);
+    assert.equal(snapshot.has('native/tauri-rust/Cargo.toml'), true);
+    assert.equal(
+      [...snapshot.keys()].some((entry) => entry.includes('/target/')),
+      false,
+      'release parity must not compare local Rust target build output',
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test('desktop release build runner injects the supported Visual Studio generator only on Windows', async () => {
@@ -2126,6 +2273,20 @@ test('release plan resolver expands the claw-studio profile into the full deskto
     resolver.parseArgs(['--package-profile', 'hermes-only']).packageProfileId,
     'hermes-only',
   );
+});
+
+test('shared sdk release parity ignores local generator manual backups', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'check-shared-sdk-release-parity.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+
+  assert.equal(typeof helper.shouldIgnoreParityPath, 'function');
+  assert.equal(helper.shouldIgnoreParityPath('.sdkwork/manual-backups/README.md'), true);
+  assert.equal(helper.shouldIgnoreParityPath('.sdkwork/manual-backups/src/api/app.ts'), true);
+  assert.equal(helper.shouldIgnoreParityPath('generated/server-openapi/.sdkwork/sdkwork-generator-changes.json'), true);
+  assert.equal(helper.shouldIgnoreParityPath('generated/server-openapi/.sdkwork/sdkwork-generator-manifest.json'), true);
+  assert.equal(helper.shouldIgnoreParityPath('generated/server-openapi/.sdkwork/sdkwork-generator-report.json'), true);
+  assert.equal(helper.shouldIgnoreParityPath('.sdkwork/sdkwork-generator-report.json'), false);
+  assert.equal(helper.shouldIgnoreParityPath('sdkwork-sdk.json'), false);
 });
 
 test('release plan resolver exposes target counts through GitHub output', async () => {

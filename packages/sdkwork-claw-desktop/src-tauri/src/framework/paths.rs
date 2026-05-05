@@ -18,6 +18,8 @@ pub const OPENCLAW_DEFAULT_AGENT_ID: &str = "main";
 const SUPPORTED_KERNEL_IDS: [&str; 2] = [OPENCLAW_KERNEL_ID, HERMES_KERNEL_ID];
 const SDKWORK_USER_HOME_DIR_NAME: &str = ".sdkwork";
 const PRODUCT_USER_ROOT_DIR_NAME: &str = "crawstudio";
+const SDKWORK_CLAW_MACHINE_ROOT_ENV_VAR: &str = "SDKWORK_CLAW_MACHINE_ROOT";
+const SDKWORK_CLAW_USER_ROOT_ENV_VAR: &str = "SDKWORK_CLAW_USER_ROOT";
 const MAX_OPENCLAW_AGENT_ID_LEN: usize = 64;
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
@@ -447,6 +449,15 @@ fn build_user_root_from_home_dir(home_dir: &Path) -> PathBuf {
         .join(PRODUCT_USER_ROOT_DIR_NAME)
 }
 
+fn resolve_root_override_from_env(env_var: &str) -> Option<PathBuf> {
+    let raw_value = std::env::var_os(env_var)?;
+    if raw_value.to_string_lossy().trim().is_empty() {
+        return None;
+    }
+
+    Some(PathBuf::from(raw_value))
+}
+
 fn build_paths(install_root: PathBuf, machine_root: PathBuf, user_root: PathBuf) -> AppPaths {
     let foundation_dir = install_root.join("foundation");
     let foundation_components_dir = foundation_dir.join("components");
@@ -632,6 +643,10 @@ fn resolve_machine_root<R: Runtime>(_app: &AppHandle<R>) -> Result<PathBuf> {
 
 #[cfg(windows)]
 fn resolve_machine_root_from_env() -> Result<PathBuf> {
+    if let Some(root) = resolve_root_override_from_env(SDKWORK_CLAW_MACHINE_ROOT_ENV_VAR) {
+        return Ok(root);
+    }
+
     let base = std::env::var_os("ProgramData")
         .map(PathBuf::from)
         .ok_or_else(|| FrameworkError::NotFound("ProgramData environment variable".to_string()))?;
@@ -646,6 +661,10 @@ fn resolve_machine_root_from_current_process() -> Result<PathBuf> {
 
 #[cfg(not(windows))]
 fn resolve_machine_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
+    if let Some(root) = resolve_root_override_from_env(SDKWORK_CLAW_MACHINE_ROOT_ENV_VAR) {
+        return Ok(root);
+    }
+
     let resolver = app.path();
     resolver
         .app_data_dir()
@@ -655,6 +674,10 @@ fn resolve_machine_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
 
 #[cfg(not(windows))]
 fn resolve_machine_root_from_current_process() -> Result<PathBuf> {
+    if let Some(root) = resolve_root_override_from_env(SDKWORK_CLAW_MACHINE_ROOT_ENV_VAR) {
+        return Ok(root);
+    }
+
     let context: tauri::Context<tauri::Wry> = tauri::generate_context!();
     dirs::data_dir()
         .map(|path| {
@@ -671,6 +694,10 @@ fn resolve_user_root<R: Runtime>(_app: &AppHandle<R>) -> Result<PathBuf> {
 
 #[cfg(windows)]
 fn resolve_user_root_from_env() -> Result<PathBuf> {
+    if let Some(root) = resolve_root_override_from_env(SDKWORK_CLAW_USER_ROOT_ENV_VAR) {
+        return Ok(root);
+    }
+
     let base = dirs::home_dir()
         .or_else(|| std::env::var_os("USERPROFILE").map(PathBuf::from))
         .ok_or_else(|| FrameworkError::NotFound("user home directory".to_string()))?;
@@ -685,6 +712,10 @@ fn resolve_user_root_from_current_process() -> Result<PathBuf> {
 
 #[cfg(not(windows))]
 fn resolve_user_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
+    if let Some(root) = resolve_root_override_from_env(SDKWORK_CLAW_USER_ROOT_ENV_VAR) {
+        return Ok(root);
+    }
+
     let resolver = app.path();
     resolver
         .home_dir()
@@ -694,6 +725,10 @@ fn resolve_user_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
 
 #[cfg(not(windows))]
 fn resolve_user_root_from_current_process() -> Result<PathBuf> {
+    if let Some(root) = resolve_root_override_from_env(SDKWORK_CLAW_USER_ROOT_ENV_VAR) {
+        return Ok(root);
+    }
+
     dirs::home_dir()
         .map(|path| build_user_root_from_home_dir(&path))
         .ok_or_else(|| FrameworkError::NotFound("user home directory".to_string()))
@@ -716,6 +751,25 @@ mod tests {
         build_user_root_from_home_dir, normalize_openclaw_agent_id, resolve_paths_for_root,
     };
     use std::path::PathBuf;
+    use std::sync::{Mutex, OnceLock};
+
+    static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+    fn with_env_override<F>(key: &str, value: &std::path::Path, action: F)
+    where
+        F: FnOnce(),
+    {
+        let lock = ENV_LOCK.get_or_init(|| Mutex::new(()));
+        let _guard = lock.lock().expect("env lock");
+        let previous = std::env::var_os(key);
+        std::env::set_var(key, value);
+        action();
+        if let Some(previous) = previous {
+            std::env::set_var(key, previous);
+        } else {
+            std::env::remove_var(key);
+        }
+    }
 
     fn normalize(path: &std::path::Path) -> String {
         path.to_string_lossy().replace('\\', "/")
@@ -757,6 +811,33 @@ mod tests {
             ),
             "C:/Users/alice/.sdkwork/crawstudio/.openclaw"
         );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn explicit_user_root_env_override_takes_precedence_on_windows() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let expected_user_root = root.path().join(".sdkwork").join("crawstudio");
+
+        with_env_override("SDKWORK_CLAW_USER_ROOT", &expected_user_root, || {
+            let user_root = super::resolve_user_root_from_env().expect("user root from env");
+
+            assert_eq!(normalize(&user_root), normalize(&expected_user_root));
+        });
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn explicit_machine_root_env_override_takes_precedence_on_windows() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let expected_machine_root = root.path().join("SdkWork").join("CrawStudio");
+
+        with_env_override("SDKWORK_CLAW_MACHINE_ROOT", &expected_machine_root, || {
+            let machine_root =
+                super::resolve_machine_root_from_env().expect("machine root from env");
+
+            assert_eq!(normalize(&machine_root), normalize(&expected_machine_root));
+        });
     }
 
     #[test]

@@ -17,18 +17,33 @@ const workspaceRootDir = path.resolve(__dirname, '..');
 const releaseConfigPath = path.resolve(workspaceRootDir, 'config', 'shared-sdk-release-sources.json');
 
 const ignoredDirectoryNames = new Set([
+  '.generated',
   '.git',
+  '.npm-cache',
   '.turbo',
+  'build',
   'coverage',
   'dist',
   'node_modules',
+  'obj',
+  'out',
+  'target',
 ]);
 
 const ignoredFileNames = new Set([
   '.DS_Store',
 ]);
 
-const paritySources = [
+export function shouldIgnoreParityPath(relativePath) {
+  const normalizedRelativePath = String(relativePath ?? '').replaceAll('\\', '/');
+  return normalizedRelativePath === '.sdkwork/manual-backups'
+    || normalizedRelativePath.startsWith('.sdkwork/manual-backups/')
+    || normalizedRelativePath.endsWith('/.sdkwork/sdkwork-generator-changes.json')
+    || normalizedRelativePath.endsWith('/.sdkwork/sdkwork-generator-manifest.json')
+    || normalizedRelativePath.endsWith('/.sdkwork/sdkwork-generator-report.json');
+}
+
+export const paritySources = [
   {
     id: 'app-sdk',
     label: '@sdkwork/app-sdk',
@@ -51,6 +66,14 @@ const paritySources = [
     localRoot: path.resolve(
       workspaceRootDir,
       '../sdkwork-core/sdkwork-core-pc-react',
+    ),
+  },
+  {
+    id: 'local-api-proxy',
+    label: '@sdkwork/local-api-proxy',
+    localRoot: path.resolve(
+      workspaceRootDir,
+      '../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy',
     ),
   },
   {
@@ -91,7 +114,7 @@ function hashFile(filePath) {
   return hashBufferForParity(fs.readFileSync(filePath));
 }
 
-function walkSnapshot(rootDir, currentDir = rootDir, snapshot = new Map()) {
+export function walkSnapshot(rootDir, currentDir = rootDir, snapshot = new Map()) {
   const entries = fs.readdirSync(currentDir, { withFileTypes: true });
 
   for (const entry of entries) {
@@ -102,7 +125,11 @@ function walkSnapshot(rootDir, currentDir = rootDir, snapshot = new Map()) {
     const absolutePath = path.join(currentDir, entry.name);
     const relativePath = path.relative(rootDir, absolutePath).replaceAll(path.sep, '/');
 
-    if (entry.isDirectory()) {
+    if (shouldIgnoreParityPath(relativePath)) {
+      continue;
+    }
+
+    if (entry.isDirectory() || fs.statSync(absolutePath).isDirectory()) {
       walkSnapshot(rootDir, absolutePath, snapshot);
       continue;
     }

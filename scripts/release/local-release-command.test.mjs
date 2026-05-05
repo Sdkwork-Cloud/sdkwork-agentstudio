@@ -550,6 +550,10 @@ test('local release helper auto-builds stale desktop prerequisites for local des
   assert.equal(typeof helper.ensureLocalDesktopBuildPrerequisite, 'function');
 
   const buildCalls = [];
+  const resolvedBundleRoots = [
+    'D:/synthetic/fallback-desktop-bundle',
+    'D:/synthetic/x86_64-pc-windows-msvc-desktop-bundle',
+  ];
   const result = helper.ensureLocalDesktopBuildPrerequisite({
     context: {
       mode: 'package:desktop',
@@ -560,7 +564,7 @@ test('local release helper auto-builds stale desktop prerequisites for local des
       return true;
     },
     resolveDesktopBundleRoot() {
-      return 'D:/synthetic/desktop-bundle';
+      return resolvedBundleRoots.shift();
     },
     inspectTauriTargetFn() {
       return {
@@ -579,7 +583,7 @@ test('local release helper auto-builds stale desktop prerequisites for local des
     },
   ]);
   assert.deepEqual(result, {
-    bundleRoot: 'D:/synthetic/desktop-bundle',
+    bundleRoot: 'D:/synthetic/x86_64-pc-windows-msvc-desktop-bundle',
     built: true,
     staleTarget: true,
   });

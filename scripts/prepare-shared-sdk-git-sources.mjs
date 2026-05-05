@@ -8,11 +8,13 @@ const __filename = fileURLToPath(import.meta.url);
 export const SHARED_SDK_APP_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_APP_REPO_URL';
 export const SHARED_SDK_COMMON_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_COMMON_REPO_URL';
 export const SHARED_SDK_CORE_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_CORE_REPO_URL';
+export const SHARED_SDK_APPBASE_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_APPBASE_REPO_URL';
 export const SHARED_SDK_IM_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_IM_REPO_URL';
 export const SHARED_SDK_RTC_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_RTC_REPO_URL';
 export const SHARED_SDK_APP_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_APP_GIT_REF';
 export const SHARED_SDK_COMMON_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_COMMON_GIT_REF';
 export const SHARED_SDK_CORE_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_CORE_GIT_REF';
+export const SHARED_SDK_APPBASE_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_APPBASE_GIT_REF';
 export const SHARED_SDK_IM_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_IM_GIT_REF';
 export const SHARED_SDK_RTC_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_RTC_GIT_REF';
 export const SHARED_SDK_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_GIT_REF';
@@ -21,6 +23,7 @@ export const SHARED_SDK_RELEASE_CONFIG_PATH_ENV_VAR = 'SDKWORK_SHARED_SDK_RELEAS
 export const DEFAULT_SHARED_SDK_APP_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-app.git';
 export const DEFAULT_SHARED_SDK_COMMON_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-commons.git';
 export const DEFAULT_SHARED_SDK_CORE_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-core.git';
+export const DEFAULT_SHARED_SDK_APPBASE_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-appbase.git';
 export const DEFAULT_SHARED_SDK_IM_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git';
 export const DEFAULT_SHARED_SDK_RTC_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-rtc-sdk.git';
 export const DEFAULT_SHARED_SDK_RELEASE_CONFIG_PATH = 'config/shared-sdk-release-sources.json';
@@ -145,6 +148,17 @@ function createSourceSpecs(workspaceRootDir) {
       repoUrlEnvVar: SHARED_SDK_CORE_REPO_URL_ENV_VAR,
       refEnvVar: SHARED_SDK_CORE_GIT_REF_ENV_VAR,
       defaultRepoUrl: DEFAULT_SHARED_SDK_CORE_REPO_URL,
+    },
+    {
+      id: 'local-api-proxy',
+      label: '@sdkwork/local-api-proxy',
+      repoRoot: path.resolve(workspaceRootDir, '../sdkwork-appbase'),
+      packageContainerDirName: 'packages/pc-react/intelligence',
+      packageDirName: 'sdkwork-local-api-proxy',
+      monorepoSubmodulePath: '',
+      repoUrlEnvVar: SHARED_SDK_APPBASE_REPO_URL_ENV_VAR,
+      refEnvVar: SHARED_SDK_APPBASE_GIT_REF_ENV_VAR,
+      defaultRepoUrl: DEFAULT_SHARED_SDK_APPBASE_REPO_URL,
     },
     {
       id: 'im-sdk',

@@ -393,14 +393,22 @@ export function ensureLocalDesktopBuildPrerequisite({
     profileId: context?.profileId,
     targetTriple: context?.target,
   });
-  if (!(typeof bundleRoot === 'string' && bundleRoot.length > 0 && fileExists(bundleRoot))) {
+  const rebuiltBundleRoot = resolveDesktopBundleRoot({
+    targetTriple: String(context?.target ?? '').trim(),
+    env: inspectionEnv,
+  });
+  if (!(
+    typeof rebuiltBundleRoot === 'string'
+    && rebuiltBundleRoot.length > 0
+    && fileExists(rebuiltBundleRoot)
+  )) {
     throw new Error(
-      `Desktop release build completed without producing the canonical bundle root at ${bundleRoot}.`,
+      `Desktop release build completed without producing the canonical bundle root at ${rebuiltBundleRoot}.`,
     );
   }
 
   return {
-    bundleRoot,
+    bundleRoot: rebuiltBundleRoot,
     built: true,
     staleTarget,
   };

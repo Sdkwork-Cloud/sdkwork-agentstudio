@@ -12,6 +12,10 @@
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-core.git",
       "ref": "661c42032a7af6b81503d48c3821aa81075ebc8d"
     },
+    "local-api-proxy": {
+      "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-appbase.git",
+      "ref": "4909120cb8c6f9f02f679ac477f6dd78711a1e0e"
+    },
     "im-sdk": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git",
       "ref": "043e3015bb7b114496cbc6db3e5df078c5ad2c8e"

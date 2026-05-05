@@ -513,6 +513,8 @@ function buildWindowsSmokeEnvironment(smokeRoot, baseEnv = process.env) {
   const localAppDataDir = ensureDirectory(path.join(homeDir, 'AppData', 'Local'));
   const tempDir = ensureDirectory(path.join(smokeRoot, 'tmp'));
   const programDataDir = ensureDirectory(path.join(smokeRoot, 'program-data'));
+  const clawUserRoot = ensureDirectory(path.join(homeDir, '.sdkwork', 'crawstudio'));
+  const clawMachineRoot = ensureDirectory(path.join(programDataDir, 'SdkWork', 'CrawStudio'));
 
   return {
     ...baseEnv,
@@ -520,6 +522,8 @@ function buildWindowsSmokeEnvironment(smokeRoot, baseEnv = process.env) {
     APPDATA: appDataDir,
     LOCALAPPDATA: localAppDataDir,
     ProgramData: programDataDir,
+    SDKWORK_CLAW_USER_ROOT: clawUserRoot,
+    SDKWORK_CLAW_MACHINE_ROOT: clawMachineRoot,
     TEMP: tempDir,
     TMP: tempDir,
     TMPDIR: tempDir,
@@ -536,11 +540,15 @@ function buildPosixSmokeEnvironment({
   const dataHome = ensureDirectory(path.join(homeDir, '.local', 'share'));
   const configHome = ensureDirectory(path.join(homeDir, '.config'));
   const cacheHome = ensureDirectory(path.join(homeDir, '.cache'));
+  const clawUserRoot = ensureDirectory(path.join(homeDir, '.sdkwork', 'crawstudio'));
+  const clawMachineRoot = ensureDirectory(path.join(smokeRoot, 'app-data', 'machine'));
 
   return {
     ...baseEnv,
     HOME: homeDir,
     TMPDIR: tempDir,
+    SDKWORK_CLAW_USER_ROOT: clawUserRoot,
+    SDKWORK_CLAW_MACHINE_ROOT: clawMachineRoot,
     ...(platform === 'linux'
       ? {
         XDG_DATA_HOME: dataHome,
@@ -556,6 +564,16 @@ function resolveDesktopStartupEvidencePathForEnv({
   env,
 } = {}) {
   const releasePlatform = normalizeDesktopPlatform(platform);
+  const explicitUserRoot = String(env?.SDKWORK_CLAW_USER_ROOT ?? '').trim();
+  if (explicitUserRoot) {
+    return path.join(
+      explicitUserRoot,
+      'studio',
+      'diagnostics',
+      'desktop-startup-evidence.json',
+    );
+  }
+
   const homeDir = releasePlatform === 'windows'
     ? String(env?.USERPROFILE ?? '').trim()
     : String(env?.HOME ?? '').trim();

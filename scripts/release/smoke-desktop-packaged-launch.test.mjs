@@ -339,6 +339,14 @@ test('desktop packaged launch smoke executes the Windows installer through Power
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-windows-installer-'));
   const smokeRoot = path.join(tempRoot, 'smoke-root');
   const expectedBinaryPath = path.join(smokeRoot, 'install-root', 'Claw Studio.exe');
+  const expectedUserRoot = path.join(smokeRoot, 'home', '.sdkwork', 'crawstudio');
+  const expectedMachineRoot = path.join(smokeRoot, 'program-data', 'SdkWork', 'CrawStudio');
+  const expectedEvidencePath = path.join(
+    expectedUserRoot,
+    'studio',
+    'diagnostics',
+    'desktop-startup-evidence.json',
+  );
   let commandInvocation = null;
 
   try {
@@ -364,6 +372,22 @@ test('desktop packaged launch smoke executes the Windows installer through Power
     assert.equal(
       preparedLaunch.launcher.command.replaceAll('\\', '/'),
       expectedBinaryPath.replaceAll('\\', '/'),
+    );
+    assert.equal(
+      commandInvocation.env.SDKWORK_CLAW_USER_ROOT.replaceAll('\\', '/'),
+      expectedUserRoot.replaceAll('\\', '/'),
+    );
+    assert.equal(
+      commandInvocation.env.SDKWORK_CLAW_MACHINE_ROOT.replaceAll('\\', '/'),
+      expectedMachineRoot.replaceAll('\\', '/'),
+    );
+    assert.equal(
+      preparedLaunch.launcher.env.SDKWORK_CLAW_USER_ROOT.replaceAll('\\', '/'),
+      expectedUserRoot.replaceAll('\\', '/'),
+    );
+    assert.equal(
+      preparedLaunch.evidencePath.replaceAll('\\', '/'),
+      expectedEvidencePath.replaceAll('\\', '/'),
     );
     assert.match(
       smokeSource,
