@@ -54,27 +54,19 @@ const paritySources = [
     ),
   },
   {
-    id: 'im-backend-sdk',
-    label: '@sdkwork/im-backend-sdk',
+    id: 'im-sdk',
+    label: '@sdkwork/im-sdk',
     localRoot: path.resolve(
       workspaceRootDir,
-      '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/generated/server-openapi',
+      '../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript',
     ),
   },
   {
-    id: 'openchat-im-sdk',
-    label: '@openchat/sdkwork-im-sdk',
+    id: 'rtc-sdk',
+    label: '@sdkwork/rtc-sdk',
     localRoot: path.resolve(
       workspaceRootDir,
-      '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/composed',
-    ),
-  },
-  {
-    id: 'openchat-im-wukongim-adapter',
-    label: '@openchat/sdkwork-im-wukongim-adapter',
-    localRoot: path.resolve(
-      workspaceRootDir,
-      '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/adapter-wukongim',
+      '../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript',
     ),
   },
 ];
