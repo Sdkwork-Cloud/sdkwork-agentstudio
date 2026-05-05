@@ -154,9 +154,17 @@ const DEFAULT_CHANNEL_DEFINITIONS: ReturnType<
     setupSteps: ['SDKWORK Chat is available immediately.'],
   },
   {
-    id: 'wehcat',
+    id: 'wechat',
     name: 'WeChat',
-    description: 'WeChat channel integration.',
+    description: 'WeChat direct chat integration.',
+    configurationMode: 'none',
+    fields: [],
+    setupSteps: ['Scan the WeChat connection QR code or keep the direct chat runtime enabled.'],
+  },
+  {
+    id: 'wehcat',
+    name: 'WeChat Official Account',
+    description: 'WeChat official account integration.',
     configurationMode: 'required',
     fields: [createChannelField('appId'), createChannelField('appSecret')],
     setupSteps: ['Configure the WeChat application credentials.'],
@@ -970,8 +978,8 @@ await runTest('getInstanceWorkbench builds a remote OpenClaw snapshot from gatew
 
   assert.ok(workbench);
   assert.deepEqual(
-    workbench?.channels.slice(0, 5).map((channel) => channel.id),
-    ['sdkworkchat', 'wehcat', 'qq', 'dingtalk', 'wecom'],
+    workbench?.channels.slice(0, 6).map((channel) => channel.id),
+    ['sdkworkchat', 'wechat', 'wehcat', 'qq', 'dingtalk', 'wecom'],
   );
   assert.equal(workbench?.channels.some((channel) => channel.id === 'slack'), true);
   assert.equal(workbench?.channels.find((channel) => channel.id === 'slack')?.status, 'connected');
@@ -2384,8 +2392,8 @@ await runTest('getInstanceWorkbench keeps Provider Center managed llmProviders a
 
     assert.ok(workbench);
     assert.deepEqual(
-      workbench?.channels.slice(0, 5).map((channel) => channel.id),
-      ['sdkworkchat', 'wehcat', 'qq', 'dingtalk', 'wecom'],
+      workbench?.channels.slice(0, 6).map((channel) => channel.id),
+      ['sdkworkchat', 'wechat', 'wehcat', 'qq', 'dingtalk', 'wecom'],
     );
     assert.equal(workbench?.channels.some((channel) => channel.id === 'slack'), true);
     assert.equal(workbench?.channels.some((channel) => channel.id === 'old-channel'), true);

@@ -363,7 +363,7 @@ function createDefaultDependencies(): InstanceWorkbenchServiceDependencies {
     },
     openClawConfigDocumentApi: {
       readConfigSnapshot: async (configFile) => createEmptyOpenClawConfigSnapshot(configFile),
-      getChannelDefinitions: () => [],
+      getChannelDefinitions: () => openClawConfigService.getChannelDefinitions(),
     },
     openClawGatewayClient: {
       getConfig: createMissingAsyncDependency('openClawGatewayClient.getConfig'),

@@ -156,16 +156,22 @@ await runTest(
 );
 
 await runTest(
-  'ChatSidebar compresses long kernel names into a compact badge while preserving the full label as hover metadata',
+  'ChatSidebar keeps the agent rail compact and omits kernel abbreviation badges',
   () => {
     assert.equal(existsSync(agentItemUrl), true);
     assert.match(sidebarSource, /import \{ ChatSidebarAgentItem \} from '\.\/ChatSidebarAgentItem';/);
-    assert.match(agentItemSource, /resolveKernelBadgeLabel/);
-    assert.match(agentItemSource, /CHAT_SIDEBAR_KERNEL_BADGE_CLASS/);
+    assert.doesNotMatch(agentItemSource, /resolveKernelBadgeLabel/);
+    assert.doesNotMatch(agentItemSource, /CHAT_SIDEBAR_KERNEL_BADGE_CLASS/);
     assert.match(primitivesSource, /export function resolveKernelBadgeLabel\(/);
     assert.match(
-      agentItemSource,
-      /agent\.kernelLabel \?\s*\(\s*<span className=\{CHAT_SIDEBAR_KERNEL_BADGE_CLASS\} title=\{agent\.kernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(agent\.kernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
+      primitivesSource,
+      /'relative flex h-10 w-full min-w-0 items-center gap-2 rounded-lg px-2 text-left transition-all disabled:cursor-wait'/,
     );
+    assert.match(
+      primitivesSource,
+      /'relative flex h-7 w-7 shrink-0 items-center justify-center rounded-\[0\.65rem\] text-\[9px\] font-semibold uppercase transition-colors'/,
+    );
+    assert.match(agentItemSource, /<div className="flex min-w-0 flex-1 items-center gap-1 pr-7">/);
+    assert.doesNotMatch(agentItemSource, /agent\.kernelLabel \?\s*\(/);
   },
 );

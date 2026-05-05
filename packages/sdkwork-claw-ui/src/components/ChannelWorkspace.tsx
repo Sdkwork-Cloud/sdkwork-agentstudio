@@ -1,6 +1,15 @@
 import * as React from 'react';
+import * as QRCode from 'qrcode';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, ExternalLink, X } from 'lucide-react';
+import {
+  BookOpen,
+  ExternalLink,
+  Keyboard,
+  LoaderCircle,
+  QrCode,
+  ShieldCheck,
+  X,
+} from 'lucide-react';
 import { cn } from '../lib/utils';
 import {
   ChannelCatalog,
@@ -56,6 +65,12 @@ export interface ChannelWorkspaceTexts extends ChannelCatalogTexts {
   panelEyebrow: string;
   setupGuideTitle: string;
   credentialsTitle: string;
+  qrConnectionTitle: string;
+  qrConnectionDescription: string;
+  qrConnectionAlt: string;
+  qrConnectionPending: string;
+  qrConnectionHint: string;
+  manualConfigurationAction: string;
   saveAction: string;
   savingAction: string;
   deleteConfigurationAction: string;
@@ -124,6 +139,63 @@ function getInputType(field: ChannelWorkspaceField) {
   return 'text';
 }
 
+type ChannelConnectionMode = 'qr' | 'manual';
+
+function supportsChannelQrConnection(channel: ChannelWorkspaceItem | null) {
+  return Boolean(channel && getChannelCatalogRegions(channel.id).includes('domestic'));
+}
+
+function buildChannelQrContent(channel: ChannelWorkspaceItem) {
+  return JSON.stringify({
+    kind: 'sdkwork-claw-channel-connect',
+    channelId: channel.id,
+    channelName: channel.name,
+    configurationMode: channel.configurationMode || 'required',
+  });
+}
+
+function useChannelQrImage(channel: ChannelWorkspaceItem | null) {
+  const [qrImageSrc, setQrImageSrc] = React.useState('');
+
+  React.useEffect(() => {
+    let disposed = false;
+
+    if (!channel || !supportsChannelQrConnection(channel)) {
+      setQrImageSrc('');
+      return () => {
+        disposed = true;
+      };
+    }
+
+    setQrImageSrc('');
+    void QRCode.toDataURL(buildChannelQrContent(channel), {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      scale: 8,
+      color: {
+        dark: '#111827',
+        light: '#ffffff',
+      },
+    })
+      .then((nextImageSrc) => {
+        if (!disposed) {
+          setQrImageSrc(nextImageSrc);
+        }
+      })
+      .catch(() => {
+        if (!disposed) {
+          setQrImageSrc('');
+        }
+      });
+
+    return () => {
+      disposed = true;
+    };
+  }, [channel]);
+
+  return qrImageSrc;
+}
+
 export function ChannelWorkspace({
   items,
   texts,
@@ -146,6 +218,8 @@ export function ChannelWorkspace({
 }: ChannelWorkspaceProps) {
   const { t } = useTranslation();
   const [validationError, setValidationError] = React.useState<string | null>(null);
+  const [selectedConnectionMode, setSelectedConnectionMode] =
+    React.useState<ChannelConnectionMode>('qr');
   const localizedItems = React.useMemo(
     () =>
       items.map((item) =>
@@ -168,6 +242,9 @@ export function ChannelWorkspace({
     () => localizedItems.find((channel) => channel.id === selectedChannelId) || null,
     [localizedItems, selectedChannelId],
   );
+  const selectedChannelSupportsQrConnection = supportsChannelQrConnection(selectedChannel);
+  const selectedQrImageSrc = useChannelQrImage(selectedChannelSupportsQrConnection ? selectedChannel : null);
+  const shouldShowCredentialsPanel = !selectedChannelSupportsQrConnection || selectedConnectionMode === 'manual';
 
   const selectedValues = React.useMemo<Record<string, string>>(() => {
     if (!selectedChannel) {
@@ -179,6 +256,7 @@ export function ChannelWorkspace({
 
   React.useEffect(() => {
     setValidationError(null);
+    setSelectedConnectionMode('qr');
   }, [selectedChannelId]);
 
   React.useEffect(() => {
@@ -256,6 +334,25 @@ export function ChannelWorkspace({
     }
 
     void onSave(selectedChannel, selectedValues);
+  };
+
+  const handleQrConnect = () => {
+    if (!selectedChannel) {
+      return;
+    }
+
+    setValidationError(null);
+    if (selectedChannel.fields.length === 0 && onToggleEnabled) {
+      void onToggleEnabled(selectedChannel, true);
+      return;
+    }
+
+    if (selectedChannel.fields.length === 0 && onSave) {
+      void onSave(selectedChannel, selectedValues);
+      return;
+    }
+
+    setSelectedConnectionMode('manual');
   };
 
   return (
@@ -403,62 +500,118 @@ export function ChannelWorkspace({
                 ) : null}
               </div>
 
-              <div
-                data-slot="channel-workspace-credentials-panel"
-                className="rounded-[24px] border border-zinc-200/80 bg-white/92 p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.32)] dark:border-zinc-800 dark:bg-zinc-900/86"
-              >
-                <h3 className="border-b border-zinc-100 pb-2 text-sm font-bold text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
-                  {texts.credentialsTitle}
-                </h3>
-                <div className="mt-5 space-y-5">
-                  {selectedChannel.fields.map((field) => (
-                    <div key={field.key}>
-                      <Label className="mb-1.5 block">
-                        {field.label}
-                        {field.required ? ' *' : ''}
-                      </Label>
-                      {field.multiline ? (
-                        <Textarea
-                          value={selectedValues[field.key] || ''}
-                          onChange={(event) => {
-                            setValidationError(null);
-                            if (!onFieldChange) {
-                              return;
-                            }
-                            void onFieldChange(selectedChannel, field.key, event.target.value);
-                          }}
-                          placeholder={field.placeholder}
-                          rows={5}
+              {selectedChannelSupportsQrConnection && selectedConnectionMode === 'qr' ? (
+                <div
+                  data-slot="channel-workspace-qr-panel"
+                  className="rounded-[24px] border border-zinc-200/80 bg-white/92 p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.32)] dark:border-zinc-800 dark:bg-zinc-900/86"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                        <QrCode className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+                        {texts.qrConnectionTitle}
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+                        {texts.qrConnectionDescription}
+                      </p>
+                    </div>
+                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      {texts.qrConnectionPending}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 rounded-[22px] bg-zinc-50 p-4 dark:bg-zinc-950/55">
+                    <div className="mx-auto aspect-square w-full max-w-[220px] rounded-[18px] bg-white p-3 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.45)]">
+                      {selectedQrImageSrc ? (
+                        <img
+                          src={selectedQrImageSrc}
+                          alt={texts.qrConnectionAlt}
+                          className="h-full w-full object-contain"
                         />
                       ) : (
-                        <Input
-                          type={getInputType(field)}
-                          value={selectedValues[field.key] || ''}
-                          onChange={(event) => {
-                            setValidationError(null);
-                            if (!onFieldChange) {
-                              return;
-                            }
-                            void onFieldChange(selectedChannel, field.key, event.target.value);
-                          }}
-                          placeholder={field.placeholder}
-                        />
+                        <div className="flex h-full items-center justify-center rounded-[14px] bg-zinc-100 text-zinc-400">
+                          <LoaderCircle className="h-7 w-7 animate-spin" />
+                        </div>
                       )}
-                      {field.helpText ? (
-                        <p className="mt-1.5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                          {field.helpText}
-                        </p>
-                      ) : null}
                     </div>
-                  ))}
-
-                  {displayedError ? (
-                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-                      {displayedError}
-                    </div>
-                  ) : null}
+                    <p className="mx-auto mt-4 max-w-[18rem] text-center text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+                      {texts.qrConnectionHint}
+                    </p>
+                    <button
+                      type="button"
+                      data-slot="channel-workspace-qr-manual-action"
+                      className="mx-auto mt-3 flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                      onClick={() => {
+                        setValidationError(null);
+                        setSelectedConnectionMode('manual');
+                      }}
+                    >
+                      <Keyboard className="h-4 w-4" />
+                      {texts.manualConfigurationAction}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
+
+              {shouldShowCredentialsPanel ? (
+                <div
+                  data-slot="channel-workspace-credentials-panel"
+                  className="rounded-[24px] border border-zinc-200/80 bg-white/92 p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.32)] dark:border-zinc-800 dark:bg-zinc-900/86"
+                >
+                  <h3 className="border-b border-zinc-100 pb-2 text-sm font-bold text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
+                    {texts.credentialsTitle}
+                  </h3>
+                  <div className="mt-5 space-y-5">
+                    {selectedChannel.fields.map((field) => (
+                      <div key={field.key}>
+                        <Label className="mb-1.5 block">
+                          {field.label}
+                          {field.required ? ' *' : ''}
+                        </Label>
+                        {field.multiline ? (
+                          <Textarea
+                            value={selectedValues[field.key] || ''}
+                            onChange={(event) => {
+                              setValidationError(null);
+                              if (!onFieldChange) {
+                                return;
+                              }
+                              void onFieldChange(selectedChannel, field.key, event.target.value);
+                            }}
+                            placeholder={field.placeholder}
+                            rows={5}
+                          />
+                        ) : (
+                          <Input
+                            type={getInputType(field)}
+                            value={selectedValues[field.key] || ''}
+                            onChange={(event) => {
+                              setValidationError(null);
+                              if (!onFieldChange) {
+                                return;
+                              }
+                              void onFieldChange(selectedChannel, field.key, event.target.value);
+                            }}
+                            placeholder={field.placeholder}
+                          />
+                        )}
+                        {field.helpText ? (
+                          <p className="mt-1.5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                            {field.helpText}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+
+                    {displayedError ? (
+                      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                        {displayedError}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -467,9 +620,15 @@ export function ChannelWorkspace({
             className="border-t border-zinc-200/70 bg-white/92 p-6 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/82"
           >
             <div className="flex flex-col gap-3">
-              <Button onClick={handleSave} disabled={isSaving} className="w-full">
-                {isSaving ? texts.savingAction : texts.saveAction}
-              </Button>
+              {selectedChannelSupportsQrConnection && selectedConnectionMode === 'qr' ? (
+                <Button onClick={handleQrConnect} disabled={isSaving} className="w-full">
+                  {isSaving ? texts.savingAction : texts.actionConnect}
+                </Button>
+              ) : (
+                <Button onClick={handleSave} disabled={isSaving} className="w-full">
+                  {isSaving ? texts.savingAction : texts.saveAction}
+                </Button>
+              )}
               {onDeleteConfiguration && hasConfiguredValues ? (
                 <button
                   type="button"

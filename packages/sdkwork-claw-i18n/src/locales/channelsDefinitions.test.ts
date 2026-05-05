@@ -16,6 +16,7 @@ function runTest(name: string, callback: () => void | Promise<void>) {
 
 const expectedChannelFields: Record<string, string[]> = {
   sdkworkchat: [],
+  wechat: [],
   wehcat: ['appId', 'appSecret', 'token', 'encodingAesKey'],
   qq: ['botKey', 'groupId'],
   dingtalk: ['accessToken', 'secret'],
@@ -47,6 +48,7 @@ const expectedChannelFields: Record<string, string[]> = {
 
 const expectedOfficialLinkChannels = [
   'sdkworkchat',
+  'wechat',
   'wehcat',
   'feishu',
   'qq',
@@ -105,5 +107,23 @@ await runTest('channels locale bundles expose localized official link labels for
     assert.equal(en.definitions.officialLinks[channelId].length > 0, true);
     assert.equal(typeof zh.definitions.officialLinks[channelId], 'string');
     assert.equal(zh.definitions.officialLinks[channelId].length > 0, true);
+  }
+});
+
+await runTest('channels locale bundles expose QR connection copy and manual fallback labels', () => {
+  const qrCopyKeys = [
+    'qrConnectionTitle',
+    'qrConnectionDescription',
+    'qrConnectionAlt',
+    'qrConnectionPending',
+    'qrConnectionHint',
+    'manualConfigurationAction',
+  ] as const;
+
+  for (const key of qrCopyKeys) {
+    assert.equal(typeof en.page.panel[key], 'string');
+    assert.equal(en.page.panel[key].length > 0, true);
+    assert.equal(typeof zh.page.panel[key], 'string');
+    assert.equal(zh.page.panel[key].length > 0, true);
   }
 });

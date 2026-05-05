@@ -68,6 +68,15 @@ runTest('ChannelCatalog management actions live in a separate action surface', (
   assert.match(source, /rounded-\[20px\] border border-zinc-200\/80 bg-zinc-50\/80 px-3 py-3/);
 });
 
+runTest('ChannelCatalog opens domestic download-only channels through the shared configure flow so QR connection is available', () => {
+  const source = readFileSync(resolve(import.meta.dirname, 'ChannelCatalog.tsx'), 'utf8');
+
+  assert.match(source, /const supportsQrConnection = getChannelCatalogRegions\(channel\.id\)\.includes\('domestic'\)/);
+  assert.match(source, /isChannelDownloadAppAction\(channel\.id\) && !supportsQrConnection/);
+  assert.match(source, /onConfigure && supportsQrConnection/);
+  assert.match(source, /onConfigure\(channel\)/);
+});
+
 runTest('ChannelCatalog reads region copy from the shared catalog region content helper', () => {
   const source = readFileSync(resolve(import.meta.dirname, 'ChannelCatalog.tsx'), 'utf8');
 

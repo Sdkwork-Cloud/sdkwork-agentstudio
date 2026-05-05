@@ -184,6 +184,24 @@ await runTest('sdkwork-claw-chat keeps page-local UI state inside a dedicated pa
   assert.match(uiStateHookSource, /export function useChatPageUiState\(\)/);
 });
 
+await runTest('sdkwork-claw-chat keeps the light conversation background distinct from the composer surface', () => {
+  const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
+  const chatChromeSurfaceSource = read('packages/sdkwork-claw-chat/src/components/chatChromeSurface.ts');
+
+  assert.match(
+    chatPageSource,
+    /className="relative flex h-full min-w-0 overflow-hidden bg-zinc-100 dark:bg-zinc-950"/,
+  );
+  assert.doesNotMatch(
+    chatPageSource,
+    /className="relative flex h-full min-w-0 overflow-hidden bg-zinc-50 dark:bg-zinc-950"/,
+  );
+  assert.match(
+    chatChromeSurfaceSource,
+    /export const CHAT_SURFACE_INPUT_CLASS =\s*'border-zinc-200\/80 bg-zinc-50\/92 shadow-none dark:border-zinc-800 dark:bg-zinc-900\/82';/,
+  );
+});
+
 await runTest('sdkwork-claw-chat keeps route-level boundaries by consuming shared core services instead of other route packages', () => {
   const chatPageSource = read('packages/sdkwork-claw-chat/src/pages/Chat.tsx');
   const sourceStateHookSource = read(
@@ -1425,7 +1443,7 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
   assert.match(chatSidebarAgentItemSource, /CHAT_SIDEBAR_AGENT_ROW_BUTTON_CLASS/);
   assert.match(chatSidebarAgentItemSource, /CHAT_SIDEBAR_AGENT_AVATAR_SHELL_CLASS/);
   assert.match(chatSidebarAgentItemSource, /CHAT_SIDEBAR_AGENT_NAME_CLASS/);
-  assert.match(chatSidebarAgentItemSource, /CHAT_SIDEBAR_KERNEL_BADGE_CLASS/);
+  assert.doesNotMatch(chatSidebarAgentItemSource, /CHAT_SIDEBAR_KERNEL_BADGE_CLASS/);
   assert.match(chatSidebarSessionItemSource, /CHAT_SIDEBAR_ROW_BUTTON_CLASS/);
   assert.match(chatSidebarSessionItemSource, /CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS/);
   assert.match(chatSidebarSessionItemSource, /CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS/);
@@ -1442,14 +1460,18 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
   assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_AGENT_ROW_BUTTON_CLASS =/);
   assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_AGENT_AVATAR_SHELL_CLASS =/);
   assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_AGENT_NAME_CLASS =/);
-  assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_KERNEL_BADGE_CLASS =/);
+  assert.doesNotMatch(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_KERNEL_BADGE_CLASS =/);
   assert.match(
     sidebarItemPrimitivesSource,
-    /'relative flex h-12 w-full min-w-0 items-center gap-2\.5 rounded-lg px-2\.5 text-left transition-all disabled:cursor-wait'/,
+    /'relative flex h-10 w-full min-w-0 items-center gap-2 rounded-lg px-2 text-left transition-all disabled:cursor-wait'/,
   );
   assert.match(
     sidebarItemPrimitivesSource,
-    /'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-\[10px\] font-semibold uppercase transition-colors'/,
+    /'relative flex h-7 w-7 shrink-0 items-center justify-center rounded-\[0\.65rem\] text-\[9px\] font-semibold uppercase transition-colors'/,
+  );
+  assert.match(
+    sidebarItemPrimitivesSource,
+    /'min-w-0 flex-1 truncate text-\[12px\] font-medium leading-4 transition-colors'/,
   );
   assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_PRIMARY_BADGE_CLASS =/);
   assert.match(sidebarItemPrimitivesSource, /export const CHAT_SIDEBAR_TITLE_TEXT_CLASS =/);
@@ -1463,7 +1485,7 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
   assert.match(sidebarItemPrimitivesSource, /export const SESSION_KERNEL_SLOT_CLASS =/);
   assert.match(sidebarItemPrimitivesSource, /export function resolveKernelBadgeLabel\(/);
   assert.match(chatSidebarSessionItemSource, /<div className="min-w-0 flex-1 overflow-hidden pr-8">/);
-  assert.match(chatSidebarAgentItemSource, /<div className="flex min-w-0 flex-1 items-center gap-1\.5 pr-8">/);
+  assert.match(chatSidebarAgentItemSource, /<div className="flex min-w-0 flex-1 items-center gap-1 pr-7">/);
   assert.match(chatSidebarAgentItemSource, /title=\{agent\.name\}/);
   assert.doesNotMatch(chatSidebarAgentItemSource, /SESSION_OWNER_SLOT_CLASS/);
   assert.doesNotMatch(chatSidebarAgentItemSource, /absolute bottom-2 left-0 top-2 w-0\.5/);
@@ -1486,10 +1508,7 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
   assert.match(chatSidebarSessionItemSource, /<span className=\{SESSION_OWNER_SLOT_CLASS\} title=\{item\.ownerName\}>/);
   assert.match(chatSidebarSessionItemSource, /<span className="truncate">\{item\.ownerName\}<\/span>/);
   assert.doesNotMatch(chatSidebarSessionItemSource, /item\.ownerKernelLabel \?\s*\(/);
-  assert.match(
-    chatSidebarAgentItemSource,
-    /agent\.kernelLabel \?\s*\(\s*<span className=\{CHAT_SIDEBAR_KERNEL_BADGE_CLASS\} title=\{agent\.kernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(agent\.kernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
-  );
+  assert.doesNotMatch(chatSidebarAgentItemSource, /agent\.kernelLabel \?\s*\(/);
   assert.doesNotMatch(chatSidebarAgentItemSource, /agent\.preview/);
   assert.doesNotMatch(chatSidebarAgentItemSource, /agent\.relativeTimeLabel/);
   assert.doesNotMatch(chatSidebarAgentItemSource, /displayTitle/);
@@ -1536,7 +1555,8 @@ await runTest('sdkwork-claw-chat reflows chrome before text gets squeezed on sma
   assert.match(chatSidebarSource, /openCreateAgentMenuAtElement\(event\.currentTarget, event\.currentTarget\)/);
   assert.match(chatSidebarSource, /closeSessionMenu\(\);\s*setCreateAgentMenuState\(\{/);
   assert.match(chatSidebarSource, /onSelectAction=\{handleCreateAgentMenuAction\}/);
-  assert.match(chatSidebarSource, /className="max-h-\[22\.875rem\] overflow-y-auto pr-1"/);
+  assert.match(chatSidebarSource, /className="max-h-\[18rem\] overflow-y-auto pr-0\.5"/);
+  assert.match(chatSidebarSource, /<div className="space-y-1">/);
   assert.match(chatSidebarSource, /visibleAgentRailItems\.length === 0 && agentSearchQuery\.trim\(\)/);
   assert.match(chatSidebarSource, /title=\{t\('chat\.sidebar\.newAgentOptions'\)\}/);
   assert.match(chatSidebarSource, /aria-label=\{t\('chat\.sidebar\.newAgentOptions'\)\}/);

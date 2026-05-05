@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 
+import type { CreateKernelAgentResult } from '@sdkwork/claw-core';
 import type { Agent } from '@sdkwork/claw-types';
+import type { KernelChatAgentCatalog } from './kernelChatAgentCatalogService.ts';
 import {
+  mergeCreatedKernelAgentIntoCatalog,
   resolveChatAgentCatalogState,
   resolveChatContextSelectionSyncMutation,
   shouldLoadKernelChatAgentCatalog,
@@ -41,6 +44,41 @@ const KERNEL_AGENTS: Agent[] = [
   },
 ];
 
+const EXISTING_KERNEL_CATALOG: KernelChatAgentCatalog = {
+  source: 'kernelCatalog',
+  defaultAgentId: 'main',
+  agents: [
+    {
+      id: 'main',
+      name: 'Main',
+      description: 'Default OpenClaw agent',
+      avatar: 'M',
+      systemPrompt: 'You are main.',
+      creator: 'OpenClaw',
+    },
+  ],
+  profiles: [
+    {
+      instanceId: 'openclaw-prod',
+      kernelId: 'openclaw',
+      agentId: 'main',
+      label: 'Main',
+      description: 'Default OpenClaw agent',
+      source: 'kernelCatalog',
+      systemPrompt: 'You are main.',
+      avatar: 'M',
+      creator: 'OpenClaw',
+    },
+  ],
+};
+
+const CREATED_AGENT_RESULT: CreateKernelAgentResult = {
+  instanceId: 'openclaw-prod',
+  kernelId: 'openclaw',
+  agentId: 'ops-responder',
+  displayName: 'Ops Responder',
+};
+
 await runTest(
   'shouldLoadKernelChatAgentCatalog only hydrates kernel catalogs for supported kernel-catalog routes',
   () => {
@@ -79,6 +117,108 @@ await runTest(
       }),
       true,
     );
+  },
+);
+
+await runTest(
+  'mergeCreatedKernelAgentIntoCatalog makes a newly created agent visible without waiting for the next runtime catalog refresh',
+  () => {
+    const patchedCatalog = mergeCreatedKernelAgentIntoCatalog(
+      EXISTING_KERNEL_CATALOG,
+      CREATED_AGENT_RESULT,
+    );
+
+    assert.notEqual(patchedCatalog, EXISTING_KERNEL_CATALOG);
+    assert.deepEqual(
+      patchedCatalog.agents.map((agent) => agent.id),
+      ['main', 'ops-responder'],
+    );
+    assert.deepEqual(
+      patchedCatalog.profiles.map((profile) => profile.agentId),
+      ['main', 'ops-responder'],
+    );
+    assert.equal(patchedCatalog.defaultAgentId, 'main');
+    assert.equal(patchedCatalog.source, 'kernelCatalog');
+    assert.deepEqual(patchedCatalog.agents[1], {
+      id: 'ops-responder',
+      name: 'Ops Responder',
+      description: '',
+      avatar: 'AI',
+      systemPrompt: '',
+      creator: 'OpenClaw',
+    });
+    assert.deepEqual(patchedCatalog.profiles[1], {
+      instanceId: 'openclaw-prod',
+      kernelId: 'openclaw',
+      agentId: 'ops-responder',
+      label: 'Ops Responder',
+      description: null,
+      source: 'kernelCatalog',
+      systemPrompt: null,
+      avatar: null,
+      creator: null,
+    });
+  },
+);
+
+await runTest(
+  'mergeCreatedKernelAgentIntoCatalog preserves existing agent metadata when a refresh repeats the created id',
+  () => {
+    const patchedCatalog = mergeCreatedKernelAgentIntoCatalog(
+      {
+        ...EXISTING_KERNEL_CATALOG,
+        agents: [
+          ...EXISTING_KERNEL_CATALOG.agents,
+          {
+            id: 'ops-responder',
+            name: 'Runtime Ops',
+            description: 'Runtime metadata already arrived',
+            avatar: 'O',
+            systemPrompt: 'Use runtime instructions.',
+            creator: 'Runtime',
+          },
+        ],
+        profiles: [
+          ...EXISTING_KERNEL_CATALOG.profiles,
+          {
+            instanceId: 'openclaw-prod',
+            kernelId: 'openclaw',
+            agentId: 'ops-responder',
+            label: 'Runtime Ops',
+            description: 'Runtime metadata already arrived',
+            source: 'kernelCatalog',
+            systemPrompt: 'Use runtime instructions.',
+            avatar: 'O',
+            creator: 'Runtime',
+          },
+        ],
+      },
+      CREATED_AGENT_RESULT,
+    );
+
+    assert.deepEqual(
+      patchedCatalog.agents.map((agent) => agent.id),
+      ['main', 'ops-responder'],
+    );
+    assert.deepEqual(patchedCatalog.agents[1], {
+      id: 'ops-responder',
+      name: 'Runtime Ops',
+      description: 'Runtime metadata already arrived',
+      avatar: 'O',
+      systemPrompt: 'Use runtime instructions.',
+      creator: 'Runtime',
+    });
+    assert.deepEqual(patchedCatalog.profiles[1], {
+      instanceId: 'openclaw-prod',
+      kernelId: 'openclaw',
+      agentId: 'ops-responder',
+      label: 'Runtime Ops',
+      description: 'Runtime metadata already arrived',
+      source: 'kernelCatalog',
+      systemPrompt: 'Use runtime instructions.',
+      avatar: 'O',
+      creator: 'Runtime',
+    });
   },
 );
 

@@ -102,10 +102,23 @@ const BROWSER_OPENCLAW_CHANNEL_TEMPLATES: BrowserOpenClawChannelTemplate[] = [
     ],
   },
   {
-    id: 'wehcat',
-    name: 'Wehcat',
+    id: 'wechat',
+    name: 'WeChat',
     description:
-      'Connect a WeChat official account workflow so OpenClaw can serve China-facing channels.',
+      'Connect WeChat conversational messaging so OpenClaw can serve China-facing direct chat surfaces.',
+    configurationMode: 'none',
+    fieldCount: 0,
+    setupSteps: [
+      'Prepare the WeChat integration entry approved for your runtime deployment.',
+      'Keep this channel enabled when OpenClaw should expose direct WeChat conversations.',
+      'Use the WeChat Official Account channel separately for public account and broadcast workflows.',
+    ],
+  },
+  {
+    id: 'wehcat',
+    name: 'WeChat Official Account',
+    description:
+      'Connect a WeChat official account workflow so OpenClaw can serve China-facing media channels.',
     configurationMode: 'required',
     fieldCount: 4,
     setupSteps: [

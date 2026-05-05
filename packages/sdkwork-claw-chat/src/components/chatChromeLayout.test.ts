@@ -14,13 +14,19 @@ function runTest(name: string, callback: () => void | Promise<void>) {
 }
 
 const pageSource = readFileSync(new URL('../pages/Chat.tsx', import.meta.url), 'utf8');
+const conversationPaneSource = readFileSync(new URL('./ChatConversationPane.tsx', import.meta.url), 'utf8');
 const topControlsSource = readFileSync(new URL('./ChatTopControls.tsx', import.meta.url), 'utf8');
 const inputSource = readFileSync(new URL('./ChatInput.tsx', import.meta.url), 'utf8');
+const chromeSurfaceSource = readFileSync(new URL('./chatChromeSurface.ts', import.meta.url), 'utf8');
 
 await runTest(
   'Chat removes the visible top header rail, keeps floating controls, and does not reserve a chat-local top header band',
   () => {
-    assert.match(pageSource, /className="relative flex h-full min-w-0 flex-1 flex-col"/);
+    assert.match(
+      pageSource,
+      /className="relative flex h-full min-w-0 overflow-hidden bg-zinc-100 dark:bg-zinc-950"/,
+    );
+    assert.match(conversationPaneSource, /className="relative flex h-full min-w-0 flex-1 flex-col"/);
     assert.doesNotMatch(pageSource, /className="relative flex h-full min-w-0 flex-1 flex-col pt-11 sm:pt-12"/);
     assert.doesNotMatch(
       pageSource,
@@ -46,16 +52,17 @@ await runTest(
   'Chat keeps the composer rail flat but restores contrast with a subtle translucent separation layer',
   () => {
     assert.match(
-      pageSource,
-      /className="flex-shrink-0 bg-gradient-to-t from-zinc-50 via-zinc-50\/78 to-transparent px-3 pb-3 pt-1\.5 sm:px-4 sm:pb-4 sm:pt-2 lg:px-6 dark:from-zinc-950 dark:via-zinc-950\/38 dark:to-transparent"/,
+      chromeSurfaceSource,
+      /export const CHAT_CHROME_COMPOSER_LAYER_CLASS =\s*'flex-shrink-0 bg-transparent px-3 pb-3 pt-1\.5 sm:px-4 sm:pb-4 sm:pt-2 lg:px-6';/,
     );
     assert.doesNotMatch(
-      pageSource,
+      chromeSurfaceSource,
       /className="flex-shrink-0 border-t border-zinc-200\/80 bg-zinc-50\/88 px-3 py-3 backdrop-blur-xl sm:px-4 sm:py-4 lg:px-6 dark:border-zinc-800 dark:bg-zinc-950\/88"/,
     );
+    assert.match(inputSource, /CHAT_SURFACE_INPUT_CLASS,/);
     assert.match(
       inputSource,
-      /'relative flex w-full flex-col overflow-visible rounded-\[18px\] bg-white\/90 px-2 py-1\.5 shadow-\[0_-10px_24px_rgba\(15,23,42,0\.08\)\] backdrop-blur-xl transition-all duration-300 dark:bg-\[#161b24\]\/76 dark:shadow-\[0_-14px_34px_rgba\(0,0,0,0\.28\)\] sm:rounded-\[20px\] sm:px-2\.5 sm:py-2'/,
+      /'relative flex w-full flex-col overflow-visible rounded-\[18px\] px-2 py-1\.5 shadow-\[0_-10px_24px_rgba\(15,23,42,0\.06\)\] backdrop-blur-xl transition-all duration-300 dark:shadow-\[0_-14px_34px_rgba\(0,0,0,0\.24\)\] sm:rounded-\[20px\] sm:px-2\.5 sm:py-2'/,
     );
     assert.doesNotMatch(
       inputSource,
@@ -81,7 +88,7 @@ await runTest(
     );
     assert.match(
       inputSource,
-      /const sendSideActionButtonClassName =\s*'flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100\/80 hover:text-zinc-900 dark:bg-white\/\[0\.045\] dark:text-zinc-200 dark:hover:bg-white\/\[0\.09\] dark:hover:text-zinc-50';/,
+      /const sendSideActionButtonClassName =\s*'flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100\/80 hover:text-zinc-900 dark:bg-zinc-800\/55 dark:text-zinc-200 dark:hover:bg-zinc-800\/90 dark:hover:text-zinc-50';/,
     );
     assert.doesNotMatch(
       inputSource,

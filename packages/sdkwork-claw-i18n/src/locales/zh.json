@@ -454,7 +454,13 @@
         "setupGuide": "配置指引",
         "openOfficialSite": "前往官方配置页面",
         "readFullDocumentation": "查看完整文档",
-        "credentials": "凭证信息"
+        "credentials": "凭证信息",
+        "qrConnectionTitle": "扫码连接",
+        "qrConnectionDescription": "使用手机端或通道 App 扫描此二维码，进入连接流程。",
+        "qrConnectionAlt": "通道连接二维码",
+        "qrConnectionPending": "等待扫码",
+        "qrConnectionHint": "完成连接时请保持此窗口打开。",
+        "manualConfigurationAction": "手动填写配置"
       },
       "catalog": {
         "tabs": {
@@ -480,6 +486,7 @@
     "definitions": {
       "officialLinks": {
         "sdkworkchat": "SDKWORK Chat 下载",
+        "wechat": "微信官网",
         "wehcat": "微信公众号平台",
         "feishu": "飞书开放平台",
         "qq": "QQ 机器人平台",
@@ -505,6 +512,15 @@
             "0": "打开集成的 SDKWORK 官方账号体验；如果当前机器尚未登录，也可以先安装 SDKWORK 客户端。",
             "1": "使用你的 SDKWORK 账号登录，使默认媒体通道立即可用。",
             "2": "当当前运行时需要把会话交接到 SDKWORK 官方账号时，请保持此通道为启用状态。"
+          }
+        },
+        "wechat": {
+          "name": "微信",
+          "description": "接入微信会话能力，让 OpenClaw 能覆盖面向国内的直接聊天场景。",
+          "setupSteps": {
+            "0": "准备当前运行时支持的微信接入入口。",
+            "1": "当 OpenClaw 需要提供微信直接会话时，保持该通道启用。",
+            "2": "公众号与广播触达请使用“微信公众号”通道单独配置。"
           }
         },
         "wehcat": {

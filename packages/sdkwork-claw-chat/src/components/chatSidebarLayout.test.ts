@@ -45,8 +45,8 @@ await runTest(
     assert.match(agentItemSource, /CHAT_SIDEBAR_PRIMARY_BADGE_CLASS/);
     assert.match(sessionItemSource, /CHAT_SIDEBAR_PRIMARY_BADGE_CLASS/);
     assert.match(sessionItemSource, /SESSION_OWNER_SLOT_CLASS/);
-    assert.match(agentItemSource, /CHAT_SIDEBAR_KERNEL_BADGE_CLASS/);
-    assert.match(agentItemSource, /resolveKernelBadgeLabel/);
+    assert.doesNotMatch(agentItemSource, /CHAT_SIDEBAR_KERNEL_BADGE_CLASS/);
+    assert.doesNotMatch(agentItemSource, /resolveKernelBadgeLabel/);
     assert.match(primitivesSource, /export const CHAT_SIDEBAR_ROW_BUTTON_CLASS =/);
     assert.match(primitivesSource, /export const CHAT_SIDEBAR_ROW_AVATAR_SHELL_CLASS =/);
     assert.match(primitivesSource, /export const CHAT_SIDEBAR_ROW_AVATAR_INNER_CLASS =/);
@@ -59,7 +59,7 @@ await runTest(
     assert.match(primitivesSource, /export const CHAT_SIDEBAR_TIME_LABEL_CLASS =/);
     assert.match(primitivesSource, /export const SESSION_OWNER_SLOT_CLASS =/);
     assert.match(primitivesSource, /export const SESSION_KERNEL_SLOT_CLASS =/);
-    assert.match(primitivesSource, /export const CHAT_SIDEBAR_KERNEL_BADGE_CLASS =/);
+    assert.doesNotMatch(primitivesSource, /export const CHAT_SIDEBAR_KERNEL_BADGE_CLASS =/);
     assert.match(primitivesSource, /export function resolveKernelBadgeLabel\(/);
     assert.match(
       source,
@@ -161,8 +161,9 @@ await runTest(
     assert.match(source, /placeholder=\{t\('chat\.sidebar\.agentSearchPlaceholder'\)\}/);
     assert.match(
       source,
-      /className="max-h-\[22\.875rem\] overflow-y-auto pr-1"/,
+      /className="max-h-\[18rem\] overflow-y-auto pr-0\.5"/,
     );
+    assert.match(source, /<div className="space-y-1">/);
     assert.match(
       primitivesSource,
       /'flex w-full min-w-0 items-center gap-3 rounded-\[0\.75rem\] px-3 py-3 text-left transition-colors disabled:cursor-wait'/,
@@ -179,8 +180,9 @@ await runTest(
     assert.doesNotMatch(agentItemSource, /CHAT_SIDEBAR_ROW_BUTTON_CLASS/);
     assert.doesNotMatch(agentItemSource, /absolute bottom-2 left-0 top-2 w-0\.5/);
     assert.doesNotMatch(agentItemSource, /bg-primary-500\/80 opacity-100/);
-    assert.match(primitivesSource, /'relative flex h-12 w-full min-w-0 items-center gap-2\.5 rounded-lg px-2\.5 text-left transition-all disabled:cursor-wait'/);
-    assert.match(primitivesSource, /'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-\[10px\] font-semibold uppercase transition-colors'/);
+    assert.match(primitivesSource, /'relative flex h-10 w-full min-w-0 items-center gap-2 rounded-lg px-2 text-left transition-all disabled:cursor-wait'/);
+    assert.match(primitivesSource, /'relative flex h-7 w-7 shrink-0 items-center justify-center rounded-\[0\.65rem\] text-\[9px\] font-semibold uppercase transition-colors'/);
+    assert.match(primitivesSource, /'min-w-0 flex-1 truncate text-\[12px\] font-medium leading-4 transition-colors'/);
     assert.match(agentItemSource, /className=\{cn\(\s*CHAT_SIDEBAR_AGENT_NAME_CLASS,/);
     assert.match(
       agentItemSource,
@@ -196,10 +198,7 @@ await runTest(
       /\{agent\.name\}/,
     );
     assert.match(source, /closeSessionMenu\(\);\s*setCreateAgentMenuState\(\{/);
-    assert.match(
-      agentItemSource,
-      /agent\.kernelLabel \?\s*\(\s*<span className=\{CHAT_SIDEBAR_KERNEL_BADGE_CLASS\} title=\{agent\.kernelLabel\}>[\s\S]*\{resolveKernelBadgeLabel\(agent\.kernelLabel\)\}[\s\S]*<\/span>\s*\) : null/,
-    );
+    assert.doesNotMatch(agentItemSource, /agent\.kernelLabel \?\s*\(/);
     assert.doesNotMatch(
       agentItemSource,
       /agent\.kernelLabel \?\s*\(\s*<span className="mt-0\.5 block truncate text-\[10px\] font-medium uppercase tracking-\[0\.12em\] text-zinc-400 dark:text-zinc-500">\s*\{agent\.kernelLabel\}\s*<\/span>\s*\) : null/,

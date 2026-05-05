@@ -14,11 +14,13 @@ import {
   createChatSidebarSelectionFailure,
   type ChatSidebarSelectionActionResult,
   resolveChatAgentLinkedInstanceId,
+  mergeCreatedKernelAgentIntoCatalog,
   resolveChatSidebarAgentCreatedSelectionPlan,
   resolveChatSidebarAgentSelectionPlan,
   resolveChatSidebarKnownAgentLinkedInstanceId,
   resolveChatSidebarSessionSelectionPlan,
   type ChatSidebarAgentOption,
+  type KernelChatAgentCatalog,
 } from '../services';
 import type { ChatSession, ChatState } from '../store/useChatStore';
 import type {
@@ -331,10 +333,20 @@ export function useChatSidebarState({
 
     try {
       revealHiddenAgentId(result.instanceId, result.agentId);
-      await queryClient.invalidateQueries({
-        queryKey: ['chat', 'kernel-agent-catalog', result.instanceId],
-      });
-      await queryClient.invalidateQueries({
+      queryClient.setQueriesData<KernelChatAgentCatalog | undefined>(
+        { queryKey: ['chat', 'kernel-agent-catalog', result.instanceId] },
+        (catalog) => mergeCreatedKernelAgentIntoCatalog(catalog, result),
+      );
+      queryClient.setQueryData<KernelChatAgentCatalog | undefined>(
+        ['chat', 'kernel-agent-catalog', result.instanceId, runtime.agentCatalogMode],
+        (catalog) =>
+          mergeCreatedKernelAgentIntoCatalog(catalog, result),
+      );
+      queryClient.setQueryData<KernelChatAgentCatalog | undefined>(
+        ['chat', 'kernel-agent-catalog', result.instanceId, 'kernelCatalog'],
+        (catalog) => mergeCreatedKernelAgentIntoCatalog(catalog, result),
+      );
+      void queryClient.invalidateQueries({
         queryKey: ['chat', 'owned-kernel-agent-library', result.instanceId],
       });
       const currentActiveInstanceId = resolveCurrentInstanceId();

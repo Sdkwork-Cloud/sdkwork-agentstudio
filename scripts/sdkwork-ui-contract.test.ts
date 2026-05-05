@@ -144,6 +144,7 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.match(channelRegionTabsSource, /data-slot="channel-region-tabs"/);
   assert.match(channelRegionTabsSource, /\['domestic', 'global', 'media', 'all'\]/);
   assert.match(channelCatalogMetaSource, /sdkworkchat/);
+  assert.match(channelCatalogMetaSource, /wechat/);
   assert.match(channelCatalogMetaSource, /wehcat/);
   assert.match(channelCatalogMetaSource, /clawstudio\.sdkwork\.com\/platforms\/android/);
   assert.match(channelCatalogMetaSource, /export type ChannelCatalogRegion = 'domestic' \| 'global' \| 'media' \| 'all'/);
@@ -156,7 +157,8 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.match(channelCatalogMetaSource, /isChannelDownloadAppAction/);
   assert.match(channelCatalogMetaSource, /export function sortChannelCatalogItems/);
   assert.match(channelCatalogMetaSource, /sdkworkchat:\s*\{[\s\S]*regions:\s*\['domestic', 'global', 'media'\]/);
-  assert.match(channelCatalogMetaSource, /wehcat:\s*\{[\s\S]*regions:\s*\['domestic', 'media'\]/);
+  assert.match(channelCatalogMetaSource, /wechat:\s*\{[\s\S]*regions:\s*\['domestic'\]/);
+  assert.match(channelCatalogMetaSource, /wehcat:\s*\{[\s\S]*regions:\s*\['media'\]/);
   assert.match(channelCatalogMetaSource, /groups\.all\.push\(item\)/);
   assert.match(channelCatalogMetaSource, /for \(const region of regions\)/);
   assert.match(channelCatalogMetaSource, /media: \[\]/);
@@ -166,6 +168,16 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.match(channelWorkspaceSource, /getChannelCatalogRegions\(selectedChannel\.id\)\.includes\(activeRegion\)/);
   assert.match(overlaySurfaceSource, /createPortal/);
   assert.match(overlaySurfaceSource, /document\.body/);
+});
+
+runTest('shared dialog and overlay primitives expose stable surface slots for light theme depth', () => {
+  const dialogSource = read('packages/sdkwork-claw-ui/src/components/Dialog.tsx');
+  const overlaySurfaceSource = read('packages/sdkwork-claw-ui/src/components/OverlaySurface.tsx');
+
+  assert.match(dialogSource, /data-slot="dialog-overlay"/);
+  assert.match(dialogSource, /data-slot="dialog-content"/);
+  assert.match(overlaySurfaceSource, /data-slot="overlay-backdrop"/);
+  assert.match(overlaySurfaceSource, /data-slot=\{`overlay-surface-\$\{variant\}`\}/);
 });
 
 runTest('feature packages use shared shadcn-style form primitives instead of native controls', () => {

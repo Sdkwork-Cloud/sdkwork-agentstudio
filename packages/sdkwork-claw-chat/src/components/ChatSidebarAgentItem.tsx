@@ -6,9 +6,7 @@ import {
   CHAT_SIDEBAR_AGENT_AVATAR_SHELL_CLASS,
   CHAT_SIDEBAR_AGENT_NAME_CLASS,
   CHAT_SIDEBAR_AGENT_ROW_BUTTON_CLASS,
-  CHAT_SIDEBAR_KERNEL_BADGE_CLASS,
   CHAT_SIDEBAR_PRIMARY_BADGE_CLASS,
-  resolveKernelBadgeLabel,
 } from './chatSidebarItemPrimitives';
 
 export interface ChatSidebarAgentItemProps {
@@ -93,7 +91,7 @@ export function ChatSidebarAgentItem({
           {agent.avatarLabel ?? 'AI'}
         </div>
 
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 pr-8">
+        <div className="flex min-w-0 flex-1 items-center gap-1 pr-7">
           <span
             className={cn(
               CHAT_SIDEBAR_AGENT_NAME_CLASS,
@@ -105,11 +103,6 @@ export function ChatSidebarAgentItem({
           >
             {agent.name}
           </span>
-          {agent.kernelLabel ? (
-            <span className={CHAT_SIDEBAR_KERNEL_BADGE_CLASS} title={agent.kernelLabel}>
-              {resolveKernelBadgeLabel(agent.kernelLabel)}
-            </span>
-          ) : null}
           {agent.isPrimary ? (
             <span className={CHAT_SIDEBAR_PRIMARY_BADGE_CLASS}>
               {mainAgentBadgeLabel}
@@ -135,7 +128,7 @@ export function ChatSidebarAgentItem({
             onOpenMenuAtElement(event.currentTarget, agent);
           }}
           className={cn(
-            'absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-zinc-400 transition-all hover:bg-zinc-900/[0.06] hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white/[0.08] dark:hover:text-zinc-200',
+            'absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-zinc-400 transition-all hover:bg-zinc-900/[0.06] hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white/[0.08] dark:hover:text-zinc-200',
             isAgentMenuOpen
               ? 'pointer-events-auto opacity-100'
               : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100',

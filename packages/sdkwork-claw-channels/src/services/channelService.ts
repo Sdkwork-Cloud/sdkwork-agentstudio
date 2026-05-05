@@ -84,6 +84,7 @@ const CHANNEL_WRITE_UNAVAILABLE_ERROR =
 
 const channelIconNameMap: Record<string, string> = {
   sdkworkchat: 'MessageSquare',
+  wechat: 'Send',
   wehcat: 'Send',
   feishu: 'MessageCircle',
   qq: 'Smile',

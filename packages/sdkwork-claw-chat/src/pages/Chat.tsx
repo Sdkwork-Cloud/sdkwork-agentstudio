@@ -16,7 +16,7 @@ export function Chat() {
   });
 
   return (
-    <div className="relative flex h-full min-w-0 overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+    <div className="relative flex h-full min-w-0 overflow-hidden bg-zinc-100 dark:bg-zinc-950">
       <ChatSidebarChrome {...sidebarChromeProps} />
       <ChatConversationPane {...conversationPaneProps} />
       <ChatSessionContextDrawer {...sessionContextDrawerProps} />

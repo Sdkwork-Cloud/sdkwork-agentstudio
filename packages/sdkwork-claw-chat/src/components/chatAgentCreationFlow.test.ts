@@ -546,7 +546,23 @@ await runTest(
     );
     assert.match(
       sidebarStateSource,
-      /await queryClient\.invalidateQueries\(\{[\s\S]*queryKey: \['chat', 'kernel-agent-catalog', result\.instanceId\],[\s\S]*\}\);[\s\S]*await queryClient\.invalidateQueries\(\{[\s\S]*queryKey: \['chat', 'owned-kernel-agent-library', result\.instanceId\],[\s\S]*\}\);[\s\S]*await commitSelectionPlan\(requestId, plan\);[\s\S]*return CHAT_AGENT_CREATION_FOLLOW_UP_COMPLETED;/s,
+      /mergeCreatedKernelAgentIntoCatalog,/,
+    );
+    assert.match(
+      sidebarStateSource,
+      /queryClient\.setQueriesData<KernelChatAgentCatalog \| undefined>\(\s*\{ queryKey: \['chat', 'kernel-agent-catalog', result\.instanceId\] \},\s*\(catalog\) => mergeCreatedKernelAgentIntoCatalog\(catalog, result\),\s*\);/s,
+    );
+    assert.match(
+      sidebarStateSource,
+      /queryClient\.setQueryData<KernelChatAgentCatalog \| undefined>\(\s*\['chat', 'kernel-agent-catalog', result\.instanceId, 'kernelCatalog'\],\s*\(catalog\) => mergeCreatedKernelAgentIntoCatalog\(catalog, result\),\s*\);/s,
+    );
+    assert.doesNotMatch(
+      sidebarStateSource,
+      /queryClient\.invalidateQueries\(\{[\s\S]*queryKey: \['chat', 'kernel-agent-catalog', result\.instanceId\]/s,
+    );
+    assert.match(
+      sidebarStateSource,
+      /void queryClient\.invalidateQueries\(\{[\s\S]*queryKey: \['chat', 'owned-kernel-agent-library', result\.instanceId\],[\s\S]*\}\);[\s\S]*await commitSelectionPlan\(requestId, plan\);[\s\S]*return CHAT_AGENT_CREATION_FOLLOW_UP_COMPLETED;/s,
     );
     assert.match(
       sidebarStateSource,

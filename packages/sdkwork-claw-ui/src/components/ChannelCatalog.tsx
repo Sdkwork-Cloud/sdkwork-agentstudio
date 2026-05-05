@@ -196,6 +196,19 @@ function OfficialLinkButton({
   );
 }
 
+function shouldUseDownloadOnlyAction(channel: ChannelCatalogItem) {
+  const supportsQrConnection = getChannelCatalogRegions(channel.id).includes('domestic');
+  if (isChannelDownloadAppAction(channel.id) && !supportsQrConnection) {
+    return true;
+  }
+
+  return false;
+}
+
+function supportsChannelQrConnection(channel: ChannelCatalogItem) {
+  return getChannelCatalogRegions(channel.id).includes('domestic');
+}
+
 export function ChannelCatalog({
   items,
   texts,
@@ -387,7 +400,8 @@ export function ChannelCatalog({
           {visibleItems.map((channel) => {
             const badge = getStatusBadge(channel, texts, variant);
             const officialLink = resolveOfficialLink(channel);
-            const isDownloadAppChannel = isChannelDownloadAppAction(channel.id);
+            const supportsQrConnection = supportsChannelQrConnection(channel);
+            const isDownloadAppChannel = shouldUseDownloadOnlyAction(channel);
             const channelRegions = getChannelCatalogRegions(channel.id);
             const shouldShowConfiguredFieldMetric =
               typeof channel.configuredFieldCount === 'number' &&
@@ -491,7 +505,9 @@ export function ChannelCatalog({
                     className="flex flex-wrap items-center gap-3 rounded-[20px] border border-zinc-200/80 bg-zinc-50/80 px-3 py-3 transition-colors group-hover:border-zinc-300/80 group-hover:bg-white dark:border-zinc-800 dark:bg-zinc-900/78 dark:group-hover:border-zinc-700 dark:group-hover:bg-zinc-900"
                   >
                     {isDownloadAppChannel ? (
-                      onToggleEnabled ? (
+                      onConfigure && supportsQrConnection ? (
+                        <Button onClick={() => onConfigure(channel)}>{texts.actionConnect}</Button>
+                      ) : onToggleEnabled ? (
                         <Switch
                           checked={channel.enabled}
                           onCheckedChange={(checked) => onToggleEnabled(channel, checked === true)}

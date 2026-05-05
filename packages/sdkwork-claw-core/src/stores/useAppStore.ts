@@ -112,7 +112,7 @@ export const useAppStore = create<AppState>()(
         })),
       themeMode: 'system',
       setThemeMode: (themeMode) => set({ themeMode }),
-      themeColor: 'lobster',
+      themeColor: 'tech-blue',
       setThemeColor: (themeColor) => set({ themeColor }),
       languagePreference: 'system',
       hasExplicitLanguagePreference: false,

@@ -58,7 +58,8 @@ runTest('isChannelDownloadAppAction only marks first-party Sdkwork Chat as a dow
 
 runTest('getChannelCatalogRegion keeps domestic channels grouped separately from global channels', () => {
   assert.equal(getChannelCatalogRegion('sdkworkchat'), 'domestic');
-  assert.equal(getChannelCatalogRegion('wehcat'), 'domestic');
+  assert.equal(getChannelCatalogRegion('wechat'), 'domestic');
+  assert.equal(getChannelCatalogRegion('wehcat'), 'media');
   assert.equal(getChannelCatalogRegion('qq'), 'domestic');
   assert.equal(getChannelCatalogRegion('dingtalk'), 'domestic');
   assert.equal(getChannelCatalogRegion('wecom'), 'domestic');
@@ -70,7 +71,8 @@ runTest('getChannelCatalogRegion keeps domestic channels grouped separately from
 
 runTest('getChannelCatalogRegions allows Sdkwork Chat to appear in both domestic and global tabs', () => {
   assert.deepEqual(getChannelCatalogRegions('sdkworkchat'), ['domestic', 'global', 'media']);
-  assert.deepEqual(getChannelCatalogRegions('wehcat'), ['domestic', 'media']);
+  assert.deepEqual(getChannelCatalogRegions('wechat'), ['domestic']);
+  assert.deepEqual(getChannelCatalogRegions('wehcat'), ['media']);
   assert.deepEqual(getChannelCatalogRegions('discord'), ['global']);
   assert.deepEqual(getChannelCatalogRegions('unknown-channel'), ['global']);
 });
@@ -83,6 +85,20 @@ runTest('partitionChannelCatalogItemsByRegion builds domestic, global, media, an
       description: 'Discord workspace',
       status: 'connected',
       enabled: true,
+    },
+    {
+      id: 'wechat',
+      name: 'WeChat',
+      description: 'WeChat workspace',
+      status: 'connected',
+      enabled: true,
+    },
+    {
+      id: 'wehcat',
+      name: 'WeChat Official Account',
+      description: 'WeChat media account workspace',
+      status: 'not_configured',
+      enabled: false,
     },
     {
       id: 'qq',
@@ -102,7 +118,7 @@ runTest('partitionChannelCatalogItemsByRegion builds domestic, global, media, an
 
   assert.deepEqual(
     groups.domestic.map((item) => item.id),
-    ['sdkworkchat', 'qq'],
+    ['sdkworkchat', 'wechat', 'qq'],
   );
   assert.deepEqual(
     groups.global.map((item) => item.id),
@@ -110,11 +126,11 @@ runTest('partitionChannelCatalogItemsByRegion builds domestic, global, media, an
   );
   assert.deepEqual(
     groups.media.map((item) => item.id),
-    ['sdkworkchat'],
+    ['sdkworkchat', 'wehcat'],
   );
   assert.deepEqual(
     groups.all.map((item) => item.id),
-    ['sdkworkchat', 'qq', 'discord'],
+    ['sdkworkchat', 'wechat', 'wehcat', 'qq', 'discord'],
   );
   assert.equal(resolveDefaultChannelCatalogRegion(groups), 'domestic');
   assert.equal(
@@ -163,6 +179,13 @@ runTest('sortChannelCatalogItems keeps Sdkwork Chat pinned first and preserves c
       enabled: false,
     },
     {
+      id: 'wechat',
+      name: 'WeChat',
+      description: 'WeChat workspace',
+      status: 'connected',
+      enabled: true,
+    },
+    {
       id: 'wehcat',
       name: 'Wehcat',
       description: 'WeChat workspace',
@@ -173,11 +196,11 @@ runTest('sortChannelCatalogItems keeps Sdkwork Chat pinned first and preserves c
 
   assert.deepEqual(
     sorted.map((item) => item.id),
-    ['sdkworkchat', 'wehcat', 'discord'],
+    ['sdkworkchat', 'wechat', 'wehcat', 'discord'],
   );
 });
 
-runTest('sortChannelCatalogItems keeps QQ directly after Wehcat across shared channel surfaces', () => {
+runTest('sortChannelCatalogItems keeps WeChat, media, and domestic channels in catalog order', () => {
   const sorted = sortChannelCatalogItems([
     {
       id: 'qq',
@@ -201,6 +224,13 @@ runTest('sortChannelCatalogItems keeps QQ directly after Wehcat across shared ch
       enabled: true,
     },
     {
+      id: 'wechat',
+      name: 'WeChat',
+      description: 'WeChat workspace',
+      status: 'connected',
+      enabled: true,
+    },
+    {
       id: 'wehcat',
       name: 'Wehcat',
       description: 'WeChat workspace',
@@ -211,6 +241,6 @@ runTest('sortChannelCatalogItems keeps QQ directly after Wehcat across shared ch
 
   assert.deepEqual(
     sorted.map((item) => item.id),
-    ['wehcat', 'qq', 'feishu', 'slack'],
+    ['wechat', 'wehcat', 'qq', 'feishu', 'slack'],
   );
 });

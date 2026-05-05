@@ -87,6 +87,7 @@ export function OverlaySurface({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
+            data-slot="overlay-backdrop"
             className={cn(
               'absolute inset-0 bg-zinc-950/45 backdrop-blur-sm',
               backdropClassName,
@@ -109,6 +110,7 @@ export function OverlaySurface({
                 mass: 0.82,
               }}
               style={variant === 'drawer' ? undefined : getOverlaySurfaceStyle()}
+              data-slot={`overlay-surface-${variant}`}
               className={cn(
                 'relative flex w-full flex-col overflow-hidden border border-zinc-200/80 bg-white shadow-2xl shadow-zinc-950/12 dark:border-zinc-800 dark:bg-zinc-900',
                 variant === 'drawer'

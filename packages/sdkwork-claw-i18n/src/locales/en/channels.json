@@ -32,7 +32,13 @@
       "setupGuide": "Setup Guide",
       "openOfficialSite": "Open official setup page",
       "readFullDocumentation": "Read full documentation",
-      "credentials": "Credentials"
+      "credentials": "Credentials",
+      "qrConnectionTitle": "Scan to connect",
+      "qrConnectionDescription": "Use the mobile client or channel app to scan this code and start the connection flow.",
+      "qrConnectionAlt": "Channel connection QR code",
+      "qrConnectionPending": "Ready to scan",
+      "qrConnectionHint": "Keep this window open while you complete the connection.",
+      "manualConfigurationAction": "Manually fill configuration"
     },
     "catalog": {
       "tabs": {
@@ -58,6 +64,7 @@
   "definitions": {
     "officialLinks": {
       "sdkworkchat": "SDKWORK Chat app download",
+      "wechat": "WeChat official site",
       "wehcat": "WeChat Official Account platform",
       "feishu": "Feishu Open Platform",
       "qq": "QQ Bot platform",
@@ -83,6 +90,15 @@
           "0": "Open the integrated SDKWORK official account experience or install the SDKWORK client if this machine has not signed in yet.",
           "1": "Sign in with your SDKWORK account so the default media channel is ready immediately.",
           "2": "Keep this channel enabled when the current runtime should hand off into the SDKWORK official account."
+        }
+      },
+      "wechat": {
+        "name": "WeChat",
+        "description": "Connect WeChat conversational messaging so OpenClaw can serve China-facing direct chat surfaces.",
+        "setupSteps": {
+          "0": "Prepare the WeChat integration entry approved for your runtime deployment.",
+          "1": "Keep this channel enabled when OpenClaw should expose direct WeChat conversations.",
+          "2": "Use the WeChat Official Account channel separately for public account and broadcast workflows."
         }
       },
       "wehcat": {

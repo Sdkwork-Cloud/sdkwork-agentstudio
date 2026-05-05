@@ -175,6 +175,7 @@ runTest('sdkwork-claw-shell binds dark variants to the theme manager dark class 
   const themeManagerSource = read('packages/sdkwork-claw-shell/src/application/providers/ThemeManager.tsx');
   const shellStylesSource = read('packages/sdkwork-claw-shell/src/styles/index.css');
   const generalSettingsSource = read('packages/sdkwork-claw-settings/src/GeneralSettings.tsx');
+  const appStoreSource = read('packages/sdkwork-claw-core/src/stores/useAppStore.ts');
 
   assert.match(themeManagerSource, /root\.classList\.add\('dark'\)/);
   assert.match(themeManagerSource, /root\.classList\.remove\('dark'\)/);
@@ -186,4 +187,176 @@ runTest('sdkwork-claw-shell binds dark variants to the theme manager dark class 
   assert.match(shellStylesSource, /\[data-theme="violet"\]/);
   assert.match(shellStylesSource, /\[data-theme="rose"\]/);
   assert.match(generalSettingsSource, /id: 'tech-blue'/);
+  assert.match(appStoreSource, /themeColor: 'tech-blue'/);
+});
+
+runTest('sdkwork-claw-shell gives light mode a flat graphite enterprise theme without changing layout source', () => {
+  const shellStylesSource = read('packages/sdkwork-claw-shell/src/styles/index.css');
+  const layoutSource = read('packages/sdkwork-claw-shell/src/application/layouts/MainLayout.tsx');
+
+  assert.match(shellStylesSource, /--theme-neutral-50: #fafafa;/);
+  assert.match(shellStylesSource, /--theme-neutral-950: #09090b;/);
+  assert.match(shellStylesSource, /--theme-surface-base: #f3f3f4;/);
+  assert.match(shellStylesSource, /--theme-surface-raised: #ffffff;/);
+  assert.match(shellStylesSource, /--theme-surface-muted: #eeeeef;/);
+  assert.match(shellStylesSource, /--theme-surface-dialog: #ffffff;/);
+  assert.match(shellStylesSource, /--theme-dialog-overlay: rgba\(17, 17, 19, 0\.24\);/);
+  assert.match(shellStylesSource, /--theme-dialog-border: rgba\(9, 9, 11, 0\.1\);/);
+  assert.match(shellStylesSource, /--theme-dialog-shadow: 0 22px 54px rgba\(9, 9, 11, 0\.09\);/);
+  assert.match(shellStylesSource, /--theme-border-subtle: transparent;/);
+  assert.match(shellStylesSource, /--theme-border-strong: rgba\(9, 9, 11, 0\.06\);/);
+  assert.match(shellStylesSource, /--theme-text-strong: #111111;/);
+  assert.doesNotMatch(shellStylesSource, /--theme-neutral-50: #f8fafc;/);
+  assert.doesNotMatch(shellStylesSource, /--theme-surface-base: #f5f7fb;/);
+  assert.doesNotMatch(shellStylesSource, /--theme-border-subtle: #d9e2ef;/);
+  assert.match(shellStylesSource, /\[data-theme="tech-blue"\][\s\S]*--theme-primary-500: #2864c8;/);
+  assert.match(shellStylesSource, /\.dark\[data-theme="tech-blue"\][\s\S]*--theme-primary-500: #3b82f6;/);
+  assert.match(shellStylesSource, /html:not\(\.dark\) body/);
+  assert.match(shellStylesSource, /html:not\(\.dark\) \.bg-zinc-100/);
+  assert.match(shellStylesSource, /html:not\(\.dark\) \.text-zinc-950/);
+  assert.match(shellStylesSource, /html:not\(\.dark\) \.border-zinc-200/);
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \.bg-zinc-50[\s\S]*?background-color: var\(--theme-surface-raised\);/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \.bg-white[\s\S]*?background-color: var\(--theme-surface-raised\);/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \.shadow-sm[\s\S]*?box-shadow: none;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \.shadow-xl[\s\S]*?box-shadow: none;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \.shadow-\\\[18px_0_50px_rgba\\\(15\\,23\\,42\\,0\\.08\\\)\\\][\s\S]*?box-shadow: none;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class\^="shadow-"\][\s\S]*?html:not\(\.dark\) \[class\*=":shadow-"\][\s\S]*?box-shadow: none !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[data-slot='dialog-overlay'\][\s\S]*?background-color: var\(--theme-dialog-overlay\) !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[data-slot='dialog-content'\][\s\S]*?background-color: var\(--theme-surface-dialog\) !important;[\s\S]*?border-color: var\(--theme-dialog-border\) !important;[\s\S]*?box-shadow: var\(--theme-dialog-shadow\) !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[data-slot='overlay-backdrop'\][\s\S]*?background-color: var\(--theme-dialog-overlay\) !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[data-slot\^='overlay-surface-'\][\s\S]*?background-color: var\(--theme-surface-dialog\) !important;[\s\S]*?border-color: var\(--theme-dialog-border\) !important;[\s\S]*?box-shadow: var\(--theme-dialog-shadow\) !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class\*="shadow-primary-"\][\s\S]*?box-shadow: none !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \.drop-shadow-sm[\s\S]*?filter: none !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class\*="drop-shadow-"\][\s\S]*?filter: none !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \.border-zinc-200[\s\S]*?border-color: transparent;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class\*="border-zinc-200"\][\s\S]*?border-color: transparent !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class\*="border-zinc-100"\][\s\S]*?border-color: transparent !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class\*="border-zinc-300"\][\s\S]*?border-color: var\(--theme-border-strong\) !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \.divide-zinc-100 > :not\(\[hidden\]\) ~ :not\(\[hidden\]\)[\s\S]*?border-color: transparent;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \.ring-zinc-200[\s\S]*?(?:--tw-ring-color|border-color): transparent;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \.divide-zinc-200 > :not\(\[hidden\]\) ~ :not\(\[hidden\]\)[\s\S]*?border-color: transparent;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class~="border-dashed"\]\[class~="border-zinc-300"\][\s\S]*?html:not\(\.dark\) \[class~="border-dashed"\]\[class~="border-zinc-300\\\/80"\][\s\S]*?border-color: transparent;/,
+  );
+  assert.doesNotMatch(shellStylesSource, /\[class\*="border-dashed"\]\[class\*="border-zinc-"\]/);
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \.border-white\\\/70[\s\S]*?border-color: transparent;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class\*="ring-primary-"\][\s\S]*?--tw-ring-color: transparent !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class\*="border-primary-"\][\s\S]*?border-color: transparent !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class\*="border-amber-"\][\s\S]*?border-color: transparent !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) :where\(input, textarea, select\)[\s\S]*?border-color: transparent !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class\*="bg-\\\[radial-gradient"\][\s\S]*?background-image: none !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /html:not\(\.dark\) \[class\*="bg-\\\[linear-gradient"\][\s\S]*?background-image: none !important;/,
+  );
+  assert.match(
+    shellStylesSource,
+    /\n  \[data-chat-scroll-region='messages'\] \{[\s\S]*?--chat-scrollbar-track: var\(--theme-surface-muted\);[\s\S]*?--chat-scrollbar-thumb: color-mix\(in srgb, var\(--theme-neutral-400\) 82%, var\(--theme-neutral-500\) 18%\);/,
+  );
+  assert.doesNotMatch(
+    shellStylesSource,
+    /\n  \[data-chat-scroll-region='messages'\] \{[\s\S]*?var\(--theme-primary-(?:100|500)\)/,
+  );
+  assert.doesNotMatch(
+    shellStylesSource,
+    /html:not\(\.dark\) \.(?:bg-zinc-50|bg-white|hover\\:bg-zinc-50|hover\\:bg-zinc-900)[\s\S]*?background-color: color-mix\(in srgb,[^;]*var\(--theme-primary-(?:50|100)\)/,
+  );
+  assert.doesNotMatch(
+    shellStylesSource,
+    /html:not\(\.dark\) \.(?:shadow-sm|shadow-md|shadow-lg|shadow-xl|shadow-2xl|shadow-\\\[)[\s\S]*?rgba\(9, 9, 11, 0\.(?:1[0-9]|2[0-9]|3[0-9])\)/,
+  );
+  assert.doesNotMatch(
+    shellStylesSource,
+    /html:not\(\.dark\) [^{]*radial-gradient\(circle_at_(?:top|left)/,
+  );
+  assert.doesNotMatch(shellStylesSource, /html:not\(\.dark\) \.grid-cols/);
+  assert.doesNotMatch(shellStylesSource, /html:not\(\.dark\) \.space-y-/);
+  assert.match(layoutSource, /bg-zinc-100 text-zinc-900 font-sans/);
+  assert.match(
+    layoutSource,
+    /dark:bg-\[radial-gradient\(circle_at_top,_rgba\(59,130,246,0\.16\),_transparent_68%\)\]/,
+  );
+  assert.match(
+    layoutSource,
+    /dark:bg-\[radial-gradient\(circle_at_left,_rgba\(255,255,255,0\.04\),_transparent_72%\)\]/,
+  );
 });

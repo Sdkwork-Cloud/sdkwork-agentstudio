@@ -20,6 +20,7 @@ const DialogOverlay = React.forwardRef<
       className,
     )}
     {...props}
+    data-slot="dialog-overlay"
   />
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
@@ -45,6 +46,7 @@ const DialogContent = React.forwardRef<
           className,
         )}
         {...props}
+        data-slot="dialog-content"
       >
         {children}
         {showCloseButton ? (

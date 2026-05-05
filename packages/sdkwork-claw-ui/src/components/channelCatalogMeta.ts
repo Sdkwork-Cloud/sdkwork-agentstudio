@@ -38,12 +38,23 @@ const channelCatalogMetaMap: Record<string, ChannelCatalogMeta> = {
     },
     primaryAction: 'downloadApp',
   },
-  wehcat: {
+  wechat: {
     order: 1,
+    monogram: 'WX',
+    tone:
+      'border-green-200/80 bg-gradient-to-br from-green-50 to-emerald-100 text-green-700 dark:border-green-500/20 dark:from-green-500/15 dark:to-emerald-500/15 dark:text-green-200',
+    regions: ['domestic'],
+    officialLink: {
+      href: 'https://weixin.qq.com/',
+      label: 'WeChat Official Site',
+    },
+  },
+  wehcat: {
+    order: 2,
     monogram: 'WC',
     tone:
       'border-green-200/80 bg-gradient-to-br from-green-50 to-lime-100 text-green-700 dark:border-green-500/20 dark:from-green-500/15 dark:to-lime-500/15 dark:text-green-200',
-    regions: ['domestic', 'media'],
+    regions: ['media'],
     officialLink: {
       href: 'https://mp.weixin.qq.com/',
       label: 'WeChat Official Account Platform',
@@ -61,7 +72,7 @@ const channelCatalogMetaMap: Record<string, ChannelCatalogMeta> = {
     },
   },
   qq: {
-    order: 2,
+    order: 3,
     monogram: 'QQ',
     tone:
       'border-cyan-200/80 bg-gradient-to-br from-cyan-50 to-blue-100 text-cyan-700 dark:border-cyan-500/20 dark:from-cyan-500/15 dark:to-blue-500/15 dark:text-cyan-200',
@@ -72,7 +83,7 @@ const channelCatalogMetaMap: Record<string, ChannelCatalogMeta> = {
     },
   },
   dingtalk: {
-    order: 3,
+    order: 4,
     monogram: 'DT',
     tone:
       'border-blue-200/80 bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-700 dark:border-blue-500/20 dark:from-blue-500/15 dark:to-indigo-500/15 dark:text-blue-200',
@@ -83,7 +94,7 @@ const channelCatalogMetaMap: Record<string, ChannelCatalogMeta> = {
     },
   },
   wecom: {
-    order: 4,
+    order: 5,
     monogram: 'WC',
     tone:
       'border-violet-200/80 bg-gradient-to-br from-violet-50 to-indigo-100 text-violet-700 dark:border-violet-500/20 dark:from-violet-500/15 dark:to-indigo-500/15 dark:text-violet-200',

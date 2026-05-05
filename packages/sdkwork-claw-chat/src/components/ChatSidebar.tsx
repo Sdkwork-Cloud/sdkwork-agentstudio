@@ -750,8 +750,8 @@ export function ChatSidebar({
                 </p>
               </div>
             ) : (
-              <div className="max-h-[22.875rem] overflow-y-auto pr-1">
-                <div className="space-y-1.5">
+              <div className="max-h-[18rem] overflow-y-auto pr-0.5">
+                <div className="space-y-1">
                   {visibleAgentRailItems.map((agent) => {
                     const isAgentPending =
                       selectionTransition?.kind === 'agent' && pendingAgentId === agent.id;

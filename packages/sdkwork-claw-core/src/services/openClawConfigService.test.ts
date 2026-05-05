@@ -264,14 +264,19 @@ await runTest('openClawConfigService persists native OpenClaw provider defaults 
     assert.equal(snapshot.channelSnapshots[0]?.status, 'connected');
     assert.equal(snapshot.channelSnapshots[0]?.enabled, true);
     assert.equal(snapshot.channelSnapshots[0]?.name, 'SDKWORK Official Account');
+    assert.equal(snapshot.channelSnapshots.some((channel) => channel.id === 'wechat'), true);
+    assert.equal(
+      snapshot.channelSnapshots.find((channel) => channel.id === 'wechat')?.name,
+      'WeChat',
+    );
     assert.equal(snapshot.channelSnapshots.some((channel) => channel.id === 'wehcat'), true);
     assert.equal(
       snapshot.channelSnapshots.find((channel) => channel.id === 'wehcat')?.name,
       'WeChat Official Account',
     );
     assert.deepEqual(
-      snapshot.channelSnapshots.slice(0, 5).map((channel) => channel.id),
-      ['sdkworkchat', 'wehcat', 'qq', 'dingtalk', 'wecom'],
+      snapshot.channelSnapshots.slice(0, 6).map((channel) => channel.id),
+      ['sdkworkchat', 'wechat', 'wehcat', 'qq', 'dingtalk', 'wecom'],
     );
     assert.equal(snapshot.channelSnapshots.some((channel) => channel.id === 'qq'), true);
     assert.equal(snapshot.channelSnapshots.some((channel) => channel.id === 'dingtalk'), true);

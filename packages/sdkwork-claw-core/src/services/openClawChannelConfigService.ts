@@ -161,6 +161,19 @@ const OPENCLAW_CHANNEL_DEFINITIONS: OpenClawChannelDefinition[] = [
     fields: [],
   },
   {
+    id: 'wechat',
+    name: 'WeChat',
+    description:
+      'Connect WeChat conversational messaging so OpenClaw can serve China-facing direct chat surfaces.',
+    setupSteps: [
+      'Prepare the WeChat integration entry approved for your runtime deployment.',
+      'Keep this channel enabled when OpenClaw should expose direct WeChat conversations.',
+      'Use the WeChat Official Account channel separately for public account and broadcast workflows.',
+    ],
+    configurationMode: 'none',
+    fields: [],
+  },
+  {
     id: 'wehcat',
     name: 'WeChat Official Account',
     description:

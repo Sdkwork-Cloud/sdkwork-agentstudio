@@ -31,6 +31,10 @@ function WehcatIcon({ className }: { className?: string }) {
   );
 }
 
+function WechatIcon({ className }: { className?: string }) {
+  return <WehcatIcon className={className} />;
+}
+
 function FeishuIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 28 28" className={withDefaultClassName(className)} aria-hidden="true">
@@ -125,6 +129,8 @@ export function getChannelCatalogIcon(channelId: string) {
   switch (channelId) {
     case 'sdkworkchat':
       return <SdkworkChatIcon />;
+    case 'wechat':
+      return <WechatIcon />;
     case 'wehcat':
       return <WehcatIcon />;
     case 'feishu':

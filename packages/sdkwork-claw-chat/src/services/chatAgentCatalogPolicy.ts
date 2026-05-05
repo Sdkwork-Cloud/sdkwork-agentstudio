@@ -1,4 +1,6 @@
-import type { Agent } from '@sdkwork/claw-types';
+import type { CreateKernelAgentResult } from '@sdkwork/claw-core';
+import type { Agent, KernelChatAgentProfile } from '@sdkwork/claw-types';
+import type { KernelChatAgentCatalog } from './kernelChatAgentCatalogService.ts';
 
 export interface ShouldLoadKernelChatAgentCatalogInput {
   activeInstanceId: string | null | undefined;
@@ -43,6 +45,75 @@ export interface ResolveChatContextSelectionSyncMutationInput {
 export interface ChatContextSelectionSyncMutation {
   nextSelectedAgentId: string | null | undefined;
   nextSelectedSkillId?: string | null;
+}
+
+function normalizeOptionalString(value: string | null | undefined) {
+  if (typeof value !== 'string') {
+    return value ?? null;
+  }
+
+  const normalized = value.trim();
+  return normalized || null;
+}
+
+function sameNormalizedId(left: string | null | undefined, right: string | null | undefined) {
+  const normalizedLeft = normalizeOptionalString(left)?.toLowerCase() ?? null;
+  const normalizedRight = normalizeOptionalString(right)?.toLowerCase() ?? null;
+  return Boolean(normalizedLeft && normalizedRight && normalizedLeft === normalizedRight);
+}
+
+function buildCreatedKernelAgent(result: CreateKernelAgentResult): Agent {
+  return {
+    id: result.agentId,
+    name: result.displayName,
+    description: '',
+    avatar: 'AI',
+    systemPrompt: '',
+    creator: result.kernelId === 'openclaw' ? 'OpenClaw' : result.kernelId,
+  };
+}
+
+function buildCreatedKernelAgentProfile(
+  result: CreateKernelAgentResult,
+): KernelChatAgentProfile {
+  return {
+    instanceId: result.instanceId,
+    kernelId: result.kernelId,
+    agentId: result.agentId,
+    label: result.displayName,
+    description: null,
+    source: 'kernelCatalog',
+    systemPrompt: null,
+    avatar: null,
+    creator: null,
+  };
+}
+
+export function mergeCreatedKernelAgentIntoCatalog(
+  catalog: KernelChatAgentCatalog | undefined,
+  result: CreateKernelAgentResult,
+): KernelChatAgentCatalog {
+  const baseCatalog = catalog ?? {
+    source: 'kernelCatalog' as const,
+    defaultAgentId: null,
+    profiles: [],
+    agents: [],
+  };
+  const hasAgent = baseCatalog.agents.some((agent) =>
+    sameNormalizedId(agent.id, result.agentId));
+  const hasProfile = baseCatalog.profiles.some((profile) =>
+    sameNormalizedId(profile.agentId, result.agentId));
+
+  return {
+    ...baseCatalog,
+    source: baseCatalog.source === 'none' ? 'kernelCatalog' : baseCatalog.source,
+    agents: hasAgent
+      ? baseCatalog.agents
+      : [...baseCatalog.agents, buildCreatedKernelAgent(result)],
+    profiles: hasProfile
+      ? baseCatalog.profiles
+      : [...baseCatalog.profiles, buildCreatedKernelAgentProfile(result)],
+  };
 }
 
 export function shouldLoadKernelChatAgentCatalog(
