@@ -101,8 +101,7 @@ This check clones the pinned refs from `config/shared-sdk-release-sources.json`
 and compares them with the local sibling SDK package roots that development
 still uses through relative workspace paths, including `@sdkwork/app-sdk`,
 `@sdkwork/sdk-common`, `@sdkwork/core-pc-react`,
-`@sdkwork/im-backend-sdk`, `@openchat/sdkwork-im-sdk`, and
-`@openchat/sdkwork-im-wukongim-adapter`. The comparison normalizes text-file
+`@sdkwork/im-sdk`, and `@sdkwork/rtc-sdk`. The comparison normalizes text-file
 line endings so Windows `CRLF` checkouts and GitHub `LF` checkouts do not raise
 false drift. Shared SDK package scripts must resolve `vite`, `tsc`, and other
 build tools from package-local workspace metadata rather than hard-coded
