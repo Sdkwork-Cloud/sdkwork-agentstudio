@@ -4116,6 +4116,14 @@
       "status": "published",
       "summary": "Published hotfix release that restores packaged desktop documentation intro translations, adds a focused docs locale regression test, and verifies the rebuilt Windows release executable renders localized docs copy without raw keys.",
       "notesFile": "release-2026-04-12-173.md"
+    },
+    {
+      "tag": "release-2026-05-05-174",
+      "title": "Claw Studio release-2026-05-05-174",
+      "date": "2026-05-05",
+      "status": "pending",
+      "summary": "Release candidate that publishes the post-173 kernel authority, chat workspace, shared SDK Git-source, and Windows packaged-launch smoke hardening with local relative SDK development dependencies preserved and GitHub-pinned release dependencies verified.",
+      "notesFile": "release-2026-05-05-174.md"
     }
   ]
 }
