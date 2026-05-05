@@ -99,8 +99,8 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
   assert.match(reusableWorkflow, /SDKWORK_SHARED_SDK_MODE:\s*git/);
   assert.match(
     rustToolchain,
-    /channel\s*=\s*"1\.91\.1"/,
-    'release builds must pin Rust to the locally verified toolchain instead of floating stable',
+    /channel\s*=\s*"1\.90\.0"/,
+    'release builds must pin Rust to the locally verified toolchain that passes the Windows windows-sys release compile gate instead of floating stable',
   );
   assert.doesNotMatch(
     reusableWorkflow,
@@ -109,7 +109,7 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
   );
   assert.match(
     reusableWorkflow,
-    /uses:\s*dtolnay\/rust-toolchain@1\.91\.1/,
+    /uses:\s*dtolnay\/rust-toolchain@1\.90\.0/,
     'release workflow must install the same Rust toolchain pinned by rust-toolchain.toml',
   );
   assert.match(
@@ -1197,6 +1197,66 @@ test('shared sdk package preparation can skip devDependency hydration for packag
   }
 });
 
+test('shared sdk package preparation exposes a generator root for relocated IM and RTC release sources', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-packages.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+
+  assert.equal(typeof helper.createSharedSdkBuildEnv, 'function');
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-generator-root-'));
+  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const expectedGeneratorRoot = path.join(tempRoot, 'sdk', 'sdkwork-sdk-generator');
+  const explicitGeneratorRoot = path.join(tempRoot, 'custom-generator-root');
+
+  try {
+    mkdirSync(workspaceRoot, { recursive: true });
+    mkdirSync(expectedGeneratorRoot, { recursive: true });
+    mkdirSync(explicitGeneratorRoot, { recursive: true });
+
+    assert.equal(
+      helper.createSharedSdkBuildEnv(
+        {
+          workspaceRoot,
+          canonicalWorkspaceRoot: workspaceRoot,
+        },
+        {},
+      ).SDKWORK_GENERATOR_ROOT,
+      path.resolve(expectedGeneratorRoot),
+      'local release builds should use the real workspace generator when it exists',
+    );
+
+    rmSync(expectedGeneratorRoot, { recursive: true, force: true });
+
+    assert.equal(
+      helper.createSharedSdkBuildEnv(
+        {
+          workspaceRoot,
+          canonicalWorkspaceRoot: workspaceRoot,
+        },
+        {},
+      ).SDKWORK_GENERATOR_ROOT,
+      path.resolve(workspaceRoot),
+      'GitHub release clean-room builds should fall back to the installed claw-studio workspace dependencies',
+    );
+
+    assert.equal(
+      helper.createSharedSdkBuildEnv(
+        {
+          workspaceRoot,
+          canonicalWorkspaceRoot: workspaceRoot,
+        },
+        {
+          SDKWORK_GENERATOR_ROOT: explicitGeneratorRoot,
+        },
+      ).SDKWORK_GENERATOR_ROOT,
+      path.resolve(explicitGeneratorRoot),
+      'an explicit SDKWORK_GENERATOR_ROOT must remain authoritative for SDK release builds',
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('git-backed shared sdk source detection resolves origin from nested directories inside an existing git checkout', async () => {
   const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-git-sources.mjs');
   const helper = await import(pathToFileURL(helperPath).href);
@@ -2053,12 +2113,12 @@ test('desktop release bundle phase merges the generated Windows bundle overlay c
   assert.equal(
     windowsCommand.env.CARGO_PROFILE_RELEASE_STRIP,
     'none',
-    'Windows release bundling must avoid Cargo release strip=debuginfo because Rust 1.91.1 release builds can trip const-eval failures in the full desktop dependency graph',
+    'Windows release bundling must avoid Cargo release strip=debuginfo because Windows release builds can trip const-eval failures in the full desktop dependency graph',
   );
   assert.equal(
     windowsCommand.env.CARGO_PROFILE_RELEASE_OPT_LEVEL,
     '2',
-    'Windows release bundling must lower Cargo release opt-level to 2 because Rust 1.91.1 release builds can trip const-eval failures in the full desktop dependency graph at the default opt-level',
+    'Windows release bundling must lower Cargo release opt-level to 2 because Windows release builds can trip const-eval failures in the full desktop dependency graph at the default opt-level',
   );
 });
 

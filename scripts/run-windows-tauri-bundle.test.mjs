@@ -168,12 +168,12 @@ assert.equal(
 assert.equal(
   windowsBundleCommand.env.CARGO_PROFILE_RELEASE_STRIP,
   'none',
-  'run-windows-tauri-bundle must disable Cargo release debug-info stripping on Windows because Rust 1.91.1 release builds can trigger const-eval failures in the full desktop dependency graph',
+  'run-windows-tauri-bundle must disable Cargo release debug-info stripping on Windows because Windows release builds can trigger const-eval failures in the full desktop dependency graph',
 );
 assert.equal(
   windowsBundleCommand.env.CARGO_PROFILE_RELEASE_OPT_LEVEL,
   '2',
-  'run-windows-tauri-bundle must lower Windows Cargo release opt-level to 2 because Rust 1.91.1 release builds can trigger const-eval failures in the full desktop dependency graph at the default opt-level',
+  'run-windows-tauri-bundle must lower Windows Cargo release opt-level to 2 because Windows release builds can trigger const-eval failures in the full desktop dependency graph at the default opt-level',
 );
 assert.deepEqual(
   windowsBundleCommand.args.slice(1, 9),

@@ -84,9 +84,27 @@ function resolveSpawnCommand(command) {
   return command;
 }
 
-function run(command, args, workspaceRoot) {
+export function createSharedSdkBuildEnv(context, env = process.env) {
+  const explicitGeneratorRoot = typeof env?.SDKWORK_GENERATOR_ROOT === 'string'
+    ? env.SDKWORK_GENERATOR_ROOT.trim()
+    : '';
+  const generatorRoot = explicitGeneratorRoot.length > 0
+    ? path.resolve(explicitGeneratorRoot)
+    : path.resolve(context.canonicalWorkspaceRoot, '../../sdk/sdkwork-sdk-generator');
+  const sdkWorkGeneratorRoot = exists(generatorRoot)
+    ? generatorRoot
+    : context.workspaceRoot;
+
+  return {
+    ...env,
+    SDKWORK_GENERATOR_ROOT: sdkWorkGeneratorRoot,
+  };
+}
+
+function run(command, args, workspaceRoot, env = process.env) {
   const result = spawnSync(resolveSpawnCommand(command), args, {
     cwd: workspaceRoot,
+    env,
     stdio: 'inherit',
     shell: false,
     windowsHide: true,
@@ -253,13 +271,13 @@ function shouldBuildPackage(packageRoot) {
   return sourceMtimeMs > statMtimeMs(distEntry);
 }
 
-function ensurePackageBuilt(filterName, packageRoot, workspaceRoot) {
+function ensurePackageBuilt(filterName, packageRoot, workspaceRoot, env = process.env) {
   if (!shouldBuildPackage(packageRoot)) {
     return;
   }
 
   console.log(`[prepare-shared-sdk-packages] Building ${filterName}.`);
-  run('pnpm', ['--filter', filterName, 'build'], workspaceRoot);
+  run('pnpm', ['--filter', filterName, 'build'], workspaceRoot, env);
 }
 
 export function prepareSharedSdkPackages({
@@ -271,6 +289,7 @@ export function prepareSharedSdkPackages({
     currentWorkingDir,
     env,
   });
+  const sharedSdkBuildEnv = createSharedSdkBuildEnv(context, env);
 
   if (
     context.mode === 'git' ||
@@ -292,7 +311,7 @@ export function prepareSharedSdkPackages({
     includeDependencies: true,
     includeDevDependencies: needsSharedSdkCommonBuild,
   });
-  ensurePackageBuilt('@sdkwork/sdk-common', context.sharedSdkCommonRoot, context.workspaceRoot);
+  ensurePackageBuilt('@sdkwork/sdk-common', context.sharedSdkCommonRoot, context.workspaceRoot, sharedSdkBuildEnv);
   const needsSharedAppSdkBuild = shouldBuildPackage(context.sharedAppSdkRoot);
   ensurePackageDependencyLinks(context.sharedAppSdkRoot, context.workspaceRoot, {
     includeDependencies: true,
@@ -301,7 +320,7 @@ export function prepareSharedSdkPackages({
       '@sdkwork/sdk-common': context.sharedSdkCommonRoot,
     },
   });
-  ensurePackageBuilt('@sdkwork/app-sdk', context.sharedAppSdkRoot, context.workspaceRoot);
+  ensurePackageBuilt('@sdkwork/app-sdk', context.sharedAppSdkRoot, context.workspaceRoot, sharedSdkBuildEnv);
 
   if (!hasOptionalSharedImSdkSources(context)) {
     console.log(
@@ -321,7 +340,7 @@ export function prepareSharedSdkPackages({
       '@sdkwork/sdk-common': context.sharedSdkCommonRoot,
     },
   });
-  ensurePackageBuilt('@sdkwork/im-sdk', context.sharedImSdkRoot, context.workspaceRoot);
+  ensurePackageBuilt('@sdkwork/im-sdk', context.sharedImSdkRoot, context.workspaceRoot, sharedSdkBuildEnv);
 
   const needsSharedRtcSdkBuild = shouldBuildPackage(context.sharedRtcSdkRoot);
   ensurePackageDependencyLinks(context.sharedRtcSdkRoot, context.workspaceRoot, {
@@ -331,7 +350,7 @@ export function prepareSharedSdkPackages({
       '@sdkwork/im-sdk': context.sharedImSdkRoot,
     },
   });
-  ensurePackageBuilt('@sdkwork/rtc-sdk', context.sharedRtcSdkRoot, context.workspaceRoot);
+  ensurePackageBuilt('@sdkwork/rtc-sdk', context.sharedRtcSdkRoot, context.workspaceRoot, sharedSdkBuildEnv);
 
   return context;
 }

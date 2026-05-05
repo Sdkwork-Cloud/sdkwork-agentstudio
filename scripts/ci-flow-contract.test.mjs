@@ -57,8 +57,8 @@ test('repository exposes a mainline CI workflow for push and pull request verifi
   assert.match(workflow, /SDKWORK_SHARED_SDK_MODE:\s*git/);
   assert.match(
     rustToolchain,
-    /channel\s*=\s*"1\.91\.1"/,
-    'ci must use the same locally verified Rust toolchain as release builds',
+    /channel\s*=\s*"1\.90\.0"/,
+    'ci must use the same locally verified Rust toolchain as release builds, including the Windows windows-sys release compile gate',
   );
   assert.doesNotMatch(
     workflow,
@@ -67,7 +67,7 @@ test('repository exposes a mainline CI workflow for push and pull request verifi
   );
   assert.match(
     workflow,
-    /uses:\s*dtolnay\/rust-toolchain@1\.91\.1/,
+    /uses:\s*dtolnay\/rust-toolchain@1\.90\.0/,
     'ci must install the same Rust toolchain pinned by rust-toolchain.toml',
   );
   assert.match(workflow, /Prepare shared SDK sources/);

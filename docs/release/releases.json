@@ -4152,13 +4152,27 @@
       "tag": "release-2026-05-05-177",
       "title": "Claw Studio release-2026-05-05-177",
       "date": "2026-05-05",
-      "status": "pending",
-      "summary": "Release candidate that carries forward release-2026-05-05-174, release-2026-05-05-175, and release-2026-05-05-176, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to 1.91.1, stabilizes Windows Cargo release bundling, synchronizes the @sdkwork/claw-ui qrcode lockfile entry, and adds cross-platform sdkwork-run-node/sdkwork-run-pnpm wrappers for GitHub-hosted release runners.",
+      "status": "failed",
+      "summary": "Release candidate that carried forward release-2026-05-05-174 through release-2026-05-05-176 and added cross-platform workspace command wrappers, but failed before publication because relocated IM SDK release sources could not locate sdkwork-sdk-generator in the clean-room Ubuntu runner.",
       "notesFile": "release-2026-05-05-177.md",
       "carryForward": [
         "release-2026-05-05-174",
         "release-2026-05-05-175",
         "release-2026-05-05-176"
+      ]
+    },
+    {
+      "tag": "release-2026-05-05-178",
+      "title": "Claw Studio release-2026-05-05-178",
+      "date": "2026-05-05",
+      "status": "pending",
+      "summary": "Release candidate that carries forward release-2026-05-05-174 through release-2026-05-05-177, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.90.0 toolchain after reproducing a rustc 1.91.1 windows-sys release compile failure, stabilizes Windows Cargo release bundling, synchronizes the @sdkwork/claw-ui qrcode lockfile entry, exposes cross-platform sdkwork-run-node/sdkwork-run-pnpm wrappers, and provides an explicit generator root for clean-room IM/RTC SDK release-source builds.",
+      "notesFile": "release-2026-05-05-178.md",
+      "carryForward": [
+        "release-2026-05-05-174",
+        "release-2026-05-05-175",
+        "release-2026-05-05-176",
+        "release-2026-05-05-177"
       ]
     }
   ]
