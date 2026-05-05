@@ -10,15 +10,15 @@
     },
     "core-pc-react": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-core.git",
-      "ref": "30da9cae505a515fbf56854844c8fcc5c397ef49"
+      "ref": "661c42032a7af6b81503d48c3821aa81075ebc8d"
     },
     "im-sdk": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git",
-      "ref": "61ca9a3605495023ce9883f7a0bccbf8ab4bb888"
+      "ref": "043e3015bb7b114496cbc6db3e5df078c5ad2c8e"
     },
     "rtc-sdk": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-rtc-sdk.git",
-      "ref": "04a019dc688c671e8285989f319d465ef8d1b9a5"
+      "ref": "e2a692b0b92559d5e54e69be027cb2fa3ad30dfb"
     }
   }
 }

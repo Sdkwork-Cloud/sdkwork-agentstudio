@@ -27,9 +27,9 @@
 
 ### IM package portability evidence
 
-1. After extending `prepare-shared-sdk-packages.mjs` to build the IM and RTC package chain, the next clean-room failure moved into the IM SDK package-local tooling.
-2. That package failed when resolving build tools from one specific monorepo directory layout instead of package-local metadata.
-3. Updating the IM TypeScript package scripts to resolve local tooling, plus explicit `devDependencies`, made the package build successfully in the Claw Studio workspace.
+1. After extending `prepare-shared-sdk-packages.mjs` to build the IM/RTC package chain, the next clean-room failure moved into the legacy realtime adapter package.
+2. That package failed with a missing monorepo-local `vite` path, proving the build script depended on one specific repository directory layout instead of package-local tool resolution.
+3. Updating the IM TypeScript package scripts to `vite build` and `tsc -p tsconfig.build.json --noEmit`, plus explicit `devDependencies`, made both packages build successfully in the Claw Studio workspace.
 4. The portable IM SDK fix was committed and pushed to `Sdkwork-Cloud/sdkwork-im-sdk` as `c71a0f115c08cb164d5a857cdac15ea6d3adc006`.
 
 ### Pin verification evidence

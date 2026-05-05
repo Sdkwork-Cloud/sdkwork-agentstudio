@@ -15,7 +15,7 @@ The repair pass covers these defects:
 
 Out of scope:
 
-- Any retired chat SDK migration work
+- Any retired chat product work
 - App store, market, GitHub, HuggingFace, points, mall, or e-commerce surfaces already removed from this repo
 - New features or broad refactors unrelated to the four defects
 
