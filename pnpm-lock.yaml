@@ -283,9 +283,6 @@ importers:
       motion:
         specifier: ^12.38.0
         version: 12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      qrcode:
-        specifier: ^1.5.4
-        version: 1.5.4
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -983,6 +980,9 @@ importers:
       motion:
         specifier: ^12.38.0
         version: 12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      qrcode:
+        specifier: ^1.5.4
+        version: 1.5.4
       react:
         specifier: ^19.2.4
         version: 19.2.4

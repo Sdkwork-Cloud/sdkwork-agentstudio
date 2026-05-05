@@ -4129,11 +4129,23 @@
       "tag": "release-2026-05-05-175",
       "title": "Claw Studio release-2026-05-05-175",
       "date": "2026-05-05",
-      "status": "pending",
-      "summary": "Release candidate that carries forward release-2026-05-05-174, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.91.1 toolchain, and stabilizes Windows Cargo release bundling with strip=none and opt-level=2 after local const-eval compiler failures.",
+      "status": "failed",
+      "summary": "Release candidate that carried forward release-2026-05-05-174 and fixed private shared SDK GitHub clone authentication, but failed before publication because pnpm-lock.yaml was not synchronized with the @sdkwork/claw-ui qrcode dependency for frozen CI installs.",
       "notesFile": "release-2026-05-05-175.md",
       "carryForward": [
         "release-2026-05-05-174"
+      ]
+    },
+    {
+      "tag": "release-2026-05-05-176",
+      "title": "Claw Studio release-2026-05-05-176",
+      "date": "2026-05-05",
+      "status": "pending",
+      "summary": "Release candidate that carries forward release-2026-05-05-174 and release-2026-05-05-175, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.91.1 toolchain, stabilizes Windows Cargo release bundling with strip=none and opt-level=2, and synchronizes the @sdkwork/claw-ui qrcode lockfile entry for frozen CI installs.",
+      "notesFile": "release-2026-05-05-176.md",
+      "carryForward": [
+        "release-2026-05-05-174",
+        "release-2026-05-05-175"
       ]
     }
   ]
