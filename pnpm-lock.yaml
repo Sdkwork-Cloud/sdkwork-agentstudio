@@ -100,7 +100,7 @@ importers:
   ../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript:
     dependencies:
       '@sdkwork/im-sdk':
-        specifier: ^0.1.0
+        specifier: ^0.1.1
         version: link:../../sdkwork-im-sdk/sdkwork-im-sdk-typescript
       '@volcengine/rtc':
         specifier: ^4.68.3
@@ -112,10 +112,10 @@ importers:
         specifier: ^1.0.34
         version: link:../../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript
       '@sdkwork/im-sdk':
-        specifier: ^0.1.0
+        specifier: ^0.1.1
         version: link:../../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript
       '@sdkwork/rtc-sdk':
-        specifier: ^0.1.0
+        specifier: ^0.1.1
         version: link:../../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript
     devDependencies:
       '@testing-library/react':
