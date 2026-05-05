@@ -61,10 +61,14 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
   const workflow = read('.github/workflows/release.yml');
   const reusableWorkflow = read('.github/workflows/release-reusable.yml');
   const rustToolchain = read('rust-toolchain.toml');
+  const nodeWrapperPath = path.join(rootDir, 'sdkwork-run-node');
+  const pnpmWrapperPath = path.join(rootDir, 'sdkwork-run-pnpm');
   const gitSourcePreparationCount =
     reusableWorkflow.match(/node scripts\/prepare-shared-sdk-git-sources\.mjs/g)?.length ?? 0;
   const sharedSdkPreparationCount =
     reusableWorkflow.match(/pnpm prepare:shared-sdk/g)?.length ?? 0;
+  const wrapperPathExposureCount =
+    reusableWorkflow.match(/Expose workspace command wrappers/g)?.length ?? 0;
 
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /push:\s*[\s\S]*tags:\s*[\s\S]*release-\*/);
@@ -112,6 +116,26 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
     reusableWorkflow,
     /SDKWORK_SHARED_SDK_GITHUB_TOKEN:\s*\$\{\{ secrets\.SDKWORK_SHARED_SDK_GITHUB_TOKEN \|\| github\.token \}\}/,
     'release workflow must pass a GitHub token to private shared SDK clones without embedding credentials in repo URLs',
+  );
+  assert.equal(
+    existsSync(nodeWrapperPath),
+    true,
+    'release Linux and macOS runners need a POSIX sdkwork-run-node wrapper because package scripts invoke sdkwork-run-node without a .cmd extension',
+  );
+  assert.equal(
+    existsSync(pnpmWrapperPath),
+    true,
+    'release Linux and macOS runners need a POSIX sdkwork-run-pnpm wrapper because package scripts invoke sdkwork-run-pnpm without a .cmd extension',
+  );
+  assert.match(
+    reusableWorkflow,
+    /Expose workspace command wrappers[\s\S]*command -v cygpath[\s\S]*chmod \+x "\$\{workspace_path\}\/sdkwork-run-node" "\$\{workspace_path\}\/sdkwork-run-pnpm"[\s\S]*printf '%s\\n' "\$GITHUB_WORKSPACE" >> "\$\{github_path_file\}"/,
+    'release jobs must add the checked-out workspace root to PATH before running pnpm scripts that call sdkwork-run-node or sdkwork-run-pnpm',
+  );
+  assert.equal(
+    wrapperPathExposureCount,
+    5,
+    'release workflow must expose workspace command wrappers in every job that runs pnpm lifecycle scripts',
   );
   assert.match(reusableWorkflow, /verify-release:/);
   assert.match(reusableWorkflow, /Prepare shared SDK sources/);

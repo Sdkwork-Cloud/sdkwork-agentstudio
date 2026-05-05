@@ -4140,12 +4140,25 @@
       "tag": "release-2026-05-05-176",
       "title": "Claw Studio release-2026-05-05-176",
       "date": "2026-05-05",
-      "status": "pending",
-      "summary": "Release candidate that carries forward release-2026-05-05-174 and release-2026-05-05-175, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.91.1 toolchain, stabilizes Windows Cargo release bundling with strip=none and opt-level=2, and synchronizes the @sdkwork/claw-ui qrcode lockfile entry for frozen CI installs.",
+      "status": "failed",
+      "summary": "Release candidate that carried forward release-2026-05-05-174 and release-2026-05-05-175 and fixed the frozen qrcode lockfile drift, but failed before publication because GitHub Ubuntu runners could not resolve the Windows-only sdkwork-run-node.cmd wrapper from pnpm lifecycle scripts.",
       "notesFile": "release-2026-05-05-176.md",
       "carryForward": [
         "release-2026-05-05-174",
         "release-2026-05-05-175"
+      ]
+    },
+    {
+      "tag": "release-2026-05-05-177",
+      "title": "Claw Studio release-2026-05-05-177",
+      "date": "2026-05-05",
+      "status": "pending",
+      "summary": "Release candidate that carries forward release-2026-05-05-174, release-2026-05-05-175, and release-2026-05-05-176, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to 1.91.1, stabilizes Windows Cargo release bundling, synchronizes the @sdkwork/claw-ui qrcode lockfile entry, and adds cross-platform sdkwork-run-node/sdkwork-run-pnpm wrappers for GitHub-hosted release runners.",
+      "notesFile": "release-2026-05-05-177.md",
+      "carryForward": [
+        "release-2026-05-05-174",
+        "release-2026-05-05-175",
+        "release-2026-05-05-176"
       ]
     }
   ]

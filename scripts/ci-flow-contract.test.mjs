@@ -15,10 +15,14 @@ test('repository exposes a mainline CI workflow for push and pull request verifi
 
   const workflow = read('.github/workflows/ci.yml');
   const rustToolchain = read('rust-toolchain.toml');
+  const nodeWrapperPath = path.join(rootDir, 'sdkwork-run-node');
+  const pnpmWrapperPath = path.join(rootDir, 'sdkwork-run-pnpm');
   const gitSourcePreparationCount =
     workflow.match(/node scripts\/prepare-shared-sdk-git-sources\.mjs/g)?.length ?? 0;
   const sharedSdkPreparationCount =
     workflow.match(/pnpm prepare:shared-sdk/g)?.length ?? 0;
+  const wrapperPathExposureCount =
+    workflow.match(/Expose workspace command wrappers/g)?.length ?? 0;
 
   assert.match(workflow, /push:\s*[\s\S]*branches:\s*[\s\S]*-\s*main/);
   assert.match(workflow, /pull_request:\s*[\s\S]*branches:\s*[\s\S]*-\s*main/);
@@ -29,6 +33,26 @@ test('repository exposes a mainline CI workflow for push and pull request verifi
   assert.match(workflow, /windows-2022/);
   assert.match(workflow, /pnpm\/action-setup@/);
   assert.match(workflow, /actions\/setup-node@/);
+  assert.equal(
+    existsSync(nodeWrapperPath),
+    true,
+    'CI Linux runners need a POSIX sdkwork-run-node wrapper because package scripts invoke sdkwork-run-node without a .cmd extension',
+  );
+  assert.equal(
+    existsSync(pnpmWrapperPath),
+    true,
+    'CI Linux runners need a POSIX sdkwork-run-pnpm wrapper because package scripts invoke sdkwork-run-pnpm without a .cmd extension',
+  );
+  assert.match(
+    workflow,
+    /Expose workspace command wrappers[\s\S]*command -v cygpath[\s\S]*chmod \+x "\$\{workspace_path\}\/sdkwork-run-node" "\$\{workspace_path\}\/sdkwork-run-pnpm"[\s\S]*printf '%s\\n' "\$GITHUB_WORKSPACE" >> "\$\{github_path_file\}"/,
+    'CI must add the checked-out workspace root to PATH before running pnpm scripts that call sdkwork-run-node or sdkwork-run-pnpm',
+  );
+  assert.equal(
+    wrapperPathExposureCount,
+    2,
+    'CI must expose workspace command wrappers in each job that runs pnpm lifecycle scripts',
+  );
   assert.equal(gitSourcePreparationCount, 2);
   assert.match(workflow, /SDKWORK_SHARED_SDK_MODE:\s*git/);
   assert.match(
