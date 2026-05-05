@@ -89,6 +89,35 @@ assert.throws(
   /Missing value for --bundles/,
   'run-windows-tauri-bundle must reject a missing --bundles value',
 );
+const previousSdkworkDesktopTarget = process.env.SDKWORK_DESKTOP_TARGET;
+const previousSdkworkDesktopTargetPlatform = process.env.SDKWORK_DESKTOP_TARGET_PLATFORM;
+const previousSdkworkDesktopTargetArch = process.env.SDKWORK_DESKTOP_TARGET_ARCH;
+try {
+  process.env.SDKWORK_DESKTOP_TARGET = 'x86_64-pc-windows-msvc';
+  process.env.SDKWORK_DESKTOP_TARGET_PLATFORM = 'windows';
+  process.env.SDKWORK_DESKTOP_TARGET_ARCH = 'x64';
+  assert.equal(
+    bundleModule.parseArgs([]).targetTriple,
+    '',
+    'run-windows-tauri-bundle must treat --target as an explicit CLI-only option so native Windows builds do not inherit SDKWORK_DESKTOP_TARGET back into tauri build',
+  );
+} finally {
+  if (previousSdkworkDesktopTarget === undefined) {
+    delete process.env.SDKWORK_DESKTOP_TARGET;
+  } else {
+    process.env.SDKWORK_DESKTOP_TARGET = previousSdkworkDesktopTarget;
+  }
+  if (previousSdkworkDesktopTargetPlatform === undefined) {
+    delete process.env.SDKWORK_DESKTOP_TARGET_PLATFORM;
+  } else {
+    process.env.SDKWORK_DESKTOP_TARGET_PLATFORM = previousSdkworkDesktopTargetPlatform;
+  }
+  if (previousSdkworkDesktopTargetArch === undefined) {
+    delete process.env.SDKWORK_DESKTOP_TARGET_ARCH;
+  } else {
+    process.env.SDKWORK_DESKTOP_TARGET_ARCH = previousSdkworkDesktopTargetArch;
+  }
+}
 assert.match(
   bundleModuleSource,
   /if \(path\.resolve\(process\.argv\[1\] \?\? ''\) === __filename\) \{\s*try \{\s*await main\(\);\s*\} catch \(error\) \{\s*console\.error\(error instanceof Error \? error\.message : String\(error\)\);\s*process\.exit\(1\);\s*\}\s*\}/s,
@@ -136,6 +165,16 @@ assert.equal(
   false,
   'run-windows-tauri-bundle must keep direct Windows tauri execution out of shell mode',
 );
+assert.equal(
+  windowsBundleCommand.env.CARGO_PROFILE_RELEASE_STRIP,
+  'none',
+  'run-windows-tauri-bundle must disable Cargo release debug-info stripping on Windows because Rust 1.91.1 release builds can trigger const-eval failures in the full desktop dependency graph',
+);
+assert.equal(
+  windowsBundleCommand.env.CARGO_PROFILE_RELEASE_OPT_LEVEL,
+  '2',
+  'run-windows-tauri-bundle must lower Windows Cargo release opt-level to 2 because Rust 1.91.1 release builds can trigger const-eval failures in the full desktop dependency graph at the default opt-level',
+);
 assert.deepEqual(
   windowsBundleCommand.args.slice(1, 9),
   [
@@ -171,6 +210,33 @@ assert.deepEqual(
   configuredWindowsBundleCommand.args.slice(-2),
   ['--bundles', 'nsis,msi'],
   'run-windows-tauri-bundle must allow release profiles to override the Windows bundle target list when a different application requires it',
+);
+const nativeWindowsEnvTargetBundleCommand = bundleModule.buildWindowsTauriBundleCommand({
+  platform: 'win32',
+  env: {
+    SDKWORK_DESKTOP_TARGET: 'x86_64-pc-windows-msvc',
+    SDKWORK_DESKTOP_TARGET_PLATFORM: 'windows',
+    SDKWORK_DESKTOP_TARGET_ARCH: 'x64',
+  },
+  execPath: process.execPath,
+  resolveTauriCliEntrypoint: () => 'D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
+});
+assert.equal(
+  nativeWindowsEnvTargetBundleCommand.args.includes('--target'),
+  false,
+  'run-windows-tauri-bundle must not reintroduce an explicit native Windows target from inherited release env after the outer runner omitted it',
+);
+const arm64WindowsBundleCommand = bundleModule.buildWindowsTauriBundleCommand({
+  targetTriple: 'aarch64-pc-windows-msvc',
+  platform: 'win32',
+  env: {},
+  execPath: process.execPath,
+  resolveTauriCliEntrypoint: () => 'D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
+});
+assert.deepEqual(
+  arm64WindowsBundleCommand.args.slice(-2),
+  ['--target', 'aarch64-pc-windows-msvc'],
+  'run-windows-tauri-bundle must still pass explicit cross-architecture Windows targets',
 );
 const windowsBundlePreflight = bundleModule.buildWindowsTauriBundlePreflightCommand({
   targetTriple: 'aarch64-pc-windows-msvc',

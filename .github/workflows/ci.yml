@@ -19,6 +19,7 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   SDKWORK_SHARED_SDK_MODE: git
+  SDKWORK_SHARED_SDK_GITHUB_TOKEN: ${{ secrets.SDKWORK_SHARED_SDK_GITHUB_TOKEN || github.token }}
 
 jobs:
   workspace-verify:
@@ -44,7 +45,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.91.1
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
@@ -135,7 +136,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.91.1
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2

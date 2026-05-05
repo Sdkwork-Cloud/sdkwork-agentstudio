@@ -20,6 +20,7 @@ export const SHARED_SDK_RTC_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_RTC_GIT_REF';
 export const SHARED_SDK_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_GIT_REF';
 export const SHARED_SDK_GIT_FORCE_SYNC_ENV_VAR = 'SDKWORK_SHARED_SDK_GIT_FORCE_SYNC';
 export const SHARED_SDK_RELEASE_CONFIG_PATH_ENV_VAR = 'SDKWORK_SHARED_SDK_RELEASE_CONFIG_PATH';
+export const SHARED_SDK_GITHUB_TOKEN_ENV_VAR = 'SDKWORK_SHARED_SDK_GITHUB_TOKEN';
 export const DEFAULT_SHARED_SDK_APP_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-app.git';
 export const DEFAULT_SHARED_SDK_COMMON_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-commons.git';
 export const DEFAULT_SHARED_SDK_CORE_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-core.git';
@@ -84,7 +85,21 @@ export function resolveSpawnCommand(command) {
   return command;
 }
 
+export function formatCommandForError(command, args = []) {
+  const redactedArgs = args.map((arg) => {
+    const value = String(arg ?? '');
+    if (/^http\.https:\/\/github\.com\/\.extraheader=/i.test(value)) {
+      return 'http.https://github.com/.extraheader=<redacted>';
+    }
+
+    return value;
+  });
+
+  return [command, ...redactedArgs].join(' ');
+}
+
 function run(command, args, { cwd = process.cwd(), captureStdout = false } = {}) {
+  const commandForError = formatCommandForError(command, args);
   const result = spawnSync(resolveSpawnCommand(command), args, {
     cwd,
     encoding: 'utf8',
@@ -94,12 +109,12 @@ function run(command, args, { cwd = process.cwd(), captureStdout = false } = {})
   });
 
   if (result.error) {
-    throw new Error(`${command} ${args.join(' ')} failed: ${result.error.message}`);
+    throw new Error(`${commandForError} failed: ${result.error.message}`);
   }
 
   if (result.status !== 0) {
     throw new Error(
-      `${command} ${args.join(' ')} failed with exit code ${result.status ?? 'unknown'}`,
+      `${commandForError} failed with exit code ${result.status ?? 'unknown'}`,
     );
   }
 
@@ -182,6 +197,37 @@ function createSourceSpecs(workspaceRootDir) {
       refEnvVar: SHARED_SDK_RTC_GIT_REF_ENV_VAR,
       defaultRepoUrl: DEFAULT_SHARED_SDK_RTC_REPO_URL,
     },
+  ];
+}
+
+export function resolveGitAuthConfigArgs(repoUrl, env = process.env) {
+  const normalizedRepoUrl = String(repoUrl ?? '').trim();
+  if (!/^https:\/\/github\.com\//i.test(normalizedRepoUrl)) {
+    return [];
+  }
+
+  const token = String(
+    env?.[SHARED_SDK_GITHUB_TOKEN_ENV_VAR]
+      ?? env?.GITHUB_TOKEN
+      ?? '',
+  ).trim();
+  if (!token) {
+    return [];
+  }
+
+  const encodedCredentials = Buffer
+    .from(`x-access-token:${token}`, 'utf8')
+    .toString('base64');
+  return [
+    '-c',
+    `http.https://github.com/.extraheader=AUTHORIZATION: basic ${encodedCredentials}`,
+  ];
+}
+
+function buildGitRemoteArgs(args, repoUrl, env = process.env) {
+  return [
+    ...resolveGitAuthConfigArgs(repoUrl, env),
+    ...args,
   ];
 }
 
@@ -442,8 +488,8 @@ export function detectExistingOriginUrl(repoRoot) {
   }
 }
 
-export function resolveRemoteDefaultBranch(repoUrl) {
-  const output = run('git', ['ls-remote', '--symref', repoUrl, 'HEAD'], {
+export function resolveRemoteDefaultBranch(repoUrl, env = process.env) {
+  const output = run('git', buildGitRemoteArgs(['ls-remote', '--symref', repoUrl, 'HEAD'], repoUrl, env), {
     captureStdout: true,
   });
   const match = output.match(/ref:\s+refs\/heads\/([^\s]+)\s+HEAD/);
@@ -541,7 +587,7 @@ function resolveTargetRef({ repoUrl, spec, workspaceRootDir, env, checkoutRoot, 
     }
   }
 
-  return resolveRemoteDefaultBranch(repoUrl);
+  return resolveRemoteDefaultBranch(repoUrl, env);
 }
 
 function isExplicitGitTransportUrl(repoUrl) {
@@ -591,18 +637,18 @@ function assertGitCheckoutIsClean(repoRoot, label) {
   );
 }
 
-function cloneSourceRepo({ repoRoot, repoUrl, targetRef }) {
+function cloneSourceRepo({ repoRoot, repoUrl, targetRef, env = process.env }) {
   const cloneRepoUrl = resolveGitCloneRepoUrl(repoUrl);
   fs.mkdirSync(path.dirname(repoRoot), { recursive: true });
-  run('git', ['clone', '--depth', '1', cloneRepoUrl, repoRoot]);
-  run('git', ['-C', repoRoot, 'fetch', '--depth', '1', 'origin', targetRef]);
+  run('git', buildGitRemoteArgs(['clone', '--depth', '1', cloneRepoUrl, repoRoot], repoUrl, env));
+  run('git', buildGitRemoteArgs(['-C', repoRoot, 'fetch', '--depth', '1', 'origin', targetRef], repoUrl, env));
   run('git', ['-c', 'advice.detachedHead=false', '-C', repoRoot, 'checkout', '--force', 'FETCH_HEAD']);
 }
 
-function syncExistingSourceRepo({ repoRoot, repoUrl, targetRef, label }) {
+function syncExistingSourceRepo({ repoRoot, repoUrl, targetRef, label, env = process.env }) {
   assertGitCheckoutIsClean(repoRoot, label);
   run('git', ['-C', repoRoot, 'remote', 'set-url', 'origin', repoUrl]);
-  run('git', ['-C', repoRoot, 'fetch', '--depth', '1', 'origin', targetRef]);
+  run('git', buildGitRemoteArgs(['-C', repoRoot, 'fetch', '--depth', '1', 'origin', targetRef], repoUrl, env));
   run('git', ['-c', 'advice.detachedHead=false', '-C', repoRoot, 'checkout', '--force', 'FETCH_HEAD']);
 }
 
@@ -630,6 +676,7 @@ function ensureSourceSpecReady(spec, workspaceRootDir, env, syncExistingRepos) {
       repoRoot: checkoutRoot,
       repoUrl,
       targetRef,
+      env,
     });
   } else if (syncExistingRepos) {
     syncExistingSourceRepo({
@@ -637,6 +684,7 @@ function ensureSourceSpecReady(spec, workspaceRootDir, env, syncExistingRepos) {
       repoUrl,
       targetRef,
       label: spec.label,
+      env,
     });
   }
 

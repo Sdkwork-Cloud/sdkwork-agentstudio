@@ -14,6 +14,7 @@ test('repository exposes a mainline CI workflow for push and pull request verifi
   assert.equal(existsSync(workflowPath), true, 'missing .github/workflows/ci.yml');
 
   const workflow = read('.github/workflows/ci.yml');
+  const rustToolchain = read('rust-toolchain.toml');
   const gitSourcePreparationCount =
     workflow.match(/node scripts\/prepare-shared-sdk-git-sources\.mjs/g)?.length ?? 0;
   const sharedSdkPreparationCount =
@@ -30,6 +31,21 @@ test('repository exposes a mainline CI workflow for push and pull request verifi
   assert.match(workflow, /actions\/setup-node@/);
   assert.equal(gitSourcePreparationCount, 2);
   assert.match(workflow, /SDKWORK_SHARED_SDK_MODE:\s*git/);
+  assert.match(
+    rustToolchain,
+    /channel\s*=\s*"1\.91\.1"/,
+    'ci must use the same locally verified Rust toolchain as release builds',
+  );
+  assert.doesNotMatch(
+    workflow,
+    /uses:\s*dtolnay\/rust-toolchain@stable/,
+    'ci must not float Rust to a future stable compiler that can change release results',
+  );
+  assert.match(
+    workflow,
+    /uses:\s*dtolnay\/rust-toolchain@1\.91\.1/,
+    'ci must install the same Rust toolchain pinned by rust-toolchain.toml',
+  );
   assert.match(workflow, /Prepare shared SDK sources/);
   assert.doesNotMatch(
     workflow,

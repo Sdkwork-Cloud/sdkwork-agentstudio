@@ -170,7 +170,11 @@ export function buildWindowsTauriBundleCommand({
       serializeBundleTargets(resolvedBundleTargets),
       ...(String(targetTriple ?? '').trim().length > 0 ? ['--target', targetTriple] : []),
     ],
-    env,
+    env: {
+      ...env,
+      CARGO_PROFILE_RELEASE_STRIP: 'none',
+      CARGO_PROFILE_RELEASE_OPT_LEVEL: '2',
+    },
     platform,
     cwd,
     execPath,
@@ -521,7 +525,7 @@ export function parseArgs(argv) {
   const options = {
     profileId: DEFAULT_RELEASE_PROFILE_ID,
     configPath: defaultBundleOverlayConfig,
-    targetTriple: String(process.env.SDKWORK_DESKTOP_TARGET ?? '').trim(),
+    targetTriple: '',
     bundleTargets: [],
   };
 

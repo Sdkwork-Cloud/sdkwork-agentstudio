@@ -4121,9 +4121,20 @@
       "tag": "release-2026-05-05-174",
       "title": "Claw Studio release-2026-05-05-174",
       "date": "2026-05-05",
-      "status": "pending",
-      "summary": "Release candidate that publishes the post-173 kernel authority, chat workspace, shared SDK Git-source, and Windows packaged-launch smoke hardening with local relative SDK development dependencies preserved and GitHub-pinned release dependencies verified.",
+      "status": "failed",
+      "summary": "Release candidate that carried the post-173 kernel authority, chat workspace, shared SDK Git-source, and Windows packaged-launch smoke hardening, but failed before GitHub publication because private shared SDK GitHub clones were unauthenticated in the release runner.",
       "notesFile": "release-2026-05-05-174.md"
+    },
+    {
+      "tag": "release-2026-05-05-175",
+      "title": "Claw Studio release-2026-05-05-175",
+      "date": "2026-05-05",
+      "status": "pending",
+      "summary": "Release candidate that carries forward release-2026-05-05-174, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.91.1 toolchain, and stabilizes Windows Cargo release bundling with strip=none and opt-level=2 after local const-eval compiler failures.",
+      "notesFile": "release-2026-05-05-175.md",
+      "carryForward": [
+        "release-2026-05-05-174"
+      ]
     }
   ]
 }

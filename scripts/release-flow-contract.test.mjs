@@ -60,6 +60,7 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
 
   const workflow = read('.github/workflows/release.yml');
   const reusableWorkflow = read('.github/workflows/release-reusable.yml');
+  const rustToolchain = read('rust-toolchain.toml');
   const gitSourcePreparationCount =
     reusableWorkflow.match(/node scripts\/prepare-shared-sdk-git-sources\.mjs/g)?.length ?? 0;
   const sharedSdkPreparationCount =
@@ -69,6 +70,11 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
   assert.match(workflow, /push:\s*[\s\S]*tags:\s*[\s\S]*release-\*/);
   assert.match(workflow, /package_profile:/);
   assert.match(workflow, /uses:\s*\.\/\.github\/workflows\/release-reusable\.yml/);
+  assert.match(
+    workflow,
+    /secrets:\s*inherit/,
+    'release caller workflow must pass repository secrets through to the reusable release workflow',
+  );
   assert.match(workflow, /release_profile:\s*claw-studio/);
   assert.match(workflow, /package_profile:\s*\$\{\{ github\.event_name == 'push' && 'openclaw-only' \|\| github\.event\.inputs\.package_profile \}\}/);
   assert.match(
@@ -77,11 +83,36 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
     'release caller workflow must grant packages: write to the reusable release workflow',
   );
   assert.match(reusableWorkflow, /workflow_call:/);
+  assert.match(
+    reusableWorkflow,
+    /workflow_call:[\s\S]*secrets:[\s\S]*SDKWORK_SHARED_SDK_GITHUB_TOKEN:[\s\S]*required:\s*false/,
+    'reusable release workflow must declare the optional private shared SDK GitHub token secret',
+  );
   assert.match(reusableWorkflow, /package_profile:/);
   assert.match(reusableWorkflow, /concurrency:/);
   assert.match(reusableWorkflow, /release-\$\{\{ inputs\.release_profile \}\}-\$\{\{ inputs\.package_profile \}\}-\$\{\{ inputs\.release_tag \}\}/);
   assert.match(reusableWorkflow, /packages:\s*write/);
   assert.match(reusableWorkflow, /SDKWORK_SHARED_SDK_MODE:\s*git/);
+  assert.match(
+    rustToolchain,
+    /channel\s*=\s*"1\.91\.1"/,
+    'release builds must pin Rust to the locally verified toolchain instead of floating stable',
+  );
+  assert.doesNotMatch(
+    reusableWorkflow,
+    /uses:\s*dtolnay\/rust-toolchain@stable/,
+    'release workflow must not float Rust to a future stable compiler that can change release results',
+  );
+  assert.match(
+    reusableWorkflow,
+    /uses:\s*dtolnay\/rust-toolchain@1\.91\.1/,
+    'release workflow must install the same Rust toolchain pinned by rust-toolchain.toml',
+  );
+  assert.match(
+    reusableWorkflow,
+    /SDKWORK_SHARED_SDK_GITHUB_TOKEN:\s*\$\{\{ secrets\.SDKWORK_SHARED_SDK_GITHUB_TOKEN \|\| github\.token \}\}/,
+    'release workflow must pass a GitHub token to private shared SDK clones without embedding credentials in repo URLs',
+  );
   assert.match(reusableWorkflow, /verify-release:/);
   assert.match(reusableWorkflow, /Prepare shared SDK sources/);
   assert.doesNotMatch(
@@ -234,6 +265,23 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
   assert.match(reusableWorkflow, /-\s*server-release/);
   assert.match(reusableWorkflow, /-\s*container-release/);
   assert.match(reusableWorkflow, /-\s*kubernetes-release/);
+});
+
+test('ci workflow authenticates private GitHub shared SDK source preparation', () => {
+  const ciWorkflowPath = path.join(rootDir, '.github', 'workflows', 'ci.yml');
+  assert.equal(existsSync(ciWorkflowPath), true, 'missing .github/workflows/ci.yml');
+
+  const ciWorkflow = read('.github/workflows/ci.yml');
+  const gitSourcePreparationCount =
+    ciWorkflow.match(/node scripts\/prepare-shared-sdk-git-sources\.mjs/g)?.length ?? 0;
+
+  assert.match(ciWorkflow, /SDKWORK_SHARED_SDK_MODE:\s*git/);
+  assert.match(
+    ciWorkflow,
+    /SDKWORK_SHARED_SDK_GITHUB_TOKEN:\s*\$\{\{ secrets\.SDKWORK_SHARED_SDK_GITHUB_TOKEN \|\| github\.token \}\}/,
+    'CI must pass a GitHub token to private shared SDK clones without embedding credentials in repo URLs',
+  );
+  assert.equal(gitSourcePreparationCount, 2);
 });
 
 test('desktop tauri build script stays clean of removed sdkwork-api-router artifact handling', () => {
@@ -1204,6 +1252,66 @@ test('git-backed shared sdk source helper normalizes local clone repo URLs to fi
   }
 });
 
+test('git-backed shared sdk source helper authenticates private GitHub SDK clones without rewriting logged URLs', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-git-sources.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+  const helperSource = read('scripts/prepare-shared-sdk-git-sources.mjs');
+  const repoUrl = 'https://github.com/Sdkwork-Cloud/sdkwork-appbase.git';
+  const token = 'synthetic-token-for-private-sdk-read';
+  const expectedHeader = Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64');
+
+  assert.equal(helper.SHARED_SDK_GITHUB_TOKEN_ENV_VAR, 'SDKWORK_SHARED_SDK_GITHUB_TOKEN');
+  assert.equal(typeof helper.resolveGitAuthConfigArgs, 'function');
+  assert.equal(typeof helper.formatCommandForError, 'function');
+  assert.deepEqual(
+    helper.resolveGitAuthConfigArgs(repoUrl, {
+      [helper.SHARED_SDK_GITHUB_TOKEN_ENV_VAR]: token,
+    }),
+    [
+      '-c',
+      `http.https://github.com/.extraheader=AUTHORIZATION: basic ${expectedHeader}`,
+    ],
+  );
+  assert.deepEqual(
+    helper.resolveGitAuthConfigArgs('https://example.com/Sdkwork-Cloud/sdkwork-appbase.git', {
+      [helper.SHARED_SDK_GITHUB_TOKEN_ENV_VAR]: token,
+    }),
+    [],
+  );
+  assert.equal(
+    helper.resolveGitCloneRepoUrl(repoUrl),
+    repoUrl,
+    'release logs should keep the configured GitHub URL and must not embed tokens in clone URLs',
+  );
+  assert.equal(
+    helper.formatCommandForError('git', [
+      '-c',
+      `http.https://github.com/.extraheader=AUTHORIZATION: basic ${expectedHeader}`,
+      'clone',
+      '--depth',
+      '1',
+      repoUrl,
+      '/tmp/sdkwork-appbase',
+    ]),
+    'git -c http.https://github.com/.extraheader=<redacted> clone --depth 1 https://github.com/Sdkwork-Cloud/sdkwork-appbase.git /tmp/sdkwork-appbase',
+  );
+  assert.doesNotMatch(
+    helper.formatCommandForError('git', [
+      '-c',
+      `http.https://github.com/.extraheader=AUTHORIZATION: basic ${expectedHeader}`,
+      'clone',
+      repoUrl,
+    ]),
+    new RegExp(expectedHeader),
+    'git command errors must not leak the base64 encoded GitHub token header',
+  );
+  assert.doesNotMatch(helper.resolveGitCloneRepoUrl(repoUrl), /synthetic-token-for-private-sdk-read/);
+  assert.match(helperSource, /resolveGitAuthConfigArgs\(repoUrl, env\)/);
+  assert.match(helperSource, /run\('git', buildGitRemoteArgs\(\['clone'/);
+  assert.match(helperSource, /run\('git', buildGitRemoteArgs\(\['-C', repoRoot, 'fetch'/);
+  assert.match(helperSource, /run\('git', buildGitRemoteArgs\(\['ls-remote'/);
+});
+
 test('git-backed shared sdk source helper parses monorepo submodule layouts and resolves config-backed package roots', async () => {
   const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-git-sources.mjs');
   const helper = await import(pathToFileURL(helperPath).href);
@@ -1886,8 +1994,48 @@ test('desktop release bundle phase merges the generated Windows bundle overlay c
   const windowsBundleModulePath = path.join(rootDir, 'scripts', 'run-windows-tauri-bundle.mjs');
   const windowsBundleModule = await import(pathToFileURL(windowsBundleModulePath).href);
   const windowsCommand = windowsBundleModule.buildWindowsTauriBundleCommand();
+  const previousSdkworkDesktopTarget = process.env.SDKWORK_DESKTOP_TARGET;
+  const previousSdkworkDesktopTargetPlatform = process.env.SDKWORK_DESKTOP_TARGET_PLATFORM;
+  const previousSdkworkDesktopTargetArch = process.env.SDKWORK_DESKTOP_TARGET_ARCH;
+  try {
+    process.env.SDKWORK_DESKTOP_TARGET = 'x86_64-pc-windows-msvc';
+    process.env.SDKWORK_DESKTOP_TARGET_PLATFORM = 'windows';
+    process.env.SDKWORK_DESKTOP_TARGET_ARCH = 'x64';
+    assert.equal(
+      windowsBundleModule.parseArgs([]).targetTriple,
+      '',
+      'Windows bundle helper must not inherit SDKWORK_DESKTOP_TARGET as an implicit --target after the outer runner omits the native target flag',
+    );
+  } finally {
+    if (previousSdkworkDesktopTarget === undefined) {
+      delete process.env.SDKWORK_DESKTOP_TARGET;
+    } else {
+      process.env.SDKWORK_DESKTOP_TARGET = previousSdkworkDesktopTarget;
+    }
+    if (previousSdkworkDesktopTargetPlatform === undefined) {
+      delete process.env.SDKWORK_DESKTOP_TARGET_PLATFORM;
+    } else {
+      process.env.SDKWORK_DESKTOP_TARGET_PLATFORM = previousSdkworkDesktopTargetPlatform;
+    }
+    if (previousSdkworkDesktopTargetArch === undefined) {
+      delete process.env.SDKWORK_DESKTOP_TARGET_ARCH;
+    } else {
+      process.env.SDKWORK_DESKTOP_TARGET_ARCH = previousSdkworkDesktopTargetArch;
+    }
+  }
 
   assert.match(windowsCommand.args.join(' '), /--bundles nsis/);
+  assert.doesNotMatch(windowsCommand.args.join(' '), /--target x86_64-pc-windows-msvc/);
+  assert.equal(
+    windowsCommand.env.CARGO_PROFILE_RELEASE_STRIP,
+    'none',
+    'Windows release bundling must avoid Cargo release strip=debuginfo because Rust 1.91.1 release builds can trip const-eval failures in the full desktop dependency graph',
+  );
+  assert.equal(
+    windowsCommand.env.CARGO_PROFILE_RELEASE_OPT_LEVEL,
+    '2',
+    'Windows release bundling must lower Cargo release opt-level to 2 because Rust 1.91.1 release builds can trip const-eval failures in the full desktop dependency graph at the default opt-level',
+  );
 });
 
 test('desktop release build runner exposes granular release phases for CI diagnostics', async () => {

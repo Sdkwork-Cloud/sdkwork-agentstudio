@@ -19,6 +19,10 @@ on:
         description: Git ref to build; defaults to refs/tags/<release_tag>
         required: false
         type: string
+    secrets:
+      SDKWORK_SHARED_SDK_GITHUB_TOKEN:
+        description: Optional token with read access to private shared SDK GitHub repositories
+        required: false
 
 permissions:
   contents: write
@@ -33,6 +37,7 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   SDKWORK_SHARED_SDK_MODE: git
+  SDKWORK_SHARED_SDK_GITHUB_TOKEN: ${{ secrets.SDKWORK_SHARED_SDK_GITHUB_TOKEN || github.token }}
 
 jobs:
   prepare:
@@ -99,7 +104,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.91.1
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
@@ -173,7 +178,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.91.1
         with:
           targets: ${{ matrix.target }}
 
@@ -341,7 +346,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.91.1
         with:
           targets: ${{ matrix.target }}
 
@@ -411,7 +416,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.91.1
         with:
           targets: ${{ matrix.target }}
 
