@@ -13,6 +13,19 @@ function resolvePlatformPathModule(platform = process.platform) {
   return platform === 'win32' ? path.win32 : path.posix;
 }
 
+function resolvePathModuleForValue(value, platform = process.platform) {
+  const normalizedValue = String(value ?? '').trim();
+  if (
+    platform === 'win32'
+    && normalizedValue.includes('/')
+    && !normalizedValue.includes('\\')
+  ) {
+    return path.posix;
+  }
+
+  return resolvePlatformPathModule(platform);
+}
+
 function resolvePathDelimiter(platform = process.platform) {
   return platform === 'win32' ? ';' : ':';
 }
@@ -65,7 +78,7 @@ function resolveCargoHomeBinDir(cargoHome, platform = process.platform) {
     return null;
   }
 
-  const pathModule = resolvePlatformPathModule(platform);
+  const pathModule = resolvePathModuleForValue(trimmedCargoHome, platform);
   return pathModule.basename(trimmedCargoHome).toLowerCase() === 'bin'
     ? trimmedCargoHome
     : pathModule.join(trimmedCargoHome, 'bin');
@@ -91,7 +104,8 @@ function resolveRustToolchainBinCandidates({
       : (typeof homeDir === 'string' ? homeDir.trim() : '');
 
   if (standardRustHomeDir) {
-    candidates.push(pathModule.join(standardRustHomeDir, '.cargo', 'bin'));
+    const standardRustHomePathModule = resolvePathModuleForValue(standardRustHomeDir, platform);
+    candidates.push(standardRustHomePathModule.join(standardRustHomeDir, '.cargo', 'bin'));
   }
 
   return uniquePathEntries(candidates, platform);
@@ -106,7 +120,10 @@ function resolveExistingRustToolchainBinDirs({
   return resolveRustToolchainBinCandidates({ env, platform }).filter((candidateDir) => {
     return requiredCommands.every((command) => {
       return pathExists(
-        resolvePlatformPathModule(platform).join(candidateDir, commandExecutableName(command, platform)),
+        resolvePathModuleForValue(candidateDir, platform).join(
+          candidateDir,
+          commandExecutableName(command, platform),
+        ),
       );
     });
   });

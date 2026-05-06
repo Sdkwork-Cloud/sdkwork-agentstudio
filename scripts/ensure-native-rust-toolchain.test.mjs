@@ -77,6 +77,21 @@ assert.ok(
   'Rust toolchain guard should inspect commands with the augmented PATH',
 );
 
+const posixStyleRustHome = fakeRustHome.replace(/\\/g, '/');
+const posixStyleRustBinDir = `${posixStyleRustHome}/.cargo/bin`;
+const posixStyleFallbackEnv = withRustToolchainPath({
+  PATH: 'C:\\Windows\\System32',
+  USERPROFILE: posixStyleRustHome,
+}, {
+  platform: 'win32',
+});
+
+assert.match(
+  posixStyleFallbackEnv.PATH,
+  new RegExp(`^${posixStyleRustBinDir.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(;|$)`),
+  'Rust toolchain PATH helper should preserve POSIX-style rustup paths when simulating Windows on Linux runners',
+);
+
 let missingToolError;
 try {
   ensureNativeRustToolchain({
