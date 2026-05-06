@@ -837,6 +837,14 @@ test('shared sdk package preparation resolves the workspace root consistently fr
         expectedCanonicalWorkspaceRoot,
         '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript',
       ),
+      sharedCorePcReactRoot: path.resolve(
+        expectedCanonicalWorkspaceRoot,
+        '../sdkwork-core/sdkwork-core-pc-react',
+      ),
+      sharedLocalApiProxyRoot: path.resolve(
+        expectedCanonicalWorkspaceRoot,
+        '../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy',
+      ),
       sharedImSdkRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
         '../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript',
@@ -1190,6 +1198,232 @@ test('shared sdk package preparation can skip devDependency hydration for packag
     );
     assert.equal(
       existsSync(path.join(packageRoot, 'node_modules', 'missing-build-tool')),
+      false,
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('shared sdk package preparation can hydrate peer dependencies for linked source packages', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-packages.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-peer-links-'));
+  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const packageRoot = path.join(tempRoot, 'apps', 'sdkwork-appbase', 'packages', 'pc-react', 'intelligence', 'sdkwork-local-api-proxy');
+
+  const writeWorkspaceInstalledPackage = (packageName, version = '1.0.0') => {
+    const pnpmPackageDir = path.join(
+      workspaceRoot,
+      'node_modules',
+      '.pnpm',
+      `${packageName.replace('/', '+')}@${version}`,
+      'node_modules',
+      ...packageName.split('/'),
+    );
+
+    mkdirSync(pnpmPackageDir, { recursive: true });
+    writeFileSync(
+      path.join(pnpmPackageDir, 'package.json'),
+      JSON.stringify({ name: packageName, version }, null, 2),
+      'utf8',
+    );
+
+    return pnpmPackageDir;
+  };
+
+  mkdirSync(workspaceRoot, { recursive: true });
+  writeFileSync(
+    path.join(workspaceRoot, 'package.json'),
+    JSON.stringify({ name: '@sdkwork/claw-workspace' }, null, 2),
+    'utf8',
+  );
+  writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
+
+  mkdirSync(packageRoot, { recursive: true });
+  writeFileSync(
+    path.join(packageRoot, 'package.json'),
+    JSON.stringify(
+      {
+        name: '@sdkwork/local-api-proxy',
+        peerDependencies: {
+          '@sdkwork/ui-pc-react': '*',
+          react: '>=18.2.0 <20.0.0',
+          'react-dom': '>=18.2.0 <20.0.0',
+        },
+        peerDependenciesMeta: {
+          '@sdkwork/ui-pc-react': {
+            optional: true,
+          },
+        },
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
+
+  const reactPackageRoot = writeWorkspaceInstalledPackage('react', '19.2.4');
+  const reactDomPackageRoot = writeWorkspaceInstalledPackage('react-dom', '19.2.4');
+
+  try {
+    const repairedPackages = helper.ensurePackageDependencyLinks(packageRoot, workspaceRoot, {
+      includeDependencies: false,
+      includeDevDependencies: false,
+      includePeerDependencies: true,
+    });
+
+    assert.deepEqual(repairedPackages.sort(), ['react', 'react-dom']);
+    assert.equal(
+      realpathSync(path.join(packageRoot, 'node_modules', 'react')),
+      realpathSync(reactPackageRoot),
+    );
+    assert.equal(
+      realpathSync(path.join(packageRoot, 'node_modules', 'react-dom')),
+      realpathSync(reactDomPackageRoot),
+    );
+    assert.equal(
+      existsSync(path.join(packageRoot, 'node_modules', '@sdkwork', 'ui-pc-react')),
+      false,
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('shared sdk package preparation hydrates local api proxy peers for clean release workspaces', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-packages.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-local-proxy-peers-'));
+  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const sharedSdkCommonRoot = path.join(
+    tempRoot,
+    'sdk',
+    'sdkwork-sdk-commons',
+    'sdkwork-sdk-common-typescript',
+  );
+  const sharedAppSdkRoot = path.join(
+    tempRoot,
+    'spring-ai-plus-app-api',
+    'sdkwork-sdk-app',
+    'sdkwork-app-sdk-typescript',
+  );
+  const sharedCorePcReactRoot = path.join(
+    tempRoot,
+    'apps',
+    'sdkwork-core',
+    'sdkwork-core-pc-react',
+  );
+  const sharedLocalApiProxyRoot = path.join(
+    tempRoot,
+    'apps',
+    'sdkwork-appbase',
+    'packages',
+    'pc-react',
+    'intelligence',
+    'sdkwork-local-api-proxy',
+  );
+
+  const writePackage = (packageRoot, manifest) => {
+    mkdirSync(path.join(packageRoot, 'dist'), { recursive: true });
+    writeFileSync(
+      path.join(packageRoot, 'package.json'),
+      JSON.stringify(manifest, null, 2),
+      'utf8',
+    );
+    writeFileSync(path.join(packageRoot, 'dist', 'index.js'), 'export {};\n', 'utf8');
+  };
+  const writeWorkspaceInstalledPackage = (packageName, version = '1.0.0') => {
+    const pnpmPackageDir = path.join(
+      workspaceRoot,
+      'node_modules',
+      '.pnpm',
+      `${packageName.replace('/', '+')}@${version}`,
+      'node_modules',
+      ...packageName.split('/'),
+    );
+
+    mkdirSync(pnpmPackageDir, { recursive: true });
+    writeFileSync(
+      path.join(pnpmPackageDir, 'package.json'),
+      JSON.stringify({ name: packageName, version }, null, 2),
+      'utf8',
+    );
+
+    return pnpmPackageDir;
+  };
+
+  mkdirSync(workspaceRoot, { recursive: true });
+  writeFileSync(
+    path.join(workspaceRoot, 'package.json'),
+    JSON.stringify({ name: '@sdkwork/claw-workspace' }, null, 2),
+    'utf8',
+  );
+  writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
+
+  writePackage(sharedSdkCommonRoot, { name: '@sdkwork/sdk-common', version: '1.0.2' });
+  writePackage(sharedAppSdkRoot, {
+    name: '@sdkwork/app-sdk',
+    version: '1.0.55',
+    dependencies: {
+      '@sdkwork/sdk-common': '^1.0.2',
+    },
+  });
+  writePackage(sharedCorePcReactRoot, {
+    name: '@sdkwork/core-pc-react',
+    version: '0.1.1',
+    dependencies: {
+      '@sdkwork/app-sdk': '^1.0.55',
+    },
+    peerDependencies: {
+      react: '>=18.2.0',
+      'react-dom': '>=18.2.0',
+    },
+  });
+  writePackage(sharedLocalApiProxyRoot, {
+    name: '@sdkwork/local-api-proxy',
+    version: '0.1.0',
+    peerDependencies: {
+      '@sdkwork/core-pc-react': '*',
+      '@sdkwork/ui-pc-react': '*',
+      react: '>=18.2.0 <20.0.0',
+      'react-dom': '>=18.2.0 <20.0.0',
+    },
+    peerDependenciesMeta: {
+      '@sdkwork/core-pc-react': {
+        optional: true,
+      },
+      '@sdkwork/ui-pc-react': {
+        optional: true,
+      },
+    },
+  });
+
+  const reactPackageRoot = writeWorkspaceInstalledPackage('react', '19.2.4');
+  const reactDomPackageRoot = writeWorkspaceInstalledPackage('react-dom', '19.2.4');
+
+  try {
+    helper.prepareSharedSdkPackages({
+      currentWorkingDir: workspaceRoot,
+      env: { SDKWORK_SHARED_SDK_MODE: 'source' },
+    });
+
+    assert.equal(
+      realpathSync(path.join(sharedLocalApiProxyRoot, 'node_modules', 'react')),
+      realpathSync(reactPackageRoot),
+    );
+    assert.equal(
+      realpathSync(path.join(sharedLocalApiProxyRoot, 'node_modules', 'react-dom')),
+      realpathSync(reactDomPackageRoot),
+    );
+    assert.equal(
+      realpathSync(path.join(sharedLocalApiProxyRoot, 'node_modules', '@sdkwork', 'core-pc-react')),
+      realpathSync(sharedCorePcReactRoot),
+    );
+    assert.equal(
+      existsSync(path.join(sharedLocalApiProxyRoot, 'node_modules', '@sdkwork', 'ui-pc-react')),
       false,
     );
   } finally {

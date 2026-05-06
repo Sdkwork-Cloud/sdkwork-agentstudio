@@ -4179,8 +4179,8 @@
       "tag": "release-2026-05-05-179",
       "title": "Claw Studio release-2026-05-05-179",
       "date": "2026-05-05",
-      "status": "pending",
-      "summary": "Release candidate that carries forward release-2026-05-05-174 through release-2026-05-05-178, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.90.0 toolchain, exposes cross-platform sdkwork-run-node/sdkwork-run-pnpm wrappers, provides an explicit generator root for clean-room IM/RTC SDK release-source builds, and updates the IM SDK GitHub pin to a source-level TS 6 rootDir fix.",
+      "status": "failed",
+      "summary": "Release candidate that carried forward release-2026-05-05-174 through release-2026-05-05-178 and updated the IM SDK GitHub pin to a source-level TS 6 rootDir fix, but failed before publication because Linux clean-room release verification typechecked @sdkwork/local-api-proxy through its adjacent sdkwork-appbase source path without package-local React peer dependency links.",
       "notesFile": "release-2026-05-05-179.md",
       "carryForward": [
         "release-2026-05-05-174",
@@ -4188,6 +4188,22 @@
         "release-2026-05-05-176",
         "release-2026-05-05-177",
         "release-2026-05-05-178"
+      ]
+    },
+    {
+      "tag": "release-2026-05-05-180",
+      "title": "Claw Studio release-2026-05-05-180",
+      "date": "2026-05-05",
+      "status": "pending",
+      "summary": "Release candidate that carries forward release-2026-05-05-174 through release-2026-05-05-179, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.90.0 toolchain, exposes cross-platform sdkwork-run-node/sdkwork-run-pnpm wrappers, provides an explicit generator root for clean-room IM/RTC SDK release-source builds, updates the IM SDK GitHub pin to a source-level TS 6 rootDir fix, and hydrates package-local peer dependency links for clean-room PC React shared SDK source packages.",
+      "notesFile": "release-2026-05-05-180.md",
+      "carryForward": [
+        "release-2026-05-05-174",
+        "release-2026-05-05-175",
+        "release-2026-05-05-176",
+        "release-2026-05-05-177",
+        "release-2026-05-05-178",
+        "release-2026-05-05-179"
       ]
     }
   ]

@@ -33,6 +33,14 @@ export function createSharedSdkPackageContext({
       canonicalWorkspaceRoot,
       '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript',
     ),
+    sharedCorePcReactRoot: path.resolve(
+      canonicalWorkspaceRoot,
+      '../sdkwork-core/sdkwork-core-pc-react',
+    ),
+    sharedLocalApiProxyRoot: path.resolve(
+      canonicalWorkspaceRoot,
+      '../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy',
+    ),
     sharedImSdkRoot: path.resolve(
       canonicalWorkspaceRoot,
       '../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript',
@@ -134,6 +142,10 @@ function hasOptionalSharedImSdkSources(context) {
   return exists(context.sharedImSdkRoot) && exists(context.sharedRtcSdkRoot);
 }
 
+function hasOptionalPcReactSharedSources(context) {
+  return exists(context.sharedCorePcReactRoot) && exists(context.sharedLocalApiProxyRoot);
+}
+
 function readPackageManifest(packageRoot) {
   return JSON.parse(
     fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8'),
@@ -218,6 +230,7 @@ export function ensurePackageDependencyLinks(
   {
     includeDependencies = true,
     includeDevDependencies = true,
+    includePeerDependencies = false,
     localPackageRoots = {},
   } = {},
 ) {
@@ -226,6 +239,7 @@ export function ensurePackageDependencyLinks(
     ...new Set([
       ...(includeDependencies ? Object.keys(manifest.dependencies ?? {}) : []),
       ...(includeDevDependencies ? Object.keys(manifest.devDependencies ?? {}) : []),
+      ...(includePeerDependencies ? Object.keys(manifest.peerDependencies ?? {}) : []),
     ]),
   ];
   const repairedPackages = [];
@@ -237,6 +251,14 @@ export function ensurePackageDependencyLinks(
       : resolveWorkspaceInstalledPackageRoot(dependencyName, workspaceRoot);
 
     if (!targetPackageRoot || !exists(targetPackageRoot)) {
+      if (
+        includePeerDependencies
+        && manifest.peerDependencies?.[dependencyName]
+        && manifest.peerDependenciesMeta?.[dependencyName]?.optional === true
+      ) {
+        continue;
+      }
+
       throw new Error(
         `[prepare-shared-sdk-packages] Missing installed dependency ${dependencyName} required by ${manifest.name ?? packageRoot}. ` +
           `Expected a workspace-installed package under ${workspaceRoot}. Run pnpm install at the workspace root to materialize shared build dependencies.`,
@@ -321,6 +343,25 @@ export function prepareSharedSdkPackages({
     },
   });
   ensurePackageBuilt('@sdkwork/app-sdk', context.sharedAppSdkRoot, context.workspaceRoot, sharedSdkBuildEnv);
+
+  if (hasOptionalPcReactSharedSources(context)) {
+    ensurePackageDependencyLinks(context.sharedCorePcReactRoot, context.workspaceRoot, {
+      includeDependencies: true,
+      includeDevDependencies: shouldBuildPackage(context.sharedCorePcReactRoot),
+      includePeerDependencies: true,
+      localPackageRoots: {
+        '@sdkwork/app-sdk': context.sharedAppSdkRoot,
+      },
+    });
+    ensurePackageDependencyLinks(context.sharedLocalApiProxyRoot, context.workspaceRoot, {
+      includeDependencies: true,
+      includeDevDependencies: shouldBuildPackage(context.sharedLocalApiProxyRoot),
+      includePeerDependencies: true,
+      localPackageRoots: {
+        '@sdkwork/core-pc-react': context.sharedCorePcReactRoot,
+      },
+    });
+  }
 
   if (!hasOptionalSharedImSdkSources(context)) {
     console.log(
