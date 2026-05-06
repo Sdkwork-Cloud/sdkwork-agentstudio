@@ -351,6 +351,9 @@ export function prepareSharedSdkPackages({
       includePeerDependencies: true,
       localPackageRoots: {
         '@sdkwork/app-sdk': context.sharedAppSdkRoot,
+        '@sdkwork/sdk-common': context.sharedSdkCommonRoot,
+        '@sdkwork/im-sdk': context.sharedImSdkRoot,
+        '@sdkwork/rtc-sdk': context.sharedRtcSdkRoot,
       },
     });
     ensurePackageDependencyLinks(context.sharedLocalApiProxyRoot, context.workspaceRoot, {

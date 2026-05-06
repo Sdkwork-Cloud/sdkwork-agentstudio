@@ -1431,6 +1431,168 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
   }
 });
 
+test('shared sdk package preparation hydrates core pc react SDK dependencies for clean release workspaces', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-packages.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-core-deps-'));
+  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const sharedSdkCommonRoot = path.join(
+    tempRoot,
+    'sdk',
+    'sdkwork-sdk-commons',
+    'sdkwork-sdk-common-typescript',
+  );
+  const sharedAppSdkRoot = path.join(
+    tempRoot,
+    'spring-ai-plus-app-api',
+    'sdkwork-sdk-app',
+    'sdkwork-app-sdk-typescript',
+  );
+  const sharedCorePcReactRoot = path.join(
+    tempRoot,
+    'apps',
+    'sdkwork-core',
+    'sdkwork-core-pc-react',
+  );
+  const sharedLocalApiProxyRoot = path.join(
+    tempRoot,
+    'apps',
+    'sdkwork-appbase',
+    'packages',
+    'pc-react',
+    'intelligence',
+    'sdkwork-local-api-proxy',
+  );
+  const sharedImSdkRoot = path.join(
+    tempRoot,
+    'apps',
+    'craw-chat',
+    'sdks',
+    'sdkwork-im-sdk',
+    'sdkwork-im-sdk-typescript',
+  );
+  const sharedRtcSdkRoot = path.join(
+    tempRoot,
+    'apps',
+    'craw-chat',
+    'sdks',
+    'sdkwork-rtc-sdk',
+    'sdkwork-rtc-sdk-typescript',
+  );
+
+  const writePackage = (packageRoot, manifest) => {
+    mkdirSync(path.join(packageRoot, 'dist'), { recursive: true });
+    writeFileSync(
+      path.join(packageRoot, 'package.json'),
+      JSON.stringify(manifest, null, 2),
+      'utf8',
+    );
+    writeFileSync(path.join(packageRoot, 'dist', 'index.js'), 'export {};\n', 'utf8');
+  };
+  const writeWorkspaceInstalledPackage = (packageName, version = '1.0.0') => {
+    const pnpmPackageDir = path.join(
+      workspaceRoot,
+      'node_modules',
+      '.pnpm',
+      `${packageName.replace('/', '+')}@${version}`,
+      'node_modules',
+      ...packageName.split('/'),
+    );
+
+    mkdirSync(pnpmPackageDir, { recursive: true });
+    writeFileSync(
+      path.join(pnpmPackageDir, 'package.json'),
+      JSON.stringify({ name: packageName, version }, null, 2),
+      'utf8',
+    );
+
+    return pnpmPackageDir;
+  };
+
+  mkdirSync(workspaceRoot, { recursive: true });
+  writeFileSync(
+    path.join(workspaceRoot, 'package.json'),
+    JSON.stringify({ name: '@sdkwork/claw-workspace' }, null, 2),
+    'utf8',
+  );
+  writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
+
+  writePackage(sharedSdkCommonRoot, { name: '@sdkwork/sdk-common', version: '1.0.2' });
+  writePackage(sharedAppSdkRoot, {
+    name: '@sdkwork/app-sdk',
+    version: '1.0.55',
+    dependencies: {
+      '@sdkwork/sdk-common': '^1.0.2',
+    },
+  });
+  writePackage(sharedImSdkRoot, {
+    name: '@sdkwork/im-sdk',
+    version: '0.1.1',
+    dependencies: {
+      '@sdkwork/sdk-common': '^1.0.2',
+    },
+  });
+  writePackage(sharedRtcSdkRoot, {
+    name: '@sdkwork/rtc-sdk',
+    version: '0.1.1',
+    dependencies: {
+      '@sdkwork/im-sdk': '^0.1.1',
+    },
+  });
+  writePackage(sharedCorePcReactRoot, {
+    name: '@sdkwork/core-pc-react',
+    version: '0.1.1',
+    dependencies: {
+      '@sdkwork/app-sdk': '^1.0.55',
+      '@sdkwork/sdk-common': '^1.0.2',
+      '@sdkwork/im-sdk': '^0.1.1',
+      '@sdkwork/rtc-sdk': '^0.1.1',
+    },
+    peerDependencies: {
+      react: '>=18.2.0',
+      'react-dom': '>=18.2.0',
+    },
+  });
+  writePackage(sharedLocalApiProxyRoot, {
+    name: '@sdkwork/local-api-proxy',
+    version: '0.1.0',
+    peerDependencies: {
+      react: '>=18.2.0 <20.0.0',
+      'react-dom': '>=18.2.0 <20.0.0',
+    },
+  });
+
+  writeWorkspaceInstalledPackage('react', '19.2.4');
+  writeWorkspaceInstalledPackage('react-dom', '19.2.4');
+
+  try {
+    helper.prepareSharedSdkPackages({
+      currentWorkingDir: workspaceRoot,
+      env: { SDKWORK_SHARED_SDK_MODE: 'source' },
+    });
+
+    assert.equal(
+      realpathSync(path.join(sharedCorePcReactRoot, 'node_modules', '@sdkwork', 'app-sdk')),
+      realpathSync(sharedAppSdkRoot),
+    );
+    assert.equal(
+      realpathSync(path.join(sharedCorePcReactRoot, 'node_modules', '@sdkwork', 'sdk-common')),
+      realpathSync(sharedSdkCommonRoot),
+    );
+    assert.equal(
+      realpathSync(path.join(sharedCorePcReactRoot, 'node_modules', '@sdkwork', 'im-sdk')),
+      realpathSync(sharedImSdkRoot),
+    );
+    assert.equal(
+      realpathSync(path.join(sharedCorePcReactRoot, 'node_modules', '@sdkwork', 'rtc-sdk')),
+      realpathSync(sharedRtcSdkRoot),
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('shared sdk package preparation exposes a generator root for relocated IM and RTC release sources', async () => {
   const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-packages.mjs');
   const helper = await import(pathToFileURL(helperPath).href);
