@@ -1403,6 +1403,8 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
 
   const reactPackageRoot = writeWorkspaceInstalledPackage('react', '19.2.4');
   const reactDomPackageRoot = writeWorkspaceInstalledPackage('react-dom', '19.2.4');
+  const reactTypesPackageRoot = writeWorkspaceInstalledPackage('@types/react', '19.2.14');
+  const reactDomTypesPackageRoot = writeWorkspaceInstalledPackage('@types/react-dom', '19.2.3');
 
   try {
     helper.prepareSharedSdkPackages({
@@ -1417,6 +1419,14 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
     assert.equal(
       realpathSync(path.join(sharedLocalApiProxyRoot, 'node_modules', 'react-dom')),
       realpathSync(reactDomPackageRoot),
+    );
+    assert.equal(
+      realpathSync(path.join(sharedLocalApiProxyRoot, 'node_modules', '@types', 'react')),
+      realpathSync(reactTypesPackageRoot),
+    );
+    assert.equal(
+      realpathSync(path.join(sharedLocalApiProxyRoot, 'node_modules', '@types', 'react-dom')),
+      realpathSync(reactDomTypesPackageRoot),
     );
     assert.equal(
       realpathSync(path.join(sharedLocalApiProxyRoot, 'node_modules', '@sdkwork', 'core-pc-react')),
@@ -1565,6 +1575,8 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
 
   writeWorkspaceInstalledPackage('react', '19.2.4');
   writeWorkspaceInstalledPackage('react-dom', '19.2.4');
+  writeWorkspaceInstalledPackage('@types/react', '19.2.14');
+  writeWorkspaceInstalledPackage('@types/react-dom', '19.2.3');
 
   try {
     helper.prepareSharedSdkPackages({

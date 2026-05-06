@@ -156,6 +156,21 @@ function resolvePackageLinkPath(packageRoot, packageName) {
   return path.join(packageRoot, 'node_modules', ...packageName.split('/'));
 }
 
+function resolvePeerTypeDependencyNames(manifest) {
+  const peerDependencyNames = new Set(Object.keys(manifest.peerDependencies ?? {}));
+  const peerTypeDependencyNames = [];
+
+  if (peerDependencyNames.has('react')) {
+    peerTypeDependencyNames.push('@types/react');
+  }
+
+  if (peerDependencyNames.has('react-dom')) {
+    peerTypeDependencyNames.push('@types/react-dom');
+  }
+
+  return peerTypeDependencyNames;
+}
+
 function createPackageSymlink(linkPath, targetPath) {
   fs.mkdirSync(path.dirname(linkPath), { recursive: true });
   fs.symlinkSync(
@@ -235,11 +250,13 @@ export function ensurePackageDependencyLinks(
   } = {},
 ) {
   const manifest = readPackageManifest(packageRoot);
+  const peerTypeDependencyNames = new Set(resolvePeerTypeDependencyNames(manifest));
   const dependencyNames = [
     ...new Set([
       ...(includeDependencies ? Object.keys(manifest.dependencies ?? {}) : []),
       ...(includeDevDependencies ? Object.keys(manifest.devDependencies ?? {}) : []),
       ...(includePeerDependencies ? Object.keys(manifest.peerDependencies ?? {}) : []),
+      ...(includePeerDependencies ? [...peerTypeDependencyNames] : []),
     ]),
   ];
   const repairedPackages = [];
@@ -256,6 +273,9 @@ export function ensurePackageDependencyLinks(
         && manifest.peerDependencies?.[dependencyName]
         && manifest.peerDependenciesMeta?.[dependencyName]?.optional === true
       ) {
+        continue;
+      }
+      if (peerTypeDependencyNames.has(dependencyName)) {
         continue;
       }
 
