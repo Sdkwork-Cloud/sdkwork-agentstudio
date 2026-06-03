@@ -9,6 +9,7 @@ export interface WorkbenchFileTabState {
 interface WorkbenchFileContentStateInput {
   file: InstanceWorkbenchFile;
   loadedFileContents: Record<string, string>;
+  contentStateKey?: string;
   runtimeKind?: string | null;
   transportKind?: string | null;
   isBuiltIn?: boolean;
@@ -24,6 +25,12 @@ export interface WorkbenchFileTabPresentation {
   title: string;
   tooltip: string;
   subtitle?: string;
+}
+
+export interface WorkbenchFileContentStateKeyInput {
+  instanceId: string;
+  scopeKey: string;
+  file: InstanceWorkbenchFile;
 }
 
 export function normalizeWorkbenchPath(path?: string | null) {
@@ -182,8 +189,9 @@ export function getInstanceVisibleWorkbenchFiles(
 export function reconcileWorkbenchFileTextState(
   files: InstanceWorkbenchFile[],
   state: Record<string, string>,
+  resolveStateKey: (file: InstanceWorkbenchFile) => string = (file) => file.id,
 ) {
-  const visibleFileIds = new Set(files.map((file) => file.id));
+  const visibleFileIds = new Set(files.map(resolveStateKey));
   let changed = false;
   const nextState: Record<string, string> = {};
 
@@ -242,8 +250,21 @@ function isRemoteGatewayWorkbenchFile(input: WorkbenchFileContentStateInput) {
   return input.transportKind === 'openclawGatewayWs' && !input.isBuiltIn;
 }
 
+export function buildWorkbenchFileContentStateKey({
+  instanceId,
+  scopeKey,
+  file,
+}: WorkbenchFileContentStateKeyInput) {
+  return [instanceId, scopeKey, file.id].join('\u001f');
+}
+
+function resolveWorkbenchFileContentStateKey(input: WorkbenchFileContentStateInput) {
+  return input.contentStateKey || input.file.id;
+}
+
 export function shouldLoadWorkbenchFileContent(input: WorkbenchFileContentStateInput) {
-  if (Object.prototype.hasOwnProperty.call(input.loadedFileContents, input.file.id)) {
+  const contentStateKey = resolveWorkbenchFileContentStateKey(input);
+  if (Object.prototype.hasOwnProperty.call(input.loadedFileContents, contentStateKey)) {
     return false;
   }
 
@@ -251,8 +272,9 @@ export function shouldLoadWorkbenchFileContent(input: WorkbenchFileContentStateI
 }
 
 export function getWorkbenchFileResolvedContent(input: WorkbenchFileContentStateInput) {
-  if (Object.prototype.hasOwnProperty.call(input.loadedFileContents, input.file.id)) {
-    return input.loadedFileContents[input.file.id] || '';
+  const contentStateKey = resolveWorkbenchFileContentStateKey(input);
+  if (Object.prototype.hasOwnProperty.call(input.loadedFileContents, contentStateKey)) {
+    return input.loadedFileContents[contentStateKey] || '';
   }
 
   if (isRemoteGatewayWorkbenchFile(input)) {

@@ -32,7 +32,7 @@ function createTask(overrides: Partial<Task> = {}): Task {
     executionContent: 'runAssistantTask',
     timeoutSeconds: 90,
     deliveryMode: 'publishSummary',
-    deliveryChannel: 'qq',
+    deliveryChannel: 'telegram',
     recipient: 'ops-room',
     lastRun: '2 hours ago',
     nextRun: 'in 22 hours',

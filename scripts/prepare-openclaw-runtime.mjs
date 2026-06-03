@@ -1358,6 +1358,21 @@ export function resolveDownloadedNativeRuntimeAsset({
   return null;
 }
 
+function resolveInstallSpecVersion(installSpec) {
+  const normalized = String(installSpec ?? '').trim();
+  if (!normalized) {
+    return '';
+  }
+
+  if (normalized.startsWith('@')) {
+    const versionSeparatorIndex = normalized.lastIndexOf('@');
+    return versionSeparatorIndex > 0 ? normalized.slice(versionSeparatorIndex + 1).trim() : '';
+  }
+
+  const versionSeparatorIndex = normalized.indexOf('@');
+  return versionSeparatorIndex >= 0 ? normalized.slice(versionSeparatorIndex + 1).trim() : '';
+}
+
 function resolveDownloadedNativeRuntimeAssetDestinationPath(packageDir, runtimeAsset) {
   const destinationRelativePath = String(runtimeAsset?.destinationRelativePath ?? '').trim();
   return destinationRelativePath ? path.join(packageDir, destinationRelativePath) : '';
@@ -2092,6 +2107,93 @@ function normalizeBundledPluginRuntimeDeps(runtimeDeps) {
     .toSorted((left, right) => left.name.localeCompare(right.name));
 }
 
+function normalizeOpenClawChannelId(value) {
+  return String(value ?? '').trim();
+}
+
+function resolveOpenClawChannelIdFromExtensionPackageJson(packageJson) {
+  return normalizeOpenClawChannelId(packageJson?.openclaw?.channel?.id);
+}
+
+function resolveOpenClawChannelIdFromPluginManifest(pluginManifest) {
+  if (Array.isArray(pluginManifest?.channels)) {
+    const channelId = pluginManifest.channels
+      .map((value) => normalizeOpenClawChannelId(value))
+      .find(Boolean);
+    if (channelId) {
+      return channelId;
+    }
+  }
+
+  if (pluginManifest?.channelConfigs && typeof pluginManifest.channelConfigs === 'object') {
+    const channelId = Object.keys(pluginManifest.channelConfigs)
+      .map((value) => normalizeOpenClawChannelId(value))
+      .find(Boolean);
+    if (channelId) {
+      return channelId;
+    }
+  }
+
+  return '';
+}
+
+async function resolveOpenClawChannelIdFromExtensionPackageDir(extensionPackageDir) {
+  const packageJson = await readJsonFileIfExists(path.join(extensionPackageDir, 'package.json'));
+  const packageJsonChannelId = resolveOpenClawChannelIdFromExtensionPackageJson(packageJson);
+  if (packageJsonChannelId) {
+    return packageJsonChannelId;
+  }
+
+  const pluginManifest = await readJsonFileIfExists(
+    path.join(extensionPackageDir, 'openclaw.plugin.json'),
+  );
+  return resolveOpenClawChannelIdFromPluginManifest(pluginManifest);
+}
+
+async function readJsonFileIfExists(filePath) {
+  try {
+    return JSON.parse(await readFile(filePath, 'utf8'));
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function copyOpenClawSupplementalChannelExtensions({
+  packageInstallRoot,
+  runtimeSupplementalPackages = DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
+} = {}) {
+  const modulesRoot = path.join(packageInstallRoot, 'node_modules');
+  const openclawExtensionsDir = path.join(
+    modulesRoot,
+    'openclaw',
+    'dist',
+    'extensions',
+  );
+  const copiedChannelIds = [];
+
+  for (const supplementalPackagePath of resolveOpenClawRuntimeSupplementalPackagePathsFromModulesRoot({
+    modulesRoot,
+    runtimeSupplementalPackages,
+  })) {
+    const channelId = await resolveOpenClawChannelIdFromExtensionPackageDir(supplementalPackagePath);
+    if (!channelId) {
+      continue;
+    }
+
+    const targetExtensionDir = path.join(openclawExtensionsDir, channelId);
+    await removeDirectoryWithRetries(targetExtensionDir);
+    await mkdir(path.dirname(targetExtensionDir), { recursive: true });
+    await copyDirectoryWithWindowsFallback(supplementalPackagePath, targetExtensionDir);
+    await removeDirectoryWithRetries(path.join(targetExtensionDir, 'node_modules'));
+    copiedChannelIds.push(channelId);
+  }
+
+  return copiedChannelIds.toSorted((left, right) => left.localeCompare(right));
+}
+
 async function scanBundledPluginRuntimeDepsFromExtensionPackages(packageRoot) {
   const extensionsDir = path.join(packageRoot, 'dist', 'extensions');
   let extensionEntries = [];
@@ -2119,6 +2221,26 @@ async function scanBundledPluginRuntimeDepsFromExtensionPackages(packageRoot) {
       packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
     } catch {
       continue;
+    }
+
+    if (!resolveOpenClawChannelIdFromExtensionPackageJson(packageJson)) {
+      const pluginManifest = await readJsonFileIfExists(
+        path.join(extensionsDir, pluginId, 'openclaw.plugin.json'),
+      );
+      const channelId = resolveOpenClawChannelIdFromPluginManifest(pluginManifest);
+      if (channelId) {
+        packageJson = {
+          ...packageJson,
+          openclaw: {
+            ...(packageJson.openclaw && typeof packageJson.openclaw === 'object'
+              ? packageJson.openclaw
+              : {}),
+            channel: {
+              id: channelId,
+            },
+          },
+        };
+      }
     }
 
     for (const [name, version] of Object.entries(collectPackageDependencyEntries(packageJson))) {
@@ -3270,11 +3392,53 @@ export async function applyOpenClawRuntimeAgentPathMaterializationPatch({
   };
 }
 
+async function normalizePreparedRuntimeWrapperPackageJson({
+  packageDir,
+  openclawPackage = DEFAULT_OPENCLAW_PACKAGE,
+  openclawVersion = DEFAULT_OPENCLAW_VERSION,
+  runtimeSupplementalPackages = DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
+} = {}) {
+  const packageJsonPath = path.join(packageDir, 'package.json');
+  let packageJson;
+  try {
+    packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
+  } catch {
+    packageJson = {};
+  }
+
+  const dependencies =
+    packageJson.dependencies && typeof packageJson.dependencies === 'object'
+      ? { ...packageJson.dependencies }
+      : {};
+  dependencies[openclawPackage] = openclawVersion;
+  for (const installSpec of normalizeOpenClawRuntimeSupplementalPackages(runtimeSupplementalPackages)) {
+    const packageName = resolvePackageNameFromInstallSpec(installSpec);
+    const versionSpec = resolveInstallSpecVersion(installSpec);
+    if (packageName && versionSpec) {
+      dependencies[packageName] = versionSpec;
+    }
+  }
+
+  await writeFile(
+    packageJsonPath,
+    `${JSON.stringify(
+      {
+        ...packageJson,
+        dependencies,
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  );
+}
+
 export async function prepareOpenClawRuntimeFromSource({
   sourceRuntimeDir,
   resourceDir = DEFAULT_RESOURCE_DIR,
   openclawVersion = DEFAULT_OPENCLAW_VERSION,
   nodeVersion = DEFAULT_NODE_VERSION,
+  openclawPackage = DEFAULT_OPENCLAW_PACKAGE,
   target = resolveOpenClawTarget(),
   runtimeSupplementalPackages = DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
 }) {
@@ -3285,6 +3449,16 @@ export async function prepareOpenClawRuntimeFromSource({
   await cleanPreparedOpenClawResourceDir(resourceDir);
   await copyDirectoryWithWindowsFallback(sourceRuntimeDir, path.join(resourceDir, 'runtime'));
   await removePreparedBundledNodeRuntime(path.join(resourceDir, 'runtime'));
+  await normalizePreparedRuntimeWrapperPackageJson({
+    packageDir: path.join(resourceDir, 'runtime', 'package'),
+    openclawPackage,
+    openclawVersion,
+    runtimeSupplementalPackages,
+  });
+  await copyOpenClawSupplementalChannelExtensions({
+    packageInstallRoot: path.join(resourceDir, 'runtime', 'package'),
+    runtimeSupplementalPackages,
+  });
   await writePreparedRuntimeSidecarManifest({
     runtimeDir: path.join(resourceDir, 'runtime'),
     manifest,
@@ -3297,6 +3471,9 @@ export async function prepareOpenClawRuntimeFromSource({
   );
   await applyOpenClawRuntimeAgentPathMaterializationPatch({
     runtimeDir: path.join(resourceDir, 'runtime'),
+  });
+  await validatePreparedRuntimeSource(path.join(resourceDir, 'runtime'), manifest, {
+    runtimeSupplementalPackages,
   });
 
   return {
@@ -3311,6 +3488,7 @@ export async function prepareOpenClawRuntimeFromStagedDirs({
   resourceDir = DEFAULT_RESOURCE_DIR,
   openclawVersion = DEFAULT_OPENCLAW_VERSION,
   nodeVersion = DEFAULT_NODE_VERSION,
+  openclawPackage = DEFAULT_OPENCLAW_PACKAGE,
   target = resolveOpenClawTarget(),
   runtimeSupplementalPackages = DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
 }) {
@@ -3324,6 +3502,16 @@ export async function prepareOpenClawRuntimeFromStagedDirs({
   await cleanPreparedOpenClawResourceDir(resourceDir);
   await mkdir(path.join(resourceDir, 'runtime'), { recursive: true });
   await copyDirectoryWithWindowsFallback(packageSourceDir, path.join(resourceDir, 'runtime', 'package'));
+  await normalizePreparedRuntimeWrapperPackageJson({
+    packageDir: path.join(resourceDir, 'runtime', 'package'),
+    openclawPackage,
+    openclawVersion,
+    runtimeSupplementalPackages,
+  });
+  await copyOpenClawSupplementalChannelExtensions({
+    packageInstallRoot: path.join(resourceDir, 'runtime', 'package'),
+    runtimeSupplementalPackages,
+  });
   await writePreparedRuntimeSidecarManifest({
     runtimeDir: path.join(resourceDir, 'runtime'),
     manifest,
@@ -3398,6 +3586,7 @@ export async function prepareOpenClawRuntime({
         resourceDir,
         openclawVersion,
         nodeVersion,
+        openclawPackage,
         target,
         runtimeSupplementalPackages,
       });
@@ -3415,6 +3604,7 @@ export async function prepareOpenClawRuntime({
       resourceDir,
       openclawVersion,
       nodeVersion,
+      openclawPackage,
       target,
       runtimeSupplementalPackages,
     });
@@ -3519,12 +3709,17 @@ export async function prepareOpenClawRuntime({
       },
     );
 
-    await copyDirectoryWithWindowsFallback(packageDir, path.join(resourceDir, 'runtime', 'package'));
-    await refreshCachedOpenClawRuntimeArtifacts({
-      nodeSourceDir: extractedNodeDir,
-      packageSourceDir: packageDir,
-      cachePaths,
+    await normalizePreparedRuntimeWrapperPackageJson({
+      packageDir,
+      openclawPackage,
+      openclawVersion,
+      runtimeSupplementalPackages,
     });
+    await copyOpenClawSupplementalChannelExtensions({
+      packageInstallRoot: packageDir,
+      runtimeSupplementalPackages,
+    });
+    await copyDirectoryWithWindowsFallback(packageDir, path.join(resourceDir, 'runtime', 'package'));
     await writePreparedRuntimeSidecarManifest({
       runtimeDir: path.join(resourceDir, 'runtime'),
       manifest,
@@ -3537,6 +3732,11 @@ export async function prepareOpenClawRuntime({
     );
     await validatePreparedRuntimeSource(path.join(resourceDir, 'runtime'), manifest, {
       runtimeSupplementalPackages,
+    });
+    await refreshCachedOpenClawRuntimeArtifacts({
+      nodeSourceDir: extractedNodeDir,
+      packageSourceDir: packageDir,
+      cachePaths,
     });
 
     return await finalizePreparedOpenClawRuntime({

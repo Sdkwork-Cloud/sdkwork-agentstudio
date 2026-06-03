@@ -16,6 +16,13 @@ import {
 
 type OpenClawChannelConfigSnapshot = OpenClawConfigSnapshot['channelSnapshots'][number];
 
+const RETIRED_OPENCLAW_RUNTIME_CHANNEL_IDS = new Set([
+  'qq',
+  'wechat',
+  'wehcat',
+  'sdkworkchat',
+]);
+
 export function mapConfigChannel(
   channel: OpenClawChannelConfigSnapshot,
 ): InstanceWorkbenchChannel {
@@ -171,11 +178,10 @@ export function buildOpenClawChannels(
       ...(Array.isArray(status.channelOrder) ? status.channelOrder.filter(isNonEmptyString) : []),
       ...Object.keys(rawChannels),
     ]),
-  );
+  ).filter((channelId) => !RETIRED_OPENCLAW_RUNTIME_CHANNEL_IDS.has(channelId));
 
   return orderedIds
     .map((channelId) => {
-      const isConfigurationFree = channelId === 'sdkworkchat';
       const rawChannel = rawChannels[channelId];
       if (!isRecord(rawChannel)) {
         return null;
@@ -193,14 +199,7 @@ export function buildOpenClawChannels(
         (getBooleanValue(rawChannel, ['configured']) ?? false) ||
         configuredFieldCount > 0 ||
         accountCount > 0;
-      const setupSteps = isConfigurationFree
-        ? [
-            'Download the Sdkwork Chat app or open the existing Sdkwork Chat workspace.',
-            enabled
-              ? 'Sdkwork Chat delivery is ready for runtime handoff.'
-              : 'Enable the channel when this runtime should deliver into Sdkwork Chat.',
-          ]
-        : accounts.length > 0
+      const setupSteps = accounts.length > 0
           ? [
               `${channelName} runtime reports ${connectedAccountCount}/${accountCount} connected accounts.`,
               ...accounts.map(
@@ -235,23 +234,17 @@ export function buildOpenClawChannels(
                 )
                 .join(', ')}.`
             : `${channelName} integration managed by the OpenClaw gateway.`),
-        status: isConfigurationFree
-          ? enabled
-            ? 'connected'
-            : 'disconnected'
-          : configured
+        status: configured
             ? enabled
               ? 'connected'
               : 'disconnected'
             : 'not_configured',
         enabled,
-        configurationMode: isConfigurationFree ? 'none' : 'required',
-        fieldCount: isConfigurationFree ? 0 : Math.max(fieldCount, accountCount, configured ? 1 : 0),
-        configuredFieldCount: isConfigurationFree
-          ? 0
-          : configured
-            ? Math.max(configuredFieldCount, accountCount, 1)
-            : 0,
+        configurationMode: 'required',
+        fieldCount: Math.max(fieldCount, accountCount, configured ? 1 : 0),
+        configuredFieldCount: configured
+          ? Math.max(configuredFieldCount, accountCount, 1)
+          : 0,
         setupSteps,
         accounts,
       } satisfies InstanceWorkbenchChannel;

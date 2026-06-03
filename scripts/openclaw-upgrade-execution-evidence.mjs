@@ -36,6 +36,7 @@ const DEFAULT_SRC_TAURI_DIR = path.join(
   'sdkwork-claw-desktop',
   'src-tauri',
 );
+const DEFAULT_TARGET_CLEAN_DIR_NAME = 'check-desktop-openclaw-runtime';
 
 function createPhase(id, status, detail, extra = {}) {
   return {
@@ -86,6 +87,20 @@ function summarizeTargetInspection(inspection) {
   };
 }
 
+function buildTargetCleanEnv({
+  workspaceRootDir = rootDir,
+  env = process.env,
+} = {}) {
+  return {
+    ...env,
+    CARGO_TARGET_DIR: path.join(
+      path.resolve(workspaceRootDir),
+      'target',
+      DEFAULT_TARGET_CLEAN_DIR_NAME,
+    ),
+  };
+}
+
 function normalizeTargetInput({
   platform = process.platform,
   arch = process.arch,
@@ -127,6 +142,7 @@ export async function buildOpenClawUpgradeExecutionEvidence({
 } = {}) {
   const blockers = [];
   const phases = [];
+  const targetCleanEnv = buildTargetCleanEnv({ workspaceRootDir });
   const normalizedTarget = normalizeTargetInput({
     platform,
     arch,
@@ -174,10 +190,15 @@ export async function buildOpenClawUpgradeExecutionEvidence({
 
   let targetCleanInspection = null;
   try {
-    const ensuredTarget = ensureTauriTargetCleanFn(srcTauriDir);
+    const ensuredTarget = ensureTauriTargetCleanFn(srcTauriDir, { env: targetCleanEnv });
+    const removedResourceDirs = Array.isArray(ensuredTarget?.removedResourceDirs)
+      ? ensuredTarget.removedResourceDirs
+      : [];
+    const targetCleanMutated =
+      ensuredTarget?.removedTarget === true || removedResourceDirs.length > 0;
     const finalInspection =
-      ensuredTarget?.removedTarget === true
-        ? inspectTauriTargetFn(srcTauriDir)
+      targetCleanMutated
+        ? inspectTauriTargetFn(srcTauriDir, { env: targetCleanEnv })
         : ensuredTarget;
     targetCleanInspection = {
       ensuredTarget: summarizeTargetInspection(ensuredTarget),
@@ -202,7 +223,7 @@ export async function buildOpenClawUpgradeExecutionEvidence({
         createPhase(
           'target-clean',
           'passed',
-          ensuredTarget?.removedTarget === true
+          targetCleanMutated
             ? 'tauri target cleanup removed stale cache entries and re-inspection is now clean'
             : 'tauri target cache is already clean for the desktop upgrade path',
           targetCleanInspection,

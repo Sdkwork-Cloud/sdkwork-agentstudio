@@ -7,6 +7,7 @@ import type {
   RuntimeDesktopBundledComponentInfo,
   RuntimeDesktopBundledComponentsInfo,
   RuntimeDesktopLocalAiProxyInfo,
+  RuntimeDesktopOpenClawRuntimeInfo,
   RuntimePathsInfo,
   StudioInstanceRecord,
 } from '@sdkwork/claw-infrastructure';
@@ -93,6 +94,20 @@ export interface DesktopStartupEvidenceBundledComponents {
   components: RuntimeDesktopBundledComponentsInfo['components'];
 }
 
+export interface DesktopStartupEvidenceOpenClawConfigHealth {
+  status: string;
+  valid: boolean;
+  runtimeMetadataAvailable: boolean;
+  configReadable: boolean;
+  supportedChannelIds: string[];
+  configuredChannelIds: string[];
+  unknownChannelIds: string[];
+  malformedChannelIds: string[];
+  modelByChannelIds: string[];
+  unknownModelByChannelIds: string[];
+  invalidModelByChannelIds: string[];
+}
+
 export interface DesktopStartupEvidenceDocument {
   version: 1;
   status: DesktopStartupEvidenceStatus;
@@ -109,6 +124,7 @@ export interface DesktopStartupEvidenceDocument {
   openClawRuntime: ManageOpenClawRuntimeRecord | null;
   openClawGateway: ManageOpenClawGatewayRecord | null;
   builtInInstance: DesktopStartupEvidenceBuiltInInstance | null;
+  openClawConfigHealth: DesktopStartupEvidenceOpenClawConfigHealth | null;
   readinessEvidence: DesktopHostedRuntimeReadinessEvidence | null;
   localAiProxy: DesktopStartupEvidenceLocalAiProxy | null;
   error: DesktopStartupEvidenceErrorSummary | null;
@@ -238,6 +254,37 @@ export function sanitizeDesktopStartupLocalAiProxy(
   };
 }
 
+function cloneStringArray(values: string[] | null | undefined): string[] {
+  return Array.isArray(values)
+    ? values
+      .map((value) => String(value ?? '').trim())
+      .filter(Boolean)
+    : [];
+}
+
+export function sanitizeDesktopStartupOpenClawConfigHealth(
+  openClawRuntime: Pick<RuntimeDesktopOpenClawRuntimeInfo, 'channelConfigHealth'> | null | undefined,
+): DesktopStartupEvidenceOpenClawConfigHealth | null {
+  const health = openClawRuntime?.channelConfigHealth;
+  if (!health || typeof health !== 'object') {
+    return null;
+  }
+
+  return {
+    status: String(health.status ?? '').trim() || 'unknown',
+    valid: health.valid === true,
+    runtimeMetadataAvailable: health.runtimeMetadataAvailable === true,
+    configReadable: health.configReadable === true,
+    supportedChannelIds: cloneStringArray(health.supportedChannelIds),
+    configuredChannelIds: cloneStringArray(health.configuredChannelIds),
+    unknownChannelIds: cloneStringArray(health.unknownChannelIds),
+    malformedChannelIds: cloneStringArray(health.malformedChannelIds),
+    modelByChannelIds: cloneStringArray(health.modelByChannelIds),
+    unknownModelByChannelIds: cloneStringArray(health.unknownModelByChannelIds),
+    invalidModelByChannelIds: cloneStringArray(health.invalidModelByChannelIds),
+  };
+}
+
 function summarizeStartupError(
   error: unknown,
 ): DesktopStartupEvidenceErrorSummary | null {
@@ -276,6 +323,7 @@ export function buildDesktopStartupEvidenceDocument({
   bundledComponents = null,
   appPaths = null,
   readinessSnapshot = null,
+  openClawRuntime = null,
   localAiProxy = null,
   error = null,
   recordedAt = new Date().toISOString(),
@@ -288,6 +336,7 @@ export function buildDesktopStartupEvidenceDocument({
   bundledComponents?: RuntimeDesktopBundledComponentsInfo | null;
   appPaths?: RuntimePathsInfo | null;
   readinessSnapshot?: DesktopHostedRuntimeReadinessSnapshot | null;
+  openClawRuntime?: RuntimeDesktopOpenClawRuntimeInfo | null;
   localAiProxy?: RuntimeDesktopLocalAiProxyInfo | null;
   error?: unknown;
   recordedAt?: string;
@@ -314,6 +363,7 @@ export function buildDesktopStartupEvidenceDocument({
     openClawRuntime: readinessSnapshot?.openClawRuntime ?? null,
     openClawGateway: readinessSnapshot?.openClawGateway ?? null,
     builtInInstance: sanitizeDesktopStartupBuiltInInstance(builtInInstance),
+    openClawConfigHealth: sanitizeDesktopStartupOpenClawConfigHealth(openClawRuntime),
     readinessEvidence: readinessSnapshot?.evidence ?? null,
     localAiProxy: sanitizeDesktopStartupLocalAiProxy(localAiProxy),
     error: summarizeStartupError(error),

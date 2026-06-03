@@ -14,6 +14,7 @@ use crate::framework::{config::AppConfig, paths::AppPaths, FrameworkError, Resul
 use sdkwork_local_api_proxy_native::probe::probe_route;
 use sdkwork_local_api_proxy_native::runtime::start_local_api_proxy_server;
 use sdkwork_local_api_proxy_native::runtime::LocalApiProxyServerHandle;
+use sdkwork_local_api_proxy_native::runtime::LocalApiProxyServerStartResult;
 use sdkwork_local_api_proxy_native::support::current_time_ms;
 use std::{
     fs,
@@ -177,17 +178,18 @@ impl LocalAiProxyService {
             };
             let router = router::build_router(state);
             let log_path = paths.local_ai_proxy_log_file.clone();
-            let server = start_local_api_proxy_server(
+            let serve_error_log: Arc<dyn Fn(String) + Send + Sync> = Arc::new(move |error| {
+                let _ = append_proxy_log(
+                    &log_path,
+                    &format!("local ai proxy serve loop stopped unexpectedly: {error}"),
+                );
+            });
+            let server = start_local_ai_proxy_server_with_ephemeral_fallback(
                 router,
                 snapshot.bind_host.clone(),
                 snapshot.requested_port,
                 Duration::from_secs(10),
-                move |error| {
-                    let _ = append_proxy_log(
-                        &log_path,
-                        &format!("local ai proxy serve loop stopped unexpectedly: {error}"),
-                    );
-                },
+                serve_error_log,
             )?;
             let health = health::build_health(
                 &snapshot,
@@ -374,8 +376,12 @@ impl LocalAiProxyService {
         let Some(existing_health) = runtime.health.as_ref() else {
             return Ok(None);
         };
-        let health =
-            health::build_health(snapshot, existing_health.active_port, public_base_host, paths);
+        let health = health::build_health(
+            snapshot,
+            existing_health.active_port,
+            public_base_host,
+            paths,
+        );
         runtime.health = Some(health.clone());
         runtime.last_error = None;
         Ok(Some(health))
@@ -404,6 +410,53 @@ fn is_loopback_host(value: &str) -> bool {
         || normalized == "::1"
         || normalized == "localhost"
         || normalized.ends_with(".localhost")
+}
+
+fn start_local_ai_proxy_server_with_ephemeral_fallback(
+    router: axum::Router,
+    bind_host: String,
+    requested_port: u16,
+    ready_timeout: Duration,
+    on_serve_error: Arc<dyn Fn(String) + Send + Sync>,
+) -> Result<LocalApiProxyServerStartResult> {
+    let retry_router = router.clone();
+    let retry_bind_host = bind_host.clone();
+    let retry_on_serve_error = on_serve_error.clone();
+    let start_result = start_local_api_proxy_server(
+        router,
+        bind_host,
+        requested_port,
+        ready_timeout,
+        move |error| on_serve_error(error),
+    );
+
+    match start_result {
+        Ok(server) => Ok(server),
+        Err(error)
+            if requested_port > 0
+                && error.to_string().contains(
+                    "failed to bind local ai proxy within the canonical fallback window",
+                ) =>
+        {
+            let first_error = error.to_string();
+            retry_on_serve_error(format!(
+                "local ai proxy fixed fallback window exhausted; retrying with an ephemeral port: {first_error}"
+            ));
+            start_local_api_proxy_server(
+                retry_router,
+                retry_bind_host,
+                0,
+                ready_timeout,
+                move |error| retry_on_serve_error(error),
+            )
+            .map_err(|fallback_error| {
+                FrameworkError::Conflict(format!(
+                    "failed to bind local ai proxy: {first_error}; ephemeral fallback failed: {fallback_error}"
+                ))
+            })
+        }
+        Err(error) => Err(FrameworkError::from(error)),
+    }
 }
 
 pub(crate) fn resolve_projected_openclaw_provider_api(client_protocol: &str) -> &'static str {
@@ -483,7 +536,13 @@ mod tests {
     fn local_ai_proxy_openclaw_projection_production_path_has_no_panic_exits() {
         let source = include_str!("local_ai_proxy/projection.rs");
         let production_source = source.split("#[cfg(test)]").next().unwrap_or(source);
-        let forbidden_patterns = [".expect(", ".unwrap(", "panic!(", "todo!(", "unimplemented!("];
+        let forbidden_patterns = [
+            ".expect(",
+            ".unwrap(",
+            "panic!(",
+            "todo!(",
+            "unimplemented!(",
+        ];
         let mut offenders = Vec::new();
 
         for (index, line) in production_source.lines().enumerate() {
@@ -3364,6 +3423,34 @@ mod tests {
     }
 
     #[test]
+    fn local_ai_proxy_falls_back_to_ephemeral_port_when_requested_and_dynamic_window_are_busy() {
+        let (requested_port, reserved_ports) = reserve_contiguous_loopback_ports(32);
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let service = LocalAiProxyService::new();
+        let snapshot = LocalAiProxySnapshot {
+            requested_port,
+            ..sample_projection_snapshot()
+        };
+
+        let health = service
+            .start(&paths, snapshot)
+            .expect("start local ai proxy on ephemeral fallback port");
+
+        assert!(reserved_ports.iter().all(|listener| listener
+            .local_addr()
+            .expect("reserved addr")
+            .port()
+            != health.active_port));
+        assert_eq!(
+            health.base_url,
+            expected_test_public_v1_base_url(health.active_port)
+        );
+
+        service.stop().expect("stop local ai proxy");
+    }
+
+    #[test]
     fn local_ai_proxy_start_reuses_running_server_when_snapshot_is_unchanged() {
         let busy_listener = std::net::TcpListener::bind(("127.0.0.1", 0)).expect("busy listener");
         let busy_port = busy_listener
@@ -3888,6 +3975,31 @@ mod tests {
             snapshot_path: "snapshot.json".to_string(),
             log_path: "proxy.log".to_string(),
         }
+    }
+
+    fn reserve_contiguous_loopback_ports(count: u16) -> (u16, Vec<std::net::TcpListener>) {
+        let mut candidate_start = 30_000u16;
+        while candidate_start < 60_000u16.saturating_sub(count) {
+            let mut listeners = Vec::new();
+            let mut complete_window = true;
+            for port in candidate_start..candidate_start + count {
+                match std::net::TcpListener::bind(("127.0.0.1", port)) {
+                    Ok(listener) => listeners.push(listener),
+                    Err(_) => {
+                        complete_window = false;
+                        break;
+                    }
+                }
+            }
+
+            if complete_window {
+                return (candidate_start, listeners);
+            }
+
+            candidate_start = candidate_start.saturating_add(count);
+        }
+
+        panic!("could not reserve contiguous loopback test port window");
     }
 
     fn expected_test_public_host() -> String {

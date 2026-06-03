@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
 import {
   mkdtempSync,
   mkdirSync,
@@ -476,6 +477,13 @@ test('desktop packaged launch smoke captures packaged startup evidence and forwa
         assert.equal(processRecord.pid, 1024);
         launchEvents.push('stop');
       },
+      resolveExistingPackagedLaunchSmokeRootsFn: () => {
+        launchEvents.push('resolve-cleanup-roots');
+        return [path.join(tempRoot, 'old-smoke-root')];
+      },
+      cleanupWindowsPackagedLaunchSmokeRootsFn: async (rootPaths) => {
+        launchEvents.push(`cleanup-roots:${rootPaths.length}`);
+      },
       smokeDesktopStartupEvidenceFn: async (options) => {
         assert.equal(
           options.startupEvidencePath.replaceAll('\\', '/'),
@@ -500,12 +508,117 @@ test('desktop packaged launch smoke captures packaged startup evidence and forwa
     assert.equal(result.smokeResult.report.status, 'passed');
     assert.deepEqual(
       launchEvents,
-      ['prepare', 'launch', 'wait', 'stop', 'smoke', 'cleanup'],
+      [
+        'resolve-cleanup-roots',
+        'cleanup-roots:1',
+        'prepare',
+        'launch',
+        'wait',
+        'stop',
+        'smoke',
+        'cleanup',
+        'cleanup-roots:1',
+      ],
     );
     assert.deepEqual(
       JSON.parse(readFileSync(capturedEvidencePath, 'utf8')).phase,
       'shell-mounted',
     );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop packaged launch smoke fails fast when the launched desktop process exits before startup evidence is ready', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-packaged-launch.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-packaged-launch-exit-'));
+  const releaseAssetsDir = path.join(tempRoot, 'release-assets');
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const capturedEvidencePath = path.join(tempRoot, 'captured', 'desktop-startup-evidence.json');
+  const child = new EventEmitter();
+  child.exitCode = null;
+  child.signalCode = null;
+  child.stdout = new EventEmitter();
+  child.stderr = new EventEmitter();
+  const launchEvents = [];
+
+  try {
+    writeArtifactFile(releaseAssetsDir, artifactRelativePath);
+    writeDesktopManifest({
+      releaseAssetsDir,
+      platform: 'windows',
+      arch: 'x64',
+      artifacts: [
+        {
+          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          relativePath: artifactRelativePath,
+          family: 'desktop',
+          platform: 'windows',
+          arch: 'x64',
+          kind: 'installer',
+          sha256: 'synthetic',
+          size: 17,
+        },
+      ],
+    });
+
+    await assert.rejects(
+      () => smoke.smokeDesktopPackagedLaunch({
+        releaseAssetsDir,
+        platform: 'windows',
+        hostPlatform: 'windows',
+        arch: 'x64',
+        target: 'x86_64-pc-windows-msvc',
+        prepareDesktopPackagedLaunchFn: async () => ({
+          launcher: {
+            command: 'D:/synthetic/Claw Studio.exe',
+            args: [],
+            cwd: 'D:/synthetic',
+            env: {
+              USERPROFILE: 'D:/synthetic/home',
+            },
+          },
+          evidencePath: capturedEvidencePath,
+          cleanup: async () => {
+            launchEvents.push('cleanup');
+          },
+        }),
+        launchDesktopPackagedAppFn: async () => {
+          const stdoutChunks = [];
+          const stderrChunks = [];
+          child.stdout.on('data', (chunk) => {
+            stdoutChunks.push(Buffer.from(String(chunk)));
+          });
+          child.stderr.on('data', (chunk) => {
+            stderrChunks.push(Buffer.from(String(chunk)));
+          });
+          setImmediate(() => {
+            child.exitCode = 42;
+            child.stderr.emit('data', 'gateway startup failed before evidence\n');
+            child.emit('exit', 42, null);
+          });
+          return {
+            child,
+            pid: 2048,
+            command: 'D:/synthetic/Claw Studio.exe',
+            args: [],
+            stdoutChunks,
+            stderrChunks,
+          };
+        },
+        waitForReadyDesktopStartupEvidenceFn: async () => new Promise(() => {}),
+        stopDesktopPackagedAppFn: async () => {
+          launchEvents.push('stop');
+        },
+        cleanupWindowsPackagedLaunchSmokeRootsFn: async () => {
+          launchEvents.push('cleanup-roots');
+        },
+      }),
+      /exited before startup evidence became ready.*42.*gateway startup failed before evidence/is,
+    );
+    assert.deepEqual(launchEvents, ['cleanup-roots', 'stop', 'cleanup', 'cleanup-roots']);
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }

@@ -19,129 +19,184 @@ function runTest(name: string, callback: () => void) {
   }
 }
 
-runTest('getChannelOfficialLink maps supported channels to their official setup destinations', () => {
-  assert.deepEqual(getChannelOfficialLink('sdkworkchat'), {
-    href: 'https://clawstudio.sdkwork.com/platforms/android',
-    label: 'Sdkwork Chat App Download',
+runTest('getChannelOfficialLink maps bundled OpenClaw channels to setup destinations', () => {
+  assert.deepEqual(getChannelOfficialLink('telegram'), {
+    href: 'https://core.telegram.org/bots',
+    label: 'Telegram Bot Platform',
+  });
+  assert.deepEqual(getChannelOfficialLink('slack'), {
+    href: 'https://api.slack.com/apps',
+    label: 'Slack API Apps',
+  });
+  assert.deepEqual(getChannelOfficialLink('matrix'), {
+    href: 'https://docs.openclaw.ai/channels/matrix',
+    label: 'OpenClaw Matrix Channel Docs',
+  });
+  assert.deepEqual(getChannelOfficialLink('qqbot'), {
+    href: 'https://docs.openclaw.ai/channels/qqbot',
+    label: 'OpenClaw QQ Bot Channel Docs',
   });
   assert.deepEqual(getChannelOfficialLink('feishu'), {
-    href: 'https://open.feishu.cn/app?lang=zh-CN',
-    label: 'Feishu Open Platform',
+    href: 'https://docs.openclaw.ai/channels/feishu',
+    label: 'OpenClaw Feishu Channel Docs',
   });
-  assert.deepEqual(getChannelOfficialLink('qq'), {
-    href: 'https://q.qq.com/qqbot/#/home',
-    label: 'QQ Bot Platform',
-  });
-  assert.deepEqual(getChannelOfficialLink('dingtalk'), {
-    href: 'https://open-dev.dingtalk.com/',
-    label: 'DingTalk Developer Console',
+  assert.deepEqual(getChannelOfficialLink('openclaw-weixin'), {
+    href: 'https://docs.openclaw.ai/channels/wechat',
+    label: 'OpenClaw WeChat Plugin Docs',
   });
   assert.deepEqual(getChannelOfficialLink('wecom'), {
-    href: 'https://work.weixin.qq.com/wework_admin/loginpage_wx?redirect_uri=https%3A%2F%2Fwork.weixin.qq.com%2Fwework_admin%2Fframe',
-    label: 'WeCom Admin Console',
+    href: 'https://github.com/WecomTeam/wecom-openclaw-plugin',
+    label: 'Official WeCom OpenClaw Plugin',
   });
-  assert.deepEqual(getChannelOfficialLink('wehcat'), {
-    href: 'https://mp.weixin.qq.com/',
-    label: 'WeChat Official Account Platform',
+  assert.deepEqual(getChannelOfficialLink('dingtalk-connector'), {
+    href: 'https://github.com/DingTalk-Real-AI/dingtalk-openclaw-connector',
+    label: 'Official DingTalk OpenClaw Plugin',
+  });
+  assert.deepEqual(getChannelOfficialLink('dingtalk'), {
+    href: 'https://soimy.github.io/openclaw-channel-dingtalk/',
+    label: 'OpenClaw DingTalk Channel Plugin Docs',
   });
 });
 
-runTest('getChannelOfficialLink returns null for channels without a dedicated destination', () => {
-  assert.equal(getChannelOfficialLink('webhook'), null);
+runTest('getChannelOfficialLink does not expose retired non-runtime channels', () => {
+  for (const channelId of ['sdkworkchat', 'wechat', 'wehcat', 'qq']) {
+    assert.equal(getChannelOfficialLink(channelId), null);
+  }
 });
 
-runTest('isChannelDownloadAppAction only marks first-party Sdkwork Chat as a download-only action', () => {
-  assert.equal(isChannelDownloadAppAction('sdkworkchat'), true);
-  assert.equal(isChannelDownloadAppAction('wehcat'), false);
-  assert.equal(isChannelDownloadAppAction('discord'), false);
+runTest('isChannelDownloadAppAction does not mark runtime channels as download-only actions', () => {
+  assert.equal(isChannelDownloadAppAction('telegram'), false);
+  assert.equal(isChannelDownloadAppAction('slack'), false);
+  assert.equal(isChannelDownloadAppAction('sdkworkchat'), false);
 });
 
-runTest('getChannelCatalogRegion keeps domestic channels grouped separately from global channels', () => {
-  assert.equal(getChannelCatalogRegion('sdkworkchat'), 'domestic');
-  assert.equal(getChannelCatalogRegion('wechat'), 'domestic');
-  assert.equal(getChannelCatalogRegion('wehcat'), 'media');
-  assert.equal(getChannelCatalogRegion('qq'), 'domestic');
-  assert.equal(getChannelCatalogRegion('dingtalk'), 'domestic');
-  assert.equal(getChannelCatalogRegion('wecom'), 'domestic');
+runTest('getChannelCatalogRegion groups bundled OpenClaw channels by runtime category', () => {
+  assert.equal(getChannelCatalogRegion('imessage'), 'global');
+  assert.equal(getChannelCatalogRegion('qqbot'), 'domestic');
   assert.equal(getChannelCatalogRegion('feishu'), 'domestic');
+  assert.equal(getChannelCatalogRegion('openclaw-weixin'), 'domestic');
+  assert.equal(getChannelCatalogRegion('wecom'), 'domestic');
+  assert.equal(getChannelCatalogRegion('dingtalk-connector'), 'domestic');
+  assert.equal(getChannelCatalogRegion('dingtalk'), 'domestic');
   assert.equal(getChannelCatalogRegion('telegram'), 'global');
-  assert.equal(getChannelCatalogRegion('discord'), 'global');
+  assert.equal(getChannelCatalogRegion('slack'), 'global');
   assert.equal(getChannelCatalogRegion('unknown-channel'), 'global');
 });
 
-runTest('getChannelCatalogRegions allows Sdkwork Chat to appear in both domestic and global tabs', () => {
-  assert.deepEqual(getChannelCatalogRegions('sdkworkchat'), ['domestic', 'global', 'media']);
-  assert.deepEqual(getChannelCatalogRegions('wechat'), ['domestic']);
-  assert.deepEqual(getChannelCatalogRegions('wehcat'), ['media']);
-  assert.deepEqual(getChannelCatalogRegions('discord'), ['global']);
-  assert.deepEqual(getChannelCatalogRegions('unknown-channel'), ['global']);
+runTest('getChannelCatalogRegions keeps iMessage visible in media workflows without adding retired media channels', () => {
+  assert.deepEqual(getChannelCatalogRegions('imessage'), ['global', 'media']);
+  assert.deepEqual(getChannelCatalogRegions('qqbot'), ['domestic']);
+  assert.deepEqual(getChannelCatalogRegions('feishu'), ['domestic']);
+  assert.deepEqual(getChannelCatalogRegions('openclaw-weixin'), ['domestic']);
+  assert.deepEqual(getChannelCatalogRegions('wecom'), ['domestic']);
+  assert.deepEqual(getChannelCatalogRegions('dingtalk-connector'), ['domestic']);
+  assert.deepEqual(getChannelCatalogRegions('dingtalk'), ['domestic']);
+  assert.deepEqual(getChannelCatalogRegions('telegram'), ['global']);
+  assert.deepEqual(getChannelCatalogRegions('wehcat'), ['global']);
 });
 
-runTest('partitionChannelCatalogItemsByRegion builds domestic, global, media, and all tabs while keeping domestic as the default', () => {
+runTest('partitionChannelCatalogItemsByRegion builds tabs from supported runtime channels only', () => {
   const groups = partitionChannelCatalogItemsByRegion([
     {
-      id: 'discord',
-      name: 'Discord',
-      description: 'Discord workspace',
-      status: 'connected',
-      enabled: true,
-    },
-    {
-      id: 'wechat',
-      name: 'WeChat',
-      description: 'WeChat workspace',
-      status: 'connected',
-      enabled: true,
-    },
-    {
-      id: 'wehcat',
-      name: 'WeChat Official Account',
-      description: 'WeChat media account workspace',
+      id: 'qqbot',
+      name: 'QQ Bot',
+      description: 'QQ official bot',
       status: 'not_configured',
       enabled: false,
     },
     {
-      id: 'qq',
-      name: 'QQ',
-      description: 'QQ workspace',
+      id: 'feishu',
+      name: 'Feishu',
+      description: 'Feishu bot',
       status: 'not_configured',
       enabled: false,
     },
     {
-      id: 'sdkworkchat',
-      name: 'Sdkwork Chat',
-      description: 'Sdkwork Chat workspace',
+      id: 'slack',
+      name: 'Slack',
+      description: 'Slack workspace',
       status: 'connected',
       enabled: true,
+    },
+    {
+      id: 'telegram',
+      name: 'Telegram',
+      description: 'Telegram bot',
+      status: 'not_configured',
+      enabled: false,
+    },
+    {
+      id: 'imessage',
+      name: 'iMessage',
+      description: 'iMessage bridge',
+      status: 'connected',
+      enabled: true,
+    },
+    {
+      id: 'openclaw-weixin',
+      name: 'Weixin',
+      description: 'Weixin plugin',
+      status: 'connected',
+      enabled: true,
+    },
+    {
+      id: 'wecom',
+      name: 'WeCom',
+      description: 'WeCom plugin',
+      status: 'connected',
+      enabled: true,
+    },
+    {
+      id: 'dingtalk-connector',
+      name: 'DingTalk Connector',
+      description: 'Official DingTalk plugin',
+      status: 'connected',
+      enabled: true,
+    },
+    {
+      id: 'dingtalk',
+      name: 'DingTalk',
+      description: 'DingTalk plugin',
+      status: 'connected',
+      enabled: true,
+    },
+    {
+      id: 'matrix',
+      name: 'Matrix',
+      description: 'Matrix workspace',
+      status: 'not_configured',
+      enabled: false,
     },
   ]);
 
   assert.deepEqual(
     groups.domestic.map((item) => item.id),
-    ['sdkworkchat', 'wechat', 'qq'],
+    ['qqbot', 'feishu', 'openclaw-weixin', 'wecom', 'dingtalk-connector', 'dingtalk'],
   );
   assert.deepEqual(
     groups.global.map((item) => item.id),
-    ['sdkworkchat', 'discord'],
+    ['imessage', 'matrix', 'slack', 'telegram'],
   );
   assert.deepEqual(
     groups.media.map((item) => item.id),
-    ['sdkworkchat', 'wehcat'],
+    ['imessage'],
   );
   assert.deepEqual(
     groups.all.map((item) => item.id),
-    ['sdkworkchat', 'wechat', 'wehcat', 'qq', 'discord'],
+    [
+      'qqbot',
+      'feishu',
+      'openclaw-weixin',
+      'wecom',
+      'dingtalk-connector',
+      'dingtalk',
+      'imessage',
+      'matrix',
+      'slack',
+      'telegram',
+    ],
   );
   assert.equal(resolveDefaultChannelCatalogRegion(groups), 'domestic');
-  assert.equal(
-    resolveDefaultChannelCatalogRegion({
-      domestic: [],
-      global: groups.global,
-      media: groups.media,
-      all: groups.all,
-    }),
-    'global',
-  );
   assert.equal(
     resolveDefaultChannelCatalogRegion({
       domestic: [],
@@ -162,52 +217,42 @@ runTest('partitionChannelCatalogItemsByRegion builds domestic, global, media, an
   );
 });
 
-runTest('sortChannelCatalogItems keeps Sdkwork Chat pinned first and preserves configured channels after it', () => {
+runTest('sortChannelCatalogItems keeps bundled runtime channels in catalog order', () => {
   const sorted = sortChannelCatalogItems([
     {
-      id: 'discord',
-      name: 'Discord',
-      description: 'Discord workspace',
+      id: 'qqbot',
+      name: 'QQ Bot',
+      description: 'QQ official bot',
+      status: 'not_configured',
+      enabled: false,
+    },
+    {
+      id: 'feishu',
+      name: 'Feishu',
+      description: 'Feishu bot',
+      status: 'not_configured',
+      enabled: false,
+    },
+    {
+      id: 'telegram',
+      name: 'Telegram',
+      description: 'Telegram bot',
       status: 'connected',
       enabled: true,
     },
     {
-      id: 'sdkworkchat',
-      name: 'Sdkwork Chat',
-      description: 'Sdkwork Chat workspace',
+      id: 'matrix',
+      name: 'Matrix',
+      description: 'Matrix workspace',
       status: 'not_configured',
       enabled: false,
     },
     {
-      id: 'wechat',
-      name: 'WeChat',
-      description: 'WeChat workspace',
+      id: 'imessage',
+      name: 'iMessage',
+      description: 'iMessage bridge',
       status: 'connected',
       enabled: true,
-    },
-    {
-      id: 'wehcat',
-      name: 'Wehcat',
-      description: 'WeChat workspace',
-      status: 'not_configured',
-      enabled: false,
-    },
-  ]);
-
-  assert.deepEqual(
-    sorted.map((item) => item.id),
-    ['sdkworkchat', 'wechat', 'wehcat', 'discord'],
-  );
-});
-
-runTest('sortChannelCatalogItems keeps WeChat, media, and domestic channels in catalog order', () => {
-  const sorted = sortChannelCatalogItems([
-    {
-      id: 'qq',
-      name: 'QQ',
-      description: 'QQ workspace',
-      status: 'not_configured',
-      enabled: false,
     },
     {
       id: 'slack',
@@ -217,23 +262,40 @@ runTest('sortChannelCatalogItems keeps WeChat, media, and domestic channels in c
       enabled: true,
     },
     {
-      id: 'feishu',
-      name: 'Feishu',
-      description: 'Feishu workspace',
-      status: 'connected',
-      enabled: true,
+      id: 'irc',
+      name: 'IRC',
+      description: 'IRC network',
+      status: 'not_configured',
+      enabled: false,
+    },
+  ]);
+
+  assert.deepEqual(
+    sorted.map((item) => item.id),
+    ['qqbot', 'feishu', 'imessage', 'irc', 'matrix', 'slack', 'telegram'],
+  );
+});
+
+runTest('sortChannelCatalogItems orders unknown runtime-reported channels after known bundled channels by status and name', () => {
+  const sorted = sortChannelCatalogItems([
+    {
+      id: 'unknown-b',
+      name: 'Zulu',
+      description: 'Runtime channel',
+      status: 'not_configured',
+      enabled: false,
     },
     {
-      id: 'wechat',
-      name: 'WeChat',
-      description: 'WeChat workspace',
-      status: 'connected',
-      enabled: true,
+      id: 'telegram',
+      name: 'Telegram',
+      description: 'Telegram bot',
+      status: 'not_configured',
+      enabled: false,
     },
     {
-      id: 'wehcat',
-      name: 'Wehcat',
-      description: 'WeChat workspace',
+      id: 'unknown-a',
+      name: 'Alpha',
+      description: 'Runtime channel',
       status: 'connected',
       enabled: true,
     },
@@ -241,6 +303,6 @@ runTest('sortChannelCatalogItems keeps WeChat, media, and domestic channels in c
 
   assert.deepEqual(
     sorted.map((item) => item.id),
-    ['wechat', 'wehcat', 'qq', 'feishu', 'slack'],
+    ['telegram', 'unknown-a', 'unknown-b'],
   );
 });

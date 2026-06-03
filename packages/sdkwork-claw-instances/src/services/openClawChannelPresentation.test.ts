@@ -31,18 +31,18 @@ await runTest(
 
     const items = buildReadonlyChannelWorkspaceItems([
       {
-        id: 'wechat',
-        name: 'WeChat',
+        id: 'telegram',
+        name: 'Telegram',
         description: 'Runtime channel',
         status: 'connected',
         enabled: true,
-        setupSteps: ['Scan QR'],
+        setupSteps: ['Configure bot'],
       },
     ] as any);
 
     assert.equal(items.length, 1);
-    assert.equal(items[0]?.id, 'wechat');
-    assert.deepEqual(items[0]?.setupSteps, ['Scan QR']);
+    assert.equal(items[0]?.id, 'telegram');
+    assert.deepEqual(items[0]?.setupSteps, ['Configure bot']);
     assert.deepEqual(items[0]?.fields, []);
     assert.deepEqual(items[0]?.values, {});
   },

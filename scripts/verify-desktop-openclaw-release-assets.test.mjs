@@ -25,6 +25,103 @@ const releaseConfig = resolveKernelReleaseConfig('openclaw');
 const expectedOpenClawVersion = releaseConfig.stableVersion;
 const expectedNodeVersion = releaseConfig.nodeVersion;
 const retiredOpenClawVersion = shiftNumericVersion(expectedOpenClawVersion, -1);
+const expectedBundledOpenClawChannelIds = [
+  'qqbot',
+  'feishu',
+  'imessage',
+  'irc',
+  'matrix',
+  'mattermost',
+  'signal',
+  'slack',
+  'telegram',
+];
+
+async function writeOfficialQqbotSupplementalPackage(packageDir, version = expectedOpenClawVersion) {
+  const qqbotPackageDir = path.join(packageDir, 'node_modules', '@openclaw', 'qqbot');
+  mkdirSync(path.join(qqbotPackageDir, 'dist'), { recursive: true });
+  writeFileSync(
+    path.join(qqbotPackageDir, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@openclaw/qqbot',
+        version,
+        type: 'module',
+        openclaw: {
+          channel: {
+            id: 'qqbot',
+            label: 'QQ Bot',
+          },
+          runtimeExtensions: ['./dist/index.js'],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  );
+  writeFileSync(
+    path.join(qqbotPackageDir, 'openclaw.plugin.json'),
+    `${JSON.stringify(
+      {
+        id: 'qqbot',
+        channels: ['qqbot'],
+        channelConfigs: {
+          qqbot: {
+            label: 'QQ Bot',
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  );
+  writeFileSync(path.join(qqbotPackageDir, 'dist', 'index.js'), 'export {};\n', 'utf8');
+}
+
+async function writeOfficialFeishuSupplementalPackage(packageDir, version = expectedOpenClawVersion) {
+  const feishuPackageDir = path.join(packageDir, 'node_modules', '@openclaw', 'feishu');
+  mkdirSync(path.join(feishuPackageDir, 'dist'), { recursive: true });
+  writeFileSync(
+    path.join(feishuPackageDir, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@openclaw/feishu',
+        version,
+        type: 'module',
+        openclaw: {
+          channel: {
+            id: 'feishu',
+            label: 'Feishu',
+          },
+          runtimeExtensions: ['./dist/index.js'],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  );
+  writeFileSync(
+    path.join(feishuPackageDir, 'openclaw.plugin.json'),
+    `${JSON.stringify(
+      {
+        id: 'feishu',
+        channels: ['feishu'],
+        channelConfigs: {
+          feishu: {
+            label: 'Feishu',
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  );
+  writeFileSync(path.join(feishuPackageDir, 'dist', 'index.js'), 'export {};\n', 'utf8');
+}
 
 function buildRuntimeArchiveEntries(sourceRoot, extraEntries = []) {
   const manifest = JSON.parse(readFileSync(path.join(sourceRoot, 'manifest.json'), 'utf8'));
@@ -55,6 +152,40 @@ function buildRuntimeArchiveEntries(sourceRoot, extraEntries = []) {
   ];
 }
 
+function buildRuntimeChannelMetadataArchiveEntries(channelIds) {
+  return channelIds.map((channelId) => {
+    if (channelId === 'qqbot') {
+      return {
+        name: `runtime/package/node_modules/openclaw/dist/extensions/${channelId}/openclaw.plugin.json`,
+        content: `${JSON.stringify({
+          id: 'qqbot',
+          channels: ['qqbot'],
+          channelConfigs: {
+            qqbot: {
+              label: 'QQ Bot',
+            },
+          },
+        }, null, 2)}\n`,
+      };
+    }
+
+    return {
+      name: `runtime/package/node_modules/openclaw/dist/extensions/${channelId}/package.json`,
+      content: `${JSON.stringify({
+        name: `@openclaw/${channelId}`,
+        version: expectedOpenClawVersion,
+        openclaw: {
+          extensions: ['./index.js'],
+          channel: {
+            id: channelId,
+            label: channelId,
+          },
+        },
+      }, null, 2)}\n`,
+    };
+  });
+}
+
 function buildExpectedInstallReadyLayout(manifest, mode) {
   return {
     mode,
@@ -72,6 +203,7 @@ async function setupPreparedReleaseAssets({
   arch,
   createArchiveImpl,
   includeBundledNode = false,
+  includeChannelMetadata = true,
 } = {}) {
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'verify-openclaw-release-assets-'));
   const sourceRuntimeDir = path.join(tempRoot, 'source-runtime');
@@ -116,6 +248,64 @@ async function setupPreparedReleaseAssets({
   mkdirSync(path.dirname(openclawServerImplPath), { recursive: true });
   mkdirSync(path.dirname(carbonPackageJsonPath), { recursive: true });
   mkdirSync(resourceDir, { recursive: true });
+  if (includeChannelMetadata) {
+    for (const channelId of expectedBundledOpenClawChannelIds) {
+      if (channelId === 'qqbot') {
+        const pluginJsonPath = path.join(
+          sourceRuntimeDir,
+          'package',
+          'node_modules',
+          'openclaw',
+          'dist',
+          'extensions',
+          channelId,
+          'openclaw.plugin.json',
+        );
+        mkdirSync(path.dirname(pluginJsonPath), { recursive: true });
+        writeFileSync(
+          pluginJsonPath,
+          `${JSON.stringify({
+            id: 'qqbot',
+            channels: ['qqbot'],
+            channelConfigs: {
+              qqbot: {
+                label: 'QQ Bot',
+              },
+            },
+          }, null, 2)}\n`,
+          'utf8',
+        );
+        continue;
+      }
+
+      const channelPackageJsonPath = path.join(
+        sourceRuntimeDir,
+        'package',
+        'node_modules',
+        'openclaw',
+        'dist',
+        'extensions',
+        channelId,
+        'package.json',
+      );
+      mkdirSync(path.dirname(channelPackageJsonPath), { recursive: true });
+      writeFileSync(
+        channelPackageJsonPath,
+        `${JSON.stringify({
+          name: `@openclaw/${channelId}`,
+          version: expectedOpenClawVersion,
+          openclaw: {
+            extensions: ['./index.js'],
+            channel: {
+              id: channelId,
+              label: channelId,
+            },
+          },
+        }, null, 2)}\n`,
+        'utf8',
+      );
+    }
+  }
   if (includeBundledNode) {
     const nodePath = path.join(
       sourceRuntimeDir,
@@ -146,6 +336,8 @@ async function setupPreparedReleaseAssets({
     `${JSON.stringify({ name: '@buape/carbon', version: '0.14.0' }, null, 2)}\n`,
     'utf8',
   );
+  await writeOfficialFeishuSupplementalPackage(path.join(sourceRuntimeDir, 'package'));
+  await writeOfficialQqbotSupplementalPackage(path.join(sourceRuntimeDir, 'package'));
 
   await prepareOpenClawRuntimeFromSource({
     sourceRuntimeDir,
@@ -469,6 +661,62 @@ test('desktop OpenClaw release asset verifier rejects symlink runtime archive en
         target: fixture.target,
       }),
       /unsupported archive entry type/i,
+    );
+  } finally {
+    rmSync(fixture.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop OpenClaw release asset verifier rejects packaged runtime archives missing channel metadata', async () => {
+  const modulePath = path.join(rootDir, 'scripts', 'verify-desktop-openclaw-release-assets.mjs');
+  const verifier = await import(pathToFileURL(modulePath).href);
+
+  const fixture = await setupPreparedReleaseAssets({
+    platform: 'linux',
+    arch: 'x64',
+    includeChannelMetadata: false,
+  });
+
+  try {
+    await assert.rejects(
+      verifier.verifyDesktopOpenClawReleaseAssets({
+        workspaceRootDir: fixture.workspaceRootDir,
+        resourceDir: fixture.resourceDir,
+        target: fixture.target,
+      }),
+      /channel metadata|extensions|missing/i,
+    );
+  } finally {
+    rmSync(fixture.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop OpenClaw release asset verifier rejects packaged runtime archives with retired channel metadata', async () => {
+  const modulePath = path.join(rootDir, 'scripts', 'verify-desktop-openclaw-release-assets.mjs');
+  const verifier = await import(pathToFileURL(modulePath).href);
+
+  const fixture = await setupPreparedReleaseAssets({
+    platform: 'linux',
+    arch: 'x64',
+    createArchiveImpl: async ({ archivePath, sourceRoot }) => {
+      await writeFile(
+        archivePath,
+        createStoredZipArchive(buildRuntimeArchiveEntries(sourceRoot, [
+          ...buildRuntimeChannelMetadataArchiveEntries(expectedBundledOpenClawChannelIds),
+          ...buildRuntimeChannelMetadataArchiveEntries(['qq']),
+        ])),
+      );
+    },
+  });
+
+  try {
+    await assert.rejects(
+      verifier.verifyDesktopOpenClawReleaseAssets({
+        workspaceRootDir: fixture.workspaceRootDir,
+        resourceDir: fixture.resourceDir,
+        target: fixture.target,
+      }),
+      /retired|unsupported|channel metadata|qq/i,
     );
   } finally {
     rmSync(fixture.tempRoot, { recursive: true, force: true });

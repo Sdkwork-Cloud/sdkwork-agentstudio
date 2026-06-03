@@ -6,6 +6,7 @@ import type {
   StudioWorkbenchLLMProviderRecord,
   StudioWorkbenchSnapshot,
 } from '@sdkwork/claw-types';
+import { isOpenClawBundledChannelId } from '@sdkwork/claw-types';
 
 type BrowserPersistedWorkbenchChannelRecord =
   StudioWorkbenchSnapshot['channels'][number] & {
@@ -166,7 +167,11 @@ export function sanitizeBrowserWorkbenchChannelValues(
 
 export function sanitizeBrowserWorkbenchChannelRecord<T extends BrowserPersistedWorkbenchChannelRecord>(
   channel: T,
-): T {
+): T | null {
+  if (!isOpenClawBundledChannelId(channel.id)) {
+    return null;
+  }
+
   return {
     ...channel,
     values: sanitizeBrowserWorkbenchChannelValues(channel.values),
@@ -228,7 +233,9 @@ export function sanitizeBrowserWorkbenchSnapshot(
 ): BrowserPersistedWorkbenchSnapshot {
   return {
     ...snapshot,
-    channels: snapshot.channels.map(sanitizeBrowserWorkbenchChannelRecord),
+    channels: snapshot.channels
+      .map(sanitizeBrowserWorkbenchChannelRecord)
+      .filter((channel): channel is BrowserPersistedWorkbenchChannelRecord => Boolean(channel)),
     cronTasks: {
       tasks: snapshot.cronTasks.tasks.map((task) => ({
         ...task,

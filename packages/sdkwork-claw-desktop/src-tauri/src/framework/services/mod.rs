@@ -29,6 +29,7 @@ pub mod local_ai_proxy;
 pub mod local_ai_proxy_observability;
 pub mod local_ai_proxy_snapshot;
 pub mod notifications;
+pub mod openclaw_channel_config;
 pub mod openclaw_mirror;
 pub mod openclaw_mirror_export;
 pub mod openclaw_mirror_import;
@@ -561,7 +562,10 @@ mod tests {
             write_kernel_host_ownership_marker,
         },
         paths::resolve_paths_for_root,
-        services::{openclaw_runtime::ActivatedOpenClawRuntime, supervisor},
+        services::{
+            openclaw_channel_config::write_test_openclaw_channel_metadata,
+            openclaw_runtime::ActivatedOpenClawRuntime, supervisor,
+        },
     };
     use std::{
         fs,
@@ -613,6 +617,7 @@ mod tests {
             .join("openclaw.mjs");
 
         fs::create_dir_all(cli_path.parent().expect("cli parent")).expect("cli dir");
+        write_test_openclaw_channel_metadata(&runtime_dir);
         fs::write(
             &paths.openclaw_config_file,
             format!("{{\n  \"gateway\": {{\n    \"port\": {gateway_port}\n  }}\n}}\n"),

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {
   OpenClawGatewaySessionStore,
+  mergeHistoryWithLocalMessages,
+  type OpenClawGatewayMessage,
   type OpenClawGatewayClientLike,
 } from './openClawGatewaySessionStore.ts';
 import { OpenClawGatewayRequestError } from '../services/openclaw/gatewayProtocol.ts';
@@ -15,6 +17,22 @@ function runTest(name: string, callback: () => void | Promise<void>) {
       console.error(`not ok - ${name}`);
       throw error;
     });
+}
+
+function createGatewayStoreMessage(
+  id: string,
+  role: OpenClawGatewayMessage['role'],
+  content: string,
+  timestamp: number,
+  overrides: Partial<OpenClawGatewayMessage> = {},
+): OpenClawGatewayMessage {
+  return {
+    id,
+    role,
+    content,
+    timestamp,
+    ...overrides,
+  };
 }
 
 async function waitFor(check: () => boolean, timeoutMs = 1_000) {
@@ -352,6 +370,52 @@ class MockGatewayClient implements OpenClawGatewayClientLike {
     this.connectHello = value;
   }
 }
+
+await runTest(
+  'mergeHistoryWithLocalMessages uses bounded fallback for large transcripts without duplicating remote history',
+  () => {
+    const localMessages: OpenClawGatewayMessage[] = Array.from({ length: 180 }, (_, index) =>
+      createGatewayStoreMessage(`local-${index}`, index % 2 === 0 ? 'user' : 'assistant', `local ${index}`, index),
+    );
+    const remoteMessages: OpenClawGatewayMessage[] = Array.from({ length: 180 }, (_, index) =>
+      createGatewayStoreMessage(`remote-${index}`, index % 2 === 0 ? 'user' : 'assistant', `remote ${index}`, 1_000 + index),
+    );
+    const pendingLocalUser = createGatewayStoreMessage(
+      'pending-user',
+      'user',
+      'pending local prompt',
+      2_000,
+      { pendingDelivery: true },
+    );
+    const currentAssistant = createGatewayStoreMessage(
+      'current-assistant',
+      'assistant',
+      'streaming current answer',
+      2_001,
+      { runId: 'run-current' },
+    );
+
+    const merged = mergeHistoryWithLocalMessages(
+      [...localMessages, pendingLocalUser, currentAssistant],
+      remoteMessages,
+      {
+        preserveAssistantRunId: 'run-current',
+      },
+    );
+
+    assert.equal(merged.length, remoteMessages.length + 2);
+    assert.deepEqual(merged.slice(0, 3).map((message) => message.id), [
+      'remote-0',
+      'remote-1',
+      'remote-2',
+    ]);
+    assert.deepEqual(merged.slice(-2).map((message) => message.id), [
+      'pending-user',
+      'current-assistant',
+    ]);
+    assert.ok(!merged.some((message) => message.id === 'local-0'));
+  },
+);
 
 await runTest(
   'openclaw gateway session store streams agent tool events into a single live tool card message',

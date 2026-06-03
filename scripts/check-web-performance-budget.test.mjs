@@ -29,19 +29,48 @@ function writeSizedAsset(assetsDir, name, size) {
   fs.writeFileSync(path.join(assetsDir, name), 'x'.repeat(size));
 }
 
+function writeBaselineBudgetAssets(assetsDir, overrides = {}) {
+  const assets = {
+    'index-test.js': 310 * 1024,
+    'index-test.css': 300 * 1024,
+    'community-editor-test.js': 360 * 1024,
+    'useInstanceStore-test.js': 245 * 1024,
+    'NewPost-test.js': 2_990,
+    'InstanceDetail-test.js': 184_778,
+    'InstanceConfigWorkbenchPanel-test.js': 63_329,
+    'InstanceDetailFilesSection-test.js': 2_385,
+    'markdown-runtime-test.js': 219_700,
+    'claw-i18n-runtime-test.js': 65_536,
+    'claw-i18n-en-test.js': 243_322,
+    'claw-i18n-zh-test.js': 232_253,
+    ...overrides,
+  };
+
+  Object.entries(assets).forEach(([name, size]) => {
+    if (size !== null) {
+      writeSizedAsset(assetsDir, name, size);
+    }
+  });
+}
+
 runTest('web performance budget accepts the current split chunk shape under budget', () => {
   const { tempDir, assetsDir } = createTempAssetsDir();
   try {
-    writeSizedAsset(assetsDir, 'NewPost-test.js', 2_990);
-    writeSizedAsset(assetsDir, 'InstanceDetail-test.js', 184_778);
-    writeSizedAsset(assetsDir, 'InstanceConfigWorkbenchPanel-test.js', 63_329);
-    writeSizedAsset(assetsDir, 'InstanceDetailFilesSection-test.js', 2_385);
-    writeSizedAsset(assetsDir, 'markdown-runtime-test.js', 219_700);
-    writeSizedAsset(assetsDir, 'claw-i18n-runtime-test.js', 65_536);
-    writeSizedAsset(assetsDir, 'claw-i18n-en-test.js', 243_322);
-    writeSizedAsset(assetsDir, 'claw-i18n-zh-test.js', 232_253);
+    writeBaselineBudgetAssets(assetsDir);
 
     assert.doesNotThrow(() => assertWebPerformanceBudget(assetsDir));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+runTest('web performance budget rejects untracked oversized app chunks', () => {
+  const { tempDir, assetsDir } = createTempAssetsDir();
+  try {
+    writeBaselineBudgetAssets(assetsDir);
+    writeSizedAsset(assetsDir, 'feature-regression-test.js', 401 * 1024);
+
+    assert.throws(() => assertWebPerformanceBudget(assetsDir), /feature-regression-test\.js/);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -50,13 +79,9 @@ runTest('web performance budget accepts the current split chunk shape under budg
 runTest('web performance budget rejects a missing heavy panel split chunk', () => {
   const { tempDir, assetsDir } = createTempAssetsDir();
   try {
-    writeSizedAsset(assetsDir, 'NewPost-test.js', 2_990);
-    writeSizedAsset(assetsDir, 'InstanceDetail-test.js', 184_778);
-    writeSizedAsset(assetsDir, 'InstanceConfigWorkbenchPanel-test.js', 63_329);
-    writeSizedAsset(assetsDir, 'markdown-runtime-test.js', 219_700);
-    writeSizedAsset(assetsDir, 'claw-i18n-runtime-test.js', 65_536);
-    writeSizedAsset(assetsDir, 'claw-i18n-en-test.js', 243_322);
-    writeSizedAsset(assetsDir, 'claw-i18n-zh-test.js', 232_253);
+    writeBaselineBudgetAssets(assetsDir, {
+      'InstanceDetailFilesSection-test.js': null,
+    });
 
     assert.throws(() => assertWebPerformanceBudget(assetsDir), /InstanceDetailFilesSection/);
   } finally {
@@ -67,46 +92,9 @@ runTest('web performance budget rejects a missing heavy panel split chunk', () =
 runTest('web performance budget rejects chunks that regress past the frozen limit', () => {
   const { tempDir, assetsDir } = createTempAssetsDir();
   try {
-    writeSizedAsset(
-      assetsDir,
-      'NewPost-test.js',
-      WEB_PERFORMANCE_BUDGETS.newPostRouteShell.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceDetail-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceDetail.maxBytes + 1,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceConfigWorkbenchPanel-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceConfigWorkbenchPanel.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceDetailFilesSection-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceDetailFilesSection.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'markdown-runtime-test.js',
-      WEB_PERFORMANCE_BUDGETS.markdownRuntime.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-runtime-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nRuntime.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-en-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nEnglish.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-zh-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nChinese.maxBytes,
-    );
+    writeBaselineBudgetAssets(assetsDir, {
+      'InstanceDetail-test.js': WEB_PERFORMANCE_BUDGETS.instanceDetail.maxBytes + 1,
+    });
 
     assert.throws(() => assertWebPerformanceBudget(assetsDir), /InstanceDetail/);
   } finally {
@@ -117,46 +105,9 @@ runTest('web performance budget rejects chunks that regress past the frozen limi
 runTest('web performance budget rejects i18n runtime regressions that collapse back into the shared chunk', () => {
   const { tempDir, assetsDir } = createTempAssetsDir();
   try {
-    writeSizedAsset(
-      assetsDir,
-      'NewPost-test.js',
-      WEB_PERFORMANCE_BUDGETS.newPostRouteShell.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceDetail-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceDetail.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceConfigWorkbenchPanel-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceConfigWorkbenchPanel.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceDetailFilesSection-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceDetailFilesSection.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'markdown-runtime-test.js',
-      WEB_PERFORMANCE_BUDGETS.markdownRuntime.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-runtime-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nRuntime.maxBytes + 1,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-en-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nEnglish.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-zh-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nChinese.maxBytes,
-    );
+    writeBaselineBudgetAssets(assetsDir, {
+      'claw-i18n-runtime-test.js': WEB_PERFORMANCE_BUDGETS.clawI18nRuntime.maxBytes + 1,
+    });
 
     assert.throws(() => assertWebPerformanceBudget(assetsDir), /claw-i18n runtime chunk/);
   } finally {
@@ -167,46 +118,9 @@ runTest('web performance budget rejects i18n runtime regressions that collapse b
 runTest('web performance budget rejects NewPost route shell regressions that pull the heavy editor back into the route chunk', () => {
   const { tempDir, assetsDir } = createTempAssetsDir();
   try {
-    writeSizedAsset(
-      assetsDir,
-      'NewPost-test.js',
-      WEB_PERFORMANCE_BUDGETS.newPostRouteShell.maxBytes + 1,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceDetail-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceDetail.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceConfigWorkbenchPanel-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceConfigWorkbenchPanel.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceDetailFilesSection-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceDetailFilesSection.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'markdown-runtime-test.js',
-      WEB_PERFORMANCE_BUDGETS.markdownRuntime.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-runtime-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nRuntime.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-en-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nEnglish.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-zh-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nChinese.maxBytes,
-    );
+    writeBaselineBudgetAssets(assetsDir, {
+      'NewPost-test.js': WEB_PERFORMANCE_BUDGETS.newPostRouteShell.maxBytes + 1,
+    });
 
     assert.throws(() => assertWebPerformanceBudget(assetsDir), /NewPost route shell chunk/);
   } finally {
@@ -217,46 +131,9 @@ runTest('web performance budget rejects NewPost route shell regressions that pul
 runTest('web performance budget rejects markdown runtime regressions after the raw-html security hardening', () => {
   const { tempDir, assetsDir } = createTempAssetsDir();
   try {
-    writeSizedAsset(
-      assetsDir,
-      'NewPost-test.js',
-      WEB_PERFORMANCE_BUDGETS.newPostRouteShell.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceDetail-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceDetail.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceConfigWorkbenchPanel-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceConfigWorkbenchPanel.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'InstanceDetailFilesSection-test.js',
-      WEB_PERFORMANCE_BUDGETS.instanceDetailFilesSection.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'markdown-runtime-test.js',
-      WEB_PERFORMANCE_BUDGETS.markdownRuntime.maxBytes + 1,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-runtime-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nRuntime.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-en-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nEnglish.maxBytes,
-    );
-    writeSizedAsset(
-      assetsDir,
-      'claw-i18n-zh-test.js',
-      WEB_PERFORMANCE_BUDGETS.clawI18nChinese.maxBytes,
-    );
+    writeBaselineBudgetAssets(assetsDir, {
+      'markdown-runtime-test.js': WEB_PERFORMANCE_BUDGETS.markdownRuntime.maxBytes + 1,
+    });
 
     assert.throws(() => assertWebPerformanceBudget(assetsDir), /markdown-runtime chunk/);
   } finally {

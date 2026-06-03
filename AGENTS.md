@@ -16,6 +16,9 @@ This repo is a `pnpm` workspace rooted at `packages/sdkwork-claw-*`. `packages/s
 ## Coding Style & Naming Conventions
 Use TypeScript and React function components with hooks. Follow the existing style: 2-space indentation, semicolons, and grouped imports. Components and pages use `PascalCase.tsx`; services and utilities use `camelCase.ts`; Zustand hooks use `useXStore.ts`. Internal workspace packages must stay scoped as `@sdkwork/claw-xxx` in kebab-case with directories named `sdkwork-claw-xxx`. Do not place business `services`, `stores`, or `hooks` inside `packages/sdkwork-claw-web/src` or `packages/sdkwork-claw-desktop/src`.
 
+## SDKWork Standards
+Before changing domains, APIs, SDK contracts, database schemas, reusable modules, frontend UI/service logic, app manifests, IAM/auth/permission behavior, deployment/runtime configuration, external integrations, events, observability, performance, privacy, or generated-client integration, read the canonical standards in `../../specs/README.md` and then the relevant spec files under `../../specs/`. Local conventions may extend these standards but must not contradict them.
+
 ## Testing Guidelines
 There is no repo-wide `pnpm test` script or coverage gate yet. Keep logic-heavy tests next to source as `*.test.ts` or `*.test.tsx`, for example `packages/sdkwork-claw-core/src/services/updateService.test.ts`. Before opening a PR, run `pnpm lint` and `pnpm build` from the workspace root. If you add new behavior, include a focused test or a clear manual verification note.
 

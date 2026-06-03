@@ -4245,8 +4245,8 @@
       "tag": "release-2026-05-05-183",
       "title": "Claw Studio release-2026-05-05-183",
       "date": "2026-05-05",
-      "status": "pending",
-      "summary": "Release candidate that carries forward release-2026-05-05-174 through release-2026-05-05-182, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.90.0 toolchain, exposes cross-platform sdkwork-run-node/sdkwork-run-pnpm wrappers, provides an explicit generator root for clean-room IM/RTC SDK release-source builds, updates the IM SDK GitHub pin to a source-level TS 6 rootDir fix, hydrates package-local peer dependency links and React peer declarations for clean-room PC React shared SDK source packages, hydrates @sdkwork/core-pc-react with its local app/common/IM/RTC SDK dependency links, and preserves POSIX-style rustup fixture paths when Linux release verification simulates Windows PATH fallback behavior.",
+      "status": "failed",
+      "summary": "Release candidate that carried forward release-2026-05-05-174 through release-2026-05-05-182 and preserved POSIX-style rustup fixture paths for Linux-hosted Windows PATH simulation, but failed before publication because desktop release runner contract tests expected a GitHub-hosted Ubuntu Node installation to include an adjacent pnpm.cjs path.",
       "notesFile": "release-2026-05-05-183.md",
       "carryForward": [
         "release-2026-05-05-174",
@@ -4258,6 +4258,26 @@
         "release-2026-05-05-180",
         "release-2026-05-05-181",
         "release-2026-05-05-182"
+      ]
+    },
+    {
+      "tag": "release-2026-05-05-184",
+      "title": "Claw Studio release-2026-05-05-184",
+      "date": "2026-05-05",
+      "status": "pending",
+      "summary": "Release candidate that carries forward release-2026-05-05-174 through release-2026-05-05-183, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.90.0 toolchain, exposes cross-platform sdkwork-run-node/sdkwork-run-pnpm wrappers, provides an explicit generator root for clean-room IM/RTC SDK release-source builds, updates the IM SDK GitHub pin to a source-level TS 6 rootDir fix, hydrates package-local peer dependency links and React peer declarations for clean-room PC React shared SDK source packages, hydrates @sdkwork/core-pc-react with its local app/common/IM/RTC SDK dependency links, preserves POSIX-style rustup fixture paths when Linux release verification simulates Windows PATH fallback behavior, and makes desktop release runner contract tests independent of the host Node/pnpm installation layout.",
+      "notesFile": "release-2026-05-05-184.md",
+      "carryForward": [
+        "release-2026-05-05-174",
+        "release-2026-05-05-175",
+        "release-2026-05-05-176",
+        "release-2026-05-05-177",
+        "release-2026-05-05-178",
+        "release-2026-05-05-179",
+        "release-2026-05-05-180",
+        "release-2026-05-05-181",
+        "release-2026-05-05-182",
+        "release-2026-05-05-183"
       ]
     }
   ]

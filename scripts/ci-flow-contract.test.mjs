@@ -56,6 +56,11 @@ test('repository exposes a mainline CI workflow for push and pull request verifi
   assert.equal(gitSourcePreparationCount, 2);
   assert.match(workflow, /SDKWORK_SHARED_SDK_MODE:\s*git/);
   assert.match(
+    workflow,
+    /SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS:\s*'true'/,
+    'CI clean-room builds must explicitly opt into optional sibling shared SDK package maintenance',
+  );
+  assert.match(
     rustToolchain,
     /channel\s*=\s*"1\.90\.0"/,
     'ci must use the same locally verified Rust toolchain as release builds, including the Windows windows-sys release compile gate',

@@ -47,6 +47,8 @@ const DEFAULT_OPENCLAW_GATEWAY_READY_TIMEOUT_MS: u64 = 60_000;
 const DEFAULT_OPENCLAW_GATEWAY_START_RETRY_ATTEMPTS: usize = 3;
 const DEFAULT_OPENCLAW_GATEWAY_START_RETRY_DELAY_MS: u64 = 250;
 const DEFAULT_OPENCLAW_GATEWAY_HEALTH_PROBE_INTERVAL_MS: u64 = 500;
+const DEFAULT_OPENCLAW_GATEWAY_STARTUP_MIN_PROCESS_STABILITY_MS: u64 = 1_000;
+const DEFAULT_OPENCLAW_GATEWAY_POST_READY_STABILITY_MS: u64 = 300;
 const DEFAULT_OPENCLAW_GATEWAY_HTTP_CONNECT_TIMEOUT_MS: u64 = 200;
 const DEFAULT_OPENCLAW_GATEWAY_START_HTTP_READY_IO_TIMEOUT_MS: u64 = 4_000;
 const DEFAULT_OPENCLAW_GATEWAY_RUNTIME_HTTP_IO_TIMEOUT_MS: u64 = 1_000;
@@ -378,7 +380,8 @@ impl SupervisorService {
             .clone()
             .ok_or_else(|| FrameworkError::NotFound("configured openclaw runtime".to_string()))?;
         self.prepare_openclaw_runtime_activation(paths)?;
-        let runtime = OpenClawRuntimeService::new().refresh_configured_runtime(paths, &runtime)?;
+        let runtime_service = OpenClawRuntimeService::new();
+        let mut runtime = runtime_service.refresh_configured_runtime(paths, &runtime)?;
         *self.lock_openclaw_runtime()? = Some(runtime.clone());
 
         self.request_restart(SERVICE_ID_OPENCLAW_GATEWAY)?;
@@ -434,6 +437,17 @@ impl SupervisorService {
                                 && attempt + 1 < DEFAULT_OPENCLAW_GATEWAY_START_RETRY_ATTEMPTS
                             {
                                 last_failure = Some(error);
+                                runtime = runtime_service
+                                    .refresh_configured_runtime(paths, &runtime)
+                                    .map_err(|refresh_error| {
+                                        let _ = self.record_stopped(
+                                            SERVICE_ID_OPENCLAW_GATEWAY,
+                                            None,
+                                            Some(refresh_error.to_string()),
+                                        );
+                                        refresh_error
+                                    })?;
+                                *self.lock_openclaw_runtime()? = Some(runtime.clone());
                                 thread::sleep(Duration::from_millis(
                                     DEFAULT_OPENCLAW_GATEWAY_START_RETRY_DELAY_MS,
                                 ));
@@ -918,6 +932,7 @@ fn wait_for_gateway_ready(
     timeout_ms: u64,
 ) -> Result<()> {
     let deadline = Instant::now() + Duration::from_millis(timeout_ms);
+    let started_waiting_at = Instant::now();
     let loopback = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, runtime.gateway_port));
     let mut next_health_probe_at = Instant::now();
     let mut last_probe_detail =
@@ -935,6 +950,11 @@ fn wait_for_gateway_ready(
         let include_health_probe = Instant::now() >= next_health_probe_at;
         let readiness = probe_gateway_ready(runtime, include_health_probe);
         if readiness.is_ready() {
+            ensure_gateway_child_survives_startup_stability_window(
+                child,
+                loopback,
+                started_waiting_at,
+            )?;
             return Ok(());
         }
         last_probe_detail = readiness.detail();
@@ -950,6 +970,30 @@ fn wait_for_gateway_ready(
         "openclaw gateway did not become ready on {} within {}ms ({})",
         loopback, timeout_ms, last_probe_detail,
     )))
+}
+
+fn ensure_gateway_child_survives_startup_stability_window(
+    child: &mut Child,
+    loopback: SocketAddr,
+    started_waiting_at: Instant,
+) -> Result<()> {
+    let post_ready_deadline =
+        Instant::now() + Duration::from_millis(DEFAULT_OPENCLAW_GATEWAY_POST_READY_STABILITY_MS);
+    let process_stability_deadline = started_waiting_at
+        + Duration::from_millis(DEFAULT_OPENCLAW_GATEWAY_STARTUP_MIN_PROCESS_STABILITY_MS);
+    let deadline = post_ready_deadline.max(process_stability_deadline);
+    while Instant::now() < deadline {
+        if let Some(status) = child.try_wait()? {
+            return Err(FrameworkError::ProcessFailed {
+                command: "openclaw gateway".to_string(),
+                exit_code: status.code(),
+                stderr_tail: format!("gateway exited before becoming ready on {}", loopback),
+            });
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+
+    Ok(())
 }
 
 fn should_retry_openclaw_gateway_start_failure(error: &FrameworkError) -> bool {
@@ -1406,12 +1450,13 @@ fn configured_openclaw_gateway_port(paths: &AppPaths) -> Option<u16> {
 }
 
 fn readable_openclaw_config_file_path(paths: &AppPaths) -> Result<PathBuf> {
-    KernelRuntimeAuthorityService::new()
-        .active_config_file_path("openclaw", paths)
+    KernelRuntimeAuthorityService::new().active_config_file_path("openclaw", paths)
 }
 
 fn built_in_openclaw_runtime_dir(paths: &AppPaths) -> Result<PathBuf> {
-    paths.kernel_paths("openclaw").map(|kernel| kernel.runtime_dir)
+    paths
+        .kernel_paths("openclaw")
+        .map(|kernel| kernel.runtime_dir)
 }
 
 fn is_loopback_port_accepting(port: u16) -> bool {
@@ -1707,12 +1752,14 @@ mod tests {
         paths::resolve_paths_for_root,
         services::{
             kernel_runtime_authority::KernelRuntimeAuthorityService,
+            openclaw_channel_config::write_test_openclaw_channel_metadata,
             openclaw_runtime::ActivatedOpenClawRuntime,
         },
     };
     use std::{
         fs,
-        net::TcpListener,
+        io::{Read, Write},
+        net::{TcpListener, TcpStream},
         process::Command,
         sync::{
             atomic::{AtomicBool, Ordering},
@@ -2110,6 +2157,52 @@ mod tests {
     }
 
     #[test]
+    fn supervisor_refreshes_gateway_port_before_retrying_after_startup_process_exit() {
+        let service = SupervisorService::new();
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let runtime = fake_gateway_runtime_with_script(
+            &paths,
+            "import fs from 'node:fs';\nimport http from 'node:http';\nconst args = process.argv.slice(2);\nconst configPath = process.env.OPENCLAW_CONFIG_PATH;\nconst attemptPath = `${configPath}.startup-attempt`;\nconst config = JSON.parse(fs.readFileSync(configPath, 'utf8'));\nconst gatewayPort = Number(config.gateway?.port ?? 21280);\nif (args[0] === 'gateway' && args[1] === 'health') {\n  process.stdout.write(JSON.stringify({ ok: true, result: { status: 'ok' } }));\n  process.exit(0);\n}\nconst attempt = (fs.existsSync(attemptPath) ? Number(fs.readFileSync(attemptPath, 'utf8')) : 0) + 1;\nfs.writeFileSync(attemptPath, String(attempt));\nif (attempt === 1) {\n  setTimeout(() => process.exit(1), 500);\n} else {\n  const server = http.createServer((req, res) => {\n    if (req.url === '/health' || req.url === '/healthz') {\n      res.writeHead(200, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ok: true, status: 'live' }));\n      return;\n    }\n    if (req.url === '/ready' || req.url === '/readyz') {\n      res.writeHead(200, { 'content-type': 'application/json' });\n      res.end(JSON.stringify({ ready: true, failing: [], uptimeMs: 1 }));\n      return;\n    }\n    res.writeHead(404, { 'content-type': 'application/json' });\n    res.end(JSON.stringify({ ok: false, error: { message: 'unexpected path' } }));\n  });\n  server.listen(gatewayPort, '127.0.0.1');\n  setInterval(() => {}, 1000);\n}\n"
+                .to_string(),
+        );
+        let first_port = runtime.gateway_port;
+        let attempt_path = runtime.config_path.with_extension("json.startup-attempt");
+        let stop_port_blocker = Arc::new(AtomicBool::new(false));
+        let stop_port_blocker_for_thread = stop_port_blocker.clone();
+        let attempt_path_for_thread = attempt_path.clone();
+        let port_blocker = thread::spawn(move || {
+            while !attempt_path_for_thread.exists()
+                && !stop_port_blocker_for_thread.load(Ordering::SeqCst)
+            {
+                thread::sleep(Duration::from_millis(10));
+            }
+            let listener =
+                TcpListener::bind(("127.0.0.1", first_port)).expect("occupy first gateway port");
+            while !stop_port_blocker_for_thread.load(Ordering::SeqCst) {
+                thread::sleep(Duration::from_millis(10));
+            }
+            drop(listener);
+        });
+
+        service
+            .configure_openclaw_gateway(&runtime)
+            .expect("configure runtime");
+        let start_result = service.start_openclaw_gateway(&paths);
+        stop_port_blocker.store(true, Ordering::SeqCst);
+        port_blocker.join().expect("port blocker thread");
+
+        start_result.expect("gateway retry should refresh away from a newly occupied port");
+        let refreshed_runtime = service
+            .configured_openclaw_runtime()
+            .expect("configured runtime")
+            .expect("runtime");
+        assert_ne!(refreshed_runtime.gateway_port, first_port);
+
+        service.begin_shutdown().expect("shutdown");
+    }
+
+    #[test]
     fn wait_for_gateway_ready_rejects_tools_invoke_without_current_http_readiness() {
         let root = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(root.path()).expect("paths");
@@ -2136,8 +2229,12 @@ mod tests {
         let error =
             readiness.expect_err("gateway without /readyz or /healthz should not become ready");
         assert!(
-            error.to_string().contains("ready probe returned HTTP/1.1 404")
-                || error.to_string().contains("live probe returned HTTP/1.1 404"),
+            error
+                .to_string()
+                .contains("ready probe returned HTTP/1.1 404")
+                || error
+                    .to_string()
+                    .contains("live probe returned HTTP/1.1 404"),
             "unexpected readiness error: {error}"
         );
     }
@@ -2195,8 +2292,40 @@ mod tests {
         let _ = force_process_shutdown(&mut gateway);
         let _ = gateway.wait();
 
-        readiness.expect(
-            "gateway should become ready once /readyz returns any successful 2xx status",
+        readiness
+            .expect("gateway should become ready once /readyz returns any successful 2xx status");
+    }
+
+    #[test]
+    fn wait_for_gateway_ready_rejects_ready_probe_from_unrelated_listener_after_child_exits() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let mut runtime = fake_gateway_runtime_with_script(
+            &paths,
+            "process.stderr.write('gateway bind failed');\nsetTimeout(() => process.exit(1), 250);\n"
+                .to_string(),
+        );
+        let unrelated_ready_server = TestReadyHttpServer::spawn();
+        runtime.gateway_port = unrelated_ready_server.port;
+
+        let mut gateway = Command::new(&runtime.node_path);
+        configure_command_for_managed_process(&mut gateway);
+        gateway.arg(&runtime.cli_path);
+        gateway.arg("gateway");
+        gateway.current_dir(&runtime.runtime_dir);
+        gateway.envs(runtime.managed_env());
+        let mut gateway = gateway.spawn().expect("spawn failing gateway");
+
+        let readiness = wait_for_gateway_ready(&mut gateway, &runtime, &paths, 5_000);
+
+        let _ = force_process_shutdown(&mut gateway);
+        let _ = gateway.wait();
+
+        let error = readiness
+            .expect_err("gateway readiness from an unrelated listener must not mask child exit");
+        assert!(
+            error.to_string().contains("exited before becoming ready"),
+            "unexpected readiness error: {error}"
         );
     }
 
@@ -2227,8 +2356,12 @@ mod tests {
         let error =
             readiness.expect_err("gateway without /readyz or /healthz should not become ready");
         assert!(
-            error.to_string().contains("ready probe returned HTTP/1.1 404")
-                || error.to_string().contains("live probe returned HTTP/1.1 404"),
+            error
+                .to_string()
+                .contains("ready probe returned HTTP/1.1 404")
+                || error
+                    .to_string()
+                    .contains("live probe returned HTTP/1.1 404"),
             "unexpected readiness error: {error}"
         );
     }
@@ -2639,6 +2772,7 @@ mod tests {
         let config_path = openclaw_config_file_path(paths);
 
         fs::create_dir_all(cli_path.parent().expect("cli parent")).expect("cli dir");
+        write_test_openclaw_channel_metadata(&runtime_dir);
         fs::write(
             &config_path,
             format!("{{\n  \"gateway\": {{\n    \"port\": {gateway_port}\n  }}\n}}\n"),
@@ -2699,6 +2833,58 @@ mod tests {
         }
 
         panic!("test gateway listener did not start on 127.0.0.1:{port} in time");
+    }
+
+    struct TestReadyHttpServer {
+        port: u16,
+        stop: Arc<AtomicBool>,
+        thread: Option<thread::JoinHandle<()>>,
+    }
+
+    impl TestReadyHttpServer {
+        fn spawn() -> Self {
+            let listener =
+                TcpListener::bind(("127.0.0.1", 0)).expect("bind unrelated ready server");
+            listener
+                .set_nonblocking(true)
+                .expect("unrelated ready server nonblocking");
+            let port = listener.local_addr().expect("ready server addr").port();
+            let stop = Arc::new(AtomicBool::new(false));
+            let stop_for_thread = stop.clone();
+            let thread = thread::spawn(move || {
+                while !stop_for_thread.load(Ordering::SeqCst) {
+                    match listener.accept() {
+                        Ok((mut stream, _addr)) => {
+                            let mut request = [0_u8; 1024];
+                            let _ = stream.read(&mut request);
+                            let response = "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 49\r\nconnection: close\r\n\r\n{\"ready\":true,\"failing\":[],\"uptimeMs\":999}";
+                            let _ = stream.write_all(response.as_bytes());
+                            let _ = stream.flush();
+                        }
+                        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                            thread::sleep(Duration::from_millis(10));
+                        }
+                        Err(_error) => break,
+                    }
+                }
+            });
+
+            Self {
+                port,
+                stop,
+                thread: Some(thread),
+            }
+        }
+    }
+
+    impl Drop for TestReadyHttpServer {
+        fn drop(&mut self) {
+            self.stop.store(true, Ordering::SeqCst);
+            let _ = TcpStream::connect(("127.0.0.1", self.port));
+            if let Some(thread) = self.thread.take() {
+                let _ = thread.join();
+            }
+        }
     }
 
     #[test]
@@ -2866,7 +3052,10 @@ mod tests {
         let startup_path_source = production_source
             .split("fn configured_openclaw_gateway_port")
             .nth(1)
-            .and_then(|tail| tail.split("fn command_matches_built_in_openclaw_gateway").next())
+            .and_then(|tail| {
+                tail.split("fn command_matches_built_in_openclaw_gateway")
+                    .next()
+            })
             .expect("startup path helper source");
 
         assert!(

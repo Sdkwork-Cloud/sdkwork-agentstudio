@@ -1,15 +1,18 @@
 {
   "kernelId": "openclaw",
-  "stableVersion": "2026.5.4-beta.1",
+  "stableVersion": "2026.5.6",
   "supportedChannels": [
     "stable"
   ],
   "defaultChannel": "stable",
   "nodeVersion": "24.15.0",
   "packageName": "openclaw",
-  "_comment_runtimeSupplementalPackages": "Keep empty unless OpenClaw requires extra runtime packages beyond its own stable dependency graph.",
-  "runtimeSupplementalPackages": [],
-  "_comment_runtimeSupplementalPackageExceptions": "Keep empty while runtimeSupplementalPackages is empty.",
+  "_comment_runtimeSupplementalPackages": "Bundled OpenClaw excludes selected official channel packages from npm; keep official QQ Bot and Feishu materialized into dist/extensions for release startup.",
+  "runtimeSupplementalPackages": [
+    "@openclaw/feishu@2026.5.6",
+    "@openclaw/qqbot@2026.5.6"
+  ],
+  "_comment_runtimeSupplementalPackageExceptions": "Keep empty while supplemental packages use stable release versions.",
   "runtimeSupplementalPackageExceptions": [],
   "runtimeRequirements": {
     "requiredExternalRuntimes": [

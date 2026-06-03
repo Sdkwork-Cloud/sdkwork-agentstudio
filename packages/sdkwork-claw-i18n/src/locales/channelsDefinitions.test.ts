@@ -15,13 +15,30 @@ function runTest(name: string, callback: () => void | Promise<void>) {
 }
 
 const expectedChannelFields: Record<string, string[]> = {
-  sdkworkchat: [],
-  wechat: [],
-  wehcat: ['appId', 'appSecret', 'token', 'encodingAesKey'],
-  qq: ['botKey', 'groupId'],
-  dingtalk: ['accessToken', 'secret'],
-  wecom: ['corpId', 'agentId', 'secret'],
-  feishu: ['appId', 'appSecret', 'encryptKey', 'verificationToken'],
+  qqbot: [
+    'appId',
+    'clientSecret',
+    'clientSecretFile',
+    'allowFrom',
+    'groupAllowFrom',
+    'dmPolicy',
+    'groupPolicy',
+    'systemPrompt',
+    'markdownSupport',
+    'streaming',
+    'groups',
+    'stt',
+    'tts',
+    'audioFormatPolicy',
+    'accounts',
+    'defaultAccount',
+  ],
+  imessage: ['dbPath', 'remoteHost', 'service', 'region', 'allowFrom', 'groups'],
+  irc: ['host', 'port', 'nick', 'username', 'password', 'passwordFile', 'channels', 'allowFrom', 'groups'],
+  matrix: ['homeserver', 'userId', 'accessToken', 'password', 'deviceId', 'deviceName', 'allowFrom', 'groups'],
+  mattermost: ['url', 'botToken', 'allowFrom', 'groups'],
+  signal: ['account', 'accountUuid', 'httpUrl', 'httpHost', 'httpPort', 'allowFrom', 'groups'],
+  slack: ['botToken', 'appToken', 'signingSecret', 'webhookPath', 'allowFrom', 'groups'],
   telegram: [
     'botToken',
     'tokenFile',
@@ -30,35 +47,31 @@ const expectedChannelFields: Record<string, string[]> = {
     'webhookPath',
     'webhookHost',
     'webhookPort',
+    'apiRoot',
+    'allowFrom',
+    'groups',
     'errorPolicy',
     'errorCooldownMs',
-  ],
-  whatsapp: ['allowFrom', 'groups'],
-  discord: ['token'],
-  slack: ['botToken', 'appToken', 'signingSecret'],
-  googlechat: [
-    'serviceAccount',
-    'serviceAccountRef',
-    'audienceType',
-    'audience',
-    'webhookPath',
-    'webhookUrl',
   ],
 };
 
 const expectedOfficialLinkChannels = [
-  'sdkworkchat',
-  'wechat',
-  'wehcat',
-  'feishu',
-  'qq',
-  'dingtalk',
-  'wecom',
-  'telegram',
-  'discord',
+  'qqbot',
+  'imessage',
+  'irc',
+  'matrix',
+  'mattermost',
+  'signal',
   'slack',
-  'googlechat',
+  'telegram',
 ];
+
+const expectedBindingGuides = {
+  qqbot: ['add', 'scan', 'restart'],
+  'openclaw-weixin': ['install', 'scan', 'restart'],
+  feishu: ['login', 'scan', 'restart'],
+  'dingtalk-connector': ['install', 'scan', 'restart'],
+};
 
 await runTest('channels locale bundles expose validation copy and complete built-in channel definitions', () => {
   assert.equal(en.page.validation.requiredField, '{{field}} is required.');
@@ -125,5 +138,27 @@ await runTest('channels locale bundles expose QR connection copy and manual fall
     assert.equal(en.page.panel[key].length > 0, true);
     assert.equal(typeof zh.page.panel[key], 'string');
     assert.equal(zh.page.panel[key].length > 0, true);
+  }
+});
+
+await runTest('channels locale bundles expose official scan binding guide steps for supported domestic plugins', () => {
+  for (const [channelId, stepKeys] of Object.entries(expectedBindingGuides)) {
+    for (const stepKey of stepKeys) {
+      assert.equal(
+        typeof en.definitions.bindingGuides?.[channelId]?.steps?.[stepKey],
+        'string',
+      );
+      assert.equal(en.definitions.bindingGuides[channelId].steps[stepKey].length > 0, true);
+      assert.equal(
+        typeof zh.definitions.bindingGuides?.[channelId]?.steps?.[stepKey],
+        'string',
+      );
+      assert.equal(zh.definitions.bindingGuides[channelId].steps[stepKey].length > 0, true);
+    }
+  }
+
+  for (const unsupportedChannelId of ['qq', 'wechat', 'wecom', 'dingtalk']) {
+    assert.equal(en.definitions.bindingGuides?.[unsupportedChannelId], undefined);
+    assert.equal(zh.definitions.bindingGuides?.[unsupportedChannelId], undefined);
   }
 });

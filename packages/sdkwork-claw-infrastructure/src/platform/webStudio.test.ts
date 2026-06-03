@@ -315,28 +315,29 @@ await runTest('web studio persists managed channel configuration through the bro
   await withMockedWindowStorage(async ({ readJson }) => {
     const platform = new WebStudioPlatform();
 
-    const saved = await platform.saveInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'wehcat', {
-      appId: 'wx1234567890abcdef',
-      appSecret: 'secret',
-      token: 'verify-token',
+    const saved = await platform.saveInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram', {
+      botToken: '123456:telegram-token',
+      webhookUrl: 'https://example.com/openclaw/telegram',
+      webhookSecret: 'secret',
     });
 
     assert.equal(saved, true);
 
     let detail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
-    let wehcat = detail?.workbench?.channels.find((channel) => channel.id === 'wehcat') as
+    let telegram = detail?.workbench?.channels.find((channel) => channel.id === 'telegram') as
       | ({ values?: Record<string, string> } & NonNullable<
           NonNullable<typeof detail>['workbench']
         >['channels'][number])
       | undefined;
 
-    assert.ok(wehcat);
-    assert.equal(wehcat?.enabled, true);
-    assert.equal(wehcat?.status, 'connected');
-    assert.equal(wehcat?.configuredFieldCount, 3);
-    assert.equal(wehcat?.values?.appId, 'wx1234567890abcdef');
-    assert.equal(wehcat?.values?.appSecret, undefined);
-    assert.equal(wehcat?.values?.token, undefined);
+    assert.ok(telegram);
+    assert.equal(telegram?.fieldCount > 0, true);
+    assert.equal(telegram?.enabled, true);
+    assert.equal(telegram?.status, 'connected');
+    assert.equal(telegram?.configuredFieldCount, 3);
+    assert.equal(telegram?.values?.webhookUrl, 'https://example.com/openclaw/telegram');
+    assert.equal(telegram?.values?.botToken, undefined);
+    assert.equal(telegram?.values?.webhookSecret, undefined);
 
     const persistedWorkbench = readJson(WORKBENCH_STORAGE_KEY) as {
       workbenches?: Record<string, {
@@ -351,8 +352,8 @@ await runTest('web studio persists managed channel configuration through the bro
         }>;
       }>;
     } | null;
-    const persistedWehcat = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID]?.channels?.find(
-      (channel) => channel.id === 'wehcat',
+    const persistedTelegram = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID]?.channels?.find(
+      (channel) => channel.id === 'telegram',
     );
     const persistedConfigFile = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID]?.files?.find(
       (file) => file.id === '/workspace/main/openclaw.json',
@@ -363,46 +364,46 @@ await runTest('web studio persists managed channel configuration through the bro
         }
       : null;
 
-    assert.ok(persistedWehcat);
-    assert.equal(persistedWehcat?.configuredFieldCount, 3);
-    assert.deepEqual(persistedWehcat?.values, {
-      appId: 'wx1234567890abcdef',
+    assert.ok(persistedTelegram);
+    assert.equal(persistedTelegram?.configuredFieldCount, 3);
+    assert.deepEqual(persistedTelegram?.values, {
+      webhookUrl: 'https://example.com/openclaw/telegram',
     });
-    assert.deepEqual(persistedConfigRoot?.channels?.wehcat, {
-      appId: 'wx1234567890abcdef',
+    assert.deepEqual(persistedConfigRoot?.channels?.telegram, {
+      webhookUrl: 'https://example.com/openclaw/telegram',
       enabled: true,
     });
 
-    const disabled = await platform.setInstanceChannelEnabled(BUILT_IN_INSTANCE_ID, 'wehcat', false);
+    const disabled = await platform.setInstanceChannelEnabled(BUILT_IN_INSTANCE_ID, 'telegram', false);
     assert.equal(disabled, true);
 
     detail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
-    wehcat = detail?.workbench?.channels.find((channel) => channel.id === 'wehcat') as
+    telegram = detail?.workbench?.channels.find((channel) => channel.id === 'telegram') as
       | ({ values?: Record<string, string> } & NonNullable<
           NonNullable<typeof detail>['workbench']
         >['channels'][number])
       | undefined;
 
-    assert.ok(wehcat);
-    assert.equal(wehcat?.enabled, false);
-    assert.equal(wehcat?.status, 'disconnected');
-    assert.equal(wehcat?.configuredFieldCount, 3);
-    assert.equal(wehcat?.values?.token, undefined);
+    assert.ok(telegram);
+    assert.equal(telegram?.enabled, false);
+    assert.equal(telegram?.status, 'disconnected');
+    assert.equal(telegram?.configuredFieldCount, 3);
+    assert.equal(telegram?.values?.webhookSecret, undefined);
 
-    const deleted = await platform.deleteInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'wehcat');
+    const deleted = await platform.deleteInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram');
     assert.equal(deleted, true);
 
     detail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
-    wehcat = detail?.workbench?.channels.find((channel) => channel.id === 'wehcat') as
+    telegram = detail?.workbench?.channels.find((channel) => channel.id === 'telegram') as
       | ({ values?: Record<string, string> } & NonNullable<
           NonNullable<typeof detail>['workbench']
         >['channels'][number])
       | undefined;
 
-    assert.ok(wehcat);
-    assert.equal(wehcat?.enabled, false);
-    assert.equal(wehcat?.status, 'not_configured');
-    assert.deepEqual(wehcat?.values || {}, {});
+    assert.ok(telegram);
+    assert.equal(telegram?.enabled, false);
+    assert.equal(telegram?.status, 'not_configured');
+    assert.deepEqual(telegram?.values || {}, {});
   });
 });
 
@@ -442,6 +443,368 @@ await runTest('web studio creates the browser fallback built-in OpenClaw instanc
     assert.equal(builtIn?.config.port, '21280');
     assert.equal(builtIn?.config.baseUrl, 'http://127.0.0.1:21280');
     assert.equal(builtIn?.config.websocketUrl, 'ws://127.0.0.1:21280');
+  });
+});
+
+await runTest('web studio rejects retired OpenClaw channel ids before they reach persisted config', async () => {
+  await withMockedWindowStorage(async ({ readJson }) => {
+    const platform = new WebStudioPlatform();
+
+    const saved = await platform.saveInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'qq', {
+      botToken: 'legacy-token',
+    });
+    const toggled = await platform.setInstanceChannelEnabled(BUILT_IN_INSTANCE_ID, 'qq', true);
+    const deleted = await platform.deleteInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'qq');
+
+    assert.equal(saved, false);
+    assert.equal(toggled, false);
+    assert.equal(deleted, false);
+
+    const detail = await platform.getInstanceDetail(BUILT_IN_INSTANCE_ID);
+    assert.ok(!detail?.workbench?.channels.some((channel) => channel.id === 'qq'));
+
+    const persistedWorkbench = readJson(WORKBENCH_STORAGE_KEY) as {
+      workbenches?: Record<string, {
+        channels?: Array<{ id: string }>;
+        files?: Array<{
+          id: string;
+          content: string;
+        }>;
+      }>;
+    } | null;
+    const persistedBuiltIn = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID];
+    const persistedConfigFile = persistedBuiltIn?.files?.find(
+      (file) => file.id === '/workspace/main/openclaw.json',
+    );
+    const persistedConfigRoot = persistedConfigFile
+      ? JSON.parse(persistedConfigFile.content) as {
+          channels?: Record<string, Record<string, unknown>>;
+        }
+      : null;
+
+    assert.ok(!persistedBuiltIn?.channels?.some((channel) => channel.id === 'qq'));
+    assert.equal(persistedConfigRoot?.channels?.qq, undefined);
+  });
+});
+
+await runTest('web studio prunes retired channel ids while preserving OpenClaw channel metadata roots', async () => {
+  await withMockedWindowStorage(async ({ readJson }) => {
+    const platform = new WebStudioPlatform();
+
+    await platform.updateInstanceFileContent(
+      BUILT_IN_INSTANCE_ID,
+      '/workspace/main/openclaw.json',
+      `${JSON.stringify({
+        channels: {
+          defaults: {
+            contextVisibility: 'quote',
+          },
+          modelByChannel: {
+            feishu: {
+              '*': 'openai/gpt-5.4',
+            },
+            telegram: {
+              '*': 'openai/gpt-5.4',
+            },
+            qq: {
+              '*': 'openai/gpt-legacy',
+            },
+            dingtalk: {
+              '*': 'openai/gpt-legacy',
+            },
+          },
+          qq: {
+            enabled: true,
+            botKey: 'legacy-key',
+          },
+        },
+      }, null, 2)}\n`,
+    );
+
+    const saved = await platform.saveInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram', {
+      botToken: '123456:telegram-token',
+    });
+
+    assert.equal(saved, true);
+
+    const persistedWorkbench = readJson(WORKBENCH_STORAGE_KEY) as {
+      workbenches?: Record<string, {
+        files?: Array<{
+          id: string;
+          content: string;
+        }>;
+      }>;
+    } | null;
+    const persistedConfigFile = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID]?.files?.find(
+      (file) => file.id === '/workspace/main/openclaw.json',
+    );
+    const persistedConfigRoot = persistedConfigFile
+      ? JSON.parse(persistedConfigFile.content) as {
+          channels?: Record<string, unknown>;
+        }
+      : null;
+
+    assert.deepEqual(persistedConfigRoot?.channels?.defaults, {
+      contextVisibility: 'quote',
+    });
+    assert.deepEqual(persistedConfigRoot?.channels?.modelByChannel, {
+      feishu: {
+        '*': 'openai/gpt-5.4',
+      },
+      qqbot: {
+        '*': 'openai/gpt-legacy',
+      },
+      telegram: {
+        '*': 'openai/gpt-5.4',
+      },
+    });
+    assert.equal(persistedConfigRoot?.channels?.qq, undefined);
+    assert.deepEqual(persistedConfigRoot?.channels?.qqbot, {
+      enabled: true,
+      botKey: 'legacy-key',
+    });
+  });
+});
+
+await runTest('web studio removes the channels root when only retired channel config remains', async () => {
+  await withMockedWindowStorage(async ({ readJson }) => {
+    const platform = new WebStudioPlatform();
+
+    await platform.updateInstanceFileContent(
+      BUILT_IN_INSTANCE_ID,
+      '/workspace/main/openclaw.json',
+      `${JSON.stringify({
+        channels: {
+          modelByChannel: {
+            dingtalk: {
+              '*': 'openai/gpt-legacy',
+            },
+          },
+          dingtalk: {
+            enabled: true,
+            accessToken: 'legacy-token',
+          },
+        },
+      }, null, 2)}\n`,
+    );
+
+    const saved = await platform.saveInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram', {
+      botToken: '123456:telegram-token',
+    });
+    const deleted = await platform.deleteInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram');
+
+    assert.equal(saved, true);
+    assert.equal(deleted, true);
+
+    const persistedWorkbench = readJson(WORKBENCH_STORAGE_KEY) as {
+      workbenches?: Record<string, {
+        files?: Array<{
+          id: string;
+          content: string;
+        }>;
+      }>;
+    } | null;
+    const persistedConfigFile = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID]?.files?.find(
+      (file) => file.id === '/workspace/main/openclaw.json',
+    );
+    const persistedConfigRoot = persistedConfigFile
+      ? JSON.parse(persistedConfigFile.content) as {
+          channels?: Record<string, unknown>;
+        }
+      : null;
+
+    assert.equal(persistedConfigRoot?.channels, undefined);
+  });
+});
+
+await runTest('web studio migrates legacy qq config when only canonical qqbot remains after pruning', async () => {
+  await withMockedWindowStorage(async ({ readJson }) => {
+    const platform = new WebStudioPlatform();
+
+    await platform.updateInstanceFileContent(
+      BUILT_IN_INSTANCE_ID,
+      '/workspace/main/openclaw.json',
+      `${JSON.stringify({
+        channels: {
+          modelByChannel: {
+            qq: {
+              '*': 'openai/gpt-legacy',
+            },
+            dingtalk: {
+              '*': 'openai/gpt-legacy',
+            },
+          },
+          qq: {
+            enabled: true,
+            botKey: 'legacy-key',
+          },
+          dingtalk: {
+            enabled: true,
+            accessToken: 'legacy-token',
+          },
+        },
+      }, null, 2)}\n`,
+    );
+
+    const saved = await platform.saveInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram', {
+      botToken: '123456:telegram-token',
+    });
+    const deleted = await platform.deleteInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram');
+
+    assert.equal(saved, true);
+    assert.equal(deleted, true);
+
+    const persistedWorkbench = readJson(WORKBENCH_STORAGE_KEY) as {
+      workbenches?: Record<string, {
+        files?: Array<{
+          id: string;
+          content: string;
+        }>;
+      }>;
+    } | null;
+    const persistedConfigFile = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID]?.files?.find(
+      (file) => file.id === '/workspace/main/openclaw.json',
+    );
+    const persistedConfigRoot = persistedConfigFile
+      ? JSON.parse(persistedConfigFile.content) as {
+          channels?: Record<string, unknown>;
+        }
+      : null;
+
+    assert.deepEqual(persistedConfigRoot?.channels, {
+      modelByChannel: {
+        qqbot: {
+          '*': 'openai/gpt-legacy',
+        },
+      },
+      qqbot: {
+        enabled: true,
+        botKey: 'legacy-key',
+      },
+    });
+  });
+});
+
+await runTest('web studio removes malformed supported channel config roots', async () => {
+  await withMockedWindowStorage(async ({ readJson }) => {
+    const platform = new WebStudioPlatform();
+
+    await platform.updateInstanceFileContent(
+      BUILT_IN_INSTANCE_ID,
+      '/workspace/main/openclaw.json',
+      `${JSON.stringify({
+        channels: {
+          telegram: '123456:telegram-token',
+          slack: ['xoxb-token'],
+          modelByChannel: {
+            telegram: {
+              '*': 'openai/gpt-5.4',
+            },
+            slack: {
+              C123: 'openai/gpt-5.4',
+            },
+          },
+        },
+      }, null, 2)}\n`,
+    );
+
+    const saved = await platform.saveInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram', {
+      botToken: '123456:telegram-token',
+    });
+    const deleted = await platform.deleteInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram');
+
+    assert.equal(saved, true);
+    assert.equal(deleted, true);
+
+    const persistedWorkbench = readJson(WORKBENCH_STORAGE_KEY) as {
+      workbenches?: Record<string, {
+        files?: Array<{
+          id: string;
+          content: string;
+        }>;
+      }>;
+    } | null;
+    const persistedConfigFile = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID]?.files?.find(
+      (file) => file.id === '/workspace/main/openclaw.json',
+    );
+    const persistedConfigRoot = persistedConfigFile
+      ? JSON.parse(persistedConfigFile.content) as {
+          channels?: Record<string, unknown>;
+        }
+      : null;
+
+    assert.deepEqual(persistedConfigRoot?.channels, {
+      modelByChannel: {
+        telegram: {
+          '*': 'openai/gpt-5.4',
+        },
+        slack: {
+          C123: 'openai/gpt-5.4',
+        },
+      },
+    });
+  });
+});
+
+await runTest('web studio removes malformed channel metadata roots and model override maps', async () => {
+  await withMockedWindowStorage(async ({ readJson }) => {
+    const platform = new WebStudioPlatform();
+
+    await platform.updateInstanceFileContent(
+      BUILT_IN_INSTANCE_ID,
+      '/workspace/main/openclaw.json',
+      `${JSON.stringify({
+        channels: {
+          defaults: 'always-on',
+          modelByChannel: {
+            telegram: {
+              '*': 'openai/gpt-5.4',
+              C123: 42,
+            },
+            slack: 'openai/gpt-legacy',
+            qq: {
+              '*': 'openai/gpt-legacy',
+            },
+          },
+          telegram: {
+            botToken: '123456:telegram-token',
+          },
+        },
+      }, null, 2)}\n`,
+    );
+
+    const saved = await platform.saveInstanceChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram', {
+      botToken: '123456:telegram-token',
+    });
+
+    assert.equal(saved, true);
+
+    const persistedWorkbench = readJson(WORKBENCH_STORAGE_KEY) as {
+      workbenches?: Record<string, {
+        files?: Array<{
+          id: string;
+          content: string;
+        }>;
+      }>;
+    } | null;
+    const persistedConfigFile = persistedWorkbench?.workbenches?.[STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID]?.files?.find(
+      (file) => file.id === '/workspace/main/openclaw.json',
+    );
+    const persistedConfigRoot = persistedConfigFile
+      ? JSON.parse(persistedConfigFile.content) as {
+          channels?: Record<string, unknown>;
+        }
+      : null;
+
+    assert.equal(persistedConfigRoot?.channels?.defaults, undefined);
+    assert.deepEqual(persistedConfigRoot?.channels?.modelByChannel, {
+      telegram: {
+        '*': 'openai/gpt-5.4',
+      },
+      qqbot: {
+        '*': 'openai/gpt-legacy',
+      },
+    });
   });
 });
 

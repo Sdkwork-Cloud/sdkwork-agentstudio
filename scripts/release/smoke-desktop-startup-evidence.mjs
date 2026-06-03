@@ -42,6 +42,21 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..', '..');
 const DEFAULT_RELEASE_ASSETS_DIR = path.join(rootDir, 'artifacts', 'release');
 const CANONICAL_BUILT_IN_OPENCLAW_INSTANCE_ID = 'managed-openclaw-primary';
+const PACKAGED_OPENCLAW_SUPPORTED_CHANNEL_IDS = Object.freeze([
+  'qqbot',
+  'feishu',
+  'imessage',
+  'irc',
+  'matrix',
+  'mattermost',
+  'signal',
+  'slack',
+  'telegram',
+]);
+const PACKAGED_OPENCLAW_SUPPORTED_CHANNEL_ID_SET = new Set(PACKAGED_OPENCLAW_SUPPORTED_CHANNEL_IDS);
+const PACKAGED_OPENCLAW_SUPPORTED_CHANNEL_ORDER = new Map(
+  PACKAGED_OPENCLAW_SUPPORTED_CHANNEL_IDS.map((channelId, index) => [channelId, index]),
+);
 
 function manifestIncludesKernel(manifest, kernelId) {
   const normalizedKernelId = String(kernelId ?? '').trim().toLowerCase();
@@ -86,6 +101,44 @@ function normalizeManifestStringArray(values) {
   return Array.isArray(values)
     ? values.map((value) => normalizeManifestString(value)).filter(Boolean)
     : [];
+}
+
+function normalizeOpenClawConfigHealthArray(values) {
+  return normalizeManifestStringArray(values).sort((left, right) => {
+    const leftOrder = PACKAGED_OPENCLAW_SUPPORTED_CHANNEL_ORDER.get(left) ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = PACKAGED_OPENCLAW_SUPPORTED_CHANNEL_ORDER.get(right) ?? Number.MAX_SAFE_INTEGER;
+    if (leftOrder !== rightOrder) {
+      return leftOrder - rightOrder;
+    }
+
+    return left.localeCompare(right);
+  });
+}
+
+function normalizeOpenClawConfigHealth(value) {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  return {
+    status: normalizeManifestString(value.status),
+    valid: value.valid === true,
+    runtimeMetadataAvailable: value.runtimeMetadataAvailable === true,
+    configReadable: value.configReadable === true,
+    supportedChannelIds: normalizeOpenClawConfigHealthArray(value.supportedChannelIds),
+    configuredChannelIds: normalizeOpenClawConfigHealthArray(value.configuredChannelIds),
+    unknownChannelIds: normalizeOpenClawConfigHealthArray(value.unknownChannelIds),
+    malformedChannelIds: normalizeOpenClawConfigHealthArray(value.malformedChannelIds),
+    modelByChannelIds: normalizeOpenClawConfigHealthArray(value.modelByChannelIds),
+    unknownModelByChannelIds: normalizeOpenClawConfigHealthArray(value.unknownModelByChannelIds),
+    invalidModelByChannelIds: normalizeOpenClawConfigHealthArray(value.invalidModelByChannelIds),
+  };
+}
+
+function findUnsupportedOpenClawChannelIds(values) {
+  return normalizeOpenClawConfigHealthArray(values).filter(
+    (channelId) => !PACKAGED_OPENCLAW_SUPPORTED_CHANNEL_ID_SET.has(channelId),
+  );
 }
 
 function assertDesktopManifestMatchesTarget({
@@ -250,6 +303,81 @@ function validateDesktopStartupEvidence(
       `Desktop startup evidence default enabled kernels mismatch at ${evidencePath}.`,
     );
   }
+
+  if (requiresBuiltInOpenClawEvidence) {
+    const openClawConfigHealth = normalizeOpenClawConfigHealth(
+      evidence?.openClawConfigHealth,
+    );
+    if (!openClawConfigHealth) {
+      throw new Error(
+        `Desktop startup evidence must preserve OpenClaw channel config sanitation evidence at ${evidencePath}.`,
+      );
+    }
+    if (!openClawConfigHealth.runtimeMetadataAvailable) {
+      throw new Error(
+        `Desktop startup evidence must prove packaged OpenClaw channel metadata was available at ${evidencePath}.`,
+      );
+    }
+    if (!openClawConfigHealth.configReadable) {
+      throw new Error(
+        `Desktop startup evidence must prove managed OpenClaw config was readable at ${evidencePath}.`,
+      );
+    }
+    if (openClawConfigHealth.supportedChannelIds.length === 0) {
+      throw new Error(
+        `Desktop startup evidence must preserve packaged OpenClaw supported channel ids at ${evidencePath}.`,
+      );
+    }
+    const unsupportedSupportedChannelIds = findUnsupportedOpenClawChannelIds(
+      openClawConfigHealth.supportedChannelIds,
+    );
+    if (unsupportedSupportedChannelIds.length > 0) {
+      throw new Error(
+        `Desktop startup evidence contains unsupported OpenClaw channel ids in packaged runtime metadata at ${evidencePath}: ${unsupportedSupportedChannelIds.join(', ')}.`,
+      );
+    }
+    const unsupportedConfiguredChannelIds = findUnsupportedOpenClawChannelIds(
+      openClawConfigHealth.configuredChannelIds,
+    );
+    if (unsupportedConfiguredChannelIds.length > 0) {
+      throw new Error(
+        `Desktop startup evidence contains unsupported configured OpenClaw channel ids at ${evidencePath}: ${unsupportedConfiguredChannelIds.join(', ')}.`,
+      );
+    }
+    const unsupportedModelByChannelIds = findUnsupportedOpenClawChannelIds(
+      openClawConfigHealth.modelByChannelIds,
+    );
+    if (unsupportedModelByChannelIds.length > 0) {
+      throw new Error(
+        `Desktop startup evidence contains unsupported OpenClaw modelByChannel ids at ${evidencePath}: ${unsupportedModelByChannelIds.join(', ')}.`,
+      );
+    }
+    if (openClawConfigHealth.unknownChannelIds.length > 0) {
+      throw new Error(
+        `Desktop startup evidence contains unknown OpenClaw channel ids after sanitation at ${evidencePath}: ${openClawConfigHealth.unknownChannelIds.join(', ')}.`,
+      );
+    }
+    if (openClawConfigHealth.malformedChannelIds.length > 0) {
+      throw new Error(
+        `Desktop startup evidence contains malformed OpenClaw channel ids after sanitation at ${evidencePath}: ${openClawConfigHealth.malformedChannelIds.join(', ')}.`,
+      );
+    }
+    if (openClawConfigHealth.unknownModelByChannelIds.length > 0) {
+      throw new Error(
+        `Desktop startup evidence contains unknown OpenClaw modelByChannel ids after sanitation at ${evidencePath}: ${openClawConfigHealth.unknownModelByChannelIds.join(', ')}.`,
+      );
+    }
+    if (openClawConfigHealth.invalidModelByChannelIds.length > 0) {
+      throw new Error(
+        `Desktop startup evidence contains invalid OpenClaw modelByChannel ids after sanitation at ${evidencePath}: ${openClawConfigHealth.invalidModelByChannelIds.join(', ')}.`,
+      );
+    }
+    if (openClawConfigHealth.status !== 'ready' || !openClawConfigHealth.valid) {
+      throw new Error(
+        `Desktop startup evidence must prove OpenClaw channel config sanitation is ready and valid at ${evidencePath}.`,
+      );
+    }
+  }
 }
 
 function extractLocalAiProxyRuntime(evidence, evidencePath) {
@@ -303,6 +431,15 @@ function buildDesktopStartupSmokeChecks({
         ? 'desktop startup evidence proved the OpenClaw gateway websocket was dialable'
         : 'desktop startup evidence skipped OpenClaw gateway websocket checks because package profile excludes openclaw',
     },
+    ...(requiresBuiltInOpenClawEvidence
+      ? [
+        {
+          id: 'openclaw-config-health',
+          status: 'passed',
+          detail: 'desktop startup evidence proved OpenClaw channel config sanitation used packaged runtime metadata',
+        },
+      ]
+      : []),
     {
       id: 'local-ai-proxy-runtime',
       status: 'passed',
@@ -359,6 +496,7 @@ export function writeDesktopStartupSmokeReport({
     descriptorBrowserBaseUrl: String(evidence?.descriptor?.browserBaseUrl ?? '').trim(),
     builtInInstanceId: String(evidence?.builtInInstance?.id ?? '').trim(),
     builtInInstanceStatus: String(evidence?.builtInInstance?.status ?? '').trim(),
+    openClawConfigHealth: normalizeOpenClawConfigHealth(evidence?.openClawConfigHealth),
     localAiProxyRuntime,
     artifactRelativePaths: normalizeReleaseSmokeRelativePathArray(
       artifactRelativePaths,

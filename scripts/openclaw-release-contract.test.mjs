@@ -546,13 +546,13 @@ for (const { fixturePath, source } of activeOpenClawReleaseStandardDocSources) {
 }
 assert.deepEqual(
   releaseConfig.runtimeSupplementalPackages,
-  [],
+  ['@openclaw/feishu@2026.5.6', '@openclaw/qqbot@2026.5.6'],
   'openclaw shared release config must pin the prepared supplemental runtime packages',
 );
 assert.deepEqual(
   releaseConfig.runtimeSupplementalPackageExceptions,
   [],
-  'openclaw shared release config must keep prerelease exception metadata empty while no supplemental runtime packages are bundled',
+  'openclaw shared release config must keep prerelease exception metadata empty while only stable supplemental runtime packages are bundled',
 );
 assert.deepEqual(
   releaseConfig.runtimeRequirements?.requiredExternalRuntimes,

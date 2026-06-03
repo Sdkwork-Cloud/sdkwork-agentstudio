@@ -1045,8 +1045,7 @@ fn readable_openclaw_config_path(paths: &AppPaths) -> Result<PathBuf> {
 }
 
 fn active_openclaw_config_path(paths: &AppPaths) -> Result<PathBuf> {
-    KernelRuntimeAuthorityService::new()
-        .active_config_file_path("openclaw", paths)
+    KernelRuntimeAuthorityService::new().active_config_file_path("openclaw", paths)
 }
 
 fn verify_managed_state(paths: &AppPaths) -> OpenClawMirrorImportVerificationCheck {
@@ -2608,6 +2607,7 @@ mod tests {
         services::{
             local_ai_proxy::LocalAiProxyService,
             local_ai_proxy_snapshot::LOCAL_AI_PROXY_PROVIDER_CENTER_NAMESPACE,
+            openclaw_channel_config::write_test_openclaw_channel_metadata,
             openclaw_mirror_export::{
                 export_phase1_full_private_mirror, OpenClawMirrorExportRequest,
             },
@@ -4048,6 +4048,7 @@ mod tests {
             .join("openclaw.mjs");
 
         fs::create_dir_all(cli_path.parent().expect("cli parent")).expect("cli dir");
+        write_test_openclaw_channel_metadata(&runtime_dir);
         fs::write(
             &openclaw_config_file_path(paths),
             format!("{{\n  \"gateway\": {{\n    \"port\": {gateway_port}\n  }}\n}}\n"),
@@ -4082,6 +4083,7 @@ mod tests {
             .join("openclaw.mjs");
 
         fs::create_dir_all(cli_path.parent().expect("cli parent")).expect("cli dir");
+        write_test_openclaw_channel_metadata(&runtime_dir);
         fs::write(
             &openclaw_config_file_path(paths),
             format!("{{\n  \"gateway\": {{\n    \"port\": {gateway_port}\n  }}\n}}\n"),

@@ -1,11 +1,9 @@
 import * as React from 'react';
-import * as QRCode from 'qrcode';
 import { useTranslation } from 'react-i18next';
 import {
   BookOpen,
   ExternalLink,
   Keyboard,
-  LoaderCircle,
   QrCode,
   ShieldCheck,
   X,
@@ -41,6 +39,7 @@ import {
   localizeChannelOfficialLink,
   localizeChannelWorkspaceItem,
 } from './channelDefinitionLocalization';
+import { getChannelBindingGuide } from './channelBindingGuides';
 
 export interface ChannelWorkspaceField {
   key: string;
@@ -77,6 +76,24 @@ export interface ChannelWorkspaceTexts extends ChannelCatalogTexts {
   validationRequiredField: (fieldLabel: string) => string;
 }
 
+export type ChannelWorkspaceBindingSessionState =
+  | 'starting'
+  | 'awaiting_scan'
+  | 'connected'
+  | 'failed'
+  | 'unsupported';
+
+export interface ChannelWorkspaceBindingSession {
+  channelId: string;
+  state: ChannelWorkspaceBindingSessionState;
+  jobId?: string;
+  qrPayload?: string;
+  qrImageSrc?: string;
+  qrTerminalText?: string;
+  outputLines?: string[];
+  error?: string;
+}
+
 export interface ChannelWorkspaceProps {
   items: ChannelWorkspaceItem[];
   texts: ChannelWorkspaceTexts;
@@ -87,6 +104,7 @@ export interface ChannelWorkspaceProps {
   configFilePath?: string | null;
   error?: React.ReactNode;
   isSaving?: boolean;
+  bindingSession?: ChannelWorkspaceBindingSession | null;
   className?: string;
   drawerClassName?: string;
   resolveOfficialLink?: (channel: ChannelWorkspaceItem) => ChannelOfficialLink | null;
@@ -109,6 +127,7 @@ export interface ChannelWorkspaceProps {
     channel: ChannelWorkspaceItem,
     nextEnabled: boolean,
   ) => Promise<void> | void;
+  onStartBinding?: (channel: ChannelWorkspaceItem) => Promise<void> | void;
 }
 
 function deriveFieldValues(channel: ChannelWorkspaceItem) {
@@ -141,61 +160,6 @@ function getInputType(field: ChannelWorkspaceField) {
 
 type ChannelConnectionMode = 'qr' | 'manual';
 
-function supportsChannelQrConnection(channel: ChannelWorkspaceItem | null) {
-  return Boolean(channel && getChannelCatalogRegions(channel.id).includes('domestic'));
-}
-
-function buildChannelQrContent(channel: ChannelWorkspaceItem) {
-  return JSON.stringify({
-    kind: 'sdkwork-claw-channel-connect',
-    channelId: channel.id,
-    channelName: channel.name,
-    configurationMode: channel.configurationMode || 'required',
-  });
-}
-
-function useChannelQrImage(channel: ChannelWorkspaceItem | null) {
-  const [qrImageSrc, setQrImageSrc] = React.useState('');
-
-  React.useEffect(() => {
-    let disposed = false;
-
-    if (!channel || !supportsChannelQrConnection(channel)) {
-      setQrImageSrc('');
-      return () => {
-        disposed = true;
-      };
-    }
-
-    setQrImageSrc('');
-    void QRCode.toDataURL(buildChannelQrContent(channel), {
-      errorCorrectionLevel: 'M',
-      margin: 1,
-      scale: 8,
-      color: {
-        dark: '#111827',
-        light: '#ffffff',
-      },
-    })
-      .then((nextImageSrc) => {
-        if (!disposed) {
-          setQrImageSrc(nextImageSrc);
-        }
-      })
-      .catch(() => {
-        if (!disposed) {
-          setQrImageSrc('');
-        }
-      });
-
-    return () => {
-      disposed = true;
-    };
-  }, [channel]);
-
-  return qrImageSrc;
-}
-
 export function ChannelWorkspace({
   items,
   texts,
@@ -206,6 +170,7 @@ export function ChannelWorkspace({
   configFilePath,
   error,
   isSaving = false,
+  bindingSession = null,
   className,
   drawerClassName,
   resolveOfficialLink = (channel) => getChannelOfficialLink(channel.id),
@@ -215,6 +180,7 @@ export function ChannelWorkspace({
   onSave,
   onDeleteConfiguration,
   onToggleEnabled,
+  onStartBinding,
 }: ChannelWorkspaceProps) {
   const { t } = useTranslation();
   const [validationError, setValidationError] = React.useState<string | null>(null);
@@ -242,9 +208,10 @@ export function ChannelWorkspace({
     () => localizedItems.find((channel) => channel.id === selectedChannelId) || null,
     [localizedItems, selectedChannelId],
   );
-  const selectedChannelSupportsQrConnection = supportsChannelQrConnection(selectedChannel);
-  const selectedQrImageSrc = useChannelQrImage(selectedChannelSupportsQrConnection ? selectedChannel : null);
-  const shouldShowCredentialsPanel = !selectedChannelSupportsQrConnection || selectedConnectionMode === 'manual';
+  const selectedBindingGuide = selectedChannel ? getChannelBindingGuide(selectedChannel.id) : null;
+  const selectedBindingSession =
+    selectedChannel && bindingSession?.channelId === selectedChannel.id ? bindingSession : null;
+  const shouldShowCredentialsPanel = !selectedBindingGuide || selectedConnectionMode === 'manual';
 
   const selectedValues = React.useMemo<Record<string, string>>(() => {
     if (!selectedChannel) {
@@ -304,6 +271,13 @@ export function ChannelWorkspace({
     all: regionGroups.all.length,
   };
   const regionEmptyText = getChannelCatalogRegionEmptyText(t, activeRegion);
+  const bindingSessionStatusLabel =
+    selectedBindingSession?.state === 'connected'
+      ? texts.statusConnected
+      : selectedBindingSession?.state === 'failed' ||
+          selectedBindingSession?.state === 'unsupported'
+        ? texts.statusDisconnected
+        : texts.qrConnectionPending;
 
   const handleOpenSelectedOfficialLink = () => {
     if (!selectedChannel || !selectedChannelOfficialLink) {
@@ -342,6 +316,21 @@ export function ChannelWorkspace({
     }
 
     setValidationError(null);
+    if (selectedBindingGuide) {
+      if (onStartBinding) {
+        void onStartBinding(selectedChannel);
+        return;
+      }
+
+      if (selectedBindingGuide.primaryAction === 'officialLink' && selectedChannelOfficialLink) {
+        handleOpenSelectedOfficialLink();
+        return;
+      }
+
+      setSelectedConnectionMode('manual');
+      return;
+    }
+
     if (selectedChannel.fields.length === 0 && onToggleEnabled) {
       void onToggleEnabled(selectedChannel, true);
       return;
@@ -500,7 +489,7 @@ export function ChannelWorkspace({
                 ) : null}
               </div>
 
-              {selectedChannelSupportsQrConnection && selectedConnectionMode === 'qr' ? (
+              {selectedBindingGuide && selectedConnectionMode === 'qr' ? (
                 <div
                   data-slot="channel-workspace-qr-panel"
                   className="rounded-[24px] border border-zinc-200/80 bg-white/92 p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.32)] dark:border-zinc-800 dark:bg-zinc-900/86"
@@ -517,27 +506,74 @@ export function ChannelWorkspace({
                     </div>
                     <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
                       <ShieldCheck className="h-3.5 w-3.5" />
-                      {texts.qrConnectionPending}
+                      {bindingSessionStatusLabel}
                     </span>
                   </div>
 
                   <div className="mt-5 rounded-[22px] bg-zinc-50 p-4 dark:bg-zinc-950/55">
-                    <div className="mx-auto aspect-square w-full max-w-[220px] rounded-[18px] bg-white p-3 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.45)]">
-                      {selectedQrImageSrc ? (
+                    {selectedBindingSession?.qrImageSrc ? (
+                      <div className="mb-4 flex justify-center">
                         <img
-                          src={selectedQrImageSrc}
+                          data-slot="channel-workspace-binding-qr-image"
+                          src={selectedBindingSession.qrImageSrc}
                           alt={texts.qrConnectionAlt}
-                          className="h-full w-full object-contain"
+                          className="h-56 w-56 rounded-[18px] border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800"
                         />
-                      ) : (
-                        <div className="flex h-full items-center justify-center rounded-[14px] bg-zinc-100 text-zinc-400">
-                          <LoaderCircle className="h-7 w-7 animate-spin" />
+                      </div>
+                    ) : null}
+                    {selectedBindingSession?.qrTerminalText ? (
+                      <pre
+                        data-slot="channel-workspace-binding-terminal-qr"
+                        className="mb-4 overflow-auto rounded-[18px] border border-zinc-200 bg-white p-4 text-center font-mono text-[10px] leading-[10px] text-zinc-950 shadow-sm dark:border-zinc-800 dark:bg-black dark:text-zinc-100"
+                      >
+                        {selectedBindingSession.qrTerminalText}
+                      </pre>
+                    ) : null}
+                    {selectedBindingSession?.error ? (
+                      <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                        {selectedBindingSession.error}
+                      </div>
+                    ) : null}
+                    <ol className="space-y-3">
+                      {selectedBindingGuide.steps.map((step, index) => (
+                        <li
+                          key={`${selectedChannel.id}-binding-${index}`}
+                          data-slot="channel-workspace-binding-step"
+                          className="flex gap-3 text-sm text-zinc-600 dark:text-zinc-300"
+                        >
+                          <span className="shrink-0 font-mono font-bold text-zinc-400">
+                            {index + 1}.
+                          </span>
+                          <span className="leading-relaxed">{t(step)}</span>
+                        </li>
+                      ))}
+                    </ol>
+                    <div
+                      data-slot="channel-workspace-binding-command"
+                      className="mt-4 overflow-hidden rounded-[18px] border border-zinc-200 bg-zinc-950 text-zinc-100 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.45)] dark:border-zinc-800 dark:bg-black"
+                    >
+                      {selectedBindingGuide.commands.map((command) => (
+                        <div
+                          key={command}
+                          className="border-b border-white/10 px-4 py-3 font-mono text-xs leading-5 last:border-b-0"
+                        >
+                          {command}
                         </div>
-                      )}
+                      ))}
                     </div>
                     <p className="mx-auto mt-4 max-w-[18rem] text-center text-sm leading-6 text-zinc-500 dark:text-zinc-400">
                       {texts.qrConnectionHint}
                     </p>
+                    {selectedBindingSession?.outputLines?.length ? (
+                      <div
+                        data-slot="channel-workspace-binding-output"
+                        className="mt-4 max-h-40 overflow-auto rounded-[18px] border border-zinc-200 bg-white px-4 py-3 font-mono text-xs leading-5 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
+                      >
+                        {selectedBindingSession.outputLines.map((line, index) => (
+                          <div key={`${selectedChannel.id}-binding-output-${index}`}>{line}</div>
+                        ))}
+                      </div>
+                    ) : null}
                     <button
                       type="button"
                       data-slot="channel-workspace-qr-manual-action"
@@ -620,7 +656,7 @@ export function ChannelWorkspace({
             className="border-t border-zinc-200/70 bg-white/92 p-6 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/82"
           >
             <div className="flex flex-col gap-3">
-              {selectedChannelSupportsQrConnection && selectedConnectionMode === 'qr' ? (
+              {selectedBindingGuide && selectedConnectionMode === 'qr' ? (
                 <Button onClick={handleQrConnect} disabled={isSaving} className="w-full">
                   {isSaving ? texts.savingAction : texts.actionConnect}
                 </Button>

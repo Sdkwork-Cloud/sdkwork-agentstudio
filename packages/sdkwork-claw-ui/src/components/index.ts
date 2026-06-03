@@ -21,5 +21,6 @@ export * from './TaskRuntimeSnapshotPanel';
 export * from './TaskStudioTabs';
 export * from './Textarea';
 export * from './channelCatalogMeta';
+export * from './channelBindingGuides';
 export * from './channelDefinitionLocalization';
 export * from './taskCatalogMeta';

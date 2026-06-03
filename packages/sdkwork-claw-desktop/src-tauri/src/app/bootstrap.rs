@@ -1025,11 +1025,12 @@ fn build_tray_menu<R: Runtime>(
 #[cfg(test)]
 mod tests {
     use super::{
-        activate_bundled_openclaw_from_resource_root, build_tray_menu_spec, resolve_tray_language,
-        retry_bundled_openclaw_activation, should_activate_bundled_openclaw,
-        should_prevent_main_window_close, tray_action_for_menu_id, TrayAction, TrayLanguage,
-        TrayMenuEntry, TRAY_MENU_ID_QUIT_APP, TRAY_MENU_ID_RESTART_BACKGROUND_SERVICES,
-        TRAY_MENU_ID_RESTART_OPENCLAW_GATEWAY, TRAY_MENU_ID_SHOW_WINDOW,
+        activate_bundled_openclaw_from_resource_root, build_tray_menu_spec,
+        finalize_openclaw_activation, resolve_tray_language, retry_bundled_openclaw_activation,
+        should_activate_bundled_openclaw, should_prevent_main_window_close,
+        tray_action_for_menu_id, TrayAction, TrayLanguage, TrayMenuEntry, TRAY_MENU_ID_QUIT_APP,
+        TRAY_MENU_ID_RESTART_BACKGROUND_SERVICES, TRAY_MENU_ID_RESTART_OPENCLAW_GATEWAY,
+        TRAY_MENU_ID_SHOW_WINDOW,
     };
     use crate::framework::{
         config::AppConfig,
@@ -1040,7 +1041,8 @@ mod tests {
         paths::resolve_paths_for_root,
         services::{
             local_ai_proxy::config::default_local_ai_proxy_public_host,
-            openclaw_runtime::BundledOpenClawManifest,
+            openclaw_channel_config::write_test_openclaw_channel_metadata,
+            openclaw_runtime::{ActivatedOpenClawRuntime, BundledOpenClawManifest},
             studio::StudioInstanceStatus,
             supervisor::{ManagedServiceLifecycle, SERVICE_ID_OPENCLAW_GATEWAY},
         },
@@ -1665,11 +1667,32 @@ mod tests {
         let paths = resolve_paths_for_root(root.path()).expect("paths");
         let logger = init_logger(&paths).expect("logger");
         let context = FrameworkContext::from_parts(paths.clone(), AppConfig::default(), logger);
-        let resource_root = create_failing_bundled_gateway_fixture(root.path());
-        seed_built_in_openclaw_gateway_port(&paths, reserve_available_loopback_port());
+        let install_dir = paths.openclaw_runtime_dir.join("broken-gateway-runtime");
+        let runtime_dir = install_dir.join("runtime");
+        let cli_path = runtime_dir
+            .join("package")
+            .join("node_modules")
+            .join("openclaw")
+            .join("openclaw.mjs");
+        fs::create_dir_all(&runtime_dir).expect("runtime dir");
+        let gateway_port = reserve_available_loopback_port();
+        seed_built_in_openclaw_gateway_port(&paths, gateway_port);
+        let runtime = ActivatedOpenClawRuntime {
+            install_key: "broken-gateway-runtime".to_string(),
+            install_dir,
+            runtime_dir,
+            node_path: std::env::current_exe().expect("test executable"),
+            cli_path,
+            home_dir: paths.user_root.clone(),
+            state_dir: paths.openclaw_root_dir.clone(),
+            workspace_dir: paths.openclaw_workspace_dir.clone(),
+            config_path: openclaw_config_file_path(&paths),
+            gateway_port,
+            gateway_auth_token: "test-token".to_string(),
+        };
 
-        let error = activate_bundled_openclaw_from_resource_root(&context, &resource_root)
-            .expect_err("activate bundled openclaw should fail");
+        let error = finalize_openclaw_activation(&context, runtime)
+            .expect_err("finalize bundled openclaw should fail when gateway runtime is incomplete");
 
         assert!(error.to_string().contains("gateway"));
 
@@ -1970,6 +1993,7 @@ setInterval(() => {}, 1000);
             .join("openclaw.mjs");
 
         fs::create_dir_all(cli_path.parent().expect("cli parent")).expect("cli dir");
+        write_test_openclaw_channel_metadata(&runtime_root);
         fs::write(&cli_path, bundled_gateway_fixture_cli_source()).expect("cli file");
 
         let manifest = BundledOpenClawManifest {
@@ -2009,6 +2033,7 @@ setInterval(() => {}, 1000);
             .join("openclaw.mjs");
 
         fs::create_dir_all(cli_path.parent().expect("cli parent")).expect("cli dir");
+        write_test_openclaw_channel_metadata(&runtime_root);
         fs::write(&cli_path, bundled_gateway_fixture_cli_source()).expect("cli file");
 
         let manifest = BundledOpenClawManifest {
@@ -2101,82 +2126,6 @@ setInterval(() => {}, 1000);
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>()
-    }
-
-    #[cfg(windows)]
-    fn create_failing_bundled_gateway_fixture(root: &std::path::Path) -> std::path::PathBuf {
-        let resource_root = root.join("bundled-openclaw-failing");
-        let runtime_root = resource_root.join("runtime");
-        let cli_path = runtime_root
-            .join("package")
-            .join("node_modules")
-            .join("openclaw")
-            .join("openclaw.mjs");
-
-        fs::create_dir_all(cli_path.parent().expect("cli parent")).expect("cli dir");
-        fs::write(&cli_path, "process.exit(1);\n").expect("cli file");
-
-        let manifest = BundledOpenClawManifest {
-            schema_version: 2,
-            runtime_id: "openclaw".to_string(),
-            openclaw_version: bundled_openclaw_version().to_string(),
-            required_external_runtimes: vec!["nodejs".to_string()],
-            required_external_runtime_versions: std::collections::BTreeMap::from([(
-                "nodejs".to_string(),
-                required_openclaw_node_version().to_string(),
-            )]),
-            platform: normalized_openclaw_platform().to_string(),
-            arch: normalized_openclaw_arch().to_string(),
-            cli_relative_path: "runtime/package/node_modules/openclaw/openclaw.mjs".to_string(),
-        };
-
-        fs::write(
-            resource_root.join("manifest.json"),
-            serde_json::to_string_pretty(&manifest).expect("manifest json"),
-        )
-        .expect("manifest file");
-        write_test_runtime_sidecar_manifest(&runtime_root, &manifest);
-
-        resource_root
-    }
-
-    #[cfg(not(windows))]
-    fn create_failing_bundled_gateway_fixture(root: &std::path::Path) -> std::path::PathBuf {
-        use std::os::unix::fs::PermissionsExt;
-
-        let resource_root = root.join("bundled-openclaw-failing");
-        let runtime_root = resource_root.join("runtime");
-        let cli_path = runtime_root
-            .join("package")
-            .join("node_modules")
-            .join("openclaw")
-            .join("openclaw.mjs");
-
-        fs::create_dir_all(cli_path.parent().expect("cli parent")).expect("cli dir");
-        fs::write(&cli_path, "process.exit(1);\n").expect("cli file");
-
-        let manifest = BundledOpenClawManifest {
-            schema_version: 2,
-            runtime_id: "openclaw".to_string(),
-            openclaw_version: bundled_openclaw_version().to_string(),
-            required_external_runtimes: vec!["nodejs".to_string()],
-            required_external_runtime_versions: std::collections::BTreeMap::from([(
-                "nodejs".to_string(),
-                required_openclaw_node_version().to_string(),
-            )]),
-            platform: normalized_openclaw_platform().to_string(),
-            arch: normalized_openclaw_arch().to_string(),
-            cli_relative_path: "runtime/package/node_modules/openclaw/openclaw.mjs".to_string(),
-        };
-
-        fs::write(
-            resource_root.join("manifest.json"),
-            serde_json::to_string_pretty(&manifest).expect("manifest json"),
-        )
-        .expect("manifest file");
-        write_test_runtime_sidecar_manifest(&runtime_root, &manifest);
-
-        resource_root
     }
 
     fn normalized_openclaw_platform() -> &'static str {

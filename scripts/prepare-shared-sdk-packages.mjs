@@ -15,6 +15,9 @@ const __filename = fileURLToPath(import.meta.url);
 export const resolveWorkspaceRootDir = resolveWorkspaceRootDirImpl;
 export { resolveCanonicalWorkspaceRootDir };
 
+export const OPTIONAL_SHARED_SDK_PACKAGE_PREPARATION_ENV_VAR =
+  'SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS';
+
 export function createSharedSdkPackageContext({
   currentWorkingDir = process.cwd(),
   env = process.env,
@@ -144,6 +147,29 @@ function hasOptionalSharedImSdkSources(context) {
 
 function hasOptionalPcReactSharedSources(context) {
   return exists(context.sharedCorePcReactRoot) && exists(context.sharedLocalApiProxyRoot);
+}
+
+function parseBooleanEnvFlag(env, envVarName) {
+  const rawValue = env?.[envVarName];
+  if (typeof rawValue !== 'string' || rawValue.trim() === '') {
+    return false;
+  }
+
+  const normalizedValue = rawValue.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalizedValue)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalizedValue)) {
+    return false;
+  }
+
+  throw new Error(
+    `Unsupported ${envVarName} value "${rawValue}". Expected one of: true, false, 1, 0, yes, no, on, off.`,
+  );
+}
+
+export function shouldPrepareOptionalSharedSdkPackages(env = process.env) {
+  return parseBooleanEnvFlag(env, OPTIONAL_SHARED_SDK_PACKAGE_PREPARATION_ENV_VAR);
 }
 
 function readPackageManifest(packageRoot) {
@@ -347,6 +373,7 @@ export function prepareSharedSdkPackages({
 
   assertPackageRootExists(context.sharedSdkCommonRoot, '@sdkwork/sdk-common');
   assertPackageRootExists(context.sharedAppSdkRoot, '@sdkwork/app-sdk');
+  const prepareOptionalSharedSdkPackages = shouldPrepareOptionalSharedSdkPackages(env);
 
   const needsSharedSdkCommonBuild = shouldBuildPackage(context.sharedSdkCommonRoot);
   ensurePackageDependencyLinks(context.sharedSdkCommonRoot, context.workspaceRoot, {
@@ -364,7 +391,7 @@ export function prepareSharedSdkPackages({
   });
   ensurePackageBuilt('@sdkwork/app-sdk', context.sharedAppSdkRoot, context.workspaceRoot, sharedSdkBuildEnv);
 
-  if (hasOptionalPcReactSharedSources(context)) {
+  if (prepareOptionalSharedSdkPackages && hasOptionalPcReactSharedSources(context)) {
     ensurePackageDependencyLinks(context.sharedCorePcReactRoot, context.workspaceRoot, {
       includeDependencies: true,
       includeDevDependencies: shouldBuildPackage(context.sharedCorePcReactRoot),
@@ -384,6 +411,14 @@ export function prepareSharedSdkPackages({
         '@sdkwork/core-pc-react': context.sharedCorePcReactRoot,
       },
     });
+  } else if (!prepareOptionalSharedSdkPackages) {
+    console.log(
+      `[prepare-shared-sdk-packages] Skipping optional shared source package preparation because ${OPTIONAL_SHARED_SDK_PACKAGE_PREPARATION_ENV_VAR} is not enabled.`,
+    );
+  }
+
+  if (!prepareOptionalSharedSdkPackages) {
+    return context;
   }
 
   if (!hasOptionalSharedImSdkSources(context)) {

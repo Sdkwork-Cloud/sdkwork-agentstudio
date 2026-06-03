@@ -64,6 +64,19 @@ function buildDesktopStartupEvidence({
   defaultEnabledKernelIds = ['openclaw'],
   builtInInstanceId = BUILT_IN_INSTANCE_ID,
   builtInInstanceStatus = 'online',
+  openClawConfigHealth = {
+    status: 'ready',
+    valid: true,
+    runtimeMetadataAvailable: true,
+    configReadable: true,
+    supportedChannelIds: ['qqbot', 'feishu', 'imessage', 'irc', 'matrix', 'mattermost', 'signal', 'slack', 'telegram'],
+    configuredChannelIds: ['telegram'],
+    unknownChannelIds: [],
+    malformedChannelIds: [],
+    modelByChannelIds: ['telegram'],
+    unknownModelByChannelIds: [],
+    invalidModelByChannelIds: [],
+  },
   localAiProxy = {
     lifecycle: 'running',
     messageCaptureEnabled: true,
@@ -159,6 +172,7 @@ function buildDesktopStartupEvidence({
       isBuiltIn: true,
       isDefault: true,
     },
+    openClawConfigHealth,
     readinessEvidence: {
       hostLifecycleReady: true,
       gatewayInvokeCapabilityAvailable: true,
@@ -241,6 +255,19 @@ test('desktop startup smoke validates captured startup evidence and writes a str
     assert.equal(smokeReport.descriptorBrowserBaseUrl, 'http://127.0.0.1:19797');
     assert.equal(smokeReport.builtInInstanceId, BUILT_IN_INSTANCE_ID);
     assert.equal(smokeReport.builtInInstanceStatus, 'online');
+    assert.deepEqual(smokeReport.openClawConfigHealth, {
+      status: 'ready',
+      valid: true,
+      runtimeMetadataAvailable: true,
+      configReadable: true,
+      supportedChannelIds: ['qqbot', 'feishu', 'imessage', 'irc', 'matrix', 'mattermost', 'signal', 'slack', 'telegram'],
+      configuredChannelIds: ['telegram'],
+      unknownChannelIds: [],
+      malformedChannelIds: [],
+      modelByChannelIds: ['telegram'],
+      unknownModelByChannelIds: [],
+      invalidModelByChannelIds: [],
+    });
     assert.deepEqual(
       smokeReport.localAiProxyRuntime,
       {
@@ -264,6 +291,7 @@ test('desktop startup smoke validates captured startup evidence and writes a str
         'runtime-readiness',
         'built-in-instance',
         'gateway-websocket',
+        'openclaw-config-health',
         'local-ai-proxy-runtime',
       ],
     );
@@ -488,6 +516,186 @@ test('desktop startup smoke rejects legacy local-built-in OpenClaw evidence for 
   }
 });
 
+test('desktop startup smoke rejects OpenClaw packages without channel config sanitation evidence', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-startup-evidence.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-config-health-missing-'));
+  const releaseAssetsDir = path.join(tempRoot, 'release-assets');
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+
+  try {
+    writeArtifactFile(releaseAssetsDir, artifactRelativePath);
+    writeDesktopManifest({
+      releaseAssetsDir,
+      platform: 'windows',
+      arch: 'x64',
+      artifacts: [
+        {
+          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          relativePath: artifactRelativePath,
+          family: 'desktop',
+          platform: 'windows',
+          arch: 'x64',
+          kind: 'installer',
+          sha256: 'synthetic',
+          size: 17,
+        },
+      ],
+    });
+
+    const evidence = buildDesktopStartupEvidence();
+    delete evidence.openClawConfigHealth;
+    writeJsonFile(
+      smoke.resolveCapturedDesktopStartupEvidencePath({
+        releaseAssetsDir,
+        platform: 'windows',
+        arch: 'x64',
+      }),
+      evidence,
+    );
+
+    await assert.rejects(
+      () => smoke.smokeDesktopStartupEvidence({
+        releaseAssetsDir,
+        platform: 'windows',
+        arch: 'x64',
+      }),
+      /OpenClaw channel config sanitation evidence/i,
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop startup smoke rejects OpenClaw packages with stale channel ids in config health evidence', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-startup-evidence.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-config-health-stale-'));
+  const releaseAssetsDir = path.join(tempRoot, 'release-assets');
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+
+  try {
+    writeArtifactFile(releaseAssetsDir, artifactRelativePath);
+    writeDesktopManifest({
+      releaseAssetsDir,
+      platform: 'windows',
+      arch: 'x64',
+      artifacts: [
+        {
+          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          relativePath: artifactRelativePath,
+          family: 'desktop',
+          platform: 'windows',
+          arch: 'x64',
+          kind: 'installer',
+          sha256: 'synthetic',
+          size: 17,
+        },
+      ],
+    });
+
+    writeJsonFile(
+      smoke.resolveCapturedDesktopStartupEvidencePath({
+        releaseAssetsDir,
+        platform: 'windows',
+        arch: 'x64',
+      }),
+      buildDesktopStartupEvidence({
+        openClawConfigHealth: {
+          status: 'degraded',
+          valid: false,
+          runtimeMetadataAvailable: true,
+          configReadable: true,
+          supportedChannelIds: ['telegram', 'slack'],
+          configuredChannelIds: ['telegram', 'qq'],
+          unknownChannelIds: ['qq'],
+          malformedChannelIds: [],
+          modelByChannelIds: [],
+          unknownModelByChannelIds: [],
+          invalidModelByChannelIds: [],
+        },
+      }),
+    );
+
+    await assert.rejects(
+      () => smoke.smokeDesktopStartupEvidence({
+        releaseAssetsDir,
+        platform: 'windows',
+        arch: 'x64',
+      }),
+      /unsupported configured OpenClaw channel ids|unknown OpenClaw channel ids/i,
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('desktop startup smoke rejects OpenClaw packages whose supported channel evidence includes retired channel ids', async () => {
+  const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-startup-evidence.mjs');
+  const smoke = await import(pathToFileURL(smokePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-config-health-supported-stale-'));
+  const releaseAssetsDir = path.join(tempRoot, 'release-assets');
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+
+  try {
+    writeArtifactFile(releaseAssetsDir, artifactRelativePath);
+    writeDesktopManifest({
+      releaseAssetsDir,
+      platform: 'windows',
+      arch: 'x64',
+      artifacts: [
+        {
+          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          relativePath: artifactRelativePath,
+          family: 'desktop',
+          platform: 'windows',
+          arch: 'x64',
+          kind: 'installer',
+          sha256: 'synthetic',
+          size: 17,
+        },
+      ],
+    });
+
+    writeJsonFile(
+      smoke.resolveCapturedDesktopStartupEvidencePath({
+        releaseAssetsDir,
+        platform: 'windows',
+        arch: 'x64',
+      }),
+      buildDesktopStartupEvidence({
+        openClawConfigHealth: {
+          status: 'ready',
+          valid: true,
+          runtimeMetadataAvailable: true,
+          configReadable: true,
+          supportedChannelIds: ['telegram', 'qq'],
+          configuredChannelIds: ['telegram'],
+          unknownChannelIds: [],
+          malformedChannelIds: [],
+          modelByChannelIds: [],
+          unknownModelByChannelIds: [],
+          invalidModelByChannelIds: [],
+        },
+      }),
+    );
+
+    await assert.rejects(
+      () => smoke.smokeDesktopStartupEvidence({
+        releaseAssetsDir,
+        platform: 'windows',
+        arch: 'x64',
+      }),
+      /unsupported OpenClaw channel ids in packaged runtime metadata/i,
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('desktop startup smoke accepts hermes-only desktop packages without managed built-in OpenClaw evidence', async () => {
   const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-desktop-startup-evidence.mjs');
   const smoke = await import(pathToFileURL(smokePath).href);
@@ -528,6 +736,7 @@ test('desktop startup smoke accepts hermes-only desktop packages without managed
     evidence.openClawRuntime = null;
     evidence.openClawGateway = null;
     evidence.builtInInstance = null;
+    evidence.openClawConfigHealth = null;
     evidence.readinessEvidence.gatewayWebsocketProbeSupported = false;
     evidence.readinessEvidence.gatewayWebsocketDialable = false;
 

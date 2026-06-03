@@ -59,36 +59,54 @@ runTest('ChannelWorkspace removes leftover hardcoded English drawer copy and rou
   assert.match(source, /texts\.validationRequiredField\(missingField\.label\)/);
 });
 
-runTest('ChannelWorkspace gives domestic channels a QR-first connection panel with a manual configuration fallback', () => {
+runTest('ChannelWorkspace gives documented scan-capable channels a command-first connection panel with manual fallback', () => {
   const source = readFileSync(resolve(import.meta.dirname, 'ChannelWorkspace.tsx'), 'utf8');
 
-  assert.match(source, /import \* as QRCode from 'qrcode'/);
   assert.match(source, /QrCode/);
   assert.match(source, /Keyboard/);
-  assert.match(source, /supportsChannelQrConnection/);
-  assert.match(source, /selectedChannelSupportsQrConnection/);
+  assert.match(source, /getChannelBindingGuide/);
+  assert.match(source, /selectedBindingGuide/);
   assert.match(source, /selectedConnectionMode === 'qr'/);
   assert.match(source, /data-slot="channel-workspace-qr-panel"/);
+  assert.match(source, /data-slot="channel-workspace-binding-command"/);
+  assert.match(source, /data-slot="channel-workspace-binding-step"/);
   assert.match(source, /data-slot="channel-workspace-qr-manual-action"/);
   assert.match(source, /texts\.qrConnectionTitle/);
   assert.match(source, /texts\.manualConfigurationAction/);
   assert.match(source, /setSelectedConnectionMode\('manual'\)/);
+  assert.doesNotMatch(source, /buildChannelQrContent/);
+  assert.doesNotMatch(source, /QRCode\.toDataURL/);
 });
 
-runTest('ChannelWorkspace keeps credentials hidden until domestic QR setup switches to manual entry', () => {
+runTest('ChannelWorkspace keeps credentials hidden until scan-capable setup switches to manual entry', () => {
   const source = readFileSync(resolve(import.meta.dirname, 'ChannelWorkspace.tsx'), 'utf8');
 
-  assert.match(source, /const shouldShowCredentialsPanel = !selectedChannelSupportsQrConnection \|\| selectedConnectionMode === 'manual'/);
+  assert.match(source, /const shouldShowCredentialsPanel = !selectedBindingGuide \|\| selectedConnectionMode === 'manual'/);
   assert.match(source, /\{shouldShowCredentialsPanel \? \(/);
   assert.match(source, /data-slot="channel-workspace-credentials-panel"/);
 });
 
-runTest('ChannelWorkspace does not submit required manual fields while the domestic QR panel is still active', () => {
+runTest('ChannelWorkspace opens documented binding destinations without submitting manual fields while scan setup is active', () => {
   const source = readFileSync(resolve(import.meta.dirname, 'ChannelWorkspace.tsx'), 'utf8');
 
   assert.match(source, /const handleQrConnect = \(\) =>/);
-  assert.match(source, /selectedChannel\.fields\.length === 0 && onToggleEnabled/);
+  assert.match(source, /onStartBinding/);
+  assert.match(source, /bindingSession/);
+  assert.match(source, /void onStartBinding\(selectedChannel\)/);
   assert.match(source, /setSelectedConnectionMode\('manual'\)/);
-  assert.match(source, /selectedChannelSupportsQrConnection && selectedConnectionMode === 'qr'/);
+  assert.match(source, /selectedBindingGuide && selectedConnectionMode === 'qr'/);
   assert.match(source, /texts\.actionConnect/);
+});
+
+runTest('ChannelWorkspace renders real binding QR payloads and progress from the channel feature session', () => {
+  const source = readFileSync(resolve(import.meta.dirname, 'ChannelWorkspace.tsx'), 'utf8');
+
+  assert.match(source, /ChannelWorkspaceBindingSession/);
+  assert.match(source, /selectedBindingSession\?\.qrImageSrc/);
+  assert.match(source, /data-slot="channel-workspace-binding-qr-image"/);
+  assert.match(source, /data-slot="channel-workspace-binding-terminal-qr"/);
+  assert.match(source, /data-slot="channel-workspace-binding-output"/);
+  assert.match(source, /selectedBindingSession\?\.state === 'connected'/);
+  assert.match(source, /selectedBindingSession\?\.state === 'failed'/);
+  assert.doesNotMatch(source, /kind: sdkwork-claw-channel-connect/);
 });

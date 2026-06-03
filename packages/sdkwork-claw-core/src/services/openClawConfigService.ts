@@ -64,7 +64,9 @@ import type {
 import {
   buildOpenClawChannelSnapshotsFromConfigRoot,
   listOpenClawChannelDefinitions,
+  pruneRetiredOpenClawChannelConfigFromRoot,
   saveOpenClawChannelConfigurationToConfigRoot,
+  setOpenClawChannelEnabledInConfigRoot,
   type OpenClawChannelSnapshot,
   type SaveOpenClawChannelConfigurationDocumentInput,
 } from './openClawChannelConfigService.ts';
@@ -592,7 +594,10 @@ export function mutateOpenClawConfigDocument(
   raw: string,
   mutate: (root: JsonObject) => void,
 ) {
-  return mutateOpenClawConfigDocumentDelegate(raw, mutate);
+  return mutateOpenClawConfigDocumentDelegate(raw, (root) => {
+    mutate(root);
+    normalizeStructuredOpenClawConfigRootBeforeWrite(root);
+  });
 }
 
 export function saveOpenClawAgentInConfigDocument(raw: string, agent: OpenClawAgentInput) {
@@ -880,10 +885,15 @@ async function readConfigRoot(configFile: string) {
 
 async function writeConfigRoot(configFile: string, root: JsonObject) {
   const normalizedConfigFile = normalizePath(configFile);
+  normalizeStructuredOpenClawConfigRootBeforeWrite(root);
   canonicalizeOpenClawAgentPathsInConfigRoot(root);
   const content = `${stringifyJson5(root, 2)}\n`;
   await platform.writeFile(normalizedConfigFile, content);
   invalidateOpenClawConfigSnapshot(normalizedConfigFile);
+}
+
+function normalizeStructuredOpenClawConfigRootBeforeWrite(root: JsonObject) {
+  return pruneRetiredOpenClawChannelConfigFromRoot(root);
 }
 
 function readAuthCooldownsRoot(root: JsonObject) {
@@ -1119,8 +1129,12 @@ class OpenClawConfigService {
       throw createUnavailableOpenClawConfigDocumentError(normalizedConfigFile);
     }
 
+    const normalizedRaw = normalizeStructuredOpenClawConfigRootBeforeWrite(parsed)
+      ? `${stringifyJson5(parsed, 2)}\n`
+      : raw;
+
     await platform
-      .writeFile(normalizedConfigFile, raw)
+      .writeFile(normalizedConfigFile, normalizedRaw)
       .catch((error) => wrapUnavailableOpenClawConfigDocumentError(normalizedConfigFile, error));
     invalidateOpenClawConfigSnapshot(normalizedConfigFile);
   }
@@ -1402,9 +1416,7 @@ class OpenClawConfigService {
     enabled: boolean;
   }) {
     const root = await readConfigRoot(input.configFile);
-    const channelsRoot = ensureObject(root, 'channels');
-    const channelRoot = ensureObject(channelsRoot, input.channelId);
-    channelRoot.enabled = input.enabled;
+    setOpenClawChannelEnabledInConfigRoot(root, input);
     await writeConfigRoot(input.configFile, root);
 
     return (

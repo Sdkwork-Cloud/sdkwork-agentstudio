@@ -27,6 +27,13 @@ function read(relativePath) {
   return readFileSync(path.join(rootDir, relativePath), 'utf8');
 }
 
+function createPnpmCliFixture(prefix = 'claw-pnpm-cli-') {
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), prefix));
+  const pnpmCliPath = path.join(tempRoot, 'pnpm.cjs');
+  writeFileSync(pnpmCliPath, '#!/usr/bin/env node\n', 'utf8');
+  return { tempRoot, pnpmCliPath };
+}
+
 test('desktop release inputs keep the Windows Tauri installer config under version control', (t) => {
   const trackedFiles = spawnSync(
     'git',
@@ -97,6 +104,11 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
   assert.match(reusableWorkflow, /release-\$\{\{ inputs\.release_profile \}\}-\$\{\{ inputs\.package_profile \}\}-\$\{\{ inputs\.release_tag \}\}/);
   assert.match(reusableWorkflow, /packages:\s*write/);
   assert.match(reusableWorkflow, /SDKWORK_SHARED_SDK_MODE:\s*git/);
+  assert.match(
+    reusableWorkflow,
+    /SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS:\s*'true'/,
+    'release clean-room builds must explicitly opt into optional sibling shared SDK package maintenance',
+  );
   assert.match(
     rustToolchain,
     /channel\s*=\s*"1\.90\.0"/,
@@ -300,6 +312,7 @@ test('ci workflow authenticates private GitHub shared SDK source preparation', (
     ciWorkflow.match(/node scripts\/prepare-shared-sdk-git-sources\.mjs/g)?.length ?? 0;
 
   assert.match(ciWorkflow, /SDKWORK_SHARED_SDK_MODE:\s*git/);
+  assert.match(ciWorkflow, /SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS:\s*'true'/);
   assert.match(
     ciWorkflow,
     /SDKWORK_SHARED_SDK_GITHUB_TOKEN:\s*\$\{\{ secrets\.SDKWORK_SHARED_SDK_GITHUB_TOKEN \|\| github\.token \}\}/,
@@ -308,12 +321,11 @@ test('ci workflow authenticates private GitHub shared SDK source preparation', (
   assert.equal(gitSourcePreparationCount, 2);
 });
 
-test('desktop tauri build script stays clean of removed sdkwork-api-router artifact handling', () => {
+test('desktop tauri build script keeps generated bundled resources explicit', () => {
   const buildScript = read('packages/sdkwork-claw-desktop/src-tauri/build.rs');
 
   assert.match(buildScript, /generated\/bundled/);
   assert.match(buildScript, /placeholder\.txt/);
-  assert.doesNotMatch(buildScript, /sdkwork-api-router/);
 });
 
 test('root package exposes release helper scripts for desktop and asset packaging', () => {
@@ -793,6 +805,44 @@ test('shared sdk mode helper defaults to source mode and supports git trunk rele
   assert.equal(helper.resolveSharedSdkMode({ SDKWORK_SHARED_SDK_MODE: 'git' }), 'git');
   assert.equal(helper.isSharedSdkSourceMode({}), true);
   assert.equal(helper.isSharedSdkSourceMode({ SDKWORK_SHARED_SDK_MODE: 'git' }), false);
+});
+
+test('shared sdk package preparation exposes explicit opt-in for optional external shared source maintenance', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-packages.mjs');
+  assert.equal(existsSync(helperPath), true, 'missing scripts/prepare-shared-sdk-packages.mjs');
+
+  const helper = await import(pathToFileURL(helperPath).href);
+
+  assert.equal(
+    helper.OPTIONAL_SHARED_SDK_PACKAGE_PREPARATION_ENV_VAR,
+    'SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS',
+  );
+  assert.equal(typeof helper.shouldPrepareOptionalSharedSdkPackages, 'function');
+  assert.equal(helper.shouldPrepareOptionalSharedSdkPackages({}), false);
+  assert.equal(
+    helper.shouldPrepareOptionalSharedSdkPackages({
+      SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS: 'true',
+    }),
+    true,
+  );
+  assert.equal(
+    helper.shouldPrepareOptionalSharedSdkPackages({
+      SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS: '1',
+    }),
+    true,
+  );
+  assert.equal(
+    helper.shouldPrepareOptionalSharedSdkPackages({
+      SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS: 'false',
+    }),
+    false,
+  );
+  assert.throws(
+    () => helper.shouldPrepareOptionalSharedSdkPackages({
+      SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS: 'sometimes',
+    }),
+    /Unsupported SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS value "sometimes"/,
+  );
 });
 
 test('shared sdk package preparation resolves the workspace root consistently from repo root and package directories', async () => {
@@ -1292,6 +1342,189 @@ test('shared sdk package preparation can hydrate peer dependencies for linked so
   }
 });
 
+test('shared sdk package preparation skips optional external source package mutation by default', async () => {
+  const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-packages.mjs');
+  const helper = await import(pathToFileURL(helperPath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-optional-skip-'));
+  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const sharedSdkCommonRoot = path.join(
+    tempRoot,
+    'sdk',
+    'sdkwork-sdk-commons',
+    'sdkwork-sdk-common-typescript',
+  );
+  const sharedAppSdkRoot = path.join(
+    tempRoot,
+    'spring-ai-plus-app-api',
+    'sdkwork-sdk-app',
+    'sdkwork-app-sdk-typescript',
+  );
+  const sharedCorePcReactRoot = path.join(
+    tempRoot,
+    'apps',
+    'sdkwork-core',
+    'sdkwork-core-pc-react',
+  );
+  const sharedLocalApiProxyRoot = path.join(
+    tempRoot,
+    'apps',
+    'sdkwork-appbase',
+    'packages',
+    'pc-react',
+    'intelligence',
+    'sdkwork-local-api-proxy',
+  );
+  const sharedImSdkRoot = path.join(
+    tempRoot,
+    'apps',
+    'craw-chat',
+    'sdks',
+    'sdkwork-im-sdk',
+    'sdkwork-im-sdk-typescript',
+  );
+  const sharedRtcSdkRoot = path.join(
+    tempRoot,
+    'apps',
+    'craw-chat',
+    'sdks',
+    'sdkwork-rtc-sdk',
+    'sdkwork-rtc-sdk-typescript',
+  );
+
+  const writePackage = (packageRoot, manifest) => {
+    mkdirSync(path.join(packageRoot, 'dist'), { recursive: true });
+    writeFileSync(
+      path.join(packageRoot, 'package.json'),
+      JSON.stringify(manifest, null, 2),
+      'utf8',
+    );
+    writeFileSync(path.join(packageRoot, 'dist', 'index.js'), 'export {};\n', 'utf8');
+  };
+  const writeWorkspaceInstalledPackage = (packageName, version = '1.0.0') => {
+    const pnpmPackageDir = path.join(
+      workspaceRoot,
+      'node_modules',
+      '.pnpm',
+      `${packageName.replace('/', '+')}@${version}`,
+      'node_modules',
+      ...packageName.split('/'),
+    );
+
+    mkdirSync(pnpmPackageDir, { recursive: true });
+    writeFileSync(
+      path.join(pnpmPackageDir, 'package.json'),
+      JSON.stringify({ name: packageName, version }, null, 2),
+      'utf8',
+    );
+
+    return pnpmPackageDir;
+  };
+
+  mkdirSync(workspaceRoot, { recursive: true });
+  writeFileSync(
+    path.join(workspaceRoot, 'package.json'),
+    JSON.stringify({ name: '@sdkwork/claw-workspace' }, null, 2),
+    'utf8',
+  );
+  writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
+
+  writePackage(sharedSdkCommonRoot, { name: '@sdkwork/sdk-common', version: '1.0.2' });
+  writePackage(sharedAppSdkRoot, {
+    name: '@sdkwork/app-sdk',
+    version: '1.0.55',
+    dependencies: {
+      '@sdkwork/sdk-common': '^1.0.2',
+    },
+  });
+  writePackage(sharedCorePcReactRoot, {
+    name: '@sdkwork/core-pc-react',
+    version: '0.1.1',
+    dependencies: {
+      '@sdkwork/app-sdk': '^1.0.55',
+      '@sdkwork/im-sdk': '^0.1.1',
+      '@sdkwork/rtc-sdk': '^0.1.1',
+    },
+    peerDependencies: {
+      react: '>=18.2.0',
+      'react-dom': '>=18.2.0',
+    },
+  });
+  writePackage(sharedLocalApiProxyRoot, {
+    name: '@sdkwork/local-api-proxy',
+    version: '0.1.0',
+    peerDependencies: {
+      '@sdkwork/core-pc-react': '*',
+      react: '>=18.2.0 <20.0.0',
+      'react-dom': '>=18.2.0 <20.0.0',
+    },
+    peerDependenciesMeta: {
+      '@sdkwork/core-pc-react': {
+        optional: true,
+      },
+    },
+  });
+  writePackage(sharedImSdkRoot, {
+    name: '@sdkwork/im-sdk',
+    version: '0.1.1',
+    dependencies: {
+      '@sdkwork/sdk-common': '^1.0.2',
+    },
+  });
+  writePackage(sharedRtcSdkRoot, {
+    name: '@sdkwork/rtc-sdk',
+    version: '0.1.1',
+    peerDependencies: {
+      '@sdkwork/im-sdk': '^0.1.1',
+    },
+    peerDependenciesMeta: {
+      '@sdkwork/im-sdk': {
+        optional: true,
+      },
+    },
+  });
+
+  writeWorkspaceInstalledPackage('react', '19.2.4');
+  writeWorkspaceInstalledPackage('react-dom', '19.2.4');
+  writeWorkspaceInstalledPackage('@types/react', '19.2.14');
+  writeWorkspaceInstalledPackage('@types/react-dom', '19.2.3');
+
+  try {
+    helper.prepareSharedSdkPackages({
+      currentWorkingDir: workspaceRoot,
+      env: { SDKWORK_SHARED_SDK_MODE: 'source' },
+    });
+
+    assert.equal(
+      existsSync(path.join(sharedCorePcReactRoot, 'node_modules')),
+      false,
+      'default app builds must not mutate optional core pc react sibling sources',
+    );
+    assert.equal(
+      existsSync(path.join(sharedLocalApiProxyRoot, 'node_modules')),
+      false,
+      'default app builds must not mutate optional local api proxy sibling sources',
+    );
+    assert.equal(
+      existsSync(path.join(sharedImSdkRoot, 'node_modules')),
+      false,
+      'default app builds must not mutate optional IM SDK sibling sources',
+    );
+    assert.equal(
+      existsSync(path.join(sharedRtcSdkRoot, 'node_modules')),
+      false,
+      'default app builds must not mutate optional RTC SDK sibling sources',
+    );
+    assert.equal(
+      realpathSync(path.join(sharedAppSdkRoot, 'node_modules', '@sdkwork', 'sdk-common')),
+      realpathSync(sharedSdkCommonRoot),
+      'required app sdk preparation must remain active for app builds',
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('shared sdk package preparation hydrates local api proxy peers for clean release workspaces', async () => {
   const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-packages.mjs');
   const helper = await import(pathToFileURL(helperPath).href);
@@ -1409,7 +1642,10 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
   try {
     helper.prepareSharedSdkPackages({
       currentWorkingDir: workspaceRoot,
-      env: { SDKWORK_SHARED_SDK_MODE: 'source' },
+      env: {
+        SDKWORK_SHARED_SDK_MODE: 'source',
+        SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS: 'true',
+      },
     });
 
     assert.equal(
@@ -1581,7 +1817,10 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
   try {
     helper.prepareSharedSdkPackages({
       currentWorkingDir: workspaceRoot,
-      env: { SDKWORK_SHARED_SDK_MODE: 'source' },
+      env: {
+        SDKWORK_SHARED_SDK_MODE: 'source',
+        SDKWORK_PREPARE_OPTIONAL_SHARED_SDKS: 'true',
+      },
     });
 
     assert.equal(
@@ -2329,57 +2568,62 @@ test('desktop release build runner injects the supported Visual Studio generator
 
   const runner = await import(pathToFileURL(runnerPath).href);
   assert.equal(typeof runner.createDesktopReleaseBuildPlan, 'function');
+  const { tempRoot, pnpmCliPath } = createPnpmCliFixture('claw-release-pnpm-cli-');
 
-  const windowsPlan = runner.createDesktopReleaseBuildPlan({
-    platform: 'win32',
-    env: {},
-  });
-  const linuxPlan = runner.createDesktopReleaseBuildPlan({
-    platform: 'linux',
-    env: {},
-  });
+  try {
+    const windowsPlan = runner.createDesktopReleaseBuildPlan({
+      platform: 'win32',
+      env: { npm_execpath: pnpmCliPath },
+    });
+    const linuxPlan = runner.createDesktopReleaseBuildPlan({
+      platform: 'linux',
+      env: {},
+    });
 
-  assert.equal(windowsPlan.command, process.execPath);
-  assert.deepEqual(windowsPlan.args, [
-    path.join(path.dirname(process.execPath), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
-    '--filter',
-    '@sdkwork/claw-desktop',
-    'run',
-    'tauri:build',
-    '--',
-    '--profile',
-    'claw-studio',
-    '--package-profile',
-    'openclaw-only',
-    '--vite-mode',
-    'production',
-    '--bundles',
-    'nsis',
-  ]);
-  assert.equal(windowsPlan.env.CMAKE_GENERATOR, 'Visual Studio 17 2022');
-  assert.equal(windowsPlan.env.HOST_CMAKE_GENERATOR, 'Visual Studio 17 2022');
-  assert.equal(windowsPlan.shell, false);
+    assert.equal(windowsPlan.command, process.execPath);
+    assert.deepEqual(windowsPlan.args, [
+      pnpmCliPath,
+      '--filter',
+      '@sdkwork/claw-desktop',
+      'run',
+      'tauri:build',
+      '--',
+      '--profile',
+      'claw-studio',
+      '--package-profile',
+      'openclaw-only',
+      '--vite-mode',
+      'production',
+      '--bundles',
+      'nsis',
+    ]);
+    assert.equal(windowsPlan.env.CMAKE_GENERATOR, 'Visual Studio 17 2022');
+    assert.equal(windowsPlan.env.HOST_CMAKE_GENERATOR, 'Visual Studio 17 2022');
+    assert.equal(windowsPlan.shell, false);
 
-  assert.equal(linuxPlan.command, 'pnpm');
-  assert.deepEqual(linuxPlan.args, [
-    '--filter',
-    '@sdkwork/claw-desktop',
-    'run',
-    'tauri:build',
-    '--',
-    '--profile',
-    'claw-studio',
-    '--package-profile',
-    'openclaw-only',
-    '--vite-mode',
-    'production',
-    '--bundles',
-    'deb,rpm',
-  ]);
-  assert.equal(Object.hasOwn(linuxPlan.env, 'CMAKE_GENERATOR'), false);
-  assert.equal(windowsPlan.env.SDKWORK_VITE_MODE, 'production');
-  assert.equal(linuxPlan.env.SDKWORK_VITE_MODE, 'production');
-  assert.equal(linuxPlan.shell, false);
+    assert.equal(linuxPlan.command, 'pnpm');
+    assert.deepEqual(linuxPlan.args, [
+      '--filter',
+      '@sdkwork/claw-desktop',
+      'run',
+      'tauri:build',
+      '--',
+      '--profile',
+      'claw-studio',
+      '--package-profile',
+      'openclaw-only',
+      '--vite-mode',
+      'production',
+      '--bundles',
+      'deb,rpm',
+    ]);
+    assert.equal(Object.hasOwn(linuxPlan.env, 'CMAKE_GENERATOR'), false);
+    assert.equal(windowsPlan.env.SDKWORK_VITE_MODE, 'production');
+    assert.equal(linuxPlan.env.SDKWORK_VITE_MODE, 'production');
+    assert.equal(linuxPlan.shell, false);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test('desktop release build runner can override the vite mode for test bundles while keeping production as the default', async () => {
@@ -2441,34 +2685,39 @@ test('desktop release target helpers resolve platform and architecture from expl
 test('desktop release build runner forwards explicit target triples to tauri build', async () => {
   const runnerPath = path.join(rootDir, 'scripts', 'run-desktop-release-build.mjs');
   const runner = await import(pathToFileURL(runnerPath).href);
+  const { tempRoot, pnpmCliPath } = createPnpmCliFixture('claw-release-pnpm-cli-');
 
-  const arm64WindowsPlan = runner.createDesktopReleaseBuildPlan({
-    platform: 'win32',
-    env: {},
-    targetTriple: 'aarch64-pc-windows-msvc',
-  });
+  try {
+    const arm64WindowsPlan = runner.createDesktopReleaseBuildPlan({
+      platform: 'win32',
+      env: { npm_execpath: pnpmCliPath },
+      targetTriple: 'aarch64-pc-windows-msvc',
+    });
 
-  assert.deepEqual(arm64WindowsPlan.args, [
-    path.join(path.dirname(process.execPath), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
-    '--filter',
-    '@sdkwork/claw-desktop',
-    'run',
-    'tauri:build',
-    '--',
-    '--profile',
-    'claw-studio',
-    '--package-profile',
-    'openclaw-only',
-    '--vite-mode',
-    'production',
-    '--bundles',
-    'nsis',
-    '--target',
-    'aarch64-pc-windows-msvc',
-  ]);
-  assert.equal(arm64WindowsPlan.env.SDKWORK_DESKTOP_TARGET, 'aarch64-pc-windows-msvc');
-  assert.equal(arm64WindowsPlan.env.SDKWORK_DESKTOP_TARGET_PLATFORM, 'windows');
-  assert.equal(arm64WindowsPlan.env.SDKWORK_DESKTOP_TARGET_ARCH, 'arm64');
+    assert.deepEqual(arm64WindowsPlan.args, [
+      pnpmCliPath,
+      '--filter',
+      '@sdkwork/claw-desktop',
+      'run',
+      'tauri:build',
+      '--',
+      '--profile',
+      'claw-studio',
+      '--package-profile',
+      'openclaw-only',
+      '--vite-mode',
+      'production',
+      '--bundles',
+      'nsis',
+      '--target',
+      'aarch64-pc-windows-msvc',
+    ]);
+    assert.equal(arm64WindowsPlan.env.SDKWORK_DESKTOP_TARGET, 'aarch64-pc-windows-msvc');
+    assert.equal(arm64WindowsPlan.env.SDKWORK_DESKTOP_TARGET_PLATFORM, 'windows');
+    assert.equal(arm64WindowsPlan.env.SDKWORK_DESKTOP_TARGET_ARCH, 'arm64');
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test('desktop release bundle phase merges the generated Windows bundle overlay config and limits CI installers to the stable profile bundle set', async () => {

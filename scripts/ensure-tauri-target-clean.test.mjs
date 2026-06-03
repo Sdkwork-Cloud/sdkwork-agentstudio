@@ -28,8 +28,13 @@ assert.equal(
 );
 assert.match(
   readFileSync(modulePath, 'utf8'),
-  /removeDirectoryWithRetriesSync\(targetInspection\.targetDir/,
-  'ensure-tauri-target-clean must remove stale target directories through the Windows lock retry helper',
+  /if \(targetInspection\.staleEntries\.length > 0\) \{\s*removeDirectoryWithRetriesSync\(targetInspection\.targetDir\);/,
+  'ensure-tauri-target-clean must remove the full target directory only when stale permission manifests require it',
+);
+assert.match(
+  readFileSync(modulePath, 'utf8'),
+  /cleanupBundledOpenClawTargetResources\(targetInspection\)/,
+  'ensure-tauri-target-clean must remove stale packaged OpenClaw target resources without deleting the full Cargo target directory',
 );
 
 function withTempDir(callback) {
@@ -178,10 +183,20 @@ withTempDir((tempDir) => {
 
   assert.equal(
     result.removedTarget,
-    true,
-    'legacy openclaw-runtime resource directories must trigger stale target cleanup',
+    false,
+    'legacy openclaw-runtime resource directories must not delete the full target cache',
   );
-  assert.equal(existsSync(targetDir), false, 'legacy bundled runtime target resources must be removed');
+  assert.deepEqual(
+    result.removedResourceDirs,
+    [path.join(targetDir, 'dev', 'debug', 'resources', 'openclaw-runtime')],
+    'legacy packaged OpenClaw target resources must be removed directly',
+  );
+  assert.equal(existsSync(targetDir), true, 'Cargo target cache must stay intact after resource cleanup');
+  assert.equal(
+    existsSync(path.join(targetDir, 'dev', 'debug', 'resources', 'openclaw-runtime')),
+    false,
+    'legacy packaged OpenClaw target resources must be removed',
+  );
 });
 
 withTempDir((tempDir) => {
@@ -209,10 +224,20 @@ withTempDir((tempDir) => {
 
   assert.equal(
     result.removedTarget,
-    true,
-    'mismatched bundled openclaw target manifests must trigger stale target cleanup',
+    false,
+    'mismatched packaged OpenClaw manifests must not delete the full target cache',
   );
-  assert.equal(existsSync(targetDir), false, 'mismatched bundled runtime target manifests must be removed');
+  assert.deepEqual(
+    result.removedResourceDirs,
+    [path.join(targetDir, 'dev', 'debug', 'resources', 'openclaw')],
+    'mismatched packaged OpenClaw target resource directories must be removed directly',
+  );
+  assert.equal(existsSync(targetDir), true, 'Cargo target cache must stay intact after resource cleanup');
+  assert.equal(
+    existsSync(path.join(targetDir, 'dev', 'debug', 'resources', 'openclaw')),
+    false,
+    'mismatched packaged OpenClaw target resources must be removed',
+  );
 });
 
 withTempDir((tempDir) => {
@@ -248,13 +273,17 @@ withTempDir((tempDir) => {
 
   assert.equal(
     result.removedTarget,
-    true,
-    'legacy desktop .tauri-target OpenClaw resources must trigger stale target cleanup',
-  );
-  assert.equal(
-    existsSync(packageTargetDir),
     false,
-    'legacy desktop .tauri-target resources must be removed alongside src-tauri target cleanup',
+    'legacy desktop .tauri-target OpenClaw resources must not delete the full target cache',
+  );
+  assert.deepEqual(result.removedResourceDirs, [
+    path.join(packageTargetDir, 'dev', 'debug', 'resources', 'openclaw-runtime'),
+  ]);
+  assert.equal(existsSync(packageTargetDir), true, 'desktop .tauri-target cache root must stay intact');
+  assert.equal(
+    existsSync(path.join(packageTargetDir, 'dev', 'debug', 'resources', 'openclaw-runtime')),
+    false,
+    'legacy desktop .tauri-target OpenClaw resources must be removed directly',
   );
 });
 
@@ -283,13 +312,18 @@ withTempDir((tempDir) => {
 
   assert.equal(
     result.removedTarget,
-    true,
-    'stale bundled target manifests must still trigger cleanup when the source tree keeps only the openclaw placeholder',
-  );
-  assert.equal(
-    existsSync(targetDir),
     false,
-    'stale target manifests must not survive the openclaw placeholder-only source layout',
+    'stale packaged target manifests must not delete the full target cache when only OpenClaw resources are stale',
+  );
+  assert.deepEqual(
+    result.removedResourceDirs,
+    [path.join(targetDir, 'dev', 'debug', 'resources', 'openclaw')],
+  );
+  assert.equal(existsSync(targetDir), true, 'Cargo target cache must stay intact after resource cleanup');
+  assert.equal(
+    existsSync(path.join(targetDir, 'dev', 'debug', 'resources', 'openclaw')),
+    false,
+    'stale packaged target manifests must not survive the openclaw placeholder-only source layout',
   );
 });
 

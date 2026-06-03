@@ -255,6 +255,22 @@ pub struct DesktopOpenClawRuntimeAuthorityInfo {
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DesktopOpenClawChannelConfigHealthInfo {
+    pub status: String,
+    pub valid: bool,
+    pub runtime_metadata_available: bool,
+    pub config_readable: bool,
+    pub supported_channel_ids: Vec<String>,
+    pub configured_channel_ids: Vec<String>,
+    pub unknown_channel_ids: Vec<String>,
+    pub malformed_channel_ids: Vec<String>,
+    pub model_by_channel_ids: Vec<String>,
+    pub unknown_model_by_channel_ids: Vec<String>,
+    pub invalid_model_by_channel_ids: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DesktopOpenClawRuntimeInfo {
     pub runtime_id: String,
     pub lifecycle: String,
@@ -283,6 +299,8 @@ pub struct DesktopOpenClawRuntimeInfo {
     pub local_ai_proxy_base_url: Option<String>,
     pub local_ai_proxy_snapshot_path: String,
     pub authority: DesktopOpenClawRuntimeAuthorityInfo,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub channel_config_health: Option<DesktopOpenClawChannelConfigHealthInfo>,
     pub provider_projection: DesktopOpenClawProviderProjectionInfo,
     pub startup_chain: Vec<DesktopOpenClawRuntimeStageInfo>,
 }

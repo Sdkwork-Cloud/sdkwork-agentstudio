@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { instanceDirectoryService, useInstanceStore } from '@sdkwork/claw-core';
 import { openExternalUrl } from '@sdkwork/claw-infrastructure';
@@ -18,8 +18,20 @@ import {
   localizeChannelWorkspaceItem,
   type ChannelWorkspaceItem,
 } from '@sdkwork/claw-ui';
-import { Channel, channelService } from '../../services';
+import {
+  Channel,
+  appendChannelBindingProcessOutput,
+  applyChannelBindingJobUpdate,
+  channelBindingSessionService,
+  extractChannelBindingQrPayload,
+  isActiveChannelBindingSession,
+  isChannelBindingSessionActive,
+  type ChannelBindingSession,
+  channelService,
+} from '../../services';
 import { resolveChannelsPageInstanceId } from './channelInstanceResolver.ts';
+
+const CHANNEL_BINDING_STATUS_POLL_INTERVAL_MS = 2_000;
 
 type Translate = (
   key: string,
@@ -116,6 +128,8 @@ export function Channels() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isResolvingInstance, setIsResolvingInstance] = useState(!activeInstanceId);
+  const [bindingSession, setBindingSession] = useState<ChannelBindingSession | null>(null);
+  const bindingSessionRef = useRef<ChannelBindingSession | null>(null);
   const effectiveInstanceId = activeInstanceId || resolvedInstanceId;
 
   const selectedChannel = useMemo(
@@ -137,6 +151,17 @@ export function Channels() {
         }),
       ),
     [channels, t],
+  );
+
+  const updateBindingSession = useCallback(
+    (updater: (session: ChannelBindingSession | null) => ChannelBindingSession | null) => {
+      setBindingSession((current) => {
+        const next = updater(current);
+        bindingSessionRef.current = next;
+        return next;
+      });
+    },
+    [],
   );
 
   useEffect(() => {
@@ -218,8 +243,130 @@ export function Channels() {
     void fetchChannels();
   }, [effectiveInstanceId, isResolvingInstance, t]);
 
+  useEffect(() => {
+    let disposed = false;
+    let unsubscribeOutput: (() => void | Promise<void>) | null = null;
+    let unsubscribeJobs: (() => void | Promise<void>) | null = null;
+
+    void channelBindingSessionService
+      .subscribeProcessOutput((event) => {
+        const current = bindingSessionRef.current;
+        if (!current?.jobId || event.jobId !== current.jobId) {
+          return;
+        }
+
+        const detectedQrPayload = extractChannelBindingQrPayload(event.chunk);
+        void appendChannelBindingProcessOutput(current, event).then((nextSession) => {
+          if (!disposed) {
+            updateBindingSession(() =>
+              detectedQrPayload && nextSession.state === 'starting'
+                ? {
+                    ...nextSession,
+                    state: 'awaiting_scan',
+                  }
+                : nextSession,
+            );
+          }
+        });
+      })
+      .then((unsubscribe) => {
+        if (disposed) {
+          void unsubscribe();
+          return;
+        }
+
+        unsubscribeOutput = unsubscribe;
+      });
+
+    void channelBindingSessionService
+      .subscribeJobUpdates((event) => {
+        updateBindingSession((current) =>
+          current ? applyChannelBindingJobUpdate(current, event) : current,
+        );
+      })
+      .then((unsubscribe) => {
+        if (disposed) {
+          void unsubscribe();
+          return;
+        }
+
+        unsubscribeJobs = unsubscribe;
+      });
+
+    return () => {
+      disposed = true;
+      if (unsubscribeOutput) {
+        void unsubscribeOutput();
+      }
+      if (unsubscribeJobs) {
+        void unsubscribeJobs();
+      }
+    };
+  }, [updateBindingSession]);
+
+  useEffect(() => {
+    const activeBindingSession = bindingSession;
+    if (!effectiveInstanceId || !isActiveChannelBindingSession(activeBindingSession)) {
+      return;
+    }
+
+    let disposed = false;
+    let timer: number | null = null;
+
+    const poll = async () => {
+      try {
+        const updatedChannels = await channelService.getChannels(effectiveInstanceId);
+        if (disposed) {
+          return;
+        }
+
+        setChannels(updatedChannels);
+        const updatedChannel = updatedChannels.find(
+          (channel) => channel.id === activeBindingSession.channelId,
+        );
+
+        if (updatedChannel?.status === 'connected' || updatedChannel?.enabled) {
+          updateBindingSession((current) =>
+            current?.channelId === activeBindingSession.channelId
+              ? {
+                  ...current,
+                  state: 'connected',
+                }
+              : current,
+          );
+          setSelectedChannelId(null);
+          setFormData({});
+          setErrorMessage(null);
+          return;
+        }
+      } catch (error) {
+        if (disposed) {
+          return;
+        }
+
+        console.error('Failed to refresh channel binding status:', error);
+      }
+
+      if (!disposed) {
+        timer = window.setTimeout(poll, CHANNEL_BINDING_STATUS_POLL_INTERVAL_MS);
+      }
+    };
+
+    timer = window.setTimeout(poll, CHANNEL_BINDING_STATUS_POLL_INTERVAL_MS);
+
+    return () => {
+      disposed = true;
+      if (timer !== null) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [bindingSession, effectiveInstanceId, updateBindingSession]);
+
   const handleSelectedChannelIdChange = (channelId: string | null) => {
     setSelectedChannelId(channelId);
+    updateBindingSession((current) =>
+      current && current.channelId !== channelId ? null : current,
+    );
 
     if (!channelId) {
       setFormData({});
@@ -262,6 +409,20 @@ export function Channels() {
 
   const openOfficialLink = async (href: string) => {
     await openExternalUrl(href);
+  };
+
+  const handleStartBinding = async (channel: ChannelWorkspaceItem) => {
+    setIsSaving(true);
+    setErrorMessage(null);
+    try {
+      const session = await channelBindingSessionService.startBinding(channel.id);
+      updateBindingSession(() => session);
+      if (session.state === 'failed' || session.state === 'unsupported') {
+        setErrorMessage(session.error || describeChannelsPageError(t, session.error, 'save'));
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSave = async () => {
@@ -335,6 +496,7 @@ export function Channels() {
             valuesByChannelId={selectedChannel ? { [selectedChannel.id]: formData } : {}}
             error={errorMessage}
             isSaving={isSaving}
+            bindingSession={bindingSession}
             texts={{
               statusActive: t('channels.page.status.active'),
               statusConnected: t('dashboard.status.connected'),
@@ -376,6 +538,7 @@ export function Channels() {
             }
             resolveOfficialLink={(channel) => getChannelOfficialLink(channel.id)}
             onOpenOfficialLink={(_channel, link) => void openOfficialLink(link.href)}
+            onStartBinding={handleStartBinding}
             onSelectedChannelIdChange={handleSelectedChannelIdChange}
             onFieldChange={handleFieldChange}
             onSave={() => void handleSave()}

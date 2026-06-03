@@ -130,6 +130,30 @@ function matchesLegacyBundledOpenClawResourceDir(targetDir, candidatePath) {
   return normalizeRelativePathForMatch(targetDir, candidatePath).endsWith('/resources/openclaw-runtime');
 }
 
+function resolveBundledOpenClawResourceDirForIssue(targetDir, candidatePath) {
+  const normalizedRelativePath = normalizeRelativePathForMatch(targetDir, candidatePath);
+  const openclawRuntimeMarker = '/resources/openclaw-runtime';
+  const openclawMarker = '/resources/openclaw';
+
+  if (normalizedRelativePath.includes(openclawRuntimeMarker)) {
+    const prefix = normalizedRelativePath.slice(
+      0,
+      normalizedRelativePath.indexOf(openclawRuntimeMarker) + openclawRuntimeMarker.length,
+    );
+    return path.join(targetDir, ...prefix.split('/'));
+  }
+
+  if (normalizedRelativePath.includes(openclawMarker)) {
+    const prefix = normalizedRelativePath.slice(
+      0,
+      normalizedRelativePath.indexOf(openclawMarker) + openclawMarker.length,
+    );
+    return path.join(targetDir, ...prefix.split('/'));
+  }
+
+  return null;
+}
+
 function bundledOpenClawManifestKind(targetDir, candidatePath) {
   const normalizedRelativePath = normalizeRelativePathForMatch(targetDir, candidatePath);
   if (normalizedRelativePath.endsWith('/resources/openclaw/manifest.json')) {
@@ -199,6 +223,7 @@ function inspectBundledOpenClawTargetResources(srcTauriDir, targetDir, { env = p
         if (matchesLegacyBundledOpenClawResourceDir(targetDir, entryPath)) {
           issues.push({
             entryPath,
+            resourceDir: resolveBundledOpenClawResourceDirForIssue(targetDir, entryPath),
             reason: 'legacy packaged OpenClaw runtime resource directory is still present',
           });
         }
@@ -221,6 +246,7 @@ function inspectBundledOpenClawTargetResources(srcTauriDir, targetDir, { env = p
       } catch (error) {
         issues.push({
           entryPath,
+          resourceDir: resolveBundledOpenClawResourceDirForIssue(targetDir, entryPath),
           reason: `failed to parse packaged OpenClaw manifest: ${error instanceof Error ? error.message : String(error)}`,
         });
         continue;
@@ -229,6 +255,7 @@ function inspectBundledOpenClawTargetResources(srcTauriDir, targetDir, { env = p
       if (manifestKind === 'legacy') {
         issues.push({
           entryPath,
+          resourceDir: resolveBundledOpenClawResourceDirForIssue(targetDir, entryPath),
           reason: 'legacy packaged OpenClaw runtime manifest is still present under target resources',
         });
         continue;
@@ -237,6 +264,7 @@ function inspectBundledOpenClawTargetResources(srcTauriDir, targetDir, { env = p
       if (!bundledOpenClawManifestMatches(sourceManifest, targetManifest)) {
         issues.push({
           entryPath,
+          resourceDir: resolveBundledOpenClawResourceDirForIssue(targetDir, entryPath),
           reason: 'packaged OpenClaw target manifest does not match the expected packaged OpenClaw manifest for the current release target',
         });
       }
@@ -348,6 +376,28 @@ function resolveCandidateTargetDirs(resolvedSrcTauriDir, env = process.env) {
   return [...new Set(targetDirs)];
 }
 
+function cleanupBundledOpenClawTargetResources(targetInspection) {
+  const removedResourceDirs = [];
+  const resourceDirs = [
+    ...new Set(
+      (targetInspection.bundledOpenClawIssues ?? [])
+        .map((issue) => String(issue.resourceDir ?? '').trim())
+        .filter(Boolean),
+    ),
+  ];
+
+  for (const resourceDir of resourceDirs) {
+    if (!existsSync(resourceDir)) {
+      continue;
+    }
+
+    removeDirectoryWithRetriesSync(resourceDir);
+    removedResourceDirs.push(resourceDir);
+  }
+
+  return removedResourceDirs;
+}
+
 export function inspectTauriTarget(srcTauriDir = 'src-tauri', { env = process.env } = {}) {
   const resolvedSrcTauriDir = path.resolve(srcTauriDir);
   const targetDirs = resolveCandidateTargetDirs(resolvedSrcTauriDir, env);
@@ -385,20 +435,28 @@ export function inspectTauriTarget(srcTauriDir = 'src-tauri', { env = process.en
 export function ensureTauriTargetClean(srcTauriDir = 'src-tauri', { env = process.env } = {}) {
   const inspection = inspectTauriTarget(srcTauriDir, { env });
   const removedTargetDirs = [];
+  const removedResourceDirs = [];
 
   for (const targetInspection of inspection.targetInspections) {
     if (!targetInspection.stale || !existsSync(targetInspection.targetDir)) {
       continue;
     }
 
-    removeDirectoryWithRetriesSync(targetInspection.targetDir);
-    removedTargetDirs.push(targetInspection.targetDir);
+    if (targetInspection.bundledOpenClawIssues.length > 0) {
+      removedResourceDirs.push(...cleanupBundledOpenClawTargetResources(targetInspection));
+    }
+
+    if (targetInspection.staleEntries.length > 0) {
+      removeDirectoryWithRetriesSync(targetInspection.targetDir);
+      removedTargetDirs.push(targetInspection.targetDir);
+    }
   }
 
   return {
     ...inspection,
     removedTarget: removedTargetDirs.length > 0,
     removedTargetDirs,
+    removedResourceDirs,
   };
 }
 

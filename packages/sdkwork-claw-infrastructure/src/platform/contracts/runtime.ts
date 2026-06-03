@@ -404,6 +404,20 @@ export interface RuntimeDesktopOpenClawRuntimeAuthorityInfo {
   readinessProbe: RuntimeDesktopOpenClawRuntimeAuthorityProbeInfo;
 }
 
+export interface RuntimeDesktopOpenClawChannelConfigHealthInfo {
+  status: string;
+  valid: boolean;
+  runtimeMetadataAvailable: boolean;
+  configReadable: boolean;
+  supportedChannelIds: string[];
+  configuredChannelIds: string[];
+  unknownChannelIds: string[];
+  malformedChannelIds: string[];
+  modelByChannelIds: string[];
+  unknownModelByChannelIds: string[];
+  invalidModelByChannelIds: string[];
+}
+
 export interface RuntimeDesktopKernelRuntimeAuthorityProbeInfo {
   supportsLoopbackHealthProbe: boolean;
   healthProbeTimeoutMs: number;
@@ -460,6 +474,7 @@ export interface RuntimeDesktopOpenClawRuntimeInfo {
   localAiProxyBaseUrl?: string | null;
   localAiProxySnapshotPath: string;
   authority: RuntimeDesktopOpenClawRuntimeAuthorityInfo;
+  channelConfigHealth?: RuntimeDesktopOpenClawChannelConfigHealthInfo | null;
   providerProjection: RuntimeDesktopOpenClawProviderProjectionInfo;
   startupChain: RuntimeDesktopOpenClawRuntimeStageInfo[];
 }

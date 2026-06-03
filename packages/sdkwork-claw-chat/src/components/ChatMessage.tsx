@@ -34,6 +34,7 @@ import {
   CHAT_SURFACE_PANEL_CLASS,
   CHAT_SURFACE_PANEL_HEADER_CLASS,
 } from './chatChromeSurface';
+import { copyChatTextToClipboard } from './chatClipboard.ts';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant' | 'system' | 'tool';
@@ -138,10 +139,14 @@ const CodeBlock = memo(
     const [copied, setCopied] = useState(false);
     const { t } = useTranslation();
 
-    const handleCopy = () => {
-      navigator.clipboard.writeText(String(children).replace(/\n$/, ''));
+    const handleCopy = async () => {
+      const didCopy = await copyChatTextToClipboard(String(children).replace(/\n$/, ''));
+      if (!didCopy) {
+        return;
+      }
+
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      window.setTimeout(() => setCopied(false), 2000);
     };
 
     return (
@@ -578,10 +583,14 @@ export const ChatMessage = memo(function ChatMessage({
       minute: '2-digit',
     }).format(new Date(value));
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(copyText);
+  const handleCopy = async () => {
+    const didCopy = await copyChatTextToClipboard(copyText);
+    if (!didCopy) {
+      return;
+    }
+
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    window.setTimeout(() => setCopied(false), 2000);
   };
 
   const renderCopyButton = (className: string) => (

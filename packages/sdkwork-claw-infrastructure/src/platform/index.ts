@@ -132,6 +132,8 @@ export type {
   RuntimeDesktopBundledComponentInfo,
   RuntimeDesktopBundledComponentsInfo,
   RuntimeDesktopFilesystemInfo,
+  RuntimeDesktopOpenClawChannelConfigHealthInfo,
+  RuntimeDesktopOpenClawRuntimeInfo,
   RuntimeDesktopIntegrationInfo,
   RuntimeDesktopIntegrationAdapterInfo,
   RuntimeDesktopActiveKernelRuntimeInfo,

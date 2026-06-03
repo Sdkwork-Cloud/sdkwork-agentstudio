@@ -60,6 +60,7 @@ export type OpenClawGatewayConnectionStatus =
 type OpenClawGatewayTitleSource = 'default' | 'preview' | 'explicit' | 'firstUser';
 
 const TITLE_REPAIR_HISTORY_LIMIT = 4;
+const HISTORY_MERGE_EXACT_CELL_LIMIT = 12_000;
 
 export interface OpenClawGatewayMessage {
   id: string;
@@ -1614,7 +1615,48 @@ function hasSemanticallyMatchingMessage(
   });
 }
 
-function mergeHistoryWithLocalMessages(
+function mergeLargeHistoryWithLocalMessages(
+  mergeableLocalMessages: OpenClawGatewayMessage[],
+  remoteMessages: OpenClawGatewayMessage[],
+  appendedLocalMessages: OpenClawGatewayMessage[],
+  options: {
+    preserveAssistantRunId?: string | null;
+    preferRemoteTerminalAssistantMessage?: boolean;
+  },
+) {
+  const mergedMessages = remoteMessages.map((message) => cloneMessage(message));
+  const appendIfNeeded = (localMessage: OpenClawGatewayMessage) => {
+    if (
+      options.preferRemoteTerminalAssistantMessage &&
+      localMessage.role === 'assistant' &&
+      resolveLatestChatMessageForDisplay(mergedMessages)?.role === 'assistant'
+    ) {
+      return;
+    }
+
+    if (!hasSemanticallyMatchingMessage(mergedMessages, localMessage)) {
+      mergedMessages.push(cloneMessage(localMessage));
+    }
+  };
+
+  for (const localMessage of mergeableLocalMessages) {
+    if (
+      localMessage.pendingDelivery ||
+      (localMessage.role !== 'user' &&
+        shouldPreserveLocalMessageInHistoryMerge(localMessage, options.preserveAssistantRunId))
+    ) {
+      appendIfNeeded(localMessage);
+    }
+  }
+
+  for (const localMessage of appendedLocalMessages) {
+    appendIfNeeded(localMessage);
+  }
+
+  return normalizeGatewaySessionMessages(mergedMessages);
+}
+
+export function mergeHistoryWithLocalMessages(
   localMessages: OpenClawGatewayMessage[],
   remoteMessages: OpenClawGatewayMessage[],
   options?: {
@@ -1659,6 +1701,18 @@ function mergeHistoryWithLocalMessages(
               .filter((message) => !hasSemanticallyMatchingMessage(remoteMessages, message))
               .map((message) => cloneMessage(message)),
           ],
+    );
+  }
+
+  if (mergeableLocalMessages.length * remoteMessages.length > HISTORY_MERGE_EXACT_CELL_LIMIT) {
+    return mergeLargeHistoryWithLocalMessages(
+      mergeableLocalMessages,
+      remoteMessages,
+      appendedLocalMessages,
+      {
+        preserveAssistantRunId,
+        preferRemoteTerminalAssistantMessage,
+      },
     );
   }
 

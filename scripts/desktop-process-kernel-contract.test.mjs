@@ -40,6 +40,25 @@ function assertMatches(relativePath, expectedPattern, label) {
   }
 }
 
+function extractRustStructBody(relativePath, structName) {
+  const content = readText(relativePath);
+  const declaration = new RegExp(`pub(?:\\(crate\\))? struct ${structName}\\s*\\{`, 'u');
+  const declarationMatch = declaration.exec(content);
+  if (!declarationMatch) {
+    failures.push(`Missing Rust struct ${structName} in ${relativePath}`);
+    return '';
+  }
+
+  const startIndex = declarationMatch.index + declarationMatch[0].length;
+  const endIndex = content.indexOf('\n}', startIndex);
+  if (endIndex === -1) {
+    failures.push(`Unable to parse Rust struct ${structName} in ${relativePath}`);
+    return '';
+  }
+
+  return content.slice(startIndex, endIndex);
+}
+
 assertPath(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/process.rs',
   'desktop process service facade module',
@@ -114,6 +133,57 @@ assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/process/requests.rs',
   'ValidatedProcessRequest',
   'validated process request type',
+);
+assertIncludes(
+  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/process/requests.rs',
+  '#[serde(deny_unknown_fields, rename_all = "camelCase")]',
+  'public process request rejects unrecognized fields',
+);
+{
+  const processRequestBody = extractRustStructBody(
+    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/process/requests.rs',
+    'ProcessRequest',
+  );
+  if (/\benv\s*:/.test(processRequestBody)) {
+    failures.push(
+      'Public ProcessRequest must not expose env injection; managed runtime env must use an internal request type.',
+    );
+  }
+}
+assertIncludes(
+  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/process/requests.rs',
+  'pub(crate) struct ProcessExecutionRequest',
+  'internal process execution request type',
+);
+assertIncludes(
+  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/process/requests.rs',
+  'extra_env: BTreeMap<String, String>',
+  'internal-only process environment overlay',
+);
+assertMatches(
+  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/process/requests.rs',
+  /SpawnPolicyScope::Public\s*=>\s*policy\.validate_command_spawn\(&command,\s*&request\.args\)\?/,
+  'public process requests use public spawn policy',
+);
+assertMatches(
+  'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/process/requests.rs',
+  /SpawnPolicyScope::Profile\s*=>\s*\{?\s*policy\.validate_profile_command_spawn\(&command,\s*&request\.args\)\?/,
+  'internal process profile requests use profile spawn policy',
+);
+assertIncludes(
+  'packages/sdkwork-claw-desktop/src-tauri/src/framework/policy.rs',
+  'pub fn validate_profile_command_spawn(&self, command: &str, args: &[String]) -> Result<()>',
+  'profile-only spawn policy entrypoint',
+);
+assertMatches(
+  'packages/sdkwork-claw-desktop/src-tauri/src/framework/policy.rs',
+  /fn is_node_command\(command: &str\) -> bool \{\s*let normalized = command\.replace\('\\\\', "\/"\);/s,
+  'profile-only node allowlist normalizes Windows command paths',
+);
+assertMatches(
+  'packages/sdkwork-claw-desktop/src-tauri/src/framework/policy.rs',
+  /fn is_npx_command\(command: &str\) -> bool \{\s*let normalized = command\.replace\('\\\\', "\/"\);/s,
+  'profile-only npx allowlist normalizes Windows command paths',
 );
 assertIncludes(
   'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/process/runtime.rs',

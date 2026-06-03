@@ -47,6 +47,11 @@ impl ExecutionPolicy {
         validate_command_spawn(command, args)
     }
 
+    pub fn validate_profile_command_spawn(&self, command: &str, args: &[String]) -> Result<()> {
+        let _ = self;
+        validate_profile_command_spawn(command, args)
+    }
+
     pub fn resolve_working_directory(&self, working_directory: Option<&Path>) -> Result<PathBuf> {
         let directory = match working_directory {
             Some(directory) => canonicalize_directory(directory)?,
@@ -161,15 +166,13 @@ pub fn ensure_not_managed_root(paths: &AppPaths, candidate: &Path) -> Result<()>
     Ok(())
 }
 
-pub fn validate_command_spawn(command: &str, args: &[String]) -> Result<()> {
+pub fn validate_command_spawn(command: &str, _args: &[String]) -> Result<()> {
     let normalized = command.trim().to_ascii_lowercase();
     if normalized.is_empty() {
         return Err(FrameworkError::ValidationFailed(
             "command must not be empty".to_string(),
         ));
     }
-
-    let _ = args;
 
     let allowed = allowed_spawn_commands()
         .iter()
@@ -183,6 +186,23 @@ pub fn validate_command_spawn(command: &str, args: &[String]) -> Result<()> {
         resource: command.to_string(),
         reason: "command spawn is not allowed".to_string(),
     })
+}
+
+pub fn validate_profile_command_spawn(command: &str, args: &[String]) -> Result<()> {
+    let normalized = command.trim().to_ascii_lowercase();
+    if normalized.is_empty() {
+        return Err(FrameworkError::ValidationFailed(
+            "command must not be empty".to_string(),
+        ));
+    }
+
+    if is_allowed_managed_openclaw_node_spawn(&normalized, args)
+        || is_allowed_dingtalk_connector_installer_spawn(&normalized, args)
+    {
+        return Ok(());
+    }
+
+    validate_command_spawn(command, args)
 }
 
 pub fn allowed_spawn_commands_snapshot() -> Vec<String> {
@@ -209,6 +229,74 @@ fn allowed_spawn_commands() -> &'static [&'static str] {
     {
         &["sh", "/bin/sh", "which", "/usr/bin/which"]
     }
+}
+
+fn is_allowed_managed_openclaw_node_spawn(command: &str, args: &[String]) -> bool {
+    if !is_node_command(command) {
+        return false;
+    }
+
+    let Some(cli_path) = args.first() else {
+        return false;
+    };
+    let normalized_cli_path = cli_path.replace('\\', "/").to_ascii_lowercase();
+    let is_openclaw_cli = normalized_cli_path.ends_with(
+        "/runtime/package/node_modules/openclaw/openclaw.mjs",
+    );
+    if !is_openclaw_cli {
+        return false;
+    }
+
+    matches!(
+        &args[1..],
+        [channels, add, channel_flag, channel_id]
+            if channels == "channels"
+                && add == "add"
+                && channel_flag == "--channel"
+                && channel_id == "qqbot"
+    ) || matches!(
+        &args[1..],
+        [channels, login, channel_flag, channel_id]
+            if channels == "channels"
+                && login == "login"
+                && channel_flag == "--channel"
+                && (channel_id == "openclaw-weixin" || channel_id == "feishu")
+    )
+}
+
+fn is_allowed_dingtalk_connector_installer_spawn(command: &str, args: &[String]) -> bool {
+    if !is_npx_command(command) {
+        return false;
+    }
+
+    matches!(
+        args,
+        [yes, package, install]
+            if yes == "-y"
+                && package == "@dingtalk-real-ai/dingtalk-connector"
+                && install == "install"
+    )
+}
+
+fn is_node_command(command: &str) -> bool {
+    let normalized = command.replace('\\', "/");
+
+    matches!(
+        normalized.as_str(),
+        "node" | "node.exe" | "/usr/bin/node" | "/usr/local/bin/node"
+    ) || normalized.ends_with("/node")
+        || normalized.ends_with("/node.exe")
+}
+
+fn is_npx_command(command: &str) -> bool {
+    let normalized = command.replace('\\', "/");
+
+    matches!(
+        normalized.as_str(),
+        "npx" | "npx.cmd" | "npx.exe" | "/usr/bin/npx" | "/usr/local/bin/npx"
+    ) || normalized.ends_with("/npx")
+        || normalized.ends_with("/npx.cmd")
+        || normalized.ends_with("/npx.exe")
 }
 
 fn managed_path_roots(paths: &AppPaths) -> Vec<PathBuf> {
@@ -505,7 +593,7 @@ fn normalize_path(path: &Path) -> PathBuf {
 mod tests {
     use super::{
         ensure_not_managed_root, resolve_managed_path, resolve_user_tooling_config_path,
-        validate_command_spawn, ExecutionPolicy,
+        validate_command_spawn, validate_profile_command_spawn, ExecutionPolicy,
     };
     use crate::framework::{
         config::SecurityConfig,
@@ -764,6 +852,99 @@ mod tests {
             &["-Command".to_string(), "Write-Output hi".to_string()],
         )
         .expect("powershell should be allowed for installer execution");
+    }
+
+    #[test]
+    fn public_spawn_rejects_profile_only_managed_openclaw_channel_binding_node_profiles() {
+        let error = validate_command_spawn(
+            "node",
+            &[
+                "C:\\Users\\admin\\.sdkwork\\crawstudio\\runtimes\\openclaw\\runtime\\package\\node_modules\\openclaw\\openclaw.mjs".to_string(),
+                "channels".to_string(),
+                "login".to_string(),
+                "--channel".to_string(),
+                "feishu".to_string(),
+            ],
+        )
+        .expect_err("public process commands must not execute profile-only binding commands");
+
+        assert!(error.to_string().contains("not allowed"));
+    }
+
+    #[test]
+    fn allows_only_managed_openclaw_channel_binding_node_profiles_for_internal_profiles() {
+        validate_profile_command_spawn(
+            "C:\\Program Files\\nodejs\\node.exe",
+            &[
+                "C:\\Users\\admin\\.sdkwork\\crawstudio\\runtimes\\openclaw\\runtime\\package\\node_modules\\openclaw\\openclaw.mjs".to_string(),
+                "channels".to_string(),
+                "login".to_string(),
+                "--channel".to_string(),
+                "feishu".to_string(),
+            ],
+        )
+        .expect("managed OpenClaw channel binding CLI should be allowed");
+
+        let error = validate_profile_command_spawn(
+            "node",
+            &[
+                "C:\\tmp\\arbitrary.js".to_string(),
+                "channels".to_string(),
+                "login".to_string(),
+                "--channel".to_string(),
+                "feishu".to_string(),
+            ],
+        )
+        .expect_err("arbitrary Node scripts must stay blocked");
+
+        assert!(error.to_string().contains("not allowed"));
+    }
+
+    #[test]
+    fn public_spawn_rejects_profile_only_official_dingtalk_connector_installer() {
+        let error = validate_command_spawn(
+            "npx.cmd",
+            &[
+                "-y".to_string(),
+                "@dingtalk-real-ai/dingtalk-connector".to_string(),
+                "install".to_string(),
+            ],
+        )
+        .expect_err("public process commands must not execute profile-only installers");
+
+        assert!(error.to_string().contains("not allowed"));
+    }
+
+    #[test]
+    fn allows_only_official_dingtalk_connector_installer_npx_profile_for_internal_profiles() {
+        validate_profile_command_spawn(
+            "C:\\Program Files\\nodejs\\npx.cmd",
+            &[
+                "-y".to_string(),
+                "@dingtalk-real-ai/dingtalk-connector".to_string(),
+                "install".to_string(),
+            ],
+        )
+        .expect("official DingTalk connector installer should be allowed");
+
+        let error = validate_profile_command_spawn(
+            "npx.cmd",
+            &["-y".to_string(), "left-pad".to_string()],
+        )
+        .expect_err("arbitrary npx packages must stay blocked");
+
+        assert!(error.to_string().contains("not allowed"));
+    }
+
+    #[test]
+    fn rejects_path_openclaw_spawn_so_release_binding_uses_managed_runtime() {
+        let error = validate_command_spawn(
+            "openclaw",
+            &["channels".to_string(), "add".to_string(), "--channel".to_string(), "qqbot".to_string()],
+        )
+        .expect_err("path openclaw should not be directly executable");
+
+        assert!(error.to_string().contains("not allowed"));
     }
 
     #[test]

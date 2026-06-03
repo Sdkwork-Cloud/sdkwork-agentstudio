@@ -190,6 +190,9 @@ export async function assessOpenClawUpgradeReadiness({
   const { dirty: localUpstreamDirty, check: localUpstreamDirtyCheck } =
     detectDirtyCheckout(upstreamRepoDir);
   const localTarballPresent = fs.existsSync(localTarballPath);
+  const hasLocalTargetSource = localTarballPresent || (
+    localUpstreamVersion === normalizedTargetVersion && localUpstreamHasTargetTag
+  );
   const versionSourcesAligned = [
     configuredVersion,
     bundledManifestVersion,
@@ -205,12 +208,12 @@ export async function assessOpenClawUpgradeReadiness({
       `Unsupported OpenClaw runtime layout is present at ${violation.relativePath}${versionSuffix}. Remove retired layout artifacts before upgrading the packaged OpenClaw runtime.`,
     );
   }
-  if (localUpstreamVersion !== normalizedTargetVersion) {
+  if (!hasLocalTargetSource && localUpstreamVersion !== normalizedTargetVersion) {
     blockers.push(
       `Local OpenClaw upstream checkout is still at ${localUpstreamVersion ?? 'unknown'} instead of ${normalizedTargetVersion}.`,
     );
   }
-  if (!localUpstreamHasTargetTag) {
+  if (!hasLocalTargetSource && !localUpstreamHasTargetTag) {
     blockers.push(
       `Local OpenClaw upstream checkout does not contain git tag ${targetTag}.`,
     );

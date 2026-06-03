@@ -258,29 +258,22 @@ await runTest('openClawConfigService persists native OpenClaw provider defaults 
       snapshot.channelSnapshots.find((channel) => channel.id === 'telegram')?.configuredFieldCount,
       2,
     );
-    assert.equal(snapshot.channelSnapshots[0]?.id, 'sdkworkchat');
-    assert.equal(snapshot.channelSnapshots[0]?.fieldCount, 0);
+    assert.equal(snapshot.channelSnapshots[0]?.id, 'qqbot');
+    assert.equal(snapshot.channelSnapshots[0]?.name, 'QQ Bot');
+    assert.equal(snapshot.channelSnapshots[0]?.status, 'not_configured');
+    assert.equal(snapshot.channelSnapshots[0]?.enabled, false);
+    assert.equal(snapshot.channelSnapshots[0]?.fieldCount > 0, true);
     assert.equal(snapshot.channelSnapshots[0]?.configuredFieldCount, 0);
-    assert.equal(snapshot.channelSnapshots[0]?.status, 'connected');
-    assert.equal(snapshot.channelSnapshots[0]?.enabled, true);
-    assert.equal(snapshot.channelSnapshots[0]?.name, 'SDKWORK Official Account');
-    assert.equal(snapshot.channelSnapshots.some((channel) => channel.id === 'wechat'), true);
-    assert.equal(
-      snapshot.channelSnapshots.find((channel) => channel.id === 'wechat')?.name,
-      'WeChat',
-    );
-    assert.equal(snapshot.channelSnapshots.some((channel) => channel.id === 'wehcat'), true);
-    assert.equal(
-      snapshot.channelSnapshots.find((channel) => channel.id === 'wehcat')?.name,
-      'WeChat Official Account',
-    );
     assert.deepEqual(
-      snapshot.channelSnapshots.slice(0, 6).map((channel) => channel.id),
-      ['sdkworkchat', 'wechat', 'wehcat', 'qq', 'dingtalk', 'wecom'],
+      snapshot.channelSnapshots.map((channel) => channel.id),
+      ['qqbot', 'feishu', 'imessage', 'irc', 'matrix', 'mattermost', 'signal', 'slack', 'telegram'],
     );
-    assert.equal(snapshot.channelSnapshots.some((channel) => channel.id === 'qq'), true);
-    assert.equal(snapshot.channelSnapshots.some((channel) => channel.id === 'dingtalk'), true);
-    assert.equal(snapshot.channelSnapshots.some((channel) => channel.id === 'wecom'), true);
+    assert.equal(
+      snapshot.channelSnapshots.some((channel) =>
+        ['sdkworkchat', 'wechat', 'wehcat', 'qq', 'dingtalk', 'wecom'].includes(channel.id),
+      ),
+      false,
+    );
     assert.match(fileContent, /provider-openai-primary/);
     assert.match(fileContent, /provider-openai-primary\/gpt-4\.1/);
     assert.match(fileContent, /channels:\s*\{/);
@@ -544,18 +537,18 @@ await runTest(
 );
 
 await runTest(
-  'openClawConfigService exposes WhatsApp managed channel controls aligned to the official access-rule config surface',
+  'openClawConfigService exposes only bundled runtime channel definitions',
   async () => {
     const { openClawConfigService } = await import('./openClawConfigService.ts');
 
-    const whatsapp = openClawConfigService
+    const ids = openClawConfigService
       .getChannelDefinitions()
-      .find((channel) => channel.id === 'whatsapp');
+      .map((channel) => channel.id);
 
-    assert.ok(whatsapp);
-    assert.equal(whatsapp?.configurationMode, 'none');
-    assert.equal(whatsapp?.fields.find((field) => field.key === 'allowFrom')?.multiline, true);
-    assert.equal(whatsapp?.fields.find((field) => field.key === 'groups')?.multiline, true);
+    assert.deepEqual(ids, ['qqbot', 'feishu', 'imessage', 'irc', 'matrix', 'mattermost', 'signal', 'slack', 'telegram']);
+    assert.equal(ids.includes('qq'), false);
+    assert.equal(ids.includes('whatsapp'), false);
+    assert.equal(ids.includes('sdkworkchat'), false);
   },
 );
 
@@ -567,14 +560,14 @@ await runTest(
     const telegram = openClawConfigService
       .getChannelDefinitions()
       .find((channel) => channel.id === 'telegram');
-    const whatsapp = openClawConfigService
+    const slack = openClawConfigService
       .getChannelDefinitions()
-      .find((channel) => channel.id === 'whatsapp');
+      .find((channel) => channel.id === 'slack');
 
     assert.ok(telegram);
-    assert.ok(whatsapp);
+    assert.ok(slack);
     assert.equal(telegram?.fields.some((field) => field.key === 'contextVisibility'), true);
-    assert.equal(whatsapp?.fields.some((field) => field.key === 'contextVisibility'), true);
+    assert.equal(slack?.fields.some((field) => field.key === 'contextVisibility'), true);
     assert.match(
       telegram?.fields.find((field) => field.key === 'contextVisibility')?.helpText || '',
       /allowlist_quote/i,
@@ -583,7 +576,7 @@ await runTest(
 );
 
 await runTest(
-  'openClawConfigService writes WhatsApp access rules as native array and object values instead of string blobs',
+  'openClawConfigService writes channel access rules as native array and object values instead of string blobs',
   async () => {
     const { configurePlatformBridge, getPlatformBridge } = await import('@sdkwork/claw-infrastructure');
     const { openClawConfigService } = await import('./openClawConfigService.ts');
@@ -605,7 +598,7 @@ await runTest(
     try {
       await openClawConfigService.saveChannelConfiguration({
         configFile: 'D:/OpenClaw/.openclaw/openclaw.json',
-        channelId: 'whatsapp',
+        channelId: 'slack',
         enabled: true,
         values: {
           allowFrom: '+15555550123\n+15555550124',
@@ -622,24 +615,254 @@ await runTest(
       );
       const parsed = parseJson5<{
         channels?: {
-          whatsapp?: {
+          slack?: {
             allowFrom?: string[];
             groups?: Record<string, { requireMention?: boolean }>;
           };
         };
       }>(fileContent);
-      const whatsapp = snapshot.channelSnapshots.find((channel) => channel.id === 'whatsapp');
+      const slack = snapshot.channelSnapshots.find((channel) => channel.id === 'slack');
 
-      assert.deepEqual(parsed.channels?.whatsapp?.allowFrom, ['+15555550123', '+15555550124']);
-      assert.deepEqual(parsed.channels?.whatsapp?.groups, {
+      assert.deepEqual(parsed.channels?.slack?.allowFrom, ['+15555550123', '+15555550124']);
+      assert.deepEqual(parsed.channels?.slack?.groups, {
         '*': {
           requireMention: true,
         },
       });
-      assert.equal(whatsapp?.enabled, true);
-      assert.equal(whatsapp?.configuredFieldCount, 2);
-      assert.match(whatsapp?.values.allowFrom || '', /\+15555550123/);
-      assert.match(whatsapp?.values.groups || '', /requireMention/);
+      assert.equal(slack?.enabled, true);
+      assert.equal(slack?.configuredFieldCount, 2);
+      assert.match(slack?.values.allowFrom || '', /\+15555550123/);
+      assert.match(slack?.values.groups || '', /requireMention/);
+    } finally {
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'openClawConfigService migrates legacy qq channel entries during unrelated structured config saves',
+  async () => {
+    const { configurePlatformBridge, getPlatformBridge } = await import('@sdkwork/claw-infrastructure');
+    const { openClawConfigService } = await import('./openClawConfigService.ts');
+
+    const originalBridge = getPlatformBridge();
+    let fileContent = `{
+  channels: {
+    telegram: {
+      botToken: "123456:telegram-token",
+      enabled: true,
+    },
+    feishu: {
+      appId: "cli_a1234567890abcdef",
+      enabled: true,
+    },
+    qq: {
+      appId: "legacy-app-id",
+      clientSecret: "legacy-secret",
+      enabled: false,
+    },
+    defaults: {
+      enabled: false,
+    },
+    modelByChannel: {
+      telegram: {
+        "*": "openai/gpt-5.4",
+      },
+      feishu: {
+        "*": "openai/gpt-feishu",
+      },
+      qq: {
+        "*": "openai/gpt-legacy",
+      },
+      dingtalk: {
+        "*": "openai/gpt-legacy",
+      },
+    },
+  },
+  webSearch: {
+    enabled: false,
+  },
+}`;
+
+    configurePlatformBridge({
+      platform: createPlatformBridgeStub({
+        readFile: async () => fileContent,
+        writeFile: async (_path, content) => {
+          fileContent = content;
+        },
+      }),
+    });
+
+    try {
+      await openClawConfigService.saveWebSearchConfiguration({
+        configFile: 'D:/OpenClaw/.openclaw/openclaw.json',
+        enabled: true,
+        provider: 'searxng',
+        maxResults: 8,
+        timeoutSeconds: 20,
+        cacheTtlMinutes: 10,
+        providerConfig: {
+          providerId: 'searxng',
+          baseUrl: 'http://127.0.0.1:8080',
+          advancedConfig: '',
+        },
+      });
+
+      const parsed = parseJson5<{
+        channels?: Record<string, unknown>;
+      }>(fileContent);
+
+      assert.equal(parsed.channels?.qq, undefined);
+      assert.deepEqual(parsed.channels?.qqbot, {
+        appId: 'legacy-app-id',
+        clientSecret: 'legacy-secret',
+        enabled: false,
+      });
+      assert.equal(typeof parsed.channels?.telegram, 'object');
+      assert.equal(typeof parsed.channels?.feishu, 'object');
+      assert.equal(typeof parsed.channels?.defaults, 'object');
+      assert.deepEqual(parsed.channels?.modelByChannel, {
+        feishu: {
+          '*': 'openai/gpt-feishu',
+        },
+        qqbot: {
+          '*': 'openai/gpt-legacy',
+        },
+        telegram: {
+          '*': 'openai/gpt-5.4',
+        },
+      });
+    } finally {
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
+
+await runTest(
+  'openClawConfigService migrates legacy qq channel entries during unrelated document helper saves',
+  async () => {
+    const { saveOpenClawWebSearchConfigInDocument } = await import('./openClawConfigService.ts');
+
+    const nextDocument = saveOpenClawWebSearchConfigInDocument(
+      `{
+  channels: {
+    qq: {
+      appId: "legacy-app-id",
+      clientSecret: "legacy-secret",
+      enabled: false,
+    },
+    modelByChannel: {
+      qq: {
+        "*": "openai/gpt-legacy",
+      },
+    },
+  },
+  webSearch: {
+    enabled: false,
+  },
+}`,
+      {
+        enabled: true,
+        provider: 'searxng',
+        maxResults: 8,
+        timeoutSeconds: 20,
+        cacheTtlMinutes: 10,
+        providerConfig: {
+          providerId: 'searxng',
+          baseUrl: 'http://127.0.0.1:8080',
+          advancedConfig: '',
+        },
+      },
+    );
+
+    const parsed = parseJson5<{
+      channels?: Record<string, unknown>;
+    }>(nextDocument);
+
+    assert.equal(parsed.channels?.qq, undefined);
+    assert.deepEqual(parsed.channels?.qqbot, {
+      appId: 'legacy-app-id',
+      clientSecret: 'legacy-secret',
+      enabled: false,
+    });
+    assert.deepEqual(parsed.channels?.modelByChannel, {
+      qqbot: {
+        '*': 'openai/gpt-legacy',
+      },
+    });
+  },
+);
+
+await runTest(
+  'openClawConfigService migrates legacy qq channel entries when saving raw config documents',
+  async () => {
+    const { configurePlatformBridge, getPlatformBridge } = await import('@sdkwork/claw-infrastructure');
+    const { openClawConfigService } = await import('./openClawConfigService.ts');
+
+    const originalBridge = getPlatformBridge();
+    let fileContent = '';
+
+    configurePlatformBridge({
+      platform: createPlatformBridgeStub({
+        getPathInfo: async (path) => ({
+          path,
+          name: 'openclaw.json',
+          kind: 'file',
+          size: 0,
+          extension: '.json',
+          exists: true,
+          lastModifiedMs: 1,
+        }),
+        writeFile: async (_path, content) => {
+          fileContent = content;
+        },
+      }),
+    });
+
+    try {
+      await openClawConfigService.writeConfigDocument(
+        'D:/OpenClaw/.openclaw/openclaw.json',
+        `{
+  channels: {
+    telegram: {
+      botToken: "123456:telegram-token",
+      enabled: true,
+    },
+    qq: {
+      appId: "legacy-app-id",
+      clientSecret: "legacy-secret",
+      enabled: true,
+    },
+    modelByChannel: {
+      telegram: {
+        "*": "openai/gpt-5.4",
+      },
+      qq: {
+        "*": "openai/gpt-legacy",
+      },
+    },
+  },
+}`,
+      );
+
+      const parsed = parseJson5<{
+        channels?: Record<string, unknown>;
+      }>(fileContent);
+
+      assert.equal(parsed.channels?.qq, undefined);
+      assert.deepEqual(parsed.channels?.qqbot, {
+        appId: 'legacy-app-id',
+        clientSecret: 'legacy-secret',
+        enabled: true,
+      });
+      assert.deepEqual(parsed.channels?.modelByChannel, {
+        qqbot: {
+          '*': 'openai/gpt-legacy',
+        },
+        telegram: {
+          '*': 'openai/gpt-5.4',
+        },
+      });
     } finally {
       configurePlatformBridge(originalBridge);
     }

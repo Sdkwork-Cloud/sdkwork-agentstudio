@@ -147,31 +147,33 @@ function createWorkbench(): InstanceWorkbenchSnapshot {
     },
     configChannels: [
       {
-        id: 'sdkworkchat',
-        name: 'Sdkwork Chat',
-        description: 'Built-in channel',
+        id: 'slack',
+        name: 'Slack',
+        description: 'Slack channel',
         status: 'connected',
         enabled: true,
-        configurationMode: 'none',
-        fieldCount: 0,
-        configuredFieldCount: 0,
-        setupSteps: [],
-        values: {},
+        configurationMode: 'required',
+        fieldCount: 2,
+        configuredFieldCount: 2,
+        setupSteps: ['Add bot token', 'Add app token'],
+        values: {
+          botToken: 'xoxb-token',
+          appToken: 'xapp-token',
+        },
         fields: [],
       },
       {
-        id: 'wechat',
-        name: 'WeChat',
-        description: 'WeChat channel',
+        id: 'telegram',
+        name: 'Telegram',
+        description: 'Telegram channel',
         status: 'not_configured',
         enabled: false,
         configurationMode: 'required',
-        fieldCount: 2,
+        fieldCount: 1,
         configuredFieldCount: 0,
-        setupSteps: ['Add app id', 'Add app secret'],
+        setupSteps: ['Add bot token'],
         values: {
-          appId: '',
-          appSecret: '',
+          botToken: '',
         },
         fields: [],
       },
@@ -426,7 +428,7 @@ await runTest(
     sessions: { visibility: 'tree' }
   },
   channels: {
-    wechat: {
+    telegram: {
       enabled: true
     }
   },
@@ -565,7 +567,7 @@ await runTest(
     OPENAI_API_KEY: "sk-live-123"
   },
   channels: {
-    sdkworkchat: {
+    slack: {
       enabled: true
     }
   }
@@ -605,7 +607,7 @@ await runTest(
           kind: 'added',
           before: undefined,
           after: {
-            sdkworkchat: {
+            slack: {
               enabled: true,
             },
           },

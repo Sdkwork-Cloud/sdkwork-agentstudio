@@ -597,6 +597,7 @@ mod tests {
         paths::resolve_paths_for_root,
         services::{
             kernel_runtime_authority::KernelRuntimeAuthorityService,
+            openclaw_channel_config::write_test_openclaw_channel_metadata,
             openclaw_runtime::BundledOpenClawManifest,
         },
     };
@@ -960,6 +961,7 @@ mod tests {
             .join("package.json");
 
         fs::create_dir_all(cli_path.parent().expect("cli parent")).expect("cli dir");
+        write_test_openclaw_channel_metadata(&runtime_root);
         fs::create_dir_all(
             openclaw_package_json_path
                 .parent()

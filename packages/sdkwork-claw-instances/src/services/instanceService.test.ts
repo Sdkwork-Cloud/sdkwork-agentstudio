@@ -1486,9 +1486,9 @@ await runTest(
       },
     });
 
-    await service.saveOpenClawChannelConfig('managed-openclaw', 'qq', {
-      botKey: 'qq-bot-key',
-      groupId: '123456',
+    await service.saveOpenClawChannelConfig('managed-openclaw', 'telegram', {
+      botToken: '123456:telegram-token',
+      webhookUrl: 'https://example.com/telegram/webhook',
     });
 
     assert.deepEqual(gatewaySnapshotCalls, ['managed-openclaw']);
@@ -1497,9 +1497,9 @@ await runTest(
     assert.equal(gatewayWriteCalls[0]?.[1].baseHash, 'hash-channel-save');
     assert.deepEqual(requireParsedOpenClawConfig(gatewayWriteCalls[0]![1].raw), {
       channels: {
-        qq: {
-          botKey: 'qq-bot-key',
-          groupId: '123456',
+        telegram: {
+          botToken: '123456:telegram-token',
+          webhookUrl: 'https://example.com/telegram/webhook',
           enabled: true,
         },
       },
@@ -2044,9 +2044,9 @@ await runTest(
             baseHash: 'hash-channel-enabled',
             config: {
               channels: {
-                qq: {
-                  botKey: 'qq-bot-key',
-                  groupId: '123456',
+                telegram: {
+                  botToken: '123456:telegram-token',
+                  webhookUrl: 'https://example.com/telegram/webhook',
                   enabled: true,
                 },
               },
@@ -2068,7 +2068,7 @@ await runTest(
       },
     });
 
-    await service.setOpenClawChannelEnabled('managed-openclaw', 'qq', false);
+    await service.setOpenClawChannelEnabled('managed-openclaw', 'telegram', false);
 
     assert.deepEqual(gatewaySnapshotCalls, ['managed-openclaw']);
     assert.equal(gatewayWriteCalls.length, 1);
@@ -2076,9 +2076,9 @@ await runTest(
     assert.equal(gatewayWriteCalls[0]?.[1].baseHash, 'hash-channel-enabled');
     assert.deepEqual(requireParsedOpenClawConfig(gatewayWriteCalls[0]![1].raw), {
       channels: {
-        qq: {
-          botKey: 'qq-bot-key',
-          groupId: '123456',
+        telegram: {
+          botToken: '123456:telegram-token',
+          webhookUrl: 'https://example.com/telegram/webhook',
           enabled: false,
         },
       },
@@ -3012,18 +3012,18 @@ await runTest(
       },
     });
 
-    await service.saveOpenClawChannelConfig('managed-openclaw', 'qq', {
-      botKey: 'qq-bot-key',
-      groupId: '123456',
+    await service.saveOpenClawChannelConfig('managed-openclaw', 'telegram', {
+      botToken: '123456:telegram-token',
+      webhookUrl: 'https://example.com/telegram/webhook',
     });
 
     assert.deepEqual(saveCalls, [
       {
         configFile: 'D:/OpenClaw/managed-openclaw/.openclaw/openclaw.json',
-        channelId: 'qq',
+        channelId: 'telegram',
         values: {
-          botKey: 'qq-bot-key',
-          groupId: '123456',
+          botToken: '123456:telegram-token',
+          webhookUrl: 'https://example.com/telegram/webhook',
         },
         enabled: true,
       },

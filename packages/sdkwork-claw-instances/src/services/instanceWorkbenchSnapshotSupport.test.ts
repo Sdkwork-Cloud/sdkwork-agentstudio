@@ -539,15 +539,15 @@ await runTest(
           setupSteps: ['Configure token'],
         },
         {
-          id: 'qq',
-          name: 'QQ',
-          description: 'Catalog QQ channel',
+          id: 'telegram',
+          name: 'Telegram',
+          description: 'Catalog Telegram channel',
           status: 'not_configured',
           enabled: false,
           configurationMode: 'required',
           fieldCount: 1,
           configuredFieldCount: 0,
-          setupSteps: ['Configure bot'],
+          setupSteps: ['Configure bot token'],
         },
       ],
     );
@@ -573,7 +573,7 @@ await runTest(
     assert.equal(finalized?.sectionAvailability.files.status, 'ready');
     assert.deepEqual(
       finalized?.channels.map((channel) => channel.id),
-      ['slack', 'qq'],
+      ['slack', 'telegram'],
     );
     assert.equal(finalized?.channels.find((channel) => channel.id === 'slack')?.status, 'connected');
     assert.equal(finalized?.llmProviders[0]?.id, 'managed-openai');

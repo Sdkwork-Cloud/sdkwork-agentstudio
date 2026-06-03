@@ -112,6 +112,24 @@ test('desktop bootstrap app refreshes local ai proxy startup evidence from a fre
   );
 });
 
+test('desktop bootstrap app persists fresh OpenClaw config health evidence from desktop kernel info', () => {
+  const source = readFileSync(
+    path.join(import.meta.dirname, 'DesktopBootstrapApp.tsx'),
+    'utf8',
+  );
+
+  assert.match(
+    source,
+    /const captureLocalAiProxyEvidence = async[\s\S]*const openClawRuntime = kernelInfo\?\.openClawRuntime \?\? null;[\s\S]*startupEvidenceContextRef\.current = startupEvidenceContextRef\.current[\s\S]*openClawRuntime,[\s\S]*Fresh desktop kernel info captured OpenClaw config health startup evidence/,
+    'fresh kernel info probes must preserve OpenClaw runtime config-health facts in startup evidence context',
+  );
+  assert.match(
+    source,
+    /openClawRuntime:\s*startupEvidenceContextRef\.current\?\.openClawRuntime \?\? null,[\s\S]*readinessSnapshot,[\s\S]*localAiProxy,/,
+    'startup evidence persistence must forward the captured OpenClaw runtime health alongside readiness snapshots',
+  );
+});
+
 test('desktop bootstrap app preserves runtime-readiness-failed evidence when background readiness fails during bootstrap', () => {
   const source = readFileSync(
     path.join(import.meta.dirname, 'DesktopBootstrapApp.tsx'),

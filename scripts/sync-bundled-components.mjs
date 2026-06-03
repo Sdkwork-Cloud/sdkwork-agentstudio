@@ -222,10 +222,15 @@ function resolveComponentPinnedRef(component, desiredVersion) {
 export function shouldRefreshComponentRepository({
   componentId,
   noFetch = false,
+  releaseMode = false,
   desiredVersion = null,
   currentVersion = null,
   currentTags = [],
 } = {}) {
+  if (componentId === 'openclaw' && releaseMode) {
+    return false;
+  }
+
   if (componentId === 'openclaw' && desiredVersion) {
     if (currentVersion !== desiredVersion) {
       return true;
@@ -958,6 +963,7 @@ function ensureRepository(component) {
     shouldRefreshComponentRepository({
       componentId: component.id,
       noFetch,
+      releaseMode,
       desiredVersion,
       currentVersion,
       currentTags,

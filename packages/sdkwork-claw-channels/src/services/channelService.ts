@@ -1,5 +1,6 @@
 import { openClawConfigService } from '@sdkwork/claw-core';
 import { getPlatformBridge } from '@sdkwork/claw-infrastructure';
+import { isOpenClawBundledChannelId } from '@sdkwork/claw-types';
 import type {
   ListParams,
   PaginatedResult,
@@ -83,18 +84,27 @@ const CHANNEL_WRITE_UNAVAILABLE_ERROR =
   'Channel configuration is not writable for this instance.';
 
 const channelIconNameMap: Record<string, string> = {
-  sdkworkchat: 'MessageSquare',
-  wechat: 'Send',
-  wehcat: 'Send',
+  qqbot: 'MessageCircle',
   feishu: 'MessageCircle',
-  qq: 'Smile',
-  dingtalk: 'Zap',
+  'openclaw-weixin': 'MessageCircle',
   wecom: 'Building2',
+  'dingtalk-connector': 'MessageSquare',
+  dingtalk: 'MessageSquare',
+  imessage: 'MessageCircle',
+  irc: 'Hash',
+  matrix: 'Grid3X3',
+  mattermost: 'MessageSquare',
+  signal: 'Radio',
   telegram: 'Send',
-  discord: 'MessageSquare',
   slack: 'Hash',
-  googlechat: 'Webhook',
 };
+
+const retiredOpenClawWorkbenchChannelIds = new Set([
+  'qq',
+  'wechat',
+  'wehcat',
+  'sdkworkchat',
+]);
 
 function resolveChannelIconName(channelId: string, iconName?: string) {
   return iconName || channelIconNameMap[channelId] || 'MessageCircle';
@@ -227,23 +237,24 @@ function mapWorkbenchChannel(
   };
 }
 
-function mapUnknownWorkbenchChannel(current: WorkbenchChannelRecord): Channel {
-  const values = normalizeChannelValues(current.values);
-
+function mapExternalWorkbenchChannel(current: WorkbenchChannelRecord): Channel {
   return {
     id: current.id,
-    name: current.name,
-    description: current.description,
+    name: current.name || current.id,
+    description: current.description || 'Runtime-discovered OpenClaw channel.',
     icon: resolveChannelIconName(current.id),
-    status: current.status,
-    enabled: current.enabled,
+    status: current.status || 'not_configured',
+    enabled: typeof current.enabled === 'boolean' ? current.enabled : current.status === 'connected',
     configurationMode: current.configurationMode || 'required',
-    fieldCount: current.fieldCount,
+    fieldCount:
+      typeof current.fieldCount === 'number' && Number.isFinite(current.fieldCount)
+        ? current.fieldCount
+        : 0,
     configuredFieldCount:
-      typeof current.configuredFieldCount === 'number'
+      typeof current.configuredFieldCount === 'number' && Number.isFinite(current.configuredFieldCount)
         ? current.configuredFieldCount
-        : countConfiguredValues(values),
-    setupGuide: [...current.setupSteps],
+        : 0,
+    setupGuide: current.setupSteps ? [...current.setupSteps] : [],
     fields: [],
   };
 }
@@ -277,14 +288,8 @@ class ChannelService implements IChannelService {
       workbenchChannels.map((channel) => [channel.id, channel as WorkbenchChannelRecord] as const),
     );
 
-    const orderedIds = Array.from(
-      new Set([
-        ...definitions.map((definition) => definition.id),
-        ...workbenchChannels.map((channel) => channel.id),
-      ]),
-    );
-
-    return orderedIds.map((channelId) => {
+    const orderedIds = definitions.map((definition) => definition.id);
+    const mappedChannels = orderedIds.map((channelId) => {
       const definition = definitionById.get(channelId);
       const workbenchChannel = workbenchById.get(channelId);
 
@@ -292,12 +297,22 @@ class ChannelService implements IChannelService {
         return mapWorkbenchChannel(definition, workbenchChannel);
       }
 
-      if (!workbenchChannel) {
-        throw new Error(`Missing workbench channel mapping for "${channelId}"`);
+      throw new Error(`Missing OpenClaw channel definition for "${channelId}"`);
+    });
+
+    for (const channel of workbenchChannels) {
+      if (
+        isOpenClawBundledChannelId(channel.id) ||
+        retiredOpenClawWorkbenchChannelIds.has(channel.id) ||
+        !channel.id
+      ) {
+        continue;
       }
 
-      return mapUnknownWorkbenchChannel(workbenchChannel);
-    });
+      mappedChannels.push(mapExternalWorkbenchChannel(channel as WorkbenchChannelRecord));
+    }
+
+    return mappedChannels;
   }
 
   private requireSetInstanceChannelEnabled() {

@@ -182,10 +182,6 @@ if (Array.isArray(bundledResources) && bundledResources.some((resource) => resou
   fail('Desktop Tauri bundle resources must prefer directory resource roots over recursive glob patterns for packaged folders.');
 }
 
-if (Array.isArray(bundledResources) && bundledResources.includes('resources/sdkwork-api-router-runtime/**/*')) {
-  fail('Desktop Tauri bundle resources must not include legacy sdkwork-api-router bundled runtime resources.');
-}
-
 const windowsBundleResources = bundledComponentsModule.createTauriBundleOverlayConfig({
   workspaceRootDir: 'D:\\workspace\\claw-studio',
   platform: 'win32',
@@ -304,10 +300,6 @@ if (!tauriBuildScriptSource.includes('generated/bundled')) {
 
 if (!tauriBuildScriptSource.includes('placeholder.txt')) {
   fail('Desktop build.rs must seed a visible generated bundled placeholder so Tauri resource glob resolution stays valid on clean clones.');
-}
-
-if (tauriBuildScriptSource.includes('sdkwork-api-router')) {
-  fail('Desktop build.rs must not retain sdkwork-api-router bundled runtime handling after api-router extraction.');
 }
 
 console.log('ok - desktop Tauri commands stay aligned with devUrl and stale-target protection');

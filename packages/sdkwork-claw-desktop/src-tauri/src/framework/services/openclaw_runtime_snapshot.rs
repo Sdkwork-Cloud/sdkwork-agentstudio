@@ -1,9 +1,9 @@
 use crate::{
     framework::{
         kernel::{
-            DesktopOpenClawProviderProjectionInfo, DesktopOpenClawRuntimeAuthorityInfo,
-            DesktopOpenClawRuntimeAuthorityProbeInfo, DesktopOpenClawRuntimeInfo,
-            DesktopOpenClawRuntimeStageInfo,
+            DesktopOpenClawChannelConfigHealthInfo, DesktopOpenClawProviderProjectionInfo,
+            DesktopOpenClawRuntimeAuthorityInfo, DesktopOpenClawRuntimeAuthorityProbeInfo,
+            DesktopOpenClawRuntimeInfo, DesktopOpenClawRuntimeStageInfo,
         },
         paths::AppPaths,
         services::{
@@ -14,7 +14,10 @@ use crate::{
                 LocalAiProxyService, LocalAiProxyServiceStatus, OPENCLAW_LOCAL_PROXY_PROVIDER_AUTH,
                 OPENCLAW_LOCAL_PROXY_PROVIDER_ID,
             },
-            openclaw_runtime::{load_manifest, ActivatedOpenClawRuntime, OPENCLAW_RUNTIME_ID},
+            openclaw_runtime::{
+                collect_openclaw_runtime_channel_ids, load_manifest, ActivatedOpenClawRuntime,
+                OPENCLAW_RUNTIME_ID,
+            },
             supervisor::{
                 ManagedServiceLifecycle, ManagedServiceSnapshot, SupervisorService,
                 SERVICE_ID_OPENCLAW_GATEWAY,
@@ -157,6 +160,12 @@ impl OpenClawRuntimeSnapshotService {
                     health_probe_timeout_ms: authority.readiness_probe.health_probe_timeout_ms,
                 },
             },
+            channel_config_health: Some(build_channel_config_health(
+                configured_runtime.as_ref(),
+                &readable_config_path,
+                &config_root,
+                config_error.as_deref(),
+            )),
             provider_projection: DesktopOpenClawProviderProjectionInfo {
                 provider_id: OPENCLAW_LOCAL_PROXY_PROVIDER_ID.to_string(),
                 available: provider_projection.available,
@@ -394,6 +403,91 @@ fn build_provider_projection(
     }
 }
 
+fn build_channel_config_health(
+    configured_runtime: Option<&ActivatedOpenClawRuntime>,
+    config_path: &Path,
+    config_root: &Value,
+    config_error: Option<&str>,
+) -> DesktopOpenClawChannelConfigHealthInfo {
+    let supported_channel_ids = configured_runtime
+        .map(|runtime| collect_openclaw_runtime_channel_ids(&runtime.runtime_dir))
+        .transpose();
+    let (runtime_metadata_available, supported_channel_ids) = match supported_channel_ids {
+        Ok(Some(channel_ids)) => (true, channel_ids.into_iter().collect::<Vec<String>>()),
+        Ok(None) | Err(_) => (false, Vec::new()),
+    };
+    let supported_channel_id_set = supported_channel_ids
+        .iter()
+        .cloned()
+        .collect::<std::collections::BTreeSet<_>>();
+    let config_readable = config_error.is_none() && config_path.exists();
+    let mut configured_channel_ids = Vec::new();
+    let mut unknown_channel_ids = Vec::new();
+    let mut malformed_channel_ids = Vec::new();
+    let mut model_by_channel_ids = Vec::new();
+    let mut unknown_model_by_channel_ids = Vec::new();
+    let mut invalid_model_by_channel_ids = Vec::new();
+
+    if let Some(channels_root) = config_root.get("channels").and_then(Value::as_object) {
+        for (channel_id, value) in channels_root {
+            if channel_id == "defaults" || channel_id == "modelByChannel" {
+                continue;
+            }
+
+            if supported_channel_id_set.contains(channel_id) {
+                if value.is_object() {
+                    configured_channel_ids.push(channel_id.clone());
+                } else {
+                    malformed_channel_ids.push(channel_id.clone());
+                }
+            } else {
+                unknown_channel_ids.push(channel_id.clone());
+            }
+        }
+
+        if let Some(model_by_channel) = channels_root
+            .get("modelByChannel")
+            .and_then(Value::as_object)
+        {
+            for (channel_id, value) in model_by_channel {
+                if !supported_channel_id_set.contains(channel_id) {
+                    unknown_model_by_channel_ids.push(channel_id.clone());
+                } else if value.as_object().is_some_and(|overrides| {
+                    !overrides.is_empty() && overrides.values().all(Value::is_string)
+                }) {
+                    model_by_channel_ids.push(channel_id.clone());
+                } else {
+                    invalid_model_by_channel_ids.push(channel_id.clone());
+                }
+            }
+        } else if channels_root.contains_key("modelByChannel") {
+            invalid_model_by_channel_ids.push("modelByChannel".to_string());
+        }
+    }
+
+    let valid = runtime_metadata_available
+        && config_readable
+        && unknown_channel_ids.is_empty()
+        && malformed_channel_ids.is_empty()
+        && unknown_model_by_channel_ids.is_empty()
+        && invalid_model_by_channel_ids.is_empty();
+    let status = if valid { "ready" } else { "degraded" }.to_string();
+
+    DesktopOpenClawChannelConfigHealthInfo {
+        status,
+        valid,
+        runtime_metadata_available,
+        config_readable,
+        supported_channel_ids,
+        configured_channel_ids,
+        unknown_channel_ids,
+        malformed_channel_ids,
+        model_by_channel_ids,
+        unknown_model_by_channel_ids,
+        invalid_model_by_channel_ids,
+    }
+}
+
 fn resolve_expected_provider_projection_contract(
     local_ai_proxy_status: &LocalAiProxyServiceStatus,
 ) -> Option<ExpectedProviderProjectionContract> {
@@ -501,8 +595,7 @@ fn readable_openclaw_config_path(paths: &AppPaths) -> Result<PathBuf> {
 }
 
 fn active_openclaw_config_path(paths: &AppPaths) -> Result<PathBuf> {
-    KernelRuntimeAuthorityService::new()
-        .active_config_file_path("openclaw", paths)
+    KernelRuntimeAuthorityService::new().active_config_file_path("openclaw", paths)
 }
 
 fn path_string(path: &Path) -> String {
@@ -511,7 +604,8 @@ fn path_string(path: &Path) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::build_provider_projection;
+    use super::{build_channel_config_health, build_provider_projection};
+    use crate::framework::services::openclaw_runtime::ActivatedOpenClawRuntime;
     use crate::framework::services::{
         local_ai_proxy::{
             LocalAiProxyDefaultRouteHealth, LocalAiProxyLifecycle, LocalAiProxyServiceHealth,
@@ -520,6 +614,7 @@ mod tests {
         local_ai_proxy_snapshot::LOCAL_AI_PROXY_DEFAULT_PORT,
     };
     use serde_json::json;
+    use std::path::PathBuf;
 
     fn default_local_ai_proxy_root_base_url() -> String {
         format!("http://127.0.0.1:{LOCAL_AI_PROXY_DEFAULT_PORT}")
@@ -533,7 +628,13 @@ mod tests {
     fn openclaw_runtime_snapshot_production_path_has_no_panic_exits() {
         let source = include_str!("openclaw_runtime_snapshot.rs");
         let production_source = source.split("#[cfg(test)]").next().unwrap_or(source);
-        let forbidden_patterns = [".expect(", ".unwrap(", "panic!(", "todo!(", "unimplemented!("];
+        let forbidden_patterns = [
+            ".expect(",
+            ".unwrap(",
+            "panic!(",
+            "todo!(",
+            "unimplemented!(",
+        ];
         let mut offenders = Vec::new();
 
         for (index, line) in production_source.lines().enumerate() {
@@ -578,6 +679,77 @@ mod tests {
             route_tests: Vec::new(),
             last_error: None,
         }
+    }
+
+    #[test]
+    fn build_channel_config_health_reports_stale_channel_roots_without_config_contents() {
+        let config_root = json!({
+            "channels": {
+                "telegram": {},
+                "qq": {},
+                "slack": ["malformed"],
+                "modelByChannel": {
+                    "telegram": {
+                        "*": "sdkwork-local-proxy/gpt-5.4-mini"
+                    },
+                    "dingtalk": {
+                        "*": "sdkwork-local-proxy/gpt-5.4-mini"
+                    },
+                    "signal": ["malformed"]
+                }
+            }
+        });
+        let temp_dir = tempfile::tempdir().expect("temp dir");
+        let install_dir = temp_dir.path().join("install");
+        let runtime_dir = install_dir.join("runtime");
+        let extensions_dir = runtime_dir
+            .join("package")
+            .join("node_modules")
+            .join("openclaw")
+            .join("dist")
+            .join("extensions");
+        for channel_id in ["telegram", "slack", "signal"] {
+            let package_path = extensions_dir.join(channel_id).join("package.json");
+            std::fs::create_dir_all(package_path.parent().expect("package parent"))
+                .expect("create package parent");
+            std::fs::write(
+                package_path,
+                format!(r#"{{"openclaw":{{"channel":{{"id":"{channel_id}"}}}}}}"#),
+            )
+            .expect("write package metadata");
+        }
+        let config_path = temp_dir.path().join("openclaw.json");
+        std::fs::write(&config_path, "{}").expect("write config");
+        let runtime = ActivatedOpenClawRuntime {
+            install_key: "test-runtime".to_string(),
+            install_dir,
+            runtime_dir,
+            node_path: PathBuf::from("node"),
+            cli_path: PathBuf::from("openclaw"),
+            home_dir: temp_dir.path().join("home"),
+            state_dir: temp_dir.path().join("state"),
+            workspace_dir: temp_dir.path().join("workspace"),
+            config_path: config_path.clone(),
+            gateway_port: 21_280,
+            gateway_auth_token: "secret-token".to_string(),
+        };
+
+        let health = build_channel_config_health(Some(&runtime), &config_path, &config_root, None);
+
+        assert_eq!(health.status, "degraded");
+        assert!(!health.valid);
+        assert!(health.runtime_metadata_available);
+        assert!(health.config_readable);
+        assert_eq!(
+            health.supported_channel_ids,
+            vec!["signal", "slack", "telegram"]
+        );
+        assert_eq!(health.configured_channel_ids, vec!["telegram"]);
+        assert_eq!(health.unknown_channel_ids, vec!["qq"]);
+        assert_eq!(health.malformed_channel_ids, vec!["slack"]);
+        assert_eq!(health.model_by_channel_ids, vec!["telegram"]);
+        assert_eq!(health.unknown_model_by_channel_ids, vec!["dingtalk"]);
+        assert_eq!(health.invalid_model_by_channel_ids, vec!["signal"]);
     }
 
     #[test]

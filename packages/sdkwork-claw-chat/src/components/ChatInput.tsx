@@ -1096,13 +1096,18 @@ export function ChatInput({
           });
       });
 
-      if (kind === 'screen-recording') {
-        const videoTrack = stream.getVideoTracks()[0];
-        videoTrack?.addEventListener('ended', () => {
-          if (recorder.state !== 'inactive') {
-            recorder.stop();
-          }
-        });
+      const videoTrack = kind === 'screen-recording' ? stream.getVideoTracks()[0] : undefined;
+      const handleVideoTrackEnded = () => {
+        if (recorder.state !== 'inactive') {
+          recorder.stop();
+        }
+      };
+
+      if (videoTrack) {
+        videoTrack.addEventListener('ended', handleVideoTrackEnded);
+        recorder.addEventListener('stop', () => {
+          videoTrack.removeEventListener('ended', handleVideoTrackEnded);
+        }, { once: true });
       }
 
       recorder.start(250);
@@ -1294,8 +1299,16 @@ export function ChatInput({
 
     updateModelDropdownPosition();
 
+    let repositionFrame: number | null = null;
     const handleReposition = () => {
-      updateModelDropdownPosition();
+      if (repositionFrame !== null) {
+        return;
+      }
+
+      repositionFrame = window.requestAnimationFrame(() => {
+        repositionFrame = null;
+        updateModelDropdownPosition();
+      });
     };
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -1312,6 +1325,9 @@ export function ChatInput({
       window.removeEventListener('resize', handleReposition);
       window.removeEventListener('scroll', handleReposition, true);
       window.removeEventListener('keydown', handleEscape);
+      if (repositionFrame !== null) {
+        window.cancelAnimationFrame(repositionFrame);
+      }
     };
   }, [showModelDropdown, activeChannel?.id]);
 

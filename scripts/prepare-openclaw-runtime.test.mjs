@@ -68,6 +68,10 @@ const actualNodeVersion = process.version.replace(/^v/i, '');
 const expectedOpenClawVersion = DEFAULT_OPENCLAW_VERSION;
 const prereleaseOpenClawVersion = `${expectedOpenClawVersion}-beta.1`;
 const expectedNodeVersion = DEFAULT_NODE_VERSION;
+const defaultRuntimeSupplementalPackages = [
+  `@openclaw/feishu@${expectedOpenClawVersion}`,
+  `@openclaw/qqbot@${expectedOpenClawVersion}`,
+];
 const customRuntimeSupplementalPackages = ['@buape/carbon@0.14.0'];
 const cachedNodeRuntimeSidecarManifestRelativePath = '.sdkwork-node-runtime.json';
 const runtimeSidecarManifestRelativePath = path.join('runtime', '.sdkwork-openclaw-runtime.json');
@@ -96,6 +100,221 @@ async function writeAlreadyPatchedOpenClawServerImpl(packageDir) {
     ].join('\n'),
   );
   return serverImplPath;
+}
+
+async function writeOfficialQqbotSupplementalPackage(packageDir, version = expectedOpenClawVersion) {
+  const qqbotPackageDir = path.join(packageDir, 'node_modules', '@openclaw', 'qqbot');
+  await mkdir(path.join(qqbotPackageDir, 'dist'), { recursive: true });
+  await mkdir(
+    path.join(packageDir, 'node_modules', '@tencent-connect', 'qqbot-connector'),
+    { recursive: true },
+  );
+  await mkdir(path.join(packageDir, 'node_modules', 'ws'), { recursive: true });
+  await writeFile(
+    path.join(qqbotPackageDir, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@openclaw/qqbot',
+        version,
+        type: 'module',
+        dependencies: {
+          '@tencent-connect/qqbot-connector': '^1.1.0',
+          ws: '^8.20.0',
+        },
+        peerDependencies: {
+          openclaw: `>=${version}`,
+        },
+        openclaw: {
+          channel: {
+            id: 'qqbot',
+            label: 'QQ Bot',
+          },
+          runtimeExtensions: ['./dist/index.js'],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(
+    path.join(qqbotPackageDir, 'openclaw.plugin.json'),
+    `${JSON.stringify(
+      {
+        id: 'qqbot',
+        channelConfigs: {
+          qqbot: {
+            label: 'QQ Bot',
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(path.join(qqbotPackageDir, 'dist', 'index.js'), 'export {};\n');
+  await writeFile(
+    path.join(packageDir, 'node_modules', '@tencent-connect', 'qqbot-connector', 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@tencent-connect/qqbot-connector',
+        version: '1.1.0',
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(
+    path.join(packageDir, 'node_modules', 'ws', 'package.json'),
+    `${JSON.stringify(
+      {
+        name: 'ws',
+        version: '8.20.0',
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  return qqbotPackageDir;
+}
+
+async function writeOfficialFeishuSupplementalPackage(packageDir, version = expectedOpenClawVersion) {
+  const feishuPackageDir = path.join(packageDir, 'node_modules', '@openclaw', 'feishu');
+  await mkdir(path.join(feishuPackageDir, 'dist'), { recursive: true });
+  await mkdir(path.join(packageDir, 'node_modules', '@larksuiteoapi', 'node-sdk'), {
+    recursive: true,
+  });
+  await writeFile(
+    path.join(feishuPackageDir, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@openclaw/feishu',
+        version,
+        type: 'module',
+        dependencies: {
+          '@larksuiteoapi/node-sdk': '^1.52.0',
+        },
+        peerDependencies: {
+          openclaw: `>=${version}`,
+        },
+        openclaw: {
+          channel: {
+            id: 'feishu',
+            label: 'Feishu',
+          },
+          runtimeExtensions: ['./dist/index.js'],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(
+    path.join(feishuPackageDir, 'openclaw.plugin.json'),
+    `${JSON.stringify(
+      {
+        id: 'feishu',
+        channelConfigs: {
+          feishu: {
+            label: 'Feishu',
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(path.join(feishuPackageDir, 'dist', 'index.js'), 'export {};\n');
+  await writeFile(
+    path.join(packageDir, 'node_modules', '@larksuiteoapi', 'node-sdk', 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@larksuiteoapi/node-sdk',
+        version: '1.52.0',
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  return feishuPackageDir;
+}
+
+async function writeOfficialDefaultSupplementalPackages(packageDir, version = expectedOpenClawVersion) {
+  await writeOfficialFeishuSupplementalPackage(packageDir, version);
+  await writeOfficialQqbotSupplementalPackage(packageDir, version);
+}
+
+async function writePluginManifestOnlyQqbotSupplementalPackage(
+  packageDir,
+  version = expectedOpenClawVersion,
+) {
+  const qqbotPackageDir = path.join(packageDir, 'node_modules', '@openclaw', 'qqbot');
+  await mkdir(path.join(qqbotPackageDir, 'dist'), { recursive: true });
+  await writeFile(
+    path.join(qqbotPackageDir, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@openclaw/qqbot',
+        version,
+        type: 'module',
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(
+    path.join(qqbotPackageDir, 'openclaw.plugin.json'),
+    `${JSON.stringify(
+      {
+        id: 'qqbot',
+        channelConfigs: {
+          qqbot: {
+            label: 'QQ Bot',
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(path.join(qqbotPackageDir, 'dist', 'index.js'), 'export {};\n');
+  return qqbotPackageDir;
+}
+
+async function writePluginManifestOnlyFeishuSupplementalPackage(
+  packageDir,
+  version = expectedOpenClawVersion,
+) {
+  const feishuPackageDir = path.join(packageDir, 'node_modules', '@openclaw', 'feishu');
+  await mkdir(path.join(feishuPackageDir, 'dist'), { recursive: true });
+  await writeFile(
+    path.join(feishuPackageDir, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@openclaw/feishu',
+        version,
+        type: 'module',
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(
+    path.join(feishuPackageDir, 'openclaw.plugin.json'),
+    `${JSON.stringify(
+      {
+        id: 'feishu',
+        channelConfigs: {
+          feishu: {
+            label: 'Feishu',
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(path.join(feishuPackageDir, 'dist', 'index.js'), 'export {};\n');
+  return feishuPackageDir;
 }
 
 function resolveExpectedWindowsSystemCommand(command) {
@@ -225,9 +444,11 @@ try {
   }
   if (
     !Array.isArray(DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES)
-    || DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES.length !== 0
+    || JSON.stringify(DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES) !== JSON.stringify(defaultRuntimeSupplementalPackages)
   ) {
-    throw new Error('Expected prepared OpenClaw runtime supplemental package list to default to an empty array');
+    throw new Error(
+      `Expected prepared OpenClaw runtime supplemental package list to include ${defaultRuntimeSupplementalPackages.join(', ')}`,
+    );
   }
   if (typeof syncWindowsPackagedOpenClawAliasRoot !== 'function') {
     throw new Error('Expected prepare-openclaw-runtime to export syncWindowsPackagedOpenClawAliasRoot');
@@ -418,6 +639,7 @@ try {
     carbonPackageJsonPath,
     `${JSON.stringify({ name: '@buape/carbon', version: '0.14.0' }, null, 2)}\n`,
   );
+  await writeOfficialDefaultSupplementalPackages(path.join(sourceRuntimeDir, 'package'));
 
   const result = await prepareOpenClawRuntimeFromSource({
     sourceRuntimeDir,
@@ -431,6 +653,49 @@ try {
   await stat(path.join(resourceDir, 'manifest.json'));
   await stat(path.join(resourceDir, runtimeSidecarManifestRelativePath));
   await stat(path.join(resourceDir, '.gitkeep'));
+  await stat(
+    path.join(
+      resourceDir,
+      'runtime',
+      'package',
+      'node_modules',
+      'openclaw',
+      'dist',
+      'extensions',
+      'qqbot',
+      'openclaw.plugin.json',
+    ),
+  );
+  await stat(
+    path.join(
+      resourceDir,
+      'runtime',
+      'package',
+      'node_modules',
+      'openclaw',
+      'dist',
+      'extensions',
+      'feishu',
+      'openclaw.plugin.json',
+    ),
+  );
+  if (
+    existsSync(
+      path.join(
+        resourceDir,
+        'runtime',
+        'package',
+        'node_modules',
+        'openclaw',
+        'dist',
+        'extensions',
+        'qqbot',
+        'node_modules',
+      ),
+    )
+  ) {
+    throw new Error('Expected materialized qqbot extension to exclude nested node_modules');
+  }
 
   const copiedManifest = JSON.parse(await readFile(path.join(resourceDir, 'manifest.json'), 'utf8'));
   const copiedRuntimeSidecarManifest = JSON.parse(
@@ -490,6 +755,8 @@ try {
   for (const expectedRelativePath of [
     manifest.cliRelativePath.replace(/^runtime[\\/]/, '').replaceAll('\\', '/'),
     'package/node_modules/openclaw/package.json',
+    'package/node_modules/@openclaw/feishu/package.json',
+    'package/node_modules/@openclaw/qqbot/package.json',
   ]) {
     if (!runtimeIntegrityRelativePaths.has(expectedRelativePath)) {
       throw new Error(
@@ -530,6 +797,9 @@ try {
   await writeFile(
     centralOpenClawPackageJsonPath,
     `${JSON.stringify({ name: 'openclaw', version: expectedOpenClawVersion }, null, 2)}\n`,
+  );
+  await writeOfficialDefaultSupplementalPackages(
+    path.join(sourceRuntimeWithCentralConfigWriterDir, 'package'),
   );
   await writeFile(
     centralMutatePath,
@@ -667,6 +937,7 @@ try {
     macosCarbonPackageJsonPath,
     `${JSON.stringify({ name: '@buape/carbon', version: '0.14.0' }, null, 2)}\n`,
   );
+  await writeOfficialDefaultSupplementalPackages(path.join(macosSourceRuntimeDir, 'package'));
   await prepareOpenClawRuntimeFromSource({
     sourceRuntimeDir: macosSourceRuntimeDir,
     resourceDir: macosResourceDir,
@@ -976,11 +1247,13 @@ try {
     runtimeSupplementalPackages: DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
   });
   if (
-    installSpecs.length !== 1
+    installSpecs.length !== 3
     || installSpecs[0] !== `openclaw@${expectedOpenClawVersion}`
+    || installSpecs[1] !== defaultRuntimeSupplementalPackages[0]
+    || installSpecs[2] !== defaultRuntimeSupplementalPackages[1]
   ) {
     throw new Error(
-      `Expected default install specs to include only OpenClaw, received ${installSpecs.join(', ')}`,
+      `Expected default install specs to include OpenClaw, official Feishu, and official QQ Bot, received ${installSpecs.join(', ')}`,
     );
   }
   const customInstallSpecs = resolveOpenClawRuntimeInstallSpecs({
@@ -1043,6 +1316,69 @@ try {
   ) {
     throw new Error(
       `Expected missing bundled plugin runtime install specs to include tlon dependencies, received ${missingBundledPluginRuntimeInstallSpecs.join(', ')}`,
+    );
+  }
+  const pluginManifestOnlyRuntimeInstallSpecsRoot = path.join(
+    tempRoot,
+    'plugin-manifest-only-runtime-install-specs-root',
+  );
+  const pluginManifestOnlyPackageRoot = path.join(
+    pluginManifestOnlyRuntimeInstallSpecsRoot,
+    'node_modules',
+    'openclaw',
+  );
+  const pluginManifestOnlyPackageJsonPath = path.join(
+    pluginManifestOnlyPackageRoot,
+    'dist',
+    'extensions',
+    'wecom',
+    'package.json',
+  );
+  const pluginManifestOnlyManifestPath = path.join(
+    pluginManifestOnlyPackageRoot,
+    'dist',
+    'extensions',
+    'wecom',
+    'openclaw.plugin.json',
+  );
+  await mkdir(path.dirname(pluginManifestOnlyPackageJsonPath), { recursive: true });
+  await writeFile(
+    pluginManifestOnlyPackageJsonPath,
+    `${JSON.stringify(
+      {
+        name: '@openclaw/wecom',
+        version: prereleaseOpenClawVersion,
+        dependencies: {
+          '@wecom/robot-sdk': '1.2.3',
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(
+    pluginManifestOnlyManifestPath,
+    `${JSON.stringify(
+      {
+        id: 'wecom',
+        channelConfigs: {
+          wecom: {
+            label: 'WeCom',
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  const pluginManifestOnlyRuntimeInstallSpecs =
+    await resolveMissingBundledPluginRuntimeInstallSpecs({
+      packageRoot: pluginManifestOnlyPackageRoot,
+      packageInstallRoot: pluginManifestOnlyRuntimeInstallSpecsRoot,
+    });
+  if (!pluginManifestOnlyRuntimeInstallSpecs.includes('@wecom/robot-sdk@1.2.3')) {
+    throw new Error(
+      `Expected plugin manifest-only channelConfigs metadata to trigger runtime dependency discovery, received ${pluginManifestOnlyRuntimeInstallSpecs.join(', ')}`,
     );
   }
   const bundledPluginRuntimeHydrationTarget =
@@ -1556,6 +1892,7 @@ try {
     packageInstallRoot: optionalNativeRuntimeInstallRoot,
     modulesRoot: optionalNativeRuntimeModulesRoot,
     expectedOpenClawVersion,
+    runtimeSupplementalPackages: [],
   });
   const hydratedBundledPluginRuntimeInstallRoot = path.join(
     tempRoot,
@@ -2107,7 +2444,7 @@ try {
       resourceDir: path.join(tempRoot, 'invalid-resource-runtime-mismatched-openclaw-version'),
       openclawVersion: expectedOpenClawVersion,
       nodeVersion: actualNodeVersion,
-      runtimeSupplementalPackages: DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
+      runtimeSupplementalPackages: [],
       target,
     });
   } catch (error) {
@@ -2214,7 +2551,7 @@ try {
       resourceDir: path.join(tempRoot, 'invalid-resource-runtime-missing-bundled-plugin-runtime-dep'),
       openclawVersion: expectedOpenClawVersion,
       nodeVersion: actualNodeVersion,
-      runtimeSupplementalPackages: DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
+      runtimeSupplementalPackages: [],
       target,
     });
   } catch (error) {
@@ -2304,7 +2641,7 @@ try {
       resourceDir: path.join(tempRoot, 'invalid-resource-runtime-failing-native-smoke'),
       openclawVersion: expectedOpenClawVersion,
       nodeVersion: actualNodeVersion,
-      runtimeSupplementalPackages: DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES,
+      runtimeSupplementalPackages: [],
       target,
     });
   } catch (error) {
@@ -2381,6 +2718,9 @@ try {
     cliOnlyBuiltDependencyCarbonPackageJsonPath,
     `${JSON.stringify({ name: '@buape/carbon', version: '0.14.0' }, null, 2)}\n`,
   );
+  await writeOfficialDefaultSupplementalPackages(
+    path.join(cliOnlyBuiltDependencySourceRuntimeDir, 'package'),
+  );
   await writeFile(
     cliOnlyBuiltDependencyPackageJsonPath,
     `${JSON.stringify(
@@ -2408,6 +2748,7 @@ try {
   });
 
   const stagedPackageDir = path.join(tempRoot, 'staged-package');
+  const stagedWrapperPackageJsonPath = path.join(stagedPackageDir, 'package.json');
   const stagedCliPath = path.join(stagedPackageDir, 'node_modules', 'openclaw', 'openclaw.mjs');
   const stagedOpenclawPackageJsonPath = path.join(
     stagedPackageDir,
@@ -2428,6 +2769,20 @@ try {
   await mkdir(path.dirname(stagedOpenclawPackageJsonPath), { recursive: true });
   await mkdir(path.dirname(stagedCarbonPackageJsonPath), { recursive: true });
   await writeAlreadyPatchedOpenClawServerImpl(stagedPackageDir);
+  await writeFile(
+    stagedWrapperPackageJsonPath,
+    `${JSON.stringify(
+      {
+        name: 'bundled-openclaw-runtime',
+        private: true,
+        dependencies: {
+          openclaw: `file:${path.join(tempRoot, `openclaw-${expectedOpenClawVersion}.tgz`).replaceAll('\\', '/')}`,
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
   await writeFile(stagedCliPath, 'console.log(\"openclaw\");');
   await writeFile(
     stagedOpenclawPackageJsonPath,
@@ -2437,6 +2792,7 @@ try {
     stagedCarbonPackageJsonPath,
     `${JSON.stringify({ name: '@buape/carbon', version: '0.14.0' }, null, 2)}\n`,
   );
+  await writeOfficialDefaultSupplementalPackages(stagedPackageDir);
 
   await prepareOpenClawRuntimeFromStagedDirs({
     nodeSourceDir: path.join(tempRoot, 'unused-staged-node'),
@@ -2452,6 +2808,154 @@ try {
   }
   await stat(path.join(stagedResourceDir, 'runtime', 'package', 'node_modules', 'openclaw', 'openclaw.mjs'));
   await stat(path.join(stagedResourceDir, runtimeSidecarManifestRelativePath));
+  const stagedResourceWrapperPackageJson = JSON.parse(
+    await readFile(path.join(stagedResourceDir, 'runtime', 'package', 'package.json'), 'utf8'),
+  );
+  if (stagedResourceWrapperPackageJson.dependencies?.openclaw !== expectedOpenClawVersion) {
+    throw new Error(
+      `Expected prepared runtime wrapper package.json to normalize openclaw dependency to ${expectedOpenClawVersion}, received ${stagedResourceWrapperPackageJson.dependencies?.openclaw}`,
+    );
+  }
+  if (
+    stagedResourceWrapperPackageJson.dependencies?.['@openclaw/feishu']
+    !== expectedOpenClawVersion
+  ) {
+    throw new Error(
+      `Expected prepared runtime wrapper package.json to preserve @openclaw/feishu dependency ${expectedOpenClawVersion}, received ${stagedResourceWrapperPackageJson.dependencies?.['@openclaw/feishu']}`,
+    );
+  }
+  if (
+    stagedResourceWrapperPackageJson.dependencies?.['@openclaw/qqbot']
+    !== expectedOpenClawVersion
+  ) {
+    throw new Error(
+      `Expected prepared runtime wrapper package.json to preserve @openclaw/qqbot dependency ${expectedOpenClawVersion}, received ${stagedResourceWrapperPackageJson.dependencies?.['@openclaw/qqbot']}`,
+    );
+  }
+  await stat(
+    path.join(
+      stagedResourceDir,
+      'runtime',
+      'package',
+      'node_modules',
+      'openclaw',
+      'dist',
+      'extensions',
+      'qqbot',
+      'openclaw.plugin.json',
+    ),
+  );
+  await stat(
+    path.join(
+      stagedResourceDir,
+      'runtime',
+      'package',
+      'node_modules',
+      'openclaw',
+      'dist',
+      'extensions',
+      'feishu',
+      'openclaw.plugin.json',
+    ),
+  );
+
+  const stagedPluginManifestOnlyPackageDir = path.join(
+    tempRoot,
+    'staged-package-plugin-manifest-only-qqbot',
+  );
+  const stagedPluginManifestOnlyWrapperPackageJsonPath = path.join(
+    stagedPluginManifestOnlyPackageDir,
+    'package.json',
+  );
+  const stagedPluginManifestOnlyCliPath = path.join(
+    stagedPluginManifestOnlyPackageDir,
+    manifest.cliRelativePath.replace(/^runtime[\\/]package[\\/]/, ''),
+  );
+  const stagedPluginManifestOnlyOpenclawPackageJsonPath = path.join(
+    stagedPluginManifestOnlyPackageDir,
+    'node_modules',
+    'openclaw',
+    'package.json',
+  );
+  const stagedPluginManifestOnlyCarbonPackageJsonPath = path.join(
+    stagedPluginManifestOnlyPackageDir,
+    'node_modules',
+    '@buape',
+    'carbon',
+    'package.json',
+  );
+  const stagedPluginManifestOnlyResourceDir = path.join(
+    tempRoot,
+    'staged-resource-plugin-manifest-only-qqbot',
+  );
+
+  await mkdir(path.dirname(stagedPluginManifestOnlyCliPath), { recursive: true });
+  await mkdir(path.dirname(stagedPluginManifestOnlyOpenclawPackageJsonPath), { recursive: true });
+  await mkdir(path.dirname(stagedPluginManifestOnlyCarbonPackageJsonPath), { recursive: true });
+  await writeAlreadyPatchedOpenClawServerImpl(stagedPluginManifestOnlyPackageDir);
+  await writeFile(
+    stagedPluginManifestOnlyWrapperPackageJsonPath,
+    `${JSON.stringify(
+      {
+        name: 'bundled-openclaw-runtime',
+        private: true,
+        dependencies: {
+          openclaw: expectedOpenClawVersion,
+          '@openclaw/feishu': expectedOpenClawVersion,
+          '@openclaw/qqbot': expectedOpenClawVersion,
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await writeFile(stagedPluginManifestOnlyCliPath, 'console.log("openclaw");');
+  await writeFile(
+    stagedPluginManifestOnlyOpenclawPackageJsonPath,
+    `${JSON.stringify({ name: 'openclaw', version: expectedOpenClawVersion }, null, 2)}\n`,
+  );
+  await writeFile(
+    stagedPluginManifestOnlyCarbonPackageJsonPath,
+    `${JSON.stringify({ name: '@buape/carbon', version: '0.14.0' }, null, 2)}\n`,
+  );
+  await writePluginManifestOnlyFeishuSupplementalPackage(stagedPluginManifestOnlyPackageDir);
+  await writePluginManifestOnlyQqbotSupplementalPackage(stagedPluginManifestOnlyPackageDir);
+
+  await prepareOpenClawRuntimeFromStagedDirs({
+    nodeSourceDir: path.join(tempRoot, 'unused-plugin-manifest-only-node'),
+    packageSourceDir: stagedPluginManifestOnlyPackageDir,
+    resourceDir: stagedPluginManifestOnlyResourceDir,
+    openclawVersion: expectedOpenClawVersion,
+    nodeVersion: expectedNodeVersion,
+    target,
+  });
+
+  await stat(
+    path.join(
+      stagedPluginManifestOnlyResourceDir,
+      'runtime',
+      'package',
+      'node_modules',
+      'openclaw',
+      'dist',
+      'extensions',
+      'qqbot',
+      'openclaw.plugin.json',
+    ),
+  );
+  await stat(
+    path.join(
+      stagedPluginManifestOnlyResourceDir,
+      'runtime',
+      'package',
+      'node_modules',
+      'openclaw',
+      'dist',
+      'extensions',
+      'feishu',
+      'openclaw.plugin.json',
+    ),
+  );
 
   const reusableResourceDir = path.join(tempRoot, 'reusable-resource-runtime');
   await prepareOpenClawRuntimeFromSource({
@@ -2648,6 +3152,19 @@ try {
       'node_modules',
       'openclaw',
       'openclaw.mjs',
+    ),
+  );
+  await stat(
+    path.join(
+      cachePreparedResourceDir,
+      'runtime',
+      'package',
+      'node_modules',
+      'openclaw',
+      'dist',
+      'extensions',
+      'qqbot',
+      'openclaw.plugin.json',
     ),
   );
 

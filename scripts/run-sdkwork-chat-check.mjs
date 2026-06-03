@@ -38,6 +38,7 @@ runNodeTypeScriptChecks([
   'packages/sdkwork-claw-chat/src/pages/chatHydrationPolicy.test.ts',
   'packages/sdkwork-claw-chat/src/store/chatSessionPreferencesStore.test.ts',
   'packages/sdkwork-claw-chat/src/components/chatComposerLayerSurface.test.ts',
+  'packages/sdkwork-claw-chat/src/components/chatClipboard.test.ts',
   'packages/sdkwork-claw-chat/src/components/chatAgentCreationFlow.test.ts',
   'packages/sdkwork-claw-chat/src/components/floatingMenuPosition.test.ts',
   'packages/sdkwork-claw-chat/src/components/chatSidebarLayout.test.ts',

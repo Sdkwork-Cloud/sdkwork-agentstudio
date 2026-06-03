@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   DEFAULT_BUNDLED_OPENCLAW_VERSION,
+  listOpenClawChannelDefinitions,
   type StudioInstanceDetailRecord,
 } from '@sdkwork/claw-types';
 import { buildOpenClawAgentFileId } from './openClawSupport.ts';
@@ -29,22 +30,8 @@ type ConfigSnapshot =
     ReturnType<InstanceWorkbenchServiceDependencies['openClawConfigDocumentApi']['readConfigSnapshot']>
   >;
 type ConfigRoute = StudioInstanceDetailRecord['dataAccess']['routes'][number];
-type ConfigChannelField =
-  ReturnType<
-    InstanceWorkbenchServiceDependencies['openClawConfigDocumentApi']['getChannelDefinitions']
-  >[number]['fields'][number];
 type LiveTask =
   Awaited<ReturnType<InstanceWorkbenchServiceDependencies['openClawGatewayClient']['listWorkbenchCronJobs']>>[number];
-
-function createChannelField(key: string): ConfigChannelField {
-  const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (value) => value.toUpperCase());
-
-  return {
-    key,
-    label,
-    placeholder: label,
-  };
-}
 
 function createConfigSnapshot(
   configPath = '',
@@ -142,99 +129,6 @@ function createConfigRoute(
   };
 }
 
-const DEFAULT_CHANNEL_DEFINITIONS: ReturnType<
-  InstanceWorkbenchServiceDependencies['openClawConfigDocumentApi']['getChannelDefinitions']
-> = [
-  {
-    id: 'sdkworkchat',
-    name: 'SDKWORK Chat',
-    description: 'Built-in SDKWORK chat relay.',
-    configurationMode: 'none',
-    fields: [],
-    setupSteps: ['SDKWORK Chat is available immediately.'],
-  },
-  {
-    id: 'wechat',
-    name: 'WeChat',
-    description: 'WeChat direct chat integration.',
-    configurationMode: 'none',
-    fields: [],
-    setupSteps: ['Scan the WeChat connection QR code or keep the direct chat runtime enabled.'],
-  },
-  {
-    id: 'wehcat',
-    name: 'WeChat Official Account',
-    description: 'WeChat official account integration.',
-    configurationMode: 'required',
-    fields: [createChannelField('appId'), createChannelField('appSecret')],
-    setupSteps: ['Configure the WeChat application credentials.'],
-  },
-  {
-    id: 'qq',
-    name: 'QQ',
-    description: 'QQ channel integration.',
-    configurationMode: 'required',
-    fields: [createChannelField('appId'), createChannelField('token')],
-    setupSteps: ['Configure the QQ bot credentials.'],
-  },
-  {
-    id: 'dingtalk',
-    name: 'DingTalk',
-    description: 'DingTalk channel integration.',
-    configurationMode: 'required',
-    fields: [createChannelField('clientId'), createChannelField('clientSecret')],
-    setupSteps: ['Configure the DingTalk app credentials.'],
-  },
-  {
-    id: 'wecom',
-    name: 'WeCom',
-    description: 'WeCom channel integration.',
-    configurationMode: 'required',
-    fields: [createChannelField('corpId'), createChannelField('secret')],
-    setupSteps: ['Configure the WeCom credentials.'],
-  },
-  {
-    id: 'feishu',
-    name: 'Feishu',
-    description: 'Feishu channel integration.',
-    configurationMode: 'required',
-    fields: [createChannelField('appId'), createChannelField('appSecret')],
-    setupSteps: ['Configure the Feishu application credentials.'],
-  },
-  {
-    id: 'telegram',
-    name: 'Telegram',
-    description: 'Telegram channel integration.',
-    configurationMode: 'required',
-    fields: [createChannelField('botToken')],
-    setupSteps: ['Configure the Telegram bot token.'],
-  },
-  {
-    id: 'whatsapp',
-    name: 'WhatsApp',
-    description: 'WhatsApp channel runtime integration.',
-    configurationMode: 'none',
-    fields: [createChannelField('allowFrom'), createChannelField('groups')],
-    setupSteps: ['Authenticate the WhatsApp runtime session.'],
-  },
-  {
-    id: 'discord',
-    name: 'Discord',
-    description: 'Discord channel integration.',
-    configurationMode: 'required',
-    fields: [createChannelField('token')],
-    setupSteps: ['Configure the Discord bot token.'],
-  },
-  {
-    id: 'slack',
-    name: 'Slack',
-    description: 'Slack notification delivery.',
-    configurationMode: 'required',
-    fields: [createChannelField('token'), createChannelField('workspace')],
-    setupSteps: ['Connect a Slack workspace account.'],
-  },
-];
-
 function resolveConfigFile(detail: StudioInstanceDetailRecord | null | undefined) {
   const configRoute = detail?.dataAccess?.routes?.find((route) => route.scope === 'config');
   if (configRoute) {
@@ -261,7 +155,7 @@ const openClawConfigDocumentApi: InstanceWorkbenchServiceDependencies['openClawC
   {
   readConfigSnapshot: async (configPath: string) => createConfigSnapshot(configPath),
   getChannelDefinitions: () =>
-    DEFAULT_CHANNEL_DEFINITIONS.map((definition) => ({
+    listOpenClawChannelDefinitions().map((definition) => ({
       ...definition,
       fields: definition.fields.map((field) => ({ ...field })),
       setupSteps: [...definition.setupSteps],
@@ -979,12 +873,10 @@ await runTest('getInstanceWorkbench builds a remote OpenClaw snapshot from gatew
   assert.ok(workbench);
   assert.deepEqual(
     workbench?.channels.slice(0, 6).map((channel) => channel.id),
-    ['sdkworkchat', 'wechat', 'wehcat', 'qq', 'dingtalk', 'wecom'],
+    ['qqbot', 'feishu', 'imessage', 'irc', 'matrix', 'mattermost'],
   );
-  assert.equal(workbench?.channels.some((channel) => channel.id === 'slack'), true);
   assert.equal(workbench?.channels.find((channel) => channel.id === 'slack')?.status, 'connected');
-  assert.equal(workbench?.channels.find((channel) => channel.id === 'qq')?.status, 'not_configured');
-  assert.equal(workbench?.channels.find((channel) => channel.id === 'sdkworkchat')?.status, 'connected');
+  assert.equal(workbench?.channels.find((channel) => channel.id === 'telegram')?.status, 'not_configured');
   assert.equal(workbench?.tasks.length, 1);
   assert.equal(workbench?.tasks[0]?.id, 'job-ops-daily');
   assert.equal(workbench?.llmProviders.length, 1);
@@ -2393,9 +2285,9 @@ await runTest('getInstanceWorkbench keeps Provider Center managed llmProviders a
     assert.ok(workbench);
     assert.deepEqual(
       workbench?.channels.slice(0, 6).map((channel) => channel.id),
-      ['sdkworkchat', 'wechat', 'wehcat', 'qq', 'dingtalk', 'wecom'],
+      ['qqbot', 'feishu', 'imessage', 'irc', 'matrix', 'mattermost'],
     );
-    assert.equal(workbench?.channels.some((channel) => channel.id === 'slack'), true);
+    assert.equal(workbench?.channels.some((channel) => channel.id === 'telegram'), true);
     assert.equal(workbench?.channels.some((channel) => channel.id === 'old-channel'), true);
     assert.equal(workbench?.tasks[0]?.id, 'live-task-1');
     assert.equal(workbench?.llmProviders[0]?.id, 'sdkwork-local-proxy');
@@ -2644,8 +2536,8 @@ await runTest('getInstanceWorkbench keeps config channel editing metadata when O
       isStandardUserRootLayout: true,
     });
     assert.equal('managedConfigPath' in (workbench || {}), false);
-    assert.equal(workbench?.configChannels?.some((channel) => channel.id === 'qq'), true);
-    assert.equal(workbench?.configChannels?.some((channel) => channel.id === 'whatsapp'), true);
+    assert.equal(workbench?.configChannels?.some((channel) => channel.id === 'telegram'), true);
+    assert.equal(workbench?.configChannels?.some((channel) => channel.id === 'signal'), true);
     assert.equal(workbench?.configWebSearch?.provider, 'searxng');
     assert.equal(workbench?.configWebSearch?.providers[0]?.baseUrl, 'http://127.0.0.1:8080');
     assert.equal(workbench?.configXSearch?.apiKeySource, 'xai-live');
@@ -2662,7 +2554,7 @@ await runTest('getInstanceWorkbench keeps config channel editing metadata when O
     assert.equal(workbench?.configDreaming?.enabled, true);
     assert.equal(workbench?.configDreaming?.frequency, '0 3 * * *');
     assert.equal(workbench?.channels.find((channel) => channel.id === 'slack')?.status, 'connected');
-    assert.equal(workbench?.channels.find((channel) => channel.id === 'qq')?.status, 'not_configured');
+    assert.equal(workbench?.channels.find((channel) => channel.id === 'telegram')?.status, 'not_configured');
   } finally {
     openClawConfigDocumentApi.readConfigSnapshot = originalReadConfigSnapshot;
   }

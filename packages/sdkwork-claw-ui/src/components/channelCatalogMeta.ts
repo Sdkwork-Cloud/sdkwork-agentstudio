@@ -26,108 +26,124 @@ const defaultChannelTone =
   'border-zinc-200/80 bg-gradient-to-br from-white to-zinc-50 text-zinc-700 dark:border-zinc-700/80 dark:from-zinc-800 dark:to-zinc-900 dark:text-zinc-100';
 
 const channelCatalogMetaMap: Record<string, ChannelCatalogMeta> = {
-  sdkworkchat: {
-    order: 0,
-    monogram: 'SC',
+  qqbot: {
+    order: 5,
+    monogram: 'QQ',
     tone:
-      'border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-teal-100 text-emerald-700 dark:border-emerald-500/20 dark:from-emerald-500/15 dark:to-teal-500/15 dark:text-emerald-200',
-    regions: ['domestic', 'global', 'media'],
-    officialLink: {
-      href: 'https://clawstudio.sdkwork.com/platforms/android',
-      label: 'Sdkwork Chat App Download',
-    },
-    primaryAction: 'downloadApp',
-  },
-  wechat: {
-    order: 1,
-    monogram: 'WX',
-    tone:
-      'border-green-200/80 bg-gradient-to-br from-green-50 to-emerald-100 text-green-700 dark:border-green-500/20 dark:from-green-500/15 dark:to-emerald-500/15 dark:text-green-200',
+      'border-blue-200/80 bg-gradient-to-br from-blue-50 to-cyan-100 text-blue-700 dark:border-blue-500/20 dark:from-blue-500/15 dark:to-cyan-500/15 dark:text-blue-200',
     regions: ['domestic'],
     officialLink: {
-      href: 'https://weixin.qq.com/',
-      label: 'WeChat Official Site',
-    },
-  },
-  wehcat: {
-    order: 2,
-    monogram: 'WC',
-    tone:
-      'border-green-200/80 bg-gradient-to-br from-green-50 to-lime-100 text-green-700 dark:border-green-500/20 dark:from-green-500/15 dark:to-lime-500/15 dark:text-green-200',
-    regions: ['media'],
-    officialLink: {
-      href: 'https://mp.weixin.qq.com/',
-      label: 'WeChat Official Account Platform',
+      href: 'https://docs.openclaw.ai/channels/qqbot',
+      label: 'OpenClaw QQ Bot Channel Docs',
     },
   },
   feishu: {
-    order: 10,
+    order: 6,
     monogram: 'FS',
-    tone:
-      'border-sky-200/80 bg-gradient-to-br from-sky-50 to-cyan-100 text-sky-700 dark:border-sky-500/20 dark:from-sky-500/15 dark:to-cyan-500/15 dark:text-sky-200',
+    tone: defaultChannelTone,
     regions: ['domestic'],
     officialLink: {
-      href: 'https://open.feishu.cn/app?lang=zh-CN',
-      label: 'Feishu Open Platform',
+      href: 'https://docs.openclaw.ai/channels/feishu',
+      label: 'OpenClaw Feishu Channel Docs',
     },
   },
-  qq: {
-    order: 3,
-    monogram: 'QQ',
-    tone:
-      'border-cyan-200/80 bg-gradient-to-br from-cyan-50 to-blue-100 text-cyan-700 dark:border-cyan-500/20 dark:from-cyan-500/15 dark:to-blue-500/15 dark:text-cyan-200',
+  'openclaw-weixin': {
+    order: 7,
+    monogram: 'WX',
+    tone: defaultChannelTone,
     regions: ['domestic'],
     officialLink: {
-      href: 'https://q.qq.com/qqbot/#/home',
-      label: 'QQ Bot Platform',
-    },
-  },
-  dingtalk: {
-    order: 4,
-    monogram: 'DT',
-    tone:
-      'border-blue-200/80 bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-700 dark:border-blue-500/20 dark:from-blue-500/15 dark:to-indigo-500/15 dark:text-blue-200',
-    regions: ['domestic'],
-    officialLink: {
-      href: 'https://open-dev.dingtalk.com/',
-      label: 'DingTalk Developer Console',
+      href: 'https://docs.openclaw.ai/channels/wechat',
+      label: 'OpenClaw WeChat Plugin Docs',
     },
   },
   wecom: {
-    order: 5,
+    order: 8,
     monogram: 'WC',
-    tone:
-      'border-violet-200/80 bg-gradient-to-br from-violet-50 to-indigo-100 text-violet-700 dark:border-violet-500/20 dark:from-violet-500/15 dark:to-indigo-500/15 dark:text-violet-200',
+    tone: defaultChannelTone,
     regions: ['domestic'],
     officialLink: {
-      href: 'https://work.weixin.qq.com/wework_admin/loginpage_wx?redirect_uri=https%3A%2F%2Fwork.weixin.qq.com%2Fwework_admin%2Fframe',
-      label: 'WeCom Admin Console',
+      href: 'https://github.com/WecomTeam/wecom-openclaw-plugin',
+      label: 'Official WeCom OpenClaw Plugin',
     },
   },
-  telegram: {
+  'dingtalk-connector': {
+    order: 9,
+    monogram: 'DT',
+    tone: defaultChannelTone,
+    regions: ['domestic'],
+    officialLink: {
+      href: 'https://github.com/DingTalk-Real-AI/dingtalk-openclaw-connector',
+      label: 'Official DingTalk OpenClaw Plugin',
+    },
+  },
+  dingtalk: {
+    order: 10,
+    monogram: 'DT',
+    tone: defaultChannelTone,
+    regions: ['domestic'],
+    officialLink: {
+      href: 'https://soimy.github.io/openclaw-channel-dingtalk/',
+      label: 'OpenClaw DingTalk Channel Plugin Docs',
+    },
+  },
+  imessage: {
     order: 20,
-    monogram: 'TG',
+    monogram: 'IM',
     tone:
-      'border-sky-200/80 bg-gradient-to-br from-sky-50 to-blue-100 text-sky-700 dark:border-sky-500/20 dark:from-sky-500/15 dark:to-blue-500/15 dark:text-sky-200',
-    regions: ['global'],
+      'border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-teal-100 text-emerald-700 dark:border-emerald-500/20 dark:from-emerald-500/15 dark:to-teal-500/15 dark:text-emerald-200',
+    regions: ['global', 'media'],
     officialLink: {
-      href: 'https://core.telegram.org/bots',
-      label: 'Telegram Bot Platform',
+      href: 'https://docs.openclaw.ai/channels/imessage',
+      label: 'OpenClaw iMessage Channel Docs',
     },
   },
-  discord: {
-    order: 21,
-    monogram: 'DS',
+  irc: {
+    order: 30,
+    monogram: 'IRC',
     tone:
-      'border-indigo-200/80 bg-gradient-to-br from-indigo-50 to-violet-100 text-indigo-700 dark:border-indigo-500/20 dark:from-indigo-500/15 dark:to-violet-500/15 dark:text-indigo-200',
+      'border-cyan-200/80 bg-gradient-to-br from-cyan-50 to-blue-100 text-cyan-700 dark:border-cyan-500/20 dark:from-cyan-500/15 dark:to-blue-500/15 dark:text-cyan-200',
     regions: ['global'],
     officialLink: {
-      href: 'https://discord.com/developers/applications',
-      label: 'Discord Developer Portal',
+      href: 'https://docs.openclaw.ai/channels/irc',
+      label: 'OpenClaw IRC Channel Docs',
+    },
+  },
+  matrix: {
+    order: 40,
+    monogram: 'MX',
+    tone:
+      'border-violet-200/80 bg-gradient-to-br from-violet-50 to-indigo-100 text-violet-700 dark:border-violet-500/20 dark:from-violet-500/15 dark:to-indigo-500/15 dark:text-violet-200',
+    regions: ['global'],
+    officialLink: {
+      href: 'https://docs.openclaw.ai/channels/matrix',
+      label: 'OpenClaw Matrix Channel Docs',
+    },
+  },
+  mattermost: {
+    order: 50,
+    monogram: 'MM',
+    tone:
+      'border-slate-200/80 bg-gradient-to-br from-slate-50 to-cyan-100 text-slate-700 dark:border-slate-500/20 dark:from-slate-500/15 dark:to-cyan-500/15 dark:text-slate-200',
+    regions: ['global'],
+    officialLink: {
+      href: 'https://docs.openclaw.ai/channels/mattermost',
+      label: 'OpenClaw Mattermost Channel Docs',
+    },
+  },
+  signal: {
+    order: 60,
+    monogram: 'SG',
+    tone:
+      'border-blue-200/80 bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-700 dark:border-blue-500/20 dark:from-blue-500/15 dark:to-indigo-500/15 dark:text-blue-200',
+    regions: ['global'],
+    officialLink: {
+      href: 'https://docs.openclaw.ai/channels/signal',
+      label: 'OpenClaw Signal Channel Docs',
     },
   },
   slack: {
-    order: 22,
+    order: 70,
     monogram: 'SL',
     tone:
       'border-rose-200/80 bg-gradient-to-br from-rose-50 to-orange-100 text-rose-700 dark:border-rose-500/20 dark:from-rose-500/15 dark:to-orange-500/15 dark:text-rose-200',
@@ -137,15 +153,15 @@ const channelCatalogMetaMap: Record<string, ChannelCatalogMeta> = {
       label: 'Slack API Apps',
     },
   },
-  googlechat: {
-    order: 23,
-    monogram: 'GC',
+  telegram: {
+    order: 80,
+    monogram: 'TG',
     tone:
-      'border-amber-200/80 bg-gradient-to-br from-amber-50 to-yellow-100 text-amber-700 dark:border-amber-500/20 dark:from-amber-500/15 dark:to-yellow-500/15 dark:text-amber-200',
+      'border-sky-200/80 bg-gradient-to-br from-sky-50 to-blue-100 text-sky-700 dark:border-sky-500/20 dark:from-sky-500/15 dark:to-blue-500/15 dark:text-sky-200',
     regions: ['global'],
     officialLink: {
-      href: 'https://developers.google.com/workspace/chat',
-      label: 'Google Chat Developer Docs',
+      href: 'https://core.telegram.org/bots',
+      label: 'Telegram Bot Platform',
     },
   },
 };

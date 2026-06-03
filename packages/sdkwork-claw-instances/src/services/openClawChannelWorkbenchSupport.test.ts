@@ -99,15 +99,15 @@ await runTest(
           ],
         },
         {
-          id: 'qq',
-          name: 'QQ',
-          description: 'Managed QQ',
+          id: 'matrix',
+          name: 'Matrix',
+          description: 'Managed Matrix',
           status: 'connected',
           enabled: true,
           configurationMode: 'optional',
           fieldCount: 2,
           configuredFieldCount: 2,
-          setupSteps: ['Scan QR'],
+          setupSteps: ['Configure Matrix'],
         },
       ] as any,
       [
@@ -133,22 +133,22 @@ await runTest(
           ],
         },
         {
-          id: 'discord',
-          name: 'Discord',
+          id: 'telegram',
+          name: 'Telegram',
           description: 'Runtime only',
           status: 'connected',
           enabled: true,
           configurationMode: 'required',
           fieldCount: 1,
           configuredFieldCount: 1,
-          setupSteps: ['Invite bot'],
+          setupSteps: ['Configure bot'],
         },
       ] as any,
     );
 
     assert.deepEqual(
       merged?.map((channel) => channel.id),
-      ['slack', 'qq', 'discord'],
+      ['slack', 'matrix', 'telegram'],
     );
     assert.equal(merged?.[0]?.name, 'Slack');
     assert.equal(merged?.[0]?.description, 'Runtime says connected');
@@ -217,13 +217,13 @@ await runTest(
 );
 
 await runTest(
-  'buildOpenClawChannels keeps channel order, account detail, and sdkworkchat runtime semantics aligned',
+  'buildOpenClawChannels keeps channel order, account detail, and runtime configuration semantics aligned',
   () => {
     const channels = channelWorkbenchSupportModule?.buildOpenClawChannels({
-      channelOrder: ['slack', 'sdkworkchat'],
+      channelOrder: ['slack', 'telegram'],
       channelLabels: {
         slack: 'Slack',
-        sdkworkchat: 'Sdkwork Chat',
+        telegram: 'Telegram',
       },
       channelDetailLabels: {
         slack: 'Slack runtime detail',
@@ -253,7 +253,7 @@ await runTest(
             },
           },
         },
-        sdkworkchat: {
+        telegram: {
           enabled: false,
           configured: false,
           fields: {},
@@ -263,7 +263,7 @@ await runTest(
 
     assert.deepEqual(
       channels?.map((channel) => channel.id),
-      ['slack', 'sdkworkchat'],
+      ['slack', 'telegram'],
     );
     assert.equal(channels?.[0]?.description, 'Slack runtime detail');
     assert.equal(channels?.[0]?.status, 'connected');
@@ -271,9 +271,79 @@ await runTest(
     assert.equal(channels?.[0]?.accounts?.[0]?.id, 'primary');
     assert.equal(channels?.[0]?.accounts?.[0]?.name, 'Primary Workspace');
     assert.equal(channels?.[0]?.accounts?.[0]?.detail, 'Bound to the primary workspace');
-    assert.equal(channels?.[1]?.configurationMode, 'none');
-    assert.equal(channels?.[1]?.status, 'disconnected');
+    assert.equal(channels?.[1]?.configurationMode, 'required');
+    assert.equal(channels?.[1]?.status, 'not_configured');
     assert.equal(channels?.[1]?.fieldCount, 0);
-    assert.match(channels?.[1]?.setupSteps?.[0] || '', /Sdkwork Chat/);
+    assert.equal(channels?.[1]?.configuredFieldCount, 0);
+    assert.match(channels?.[1]?.setupSteps?.[0] || '', /Telegram/);
+  },
+);
+
+await runTest(
+  'buildOpenClawChannels ignores retired runtime-reported channels while preserving valid external plugin channels',
+  () => {
+    const channels = channelWorkbenchSupportModule?.buildOpenClawChannels({
+      channelOrder: ['telegram', 'qq', 'wechat', 'openclaw-weixin', 'wecom', 'dingtalk'],
+      channelLabels: {
+        telegram: 'Telegram',
+        qq: 'QQ',
+        wechat: 'WeChat',
+        'openclaw-weixin': 'Weixin',
+        wecom: 'WeCom',
+        dingtalk: 'DingTalk',
+      },
+      channels: {
+        telegram: {
+          enabled: true,
+          configured: true,
+          fields: {
+            botToken: 'env:TELEGRAM_BOT_TOKEN',
+          },
+        },
+        qq: {
+          enabled: true,
+          configured: true,
+          fields: {
+            botKey: 'legacy-key',
+          },
+        },
+        wechat: {
+          enabled: true,
+          configured: true,
+          fields: {
+            token: 'legacy-wechat-token',
+          },
+        },
+        'openclaw-weixin': {
+          enabled: true,
+          configured: true,
+          fields: {
+            accountCount: 1,
+          },
+        },
+        wecom: {
+          enabled: true,
+          configured: true,
+          fields: {
+            botId: 'env:WECOM_BOT_ID',
+          },
+        },
+        dingtalk: {
+          enabled: true,
+          configured: true,
+          fields: {
+            accessToken: 'legacy-token',
+          },
+        },
+      },
+    } as any);
+
+    assert.deepEqual(
+      channels?.map((channel) => channel.id),
+      ['telegram', 'openclaw-weixin', 'wecom', 'dingtalk'],
+    );
+    assert.equal(channels?.find((channel) => channel.id === 'openclaw-weixin')?.name, 'Weixin');
+    assert.equal(channels?.find((channel) => channel.id === 'wecom')?.name, 'WeCom');
+    assert.equal(channels?.find((channel) => channel.id === 'dingtalk')?.name, 'DingTalk');
   },
 );

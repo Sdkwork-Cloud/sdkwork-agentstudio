@@ -26,30 +26,30 @@ async function loadConfigChannelMutationSupportModule() {
 
 function createConfigChannelFixture() {
   return {
-    id: 'qq',
-    name: 'QQ',
-    description: 'QQ bridge',
+    id: 'telegram',
+    name: 'Telegram',
+    description: 'Telegram bridge',
     status: 'connected',
     enabled: true,
     configurationMode: 'required',
     fieldCount: 2,
     configuredFieldCount: 1,
-    setupSteps: ['Scan QR'],
+    setupSteps: ['Configure bot'],
     values: {
-      appId: 'baseline-app',
-      appSecret: '',
+      botToken: 'baseline-token',
+      webhookUrl: '',
     },
     fields: [
       {
-        key: 'appId',
-        label: 'App Id',
-        placeholder: 'appid',
+        key: 'botToken',
+        label: 'Bot Token',
+        placeholder: '123456:AA...',
         required: true,
       },
       {
-        key: 'appSecret',
-        label: 'App Secret',
-        placeholder: 'secret',
+        key: 'webhookUrl',
+        label: 'Webhook URL',
+        placeholder: 'https://example.com/telegram/webhook',
         required: true,
       },
     ],
@@ -65,20 +65,20 @@ await runTest(
 
     const nextDrafts = applyOpenClawConfigChannelDraftChange({
       drafts: {
-        qq: {
-          appId: 'current-app',
-          appSecret: '',
+        telegram: {
+          botToken: 'current-token',
+          webhookUrl: '',
         },
       },
       channel,
-      fieldKey: 'appSecret',
-      value: 'secret-1',
+      fieldKey: 'webhookUrl',
+      value: 'https://example.com/telegram/webhook',
     });
 
     assert.deepEqual(nextDrafts, {
-      qq: {
-        appId: 'current-app',
-        appSecret: 'secret-1',
+      telegram: {
+        botToken: 'current-token',
+        webhookUrl: 'https://example.com/telegram/webhook',
       },
     });
   },
@@ -96,8 +96,8 @@ await runTest(
       instanceId: 'instance-01',
       channel: createConfigChannelFixture(),
       draft: {
-        appId: 'configured-app',
-        appSecret: '   ',
+        botToken: 'configured-token',
+        webhookUrl: '   ',
       },
       setSaving,
       setError,
@@ -106,7 +106,7 @@ await runTest(
 
     assert.deepEqual(result, {
       kind: 'error',
-      errorMessage: 'App Secret is required.',
+      errorMessage: 'Webhook URL is required.',
     });
   },
 );
@@ -125,8 +125,8 @@ await runTest(
       instanceId: 'instance-01',
       channel,
       draft: {
-        appId: 'configured-app',
-        appSecret: 'secret-1',
+        botToken: 'configured-token',
+        webhookUrl: 'https://example.com/telegram/webhook',
       },
       setSaving,
       setError,
@@ -137,15 +137,15 @@ await runTest(
     assert.equal(result.request.setSaving, setSaving);
     assert.equal(result.request.setError, setError);
     assert.equal(result.request.afterSuccess, afterSuccess);
-    assert.equal(result.request.successMessage, 'QQ configuration saved.');
-    assert.equal(result.request.failureMessage, 'Failed to save QQ.');
+    assert.equal(result.request.successMessage, 'Telegram configuration saved.');
+    assert.equal(result.request.failureMessage, 'Failed to save Telegram.');
     assert.deepEqual(result.request.mutationPlan, {
       kind: 'saveConfig',
       instanceId: 'instance-01',
-      channelId: 'qq',
+      channelId: 'telegram',
       values: {
-        appId: 'configured-app',
-        appSecret: 'secret-1',
+        botToken: 'configured-token',
+        webhookUrl: 'https://example.com/telegram/webhook',
       },
     });
   },
@@ -168,12 +168,12 @@ await runTest(
     });
 
     assert.equal(toggleResult.kind, 'mutation');
-    assert.equal(toggleResult.request.successMessage, 'QQ disabled.');
-    assert.equal(toggleResult.request.failureMessage, 'Failed to update QQ.');
+    assert.equal(toggleResult.request.successMessage, 'Telegram disabled.');
+    assert.equal(toggleResult.request.failureMessage, 'Failed to update Telegram.');
     assert.deepEqual(toggleResult.request.mutationPlan, {
       kind: 'toggleEnabled',
       instanceId: 'instance-01',
-      channelId: 'qq',
+      channelId: 'telegram',
       nextEnabled: false,
     });
 
@@ -187,15 +187,15 @@ await runTest(
 
     assert.equal(deleteResult.kind, 'mutation');
     assert.equal(deleteResult.request.afterSuccess, clearSelection);
-    assert.equal(deleteResult.request.successMessage, 'QQ configuration removed.');
-    assert.equal(deleteResult.request.failureMessage, 'Failed to delete QQ configuration.');
+    assert.equal(deleteResult.request.successMessage, 'Telegram configuration removed.');
+    assert.equal(deleteResult.request.failureMessage, 'Failed to delete Telegram configuration.');
     assert.deepEqual(deleteResult.request.mutationPlan, {
       kind: 'deleteConfig',
       instanceId: 'instance-01',
-      channelId: 'qq',
+      channelId: 'telegram',
       emptyValues: {
-        appId: '',
-        appSecret: '',
+        botToken: '',
+        webhookUrl: '',
       },
     });
   },
@@ -212,7 +212,7 @@ await runTest(
 
     const runConfigChannelMutation = createOpenClawConfigChannelMutationRunner({
       executeSaveConfig: async (instanceId: string, channelId: string, values: Record<string, string>) => {
-        callLog.push(`save:${instanceId}:${channelId}:${values.appId}:${values.appSecret}`);
+        callLog.push(`save:${instanceId}:${channelId}:${values.botToken}:${values.webhookUrl}`);
       },
       executeToggleEnabled: async (instanceId: string, channelId: string, nextEnabled: boolean) => {
         callLog.push(`toggle:${instanceId}:${channelId}:${nextEnabled}`);
@@ -237,14 +237,14 @@ await runTest(
       mutationPlan: {
         kind: 'saveConfig',
         instanceId: 'instance-01',
-        channelId: 'qq',
+        channelId: 'telegram',
         values: {
-          appId: 'configured-app',
-          appSecret: 'secret-1',
+          botToken: 'configured-token',
+          webhookUrl: 'https://example.com/telegram/webhook',
         },
       },
-      successMessage: 'QQ configuration saved.',
-      failureMessage: 'Failed to save QQ.',
+      successMessage: 'Telegram configuration saved.',
+      failureMessage: 'Failed to save Telegram.',
       setSaving: (value: boolean) => {
         savingStates.push(value);
       },
@@ -256,8 +256,8 @@ await runTest(
     assert.deepEqual(savingStates, [true, false]);
     assert.deepEqual(clearedErrors, [null]);
     assert.deepEqual(callLog, [
-      'save:instance-01:qq:configured-app:secret-1',
-      'success:QQ configuration saved.',
+      'save:instance-01:telegram:configured-token:https://example.com/telegram/webhook',
+      'success:Telegram configuration saved.',
       'reload:instance-01:false',
     ]);
   },
@@ -277,14 +277,14 @@ await runTest(
         mutationPlan: {
           kind: 'deleteConfig',
           instanceId: 'instance-01',
-          channelId: 'qq',
+          channelId: 'telegram',
           emptyValues: {
-            appId: '',
-            appSecret: '',
+            botToken: '',
+            webhookUrl: '',
           },
         },
-        successMessage: 'QQ configuration removed.',
-        failureMessage: 'Failed to delete QQ configuration.',
+        successMessage: 'Telegram configuration removed.',
+        failureMessage: 'Failed to delete Telegram configuration.',
         setSaving: (value: boolean) => {
           savingStates.push(value);
         },
@@ -296,7 +296,7 @@ await runTest(
         },
       },
       executeSaveConfig: async (instanceId: string, channelId: string, values: Record<string, string>) => {
-        callLog.push(`save:${instanceId}:${channelId}:${values.appId}:${values.appSecret}`);
+        callLog.push(`save:${instanceId}:${channelId}:${values.botToken}:${values.webhookUrl}`);
       },
       executeToggleEnabled: async (instanceId: string, channelId: string, nextEnabled: boolean) => {
         callLog.push(`toggle:${instanceId}:${channelId}:${nextEnabled}`);
@@ -315,9 +315,9 @@ await runTest(
     assert.deepEqual(savingStates, [true, false]);
     assert.deepEqual(clearedErrors, [null]);
     assert.deepEqual(callLog, [
-      'save:instance-01:qq::',
-      'toggle:instance-01:qq:false',
-      'success:QQ configuration removed.',
+      'save:instance-01:telegram::',
+      'toggle:instance-01:telegram:false',
+      'success:Telegram configuration removed.',
       'afterSuccess',
       'reload:instance-01',
     ]);
@@ -337,14 +337,14 @@ await runTest(
         mutationPlan: {
           kind: 'saveConfig',
           instanceId: 'instance-01',
-          channelId: 'qq',
+          channelId: 'telegram',
           values: {
-            appId: 'configured-app',
-            appSecret: 'secret-1',
+            botToken: 'configured-token',
+            webhookUrl: 'https://example.com/telegram/webhook',
           },
         },
         successMessage: 'unused',
-        failureMessage: 'Failed to save QQ.',
+        failureMessage: 'Failed to save Telegram.',
         setError: (value: string | null) => {
           managedErrors.push(value);
         },
@@ -365,11 +365,11 @@ await runTest(
         mutationPlan: {
           kind: 'toggleEnabled',
           instanceId: 'instance-01',
-          channelId: 'qq',
+          channelId: 'telegram',
           nextEnabled: true,
         },
         successMessage: 'unused',
-        failureMessage: 'Failed to update QQ.',
+        failureMessage: 'Failed to update Telegram.',
       },
       executeSaveConfig: async () => undefined,
       executeToggleEnabled: async () => {
@@ -382,8 +382,8 @@ await runTest(
       },
     });
 
-    assert.deepEqual(managedErrors, [null, 'Failed to save QQ.']);
-    assert.deepEqual(toastErrors, ['Failed to update QQ.']);
+    assert.deepEqual(managedErrors, [null, 'Failed to save Telegram.']);
+    assert.deepEqual(toastErrors, ['Failed to update Telegram.']);
   },
 );
 
@@ -394,11 +394,11 @@ await runTest(
       await loadConfigChannelMutationSupportModule();
     const channel = createConfigChannelFixture();
     const executedRequests: any[] = [];
-    let selectedConfigChannelId: string | null = 'qq';
+    let selectedConfigChannelId: string | null = 'telegram';
     let configChannelDrafts = {
-      qq: {
-        appId: 'configured-app',
-        appSecret: 'secret-1',
+      telegram: {
+        botToken: 'configured-token',
+        webhookUrl: 'https://example.com/telegram/webhook',
       },
     };
     const reportedErrors: Array<string | null> = [];
@@ -407,7 +407,7 @@ await runTest(
       instanceId: 'instance-01',
       configChannels: [channel],
       selectedConfigChannel: channel,
-      selectedConfigChannelDraft: configChannelDrafts.qq,
+      selectedConfigChannelDraft: configChannelDrafts.telegram,
       setSavingConfigChannel: () => undefined,
       setConfigChannelError: (value) => {
         reportedErrors.push(value);
@@ -423,7 +423,7 @@ await runTest(
       },
     });
 
-    await handlers.onToggleConfigChannel('qq', false);
+    await handlers.onToggleConfigChannel('telegram', false);
     await handlers.onSaveConfigChannel();
     await handlers.onDeleteConfigChannelConfiguration();
 
@@ -437,9 +437,9 @@ await runTest(
 
     assert.equal(selectedConfigChannelId, null);
     assert.deepEqual(configChannelDrafts, {
-      qq: {
-        appId: '',
-        appSecret: '',
+      telegram: {
+        botToken: '',
+        webhookUrl: '',
       },
     });
     assert.deepEqual(reportedErrors, []);
@@ -460,8 +460,8 @@ await runTest(
       configChannels: [channel],
       selectedConfigChannel: channel,
       selectedConfigChannelDraft: {
-        appId: 'configured-app',
-        appSecret: '   ',
+        botToken: 'configured-token',
+        webhookUrl: '   ',
       },
       setSavingConfigChannel: () => undefined,
       setConfigChannelError: (value) => {
@@ -478,6 +478,6 @@ await runTest(
     await handlers.onSaveConfigChannel();
 
     assert.deepEqual(executedRequests, []);
-    assert.deepEqual(reportedErrors, ['App Secret is required.']);
+    assert.deepEqual(reportedErrors, ['Webhook URL is required.']);
   },
 );

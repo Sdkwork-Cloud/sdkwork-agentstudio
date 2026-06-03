@@ -118,6 +118,54 @@ await runTest('assessOpenClawUpgradeReadiness reports ready when local upgrade i
   }
 });
 
+await runTest('assessOpenClawUpgradeReadiness accepts a local release tarball without a matching upstream checkout', async () => {
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'openclaw-upgrade-readiness-tarball-source-'));
+
+  try {
+    createReleaseConfig(tempRoot, previousOpenClawVersion);
+    createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'manifest.json'), {
+      schemaVersion: 1,
+      runtimeId: 'openclaw',
+      openclawVersion: previousOpenClawVersion,
+      nodeVersion: expectedNodeVersion,
+      platform: 'windows',
+      arch: 'x64',
+    });
+    createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'runtime', 'package', 'node_modules', 'openclaw', 'package.json'), {
+      name: 'openclaw',
+      version: previousOpenClawVersion,
+    });
+    createJson(path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw', 'package.json'), {
+      name: 'openclaw',
+      version: staleOpenClawVersion,
+    });
+    createGitHeadRepo(path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw'), {
+      tags: {
+        [`v${staleOpenClawVersion}`]: '0123456789abcdef0123456789abcdef01234567',
+      },
+    });
+    createText(
+      path.join(tempRoot, '.cache', 'bundled-components', 'upstreams', 'openclaw', '.git', 'status.fake'),
+      '',
+    );
+    createText(path.join(tempRoot, `openclaw-${currentOpenClawVersion}.tgz`), 'tarball');
+
+    const result = await assessOpenClawUpgradeReadiness({
+      workspaceRootDir: tempRoot,
+      targetVersion: currentOpenClawVersion,
+    });
+
+    assert.equal(result.localUpstreamVersion, staleOpenClawVersion);
+    assert.equal(result.localUpstreamHasTargetTag, false);
+    assert.equal(result.localUpstreamDirty, false);
+    assert.equal(result.localTarballPresent, true);
+    assert.equal(result.readyToUpgrade, true);
+    assert.deepEqual(result.blockers, []);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 await runTest('OpenClaw upgrade readiness git probes hide Windows console windows', async () => {
   const source = readFileSync(
     path.join(rootDir, 'scripts', 'openclaw-upgrade-readiness.mjs'),

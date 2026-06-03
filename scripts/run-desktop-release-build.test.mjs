@@ -1,10 +1,18 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 const rootDir = path.resolve(import.meta.dirname, '..');
+
+function createPnpmCliFixture(prefix = 'claw-pnpm-cli-') {
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), prefix));
+  const pnpmCliPath = path.join(tempRoot, 'pnpm.cjs');
+  writeFileSync(pnpmCliPath, '#!/usr/bin/env node\n', 'utf8');
+  return { tempRoot, pnpmCliPath };
+}
 
 test('desktop release build helper rejects missing CLI option values instead of silently falling back', async () => {
   const modulePath = path.join(rootDir, 'scripts', 'run-desktop-release-build.mjs');
@@ -129,48 +137,53 @@ test('desktop release build all-phase plan forwards bundle customization flags i
   const helper = await import(pathToFileURL(modulePath).href);
 
   assert.equal(typeof helper.createDesktopReleaseBuildPlan, 'function');
+  const { tempRoot, pnpmCliPath } = createPnpmCliFixture('claw-desktop-pnpm-cli-');
 
-  const plan = helper.createDesktopReleaseBuildPlan({
-    phase: 'all',
-    profileId: 'claw-studio',
-    packageProfileId: 'dual-kernel',
-    viteMode: 'test',
-    bundleTargets: ['nsis', 'msi'],
-    targetTriple: 'aarch64-pc-windows-msvc',
-    platform: 'win32',
-    hostArch: 'x64',
-    env: {},
-  });
+  try {
+    const plan = helper.createDesktopReleaseBuildPlan({
+      phase: 'all',
+      profileId: 'claw-studio',
+      packageProfileId: 'dual-kernel',
+      viteMode: 'test',
+      bundleTargets: ['nsis', 'msi'],
+      targetTriple: 'aarch64-pc-windows-msvc',
+      platform: 'win32',
+      hostArch: 'x64',
+      env: { npm_execpath: pnpmCliPath },
+    });
 
-  assert.equal(plan.command, process.execPath);
-  assert.deepEqual(
-    plan.args,
-    [
-      path.join(path.dirname(process.execPath), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
-      '--filter',
-      '@sdkwork/claw-desktop',
-      'run',
-      'tauri:build',
-      '--',
-      '--profile',
-      'claw-studio',
-      '--package-profile',
+    assert.equal(plan.command, process.execPath);
+    assert.deepEqual(
+      plan.args,
+      [
+        pnpmCliPath,
+        '--filter',
+        '@sdkwork/claw-desktop',
+        'run',
+        'tauri:build',
+        '--',
+        '--profile',
+        'claw-studio',
+        '--package-profile',
+        'dual-kernel',
+        '--vite-mode',
+        'test',
+        '--bundles',
+        'nsis,msi',
+        '--target',
+        'aarch64-pc-windows-msvc',
+      ],
+      'run-desktop-release-build must forward profile, vite mode, bundle target list, and target triple when phase=all delegates into the desktop package build script',
+    );
+    assert.equal(
+      plan.env.SDKWORK_KERNEL_PACKAGE_PROFILE_ID,
       'dual-kernel',
-      '--vite-mode',
-      'test',
-      '--bundles',
-      'nsis,msi',
-      '--target',
-      'aarch64-pc-windows-msvc',
-    ],
-    'run-desktop-release-build must forward profile, vite mode, bundle target list, and target triple when phase=all delegates into the desktop package build script',
-  );
-  assert.equal(
-    plan.env.SDKWORK_KERNEL_PACKAGE_PROFILE_ID,
-    'dual-kernel',
-    'run-desktop-release-build must expose the resolved kernel package profile to nested desktop package scripts through environment state',
-  );
-  assert.equal(plan.shell, false);
+      'run-desktop-release-build must expose the resolved kernel package profile to nested desktop package scripts through environment state',
+    );
+    assert.equal(plan.shell, false);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test('desktop release build sync-phase plan forwards explicit package profile selection into bundled sync', async () => {
@@ -204,32 +217,32 @@ test('desktop release build helper resolves Windows pnpm invocations through nod
   assert.equal(helper.resolveSpawnCommand('pnpm', 'win32'), 'pnpm.cmd');
   assert.equal(helper.resolveSpawnCommand('pnpm', 'linux'), 'pnpm');
   assert.equal(typeof helper.resolvePnpmExecutionPlan, 'function');
+  const { tempRoot, pnpmCliPath } = createPnpmCliFixture('claw-desktop-pnpm-cli-');
 
-  const windowsPnpmPlan = helper.resolvePnpmExecutionPlan({
-    platform: 'win32',
-    env: {},
-    nodeExecutable: process.execPath,
-  });
+  try {
+    const windowsPnpmPlan = helper.resolvePnpmExecutionPlan({
+      platform: 'win32',
+      env: { npm_execpath: pnpmCliPath },
+      nodeExecutable: process.execPath,
+    });
 
-  assert.equal(windowsPnpmPlan.command, process.execPath);
-  assert.deepEqual(windowsPnpmPlan.argsPrefix, [
-    path.join(path.dirname(process.execPath), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
-  ]);
-  assert.equal(windowsPnpmPlan.shell, false);
+    assert.equal(windowsPnpmPlan.command, process.execPath);
+    assert.deepEqual(windowsPnpmPlan.argsPrefix, [pnpmCliPath]);
+    assert.equal(windowsPnpmPlan.shell, false);
 
-  const windowsPlan = helper.createDesktopReleaseBuildPlan({
-    phase: 'all',
-    platform: 'win32',
-    hostArch: 'x64',
-    env: {},
-  });
+    const windowsPlan = helper.createDesktopReleaseBuildPlan({
+      phase: 'all',
+      platform: 'win32',
+      hostArch: 'x64',
+      env: { npm_execpath: pnpmCliPath },
+    });
 
-  assert.equal(windowsPlan.command, process.execPath);
-  assert.deepEqual(
-    windowsPlan.args.slice(0, 1),
-    [path.join(path.dirname(process.execPath), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs')],
-  );
-  assert.equal(windowsPlan.shell, false);
+    assert.equal(windowsPlan.command, process.execPath);
+    assert.deepEqual(windowsPlan.args.slice(0, 1), [pnpmCliPath]);
+    assert.equal(windowsPlan.shell, false);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test('desktop release build cli runs the OpenClaw release-asset preflight before spawning the bundle command', () => {

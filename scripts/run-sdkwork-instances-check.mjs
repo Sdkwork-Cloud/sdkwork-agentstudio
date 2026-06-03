@@ -2,6 +2,7 @@ import { runNodeTypeScriptChecks } from './run-node-typescript-check.mjs';
 
 runNodeTypeScriptChecks([
   'packages/sdkwork-claw-instances/src/components/instanceDetailHeaderBehavior.test.ts',
+  'packages/sdkwork-claw-instances/src/components/InstanceFileExplorer.test.ts',
   'packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.test.ts',
   'packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts',
   'packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationStateSupport.test.ts',

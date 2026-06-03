@@ -82,9 +82,9 @@ await runTest('browser persistence policy strips trusted instance config state',
 
 await runTest('browser persistence policy keeps channel counts while dropping secrets', () => {
   const sanitized = sanitizeBrowserWorkbenchChannelRecord({
-    id: 'wehcat',
-    name: 'Wehcat',
-    description: 'WeChat channel',
+    id: 'telegram',
+    name: 'Telegram',
+    description: 'Telegram channel',
     status: 'connected',
     enabled: true,
     configurationMode: 'required',
@@ -92,15 +92,15 @@ await runTest('browser persistence policy keeps channel counts while dropping se
     configuredFieldCount: 3,
     setupSteps: [],
     values: {
-      appId: 'wx1234567890abcdef',
-      appSecret: 'secret',
-      token: 'verify-token',
+      botToken: '123456:telegram-token',
+      webhookSecret: 'secret',
+      webhookUrl: 'https://example.com/telegram/webhook',
     },
   });
 
   assert.equal(sanitized.configuredFieldCount, 3);
   assert.deepEqual(sanitized.values, {
-    appId: 'wx1234567890abcdef',
+    webhookUrl: 'https://example.com/telegram/webhook',
   });
 });
 
@@ -157,10 +157,10 @@ await runTest('browser persistence policy sanitizes generated openclaw config fi
     isReadonly: false,
     content: JSON.stringify({
       channels: {
-        wehcat: {
-          appId: 'wx1234567890abcdef',
-          appSecret: 'secret',
-          token: 'verify-token',
+        telegram: {
+          botToken: '123456:telegram-token',
+          webhookSecret: 'secret',
+          webhookUrl: 'https://example.com/telegram/webhook',
           enabled: true,
         },
       },
@@ -169,12 +169,12 @@ await runTest('browser persistence policy sanitizes generated openclaw config fi
 
   const parsed = JSON.parse(sanitized.content) as {
     channels?: {
-      wehcat?: Record<string, unknown>;
+      telegram?: Record<string, unknown>;
     };
   };
 
-  assert.deepEqual(parsed.channels?.wehcat, {
-    appId: 'wx1234567890abcdef',
+  assert.deepEqual(parsed.channels?.telegram, {
+    webhookUrl: 'https://example.com/telegram/webhook',
     enabled: true,
   });
 });

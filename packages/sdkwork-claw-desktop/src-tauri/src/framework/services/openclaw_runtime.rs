@@ -8,7 +8,10 @@ use crate::{
             managed_gateway_fallback_port_range_end, managed_gateway_fallback_port_range_start,
             OPENCLAW_GATEWAY_DEFAULT_PORT,
         },
-        services::kernel_runtime_authority::KernelRuntimeAuthorityService,
+        services::{
+            kernel_runtime_authority::KernelRuntimeAuthorityService,
+            openclaw_channel_config::sanitize_openclaw_channel_config,
+        },
         FrameworkError, Result,
     },
     platform,
@@ -19,7 +22,7 @@ use sdkwork_claw_host_core::port_allocator::{
 use serde_json::{Map, Number, Value};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     env, fs,
     io::{self, Read},
     path::{Path, PathBuf},
@@ -243,8 +246,12 @@ impl OpenClawRuntimeService {
             )));
         }
 
-        let built_in_state =
-            ensure_built_in_openclaw_state(paths, Some(manifest.openclaw_version.as_str()))?;
+        let available_channel_ids = collect_openclaw_runtime_channel_ids(&runtime_dir)?;
+        let built_in_state = ensure_built_in_openclaw_state(
+            paths,
+            Some(manifest.openclaw_version.as_str()),
+            Some(&available_channel_ids),
+        )?;
         KernelRuntimeAuthorityService::new().record_activation_result(
             OPENCLAW_RUNTIME_ID,
             paths,
@@ -282,7 +289,9 @@ impl OpenClawRuntimeService {
             )));
         }
 
-        let built_in_state = ensure_built_in_openclaw_state(paths, None)?;
+        let available_channel_ids = collect_openclaw_runtime_channel_ids(&runtime.runtime_dir)?;
+        let built_in_state =
+            ensure_built_in_openclaw_state(paths, None, Some(&available_channel_ids))?;
 
         Ok(ActivatedOpenClawRuntime {
             install_key: runtime.install_key.clone(),
@@ -901,6 +910,7 @@ fn apply_zip_entry_permissions(_destination_path: &Path, _unix_mode: Option<u32>
 fn ensure_built_in_openclaw_state(
     paths: &AppPaths,
     bundled_openclaw_version: Option<&str>,
+    available_channel_ids: Option<&BTreeSet<String>>,
 ) -> Result<BuiltInOpenClawState> {
     let openclaw_paths = paths.kernel_paths(OPENCLAW_RUNTIME_ID)?;
 
@@ -922,6 +932,9 @@ fn ensure_built_in_openclaw_state(
 
     let mut config = imported_config.root;
     sanitize_legacy_provider_runtime_config(&mut config);
+    if let Some(available_channel_ids) = available_channel_ids {
+        sanitize_openclaw_channel_config(&mut config, available_channel_ids);
+    }
     set_nested_string(&mut config, &["gateway", "mode"], "local")?;
     set_nested_string(&mut config, &["gateway", "bind"], "loopback")?;
     let configured_port = get_nested_u16(&config, &["gateway", "port"]).filter(|port| *port > 0);
@@ -952,6 +965,7 @@ fn ensure_built_in_openclaw_state(
         "openclaw",
         paths,
         imported_config.source_path.as_deref(),
+        imported_config.quarantined_path.as_deref(),
         &config_file_path,
     )?;
 
@@ -1028,6 +1042,120 @@ fn sanitize_legacy_provider_runtime_config(config: &mut Value) {
 
         for key in LEGACY_PROVIDER_RUNTIME_CONFIG_KEYS {
             provider_root.remove(key);
+        }
+    }
+}
+
+pub(crate) fn collect_openclaw_runtime_channel_ids(runtime_dir: &Path) -> Result<BTreeSet<String>> {
+    let extensions_dir = runtime_dir
+        .join("package")
+        .join("node_modules")
+        .join("openclaw")
+        .join("dist")
+        .join("extensions");
+
+    if !extensions_dir.is_dir() {
+        return Err(FrameworkError::NotFound(format!(
+            "packaged OpenClaw runtime channel metadata not found at {}",
+            extensions_dir.display()
+        )));
+    }
+
+    let mut channel_ids = BTreeSet::new();
+    collect_openclaw_extension_channel_ids(&extensions_dir, &mut channel_ids)?;
+    if channel_ids.is_empty() {
+        return Err(FrameworkError::ValidationFailed(format!(
+            "packaged OpenClaw runtime channel metadata is empty under {}",
+            extensions_dir.display()
+        )));
+    }
+
+    Ok(channel_ids)
+}
+
+fn collect_openclaw_extension_channel_ids(
+    directory: &Path,
+    channel_ids: &mut BTreeSet<String>,
+) -> Result<()> {
+    for entry in fs::read_dir(directory)? {
+        let entry = entry?;
+        let entry_path = entry.path();
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+
+        collect_openclaw_extension_channel_id(&entry_path, channel_ids)?;
+    }
+
+    Ok(())
+}
+
+fn collect_openclaw_extension_channel_id(
+    extension_dir: &Path,
+    channel_ids: &mut BTreeSet<String>,
+) -> Result<()> {
+    let package_json_path = extension_dir.join("package.json");
+    if package_json_path.exists() {
+        let raw = fs::read_to_string(&package_json_path)?;
+        let parsed = serde_json::from_str::<Value>(&raw).map_err(|error| {
+            FrameworkError::ValidationFailed(format!(
+                "invalid OpenClaw extension package metadata at {}: {error}",
+                package_json_path.display()
+            ))
+        })?;
+
+        collect_openclaw_package_json_channel_ids(&parsed, channel_ids);
+    }
+
+    let plugin_json_path = extension_dir.join("openclaw.plugin.json");
+    if plugin_json_path.exists() {
+        let raw = fs::read_to_string(&plugin_json_path)?;
+        let parsed = serde_json::from_str::<Value>(&raw).map_err(|error| {
+            FrameworkError::ValidationFailed(format!(
+                "invalid OpenClaw plugin metadata at {}: {error}",
+                plugin_json_path.display()
+            ))
+        })?;
+
+        collect_openclaw_plugin_json_channel_ids(&parsed, channel_ids);
+    }
+
+    let node_modules_dir = extension_dir.join("node_modules");
+    if node_modules_dir.exists() {
+        collect_openclaw_extension_channel_ids(&node_modules_dir, channel_ids)?;
+    }
+
+    Ok(())
+}
+
+fn collect_openclaw_package_json_channel_ids(parsed: &Value, channel_ids: &mut BTreeSet<String>) {
+    if let Some(channel_id) = get_nested_string(parsed, &["openclaw", "channel", "id"])
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+    {
+        channel_ids.insert(channel_id);
+    }
+}
+
+fn collect_openclaw_plugin_json_channel_ids(parsed: &Value, channel_ids: &mut BTreeSet<String>) {
+    if let Some(channels) = parsed.get("channels").and_then(Value::as_array) {
+        for channel_id in channels {
+            if let Some(channel_id) = channel_id
+                .as_str()
+                .map(str::trim)
+                .filter(|channel_id| !channel_id.is_empty())
+            {
+                channel_ids.insert(channel_id.to_string());
+            }
+        }
+    }
+
+    if let Some(channel_configs) = parsed.get("channelConfigs").and_then(Value::as_object) {
+        for channel_id in channel_configs.keys() {
+            let channel_id = channel_id.trim();
+            if !channel_id.is_empty() {
+                channel_ids.insert(channel_id.to_string());
+            }
         }
     }
 }
@@ -1347,8 +1475,8 @@ fn allocate_gateway_port(requested_port: u16) -> Result<u16> {
 #[cfg(test)]
 mod tests {
     use super::{
-        copy_directory_recursive, load_manifest, normalized_target_arch,
-        normalized_target_platform, rename_directory_with_retry_using,
+        collect_openclaw_runtime_channel_ids, copy_directory_recursive, load_manifest,
+        normalized_target_arch, normalized_target_platform, rename_directory_with_retry_using,
         resolve_bundled_resource_root, resolve_bundled_resource_root_with_manifest_dir,
         resolve_runtime_sidecar_manifest_path, sha256_file_hex, staged_runtime_install_dir,
         BundledOpenClawManifest, OpenClawRuntimeService, PreparedOpenClawRuntimeIntegrityFile,
@@ -1366,7 +1494,7 @@ mod tests {
         },
     };
     use serde_json::Value;
-    use std::{env, ffi::OsString, fs, io::Write, sync::MutexGuard};
+    use std::{collections::BTreeSet, env, ffi::OsString, fs, io::Write, sync::MutexGuard};
     use zip::{write::FileOptions, CompressionMethod, ZipWriter};
 
     const TEST_BUNDLED_OPENCLAW_VERSION: &str = env!("SDKWORK_BUNDLED_OPENCLAW_VERSION");
@@ -2921,6 +3049,409 @@ mod tests {
     }
 
     #[test]
+    fn ensure_bundled_runtime_sanitizes_retired_openclaw_channel_entries() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp.path()).expect("paths");
+        let resource_root =
+            create_bundled_runtime_fixture(temp.path(), TEST_BUNDLED_OPENCLAW_VERSION);
+        let service = OpenClawRuntimeService::new();
+
+        fs::write(
+            &paths.openclaw_config_file,
+            r#"{
+  "channels": {
+    "telegram": {
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "enabled": true
+    },
+    "qq": {
+      "enabled": false
+    },
+    "dingtalk": {
+      "accessToken": "${DINGTALK_TOKEN}",
+      "enabled": true
+    },
+    "defaults": {
+      "enabled": false
+    },
+    "modelByChannel": {
+      "telegram": {
+        "*": "sdkwork-local-proxy/gpt-5.4"
+      },
+      "qq": {
+        "*": "sdkwork-local-proxy/gpt-legacy"
+      },
+      "dingtalk": {
+        "*": "sdkwork-local-proxy/gpt-legacy"
+      }
+    }
+  }
+}
+"#,
+        )
+        .expect("seed config file");
+
+        service
+            .ensure_bundled_runtime_from_root(&paths, &resource_root)
+            .expect("activated runtime");
+
+        let config = serde_json::from_str::<Value>(
+            &fs::read_to_string(&paths.openclaw_config_file).expect("config file"),
+        )
+        .expect("config json");
+        let channels = config
+            .pointer("/channels")
+            .and_then(Value::as_object)
+            .expect("channels object");
+
+        assert!(channels.contains_key("telegram"));
+        assert!(channels.contains_key("defaults"));
+        assert_eq!(
+            channels
+                .get("modelByChannel")
+                .and_then(Value::as_object)
+                .expect("modelByChannel object")
+                .keys()
+                .cloned()
+                .collect::<Vec<_>>(),
+            vec!["telegram".to_string()]
+        );
+        assert!(!channels.contains_key("qq"));
+        assert!(!channels.contains_key("dingtalk"));
+    }
+
+    #[test]
+    fn ensure_bundled_runtime_removes_malformed_channel_model_mappings() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp.path()).expect("paths");
+        let resource_root =
+            create_bundled_runtime_fixture(temp.path(), TEST_BUNDLED_OPENCLAW_VERSION);
+        let service = OpenClawRuntimeService::new();
+
+        fs::write(
+            &paths.openclaw_config_file,
+            r#"{
+  "channels": {
+    "telegram": {
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "enabled": true
+    },
+    "modelByChannel": "sdkwork-local-proxy/gpt-legacy"
+  }
+}
+"#,
+        )
+        .expect("seed config file");
+
+        service
+            .ensure_bundled_runtime_from_root(&paths, &resource_root)
+            .expect("activated runtime");
+
+        let config = serde_json::from_str::<Value>(
+            &fs::read_to_string(&paths.openclaw_config_file).expect("config file"),
+        )
+        .expect("config json");
+        let channels = config
+            .pointer("/channels")
+            .and_then(Value::as_object)
+            .expect("channels object");
+
+        assert!(channels.contains_key("telegram"));
+        assert!(!channels.contains_key("modelByChannel"));
+    }
+
+    #[test]
+    fn ensure_bundled_runtime_removes_malformed_channel_model_override_maps() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp.path()).expect("paths");
+        let resource_root =
+            create_bundled_runtime_fixture(temp.path(), TEST_BUNDLED_OPENCLAW_VERSION);
+        let service = OpenClawRuntimeService::new();
+
+        fs::write(
+            &paths.openclaw_config_file,
+            r#"{
+  "channels": {
+    "telegram": {
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "enabled": true
+    },
+    "modelByChannel": {
+      "telegram": {
+        "*": "sdkwork-local-proxy/gpt-5.4",
+        "C123": 42
+      },
+      "slack": "sdkwork-local-proxy/gpt-legacy",
+      "qq": {
+        "*": "sdkwork-local-proxy/gpt-legacy"
+      }
+    }
+  }
+}
+"#,
+        )
+        .expect("seed config file");
+
+        service
+            .ensure_bundled_runtime_from_root(&paths, &resource_root)
+            .expect("activated runtime");
+
+        let config = serde_json::from_str::<Value>(
+            &fs::read_to_string(&paths.openclaw_config_file).expect("config file"),
+        )
+        .expect("config json");
+        let telegram_overrides = config
+            .pointer("/channels/modelByChannel/telegram")
+            .and_then(Value::as_object)
+            .expect("telegram model overrides");
+
+        assert_eq!(
+            telegram_overrides.keys().cloned().collect::<Vec<_>>(),
+            vec!["*".to_string()]
+        );
+        assert!(
+            config.pointer("/channels/modelByChannel/slack").is_none(),
+            "malformed channel model override roots must be removed"
+        );
+        assert!(
+            config.pointer("/channels/modelByChannel/qq").is_none(),
+            "retired channel model override roots must be removed"
+        );
+    }
+
+    #[test]
+    fn ensure_bundled_runtime_removes_malformed_channel_defaults() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp.path()).expect("paths");
+        let resource_root =
+            create_bundled_runtime_fixture(temp.path(), TEST_BUNDLED_OPENCLAW_VERSION);
+        let service = OpenClawRuntimeService::new();
+
+        fs::write(
+            &paths.openclaw_config_file,
+            r#"{
+  "channels": {
+    "defaults": "always-on",
+    "telegram": {
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "enabled": true
+    }
+  }
+}
+"#,
+        )
+        .expect("seed config file");
+
+        service
+            .ensure_bundled_runtime_from_root(&paths, &resource_root)
+            .expect("activated runtime");
+
+        let config = serde_json::from_str::<Value>(
+            &fs::read_to_string(&paths.openclaw_config_file).expect("config file"),
+        )
+        .expect("config json");
+        let channels = config
+            .pointer("/channels")
+            .and_then(Value::as_object)
+            .expect("channels object");
+
+        assert!(channels.contains_key("telegram"));
+        assert!(!channels.contains_key("defaults"));
+    }
+
+    #[test]
+    fn ensure_bundled_runtime_removes_malformed_supported_channel_roots() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp.path()).expect("paths");
+        let resource_root =
+            create_bundled_runtime_fixture(temp.path(), TEST_BUNDLED_OPENCLAW_VERSION);
+        let service = OpenClawRuntimeService::new();
+
+        fs::write(
+            &paths.openclaw_config_file,
+            r#"{
+  "channels": {
+    "telegram": "123456:telegram-token",
+    "slack": ["xoxb-token"],
+    "modelByChannel": {
+      "telegram": {
+        "*": "sdkwork-local-proxy/gpt-5.4"
+      },
+      "slack": {
+        "C123": "sdkwork-local-proxy/gpt-5.4"
+      }
+    }
+  }
+}
+"#,
+        )
+        .expect("seed config file");
+
+        service
+            .ensure_bundled_runtime_from_root(&paths, &resource_root)
+            .expect("activated runtime");
+
+        let config = serde_json::from_str::<Value>(
+            &fs::read_to_string(&paths.openclaw_config_file).expect("config file"),
+        )
+        .expect("config json");
+        let channels = config
+            .pointer("/channels")
+            .and_then(Value::as_object)
+            .expect("channels object");
+
+        assert!(!channels.contains_key("telegram"));
+        assert!(!channels.contains_key("slack"));
+        assert_eq!(
+            channels
+                .get("modelByChannel")
+                .and_then(Value::as_object)
+                .expect("modelByChannel object")
+                .keys()
+                .cloned()
+                .collect::<Vec<_>>(),
+            vec!["slack".to_string(), "telegram".to_string()]
+        );
+    }
+
+    #[test]
+    fn ensure_bundled_runtime_removes_malformed_channels_root() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp.path()).expect("paths");
+        let resource_root =
+            create_bundled_runtime_fixture(temp.path(), TEST_BUNDLED_OPENCLAW_VERSION);
+        let service = OpenClawRuntimeService::new();
+
+        fs::write(
+            &paths.openclaw_config_file,
+            r#"{
+  "channels": ["telegram"]
+}
+"#,
+        )
+        .expect("seed config file");
+
+        service
+            .ensure_bundled_runtime_from_root(&paths, &resource_root)
+            .expect("activated runtime");
+
+        let config = serde_json::from_str::<Value>(
+            &fs::read_to_string(&paths.openclaw_config_file).expect("config file"),
+        )
+        .expect("config json");
+
+        assert!(config.get("channels").is_none());
+    }
+
+    #[test]
+    fn ensure_bundled_runtime_rejects_missing_channel_metadata_without_rewriting_config() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(temp.path()).expect("paths");
+        let resource_root =
+            create_bundled_runtime_fixture(temp.path(), TEST_BUNDLED_OPENCLAW_VERSION);
+        let service = OpenClawRuntimeService::new();
+        let extensions_dir = resource_root
+            .join("runtime")
+            .join("package")
+            .join("node_modules")
+            .join("openclaw")
+            .join("dist")
+            .join("extensions");
+        let seeded_config = r#"{
+  "channels": {
+    "telegram": {
+      "enabled": true
+    }
+  }
+}
+"#;
+
+        fs::remove_dir_all(&extensions_dir).expect("remove bundled channel metadata");
+        fs::write(&paths.openclaw_config_file, seeded_config).expect("seed config file");
+
+        let error = service
+            .ensure_bundled_runtime_from_root(&paths, &resource_root)
+            .expect_err("missing channel metadata must reject bundled runtime activation");
+        let error_message = error.to_string();
+
+        assert!(
+            error_message.contains("packaged OpenClaw runtime channel metadata not found"),
+            "unexpected error: {error_message}"
+        );
+        assert_eq!(
+            fs::read_to_string(&paths.openclaw_config_file).expect("config file"),
+            seeded_config,
+            "runtime activation must not rewrite user config when channel metadata cannot be trusted",
+        );
+    }
+
+    #[test]
+    fn collect_openclaw_runtime_channel_ids_reads_plugin_manifest_channel_metadata() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let runtime_dir = temp.path().join("runtime");
+        let plugin_dir = runtime_dir
+            .join("package")
+            .join("node_modules")
+            .join("openclaw")
+            .join("dist")
+            .join("extensions")
+            .join("qqbot");
+        fs::create_dir_all(&plugin_dir).expect("plugin dir");
+        fs::write(
+            plugin_dir.join("openclaw.plugin.json"),
+            r#"{
+  "id": "qqbot",
+  "channels": ["qqbot"],
+  "channelConfigs": {
+    "qqbot": {
+      "label": "QQ Bot"
+    }
+  }
+}
+"#,
+        )
+        .expect("plugin manifest");
+
+        let channel_ids =
+            collect_openclaw_runtime_channel_ids(&runtime_dir).expect("runtime channel ids");
+
+        assert!(channel_ids.contains("qqbot"));
+        assert!(!channel_ids.contains("qq"));
+    }
+
+    #[test]
+    fn collect_openclaw_runtime_channel_ids_reads_plugin_manifest_channel_config_keys() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let runtime_dir = temp.path().join("runtime");
+        let plugin_dir = runtime_dir
+            .join("package")
+            .join("node_modules")
+            .join("openclaw")
+            .join("dist")
+            .join("extensions")
+            .join("qqbot");
+        fs::create_dir_all(&plugin_dir).expect("plugin dir");
+        fs::write(
+            plugin_dir.join("openclaw.plugin.json"),
+            r#"{
+  "id": "qqbot",
+  "channelConfigs": {
+    "qqbot": {
+      "label": "QQ Bot"
+    }
+  }
+}
+"#,
+        )
+        .expect("plugin manifest");
+
+        let channel_ids =
+            collect_openclaw_runtime_channel_ids(&runtime_dir).expect("runtime channel ids");
+
+        assert_eq!(channel_ids, BTreeSet::from(["qqbot".to_string()]));
+    }
+
+    #[test]
     fn refresh_configured_runtime_rewrites_busy_gateway_ports() {
         let temp = tempfile::tempdir().expect("temp dir");
         let paths = resolve_paths_for_root(temp.path()).expect("paths");
@@ -3041,6 +3572,32 @@ mod tests {
             .join("extensions")
             .join("amazon-bedrock")
             .join("package.json");
+        let bundled_channel_package_json_paths = [
+            ("qqbot", "QQ Bot"),
+            ("feishu", "Feishu"),
+            ("imessage", "iMessage"),
+            ("irc", "IRC"),
+            ("matrix", "Matrix"),
+            ("mattermost", "Mattermost"),
+            ("signal", "Signal"),
+            ("slack", "Slack"),
+            ("telegram", "Telegram"),
+        ]
+        .map(|(channel_id, label)| {
+            (
+                channel_id,
+                label,
+                resource_root
+                    .join("runtime")
+                    .join("package")
+                    .join("node_modules")
+                    .join("openclaw")
+                    .join("dist")
+                    .join("extensions")
+                    .join(channel_id)
+                    .join("package.json"),
+            )
+        });
         let carbon_package_json_path = resource_root
             .join("runtime")
             .join("package")
@@ -3067,6 +3624,14 @@ mod tests {
                 .expect("bundled plugin package json parent"),
         )
         .expect("bundled plugin package dir");
+        for (_, _, package_json_path) in &bundled_channel_package_json_paths {
+            fs::create_dir_all(
+                package_json_path
+                    .parent()
+                    .expect("bundled channel package json parent"),
+            )
+            .expect("bundled channel package dir");
+        }
         fs::create_dir_all(
             carbon_package_json_path
                 .parent()
@@ -3108,6 +3673,27 @@ mod tests {
             ),
         )
         .expect("bundled plugin package json");
+        for (channel_id, label, package_json_path) in bundled_channel_package_json_paths {
+            fs::write(
+                &package_json_path,
+                format!(
+                    r#"{{
+  "name": "@openclaw/{channel_id}-channel",
+  "version": "{}-beta.1",
+  "openclaw": {{
+    "extensions": ["./index.js"],
+    "channel": {{
+      "id": "{channel_id}",
+      "label": "{label}"
+    }}
+  }}
+}}
+"#,
+                    TEST_BUNDLED_OPENCLAW_VERSION,
+                ),
+            )
+            .expect("bundled channel package json");
+        }
         fs::write(
             &carbon_package_json_path,
             r#"{

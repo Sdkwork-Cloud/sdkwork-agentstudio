@@ -62,6 +62,27 @@ function delay(milliseconds) {
   });
 }
 
+function delayWithAbort(milliseconds, abortSignal) {
+  if (!abortSignal) {
+    return delay(milliseconds);
+  }
+  if (abortSignal.aborted) {
+    throw new Error('Desktop startup evidence wait was cancelled.');
+  }
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      abortSignal.removeEventListener('abort', abortHandler);
+      resolve();
+    }, milliseconds);
+    const abortHandler = () => {
+      clearTimeout(timer);
+      reject(new Error('Desktop startup evidence wait was cancelled.'));
+    };
+    abortSignal.addEventListener('abort', abortHandler, { once: true });
+  });
+}
+
 function shouldRetryDirectoryCleanup(error) {
   const code = String(error?.code ?? '').trim().toUpperCase();
   return code === 'EBUSY' || code === 'EPERM';
@@ -269,6 +290,7 @@ export async function waitForReadyDesktopStartupEvidence({
   pathExistsFn = existsSync,
   readFileFn = (filePath) => readFileSync(filePath, 'utf8'),
   delayFn = delay,
+  abortSignal = null,
 } = {}) {
   const normalizedEvidencePath = path.resolve(String(evidencePath ?? '').trim());
   if (!normalizedEvidencePath) {
@@ -280,8 +302,14 @@ export async function waitForReadyDesktopStartupEvidence({
   let lastFailure = '';
 
   while (Date.now() - startedAt < timeoutMs) {
+    if (abortSignal?.aborted) {
+      throw new Error('Desktop startup evidence wait was cancelled.');
+    }
+
     if (!pathExistsFn(normalizedEvidencePath)) {
-      await delayFn(intervalMs);
+      await (delayFn === delay
+        ? delayWithAbort(intervalMs, abortSignal)
+        : delayFn(intervalMs));
       continue;
     }
 
@@ -297,7 +325,9 @@ export async function waitForReadyDesktopStartupEvidence({
       lastFailure = error instanceof Error ? error.message : String(error);
     }
 
-    await delayFn(intervalMs);
+    await (delayFn === delay
+      ? delayWithAbort(intervalMs, abortSignal)
+      : delayFn(intervalMs));
   }
 
   throw new Error(
@@ -993,6 +1023,59 @@ function buildDesktopLaunchFailureDetails(processRecord) {
     .join('\n');
 }
 
+function waitForDesktopProcessExit(processRecord) {
+  const child = processRecord?.child;
+  if (!child) {
+    return new Promise(() => {});
+  }
+
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return Promise.resolve({
+      exitCode: child.exitCode,
+      signalCode: child.signalCode,
+    });
+  }
+
+  return new Promise((resolve) => {
+    child.once('exit', (exitCode, signalCode) => {
+      resolve({
+        exitCode,
+        signalCode,
+      });
+    });
+  });
+}
+
+async function waitForReadyDesktopStartupEvidenceWhileProcessRuns({
+  processRecord,
+  evidencePath,
+  waitForReadyDesktopStartupEvidenceFn = waitForReadyDesktopStartupEvidence,
+} = {}) {
+  const abortController = new AbortController();
+  const evidenceWait = Promise.resolve().then(() => waitForReadyDesktopStartupEvidenceFn({
+    evidencePath,
+    abortSignal: abortController.signal,
+  }));
+  const processExitWait = waitForDesktopProcessExit(processRecord).then((exitStatus) => {
+    const detail = buildDesktopLaunchFailureDetails(processRecord);
+    const exitCode = exitStatus?.exitCode ?? processRecord?.child?.exitCode;
+    const signalCode = exitStatus?.signalCode ?? processRecord?.child?.signalCode;
+    throw new Error(
+      `Packaged desktop launch process exited before startup evidence became ready. ` +
+      `Exit code: ${exitCode ?? 'unknown'}, signal: ${signalCode ?? 'none'}.${detail ? `\n${detail}` : ''}`,
+    );
+  });
+
+  try {
+    return await Promise.race([
+      evidenceWait,
+      processExitWait,
+    ]);
+  } finally {
+    abortController.abort();
+  }
+}
+
 function waitForProcessExit(child, timeoutMs = 5000) {
   return new Promise((resolve) => {
     if (!child) {
@@ -1084,6 +1167,8 @@ export async function smokeDesktopPackagedLaunch({
   waitForReadyDesktopStartupEvidenceFn = waitForReadyDesktopStartupEvidence,
   stopDesktopPackagedAppFn = stopDesktopPackagedApp,
   smokeDesktopStartupEvidenceFn = smokeDesktopStartupEvidence,
+  resolveExistingPackagedLaunchSmokeRootsFn = resolveExistingPackagedLaunchSmokeRoots,
+  cleanupWindowsPackagedLaunchSmokeRootsFn = cleanupWindowsPackagedLaunchSmokeRoots,
 } = {}) {
   const targetSpec = resolveDesktopReleaseTarget({
     targetTriple: target,
@@ -1124,8 +1209,8 @@ export async function smokeDesktopPackagedLaunch({
     target: targetSpec.targetTriple,
   });
   if (releasePlatform === 'windows') {
-    await cleanupWindowsPackagedLaunchSmokeRoots(
-      resolveExistingPackagedLaunchSmokeRoots(),
+    await cleanupWindowsPackagedLaunchSmokeRootsFn(
+      resolveExistingPackagedLaunchSmokeRootsFn(),
     );
   }
   const smokeRoot = mkdtempSync(path.join(os.tmpdir(), DESKTOP_PACKAGED_LAUNCH_SMOKE_ROOT_PREFIX));
@@ -1149,8 +1234,10 @@ export async function smokeDesktopPackagedLaunch({
       ...await launchDesktopPackagedAppFn(preparedLaunch.launcher),
       cleanupRootPaths: [smokeRoot],
     };
-    await waitForReadyDesktopStartupEvidenceFn({
+    await waitForReadyDesktopStartupEvidenceWhileProcessRuns({
+      processRecord,
       evidencePath: preparedLaunch.evidencePath,
+      waitForReadyDesktopStartupEvidenceFn,
     });
     await stopDesktopPackagedAppFn(processRecord);
     processRecord = null;
@@ -1195,7 +1282,7 @@ export async function smokeDesktopPackagedLaunch({
     }
     if (releasePlatform === 'windows') {
       try {
-        await cleanupWindowsPackagedLaunchSmokeRoots([smokeRoot]);
+        await cleanupWindowsPackagedLaunchSmokeRootsFn([smokeRoot]);
       } catch {
         // Preserve the original failure while still attempting cleanup.
       }

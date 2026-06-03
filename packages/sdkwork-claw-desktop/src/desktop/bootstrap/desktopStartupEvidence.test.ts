@@ -331,6 +331,50 @@ test('desktop startup evidence builds a passed launch document with a sanitized 
   );
 });
 
+test('desktop startup evidence preserves non-secret OpenClaw channel config health', () => {
+  const document = buildDesktopStartupEvidenceDocument({
+    status: 'passed',
+    phase: 'runtime-ready',
+    runId: 10,
+    durationMs: 612,
+    openClawRuntime: {
+      channelConfigHealth: {
+        status: 'ready',
+        valid: true,
+        runtimeMetadataAvailable: true,
+        configReadable: true,
+        supportedChannelIds: ['qqbot', 'feishu', 'imessage', 'irc', 'matrix', 'mattermost', 'signal', 'slack', 'telegram'],
+        configuredChannelIds: ['telegram'],
+        unknownChannelIds: [],
+        malformedChannelIds: [],
+        modelByChannelIds: ['telegram'],
+        unknownModelByChannelIds: [],
+        invalidModelByChannelIds: [],
+      },
+      configFile: 'C:/Users/admin/.sdkwork/crawstudio/.openclaw/openclaw.json',
+    } as never,
+  });
+
+  assert.deepEqual(document.openClawConfigHealth, {
+    status: 'ready',
+    valid: true,
+    runtimeMetadataAvailable: true,
+    configReadable: true,
+    supportedChannelIds: ['qqbot', 'feishu', 'imessage', 'irc', 'matrix', 'mattermost', 'signal', 'slack', 'telegram'],
+    configuredChannelIds: ['telegram'],
+    unknownChannelIds: [],
+    malformedChannelIds: [],
+    modelByChannelIds: ['telegram'],
+    unknownModelByChannelIds: [],
+    invalidModelByChannelIds: [],
+  });
+
+  const serialized = serializeDesktopStartupEvidence(document);
+  assert.match(serialized, /"openClawConfigHealth": \{/);
+  assert.doesNotMatch(serialized, /openclaw\.json/);
+  assert.doesNotMatch(serialized, /authToken|gatewayAuthToken|browserSessionToken/);
+});
+
 test('desktop startup evidence resolves the built-in instance from readiness evidence instead of assuming a legacy built-in id', () => {
   const document = buildDesktopStartupEvidenceDocument({
     status: 'passed',

@@ -61,19 +61,19 @@ function createConfigBackedWorkbenchDetail(
   > = {},
 ): StudioInstanceDetailRecord {
   const channel = {
-    id: 'wehcat',
-    name: 'Wehcat',
-    description: 'Wehcat official account bridge.',
+    id: 'telegram',
+    name: 'Telegram',
+    description: 'Telegram Bot API bridge.',
     status: 'connected',
     enabled: true,
     configurationMode: 'required',
     fieldCount: 3,
     configuredFieldCount: 3,
-    setupSteps: ['Create an app', 'Copy credentials'],
+    setupSteps: ['Create a bot', 'Copy credentials'],
     values: {
-      appId: 'wx1234567890abcdef',
-      appSecret: 'secret',
-      token: 'token',
+      botToken: '123456:telegram-token',
+      webhookUrl: 'https://example.com/openclaw/telegram',
+      webhookSecret: 'secret',
     },
     ...channelOverrides,
   };
@@ -206,37 +206,38 @@ await runTest('getList exposes the seeded channel catalog', async () => {
   await withMockedWindowStorage(async () => {
     const result = await channelService.getList(BUILT_IN_INSTANCE_ID, { page: 1, pageSize: 20 });
 
-    assert.equal(result.items[0]?.id, 'sdkworkchat');
-    assert.equal(result.items.some((channel) => channel.id === 'wehcat'), true);
-    assert.equal(result.items[0]?.fieldCount, 0);
+    assert.equal(result.items[0]?.id, 'qqbot');
+    assert.equal(result.items.some((channel) => channel.id === 'telegram'), true);
+    assert.equal(result.items.some((channel) => channel.id === 'qq'), false);
+    assert.equal(result.items[0]?.fieldCount > 0, true);
     assert.equal(result.items[0]?.configuredFieldCount, 0);
-    assert.equal(result.items[0]?.status, 'connected');
+    assert.equal(result.items[0]?.status, 'not_configured');
   });
 });
 
 await runTest('saveChannelConfig and deleteChannelConfig keep state in sync with v3 behavior', async () => {
   await withMockedWindowStorage(async () => {
-    await channelService.saveChannelConfig(BUILT_IN_INSTANCE_ID, 'wehcat', {
-      appId: 'wx1234567890abcdef',
-      appSecret: 'secret',
-      token: 'token',
+    await channelService.saveChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram', {
+      botToken: '123456:telegram-token',
+      webhookUrl: 'https://example.com/openclaw/telegram',
+      webhookSecret: 'secret',
     });
 
-    let wehcat = await channelService.getById(BUILT_IN_INSTANCE_ID, 'wehcat');
-    assert.equal(wehcat?.enabled, true);
-    assert.equal(wehcat?.status, 'connected');
+    let telegram = await channelService.getById(BUILT_IN_INSTANCE_ID, 'telegram');
+    assert.equal(telegram?.enabled, true);
+    assert.equal(telegram?.status, 'connected');
     assert.equal(
-      wehcat?.fields.find((field) => field.key === 'appId')?.value,
-      'wx1234567890abcdef',
+      telegram?.fields.find((field) => field.key === 'webhookUrl')?.value,
+      'https://example.com/openclaw/telegram',
     );
 
-    await channelService.deleteChannelConfig(BUILT_IN_INSTANCE_ID, 'wehcat');
+    await channelService.deleteChannelConfig(BUILT_IN_INSTANCE_ID, 'telegram');
 
-    wehcat = await channelService.getById(BUILT_IN_INSTANCE_ID, 'wehcat');
-    assert.equal(wehcat?.enabled, false);
-    assert.equal(wehcat?.status, 'not_configured');
+    telegram = await channelService.getById(BUILT_IN_INSTANCE_ID, 'telegram');
+    assert.equal(telegram?.enabled, false);
+    assert.equal(telegram?.status, 'not_configured');
     assert.equal(
-      wehcat?.fields.find((field) => field.key === 'appId')?.value,
+      telegram?.fields.find((field) => field.key === 'webhookUrl')?.value,
       undefined,
     );
   });
@@ -279,13 +280,13 @@ await runTest(
 
     try {
       const channels = await channelService.getChannels(BUILT_IN_INSTANCE_ID);
-      const wehcat = channels.find((channel) => channel.id === 'wehcat');
+      const telegram = channels.find((channel) => channel.id === 'telegram');
 
-      assert.equal(wehcat?.enabled, true);
-      assert.equal(wehcat?.status, 'connected');
+      assert.equal(telegram?.enabled, true);
+      assert.equal(telegram?.status, 'connected');
       assert.equal(
-        wehcat?.fields.find((field) => field.key === 'appId')?.value,
-        'wx1234567890abcdef',
+        telegram?.fields.find((field) => field.key === 'webhookUrl')?.value,
+        'https://example.com/openclaw/telegram',
       );
     } finally {
       (openClawConfigService as typeof openClawConfigService & {
@@ -296,6 +297,116 @@ await runTest(
   },
 );
 
+await runTest(
+  'getChannels prunes retired workbench channels when falling back from a stale config path',
+  async () => {
+    const originalBridge = getPlatformBridge();
+    const originalReadConfigSnapshot = openClawConfigService.readConfigSnapshot;
+    const detail = createConfigBackedWorkbenchDetail();
+    detail.workbench?.channels.push({
+      id: 'qq',
+      name: 'QQ',
+      description: 'Retired QQ channel from a stale workbench snapshot.',
+      status: 'connected',
+      enabled: true,
+      configurationMode: 'required',
+      fieldCount: 1,
+      configuredFieldCount: 1,
+      setupSteps: ['Legacy QQ setup'],
+      values: {
+        botKey: 'legacy-key',
+      },
+    });
+    detail.workbench?.channels.push({
+      id: 'openclaw-weixin',
+      name: 'Weixin',
+      description: 'Runtime-discovered external Weixin plugin.',
+      status: 'connected',
+      enabled: true,
+      configurationMode: 'required',
+      fieldCount: 1,
+      configuredFieldCount: 1,
+      setupSteps: ['Scan QR code from the runtime plugin.'],
+      values: {
+        account: 'runtime-managed',
+      },
+    });
+    detail.workbench?.channels.push({
+      id: 'wecom',
+      name: 'WeCom',
+      description: 'Runtime-discovered external WeCom plugin.',
+      status: 'connected',
+      enabled: true,
+      configurationMode: 'required',
+      fieldCount: 1,
+      configuredFieldCount: 1,
+      setupSteps: ['Configure the WeCom bot in the runtime plugin.'],
+      values: {
+        botId: 'env:WECOM_BOT_ID',
+      },
+    });
+    detail.workbench?.channels.push({
+      id: 'dingtalk',
+      name: 'DingTalk',
+      description: 'Runtime-discovered DingTalk plugin.',
+      status: 'connected',
+      enabled: true,
+      configurationMode: 'required',
+      fieldCount: 1,
+      configuredFieldCount: 1,
+      setupSteps: ['Configure DingTalk stream mode in the runtime plugin.'],
+      values: {
+        robotCode: 'env:DINGTALK_ROBOT_CODE',
+      },
+    });
+
+    configurePlatformBridge({
+      studio: {
+        ...originalBridge.studio,
+        async getInstanceDetail() {
+          return detail;
+        },
+      },
+    });
+    (openClawConfigService as typeof openClawConfigService & {
+      readConfigSnapshot: typeof openClawConfigService.readConfigSnapshot;
+    }).readConfigSnapshot = async () => {
+      throw createMissingConfigError();
+    };
+
+    try {
+      const channels = await channelService.getChannels(BUILT_IN_INSTANCE_ID);
+
+      assert.equal(channels.some((channel) => channel.id === 'qq'), false);
+      assert.equal(channels.some((channel) => channel.id === 'telegram'), true);
+      assert.equal(channels.find((channel) => channel.id === 'openclaw-weixin')?.status, 'connected');
+      assert.equal(channels.find((channel) => channel.id === 'wecom')?.status, 'connected');
+      assert.equal(channels.find((channel) => channel.id === 'dingtalk')?.status, 'connected');
+    assert.deepEqual(
+      channels.map((channel) => channel.id),
+      [
+        'qqbot',
+        'feishu',
+        'imessage',
+        'irc',
+        'matrix',
+          'mattermost',
+          'signal',
+          'slack',
+          'telegram',
+          'openclaw-weixin',
+          'wecom',
+          'dingtalk',
+        ],
+      );
+    } finally {
+      (openClawConfigService as typeof openClawConfigService & {
+        readConfigSnapshot: typeof openClawConfigService.readConfigSnapshot;
+      }).readConfigSnapshot = originalReadConfigSnapshot;
+      configurePlatformBridge(originalBridge);
+    }
+  },
+);
 await runTest(
   'updateChannelStatus falls back to the workbench bridge when the config file path is stale',
   async () => {
@@ -313,13 +424,13 @@ await runTest(
         },
         async setInstanceChannelEnabled(_instanceId, channelId, enabled) {
           bridgeCalls.push(`toggle:${channelId}:${enabled}`);
-          const wehcat = detail.workbench?.channels.find((channel) => channel.id === channelId);
-          if (!wehcat) {
+          const telegram = detail.workbench?.channels.find((channel) => channel.id === channelId);
+          if (!telegram) {
             return false;
           }
 
-          wehcat.enabled = enabled;
-          wehcat.status = enabled ? 'connected' : 'disconnected';
+          telegram.enabled = enabled;
+          telegram.status = enabled ? 'connected' : 'disconnected';
           return true;
         },
       },
@@ -340,14 +451,14 @@ await runTest(
     try {
       const channels = await channelService.updateChannelStatus(
         'managed-openclaw',
-        'wehcat',
+        'telegram',
         false,
       );
-      const wehcat = channels.find((channel) => channel.id === 'wehcat');
+      const telegram = channels.find((channel) => channel.id === 'telegram');
 
-      assert.deepEqual(bridgeCalls, ['toggle:wehcat:false']);
-      assert.equal(wehcat?.enabled, false);
-      assert.equal(wehcat?.status, 'disconnected');
+      assert.deepEqual(bridgeCalls, ['toggle:telegram:false']);
+      assert.equal(telegram?.enabled, false);
+      assert.equal(telegram?.status, 'disconnected');
     } finally {
       (openClawConfigService as typeof openClawConfigService & {
         readConfigSnapshot: typeof openClawConfigService.readConfigSnapshot;
@@ -361,7 +472,6 @@ await runTest(
     }
   },
 );
-
 await runTest(
   'saveChannelConfig falls back to the workbench bridge when the config file path is stale',
   async () => {
@@ -384,15 +494,15 @@ await runTest(
         },
         async saveInstanceChannelConfig(_instanceId, channelId, values) {
           bridgeCalls.push(`save:${channelId}`);
-          const wehcat = detail.workbench?.channels.find((channel) => channel.id === channelId);
-          if (!wehcat) {
+          const telegram = detail.workbench?.channels.find((channel) => channel.id === channelId);
+          if (!telegram) {
             return false;
           }
 
-          wehcat.values = { ...values };
-          wehcat.enabled = true;
-          wehcat.status = 'connected';
-          wehcat.configuredFieldCount = Object.values(values).filter((value) => value.trim()).length;
+          telegram.values = { ...values };
+          telegram.enabled = true;
+          telegram.status = 'connected';
+          telegram.configuredFieldCount = Object.values(values).filter((value) => value.trim()).length;
           return true;
         },
       },
@@ -411,19 +521,19 @@ await runTest(
     };
 
     try {
-      const channels = await channelService.saveChannelConfig('managed-openclaw', 'wehcat', {
-        appId: 'wx-channel',
+      const channels = await channelService.saveChannelConfig('managed-openclaw', 'telegram', {
+        webhookUrl: 'https://example.com/openclaw/telegram',
         appSecret: 'secret',
         token: 'token',
       });
-      const wehcat = channels.find((channel) => channel.id === 'wehcat');
+      const telegram = channels.find((channel) => channel.id === 'telegram');
 
-      assert.deepEqual(bridgeCalls, ['save:wehcat']);
-      assert.equal(wehcat?.enabled, true);
-      assert.equal(wehcat?.status, 'connected');
+      assert.deepEqual(bridgeCalls, ['save:telegram']);
+      assert.equal(telegram?.enabled, true);
+      assert.equal(telegram?.status, 'connected');
       assert.equal(
-        wehcat?.fields.find((field) => field.key === 'appId')?.value,
-        'wx-channel',
+        telegram?.fields.find((field) => field.key === 'webhookUrl')?.value,
+        'https://example.com/openclaw/telegram',
       );
     } finally {
       (openClawConfigService as typeof openClawConfigService & {
@@ -438,7 +548,6 @@ await runTest(
     }
   },
 );
-
 await runTest(
   'deleteChannelConfig falls back to the workbench bridge when the config file path is stale',
   async () => {
@@ -456,15 +565,15 @@ await runTest(
         },
         async deleteInstanceChannelConfig(_instanceId, channelId) {
           bridgeCalls.push(`delete:${channelId}`);
-          const wehcat = detail.workbench?.channels.find((channel) => channel.id === channelId);
-          if (!wehcat) {
+          const telegram = detail.workbench?.channels.find((channel) => channel.id === channelId);
+          if (!telegram) {
             return false;
           }
 
-          wehcat.values = {};
-          wehcat.enabled = false;
-          wehcat.status = 'not_configured';
-          wehcat.configuredFieldCount = 0;
+          telegram.values = {};
+          telegram.enabled = false;
+          telegram.status = 'not_configured';
+          telegram.configuredFieldCount = 0;
           return true;
         },
       },
@@ -483,14 +592,14 @@ await runTest(
     };
 
     try {
-      const channels = await channelService.deleteChannelConfig('managed-openclaw', 'wehcat');
-      const wehcat = channels.find((channel) => channel.id === 'wehcat');
+      const channels = await channelService.deleteChannelConfig('managed-openclaw', 'telegram');
+      const telegram = channels.find((channel) => channel.id === 'telegram');
 
-      assert.deepEqual(bridgeCalls, ['delete:wehcat']);
-      assert.equal(wehcat?.enabled, false);
-      assert.equal(wehcat?.status, 'not_configured');
+      assert.deepEqual(bridgeCalls, ['delete:telegram']);
+      assert.equal(telegram?.enabled, false);
+      assert.equal(telegram?.status, 'not_configured');
       assert.equal(
-        wehcat?.fields.find((field) => field.key === 'appId')?.value,
+        telegram?.fields.find((field) => field.key === 'webhookUrl')?.value,
         undefined,
       );
     } finally {

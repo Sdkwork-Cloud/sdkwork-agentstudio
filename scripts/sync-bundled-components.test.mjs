@@ -671,6 +671,19 @@ assert.equal(
   syncModule.shouldRefreshComponentRepository({
     componentId: 'openclaw',
     noFetch: true,
+    releaseMode: true,
+    desiredVersion: expectedOpenClawVersion,
+    currentVersion: staleOpenClawVersion,
+    currentTags: [`v${staleOpenClawVersion}`],
+  }),
+  false,
+  'sync-bundled-components release mode must not refresh stale OpenClaw checkouts because release packaging is handled by the dedicated runtime preparation phase',
+);
+
+assert.equal(
+  syncModule.shouldRefreshComponentRepository({
+    componentId: 'openclaw',
+    noFetch: true,
     desiredVersion: expectedOpenClawVersion,
     currentVersion: staleOpenClawVersion,
     currentTags: [`v${staleOpenClawVersion}`],

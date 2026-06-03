@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -27,6 +27,21 @@ import { assertNoUnsupportedOpenClawRuntimeLayout } from './assert-openclaw-runt
 const __filename = fileURLToPath(import.meta.url);
 const rootDir = path.resolve(import.meta.dirname, '..');
 const RUNTIME_SIDECAR_MANIFEST_FILENAME = '.sdkwork-openclaw-runtime.json';
+const OPENCLAW_RUNTIME_EXTENSIONS_RELATIVE_DIR =
+  'runtime/package/node_modules/openclaw/dist/extensions';
+const OPENCLAW_RUNTIME_CHANNEL_METADATA_ENTRY_SUFFIX = '/package.json';
+const OPENCLAW_RUNTIME_PLUGIN_METADATA_ENTRY_SUFFIX = '/openclaw.plugin.json';
+const EXPECTED_OPENCLAW_RELEASE_CHANNEL_IDS = [
+  'qqbot',
+  'feishu',
+  'imessage',
+  'irc',
+  'matrix',
+  'mattermost',
+  'signal',
+  'slack',
+  'telegram',
+];
 
 function resolveOpenClawInstallKey(manifest) {
   return resolveDesktopOpenClawInstallKeyFromManifest(manifest);
@@ -140,6 +155,167 @@ async function ensurePathMissing(absolutePath, description) {
   throw new Error(`${description} must remain archive-only and must not exist at ${absolutePath}`);
 }
 
+function normalizeOpenClawChannelMetadataIds(channelIds) {
+  return [...new Set(channelIds.map((channelId) => String(channelId ?? '').trim()).filter(Boolean))];
+}
+
+function readOpenClawChannelIdFromMetadata(rawContent, metadataPath, contextLabel) {
+  let parsed;
+  try {
+    parsed = JSON.parse(String(rawContent ?? ''));
+  } catch (error) {
+    throw new Error(
+      `${contextLabel} contains invalid OpenClaw channel metadata at ${metadataPath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  return String(parsed?.openclaw?.channel?.id ?? '').trim();
+}
+
+function readOpenClawChannelIdsFromPluginMetadata(rawContent, metadataPath, contextLabel) {
+  let parsed;
+  try {
+    parsed = JSON.parse(String(rawContent ?? ''));
+  } catch (error) {
+    throw new Error(
+      `${contextLabel} contains invalid OpenClaw plugin metadata at ${metadataPath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  const channelIds = [];
+  if (Array.isArray(parsed?.channels)) {
+    channelIds.push(
+      ...parsed.channels
+        .map((channelId) => String(channelId ?? '').trim())
+        .filter(Boolean),
+    );
+  }
+
+  if (parsed?.channelConfigs && typeof parsed.channelConfigs === 'object') {
+    channelIds.push(
+      ...Object.keys(parsed.channelConfigs)
+        .map((channelId) => String(channelId ?? '').trim())
+        .filter(Boolean),
+    );
+  }
+
+  return channelIds;
+}
+
+function assertExpectedOpenClawChannelMetadataIds(channelIds, contextLabel) {
+  const actualChannelIds = normalizeOpenClawChannelMetadataIds(channelIds);
+  const actualChannelIdSet = new Set(actualChannelIds);
+  const unexpectedChannelIds = actualChannelIds.filter(
+    (channelId) => !EXPECTED_OPENCLAW_RELEASE_CHANNEL_IDS.includes(channelId),
+  );
+  const missingChannelIds = EXPECTED_OPENCLAW_RELEASE_CHANNEL_IDS.filter(
+    (channelId) => !actualChannelIdSet.has(channelId),
+  );
+  assert.deepEqual(
+    {
+      missing: missingChannelIds,
+      unexpected: unexpectedChannelIds,
+    },
+    {
+      missing: [],
+      unexpected: [],
+    },
+    `${contextLabel} must expose exactly the bundled OpenClaw channel metadata ids`,
+  );
+}
+
+async function collectOpenClawChannelIdsFromMaterializedRuntime(runtimeDir, contextLabel) {
+  const extensionsDir = path.join(
+    runtimeDir,
+    'package',
+    'node_modules',
+    'openclaw',
+    'dist',
+    'extensions',
+  );
+  const channelIds = [];
+
+  async function visit(directory) {
+    let entries;
+    try {
+      entries = await readdir(directory, { withFileTypes: true });
+    } catch (error) {
+      if (directory === extensionsDir && error && typeof error === 'object' && error.code === 'ENOENT') {
+        throw new Error(
+          `${contextLabel} is missing OpenClaw runtime channel metadata directory at ${extensionsDir}`,
+        );
+      }
+      throw error;
+    }
+
+    for (const entry of entries) {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        await visit(entryPath);
+        continue;
+      }
+
+      if (entry.name !== 'package.json' && entry.name !== 'openclaw.plugin.json') {
+        continue;
+      }
+
+      const raw = await readFile(entryPath, 'utf8');
+      if (entry.name === 'openclaw.plugin.json') {
+        channelIds.push(...readOpenClawChannelIdsFromPluginMetadata(raw, entryPath, contextLabel));
+      } else {
+        const channelId = readOpenClawChannelIdFromMetadata(raw, entryPath, contextLabel);
+        if (channelId) {
+          channelIds.push(channelId);
+        }
+      }
+    }
+  }
+
+  await visit(extensionsDir);
+  return channelIds;
+}
+
+async function verifyMaterializedRuntimeChannelMetadata(runtimeDir, contextLabel) {
+  const channelIds = await collectOpenClawChannelIdsFromMaterializedRuntime(runtimeDir, contextLabel);
+  assertExpectedOpenClawChannelMetadataIds(channelIds, contextLabel);
+}
+
+function verifyArchiveRuntimeChannelMetadata({
+  archiveBuffer,
+  entries,
+  archivePath,
+  contextLabel,
+}) {
+  const channelIds = [];
+
+  for (const entry of entries) {
+    if (
+      entry.type === 'directory'
+      || !entry.normalizedPath.startsWith(`${OPENCLAW_RUNTIME_EXTENSIONS_RELATIVE_DIR}/`)
+      || (
+        !entry.normalizedPath.endsWith(OPENCLAW_RUNTIME_CHANNEL_METADATA_ENTRY_SUFFIX)
+        && !entry.normalizedPath.endsWith(OPENCLAW_RUNTIME_PLUGIN_METADATA_ENTRY_SUFFIX)
+      )
+    ) {
+      continue;
+    }
+
+    const raw = readZipEntryContent(archiveBuffer, entry, archivePath).toString('utf8');
+    if (entry.normalizedPath.endsWith(OPENCLAW_RUNTIME_PLUGIN_METADATA_ENTRY_SUFFIX)) {
+      channelIds.push(
+        ...readOpenClawChannelIdsFromPluginMetadata(raw, entry.normalizedPath, contextLabel),
+      );
+    } else {
+      const channelId = readOpenClawChannelIdFromMetadata(raw, entry.normalizedPath, contextLabel);
+      if (channelId) {
+        channelIds.push(channelId);
+      }
+    }
+  }
+
+  assertExpectedOpenClawChannelMetadataIds(channelIds, contextLabel);
+}
+
 async function assertUnsupportedOpenClawRuntimeLayoutMissing(workspaceRootDir) {
   await assertNoUnsupportedOpenClawRuntimeLayout({ workspaceRootDir });
 }
@@ -211,6 +387,12 @@ async function verifyPackagedRuntimeArchive({
     manifest,
     'packaged OpenClaw runtime sidecar manifest must match the prepared source manifest',
   );
+  verifyArchiveRuntimeChannelMetadata({
+    archiveBuffer,
+    entries,
+    archivePath,
+    contextLabel: 'packaged OpenClaw runtime archive',
+  });
 }
 
 async function verifyMacosInstallRootLayout({
@@ -268,6 +450,10 @@ async function verifyMaterializedInstallRoot({
   await ensurePathExists(
     path.join(installDir, manifest.cliRelativePath),
     `${contextLabel} OpenClaw CLI entrypoint`,
+  );
+  await verifyMaterializedRuntimeChannelMetadata(
+    path.join(installDir, 'runtime'),
+    contextLabel,
   );
 }
 
@@ -376,6 +562,10 @@ export async function verifyDesktopOpenClawReleaseAssets({
     manifest,
     target,
     'prepared OpenClaw source manifest',
+  );
+  await verifyMaterializedRuntimeChannelMetadata(
+    path.join(resourceDir, 'runtime'),
+    'prepared OpenClaw source runtime',
   );
 
   const packagedManifest = await readJsonFile(

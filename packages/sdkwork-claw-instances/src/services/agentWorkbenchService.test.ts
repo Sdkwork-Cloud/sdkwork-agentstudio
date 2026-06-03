@@ -221,14 +221,14 @@ function createWorkbench(): InstanceWorkbenchSnapshot {
     },
     channels: [
       {
-        id: 'sdkworkchat',
-        name: 'Sdkwork Chat',
-        description: 'First-party channel',
+        id: 'slack',
+        name: 'Slack',
+        description: 'Slack bot',
         status: 'connected',
         enabled: true,
-        configurationMode: 'none',
-        fieldCount: 0,
-        configuredFieldCount: 0,
+        configurationMode: 'required',
+        fieldCount: 2,
+        configuredFieldCount: 2,
         setupSteps: [],
       },
       {
@@ -243,9 +243,9 @@ function createWorkbench(): InstanceWorkbenchSnapshot {
         setupSteps: [],
       },
       {
-        id: 'discord',
-        name: 'Discord',
-        description: 'Discord bot',
+        id: 'matrix',
+        name: 'Matrix',
+        description: 'Matrix bot',
         status: 'disconnected',
         enabled: false,
         configurationMode: 'required',
@@ -530,13 +530,13 @@ await runTest(
                   },
                 },
               },
-              discord: {
+              matrix: {
                 accounts: {
                   default: {
-                    token: 'discord-default',
+                    accessToken: 'matrix-default',
                   },
                   research: {
-                    token: 'discord-research',
+                    accessToken: 'matrix-research',
                   },
                 },
               },
@@ -552,7 +552,7 @@ await runTest(
               {
                 agentId: 'research',
                 match: {
-                  channel: 'discord',
+                  channel: 'matrix',
                   accountId: 'research',
                 },
               },
@@ -647,8 +647,8 @@ await runTest(
       snapshot.channels.find((channel) => channel.id === 'telegram')?.accountIds,
       ['research'],
     );
-    assert.equal(snapshot.channels.find((channel) => channel.id === 'discord')?.routeStatus, 'bound');
-    assert.equal(snapshot.channels.find((channel) => channel.id === 'sdkworkchat')?.routeStatus, 'available');
+    assert.equal(snapshot.channels.find((channel) => channel.id === 'matrix')?.routeStatus, 'bound');
+    assert.equal(snapshot.channels.find((channel) => channel.id === 'slack')?.routeStatus, 'available');
   },
 );
 

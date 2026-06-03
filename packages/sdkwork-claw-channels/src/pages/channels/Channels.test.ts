@@ -33,3 +33,17 @@ runTest('Channels page keeps channel feedback copy and validation wired to local
   assert.match(source, /t\('channels\.page\.validation\.requiredField', \{ field: fieldLabel \}\)/);
   assert.match(source, /localizeChannelWorkspaceItem\(t, \{/);
 });
+
+runTest('Channels page starts a real binding session instead of opening docs when scan setup is available', () => {
+  const source = readFileSync(resolve(import.meta.dirname, 'Channels.tsx'), 'utf8');
+
+  assert.match(source, /channelBindingSessionService/);
+  assert.match(source, /const \[bindingSession, setBindingSession\]/);
+  assert.match(source, /handleStartBinding/);
+  assert.match(source, /onStartBinding=\{handleStartBinding\}/);
+  assert.match(source, /bindingSession=\{bindingSession\}/);
+  assert.match(source, /subscribeProcessOutput/);
+  assert.match(source, /subscribeJobUpdates/);
+  assert.match(source, /extractChannelBindingQrPayload/);
+  assert.match(source, /channelService\.getChannels\(effectiveInstanceId\)/);
+});

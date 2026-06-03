@@ -12,11 +12,16 @@ use self::{
         available_profiles as available_process_profiles,
         resolve_profile as resolve_process_profile,
     },
-    requests::prepare_request,
+    requests::{prepare_execution_request, prepare_request},
     runtime::{NoopProcessEventSink, ProcessRuntime},
 };
 use crate::framework::{
-    config::AppConfig, kernel::DesktopProcessInfo, policy::ExecutionPolicy, Result,
+    config::AppConfig,
+    kernel::DesktopProcessInfo,
+    paths::AppPaths,
+    policy::ExecutionPolicy,
+    services::openclaw_runtime::ActivatedOpenClawRuntime,
+    Result,
 };
 
 #[derive(Clone, Debug)]
@@ -74,7 +79,35 @@ impl ProcessService {
         F: FnOnce(&str) -> Result<()>,
     {
         let profile = self.resolve_profile(profile_id)?;
-        let validated = prepare_request(&self.policy, profile.to_request())?;
+        let validated = prepare_execution_request(&self.policy, profile.to_request())?;
+
+        self.runtime.run_with_sink(
+            validated,
+            process_id,
+            job_id,
+            profile.allow_cancellation(),
+            sink,
+            on_started,
+        )
+    }
+
+    pub fn run_managed_openclaw_profile_and_emit_with_started<S, F>(
+        &self,
+        paths: &AppPaths,
+        openclaw_runtime: &ActivatedOpenClawRuntime,
+        profile_id: &str,
+        job_id: Option<String>,
+        process_id: Option<String>,
+        sink: &S,
+        on_started: F,
+    ) -> Result<ProcessResult>
+    where
+        S: ProcessEventSink,
+        F: FnOnce(&str) -> Result<()>,
+    {
+        let profile = self.resolve_profile(profile_id)?;
+        let request = profile.to_request_for_managed_openclaw_runtime(paths, openclaw_runtime)?;
+        let validated = prepare_execution_request(&self.policy, request)?;
 
         self.runtime.run_with_sink(
             validated,

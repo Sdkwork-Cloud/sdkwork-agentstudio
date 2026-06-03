@@ -102,6 +102,7 @@ interface DesktopStartupEvidenceContext {
   appPaths: DesktopAppPaths | null;
   bundledComponents: DesktopKernelInfo['bundledComponents'] | null;
   readinessSnapshot: DesktopHostedRuntimeReadinessSnapshot | null;
+  openClawRuntime: DesktopKernelInfo['openClawRuntime'] | null;
   localAiProxy: DesktopKernelInfo['localAiProxy'] | null;
 }
 
@@ -337,6 +338,7 @@ export function DesktopBootstrapApp({
       appPaths,
       bundledComponents,
       readinessSnapshot,
+      openClawRuntime,
       localAiProxy,
       error,
       runId = bootRunIdRef.current,
@@ -347,6 +349,7 @@ export function DesktopBootstrapApp({
       appPaths?: DesktopAppPaths | null;
       bundledComponents?: DesktopKernelInfo['bundledComponents'] | null;
       readinessSnapshot?: DesktopHostedRuntimeReadinessSnapshot | null;
+      openClawRuntime?: DesktopKernelInfo['openClawRuntime'] | null;
       localAiProxy?: DesktopKernelInfo['localAiProxy'] | null;
       error?: unknown;
       runId?: number;
@@ -365,6 +368,7 @@ export function DesktopBootstrapApp({
         bundledComponents: bundledComponents ?? context?.bundledComponents ?? null,
         appPaths: appPaths ?? context?.appPaths ?? null,
         readinessSnapshot: readinessSnapshot ?? context?.readinessSnapshot ?? null,
+        openClawRuntime: openClawRuntime ?? context?.openClawRuntime ?? null,
         localAiProxy: localAiProxy ?? context?.localAiProxy ?? null,
         error,
       });
@@ -388,6 +392,10 @@ export function DesktopBootstrapApp({
           includedKernelIds: document.bundledComponents?.includedKernelIds ?? [],
           descriptorBrowserBaseUrl: document.descriptor?.browserBaseUrl ?? null,
           builtInInstanceStatus: document.builtInInstance?.status ?? null,
+          openClawConfigHealthStatus: document.openClawConfigHealth?.status ?? null,
+          openClawConfigHealthValid: document.openClawConfigHealth?.valid ?? null,
+          openClawConfigUnknownChannelIds:
+            document.openClawConfigHealth?.unknownChannelIds ?? [],
           localAiProxyLifecycle: document.localAiProxy?.lifecycle ?? null,
           localAiProxySnapshotPath: document.localAiProxy?.snapshotPath ?? null,
           localAiProxyLogPath: document.localAiProxy?.logPath ?? null,
@@ -822,6 +830,34 @@ export function DesktopBootstrapApp({
       try {
         const kernelInfo = await getDesktopKernelInfo();
         const localAiProxy = kernelInfo?.localAiProxy ?? null;
+        const openClawRuntime = kernelInfo?.openClawRuntime ?? null;
+
+        startupEvidenceContextRef.current = startupEvidenceContextRef.current
+          ? {
+            ...startupEvidenceContextRef.current,
+            openClawRuntime,
+          }
+          : null;
+
+        if (openClawRuntime?.channelConfigHealth) {
+          logStartup('info', 'Fresh desktop kernel info captured OpenClaw config health startup evidence.', {
+            status: openClawRuntime.channelConfigHealth.status,
+            valid: openClawRuntime.channelConfigHealth.valid,
+            runtimeMetadataAvailable:
+              openClawRuntime.channelConfigHealth.runtimeMetadataAvailable,
+            configReadable: openClawRuntime.channelConfigHealth.configReadable,
+            supportedChannelIds:
+              openClawRuntime.channelConfigHealth.supportedChannelIds,
+            unknownChannelIds:
+              openClawRuntime.channelConfigHealth.unknownChannelIds,
+            malformedChannelIds:
+              openClawRuntime.channelConfigHealth.malformedChannelIds,
+            unknownModelByChannelIds:
+              openClawRuntime.channelConfigHealth.unknownModelByChannelIds,
+            invalidModelByChannelIds:
+              openClawRuntime.channelConfigHealth.invalidModelByChannelIds,
+          }, captureRunId);
+        }
 
         if (localAiProxy) {
           logStartup('info', 'Fresh desktop kernel info captured local ai proxy startup evidence.', {
@@ -940,6 +976,7 @@ export function DesktopBootstrapApp({
           appPaths,
           bundledComponents: kernelInfo?.bundledComponents ?? null,
           readinessSnapshot: null,
+          openClawRuntime: kernelInfo?.openClawRuntime ?? null,
           localAiProxy: null,
         };
         logStartup('info', 'app.getInfo() resolved.', appInfo, runId);
@@ -984,6 +1021,8 @@ export function DesktopBootstrapApp({
           bundledComponents:
             startupEvidenceContextRef.current?.bundledComponents ?? null,
           readinessSnapshot,
+          openClawRuntime:
+            startupEvidenceContextRef.current?.openClawRuntime ?? null,
           localAiProxy,
         };
         logStartup('info', 'Hosted desktop runtime readiness probe resolved.', {
@@ -1021,6 +1060,8 @@ export function DesktopBootstrapApp({
           appPaths,
           bundledComponents:
             startupEvidenceContextRef.current?.bundledComponents ?? null,
+          openClawRuntime:
+            startupEvidenceContextRef.current?.openClawRuntime ?? null,
           readinessSnapshot,
           localAiProxy,
           runId,
@@ -1077,6 +1118,8 @@ export function DesktopBootstrapApp({
             bundledComponents:
               startupEvidenceContextRef.current?.bundledComponents ?? null,
             readinessSnapshot: readinessError.snapshot,
+            openClawRuntime:
+              startupEvidenceContextRef.current?.openClawRuntime ?? null,
             localAiProxy,
           };
           logStartup('error', 'Hosted desktop runtime readiness probe failed in the background.', {
@@ -1114,6 +1157,8 @@ export function DesktopBootstrapApp({
             appPaths,
             bundledComponents:
               startupEvidenceContextRef.current?.bundledComponents ?? null,
+            openClawRuntime:
+              startupEvidenceContextRef.current?.openClawRuntime ?? null,
             readinessSnapshot: readinessError.snapshot,
             localAiProxy,
             error: readinessError,
@@ -1142,6 +1187,8 @@ export function DesktopBootstrapApp({
           appPaths,
           bundledComponents:
             startupEvidenceContextRef.current?.bundledComponents ?? null,
+          openClawRuntime:
+            startupEvidenceContextRef.current?.openClawRuntime ?? null,
           localAiProxy,
           error,
           runId,

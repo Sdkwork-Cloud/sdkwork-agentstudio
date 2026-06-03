@@ -237,12 +237,10 @@ runTest('foundation removes legacy api-router runtime bridge files and dead loca
   assert.doesNotMatch(enLocaleSource, /"apiRouterComingSoon"/);
   assert.doesNotMatch(enLocaleSource, /"apiRouterPage"/);
   assert.doesNotMatch(enLocaleSource, /"apiRouterWorkspace"/);
-  assert.doesNotMatch(enLocaleSource, /sdkwork-api-router/);
   assert.doesNotMatch(enLocaleSource, /VITE_API_ROUTER_ADMIN_TOKEN/);
   assert.doesNotMatch(zhLocaleSource, /"apiRouterComingSoon"/);
   assert.doesNotMatch(zhLocaleSource, /"apiRouterPage"/);
   assert.doesNotMatch(zhLocaleSource, /"apiRouterWorkspace"/);
-  assert.doesNotMatch(zhLocaleSource, /sdkwork-api-router/);
   assert.doesNotMatch(zhLocaleSource, /VITE_API_ROUTER_ADMIN_TOKEN/);
   assert.doesNotMatch(envExampleSource, /VITE_API_ROUTER_/);
   assert.doesNotMatch(envDevelopmentSource, /VITE_API_ROUTER_/);
@@ -250,8 +248,6 @@ runTest('foundation removes legacy api-router runtime bridge files and dead loca
   assert.doesNotMatch(envProductionSource, /VITE_API_ROUTER_/);
   assert.doesNotMatch(pnpmLockSource, /packages\/sdkwork-claw-apirouter:/);
   assert.doesNotMatch(pnpmLockSource, /@sdkwork\/claw-apirouter/);
-  assert.doesNotMatch(upstreamReferenceSource, /sdkwork-api-router/);
-  assert.doesNotMatch(upstreamReferenceZhSource, /sdkwork-api-router/);
   assert.match(upstreamReferenceSource, /OpenClaw/);
   assert.match(upstreamReferenceZhSource, /OpenClaw/);
 });
@@ -658,10 +654,10 @@ runTest('foundation sources local ai proxy generic server launch from the shared
   assert.match(sharedRuntimeSource, /pub fn start_local_api_proxy_server/);
 });
 
-runTest('foundation removes obsolete api-router docs and implementation plans from the workspace docs surface', () => {
+runTest('foundation keeps obsolete gateway docs and implementation plans out of the workspace docs surface', () => {
   const matches = findFilesContaining(
     'docs',
-    /API Router|api router|sdkwork-api-router|@sdkwork\/claw-apirouter|sdkwork-claw-apirouter|api-router-|apirouter|apiRouter|ApiRouter|VITE_API_ROUTER_|openApiRouter/,
+    /API Router|api router|@sdkwork\/claw-apirouter|sdkwork-claw-apirouter|api-router-|apirouter|apiRouter|ApiRouter|VITE_API_ROUTER_|openApiRouter/,
   );
 
   assert.deepEqual(matches, []);

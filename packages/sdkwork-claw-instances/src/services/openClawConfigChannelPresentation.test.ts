@@ -26,30 +26,30 @@ async function loadConfigChannelPresentationModule() {
 
 function createConfigChannelFixture(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'qq',
-    name: 'QQ',
-    description: 'QQ bridge',
+    id: 'telegram',
+    name: 'Telegram',
+    description: 'Telegram bridge',
     status: 'connected',
     enabled: true,
     configurationMode: 'required',
     fieldCount: 2,
     configuredFieldCount: 1,
-    setupSteps: ['Scan QR'],
+    setupSteps: ['Configure bot'],
     values: {
-      appId: 'baseline-app',
-      appSecret: '',
+      botToken: 'baseline-token',
+      webhookUrl: '',
     },
     fields: [
       {
-        key: 'appId',
-        label: 'App Id',
-        placeholder: 'appid',
+        key: 'botToken',
+        label: 'Bot Token',
+        placeholder: '123456:AA...',
         required: true,
       },
       {
-        key: 'appSecret',
-        label: 'App Secret',
-        placeholder: 'secret',
+        key: 'webhookUrl',
+        label: 'Webhook URL',
+        placeholder: 'https://example.com/telegram/webhook',
         required: true,
       },
     ],
@@ -67,7 +67,7 @@ await runTest(
       configChannels: [],
     });
 
-    assert.equal(syncState.resolveSelectedConfigChannelId('qq'), null);
+    assert.equal(syncState.resolveSelectedConfigChannelId('telegram'), null);
     assert.deepEqual(syncState.configChannelDrafts, {});
     assert.equal(syncState.configChannelError, null);
   },
@@ -83,13 +83,13 @@ await runTest(
       configChannels: [
         createConfigChannelFixture(),
         createConfigChannelFixture({
-          id: 'wechat',
-          name: 'WeChat',
+          id: 'slack',
+          name: 'Slack',
         }),
       ],
     });
 
-    assert.equal(syncState.resolveSelectedConfigChannelId('wechat'), 'wechat');
+    assert.equal(syncState.resolveSelectedConfigChannelId('slack'), 'slack');
     assert.equal(syncState.resolveSelectedConfigChannelId('missing-channel'), null);
     assert.equal(syncState.resolveSelectedConfigChannelId(null), null);
     assert.deepEqual(syncState.configChannelDrafts, {});
@@ -107,27 +107,27 @@ await runTest(
       configChannels: [
         createConfigChannelFixture(),
         createConfigChannelFixture({
-          id: 'wechat',
-          name: 'WeChat',
+          id: 'slack',
+          name: 'Slack',
           values: {
-            appId: 'wechat-app',
-            appSecret: 'wechat-secret',
+            botToken: 'xoxb-slack-token',
+            webhookUrl: 'https://example.com/slack/events',
           },
         }),
       ],
-      selectedConfigChannelId: 'wechat',
+      selectedConfigChannelId: 'slack',
       configChannelDrafts: {
-        wechat: {
-          appId: 'override-app',
-          appSecret: '',
+        slack: {
+          botToken: 'override-token',
+          webhookUrl: '',
         },
       },
     });
 
-    assert.equal(selectionState.selectedConfigChannel?.id, 'wechat');
+    assert.equal(selectionState.selectedConfigChannel?.id, 'slack');
     assert.deepEqual(selectionState.selectedConfigChannelDraft, {
-      appId: 'override-app',
-      appSecret: '',
+      botToken: 'override-token',
+      webhookUrl: '',
     });
   },
 );
@@ -142,9 +142,9 @@ await runTest(
       configChannels: [createConfigChannelFixture()],
       selectedConfigChannelId: 'missing-channel',
       configChannelDrafts: {
-        qq: {
-          appId: 'override-app',
-          appSecret: 'override-secret',
+        telegram: {
+          botToken: 'override-token',
+          webhookUrl: 'https://example.com/telegram/webhook',
         },
       },
     });
@@ -163,41 +163,41 @@ await runTest(
     const workspaceItems = buildOpenClawConfigChannelWorkspaceItems({
       configChannels: [
         createConfigChannelFixture({
-          id: 'wechat',
-          name: 'WeChat',
+          id: 'slack',
+          name: 'Slack',
           description: 'Managed description',
           status: 'connected',
           values: {
-            appId: 'wechat-app',
-            appSecret: 'wechat-secret',
+            botToken: 'xoxb-slack-token',
+            webhookUrl: 'https://example.com/slack/events',
           },
           setupSteps: ['Managed setup'],
         }),
       ],
       runtimeChannels: [
         {
-          id: 'wechat',
+          id: 'slack',
           description: 'Runtime description',
           setupSteps: ['Runtime setup'],
         },
       ] as any,
       configChannelDrafts: {
-        wechat: {
-          appId: 'override-app',
-          appSecret: '',
+        slack: {
+          botToken: 'override-token',
+          webhookUrl: '',
         },
       },
     });
 
     assert.equal(workspaceItems.length, 1);
-    assert.equal(workspaceItems[0]?.id, 'wechat');
+    assert.equal(workspaceItems[0]?.id, 'slack');
     assert.equal(workspaceItems[0]?.description, 'Runtime description');
     assert.equal(workspaceItems[0]?.status, 'connected');
     assert.equal(workspaceItems[0]?.configuredFieldCount, 1);
     assert.deepEqual(workspaceItems[0]?.setupSteps, ['Runtime setup']);
     assert.deepEqual(workspaceItems[0]?.values, {
-      appId: 'override-app',
-      appSecret: '',
+      botToken: 'override-token',
+      webhookUrl: '',
     });
   },
 );
@@ -222,8 +222,8 @@ await runTest(
           enabled: true,
           status: 'connected',
           values: {
-            appId: '',
-            appSecret: '',
+            botToken: '',
+            webhookUrl: '',
           },
         }),
       ],
@@ -232,14 +232,14 @@ await runTest(
     });
 
     assert.equal(workspaceItems.length, 2);
-    assert.equal(workspaceItems[0]?.description, 'QQ bridge');
+    assert.equal(workspaceItems[0]?.description, 'Telegram bridge');
     assert.equal(workspaceItems[0]?.status, 'disconnected');
-    assert.deepEqual(workspaceItems[0]?.setupSteps, ['Scan QR']);
+    assert.deepEqual(workspaceItems[0]?.setupSteps, ['Configure bot']);
     assert.equal(workspaceItems[1]?.status, 'not_configured');
     assert.equal(workspaceItems[1]?.configuredFieldCount, 0);
     assert.deepEqual(workspaceItems[1]?.values, {
-      appId: '',
-      appSecret: '',
+      botToken: '',
+      webhookUrl: '',
     });
   },
 );
@@ -252,14 +252,14 @@ await runTest(
     const configChannels = [
       createConfigChannelFixture(),
       createConfigChannelFixture({
-        id: 'wechat',
-        name: 'WeChat',
+        id: 'slack',
+        name: 'Slack',
       }),
     ];
 
-    assert.equal(findOpenClawConfigChannelById(configChannels, 'wechat')?.id, 'wechat');
+    assert.equal(findOpenClawConfigChannelById(configChannels, 'slack')?.id, 'slack');
     assert.equal(findOpenClawConfigChannelById(configChannels, 'missing-channel'), null);
-    assert.equal(findOpenClawConfigChannelById(null, 'wechat'), null);
+    assert.equal(findOpenClawConfigChannelById(null, 'slack'), null);
   },
 );
 
@@ -269,12 +269,12 @@ await runTest(
     const { buildOpenClawConfigChannelStateHandlers } =
       await loadConfigChannelPresentationModule();
     const selectedConfigChannel = createConfigChannelFixture();
-    let selectedConfigChannelId: string | null = 'qq';
+    let selectedConfigChannelId: string | null = 'telegram';
     let configChannelError: string | null = 'Stale error';
     let configChannelDrafts = {
-      qq: {
-        appId: 'baseline-app',
-        appSecret: '',
+      telegram: {
+        botToken: 'baseline-token',
+        webhookUrl: '',
       },
     };
 
@@ -291,19 +291,19 @@ await runTest(
       },
     });
 
-    handlers.onSelectedConfigChannelIdChange('wechat');
+    handlers.onSelectedConfigChannelIdChange('slack');
 
-    assert.equal(selectedConfigChannelId, 'wechat');
+    assert.equal(selectedConfigChannelId, 'slack');
     assert.equal(configChannelError, null);
 
     configChannelError = 'Another stale error';
-    handlers.onConfigChannelFieldChange('appSecret', 'secret-1');
+    handlers.onConfigChannelFieldChange('webhookUrl', 'https://example.com/telegram/webhook');
 
     assert.equal(configChannelError, null);
     assert.deepEqual(configChannelDrafts, {
-      qq: {
-        appId: 'baseline-app',
-        appSecret: 'secret-1',
+      telegram: {
+        botToken: 'baseline-token',
+        webhookUrl: 'https://example.com/telegram/webhook',
       },
     });
   },
@@ -315,11 +315,11 @@ await runTest(
     const { buildOpenClawConfigChannelStateHandlers } =
       await loadConfigChannelPresentationModule();
     let configChannelError: string | null = 'Stale error';
-    let selectedConfigChannelId: string | null = 'qq';
+    let selectedConfigChannelId: string | null = 'telegram';
     let configChannelDrafts = {
-      qq: {
-        appId: 'baseline-app',
-        appSecret: '',
+      telegram: {
+        botToken: 'baseline-token',
+        webhookUrl: '',
       },
     };
 
@@ -336,14 +336,14 @@ await runTest(
       },
     });
 
-    handlers.onConfigChannelFieldChange('appSecret', 'ignored');
+    handlers.onConfigChannelFieldChange('webhookUrl', 'ignored');
 
-    assert.equal(selectedConfigChannelId, 'qq');
+    assert.equal(selectedConfigChannelId, 'telegram');
     assert.equal(configChannelError, 'Stale error');
     assert.deepEqual(configChannelDrafts, {
-      qq: {
-        appId: 'baseline-app',
-        appSecret: '',
+      telegram: {
+        botToken: 'baseline-token',
+        webhookUrl: '',
       },
     });
   },

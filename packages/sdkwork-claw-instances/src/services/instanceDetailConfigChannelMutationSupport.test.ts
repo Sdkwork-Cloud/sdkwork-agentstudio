@@ -34,7 +34,7 @@ await runTest(
     const executors = createInstanceDetailConfigChannelMutationExecutors({
       instanceService: {
         saveOpenClawChannelConfig: async (instanceId, channelId, values) => {
-          calls.push(`save:${instanceId}:${channelId}:${values.token}`);
+          calls.push(`save:${instanceId}:${channelId}:${values.botToken}`);
         },
         setOpenClawChannelEnabled: async (instanceId, channelId, enabled) => {
           calls.push(`toggle:${instanceId}:${channelId}:${enabled}`);
@@ -42,12 +42,14 @@ await runTest(
       },
     });
 
-    await executors.executeSaveConfig('instance-156', 'qq', { token: 'secret-1' });
-    await executors.executeToggleEnabled('instance-156', 'qq', true);
+    await executors.executeSaveConfig('instance-156', 'telegram', {
+      botToken: '123456:telegram-token',
+    });
+    await executors.executeToggleEnabled('instance-156', 'telegram', true);
 
     assert.deepEqual(calls, [
-      'save:instance-156:qq:secret-1',
-      'toggle:instance-156:qq:true',
+      'save:instance-156:telegram:123456:telegram-token',
+      'toggle:instance-156:telegram:true',
     ]);
   },
 );

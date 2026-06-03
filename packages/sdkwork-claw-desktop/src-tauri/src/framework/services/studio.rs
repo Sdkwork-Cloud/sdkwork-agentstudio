@@ -14,7 +14,10 @@ use crate::framework::{
     paths::AppPaths,
     services::{
         kernel_runtime_authority::KernelRuntimeAuthorityService,
-        openclaw_runtime::{load_manifest, DEFAULT_GATEWAY_PORT},
+        openclaw_channel_config::{
+            bundled_openclaw_channel_id_set, sanitize_openclaw_channel_config,
+        },
+        openclaw_runtime::{collect_openclaw_runtime_channel_ids, load_manifest, DEFAULT_GATEWAY_PORT},
         supervisor::{ManagedServiceLifecycle, SERVICE_ID_OPENCLAW_GATEWAY},
     },
     storage::{
@@ -7022,11 +7025,35 @@ fn write_openclaw_config_file(paths: &AppPaths, root: &Value) -> Result<()> {
     if let Some(parent) = config_path.parent() {
         fs::create_dir_all(parent)?;
     }
+    let mut normalized_root = root.clone();
+    let channel_ids = resolve_openclaw_config_writer_channel_ids(paths);
+    sanitize_openclaw_channel_config(&mut normalized_root, &channel_ids);
     fs::write(
         config_path,
-        format!("{}\n", serde_json::to_string_pretty(root)?),
+        format!("{}\n", serde_json::to_string_pretty(&normalized_root)?),
     )?;
     Ok(())
+}
+
+fn resolve_openclaw_config_writer_channel_ids(paths: &AppPaths) -> std::collections::BTreeSet<String> {
+    read_active_openclaw_runtime_install_key(paths)
+        .and_then(|install_key| {
+            let runtime_dir = paths
+                .openclaw_runtime_dir
+                .join(install_key)
+                .join("runtime");
+            collect_openclaw_runtime_channel_ids(&runtime_dir).ok()
+        })
+        .unwrap_or_else(bundled_openclaw_channel_id_set)
+}
+
+fn read_active_openclaw_runtime_install_key(paths: &AppPaths) -> Option<String> {
+    let active_content = fs::read_to_string(&paths.active_file).ok()?;
+    let active = serde_json::from_str::<ActiveState>(&active_content).ok()?;
+    active
+        .runtimes
+        .get("openclaw")
+        .and_then(|entry| entry.active_runtime_install_key().map(str::to_string))
 }
 
 fn read_openclaw_config(paths: &AppPaths) -> Result<Value> {
@@ -7255,14 +7282,15 @@ mod tests {
         built_in_openclaw_last_error, built_in_openclaw_lifecycle, bundled_openclaw_version,
         console_install_method_from_install_record, default_storage_binding, get_nested_string,
         get_nested_value, percent_encode_url_component, read_json5_object,
-        EmbeddedHostRuntimeStatus, InstanceRegistryDocument, PartialStudioInstanceConfig,
-        StudioConversationMessage, StudioConversationMessageStatus, StudioConversationRecord,
-        StudioConversationRole, StudioCreateInstanceInput, StudioCreateKernelAgentInput,
-        StudioInstanceArtifactKind, StudioInstanceAuthMode, StudioInstanceCapability,
-        StudioInstanceCapabilityStatus, StudioInstanceConfig, StudioInstanceConsoleInstallMethod,
-        StudioInstanceDataAccessMode, StudioInstanceDataAccessScope, StudioInstanceDeploymentMode,
-        StudioInstanceIconType, StudioInstanceLifecycleOwner, StudioInstanceRecord,
-        StudioInstanceStatus, StudioInstanceStorageStatus, StudioInstanceTransportKind,
+        write_openclaw_config_file, EmbeddedHostRuntimeStatus, InstanceRegistryDocument,
+        PartialStudioInstanceConfig, StudioConversationMessage, StudioConversationMessageStatus,
+        StudioConversationRecord, StudioConversationRole, StudioCreateInstanceInput,
+        StudioCreateKernelAgentInput, StudioInstanceArtifactKind, StudioInstanceAuthMode,
+        StudioInstanceCapability, StudioInstanceCapabilityStatus, StudioInstanceConfig,
+        StudioInstanceConsoleInstallMethod, StudioInstanceDataAccessMode,
+        StudioInstanceDataAccessScope, StudioInstanceDeploymentMode, StudioInstanceIconType,
+        StudioInstanceLifecycleOwner, StudioInstanceRecord, StudioInstanceStatus,
+        StudioInstanceStorageStatus, StudioInstanceTransportKind,
         StudioKernelAgentCreationFieldSupport, StudioRuntimeKind, StudioService,
         StudioUpdateInstanceLlmProviderConfigInput, StudioWorkbenchLLMProviderConfigRecord,
         DEFAULT_INSTANCE_ID,
@@ -7380,6 +7408,48 @@ mod tests {
             ),
         )
         .expect("write manifest");
+    }
+
+    fn write_openclaw_channel_metadata(
+        paths: &crate::framework::paths::AppPaths,
+        install_key: &str,
+        channel_id: &str,
+    ) {
+        let package_json_path = paths
+            .openclaw_runtime_dir
+            .join(install_key)
+            .join("runtime")
+            .join("package")
+            .join("node_modules")
+            .join("openclaw")
+            .join("dist")
+            .join("extensions")
+            .join(channel_id)
+            .join("package.json");
+        fs::create_dir_all(
+            package_json_path
+                .parent()
+                .expect("test OpenClaw channel metadata parent"),
+        )
+        .expect("create test OpenClaw channel metadata dir");
+        fs::write(
+            package_json_path,
+            format!(
+                r#"{{
+  "name": "@openclaw/{channel_id}",
+  "version": "0.0.0-test",
+  "openclaw": {{
+    "extensions": ["./index.js"],
+    "channel": {{
+      "id": "{channel_id}",
+      "label": "{channel_id}"
+    }}
+  }}
+}}
+"#
+            ),
+        )
+        .expect("write test OpenClaw channel metadata package");
     }
 
     fn openclaw_fixture_version(patch_offset: i32) -> String {
@@ -8664,9 +8734,8 @@ mod tests {
             &fs::read_to_string(&paths.openclaw_authority_file).expect("authority state"),
         )
         .expect("authority state json");
-        authority["configFilePath"] = Value::String(
-            stale_config_file_path.to_string_lossy().into_owned(),
-        );
+        authority["configFilePath"] =
+            Value::String(stale_config_file_path.to_string_lossy().into_owned());
         fs::write(
             &paths.openclaw_authority_file,
             format!(
@@ -11352,6 +11421,142 @@ mod tests {
                 "expected workbench to include {key}"
             );
         }
+    }
+
+    #[test]
+    fn desktop_openclaw_config_writer_sanitizes_retired_and_malformed_channel_config() {
+        let (_root, paths, _config, _storage, _service) = studio_context();
+        let root = json!({
+            "channels": {
+                "telegram": {
+                    "botToken": "${TELEGRAM_BOT_TOKEN}",
+                    "enabled": true
+                },
+                "qq": {
+                    "appId": "legacy-app-id",
+                    "clientSecret": "legacy-secret",
+                    "enabled": true
+                },
+                "dingtalk": {
+                    "enabled": true
+                },
+                "slack": ["xoxb-token"],
+                "defaults": {
+                    "model": "sdkwork-local-proxy/gpt-5.4"
+                },
+                "modelByChannel": {
+                    "telegram": {
+                        "*": "sdkwork-local-proxy/gpt-5.4",
+                        "C123": 42
+                    },
+                    "slack": {
+                        "C123": "sdkwork-local-proxy/gpt-5.4"
+                    },
+                    "qq": {
+                        "*": "sdkwork-local-proxy/gpt-legacy"
+                    },
+                    "dingtalk": {
+                        "*": "sdkwork-local-proxy/gpt-legacy"
+                    }
+                }
+            }
+        });
+
+        write_openclaw_config_file(&paths, &root).expect("write config file");
+
+        let written =
+            read_json5_object(&openclaw_config_file_path(&paths)).expect("read written config");
+        let channels = written
+            .get("channels")
+            .and_then(Value::as_object)
+            .expect("channels object");
+
+        assert!(channels.contains_key("telegram"));
+        assert!(channels.contains_key("qqbot"));
+        assert!(channels.contains_key("defaults"));
+        assert!(!channels.contains_key("qq"));
+        assert!(!channels.contains_key("dingtalk"));
+        assert!(!channels.contains_key("slack"));
+        assert_eq!(
+            channels
+                .get("modelByChannel")
+                .and_then(Value::as_object)
+                .expect("modelByChannel object")
+                .keys()
+                .cloned()
+                .collect::<Vec<_>>(),
+            vec![
+                "qqbot".to_string(),
+                "slack".to_string(),
+                "telegram".to_string()
+            ]
+        );
+        assert_eq!(
+            channels
+                .get("modelByChannel")
+                .and_then(Value::as_object)
+                .and_then(|model_by_channel| model_by_channel.get("telegram"))
+                .and_then(Value::as_object)
+                .expect("telegram model overrides")
+                .keys()
+                .cloned()
+                .collect::<Vec<_>>(),
+            vec!["*".to_string()]
+        );
+    }
+
+    #[test]
+    fn desktop_openclaw_config_writer_uses_active_runtime_channel_metadata() {
+        let (_root, paths, _config, _storage, _service) = studio_context();
+        let install_key = "2026.5.6-windows-x64";
+        write_openclaw_manifest(&paths, install_key, "2026.5.6");
+        write_openclaw_channel_metadata(&paths, install_key, "matrix");
+        crate::framework::layout::set_active_runtime_version(&paths, "openclaw", install_key)
+            .expect("record active runtime install key");
+        let root = json!({
+            "channels": {
+                "telegram": {
+                    "botToken": "${TELEGRAM_BOT_TOKEN}",
+                    "enabled": true
+                },
+                "matrix": {
+                    "homeserver": "https://matrix.example",
+                    "userId": "@openclaw:matrix.example",
+                    "accessToken": "${MATRIX_ACCESS_TOKEN}",
+                    "enabled": true
+                },
+                "modelByChannel": {
+                    "telegram": {
+                        "*": "sdkwork-local-proxy/gpt-legacy"
+                    },
+                    "matrix": {
+                        "*": "sdkwork-local-proxy/gpt-5.4"
+                    }
+                }
+            }
+        });
+
+        write_openclaw_config_file(&paths, &root).expect("write config file");
+
+        let written =
+            read_json5_object(&openclaw_config_file_path(&paths)).expect("read written config");
+        let channels = written
+            .get("channels")
+            .and_then(Value::as_object)
+            .expect("channels object");
+
+        assert!(channels.contains_key("matrix"));
+        assert!(!channels.contains_key("telegram"));
+        assert_eq!(
+            channels
+                .get("modelByChannel")
+                .and_then(Value::as_object)
+                .expect("modelByChannel object")
+                .keys()
+                .cloned()
+                .collect::<Vec<_>>(),
+            vec!["matrix".to_string()]
+        );
     }
 
     #[test]

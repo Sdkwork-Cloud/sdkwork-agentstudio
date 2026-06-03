@@ -9,6 +9,7 @@ export * from './kernelChatModel.ts';
 export * from './openclawMirror.ts';
 export * from './kernelReleaseCatalog.ts';
 export * from './openclawRelease.ts';
+export * from './openclawChannels.ts';
 export * from './kernelModel.ts';
 export * from './builtInKernelIdentity.ts';
 

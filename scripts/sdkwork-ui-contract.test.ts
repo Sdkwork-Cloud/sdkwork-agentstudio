@@ -57,6 +57,7 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   );
   const channelCatalogSource = read('packages/sdkwork-claw-ui/src/components/ChannelCatalog.tsx');
   const channelWorkspaceSource = read('packages/sdkwork-claw-ui/src/components/ChannelWorkspace.tsx');
+  const channelBindingGuidesSource = read('packages/sdkwork-claw-ui/src/components/channelBindingGuides.ts');
   const channelRegionTabsSource = read('packages/sdkwork-claw-ui/src/components/ChannelRegionTabs.tsx');
   const channelCatalogMetaSource = read('packages/sdkwork-claw-ui/src/components/channelCatalogMeta.ts');
   const channelCatalogRegionContentSource = read(
@@ -79,6 +80,7 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.ok(exists('packages/sdkwork-claw-ui/src/components/TaskCatalog.tsx'));
   assert.ok(exists('packages/sdkwork-claw-ui/src/components/TaskExecutionHistoryDrawer.tsx'));
   assert.ok(exists('packages/sdkwork-claw-ui/src/components/ChannelWorkspace.tsx'));
+  assert.ok(exists('packages/sdkwork-claw-ui/src/components/channelBindingGuides.ts'));
   assert.ok(exists('packages/sdkwork-claw-ui/src/components/ChannelRegionTabs.tsx'));
   assert.ok(exists('packages/sdkwork-claw-ui/src/components/channelCatalogRegionContent.ts'));
   assert.ok(exists('packages/sdkwork-claw-ui/src/components/taskCatalogMeta.ts'));
@@ -102,6 +104,7 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.match(componentsIndexSource, /\.\/TaskExecutionHistoryDrawer/);
   assert.match(componentsIndexSource, /\.\/TaskRowList/);
   assert.match(componentsIndexSource, /\.\/ChannelWorkspace/);
+  assert.match(componentsIndexSource, /\.\/channelBindingGuides/);
   assert.match(componentsIndexSource, /\.\/taskCatalogMeta/);
   assert.match(
     taskRowListSource,
@@ -120,6 +123,7 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.match(channelCatalogSource, /buildChannelCatalogRegionLabels\(t\)/);
   assert.match(channelCatalogSource, /buildChannelCatalogRegionDescriptions\(t\)/);
   assert.match(channelCatalogSource, /getChannelCatalogRegionEmptyText\(t, activeRegion\)/);
+  assert.match(channelCatalogSource, /getChannelBindingGuide\(channel\.id\)/);
   assert.match(channelCatalogSource, /regionGroups\.all\.length/);
   assert.match(channelCatalogSource, /sortChannelCatalogItems/);
   assert.match(channelWorkspaceSource, /export interface ChannelWorkspaceItem/);
@@ -135,6 +139,22 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.match(channelWorkspaceSource, /OverlaySurface/);
   assert.match(channelWorkspaceSource, /setupSteps/);
   assert.match(channelWorkspaceSource, /deleteConfigurationAction/);
+  assert.match(channelWorkspaceSource, /getChannelBindingGuide/);
+  assert.match(channelWorkspaceSource, /data-slot="channel-workspace-binding-command"/);
+  assert.doesNotMatch(channelWorkspaceSource, /QRCode\.toDataURL/);
+  assert.ok(!pkg.dependencies?.qrcode);
+  assert.doesNotMatch(channelWorkspaceSource, /buildChannelQrContent/);
+  assert.match(channelBindingGuidesSource, /openclaw-weixin/);
+  assert.match(channelBindingGuidesSource, /qqbot/);
+  assert.match(channelBindingGuidesSource, /openclaw channels add --channel qqbot/);
+  assert.match(channelBindingGuidesSource, /@tencent-weixin\/openclaw-weixin-cli install/);
+  assert.match(channelBindingGuidesSource, /openclaw channels login --channel feishu/);
+  assert.match(channelBindingGuidesSource, /@dingtalk-real-ai\/dingtalk-connector install/);
+  assert.doesNotMatch(channelBindingGuidesSource, /wecom:\s*\{/);
+  assert.doesNotMatch(channelBindingGuidesSource, /@wecom\/wecom-openclaw-plugin install/);
+  assert.doesNotMatch(channelBindingGuidesSource, /(?:^|\s)qq:\s*\{/);
+  assert.doesNotMatch(channelBindingGuidesSource, /wechat:\s*\{/);
+  assert.doesNotMatch(channelBindingGuidesSource, /dingtalk:\s*\{/);
   assert.match(channelCatalogRegionContentSource, /channels\.page\.catalog\.tabs\.domestic/);
   assert.match(channelCatalogRegionContentSource, /channels\.page\.catalog\.descriptions\.media/);
   assert.match(channelCatalogRegionContentSource, /channels\.page\.catalog\.empty\.all/);
@@ -143,10 +163,16 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.match(channelCatalogRegionContentSource, /getChannelCatalogRegionEmptyText/);
   assert.match(channelRegionTabsSource, /data-slot="channel-region-tabs"/);
   assert.match(channelRegionTabsSource, /\['domestic', 'global', 'media', 'all'\]/);
-  assert.match(channelCatalogMetaSource, /sdkworkchat/);
-  assert.match(channelCatalogMetaSource, /wechat/);
-  assert.match(channelCatalogMetaSource, /wehcat/);
-  assert.match(channelCatalogMetaSource, /clawstudio\.sdkwork\.com\/platforms\/android/);
+  assert.match(channelCatalogMetaSource, /imessage:\s*\{/);
+  assert.match(channelCatalogMetaSource, /irc:\s*\{/);
+  assert.match(channelCatalogMetaSource, /matrix:\s*\{/);
+  assert.match(channelCatalogMetaSource, /mattermost:\s*\{/);
+  assert.match(channelCatalogMetaSource, /signal:\s*\{/);
+  assert.match(channelCatalogMetaSource, /slack:\s*\{/);
+  assert.match(channelCatalogMetaSource, /telegram:\s*\{/);
+  assert.doesNotMatch(channelCatalogMetaSource, /sdkworkchat:\s*\{/);
+  assert.doesNotMatch(channelCatalogMetaSource, /wehcat:\s*\{/);
+  assert.doesNotMatch(channelCatalogMetaSource, /qq:\s*\{/);
   assert.match(channelCatalogMetaSource, /export type ChannelCatalogRegion = 'domestic' \| 'global' \| 'media' \| 'all'/);
   assert.match(channelCatalogMetaSource, /media: T\[];/);
   assert.match(channelCatalogMetaSource, /all: T\[];/);
@@ -156,9 +182,8 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
   assert.match(channelCatalogMetaSource, /resolveDefaultChannelCatalogRegion/);
   assert.match(channelCatalogMetaSource, /isChannelDownloadAppAction/);
   assert.match(channelCatalogMetaSource, /export function sortChannelCatalogItems/);
-  assert.match(channelCatalogMetaSource, /sdkworkchat:\s*\{[\s\S]*regions:\s*\['domestic', 'global', 'media'\]/);
-  assert.match(channelCatalogMetaSource, /wechat:\s*\{[\s\S]*regions:\s*\['domestic'\]/);
-  assert.match(channelCatalogMetaSource, /wehcat:\s*\{[\s\S]*regions:\s*\['media'\]/);
+  assert.match(channelCatalogMetaSource, /imessage:\s*\{[\s\S]*regions:\s*\['global', 'media'\]/);
+  assert.match(channelCatalogMetaSource, /telegram:\s*\{[\s\S]*regions:\s*\['global'\]/);
   assert.match(channelCatalogMetaSource, /groups\.all\.push\(item\)/);
   assert.match(channelCatalogMetaSource, /for \(const region of regions\)/);
   assert.match(channelCatalogMetaSource, /media: \[\]/);

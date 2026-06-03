@@ -31,6 +31,7 @@ struct KernelRuntimeStatePaths {
 pub struct ImportedOpenClawConfig {
     pub root: Value,
     pub source_path: Option<PathBuf>,
+    pub quarantined_path: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -112,7 +113,7 @@ impl KernelRuntimeAuthorityService {
 
     pub fn import_or_default_openclaw_config(
         &self,
-        _paths: &AppPaths,
+        paths: &AppPaths,
         config_file_path: &Path,
     ) -> Result<ImportedOpenClawConfig> {
         if let Some(parent) = config_file_path.parent() {
@@ -120,15 +121,31 @@ impl KernelRuntimeAuthorityService {
         }
 
         if config_file_path.exists() {
+            let state_paths = resolve_runtime_state_paths(OPENCLAW_KERNEL_ID, paths)?;
+            let root = match read_json5_object(config_file_path) {
+                Ok(root) => root,
+                Err(FrameworkError::ValidationFailed(_)) => {
+                    let quarantined_path =
+                        quarantine_path(config_file_path, &state_paths.quarantine_dir)?;
+                    return Ok(ImportedOpenClawConfig {
+                        root: Value::Object(Map::new()),
+                        source_path: Some(config_file_path.to_path_buf()),
+                        quarantined_path: Some(quarantined_path),
+                    });
+                }
+                Err(error) => return Err(error),
+            };
             return Ok(ImportedOpenClawConfig {
-                root: read_json5_object(config_file_path)?,
+                root,
                 source_path: None,
+                quarantined_path: None,
             });
         }
 
         Ok(ImportedOpenClawConfig {
             root: Value::Object(Map::new()),
             source_path: None,
+            quarantined_path: None,
         })
     }
 
@@ -137,6 +154,7 @@ impl KernelRuntimeAuthorityService {
         runtime_id: &str,
         paths: &AppPaths,
         source_path: Option<&Path>,
+        quarantined_path: Option<&Path>,
         config_file_path: &Path,
     ) -> Result<()> {
         let normalized_runtime_id = normalize_runtime_id(runtime_id);
@@ -162,17 +180,23 @@ impl KernelRuntimeAuthorityService {
         migrations.last_config_migrated_at = Some(migrated_at);
         migrations.last_error = None;
 
-        if let Some(source_path) = source_path.filter(|path| *path != config_file_path) {
-            if source_path.exists() {
-                let quarantined_path = quarantine_path(source_path, &state_paths.quarantine_dir)?;
-                let quarantined_path_string = path_string(&quarantined_path);
-                if !authority
-                    .quarantined_paths
-                    .iter()
-                    .any(|path| path == &quarantined_path_string)
-                {
-                    authority.quarantined_paths.push(quarantined_path_string);
+        let mut recorded_quarantined_path = quarantined_path.map(PathBuf::from);
+        if recorded_quarantined_path.is_none() {
+            if let Some(source_path) = source_path.filter(|path| *path != config_file_path) {
+                if source_path.exists() {
+                    recorded_quarantined_path =
+                        Some(quarantine_path(source_path, &state_paths.quarantine_dir)?);
                 }
+            }
+        }
+        if let Some(quarantined_path) = recorded_quarantined_path {
+            let quarantined_path_string = path_string(&quarantined_path);
+            if !authority
+                .quarantined_paths
+                .iter()
+                .any(|path| path == &quarantined_path_string)
+            {
+                authority.quarantined_paths.push(quarantined_path_string);
             }
         }
 
@@ -582,7 +606,7 @@ fn unix_timestamp_ms() -> Result<u128> {
 #[cfg(test)]
 mod tests {
     use super::{
-        path_string, read_json_file, write_json_file, KernelAuthorityState,
+        path_string, read_json_file, write_json_file, KernelAuthorityState, KernelMigrationState,
         KernelRuntimeAuthorityService,
     };
     use crate::framework::{
@@ -986,12 +1010,8 @@ mod tests {
         let config_file_path = paths.openclaw_config_file.clone();
         let stale_config_path = stale_authority_config_file_path(&paths);
 
-        fs::create_dir_all(
-            stale_config_path
-                .parent()
-                .expect("stale config parent"),
-        )
-        .expect("stale config dir");
+        fs::create_dir_all(stale_config_path.parent().expect("stale config parent"))
+            .expect("stale config dir");
         fs::write(
             &stale_config_path,
             "{\n  commands: {\n    ownerDisplay: \"compact\",\n  },\n}\n",
@@ -1013,6 +1033,69 @@ mod tests {
 
         assert_eq!(imported.source_path, None);
         assert_eq!(imported.root, Value::Object(Default::default()));
+    }
+
+    #[test]
+    fn import_or_default_openclaw_config_quarantines_invalid_canonical_config_before_rewrite() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let paths = resolve_paths_for_root(root.path()).expect("paths");
+        let config_file_path = paths.openclaw_config_file.clone();
+        let corrupt_config = "{\n  \"systemPromptOverride\": \"unterminated\n}\n";
+        let authority = KernelRuntimeAuthorityService::new();
+
+        fs::create_dir_all(config_file_path.parent().expect("config parent")).expect("config dir");
+        fs::write(&config_file_path, corrupt_config).expect("seed corrupt canonical config");
+
+        let imported = authority
+            .import_or_default_openclaw_config(&paths, &config_file_path)
+            .expect("corrupt canonical config should recover to defaults");
+
+        assert_eq!(imported.root, Value::Object(Default::default()));
+        assert_eq!(
+            imported.source_path.as_deref(),
+            Some(config_file_path.as_path())
+        );
+        assert!(!config_file_path.exists());
+        let quarantined_path = imported
+            .quarantined_path
+            .as_deref()
+            .expect("quarantined path");
+        assert!(quarantined_path.starts_with(&paths.openclaw_quarantine_dir));
+        assert_eq!(
+            fs::read_to_string(quarantined_path).expect("quarantined config"),
+            corrupt_config
+        );
+
+        fs::write(&config_file_path, "{}\n").expect("rewritten config");
+        authority
+            .record_config_migration(
+                "openclaw",
+                &paths,
+                imported.source_path.as_deref(),
+                imported.quarantined_path.as_deref(),
+                &config_file_path,
+            )
+            .expect("record config migration");
+
+        let persisted_authority =
+            read_json_file::<KernelAuthorityState>(&paths.openclaw_authority_file)
+                .expect("authority state");
+        assert!(
+            persisted_authority
+                .quarantined_paths
+                .contains(&path_string(quarantined_path)),
+            "quarantined config path should be retained in authority state"
+        );
+        let migrations = read_json_file::<KernelMigrationState>(&paths.openclaw_migrations_file)
+            .expect("migration state");
+        assert_eq!(
+            migrations.last_config_source_path,
+            Some(path_string(&config_file_path))
+        );
+        assert_eq!(
+            migrations.last_config_target_path,
+            Some(path_string(&config_file_path))
+        );
     }
 
     #[test]
@@ -1079,10 +1162,7 @@ mod tests {
     }}
   }}
 }}"#,
-                install_key,
-                fallback_install_key,
-                active_version_label,
-                fallback_version_label
+                install_key, fallback_install_key, active_version_label, fallback_version_label
             ),
         )
         .expect("write active state");

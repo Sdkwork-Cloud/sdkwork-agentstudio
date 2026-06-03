@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -83,6 +84,7 @@ export async function runNodeScript({
   workspaceRootDir = rootDir,
   scriptRelativePath,
   args = [],
+  env = process.env,
 } = {}) {
   if (!scriptRelativePath) {
     throw new Error('runNodeScript requires a scriptRelativePath.');
@@ -94,6 +96,7 @@ export async function runNodeScript({
       stdio: 'inherit',
       shell: false,
       windowsHide: true,
+      env,
     });
 
     child.on('error', reject);
@@ -148,23 +151,32 @@ async function runOpenClawUpgradeVerification({
   workspaceRootDir,
   targetVersion,
   runNodeScriptFn,
+  env = process.env,
 }) {
   await runNodeScriptFn({
     workspaceRootDir,
     scriptRelativePath: 'scripts/verify-desktop-openclaw-release-assets.mjs',
     args: [],
+    env,
   });
   await runNodeScriptFn({
     workspaceRootDir,
     scriptRelativePath: 'scripts/openclaw-upgrade-rollback-evidence.mjs',
     args: ['--target-version', targetVersion],
+    env,
   });
+}
+
+function resolveOpenClawTargetTarballPath(workspaceRootDir, targetVersion) {
+  const tarballPath = path.join(workspaceRootDir, `openclaw-${targetVersion}.tgz`);
+  return existsSync(tarballPath) ? tarballPath : null;
 }
 
 export async function applyOpenClawUpgrade({
   workspaceRootDir = rootDir,
   targetVersion,
   fast = false,
+  baseEnv = process.env,
   assessOpenClawUpgradeReadinessFn = assessOpenClawUpgradeReadiness,
   runNodeScriptFn = runNodeScript,
   readVersionStateFn = readOpenClawVersionState,
@@ -184,6 +196,17 @@ export async function applyOpenClawUpgrade({
       workspaceRootDir,
       targetVersion: normalizedTargetVersion,
       runNodeScriptFn,
+      env: {
+        ...baseEnv,
+        SDKWORK_WINDOWS_MIRROR_BASE_DIR: String(
+          baseEnv.SDKWORK_WINDOWS_MIRROR_BASE_DIR
+            ?? path.join(workspaceRootDir, '.cache', 'short-mirrors'),
+        ),
+        OPENCLAW_PREPARE_CACHE_DIR: String(
+          baseEnv.OPENCLAW_PREPARE_CACHE_DIR
+            ?? path.join(workspaceRootDir, '.cache', 'openclaw-runtime-cache'),
+        ),
+      },
     });
     const versionState = await readVersionStateFn({ workspaceRootDir });
     assertAppliedVersionState(versionState, normalizedTargetVersion);
@@ -206,6 +229,21 @@ export async function applyOpenClawUpgrade({
   const kernelReleaseConfigPath = resolveKernelReleaseConfigPath('openclaw', {
     workspaceRootDir,
   });
+  const localTargetTarballPath = resolveOpenClawTargetTarballPath(
+    workspaceRootDir,
+    normalizedTargetVersion,
+  );
+  const workflowEnv = {
+    ...baseEnv,
+    SDKWORK_WINDOWS_MIRROR_BASE_DIR: String(
+      baseEnv.SDKWORK_WINDOWS_MIRROR_BASE_DIR
+        ?? path.join(workspaceRootDir, '.cache', 'short-mirrors'),
+    ),
+    OPENCLAW_PREPARE_CACHE_DIR: String(
+      baseEnv.OPENCLAW_PREPARE_CACHE_DIR
+        ?? path.join(workspaceRootDir, '.cache', 'openclaw-runtime-cache'),
+    ),
+  };
   const originalReleaseConfigText = await readFile(kernelReleaseConfigPath, 'utf8');
   const releaseConfig = JSON.parse(originalReleaseConfigText);
   const nextReleaseConfig = {
@@ -220,16 +258,25 @@ export async function applyOpenClawUpgrade({
       workspaceRootDir,
       scriptRelativePath: 'scripts/sync-bundled-components.mjs',
       args: ['--no-fetch', '--release'],
+      env: workflowEnv,
     });
     await runNodeScriptFn({
       workspaceRootDir,
       scriptRelativePath: 'scripts/prepare-openclaw-runtime.mjs',
       args: [],
+      env: localTargetTarballPath
+        ? {
+          ...workflowEnv,
+          OPENCLAW_PACKAGE_TARBALL: localTargetTarballPath,
+          OPENCLAW_FORCE_PREPARE: '1',
+        }
+        : workflowEnv,
     });
     await runOpenClawUpgradeVerification({
       workspaceRootDir,
       targetVersion: normalizedTargetVersion,
       runNodeScriptFn,
+      env: workflowEnv,
     });
 
     const versionState = await readVersionStateFn({ workspaceRootDir });

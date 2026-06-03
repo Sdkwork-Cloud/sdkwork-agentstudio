@@ -1,14 +1,23 @@
 use crate::framework::{policy::ExecutionPolicy, FrameworkError, Result};
-use std::{ffi::OsString, path::PathBuf};
+use std::{collections::BTreeMap, ffi::OsString, path::PathBuf};
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ProcessRequest {
     pub command: String,
     #[serde(default)]
     pub args: Vec<String>,
     pub cwd: Option<PathBuf>,
     pub timeout_ms: Option<u64>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ProcessExecutionRequest {
+    pub(crate) command: String,
+    pub(crate) args: Vec<String>,
+    pub(crate) cwd: Option<PathBuf>,
+    pub(crate) timeout_ms: Option<u64>,
+    pub(crate) extra_env: BTreeMap<String, String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -35,6 +44,36 @@ pub(crate) fn prepare_request_with_env<I>(
 where
     I: IntoIterator<Item = (OsString, OsString)>,
 {
+    prepare_process_request_with_env(policy, request.into(), env, SpawnPolicyScope::Public)
+}
+
+pub(crate) fn prepare_execution_request(
+    policy: &ExecutionPolicy,
+    request: ProcessExecutionRequest,
+) -> Result<ValidatedProcessRequest> {
+    prepare_execution_request_with_env(policy, request, std::env::vars_os())
+}
+
+pub(crate) fn prepare_execution_request_with_env<I>(
+    policy: &ExecutionPolicy,
+    request: ProcessExecutionRequest,
+    env: I,
+) -> Result<ValidatedProcessRequest>
+where
+    I: IntoIterator<Item = (OsString, OsString)>,
+{
+    prepare_process_request_with_env(policy, request, env, SpawnPolicyScope::Profile)
+}
+
+fn prepare_process_request_with_env<I>(
+    policy: &ExecutionPolicy,
+    request: ProcessExecutionRequest,
+    env: I,
+    scope: SpawnPolicyScope,
+) -> Result<ValidatedProcessRequest>
+where
+    I: IntoIterator<Item = (OsString, OsString)>,
+{
     let command = request.command.trim().to_string();
     if command.is_empty() {
         return Err(FrameworkError::ValidationFailed(
@@ -42,9 +81,20 @@ where
         ));
     }
 
-    policy.validate_command_spawn(&command, &request.args)?;
+    match scope {
+        SpawnPolicyScope::Public => policy.validate_command_spawn(&command, &request.args)?,
+        SpawnPolicyScope::Profile => {
+            policy.validate_profile_command_spawn(&command, &request.args)?
+        }
+    }
     let cwd = policy.resolve_working_directory(request.cwd.as_deref())?;
-    let env = policy.sanitize_environment(env);
+    let mut env = policy.sanitize_environment(env);
+    env.extend(
+        request
+            .extra_env
+            .into_iter()
+            .map(|(key, value)| (OsString::from(key), OsString::from(value))),
+    );
 
     Ok(ValidatedProcessRequest {
         command,
@@ -53,6 +103,24 @@ where
         timeout_ms: request.timeout_ms,
         env,
     })
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SpawnPolicyScope {
+    Public,
+    Profile,
+}
+
+impl From<ProcessRequest> for ProcessExecutionRequest {
+    fn from(request: ProcessRequest) -> Self {
+        Self {
+            command: request.command,
+            args: request.args,
+            cwd: request.cwd,
+            timeout_ms: request.timeout_ms,
+            extra_env: BTreeMap::new(),
+        }
+    }
 }
 
 impl ValidatedProcessRequest {
@@ -123,6 +191,24 @@ mod tests {
 
         assert!(validated.env.iter().any(|(key, _)| key == "PATH"));
         assert!(!validated.env.iter().any(|(key, _)| key == "SECRET_TOKEN"));
+    }
+
+    #[test]
+    fn public_process_request_rejects_unknown_environment_overlay_fields() {
+        let error = serde_json::from_str::<ProcessRequest>(
+            r#"{
+  "command": "sh",
+  "args": [],
+  "cwd": null,
+  "timeoutMs": null,
+  "env": {
+    "OPENCLAW_GATEWAY_TOKEN": "frontend-injected"
+  }
+}"#,
+        )
+        .expect_err("public process request must reject env overlays");
+
+        assert!(error.to_string().contains("unknown field `env`"));
     }
 
     #[cfg(windows)]

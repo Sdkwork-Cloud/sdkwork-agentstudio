@@ -6,6 +6,8 @@ import {
   OPENCLAW_GATEWAY_DEFAULT_WEBSOCKET_URL,
   STABLE_BUILT_IN_OPENCLAW_INSTANCE_ID,
   isBuiltInOpenClawInstanceId,
+  isOpenClawBundledChannelId,
+  listOpenClawChannelDefinitions,
 } from '@sdkwork/claw-types';
 import type {
   StudioConversationMessage,
@@ -69,6 +71,8 @@ const DEFAULT_OPENCLAW_PROVIDER_ID = 'openai';
 const DEFAULT_OPENCLAW_AGENT_FILE_ID = '/workspace/main/AGENTS.md';
 const DEFAULT_OPENCLAW_MEMORY_FILE_ID = '/workspace/main/MEMORY.md';
 const DEFAULT_OPENCLAW_CONFIG_FILE_ID = '/workspace/main/openclaw.json';
+const LEGACY_QQ_CHANNEL_ID = 'qq';
+const CANONICAL_QQBOT_CHANNEL_ID = 'qqbot';
 
 type BrowserOpenClawWorkbenchChannelRecord = StudioWorkbenchSnapshot['channels'][number] & {
   values?: Record<string, string>;
@@ -88,149 +92,14 @@ interface BrowserOpenClawChannelTemplate {
 }
 
 const BROWSER_OPENCLAW_CHANNEL_TEMPLATES: BrowserOpenClawChannelTemplate[] = [
-  {
-    id: 'sdkworkchat',
-    name: 'Sdkwork Chat',
-    description:
-      'Deliver OpenClaw conversations directly into the first-party Sdkwork Chat experience.',
-    configurationMode: 'none',
-    fieldCount: 0,
-    setupSteps: [
-      'Download the Sdkwork Chat app or open the existing Sdkwork Chat workspace.',
-      'Sign in with your SDKWork account to receive OpenClaw conversations immediately.',
-      'Keep this channel enabled when the current runtime should hand off into Sdkwork Chat.',
-    ],
-  },
-  {
-    id: 'wechat',
-    name: 'WeChat',
-    description:
-      'Connect WeChat conversational messaging so OpenClaw can serve China-facing direct chat surfaces.',
-    configurationMode: 'none',
-    fieldCount: 0,
-    setupSteps: [
-      'Prepare the WeChat integration entry approved for your runtime deployment.',
-      'Keep this channel enabled when OpenClaw should expose direct WeChat conversations.',
-      'Use the WeChat Official Account channel separately for public account and broadcast workflows.',
-    ],
-  },
-  {
-    id: 'wehcat',
-    name: 'WeChat Official Account',
-    description:
-      'Connect a WeChat official account workflow so OpenClaw can serve China-facing media channels.',
-    configurationMode: 'required',
-    fieldCount: 4,
-    setupSteps: [
-      'Create or manage a WeChat official account in the WeChat platform.',
-      'Paste the App ID, App Secret, token, and optional AES key here.',
-      'Configure the callback URL on the WeChat side and enable the channel.',
-    ],
-  },
-  {
-    id: 'qq',
-    name: 'QQ',
-    description:
-      'Connect a QQ bot so OpenClaw can route commands, alerts, and approvals into QQ groups.',
-    configurationMode: 'required',
-    fieldCount: 2,
-    setupSteps: [
-      'Create or manage the target QQ bot in the QQ bot platform.',
-      'Paste the bot key and target group ID here.',
-      'Enable the channel after a dry-run delivery succeeds.',
-    ],
-  },
-  {
-    id: 'dingtalk',
-    name: 'DingTalk',
-    description:
-      'Connect a DingTalk custom robot so OpenClaw can broadcast updates into DingTalk workspaces.',
-    configurationMode: 'required',
-    fieldCount: 2,
-    setupSteps: [
-      'Create a custom robot in the target DingTalk group.',
-      'Copy the access token and signing secret into this form.',
-      'Enable the channel after the first connectivity check succeeds.',
-    ],
-  },
-  {
-    id: 'wecom',
-    name: 'WeCom',
-    description:
-      'Connect a WeCom application so OpenClaw can serve enterprise WeCom conversations.',
-    configurationMode: 'required',
-    fieldCount: 3,
-    setupSteps: [
-      'Create a WeCom application with bot or customer-contact permissions.',
-      'Paste the corp ID, agent ID, and secret here.',
-      'Save the configuration and verify that message delivery succeeds.',
-    ],
-  },
-  {
-    id: 'feishu',
-    name: 'Feishu',
-    description:
-      'Connect a Feishu bot so OpenClaw can receive and reply to team messages.',
-    configurationMode: 'required',
-    fieldCount: 4,
-    setupSteps: [
-      'Create a Feishu app in the open platform.',
-      'Copy the App ID and App Secret into this form.',
-      'Add the event callback URL from your OpenClaw deployment if needed.',
-    ],
-  },
-  {
-    id: 'telegram',
-    name: 'Telegram',
-    description:
-      'Use a Telegram bot token to bring OpenClaw into direct messages or group chats.',
-    configurationMode: 'required',
-    fieldCount: 7,
-    setupSteps: [
-      'Create a bot with BotFather and copy the bot token.',
-      'Optionally set a webhook URL if Telegram should push events to your host.',
-      'Enable the channel after the required credentials are filled.',
-    ],
-  },
-  {
-    id: 'discord',
-    name: 'Discord',
-    description:
-      'Attach OpenClaw to a Discord bot for server and DM conversations.',
-    configurationMode: 'required',
-    fieldCount: 1,
-    setupSteps: [
-      'Create a Discord application and bot in the developer portal.',
-      'Paste the bot token here and invite the bot to your server.',
-      'Turn the channel on once the token has been validated.',
-    ],
-  },
-  {
-    id: 'slack',
-    name: 'Slack',
-    description:
-      'Configure bot and app tokens so OpenClaw can work inside Slack workspaces.',
-    configurationMode: 'required',
-    fieldCount: 3,
-    setupSteps: [
-      'Create or open your Slack app and install it to the target workspace.',
-      'Paste the bot token and app token below.',
-      'Add a signing secret if your workspace uses slash commands or events.',
-    ],
-  },
-  {
-    id: 'googlechat',
-    name: 'Google Chat',
-    description:
-      'Provide Google Chat service account or ref details for enterprise workspace delivery.',
-    configurationMode: 'required',
-    fieldCount: 6,
-    setupSteps: [
-      'Create a Google Chat app and service account.',
-      'Provide either the inline service account JSON or a service account reference.',
-      'Fill audience or webhook information if your deployment requires it.',
-    ],
-  },
+  ...listOpenClawChannelDefinitions().map((definition) => ({
+    id: definition.id,
+    name: definition.name,
+    description: definition.description,
+    configurationMode: definition.configurationMode || 'required',
+    fieldCount: definition.fields.length,
+    setupSteps: [...definition.setupSteps],
+  })),
 ];
 
 function asObject(value: unknown) {
@@ -699,11 +568,7 @@ function buildDefaultOpenClawConfigContent(instance: StudioInstanceRecord) {
       workspace: {
         root: '/workspace/main',
       },
-      channels: {
-        sdkworkchat: {
-          enabled: true,
-        },
-      },
+      channels: {},
       models: {
         defaultProvider: DEFAULT_OPENCLAW_PROVIDER_ID,
       },
@@ -759,7 +624,11 @@ function countConfiguredChannelValues(values: Record<string, string>) {
 function resolveBrowserOpenClawChannelTemplate(
   channelId: string,
   current?: Partial<BrowserOpenClawWorkbenchChannelRecord> | null,
-): BrowserOpenClawChannelTemplate {
+): BrowserOpenClawChannelTemplate | null {
+  if (!isOpenClawBundledChannelId(channelId)) {
+    return null;
+  }
+
   const matched = BROWSER_OPENCLAW_CHANNEL_TEMPLATES.find((template) => template.id === channelId);
   if (matched) {
     return matched;
@@ -851,9 +720,11 @@ function buildDefaultOpenClawWorkbenchChannels() {
 function parseWorkbenchConfigRoot(content: string) {
   try {
     const parsed = JSON.parse(content);
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    const root = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
       : {};
+    pruneRetiredOpenClawChannelsRoot(root);
+    return root;
   } catch {
     return {};
   }
@@ -869,6 +740,7 @@ function updateWorkbenchConfigFile(
     buildOpenClawConfigFile(instance);
   const root = parseWorkbenchConfigRoot(currentConfigFile.content);
   updater(root);
+  pruneRetiredOpenClawChannelsRoot(root);
   const content = `${JSON.stringify(root, null, 2)}\n`;
   const nextConfigFile: StudioWorkbenchFileRecord = {
     ...currentConfigFile,
@@ -2019,6 +1891,94 @@ function summarizeConversation(
   };
 }
 
+function isSupportedBrowserOpenClawChannel(channelId: string) {
+  return isOpenClawBundledChannelId(channelId);
+}
+
+function hasOwnRecordKey(record: Record<string, unknown>, key: string) {
+  return Object.prototype.hasOwnProperty.call(record, key);
+}
+
+function pruneBrowserOpenClawModelByChannel(
+  modelByChannelRoot: Record<string, unknown>,
+) {
+  const nextModelByChannel: Record<string, Record<string, string>> = {};
+  const migratedModelByChannelRoot = { ...modelByChannelRoot };
+
+  if (
+    isSupportedBrowserOpenClawChannel(CANONICAL_QQBOT_CHANNEL_ID) &&
+    hasOwnRecordKey(migratedModelByChannelRoot, LEGACY_QQ_CHANNEL_ID) &&
+    !hasOwnRecordKey(migratedModelByChannelRoot, CANONICAL_QQBOT_CHANNEL_ID)
+  ) {
+    migratedModelByChannelRoot[CANONICAL_QQBOT_CHANNEL_ID] =
+      migratedModelByChannelRoot[LEGACY_QQ_CHANNEL_ID];
+    delete migratedModelByChannelRoot[LEGACY_QQ_CHANNEL_ID];
+  }
+
+  for (const [channelId, value] of Object.entries(migratedModelByChannelRoot)) {
+    if (!isSupportedBrowserOpenClawChannel(channelId)) {
+      continue;
+    }
+
+    const channelOverrides = asObject(value);
+    const nextChannelOverrides = Object.fromEntries(
+      Object.entries(channelOverrides).filter(([, modelRef]) => typeof modelRef === 'string'),
+    ) as Record<string, string>;
+
+    if (Object.keys(nextChannelOverrides).length > 0) {
+      nextModelByChannel[channelId] = nextChannelOverrides;
+    }
+  }
+
+  return nextModelByChannel;
+}
+
+function pruneRetiredOpenClawChannelsRoot(root: Record<string, unknown>) {
+  const channelsRoot = asObject(root.channels);
+  const migratedChannelsRoot = { ...channelsRoot };
+
+  if (
+    isSupportedBrowserOpenClawChannel(CANONICAL_QQBOT_CHANNEL_ID) &&
+    hasOwnRecordKey(migratedChannelsRoot, LEGACY_QQ_CHANNEL_ID) &&
+    !hasOwnRecordKey(migratedChannelsRoot, CANONICAL_QQBOT_CHANNEL_ID)
+  ) {
+    migratedChannelsRoot[CANONICAL_QQBOT_CHANNEL_ID] =
+      migratedChannelsRoot[LEGACY_QQ_CHANNEL_ID];
+    delete migratedChannelsRoot[LEGACY_QQ_CHANNEL_ID];
+  }
+
+  const nextChannels = Object.fromEntries(
+    Object.entries(migratedChannelsRoot).filter(
+      ([channelId, value]) => isSupportedBrowserOpenClawChannel(channelId) && asObject(value) === value,
+    ),
+  );
+  const modelByChannelRoot = asObject(migratedChannelsRoot.modelByChannel);
+  const nextModelByChannel = pruneBrowserOpenClawModelByChannel(modelByChannelRoot);
+  const preservedMetaChannels: Record<string, unknown> = {};
+
+  if (asObject(channelsRoot.defaults) === channelsRoot.defaults) {
+    preservedMetaChannels.defaults = channelsRoot.defaults;
+  }
+
+  if (Object.keys(nextModelByChannel).length > 0 || hasOwnRecordKey(migratedChannelsRoot, 'modelByChannel')) {
+    if (Object.keys(nextModelByChannel).length > 0) {
+      preservedMetaChannels.modelByChannel = nextModelByChannel;
+    }
+  }
+
+  const prunedChannels = {
+    ...preservedMetaChannels,
+    ...nextChannels,
+  };
+
+  if (Object.keys(prunedChannels).length === 0) {
+    delete root.channels;
+    return;
+  }
+
+  root.channels = prunedChannels;
+}
+
 function normalizeConversationMessages(
   conversation: StudioConversationRecord,
 ): StudioConversationMessage[] {
@@ -2443,11 +2403,18 @@ export class WebStudioPlatform implements StudioPlatformAPI {
     channelId: string,
     enabled: boolean,
   ): Promise<boolean> {
+    if (!isSupportedBrowserOpenClawChannel(channelId)) {
+      return false;
+    }
+
     const updated = updateBuiltInOpenClawWorkbench(instanceId, (snapshot, instance) => {
       const current = snapshot.channels.find((channel) => channel.id === channelId) as
         | BrowserOpenClawWorkbenchChannelRecord
         | undefined;
       const template = resolveBrowserOpenClawChannelTemplate(channelId, current);
+      if (!template) {
+        return snapshot;
+      }
       const nextChannel = createBrowserOpenClawChannelRecord({
         template,
         values: current?.values,
@@ -2496,11 +2463,18 @@ export class WebStudioPlatform implements StudioPlatformAPI {
     channelId: string,
     values: Record<string, string>,
   ): Promise<boolean> {
+    if (!isSupportedBrowserOpenClawChannel(channelId)) {
+      return false;
+    }
+
     const updated = updateBuiltInOpenClawWorkbench(instanceId, (snapshot, instance) => {
       const current = snapshot.channels.find((channel) => channel.id === channelId) as
         | BrowserOpenClawWorkbenchChannelRecord
         | undefined;
       const template = resolveBrowserOpenClawChannelTemplate(channelId, current);
+      if (!template) {
+        return snapshot;
+      }
       const nextValues = {
         ...normalizeChannelValues(current?.values),
         ...normalizeChannelValues(values),
@@ -2547,11 +2521,18 @@ export class WebStudioPlatform implements StudioPlatformAPI {
     instanceId: string,
     channelId: string,
   ): Promise<boolean> {
+    if (!isSupportedBrowserOpenClawChannel(channelId)) {
+      return false;
+    }
+
     const updated = updateBuiltInOpenClawWorkbench(instanceId, (snapshot, instance) => {
       const current = snapshot.channels.find((channel) => channel.id === channelId) as
         | BrowserOpenClawWorkbenchChannelRecord
         | undefined;
       const template = resolveBrowserOpenClawChannelTemplate(channelId, current);
+      if (!template) {
+        return snapshot;
+      }
       const nextChannel = createBrowserOpenClawChannelRecord({
         template,
         values: {},

@@ -1,6 +1,10 @@
 use crate::framework::{
     events,
-    services::process::{ProcessEventSink, ProcessService},
+    paths::AppPaths,
+    services::{
+        openclaw_runtime::ActivatedOpenClawRuntime,
+        process::{ProcessEventSink, ProcessService},
+    },
     FrameworkError, Result,
 };
 use std::{
@@ -96,6 +100,72 @@ impl JobService {
         let background_job_id = job_id.clone();
         thread::spawn(move || {
             let result = process_service.run_profile_and_emit_with_started(
+                &profile.id,
+                Some(background_job_id.clone()),
+                None,
+                &sink,
+                |process_id| {
+                    jobs.mark_running_process_and_emit(
+                        &background_job_id,
+                        "running",
+                        queued.profile_id.clone(),
+                        process_id.to_string(),
+                        &sink,
+                    )
+                    .map(|_| ())
+                },
+            );
+            let current = jobs.get(&background_job_id);
+
+            if matches!(
+                current.as_ref().map(|record| &record.state),
+                Ok(JobState::Cancelled)
+            ) {
+                return;
+            }
+
+            match result {
+                Ok(_) => {
+                    let _ = jobs.mark_succeeded_and_emit(&background_job_id, "completed", &sink);
+                }
+                Err(FrameworkError::Cancelled(_)) => {
+                    let _ = jobs.cancel_and_emit(&background_job_id, &sink);
+                }
+                Err(error) => {
+                    let _ = jobs.mark_failed_and_emit(
+                        &background_job_id,
+                        &format!("process failed: {error}"),
+                        &sink,
+                    );
+                }
+            }
+        });
+
+        Ok(job_id)
+    }
+
+    pub fn submit_managed_openclaw_process_and_emit<S>(
+        &self,
+        process_service: ProcessService,
+        paths: AppPaths,
+        openclaw_runtime: ActivatedOpenClawRuntime,
+        profile_id: &str,
+        sink: S,
+    ) -> Result<String>
+    where
+        S: JobEventSink + ProcessEventSink + Clone + Send + 'static,
+    {
+        let profile = process_service.resolve_profile(profile_id)?;
+        let job_id = self.submit_process_with_metadata(&profile.job_kind, profile.id.clone())?;
+        let queued = self.get(&job_id)?;
+        emit_job_updated(&sink, &queued)?;
+
+        let jobs = self.clone();
+        let background_job_id = job_id.clone();
+        thread::spawn(move || {
+            let result = process_service.run_managed_openclaw_profile_and_emit_with_started(
+                &paths,
+                &openclaw_runtime,
                 &profile.id,
                 Some(background_job_id.clone()),
                 None,

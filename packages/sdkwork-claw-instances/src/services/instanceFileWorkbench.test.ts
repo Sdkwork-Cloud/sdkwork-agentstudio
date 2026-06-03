@@ -7,6 +7,7 @@ import {
   createDefaultWorkbenchFileTabState,
   getInstanceVisibleWorkbenchFiles,
   getWorkbenchFileResolvedContent,
+  buildWorkbenchFileContentStateKey,
   getAgentScopedWorkbenchFiles,
   openWorkbenchFileTab,
   reconcileWorkbenchFileTextState,
@@ -406,6 +407,59 @@ await runTest(
         isBuiltIn: false,
       }),
       false,
+    );
+  },
+);
+
+await runTest(
+  'workbench file content cache keys include instance and scope to isolate reused file ids',
+  () => {
+    const file = createFile('/workspace/main/openclaw.json', '/workspace/main/openclaw.json');
+    const firstKey = buildWorkbenchFileContentStateKey({
+      instanceId: 'instance-a',
+      scopeKey: 'agent:main',
+      file,
+    });
+    const secondKey = buildWorkbenchFileContentStateKey({
+      instanceId: 'instance-b',
+      scopeKey: 'agent:main',
+      file,
+    });
+    const scopedSiblingKey = buildWorkbenchFileContentStateKey({
+      instanceId: 'instance-a',
+      scopeKey: 'agent:research',
+      file,
+    });
+
+    assert.equal(firstKey, 'instance-a\u001fagent:main\u001f/workspace/main/openclaw.json');
+    assert.notEqual(firstKey, secondKey);
+    assert.notEqual(firstKey, scopedSiblingKey);
+    assert.equal(
+      shouldLoadWorkbenchFileContent({
+        file,
+        loadedFileContents: {
+          [secondKey]: '# other instance body',
+        },
+        contentStateKey: firstKey,
+        runtimeKind: 'openclaw',
+        transportKind: 'openclawGatewayWs',
+        isBuiltIn: false,
+      }),
+      true,
+    );
+    assert.equal(
+      getWorkbenchFileResolvedContent({
+        file,
+        loadedFileContents: {
+          [secondKey]: '# other instance body',
+          [firstKey]: '# current scoped body',
+        },
+        contentStateKey: firstKey,
+        runtimeKind: 'openclaw',
+        transportKind: 'openclawGatewayWs',
+        isBuiltIn: false,
+      }),
+      '# current scoped body',
     );
   },
 );

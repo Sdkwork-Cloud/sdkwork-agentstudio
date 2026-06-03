@@ -3,6 +3,7 @@ import { FolderTree, Loader2, RefreshCw, RotateCcw, Save } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
+  buildWorkbenchFileContentStateKey,
   buildWorkbenchEditorModelPath,
   closeWorkbenchFileTab,
   createDefaultWorkbenchFileTabState,
@@ -87,6 +88,12 @@ export function InstanceFilesWorkspace(props: InstanceFilesWorkspaceProps) {
     props.mode === 'instance'
       ? contextAgent?.agent.id || '__instance-files__'
       : contextAgent?.agent.id || '__agent-files__';
+  const resolveFileContentStateKey = (file: InstanceWorkbenchFile) =>
+    buildWorkbenchFileContentStateKey({
+      instanceId: props.instanceId,
+      scopeKey,
+      file,
+    });
 
   useEffect(() => {
     if (props.files.length === 0) {
@@ -97,12 +104,18 @@ export function InstanceFilesWorkspace(props: InstanceFilesWorkspaceProps) {
       return;
     }
 
-    setFileDrafts((current) => reconcileWorkbenchFileTextState(props.files, current));
-    setLoadedFileContents((current) => reconcileWorkbenchFileTextState(props.files, current));
-    setLoadingFileId((current) =>
-      current && props.files.some((file) => file.id === current) ? current : null,
+    setFileDrafts((current) =>
+      reconcileWorkbenchFileTextState(props.files, current, resolveFileContentStateKey),
     );
-  }, [props.files]);
+    setLoadedFileContents((current) =>
+      reconcileWorkbenchFileTextState(props.files, current, resolveFileContentStateKey),
+    );
+    setLoadingFileId((current) =>
+      current && props.files.some((file) => resolveFileContentStateKey(file) === current)
+        ? current
+        : null,
+    );
+  }, [props.files, props.instanceId, scopeKey]);
 
   useEffect(() => {
     if (!scopeKey) {
@@ -145,6 +158,7 @@ export function InstanceFilesWorkspace(props: InstanceFilesWorkspaceProps) {
     ? shouldLoadWorkbenchFileContent({
         file: selectedFile,
         loadedFileContents,
+        contentStateKey: resolveFileContentStateKey(selectedFile),
         runtimeKind: props.runtimeKind,
         transportKind: props.transportKind,
         isBuiltIn: props.isBuiltIn,
@@ -154,25 +168,30 @@ export function InstanceFilesWorkspace(props: InstanceFilesWorkspaceProps) {
     ? getWorkbenchFileResolvedContent({
         file: selectedFile,
         loadedFileContents,
+        contentStateKey: resolveFileContentStateKey(selectedFile),
         runtimeKind: props.runtimeKind,
         transportKind: props.transportKind,
         isBuiltIn: props.isBuiltIn,
       })
     : '';
   const hasSelectedFileDraft = selectedFile
-    ? Object.prototype.hasOwnProperty.call(fileDrafts, selectedFile.id)
+    ? Object.prototype.hasOwnProperty.call(fileDrafts, resolveFileContentStateKey(selectedFile))
     : false;
   const selectedFileDraft = selectedFile
     ? hasSelectedFileDraft
-      ? fileDrafts[selectedFile.id] || ''
+      ? fileDrafts[resolveFileContentStateKey(selectedFile)] || ''
       : selectedFileSourceContent
     : '';
   const hasPendingFileChangesFor = (file: InstanceWorkbenchFile) =>
-    !file.isReadonly && (fileDrafts[file.id] ?? getFileSourceContent(file)) !== getFileSourceContent(file);
+    !file.isReadonly &&
+    (fileDrafts[resolveFileContentStateKey(file)] ?? getFileSourceContent(file)) !==
+      getFileSourceContent(file);
   const hasPendingFileChanges = Boolean(
     selectedFile && !selectedFile.isReadonly && selectedFileDraft !== selectedFileSourceContent,
   );
-  const isSelectedFileLoading = Boolean(selectedFile && loadingFileId === selectedFile.id);
+  const isSelectedFileLoading = Boolean(
+    selectedFile && loadingFileId === resolveFileContentStateKey(selectedFile),
+  );
   const editorTheme =
     typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
       ? 'vs-dark'
@@ -184,7 +203,8 @@ export function InstanceFilesWorkspace(props: InstanceFilesWorkspaceProps) {
     }
 
     let cancelled = false;
-    setLoadingFileId(selectedFile.id);
+    const contentStateKey = resolveFileContentStateKey(selectedFile);
+    setLoadingFileId(contentStateKey);
 
     void instanceService
       .getInstanceFileContent(props.instanceId, selectedFile.id)
@@ -194,7 +214,7 @@ export function InstanceFilesWorkspace(props: InstanceFilesWorkspaceProps) {
         }
         setLoadedFileContents((current) => ({
           ...current,
-          [selectedFile.id]: content,
+          [contentStateKey]: content,
         }));
       })
       .catch((error: any) => {
@@ -206,19 +226,20 @@ export function InstanceFilesWorkspace(props: InstanceFilesWorkspaceProps) {
       })
       .finally(() => {
         if (!cancelled) {
-          setLoadingFileId((current) => (current === selectedFile.id ? null : current));
+          setLoadingFileId((current) => (current === contentStateKey ? null : current));
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [props.instanceId, selectedFile, selectedFileShouldLoadContent, t]);
+  }, [props.instanceId, selectedFile, selectedFileShouldLoadContent, scopeKey, t]);
 
   const getFileSourceContent = (file: InstanceWorkbenchFile) =>
     getWorkbenchFileResolvedContent({
       file,
       loadedFileContents,
+      contentStateKey: resolveFileContentStateKey(file),
       runtimeKind: props.runtimeKind,
       transportKind: props.transportKind,
       isBuiltIn: props.isBuiltIn,
@@ -268,7 +289,7 @@ export function InstanceFilesWorkspace(props: InstanceFilesWorkspaceProps) {
 
     setFileDrafts((current) => ({
       ...current,
-      [file.id]: value,
+      [resolveFileContentStateKey(file)]: value,
     }));
   };
 
@@ -279,7 +300,7 @@ export function InstanceFilesWorkspace(props: InstanceFilesWorkspaceProps) {
 
     setFileDrafts((current) => ({
       ...current,
-      [selectedFile.id]: selectedFileSourceContent,
+      [resolveFileContentStateKey(selectedFile)]: selectedFileSourceContent,
     }));
   };
 
@@ -297,11 +318,11 @@ export function InstanceFilesWorkspace(props: InstanceFilesWorkspaceProps) {
       );
       setLoadedFileContents((current) => ({
         ...current,
-        [selectedFile.id]: selectedFileDraft,
+        [resolveFileContentStateKey(selectedFile)]: selectedFileDraft,
       }));
       setFileDrafts((current) => ({
         ...current,
-        [selectedFile.id]: selectedFileDraft,
+        [resolveFileContentStateKey(selectedFile)]: selectedFileDraft,
       }));
       toast.success(t('instances.detail.instanceWorkbench.files.fileSaved'));
       await props.onReload?.();

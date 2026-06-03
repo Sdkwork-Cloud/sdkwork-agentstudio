@@ -200,6 +200,145 @@ test('applyOpenClawUpgrade updates the release baseline and runs sync, prepare, 
   }
 });
 
+test('applyOpenClawUpgrade passes a local target tarball to runtime preparation when readiness found one', async () => {
+  const modulePath = path.join(rootDir, 'scripts', 'apply-openclaw-upgrade.mjs');
+  const upgrade = await import(pathToFileURL(modulePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'apply-openclaw-upgrade-tarball-'));
+  try {
+    createReleaseConfig(tempRoot, previousOpenClawVersion);
+    writeRuntimeVersionState(tempRoot, previousOpenClawVersion);
+    writeFileSync(path.join(tempRoot, `openclaw-${currentOpenClawVersion}.tgz`), 'tarball');
+
+    const calls = [];
+    const result = await upgrade.applyOpenClawUpgrade({
+      workspaceRootDir: tempRoot,
+      targetVersion: currentOpenClawVersion,
+      assessOpenClawUpgradeReadinessFn: async () => ({
+        targetVersion: currentOpenClawVersion,
+        readyToUpgrade: true,
+        localTarballPresent: true,
+        blockers: [],
+      }),
+      runNodeScriptFn: async ({ scriptRelativePath, args, env }) => {
+        calls.push({ scriptRelativePath, args, env });
+
+        if (scriptRelativePath === 'scripts/prepare-openclaw-runtime.mjs') {
+          writeRuntimeVersionState(tempRoot, currentOpenClawVersion);
+        }
+      },
+    });
+
+    const prepareCall = calls.find((call) => (
+      call.scriptRelativePath === 'scripts/prepare-openclaw-runtime.mjs'
+    ));
+
+    assert.equal(result.workflowMode, 'full');
+    assert.equal(
+      prepareCall.env.OPENCLAW_PACKAGE_TARBALL,
+      path.join(tempRoot, `openclaw-${currentOpenClawVersion}.tgz`),
+      'applyOpenClawUpgrade must force runtime preparation to install from the verified local target tarball',
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('applyOpenClawUpgrade runs release subcommands with a workspace-local Windows mirror root by default', async () => {
+  const modulePath = path.join(rootDir, 'scripts', 'apply-openclaw-upgrade.mjs');
+  const upgrade = await import(pathToFileURL(modulePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'apply-openclaw-upgrade-mirror-'));
+  try {
+    createReleaseConfig(tempRoot, previousOpenClawVersion);
+    writeRuntimeVersionState(tempRoot, previousOpenClawVersion);
+
+    const calls = [];
+    await upgrade.applyOpenClawUpgrade({
+      workspaceRootDir: tempRoot,
+      targetVersion: currentOpenClawVersion,
+      assessOpenClawUpgradeReadinessFn: async () => ({
+        targetVersion: currentOpenClawVersion,
+        readyToUpgrade: true,
+        blockers: [],
+      }),
+      runNodeScriptFn: async ({ scriptRelativePath, env }) => {
+        calls.push({ scriptRelativePath, env });
+
+        if (scriptRelativePath === 'scripts/prepare-openclaw-runtime.mjs') {
+          writeRuntimeVersionState(tempRoot, currentOpenClawVersion);
+        }
+      },
+    });
+
+    assert.ok(calls.length > 0, 'expected release subcommands to run');
+    for (const call of calls) {
+      assert.equal(
+        call.env.SDKWORK_WINDOWS_MIRROR_BASE_DIR,
+        path.join(tempRoot, '.cache', 'short-mirrors'),
+        `${call.scriptRelativePath} must use the workspace-local Windows mirror root`,
+      );
+      assert.equal(
+        call.env.OPENCLAW_PREPARE_CACHE_DIR,
+        path.join(tempRoot, '.cache', 'openclaw-runtime-cache'),
+        `${call.scriptRelativePath} must use the workspace-local OpenClaw prepare cache`,
+      );
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('applyOpenClawUpgrade preserves an explicitly configured Windows mirror root', async () => {
+  const modulePath = path.join(rootDir, 'scripts', 'apply-openclaw-upgrade.mjs');
+  const upgrade = await import(pathToFileURL(modulePath).href);
+
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'apply-openclaw-upgrade-configured-mirror-'));
+  try {
+    createReleaseConfig(tempRoot, previousOpenClawVersion);
+    writeRuntimeVersionState(tempRoot, previousOpenClawVersion);
+
+    const calls = [];
+    await upgrade.applyOpenClawUpgrade({
+      workspaceRootDir: tempRoot,
+      targetVersion: currentOpenClawVersion,
+      assessOpenClawUpgradeReadinessFn: async () => ({
+        targetVersion: currentOpenClawVersion,
+        readyToUpgrade: true,
+        blockers: [],
+      }),
+      runNodeScriptFn: async ({ scriptRelativePath, env }) => {
+        calls.push({ scriptRelativePath, env });
+
+        if (scriptRelativePath === 'scripts/prepare-openclaw-runtime.mjs') {
+          writeRuntimeVersionState(tempRoot, currentOpenClawVersion);
+        }
+      },
+      baseEnv: {
+        ...process.env,
+        SDKWORK_WINDOWS_MIRROR_BASE_DIR: path.join(tempRoot, 'custom-mirrors'),
+        OPENCLAW_PREPARE_CACHE_DIR: path.join(tempRoot, 'custom-openclaw-cache'),
+      },
+    });
+
+    assert.ok(calls.length > 0, 'expected release subcommands to run');
+    for (const call of calls) {
+      assert.equal(
+        call.env.SDKWORK_WINDOWS_MIRROR_BASE_DIR,
+        path.join(tempRoot, 'custom-mirrors'),
+        `${call.scriptRelativePath} must preserve the configured Windows mirror root`,
+      );
+      assert.equal(
+        call.env.OPENCLAW_PREPARE_CACHE_DIR,
+        path.join(tempRoot, 'custom-openclaw-cache'),
+        `${call.scriptRelativePath} must preserve the configured OpenClaw prepare cache`,
+      );
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('applyOpenClawUpgrade fast mode skips sync and prepare when target runtime state is already aligned', async () => {
   const modulePath = path.join(rootDir, 'scripts', 'apply-openclaw-upgrade.mjs');
   const upgrade = await import(pathToFileURL(modulePath).href);

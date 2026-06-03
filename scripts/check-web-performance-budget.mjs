@@ -7,6 +7,26 @@ const scriptDir = path.dirname(scriptFilePath);
 const repositoryRootDir = path.resolve(scriptDir, '..');
 
 export const WEB_PERFORMANCE_BUDGETS = {
+  appEntryScript: {
+    label: 'app entry script chunk',
+    pattern: /^index-.*\.js$/,
+    maxBytes: 325 * 1024,
+  },
+  appEntryStylesheet: {
+    label: 'app entry stylesheet chunk',
+    pattern: /^index-.*\.css$/,
+    maxBytes: 310 * 1024,
+  },
+  communityEditor: {
+    label: 'community editor chunk',
+    pattern: /^community-editor-.*\.js$/,
+    maxBytes: 375 * 1024,
+  },
+  instanceStore: {
+    label: 'instance store chunk',
+    pattern: /^useInstanceStore-.*\.js$/,
+    maxBytes: 260 * 1024,
+  },
   newPostRouteShell: {
     label: 'NewPost route shell chunk',
     pattern: /^NewPost-.*\.js$/,
@@ -49,6 +69,11 @@ export const WEB_PERFORMANCE_BUDGETS = {
   },
 };
 
+export const WEB_ASSET_GLOBAL_BUDGETS = {
+  maxJavaScriptAssetBytes: 400 * 1024,
+  maxStylesheetAssetBytes: 325 * 1024,
+};
+
 export function resolveWebDistAssetsDir(rootDir = repositoryRootDir) {
   return path.join(rootDir, 'packages', 'sdkwork-claw-web', 'dist', 'assets');
 }
@@ -82,6 +107,21 @@ function findSingleAsset(entries, { label, pattern }) {
 export function assertWebPerformanceBudget(distAssetsDir = resolveWebDistAssetsDir()) {
   const entries = listDistAssets(distAssetsDir);
   const report = [];
+
+  for (const entry of entries) {
+    const assetPath = path.join(distAssetsDir, entry);
+    const size = fs.statSync(assetPath).size;
+    if (entry.endsWith('.js') && size > WEB_ASSET_GLOBAL_BUDGETS.maxJavaScriptAssetBytes) {
+      throw new Error(
+        `Web JavaScript asset exceeded the global budget: ${entry} is ${formatKiB(size)} (limit ${formatKiB(WEB_ASSET_GLOBAL_BUDGETS.maxJavaScriptAssetBytes)})`,
+      );
+    }
+    if (entry.endsWith('.css') && size > WEB_ASSET_GLOBAL_BUDGETS.maxStylesheetAssetBytes) {
+      throw new Error(
+        `Web stylesheet asset exceeded the global budget: ${entry} is ${formatKiB(size)} (limit ${formatKiB(WEB_ASSET_GLOBAL_BUDGETS.maxStylesheetAssetBytes)})`,
+      );
+    }
+  }
 
   for (const budget of Object.values(WEB_PERFORMANCE_BUDGETS)) {
     const assetName = findSingleAsset(entries, budget);

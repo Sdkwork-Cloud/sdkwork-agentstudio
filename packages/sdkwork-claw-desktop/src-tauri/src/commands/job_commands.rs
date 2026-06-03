@@ -25,6 +25,24 @@ pub async fn job_submit_process(
 ) -> Result<String, String> {
     let state = state.inner().clone();
     runtime::run_blocking_async("jobs.submit_process", move || {
+        if profile_id.starts_with("channels.bind.") {
+            let Some(openclaw_runtime) =
+                state.context.services.supervisor.configured_openclaw_runtime()?
+            else {
+                return Err(crate::framework::FrameworkError::NotFound(
+                    "configured openclaw runtime".to_string(),
+                ));
+            };
+
+            return state.context.services.jobs.submit_managed_openclaw_process_and_emit(
+                state.context.services.process.clone(),
+                state.context.paths.clone(),
+                openclaw_runtime,
+                &profile_id,
+                app,
+            );
+        }
+
         state.context.services.jobs.submit_process_and_emit(
             state.context.services.process.clone(),
             &profile_id,
@@ -73,4 +91,22 @@ pub async fn job_cancel(
     })
     .await
     .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn channel_binding_process_submission_routes_through_managed_openclaw_runtime() {
+        let source = include_str!("job_commands.rs");
+        let command_source = source
+            .split("pub async fn job_submit_process")
+            .nth(1)
+            .and_then(|tail| tail.split("pub async fn job_get").next())
+            .expect("job_submit_process source");
+
+        assert!(command_source.contains("profile_id.starts_with(\"channels.bind.\")"));
+        assert!(command_source.contains("configured_openclaw_runtime()"));
+        assert!(command_source.contains("submit_managed_openclaw_process_and_emit"));
+        assert!(command_source.contains("state.context.paths.clone()"));
+    }
 }

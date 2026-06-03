@@ -21,6 +21,7 @@ import {
   sortChannelCatalogItems,
   type ChannelOfficialLink,
 } from './channelCatalogMeta';
+import { getChannelBindingGuide } from './channelBindingGuides';
 
 export type ChannelCatalogVariant = 'management' | 'summary';
 
@@ -197,7 +198,7 @@ function OfficialLinkButton({
 }
 
 function shouldUseDownloadOnlyAction(channel: ChannelCatalogItem) {
-  const supportsQrConnection = getChannelCatalogRegions(channel.id).includes('domestic');
+  const supportsQrConnection = Boolean(getChannelBindingGuide(channel.id));
   if (isChannelDownloadAppAction(channel.id) && !supportsQrConnection) {
     return true;
   }
@@ -206,7 +207,7 @@ function shouldUseDownloadOnlyAction(channel: ChannelCatalogItem) {
 }
 
 function supportsChannelQrConnection(channel: ChannelCatalogItem) {
-  return getChannelCatalogRegions(channel.id).includes('domestic');
+  return Boolean(getChannelBindingGuide(channel.id));
 }
 
 export function ChannelCatalog({
