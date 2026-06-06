@@ -12,6 +12,7 @@
     "@sdkwork/claw-infrastructure": "workspace:*",
     "@sdkwork/claw-types": "workspace:*",
     "@sdkwork/core-pc-react": "workspace:*",
+    "@sdkwork/drive-app-sdk": "workspace:*",
     "@sdkwork/local-api-proxy": "link:../../../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy",
     "fuse.js": "^7.3.0",
     "lucide-react": "^1.7.0",

@@ -10,6 +10,7 @@ packages:
   - '../../../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript'
   - '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript'
   - '../../../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript'
+  - '../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript'
 
 catalog:
   '@types/react': ^19.2.14
