@@ -1,5 +1,9 @@
 import type { SdkworkAppConfig } from '@sdkwork/app-sdk';
 import {
+  createDriveAppClient,
+  type SdkworkDriveAppClient,
+} from '@sdkwork/drive-app-sdk';
+import {
   applyAppClientSessionTokens,
   createAppClientConfigFromEnv,
   getAppClient,
@@ -29,6 +33,7 @@ export interface AppSdkClientConfig extends SdkworkAppConfig {
 }
 
 export type AppSdkClient = ReturnType<typeof getAppClient>;
+export type DriveAppSdkClient = SdkworkDriveAppClient;
 
 export interface AppSdkSessionTokens {
   authToken?: string;
@@ -212,6 +217,37 @@ export function getAppSdkClientWithSession(
   return Object.keys(overrides).length > 0
     ? getAppClientWithSession(overrides)
     : getAppClientWithSession();
+}
+
+function applyDriveAppSdkSessionTokens(
+  client: SdkworkDriveAppClient,
+  tokens: AppSdkSessionTokens,
+): void {
+  const authToken = normalizeBearerTokenValue(tokens.authToken);
+  const accessToken = normalizeBearerTokenValue(tokens.accessToken);
+
+  if (authToken) {
+    client.setAuthToken(authToken);
+  }
+  if (accessToken) {
+    client.setAccessToken(accessToken);
+  }
+}
+
+export function getDriveAppSdkClientWithSession(
+  overrides: Partial<SdkworkAppConfig> = {},
+): DriveAppSdkClient {
+  ensureConfigured();
+  const sessionTokens = readAppSdkSessionTokens();
+  const client = createDriveAppClient(
+    createAppSdkClientConfig({
+      ...overrides,
+      authToken: overrides.authToken ?? sessionTokens.authToken,
+      accessToken: overrides.accessToken ?? sessionTokens.accessToken,
+    }),
+  );
+  applyDriveAppSdkSessionTokens(client, sessionTokens);
+  return client;
 }
 
 export function useAppSdkClient(

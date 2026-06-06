@@ -625,6 +625,9 @@ export interface StudioConversationAttachment {
   mimeType?: string;
   sizeBytes?: number;
   fileId?: string;
+  driveUri?: string;
+  driveSpaceId?: string;
+  driveNodeId?: string;
   originalUrl?: string;
   width?: number;
   height?: number;

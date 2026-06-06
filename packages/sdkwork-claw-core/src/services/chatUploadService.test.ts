@@ -58,79 +58,136 @@ function createPlatformBridgeStub(overrides: Partial<PlatformAPI> = {}): Platfor
   };
 }
 
-await runTest('chatUploadService uploads a blob through the generated upload SDK and normalizes the chat attachment payload', async () => {
-  const uploadCalls: Array<{ url: string; init?: RequestInit }> = [];
+function createDriveUploadResult(overrides: {
+  originalFileName?: string;
+  contentType?: string;
+  contentLength?: string;
+  uploadProfileCode?: string;
+  spaceId?: string;
+  nodeId?: string;
+} = {}) {
+  const originalFileName = overrides.originalFileName ?? 'Screen Shot 2026-03-22.png';
+  const contentType = overrides.contentType ?? 'image/png';
+  const contentLength = overrides.contentLength ?? '11';
+  const uploadProfileCode = overrides.uploadProfileCode ?? 'attachment';
+  const spaceId = overrides.spaceId ?? 'space-chat';
+  const nodeId = overrides.nodeId ?? 'node-chat-001';
+
+  return {
+    uploadItem: {
+      id: 'upload-item-001',
+      taskId: 'task-chat-001',
+      tenantId: 'tenant-001',
+      actorType: 'anonymous',
+      actorId: 'anonymous-claw-studio',
+      appId: 'claw-studio',
+      appResourceType: 'chat-message-attachment',
+      appResourceId: 'draft-attachment',
+      uploadProfileCode,
+      fileFingerprint: 'fingerprint-001',
+      spaceId,
+      nodeId,
+      uploadSessionId: 'upload-session-001',
+      originalFileName,
+      contentType,
+      contentTypeGroup: contentType.split('/')[0] || 'application',
+      contentLength,
+      chunkSizeBytes: '8388608',
+      totalParts: '1',
+      uploadedPartsCount: '1',
+      uploadedBytes: contentLength,
+      status: 'completed',
+      retentionMode: 'long_term',
+      cleanupStatus: 'not_required',
+      postProcessStatus: 'not_required',
+      scene: 'chat_message',
+      source: 'claw-studio-chat',
+    },
+    uploadSession: {
+      id: 'upload-session-001',
+      tenantId: 'tenant-001',
+      spaceId,
+      nodeId,
+      bucket: 'drive-internal',
+      objectKey: 'drive/object/key',
+      state: 'completed' as const,
+      expiresAtEpochMs: '1774108800000',
+      version: '1',
+      storageProviderId: 'storage-provider-001',
+      storageUploadId: 'storage-upload-001',
+    },
+    parts: [
+      {
+        partNo: 1,
+        etag: '"etag-001"',
+        offsetBytes: 0,
+        sizeBytes: Number(contentLength),
+      },
+    ],
+  };
+}
+
+await runTest('chatUploadService normalizes Drive uploader request attribution and attachment payload', async () => {
+  const driveRequests: Array<Record<string, unknown>> = [];
   const service = createChatUploadService({
     createId: () => 'asset-fixed',
-    now: () => new Date('2026-03-22T08:30:00.000Z'),
-    fetchFn: async (input, init) => {
-      uploadCalls.push({
-        url: String(input),
-        init,
-      });
-
-      return new Response(null, {
-        status: 200,
-      });
-    },
     getClient: () => ({
-      upload: {
-        getPresignedUrl: async (body: { objectKey?: string }) => ({
-          code: '2000',
-          data: {
-            url: 'https://upload.example.com/presigned-put',
-            previewUrl: 'https://cdn.example.com/chat/preview.png',
-            objectKey: body.objectKey,
-          },
-        }),
-        registerPresigned: async (body: {
-          objectKey: string;
-          fileName?: string;
-          size: number;
-          contentType?: string;
-          type?: string;
-        }) => ({
-          code: '2000',
-          data: {
-            fileId: 'file-001',
-            fileName: body.fileName,
-            fileSize: body.size,
-            fileType: body.type,
-            contentType: body.contentType,
-            objectKey: body.objectKey,
-            accessUrl: 'https://cdn.example.com/chat/final.png',
-          },
-        }),
+      uploader: {
+        uploadAttachment: async (request: Record<string, unknown>) => {
+          driveRequests.push(request);
+          return createDriveUploadResult();
+        },
       },
     }),
+    uploadContext: {
+      tenantId: 'tenant-001',
+      organizationId: 'org-001',
+      userId: 'user-001',
+      appResourceId: 'draft-attachment',
+    },
   });
 
+  const blob = new Blob(['image-bytes'], { type: 'image/png' });
   const result = await service.uploadFile({
     fileName: 'Screen Shot 2026-03-22.png',
     kind: 'screenshot',
-    data: new Blob(['image-bytes'], { type: 'image/png' }),
+    data: blob,
+    path: 'chat',
   });
 
-  assert.equal(uploadCalls.length, 1);
-  assert.equal(uploadCalls[0]?.url, 'https://upload.example.com/presigned-put');
-  assert.equal(uploadCalls[0]?.init?.method, 'PUT');
+  assert.equal(driveRequests.length, 1);
+  assert.equal(driveRequests[0]?.file, blob);
+  assert.equal(driveRequests[0]?.tenantId, 'tenant-001');
+  assert.equal(driveRequests[0]?.organizationId, 'org-001');
+  assert.equal(driveRequests[0]?.userId, 'user-001');
+  assert.equal(driveRequests[0]?.appId, 'claw-studio');
+  assert.equal(driveRequests[0]?.appResourceType, 'chat-message-attachment');
+  assert.equal(driveRequests[0]?.appResourceId, 'draft-attachment');
+  assert.equal(driveRequests[0]?.scene, 'chat_message');
+  assert.equal(driveRequests[0]?.source, 'claw-studio-chat');
+  assert.equal(driveRequests[0]?.uploadProfileCode, 'attachment');
+  assert.deepEqual(driveRequests[0]?.retention, { mode: 'long_term' });
+
   assert.equal(result.id, 'asset-fixed');
   assert.equal(result.kind, 'screenshot');
   assert.equal(result.name, 'Screen Shot 2026-03-22.png');
   assert.equal(result.mimeType, 'image/png');
   assert.equal(result.sizeBytes, 11);
-  assert.equal(result.fileId, 'file-001');
-  assert.equal(result.url, 'https://cdn.example.com/chat/final.png');
-  assert.equal(result.previewUrl, 'https://cdn.example.com/chat/final.png');
-  assert.match(result.objectKey || '', /^chat\/2026\/03\/22\//);
+  assert.equal(result.fileId, 'node-chat-001');
+  assert.equal(result.driveSpaceId, 'space-chat');
+  assert.equal(result.driveNodeId, 'node-chat-001');
+  assert.equal(result.driveUri, 'drive://spaces/space-chat/nodes/node-chat-001');
+  assert.equal(result.objectKey, undefined);
+  assert.equal(result.url, undefined);
+  assert.equal(result.previewUrl, undefined);
 });
 
-await runTest('chatUploadService can fetch a remote URL, upload it, and preserve the original source URL in metadata', async () => {
+await runTest('chatUploadService can fetch a remote URL, upload it with Drive uploader, and preserve the original source URL', async () => {
   const fetchCalls: string[] = [];
+  const driveRequests: Array<Record<string, unknown>> = [];
   const service = createChatUploadService({
     createId: () => 'asset-url',
-    now: () => new Date('2026-03-22T09:00:00.000Z'),
-    fetchFn: async (input, init) => {
+    fetchFn: async (input) => {
       const url = String(input);
       fetchCalls.push(url);
 
@@ -143,41 +200,26 @@ await runTest('chatUploadService can fetch a remote URL, upload it, and preserve
         });
       }
 
-      assert.equal(init?.method, 'PUT');
-      return new Response(null, {
-        status: 200,
-      });
+      throw new Error(`Unexpected fetch call ${url}`);
     },
     getClient: () => ({
-      upload: {
-        getPresignedUrl: async (body: { objectKey?: string }) => ({
-          code: '2000',
-          data: {
-            url: 'https://upload.example.com/presigned-audio',
-            previewUrl: 'https://cdn.example.com/audio-preview.mp3',
-            objectKey: body.objectKey,
-          },
-        }),
-        registerPresigned: async (body: {
-          objectKey: string;
-          fileName?: string;
-          size: number;
-          contentType?: string;
-          type?: string;
-        }) => ({
-          code: '2000',
-          data: {
-            fileId: 'file-audio',
-            fileName: body.fileName,
-            fileSize: body.size,
-            fileType: body.type,
-            contentType: body.contentType,
-            objectKey: body.objectKey,
-            accessUrl: 'https://cdn.example.com/audio-final.mp3',
-          },
-        }),
+      uploader: {
+        uploadAttachment: async (request: Record<string, unknown>) => {
+          driveRequests.push(request);
+          return createDriveUploadResult({
+            originalFileName: 'demo.mp3',
+            contentType: 'audio/mpeg',
+            contentLength: '11',
+            nodeId: 'node-audio',
+          });
+        },
       },
     }),
+    uploadContext: {
+      tenantId: 'tenant-001',
+      anonymousId: 'anonymous-chat',
+      appResourceId: 'draft-audio',
+    },
   });
 
   const result = await service.uploadRemoteUrl({
@@ -186,20 +228,20 @@ await runTest('chatUploadService can fetch a remote URL, upload it, and preserve
     kind: 'audio',
   });
 
-  assert.deepEqual(fetchCalls, [
-    'https://remote.example.com/demo.mp3',
-    'https://upload.example.com/presigned-audio',
-  ]);
+  assert.deepEqual(fetchCalls, ['https://remote.example.com/demo.mp3']);
+  assert.equal(driveRequests.length, 1);
+  assert.equal(driveRequests[0]?.anonymousId, 'anonymous-chat');
+  assert.equal(driveRequests[0]?.contentType, 'audio/mpeg');
   assert.equal(result.kind, 'audio');
   assert.equal(result.originalUrl, 'https://remote.example.com/demo.mp3');
-  assert.equal(result.url, 'https://cdn.example.com/audio-final.mp3');
+  assert.equal(result.driveUri, 'drive://spaces/space-chat/nodes/node-audio');
 });
 
 await runTest('chatUploadService prefers the desktop native remote fetch bridge for URL imports when available', async () => {
   const { configurePlatformBridge, getPlatformBridge } = await import('@sdkwork/claw-infrastructure');
   const originalBridge = getPlatformBridge();
   const nativeFetchCalls: string[] = [];
-  const uploadCalls: string[] = [];
+  const browserFetchCalls: string[] = [];
 
   configurePlatformBridge({
     platform: createPlatformBridgeStub({
@@ -219,43 +261,25 @@ await runTest('chatUploadService prefers the desktop native remote fetch bridge 
   try {
     const service = createChatUploadService({
       createId: () => 'asset-native-url',
-      now: () => new Date('2026-03-22T09:30:00.000Z'),
-      fetchFn: async (input, init) => {
-        uploadCalls.push(String(input));
-        assert.equal(init?.method, 'PUT');
-        return new Response(null, {
-          status: 200,
-        });
+      fetchFn: async (input) => {
+        browserFetchCalls.push(String(input));
+        throw new Error('browser fetch should not be used for desktop remote imports');
       },
       getClient: () => ({
-        upload: {
-          getPresignedUrl: async (body: { objectKey?: string }) => ({
-            code: '2000',
-            data: {
-              url: 'https://upload.example.com/presigned-native-audio',
-              objectKey: body.objectKey,
-            },
-          }),
-          registerPresigned: async (body: {
-            objectKey: string;
-            fileName?: string;
-            size: number;
-            contentType?: string;
-            type?: string;
-          }) => ({
-            code: '2000',
-            data: {
-              fileId: 'file-native-audio',
-              fileName: body.fileName,
-              fileSize: body.size,
-              fileType: body.type,
-              contentType: body.contentType,
-              objectKey: body.objectKey,
-              accessUrl: 'https://cdn.example.com/audio-native.mp3',
-            },
-          }),
+        uploader: {
+          uploadAttachment: async () =>
+            createDriveUploadResult({
+              originalFileName: 'native-demo.mp3',
+              contentType: 'audio/mpeg',
+              contentLength: '18',
+              nodeId: 'node-native-audio',
+            }),
         },
       }),
+      uploadContext: {
+        tenantId: 'tenant-001',
+        anonymousId: 'anonymous-native',
+      },
     });
 
     const result = await service.uploadRemoteUrl({
@@ -264,11 +288,11 @@ await runTest('chatUploadService prefers the desktop native remote fetch bridge 
     });
 
     assert.deepEqual(nativeFetchCalls, ['https://remote.example.com/native-demo.mp3']);
-    assert.deepEqual(uploadCalls, ['https://upload.example.com/presigned-native-audio']);
+    assert.deepEqual(browserFetchCalls, []);
     assert.equal(result.name, 'native-demo.mp3');
     assert.equal(result.mimeType, 'audio/mpeg');
     assert.equal(result.originalUrl, 'https://remote.example.com/native-demo.mp3');
-    assert.equal(result.url, 'https://cdn.example.com/audio-native.mp3');
+    assert.equal(result.driveUri, 'drive://spaces/space-chat/nodes/node-native-audio');
   } finally {
     configurePlatformBridge(originalBridge);
   }
@@ -282,54 +306,30 @@ await runTest('chatUploadService resolves the desktop native remote fetch bridge
 
   const service = createChatUploadService({
     createId: () => 'asset-late-native-url',
-    now: () => new Date('2026-03-22T10:00:00.000Z'),
-    fetchFn: async (input, init) => {
-      const url = String(input);
-
-      if (url === 'https://remote.example.com/late-native.mp3') {
-        browserFetchCalls.push(url);
-        return new Response(new Blob(['browser-voice'], { type: 'audio/mpeg' }), {
-          status: 200,
-          headers: {
-            'Content-Type': 'audio/mpeg',
-          },
-        });
-      }
-
-      assert.equal(init?.method, 'PUT');
-      return new Response(null, {
+    fetchFn: async (input) => {
+      browserFetchCalls.push(String(input));
+      return new Response(new Blob(['browser-voice'], { type: 'audio/mpeg' }), {
         status: 200,
+        headers: {
+          'Content-Type': 'audio/mpeg',
+        },
       });
     },
     getClient: () => ({
-      upload: {
-        getPresignedUrl: async (body: { objectKey?: string }) => ({
-          code: '2000',
-          data: {
-            url: 'https://upload.example.com/presigned-late-native-audio',
-            objectKey: body.objectKey,
-          },
-        }),
-        registerPresigned: async (body: {
-          objectKey: string;
-          fileName?: string;
-          size: number;
-          contentType?: string;
-          type?: string;
-        }) => ({
-          code: '2000',
-          data: {
-            fileId: 'file-late-native-audio',
-            fileName: body.fileName,
-            fileSize: body.size,
-            fileType: body.type,
-            contentType: body.contentType,
-            objectKey: body.objectKey,
-            accessUrl: 'https://cdn.example.com/audio-late-native.mp3',
-          },
-        }),
+      uploader: {
+        uploadAttachment: async () =>
+          createDriveUploadResult({
+            originalFileName: 'late-native.mp3',
+            contentType: 'audio/mpeg',
+            contentLength: '19',
+            nodeId: 'node-late-native',
+          }),
       },
     }),
+    uploadContext: {
+      tenantId: 'tenant-001',
+      anonymousId: 'anonymous-late',
+    },
   });
 
   configurePlatformBridge({
@@ -357,34 +357,25 @@ await runTest('chatUploadService resolves the desktop native remote fetch bridge
     assert.deepEqual(browserFetchCalls, []);
     assert.equal(result.name, 'late-native.mp3');
     assert.equal(result.originalUrl, 'https://remote.example.com/late-native.mp3');
-    assert.equal(result.url, 'https://cdn.example.com/audio-late-native.mp3');
+    assert.equal(result.driveUri, 'drive://spaces/space-chat/nodes/node-late-native');
   } finally {
     configurePlatformBridge(originalBridge);
   }
 });
 
-await runTest('chatUploadService surfaces a helpful error when the presigned PUT fails', async () => {
+await runTest('chatUploadService surfaces a helpful error when Drive uploader rejects the upload', async () => {
   const service = createChatUploadService({
-    fetchFn: async () =>
-      new Response('upload failed', {
-        status: 403,
-        statusText: 'Forbidden',
-      }),
     getClient: () => ({
-      upload: {
-        getPresignedUrl: async (body: { objectKey?: string }) => ({
-          code: '2000',
-          data: {
-            url: 'https://upload.example.com/rejected-put',
-            previewUrl: 'https://cdn.example.com/rejected-preview.png',
-            objectKey: body.objectKey,
-          },
-        }),
-        registerPresigned: async () => {
-          throw new Error('registerPresigned should not run after a failed PUT');
+      uploader: {
+        uploadAttachment: async () => {
+          throw new Error('Drive uploader rejected the content type.');
         },
       },
     }),
+    uploadContext: {
+      tenantId: 'tenant-001',
+      anonymousId: 'anonymous-error',
+    },
   });
 
   await assert.rejects(
@@ -394,6 +385,6 @@ await runTest('chatUploadService surfaces a helpful error when the presigned PUT
         kind: 'image',
         data: new Blob(['bad'], { type: 'image/png' }),
       }),
-    /rejected\.png/i,
+    /rejected\.png.*Drive uploader rejected/i,
   );
 });

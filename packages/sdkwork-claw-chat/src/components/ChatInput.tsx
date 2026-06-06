@@ -586,7 +586,6 @@ export function ChatInput({
           fileName: source.fileName,
           kind: source.kind,
           path: 'chat',
-          provider: 'AWS',
         });
 
         updateDraft(draftId, (draft) => ({
@@ -609,7 +608,6 @@ export function ChatInput({
         kind: source.kind,
         contentType: source.contentType,
         path: 'chat',
-        provider: 'AWS',
       });
       const enrichedAttachment: StudioConversationAttachment = {
         ...attachment,

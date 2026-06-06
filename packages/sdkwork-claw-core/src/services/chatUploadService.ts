@@ -1,9 +1,7 @@
 import type {
-  FileVO,
-  PresignedUploadRegisterForm,
-  PresignedUrlForm,
-  SdkworkAppClient,
-} from '@sdkwork/app-sdk';
+  DriveUploaderClient,
+  DriveUploaderUploadResult,
+} from '@sdkwork/drive-app-sdk';
 import {
   platform,
   type PlatformFetchedRemoteUrl,
@@ -12,19 +10,36 @@ import type {
   StudioConversationAttachment,
   StudioConversationAttachmentKind,
 } from '@sdkwork/claw-types';
-import { unwrapAppSdkResponse } from '../sdk/appSdkResult.ts';
-import { getAppSdkClientWithSession } from '../sdk/useAppSdkClient.ts';
+import {
+  getAppSdkClientConfig,
+  getDriveAppSdkClientWithSession,
+} from '../sdk/useAppSdkClient.ts';
 
-type ChatUploadClient = Pick<SdkworkAppClient, 'upload'>;
+type ChatUploadDriveUploader = Pick<DriveUploaderClient, 'uploadAttachment'>;
+type ChatUploadClient = {
+  uploader: ChatUploadDriveUploader;
+};
+
+export interface ChatUploadContext {
+  tenantId?: string;
+  organizationId?: string;
+  userId?: string;
+  anonymousId?: string;
+  operatorId?: string;
+  appId?: string;
+  appResourceType?: string;
+  appResourceId?: string;
+  scene?: string;
+  source?: string;
+}
 
 export interface ChatUploadFileInput {
   data: Blob;
   fileName: string;
   kind?: StudioConversationAttachmentKind;
   contentType?: string;
-  bucket?: string;
   path?: string;
-  provider?: PresignedUploadRegisterForm['provider'];
+  appResourceId?: string;
 }
 
 export interface ChatUploadRemoteUrlInput {
@@ -32,17 +47,16 @@ export interface ChatUploadRemoteUrlInput {
   fileName?: string;
   kind?: StudioConversationAttachmentKind;
   contentType?: string;
-  bucket?: string;
   path?: string;
-  provider?: PresignedUploadRegisterForm['provider'];
+  appResourceId?: string;
 }
 
 export interface CreateChatUploadServiceOptions {
   getClient?: () => ChatUploadClient;
   fetchFn?: typeof fetch;
   fetchRemoteUrl?: (url: string) => Promise<PlatformFetchedRemoteUrl>;
-  now?: () => Date;
   createId?: () => string;
+  uploadContext?: ChatUploadContext;
 }
 
 export interface ChatUploadService {
@@ -119,16 +133,6 @@ async function fetchRemoteUrlWithFetch(
   };
 }
 
-function buildObjectKey(fileName: string, now: Date, pathPrefix?: string) {
-  const year = String(now.getUTCFullYear());
-  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(now.getUTCDate()).padStart(2, '0');
-  const safeName = sanitizePathSegment(sanitizeFileName(fileName)) || 'upload.bin';
-  const safePrefix = sanitizePathSegment(pathPrefix || 'chat');
-  const randomPart = Math.random().toString(36).slice(2, 10);
-  return `${safePrefix || 'chat'}/${year}/${month}/${day}/${randomPart}-${safeName}`;
-}
-
 function toErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error && error.message.trim()) {
     return error.message;
@@ -139,8 +143,60 @@ function toErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function mapFileVoToAttachment(params: {
-  file: FileVO;
+function driveUri(spaceId: string, nodeId: string) {
+  return `drive://spaces/${spaceId}/nodes/${nodeId}`;
+}
+
+function numberFromString(value: string | undefined, fallback: number): number {
+  if (!value) {
+    return fallback;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function resolveChatUploadContext(params: {
+  base: ChatUploadContext;
+  attachmentId: string;
+  path?: string;
+  appResourceId?: string;
+}): Required<Pick<ChatUploadContext, 'tenantId' | 'operatorId' | 'appId' | 'appResourceType' | 'appResourceId' | 'scene' | 'source'>> &
+  Pick<ChatUploadContext, 'organizationId' | 'userId' | 'anonymousId'> {
+  const config = getAppSdkClientConfig();
+  const appId = params.base.appId || 'claw-studio';
+  const tenantId = params.base.tenantId || config?.tenantId;
+  const userId = params.base.userId;
+  const anonymousId = params.base.anonymousId || (userId ? undefined : `anonymous-${appId}`);
+  const operatorId = params.base.operatorId || userId || anonymousId;
+  const pathResource = params.path ? sanitizePathSegment(params.path) : '';
+  const appResourceId =
+    params.appResourceId ||
+    params.base.appResourceId ||
+    (pathResource ? `${pathResource}-${params.attachmentId}` : params.attachmentId);
+
+  if (!tenantId) {
+    throw new Error('Drive uploader requires a tenantId for claw-studio chat attachments.');
+  }
+  if (!operatorId) {
+    throw new Error('Drive uploader requires a userId, anonymousId, or operatorId.');
+  }
+
+  return {
+    tenantId,
+    organizationId: params.base.organizationId || config?.organizationId,
+    userId,
+    anonymousId,
+    operatorId,
+    appId,
+    appResourceType: params.base.appResourceType || 'chat-message-attachment',
+    appResourceId,
+    scene: params.base.scene || 'chat_message',
+    source: params.base.source || 'claw-studio-chat',
+  };
+}
+
+function mapDriveUploadToAttachment(params: {
+  result: DriveUploaderUploadResult;
   id: string;
   kind: StudioConversationAttachmentKind;
   fileName: string;
@@ -148,28 +204,57 @@ function mapFileVoToAttachment(params: {
   sizeBytes: number;
   originalUrl?: string;
 }): StudioConversationAttachment {
-  const finalUrl = params.file.accessUrl?.trim() || undefined;
+  const uploadItem = params.result.uploadItem;
+  const uploadSession = params.result.uploadSession;
+  const spaceId = uploadSession.spaceId || uploadItem.spaceId;
+  const nodeId = uploadSession.nodeId || uploadItem.nodeId;
+
   return {
     id: params.id,
     kind: params.kind,
-    name: params.file.fileName?.trim() || params.fileName,
-    mimeType:
-      params.file.contentType?.trim() ||
-      params.file.fileType?.trim() ||
-      params.contentType,
-    sizeBytes: params.file.fileSize ?? params.sizeBytes,
-    fileId: params.file.fileId?.trim() || undefined,
-    objectKey: params.file.objectKey?.trim() || undefined,
-    url: finalUrl,
-    previewUrl: finalUrl,
+    name: uploadItem.originalFileName?.trim() || params.fileName,
+    mimeType: uploadItem.contentType?.trim() || params.contentType,
+    sizeBytes: numberFromString(uploadItem.contentLength, params.sizeBytes),
+    fileId: nodeId,
+    driveSpaceId: spaceId,
+    driveNodeId: nodeId,
+    driveUri: driveUri(spaceId, nodeId),
     originalUrl: params.originalUrl?.trim() || undefined,
   };
+}
+
+async function uploadAttachment(params: {
+  uploader: ChatUploadDriveUploader;
+  data: Blob;
+  fileName: string;
+  contentType: string;
+  context: ReturnType<typeof resolveChatUploadContext>;
+}): Promise<DriveUploaderUploadResult> {
+  return params.uploader.uploadAttachment({
+    file: params.data,
+    tenantId: params.context.tenantId,
+    organizationId: params.context.organizationId,
+    userId: params.context.userId,
+    anonymousId: params.context.anonymousId,
+    operatorId: params.context.operatorId,
+    appId: params.context.appId,
+    appResourceType: params.context.appResourceType,
+    appResourceId: params.context.appResourceId,
+    scene: params.context.scene,
+    source: params.context.source,
+    uploadProfileCode: 'attachment',
+    originalFileName: params.fileName,
+    contentType: params.contentType,
+    retention: {
+      mode: 'long_term',
+    },
+  });
 }
 
 export function createChatUploadService(
   options: CreateChatUploadServiceOptions = {},
 ): ChatUploadService {
-  const getClient = options.getClient ?? getAppSdkClientWithSession;
+  const getClient = options.getClient ?? getDriveAppSdkClientWithSession;
   const fetchFn = options.fetchFn ?? fetch;
   const fetchRemoteUrl =
     options.fetchRemoteUrl ??
@@ -177,72 +262,47 @@ export function createChatUploadService(
       platform.getPlatform() === 'desktop'
         ? platform.fetchRemoteUrl(url)
         : fetchRemoteUrlWithFetch(fetchFn, url));
-  const now = options.now ?? (() => new Date());
   const createId = options.createId ?? defaultCreateId;
+  const uploadContext = options.uploadContext ?? {};
 
   return {
     async uploadFile(input) {
+      const attachmentId = createId();
       const client = getClient();
       const fileName = sanitizeFileName(input.fileName);
       const contentType =
         (input.contentType || input.data.type || 'application/octet-stream').trim();
       const size = input.data.size;
       const kind = inferAttachmentKind(input.kind, contentType);
-      const objectKey = buildObjectKey(fileName, now(), input.path);
-
-      const presignedRequest: PresignedUrlForm = {
-        objectKey,
-        bucket: input.bucket,
-        method: 'PUT',
-        expirationSeconds: 900,
-      };
-      const presigned = unwrapAppSdkResponse(
-        await client.upload.getPresignedUrl(presignedRequest),
-        `Failed to create a presigned upload URL for ${fileName}.`,
-      );
-      const uploadUrl = presigned.url?.trim();
-
-      if (!uploadUrl) {
-        throw new Error(`Failed to create a usable presigned upload URL for ${fileName}.`);
-      }
-
-      const uploadResponse = await fetchFn(uploadUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': contentType,
-        },
-        body: input.data,
+      const context = resolveChatUploadContext({
+        base: uploadContext,
+        attachmentId,
+        path: input.path,
+        appResourceId: input.appResourceId,
       });
 
-      if (!uploadResponse.ok) {
+      try {
+        const result = await uploadAttachment({
+          uploader: client.uploader,
+          data: input.data,
+          fileName,
+          contentType,
+          context,
+        });
+
+        return mapDriveUploadToAttachment({
+          result,
+          id: attachmentId,
+          kind,
+          fileName,
+          contentType,
+          sizeBytes: size,
+        });
+      } catch (error) {
         throw new Error(
-          `Failed to upload ${fileName}: ${uploadResponse.status} ${uploadResponse.statusText}`.trim(),
+          `Failed to upload ${fileName}: ${toErrorMessage(error, 'Unknown upload error')}`,
         );
       }
-
-      const registerBody: PresignedUploadRegisterForm = {
-        objectKey,
-        fileName,
-        size,
-        contentType,
-        type: kind,
-        path: input.path,
-        bucket: input.bucket,
-        provider: input.provider,
-      };
-      const file = unwrapAppSdkResponse(
-        await client.upload.registerPresigned(registerBody),
-        `Failed to register ${fileName} after upload.`,
-      );
-
-      return mapFileVoToAttachment({
-        file,
-        id: createId(),
-        kind,
-        fileName,
-        contentType,
-        sizeBytes: size,
-      });
     },
 
     async uploadRemoteUrl(input) {
@@ -268,9 +328,8 @@ export function createChatUploadService(
           fileName,
           kind: input.kind,
           contentType,
-          bucket: input.bucket,
           path: input.path,
-          provider: input.provider,
+          appResourceId: input.appResourceId,
         });
 
         return {
