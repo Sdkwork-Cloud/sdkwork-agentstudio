@@ -37,6 +37,7 @@ packages/*/metadata.json
 
 # OpenClaw release packages (downloaded at build time, not versioned)
 openclaw-*.tgz
+.tmp-openclaw-packs/
 # Development tool directories (vendor analysis, upstream mirrors, temp builds)
 .codex-tools/
 .codex-tmp/
