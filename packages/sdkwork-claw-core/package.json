@@ -16,7 +16,7 @@
     "@sdkwork/drive-app-sdk": "workspace:*",
     "@sdkwork/iam-runtime": "workspace:*",
     "@sdkwork/iam-sdk-adapter": "workspace:*",
-    "@sdkwork/local-api-proxy": "link:../../../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy",
+    "@sdkwork/local-api-proxy": "workspace:*",
     "@sdkwork/messaging-app-sdk": "workspace:*",
     "fuse.js": "^7.3.0",
     "lucide-react": "^1.7.0",

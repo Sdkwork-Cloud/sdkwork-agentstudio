@@ -9,7 +9,7 @@
     "@sdkwork/claw-infrastructure": "workspace:*",
     "@sdkwork/claw-types": "workspace:*",
     "@sdkwork/claw-ui": "workspace:*",
-    "@sdkwork/local-api-proxy": "link:../../../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy",
+    "@sdkwork/local-api-proxy": "workspace:*",
     "@tanstack/react-query": "^5.96.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+    "packages/sdkwork-claw-host-core/src-host",
+    "packages/sdkwork-claw-host-studio/src-host",
+    "packages/sdkwork-claw-server/src-host",
+    "packages/sdkwork-claw-desktop/src-tauri",
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+
+[workspace.dependencies]
+# SDKWork workspace members - declared once at workspace root
+sdkwork-claw-host-core = { path = "packages/sdkwork-claw-host-core/src-host" }
+sdkwork-claw-host-studio = { path = "packages/sdkwork-claw-host-studio/src-host" }
+sdkwork-claw-server = { path = "packages/sdkwork-claw-server/src-host" }
+sdkwork-claw-desktop = { path = "packages/sdkwork-claw-desktop/src-tauri" }
+sdkwork-local-api-proxy-native = { path = "../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy/native/tauri-rust" }
