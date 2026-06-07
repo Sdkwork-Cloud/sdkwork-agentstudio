@@ -43,7 +43,7 @@ This made the public release evidence weaker than the actual implementation.
 
 ### 1. Centralized the install-ready contract
 
-Added [desktop-install-ready-layout.mjs](/D:/javasource/spring-ai-plus/spring-ai-plus-business/apps/claw-studio/scripts/release/desktop-install-ready-layout.mjs) as the single source for:
+Added [desktop-install-ready-layout.mjs](/<workspace-root>/claw-studio/scripts/release/desktop-install-ready-layout.mjs) as the single source for:
 
 - install key derivation from the bundled OpenClaw manifest
 - canonical path constants for `manifest.json` and `.sdkwork-openclaw-runtime.json`
@@ -52,7 +52,7 @@ Added [desktop-install-ready-layout.mjs](/D:/javasource/spring-ai-plus/spring-ai
 
 ### 2. Strengthened verifier output
 
-Updated [verify-desktop-openclaw-release-assets.mjs](/D:/javasource/spring-ai-plus/spring-ai-plus-business/apps/claw-studio/scripts/verify-desktop-openclaw-release-assets.mjs) so both archive-prewarm and staged-layout paths now return the full normalized evidence object:
+Updated [verify-desktop-openclaw-release-assets.mjs](/<workspace-root>/claw-studio/scripts/verify-desktop-openclaw-release-assets.mjs) so both archive-prewarm and staged-layout paths now return the full normalized evidence object:
 
 - `mode`
 - `installKey`
@@ -65,11 +65,11 @@ Updated [verify-desktop-openclaw-release-assets.mjs](/D:/javasource/spring-ai-pl
 
 ### 3. Preserved evidence through smoke reports
 
-Updated [smoke-desktop-installers.mjs](/D:/javasource/spring-ai-plus/spring-ai-plus-business/apps/claw-studio/scripts/release/smoke-desktop-installers.mjs) so the smoke report now persists the full normalized object instead of dropping the path and boolean fields.
+Updated [smoke-desktop-installers.mjs](/<workspace-root>/claw-studio/scripts/release/smoke-desktop-installers.mjs) so the smoke report now persists the full normalized object instead of dropping the path and boolean fields.
 
 ### 4. Preserved evidence through final release metadata
 
-Updated [finalize-release-assets.mjs](/D:/javasource/spring-ai-plus/spring-ai-plus-business/apps/claw-studio/scripts/release/finalize-release-assets.mjs) so `desktopInstallerSmoke.installReadyLayout` is carried into final release metadata without losing the readiness proof.
+Updated [finalize-release-assets.mjs](/<workspace-root>/claw-studio/scripts/release/finalize-release-assets.mjs) so `desktopInstallerSmoke.installReadyLayout` is carried into final release metadata without losing the readiness proof.
 
 ## Verification
 

@@ -3,11 +3,13 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@sdkwork/app-sdk": ["../../../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/src/index.ts"],
+      "@sdkwork/appbase-app-sdk": ["../../../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi/src/index.ts"],
+      "@sdkwork/auth-pc-react/auth-service": ["../../../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-pc-react/src/auth-service.ts"],
       "@sdkwork/core-pc-react/app": ["../../types/sdkwork-core-pc-react-app.d.ts"],
       "@sdkwork/core-pc-react/env": ["../../types/sdkwork-core-pc-react-env.d.ts"],
       "@sdkwork/core-pc-react/runtime": ["../../types/sdkwork-core-pc-react-runtime.d.ts"],
-      "@sdkwork/sdk-common": ["../../../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts"],
+      "@sdkwork/messaging-app-sdk": ["../../../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi/src/index.ts"],
+      "@sdkwork/sdk-common": ["../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts"],
       "@sdkwork/claw-*": ["../../packages/sdkwork-claw-*/src/index.ts"]
     }
   },

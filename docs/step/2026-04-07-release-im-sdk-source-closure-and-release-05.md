@@ -11,7 +11,7 @@
 
 1. `release-2026-04-07-04` was marked as published in `docs/release/releases.json`, but the actual GitHub workflow run failed and no GitHub Release object existed for that tag.
 2. The failed `release-2026-04-07-04` workflow stopped in `Verify release inputs` because the GitHub-backed release workspace did not materialize the IM SDK packages required by `@sdkwork/core-pc-react`.
-3. The release documentation still described shared SDK parity as covering only `@sdkwork/app-sdk`, `@sdkwork/sdk-common`, and `@sdkwork/core-pc-react`, even though the release-ready closure now also depends on the IM SDK package roots.
+3. The release documentation still described shared SDK parity as covering only `retired generic app SDK package`, `@sdkwork/sdk-common`, and `@sdkwork/core-pc-react`, even though the release-ready closure now also depends on the IM SDK package roots.
 4. The product request for a `媒体账号` tab and the two media-account entries needed to be rechecked against current code so the release notes would not claim an unverified UI state.
 
 ## Root Cause Evidence
@@ -76,7 +76,7 @@ Fresh commands run in this loop:
 ```bash
 node scripts/check-shared-sdk-release-parity.mjs
 git -C ../sdkwork-core status --short -- sdkwork-core-pc-react
-git -C ../../spring-ai-plus-app-api/sdkwork-sdk-app status --short -- sdkwork-app-sdk-typescript
+git -C ../../retired Spring app SDK source tree status --short -- retired generic app SDK TypeScript package
 git -C ../../sdk/sdkwork-sdk-commons status --short -- sdkwork-sdk-common-typescript
 git -C ../craw-chat/sdks/sdkwork-im-sdk status --short -- sdkwork-im-sdk-typescript
 git -C ../craw-chat/sdks/sdkwork-rtc-sdk status --short -- sdkwork-rtc-sdk-typescript

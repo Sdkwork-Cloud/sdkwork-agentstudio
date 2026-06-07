@@ -122,8 +122,8 @@ function createTransactionId() {
 }
 
 async function getDefaultAccountClient(): Promise<AccountSdkClient> {
-  const { getAppSdkClientWithSession } = await import('../sdk/useAppSdkClient.ts');
-  return getAppSdkClientWithSession() as unknown as AccountSdkClient;
+  const { getClawStudioAppClientWithSession } = await import('../sdk/useAppSdkClient.ts');
+  return getClawStudioAppClientWithSession() as unknown as AccountSdkClient;
 }
 
 export function createAccountService(

@@ -53,7 +53,7 @@ Result:
 
 ```json
 {
-  "workspaceRootDir": "D:\\javasource\\spring-ai-plus\\spring-ai-plus-business\\apps\\claw-studio",
+  "workspaceRootDir": ".",
   "targetVersion": "2026.4.5",
   "configuredVersion": "2026.4.2",
   "bundledManifestVersion": "2026.4.2",

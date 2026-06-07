@@ -1,15 +1,14 @@
 import type {
   PageSkillVO,
-  SdkworkAppClient,
   SkillCategoryVO,
   SkillPackageVO,
   SkillReviewVO,
   SkillVO,
-} from '@sdkwork/app-sdk';
+} from '../sdk/appSdkPort.ts';
 import type { Review, Skill, SkillPack } from '@sdkwork/claw-types';
 import { unwrapAppSdkResponse } from '../sdk/appSdkResult.ts';
 import {
-  getAppSdkClientWithSession,
+  getClawStudioAppClientWithSession,
   readAppSdkSessionTokens,
 } from '../sdk/useAppSdkClient.ts';
 
@@ -32,7 +31,7 @@ export interface ClawHubPackageListParams {
   keyword?: string;
 }
 
-type ClawHubClient = Pick<SdkworkAppClient, 'skill'>;
+type ClawHubClient = { skill: import('../sdk/appSdkPort.ts').ClawStudioSkillClient };
 type ClawHubSessionTokens = {
   authToken?: string | null;
 };
@@ -55,7 +54,7 @@ const SKILL_PAGE_SIZE = 100;
 const MAX_SKILL_PAGES = 25;
 
 function getDefaultClient(): ClawHubClient {
-  return getAppSdkClientWithSession();
+  return getClawStudioAppClientWithSession() as ClawHubClient;
 }
 
 function getDefaultSessionTokens(): ClawHubSessionTokens {

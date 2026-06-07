@@ -5,7 +5,6 @@ import type {
   StudioWorkbenchLLMProviderRequestOverridesRecord,
 } from '@sdkwork/claw-types';
 import {
-  LOCAL_AI_PROXY_OPENCLAW_EXPOSE_TARGET,
   resolveLocalApiProxyProjectedModelCatalogState,
   resolveLocalApiProxyRuntimeBaseUrl,
   resolveProviderLocalApiProxyRouteModelState as resolveLegacyLocalAiProxyRouteModelState,
@@ -18,6 +17,7 @@ export const OPENCLAW_LOCAL_PROXY_PROVIDER_ID = 'sdkwork-local-proxy';
 export const OPENCLAW_LOCAL_PROXY_TOKEN_ENV_VAR = 'SDKWORK_LOCAL_PROXY_TOKEN';
 export const OPENCLAW_LOCAL_PROXY_API_KEY_PLACEHOLDER = '${SDKWORK_LOCAL_PROXY_TOKEN}';
 export const OPENCLAW_LOCAL_PROXY_DEFAULT_API_KEY = OPENCLAW_LOCAL_PROXY_API_KEY_PLACEHOLDER;
+export const OPENCLAW_LOCAL_PROXY_EXPOSURE_TARGET = 'sdkwork';
 
 export interface OpenClawLocalProxyProjectionProviderModel {
   id: string;
@@ -85,7 +85,7 @@ function selectProjectedLocalAiProxyRoute(
 ) {
   return selectLocalApiProxyProjectedProviderRoute({
     routes,
-    exposureTarget: LOCAL_AI_PROXY_OPENCLAW_EXPOSE_TARGET,
+    exposureTarget: OPENCLAW_LOCAL_PROXY_EXPOSURE_TARGET,
     preferredClientProtocol,
     fallbackClientProtocol: 'openai-compatible',
   });

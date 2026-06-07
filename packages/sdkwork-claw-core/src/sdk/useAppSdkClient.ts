@@ -1,15 +1,28 @@
-import type { SdkworkAppConfig } from '@sdkwork/app-sdk';
+import {
+  createClient as createAppbaseAppClient,
+  type SdkworkAppClient as AppbaseAppSdkClient,
+  type SdkworkAppConfig,
+} from '@sdkwork/appbase-app-sdk';
 import {
   createDriveAppClient,
   type SdkworkDriveAppClient,
 } from '@sdkwork/drive-app-sdk';
 import {
-  applyAppClientSessionTokens,
+  createClient as createMessagingAppClient,
+  type SdkworkAppClient as MessagingAppSdkClientType,
+} from '@sdkwork/messaging-app-sdk';
+import {
+  createIamRuntime,
+  type AuthTokenManager,
+  type IamRuntime,
+  type IamStoredSession,
+  type IamTokenStore,
+} from '@sdkwork/iam-runtime';
+import { createIamSdkAdapters } from '@sdkwork/iam-sdk-adapter';
+import {
   createAppClientConfigFromEnv,
-  getAppClient,
+  getAppClientWithSession as getRuntimeAppClientWithSession,
   getAppClientConfig,
-  getAppClientWithSession,
-  initAppClient,
   resolveAppClientAccessToken,
 } from '@sdkwork/core-pc-react/app';
 import { readPcReactEnvSource } from '@sdkwork/core-pc-react/env';
@@ -25,6 +38,7 @@ import {
   CLAW_STUDIO_USER_CENTER_STORAGE_PLAN,
 } from './userCenterContract.ts';
 import { createUserCenterTokenStore } from './userCenterStorage.ts';
+import type { ClawStudioRemoteAppClient } from './appSdkPort.ts';
 
 export type AppRuntimeEnv = 'development' | 'staging' | 'production' | 'test';
 
@@ -32,8 +46,19 @@ export interface AppSdkClientConfig extends SdkworkAppConfig {
   env: AppRuntimeEnv;
 }
 
-export type AppSdkClient = ReturnType<typeof getAppClient>;
+export type AppSdkClient = AppbaseAppSdkClient;
+export type ClawStudioAppClient = ClawStudioRemoteAppClient;
 export type DriveAppSdkClient = SdkworkDriveAppClient;
+export type MessagingAppSdkClient = MessagingAppSdkClientType;
+
+export interface AppSdkRuntime {
+  appbaseClient: AppbaseAppSdkClient;
+  config: AppSdkClientConfig;
+  driveClient: SdkworkDriveAppClient;
+  iamRuntime: IamRuntime;
+  messagingClient: MessagingAppSdkClient;
+  tokenManager: AuthTokenManager;
+}
 
 export interface AppSdkSessionTokens {
   authToken?: string;
@@ -46,6 +71,9 @@ export const APP_SDK_USER_CENTER_NAMESPACE = CLAW_STUDIO_USER_CENTER_NAMESPACE;
 export const APP_SDK_USER_CENTER_STORAGE_PLAN = CLAW_STUDIO_USER_CENTER_STORAGE_PLAN;
 
 let runtimeConfigured = false;
+let appSdkRuntime: AppSdkRuntime | null = null;
+
+const CLAW_STUDIO_APP_ID = '10001';
 
 function normalizeBearerTokenValue(value?: string | null): string | undefined {
   const normalized = (value || '').trim();
@@ -111,6 +139,94 @@ function clearUserCenterSessionTokens(): void {
   createAppSdkUserCenterTokenStore().clearTokenBundle();
 }
 
+function createAppSdkIamTokenStore(): IamTokenStore {
+  return {
+    clear: clearUserCenterSessionTokens,
+    get: (): IamStoredSession => readUserCenterSessionTokens(),
+    set: (session: IamStoredSession): void => {
+      persistUserCenterSessionTokens(session);
+      persistPcReactRuntimeSession(session);
+    },
+  };
+}
+
+function resolveIamEnvironment(env: AppRuntimeEnv): 'dev' | 'test' | 'prod' {
+  if (env === 'production') {
+    return 'prod';
+  }
+  if (env === 'test') {
+    return 'test';
+  }
+  return 'dev';
+}
+
+function resolveIamDeploymentMode(config: AppSdkClientConfig): 'local' | 'private' | 'saas' {
+  const baseUrl = config.baseUrl.trim().toLowerCase();
+  if (
+    baseUrl.includes('localhost')
+    || baseUrl.includes('127.0.0.1')
+    || baseUrl.includes('[::1]')
+  ) {
+    return 'local';
+  }
+  return 'saas';
+}
+
+function createTokenManagerAwareIamAppClient(
+  appbaseClient: AppbaseAppSdkClient,
+) {
+  const { appbaseApp } = createIamSdkAdapters({ appbaseApp: appbaseClient });
+
+  return {
+    ...appbaseApp,
+    setTokenManager: (manager: AuthTokenManager) => appbaseClient.setTokenManager(manager),
+  };
+}
+
+function createComposedSdkRuntime(
+  overrides: Partial<SdkworkAppConfig> = {},
+): AppSdkRuntime {
+  const config = createAppSdkClientConfig(overrides);
+  const appbaseClient = createAppbaseAppClient(config);
+  const driveClient = createDriveAppClient(config);
+  const messagingClient = createMessagingAppClient(config);
+  const iamRuntime = createIamRuntime({
+    clients: {
+      appbaseApp: createTokenManagerAwareIamAppClient(appbaseClient),
+      sdkClients: [driveClient, messagingClient],
+    },
+    config: {
+      appApiBaseUrl: config.baseUrl,
+      appId: CLAW_STUDIO_APP_ID,
+      deploymentMode: resolveIamDeploymentMode(config),
+      environment: resolveIamEnvironment(config.env),
+    },
+    tokenStore: createAppSdkIamTokenStore(),
+  });
+
+  return {
+    appbaseClient,
+    config,
+    driveClient,
+    iamRuntime,
+    messagingClient,
+    tokenManager: iamRuntime.tokenManager,
+  };
+}
+
+function getComposedSdkRuntime(
+  overrides: Partial<SdkworkAppConfig> = {},
+): AppSdkRuntime {
+  ensureConfigured();
+  if (Object.keys(overrides).length > 0) {
+    return createComposedSdkRuntime(overrides);
+  }
+  if (!appSdkRuntime) {
+    appSdkRuntime = createComposedSdkRuntime();
+  }
+  return appSdkRuntime;
+}
+
 function synchronizeRuntimeSessionFromUserCenter(): void {
   const runtimeSession = readPcReactRuntimeSession();
   const userCenterTokens = readUserCenterSessionTokens();
@@ -155,21 +271,22 @@ export function createAppSdkClientConfig(
 
 export function initAppSdkClient(overrides: Partial<SdkworkAppConfig> = {}): AppSdkClient {
   ensureConfigured();
-  return initAppClient(overrides);
+  appSdkRuntime = createComposedSdkRuntime(overrides);
+  return appSdkRuntime.appbaseClient;
 }
 
 export function getAppSdkClient(): AppSdkClient {
-  ensureConfigured();
-  return getAppClient();
+  return getComposedSdkRuntime().appbaseClient;
 }
 
 export function getAppSdkClientConfig(): AppSdkClientConfig | null {
-  return getAppClientConfig() as AppSdkClientConfig | null;
+  return appSdkRuntime?.config
+    ?? getAppClientConfig() as AppSdkClientConfig | null;
 }
 
 export function resolveAppSdkAccessToken(): string {
-  ensureConfigured();
-  return resolveAppClientAccessToken();
+  const tokens = getComposedSdkRuntime().tokenManager.getTokens();
+  return tokens.accessToken ?? readAppSdkSessionTokens().accessToken ?? resolveAppClientAccessToken();
 }
 
 export function resetAppSdkClient(): void {
@@ -178,11 +295,15 @@ export function resetAppSdkClient(): void {
     clearConfiguration: false,
   });
   runtimeConfigured = false;
+  appSdkRuntime = null;
 }
 
 export function applyAppSdkSessionTokens(tokens: AppSdkSessionTokens): void {
-  ensureConfigured();
-  applyAppClientSessionTokens(tokens);
+  const normalizedTokens = normalizeAppSdkSessionTokens(tokens);
+  const runtime = getComposedSdkRuntime();
+  runtime.tokenManager.setTokens(normalizedTokens);
+  persistUserCenterSessionTokens(normalizedTokens);
+  persistPcReactRuntimeSession(normalizedTokens);
 }
 
 export function readAppSdkSessionTokens(): AppSdkSessionTokens {
@@ -200,12 +321,14 @@ export function readAppSdkSessionTokens(): AppSdkSessionTokens {
 export function persistAppSdkSessionTokens(tokens: AppSdkSessionTokens): void {
   ensureConfigured();
   const normalizedTokens = normalizeAppSdkSessionTokens(tokens);
+  appSdkRuntime?.tokenManager.setTokens(normalizedTokens);
   persistUserCenterSessionTokens(normalizedTokens);
   persistPcReactRuntimeSession(normalizedTokens);
 }
 
 export function clearAppSdkSessionTokens(): void {
   ensureConfigured();
+  appSdkRuntime?.tokenManager.clearTokens();
   clearUserCenterSessionTokens();
   void clearPcReactRuntimeSession();
 }
@@ -213,41 +336,26 @@ export function clearAppSdkSessionTokens(): void {
 export function getAppSdkClientWithSession(
   overrides: Partial<SdkworkAppConfig> = {},
 ): AppSdkClient {
-  ensureConfigured();
-  return Object.keys(overrides).length > 0
-    ? getAppClientWithSession(overrides)
-    : getAppClientWithSession();
+  return getComposedSdkRuntime(overrides).appbaseClient;
 }
 
-function applyDriveAppSdkSessionTokens(
-  client: SdkworkDriveAppClient,
-  tokens: AppSdkSessionTokens,
-): void {
-  const authToken = normalizeBearerTokenValue(tokens.authToken);
-  const accessToken = normalizeBearerTokenValue(tokens.accessToken);
-
-  if (authToken) {
-    client.setAuthToken(authToken);
-  }
-  if (accessToken) {
-    client.setAccessToken(accessToken);
-  }
+export function getClawStudioAppClientWithSession(
+  overrides: Partial<SdkworkAppConfig> = {},
+): ClawStudioAppClient {
+  ensureConfigured();
+  return getRuntimeAppClientWithSession(overrides) as ClawStudioAppClient;
 }
 
 export function getDriveAppSdkClientWithSession(
   overrides: Partial<SdkworkAppConfig> = {},
 ): DriveAppSdkClient {
-  ensureConfigured();
-  const sessionTokens = readAppSdkSessionTokens();
-  const client = createDriveAppClient(
-    createAppSdkClientConfig({
-      ...overrides,
-      authToken: overrides.authToken ?? sessionTokens.authToken,
-      accessToken: overrides.accessToken ?? sessionTokens.accessToken,
-    }),
-  );
-  applyDriveAppSdkSessionTokens(client, sessionTokens);
-  return client;
+  return getComposedSdkRuntime(overrides).driveClient;
+}
+
+export function getMessagingAppSdkClientWithSession(
+  overrides: Partial<SdkworkAppConfig> = {},
+): MessagingAppSdkClient {
+  return getComposedSdkRuntime(overrides).messagingClient;
 }
 
 export function useAppSdkClient(

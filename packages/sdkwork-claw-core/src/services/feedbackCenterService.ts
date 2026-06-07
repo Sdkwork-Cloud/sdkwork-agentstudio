@@ -6,13 +6,12 @@ import type {
   FeedbackVO,
   PageFaqVO,
   PageFeedbackVO,
-  SdkworkAppClient,
   SupportInfoVO,
-} from '@sdkwork/app-sdk';
+} from '../sdk/appSdkPort.ts';
 import { unwrapAppSdkResponse } from '../sdk/appSdkResult.ts';
-import { getAppSdkClientWithSession } from '../sdk/useAppSdkClient.ts';
+import { getClawStudioAppClientWithSession } from '../sdk/useAppSdkClient.ts';
 
-type FeedbackCenterClient = Pick<SdkworkAppClient, 'feedback'>;
+type FeedbackCenterClient = { feedback: import('../sdk/appSdkPort.ts').ClawStudioFeedbackClient };
 
 export interface FeedbackCenterQuery {
   type?: string;
@@ -116,7 +115,7 @@ export interface FeedbackCenterService {
 }
 
 function getDefaultClient(): FeedbackCenterClient {
-  return getAppSdkClientWithSession();
+  return getClawStudioAppClientWithSession() as FeedbackCenterClient;
 }
 
 function toOptionalString(value: string | number | undefined | null): string | undefined {

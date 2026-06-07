@@ -30,25 +30,34 @@ assert.equal(
 );
 
 assert.equal(
-  loader.resolveSharedSdkSourceAliasPath('@sdkwork/app-sdk', { SDKWORK_SHARED_SDK_MODE: 'source' }),
+  loader.resolveSharedSdkSourceAliasPath('@sdkwork/appbase-app-sdk', { SDKWORK_SHARED_SDK_MODE: 'source' }),
   path.resolve(
     canonicalWorkspaceRoot,
-    '../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/src/index.ts',
+    '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi/src/index.ts',
   ),
-  'source mode must redirect @sdkwork/app-sdk to the sibling SDK source entry',
+  'source mode must redirect @sdkwork/appbase-app-sdk to the sibling SDK source entry',
+);
+
+assert.equal(
+  loader.resolveSharedSdkSourceAliasPath('@sdkwork/messaging-app-sdk', { SDKWORK_SHARED_SDK_MODE: 'source' }),
+  path.resolve(
+    canonicalWorkspaceRoot,
+    '../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi/src/index.ts',
+  ),
+  'source mode must redirect @sdkwork/messaging-app-sdk to the sibling SDK source entry',
 );
 
 assert.equal(
   loader.resolveSharedSdkSourceAliasPath('@sdkwork/sdk-common/http', { SDKWORK_SHARED_SDK_MODE: 'source' }),
   path.resolve(
     canonicalWorkspaceRoot,
-    '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/http/index.ts',
+    '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/http/index.ts',
   ),
   'source mode must redirect @sdkwork/sdk-common subpaths to sibling source entries',
 );
 
 assert.equal(
-  loader.resolveSharedSdkSourceAliasPath('@sdkwork/app-sdk', { SDKWORK_SHARED_SDK_MODE: 'git' }),
+  loader.resolveSharedSdkSourceAliasPath('@sdkwork/appbase-app-sdk', { SDKWORK_SHARED_SDK_MODE: 'git' }),
   null,
   'git mode must keep installed package resolution instead of forcing source aliases',
 );

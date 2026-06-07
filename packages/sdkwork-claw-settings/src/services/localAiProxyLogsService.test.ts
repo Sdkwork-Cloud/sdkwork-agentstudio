@@ -55,15 +55,15 @@ await runTest('localAiProxyLogsService normalizes request and message log querie
 
   await service.listRequestLogs({
     page: 0,
-    pageSize: 999,
-    search: '  openai  ',
+    page_size: 999,
+    q: '  openai  ',
     providerId: ' openai ',
     status: 'all',
   });
   await service.listMessageLogs({
     page: -1,
-    pageSize: 0,
-    search: '  summarize  ',
+    page_size: 0,
+    q: '  summarize  ',
     providerId: ' openai ',
   });
   const settings = await service.getMessageCaptureSettings();
@@ -74,8 +74,8 @@ await runTest('localAiProxyLogsService normalizes request and message log querie
       kind: 'requests',
       query: {
         page: 1,
-        pageSize: 100,
-        search: 'openai',
+        page_size: 100,
+        q: 'openai',
         providerId: 'openai',
       },
     },
@@ -83,8 +83,8 @@ await runTest('localAiProxyLogsService normalizes request and message log querie
       kind: 'messages',
       query: {
         page: 1,
-        pageSize: 20,
-        search: 'summarize',
+        page_size: 20,
+        q: 'summarize',
         providerId: 'openai',
       },
     },

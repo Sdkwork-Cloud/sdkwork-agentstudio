@@ -1,28 +1,32 @@
 {
   "sources": {
-    "app-sdk": {
-      "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-sdk-app.git",
-      "ref": "e7bc761ce45acf142721b96f732b361c77a71e73"
+    "appbase-app-sdk": {
+      "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-appbase.git",
+      "ref": "4e287906b0d712213f8b6ede39b505aac3a67722"
     },
     "sdk-common": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-sdk-commons.git",
-      "ref": "892dd2585ebd9e40bc55653d34fd5fb91281bbda"
+      "ref": "c9adc5a02fed0d9ce70ab719e5d2155ed40676da"
     },
     "core-pc-react": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-core.git",
       "ref": "661c42032a7af6b81503d48c3821aa81075ebc8d"
     },
     "local-api-proxy": {
-      "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-appbase.git",
-      "ref": "4909120cb8c6f9f02f679ac477f6dd78711a1e0e"
+      "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-local-router.git",
+      "ref": "b6c74b9c45e2eb796c194089b190c0a76204b7ef"
     },
     "im-sdk": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git",
       "ref": "12abdbd638d499194e89cf966ed0aa4cd103f19b"
     },
+    "messaging-app-sdk": {
+      "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-messaging.git",
+      "ref": "e759f25b75b33aa94694f99ce6d066316a51cee3"
+    },
     "rtc-sdk": {
       "repoUrl": "https://github.com/Sdkwork-Cloud/sdkwork-rtc-sdk.git",
-      "ref": "e2a692b0b92559d5e54e69be027cb2fa3ad30dfb"
+      "ref": "9520a452f744b5a868449547bb2031a7ffc6fd30"
     }
   }
 }

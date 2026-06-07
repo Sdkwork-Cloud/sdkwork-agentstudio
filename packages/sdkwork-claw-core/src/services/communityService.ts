@@ -1,5 +1,5 @@
 import { unwrapAppSdkResponse } from '../sdk/appSdkResult.ts';
-import { getAppSdkClientWithSession } from '../sdk/useAppSdkClient.ts';
+import { getClawStudioAppClientWithSession } from '../sdk/useAppSdkClient.ts';
 
 export interface ListParams {
   keyword?: string;
@@ -875,7 +875,7 @@ function matchesQuery(post: CommunityPost, query?: string) {
 }
 
 function defaultClientFactory() {
-  return getAppSdkClientWithSession() as unknown as CommunitySdkClient;
+  return getClawStudioAppClientWithSession() as unknown as CommunitySdkClient;
 }
 
 async function unwrapCommunitySdkResponse<T>(payload: unknown, fallbackMessage: string) {

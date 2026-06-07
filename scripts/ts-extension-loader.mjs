@@ -32,20 +32,98 @@ const EXTRA_WORKSPACE_PACKAGE_SOURCE_SPECS = [
       ),
     },
   },
+  {
+    packageName: '@sdkwork/auth-pc-react',
+    packageRoot: path.resolve(
+      CANONICAL_WORKSPACE_ROOT,
+      '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-pc-react',
+    ),
+    entryBySubpath: {
+      '.': 'src/index.ts',
+      './auth-service': 'src/auth-service.ts',
+    },
+  },
+  {
+    packageName: '@sdkwork/runtime-bootstrap',
+    packageRoot: path.resolve(
+      CANONICAL_WORKSPACE_ROOT,
+      '../sdkwork-appbase/packages/common/foundation/sdkwork-runtime-bootstrap',
+    ),
+    entryBySubpath: {
+      '.': 'src/index.ts',
+    },
+  },
+  {
+    packageName: '@sdkwork/iam-contracts',
+    packageRoot: path.resolve(
+      CANONICAL_WORKSPACE_ROOT,
+      '../sdkwork-appbase/packages/common/iam/sdkwork-iam-contracts',
+    ),
+    entryBySubpath: {
+      '.': 'src/index.ts',
+    },
+  },
+  {
+    packageName: '@sdkwork/iam-runtime',
+    packageRoot: path.resolve(
+      CANONICAL_WORKSPACE_ROOT,
+      '../sdkwork-appbase/packages/common/iam/sdkwork-iam-runtime',
+    ),
+    entryBySubpath: {
+      '.': 'src/index.ts',
+    },
+  },
+  {
+    packageName: '@sdkwork/iam-sdk-adapter',
+    packageRoot: path.resolve(
+      CANONICAL_WORKSPACE_ROOT,
+      '../sdkwork-appbase/packages/common/iam/sdkwork-iam-sdk-adapter',
+    ),
+    entryBySubpath: {
+      '.': 'src/index.ts',
+    },
+  },
+  {
+    packageName: '@sdkwork/iam-sdk-ports',
+    packageRoot: path.resolve(
+      CANONICAL_WORKSPACE_ROOT,
+      '../sdkwork-appbase/packages/common/iam/sdkwork-iam-sdk-ports',
+    ),
+    entryBySubpath: {
+      '.': 'src/index.ts',
+    },
+  },
+  {
+    packageName: '@sdkwork/iam-service',
+    packageRoot: path.resolve(
+      CANONICAL_WORKSPACE_ROOT,
+      '../sdkwork-appbase/packages/common/iam/sdkwork-iam-service',
+    ),
+    entryBySubpath: {
+      '.': 'src/index.ts',
+    },
+  },
 ];
 const SHARED_SDK_SOURCE_SPECS = [
   {
-    packageName: '@sdkwork/app-sdk',
+    packageName: '@sdkwork/appbase-app-sdk',
     sourceRoot: path.resolve(
       CANONICAL_WORKSPACE_ROOT,
-      '../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/src',
+      '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi/src',
+    ),
+  },
+  {
+    packageName: '@sdkwork/messaging-app-sdk',
+    sourceRoot: path.resolve(
+      CANONICAL_WORKSPACE_ROOT,
+      '../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi/src',
     ),
   },
   {
     packageName: '@sdkwork/sdk-common',
     sourceRoot: path.resolve(
       CANONICAL_WORKSPACE_ROOT,
-      '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src',
+      '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src',
     ),
   },
 ];

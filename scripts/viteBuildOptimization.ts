@@ -34,9 +34,23 @@ export const CLAW_VITE_DEDUPE_PACKAGES = [
   '@sdkwork/sdk-common',
 ] as const;
 
-export function createClawManualChunks(sharedAppSdkEntry: string) {
-  const normalizedSharedAppSdkEntry = normalizePath(sharedAppSdkEntry);
-  const normalizedSharedAppSdkRoot = resolveDirectory(normalizedSharedAppSdkEntry);
+export interface ClawManualChunkEntries {
+  appbaseAppSdkEntry: string;
+  messagingAppSdkEntry?: string;
+  sdkCommonEntry?: string;
+}
+
+function resolveChunkRoot(entry: string | undefined) {
+  return entry ? resolveDirectory(normalizePath(entry)) : null;
+}
+
+export function createClawManualChunks(entries: ClawManualChunkEntries | string) {
+  const normalizedEntries = typeof entries === 'string'
+    ? { appbaseAppSdkEntry: entries }
+    : entries;
+  const appbaseAppSdkRoot = resolveChunkRoot(normalizedEntries.appbaseAppSdkEntry);
+  const messagingAppSdkRoot = resolveChunkRoot(normalizedEntries.messagingAppSdkEntry);
+  const sdkCommonRoot = resolveChunkRoot(normalizedEntries.sdkCommonEntry);
 
   return function manualChunks(id: string) {
     const normalizedId = normalizePath(id);
@@ -64,8 +78,16 @@ export function createClawManualChunks(sharedAppSdkEntry: string) {
       return 'claw-infrastructure';
     }
 
-    if (isWithinDirectory(normalizedId, normalizedSharedAppSdkRoot)) {
-      return 'sdkwork-app-sdk';
+    if (appbaseAppSdkRoot && isWithinDirectory(normalizedId, appbaseAppSdkRoot)) {
+      return 'sdkwork-appbase-app-sdk';
+    }
+
+    if (messagingAppSdkRoot && isWithinDirectory(normalizedId, messagingAppSdkRoot)) {
+      return 'sdkwork-messaging-app-sdk';
+    }
+
+    if (sdkCommonRoot && isWithinDirectory(normalizedId, sdkCommonRoot)) {
+      return 'sdkwork-sdk-common';
     }
 
     if (reactVendorPattern.test(normalizedId)) {

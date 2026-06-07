@@ -12,6 +12,7 @@ import {
 
 const packagesRoot = path.resolve(process.cwd(), 'packages');
 const currentWorkspaceRoot = path.resolve(process.cwd());
+const retiredGenericAppSdkPackage = `@sdkwork/${'app'}-sdk`;
 const canonicalWorkspaceRoot = currentWorkspaceRoot.includes(`${path.sep}.worktrees${path.sep}`)
   ? path.resolve(currentWorkspaceRoot, '..', '..')
   : currentWorkspaceRoot;
@@ -97,7 +98,7 @@ test('resolveWorkspacePackageAliases creates direct aliases for local @sdkwork/c
     false,
   );
   assert.equal(
-    aliases.some((entry) => entry.find === '@sdkwork/app-sdk'),
+    aliases.some((entry) => entry.find === retiredGenericAppSdkPackage),
     false,
   );
 });

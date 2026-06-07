@@ -722,12 +722,26 @@ function resolveOpenClawCapability(
   };
 }
 
+function resolveReportedOpenClawConfigFile(detail: StudioInstanceDetailRecord) {
+  const configRoute = detail.dataAccess?.routes?.find((route) => route.scope === 'config');
+  if (configRoute?.mode === 'managedFile') {
+    const target = normalizeOptionalString(configRoute.target);
+    if (target) {
+      return target.replace(/\\/g, '/');
+    }
+  }
+
+  const configArtifact = detail.artifacts?.find((artifact) => artifact.kind === 'configFile');
+  const location = normalizeOptionalString(configArtifact?.location);
+  return location ? location.replace(/\\/g, '/') : null;
+}
+
 function resolveWritableOpenClawConfigFile(detail: StudioInstanceDetailRecord) {
   if (detail.lifecycle.configWritable !== true) {
     return null;
   }
 
-  return resolveAttachedKernelConfigFile(detail);
+  return resolveAttachedKernelConfigFile(detail) ?? resolveReportedOpenClawConfigFile(detail);
 }
 
 function applyResolvedOpenClawAgentPaths(

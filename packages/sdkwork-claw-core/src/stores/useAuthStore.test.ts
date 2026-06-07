@@ -27,6 +27,10 @@ function createMemoryStorage(): StateStorage {
 
 const fetchCalls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
 
+function readJsonRequestBody(init?: RequestInit): Record<string, unknown> {
+  return JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+}
+
 function installBrowserStorage(storage: StateStorage): void {
   Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true });
   Object.defineProperty(globalThis, 'window', { value: { localStorage: storage }, configurable: true });
@@ -35,9 +39,12 @@ function installBrowserStorage(storage: StateStorage): void {
 globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   fetchCalls.push({ input, init });
   const url = String(input);
+  const body = readJsonRequestBody(init);
 
-  if (url.endsWith('/app/v3/api/auth/login')) {
-    const body = JSON.parse(String(init?.body || '{}')) as { username?: string };
+  if (
+    url.endsWith('/app/v3/api/auth/sessions')
+    && body.grantType === 'password'
+  ) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -46,6 +53,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         errorName: '',
         data: {
           authToken: 'jwt-token',
+          accessToken: 'access-token',
           refreshToken: 'refresh-token',
           tokenType: 'Bearer',
           expiresIn: 3600,
@@ -60,20 +68,31 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/register')) {
+  if (url.endsWith('/app/v3/api/auth/registrations')) {
     return new Response(JSON.stringify({
       code: '2000',
       msg: 'success',
       requestId: 'req-register',
       errorName: '',
-      data: {},
+      data: {
+        authToken: 'register-auth-token',
+        accessToken: 'register-access-token',
+        refreshToken: 'register-refresh-token',
+        tokenType: 'Bearer',
+        expiresIn: 3600,
+        userInfo: {
+          username: body.username,
+          email: body.email,
+          nickname: 'Night Operator',
+        },
+      },
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  if (url.endsWith('/app/v3/api/auth/logout')) {
+  if (url.endsWith('/app/v3/api/auth/sessions/current')) {
     return new Response(JSON.stringify({
       code: '2000',
       msg: 'success',
@@ -86,7 +105,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     });
   }
 
-  if (url.endsWith('/app/v3/api/auth/password/reset/request')) {
+  if (url.endsWith('/app/v3/api/auth/password_reset_requests')) {
     return new Response(JSON.stringify({
       code: '2000',
       msg: 'success',
@@ -99,7 +118,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     });
   }
 
-  if (url.endsWith('/app/v3/api/auth/password/reset')) {
+  if (url.endsWith('/app/v3/api/auth/password_resets')) {
     return new Response(JSON.stringify({
       code: '2000',
       msg: 'success',
@@ -112,7 +131,10 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     });
   }
 
-  if (url.endsWith('/app/v3/api/auth/phone/login')) {
+  if (
+    url.endsWith('/app/v3/api/auth/sessions')
+    && body.grantType === 'phone_code'
+  ) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -121,6 +143,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         errorName: '',
         data: {
           authToken: 'phone-auth-token',
+          accessToken: 'phone-access-token',
           refreshToken: 'phone-refresh-token',
           tokenType: 'Bearer',
           expiresIn: 3600,
@@ -135,7 +158,10 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/email/login')) {
+  if (
+    url.endsWith('/app/v3/api/auth/sessions')
+    && body.grantType === 'email_code'
+  ) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -144,6 +170,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         errorName: '',
         data: {
           authToken: 'email-auth-token',
+          accessToken: 'email-access-token',
           refreshToken: 'email-refresh-token',
           tokenType: 'Bearer',
           expiresIn: 3600,
@@ -158,8 +185,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/oauth/login')) {
-    const body = JSON.parse(String(init?.body || '{}')) as { provider?: string };
+  if (url.endsWith('/app/v3/api/auth/oauth_sessions')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -168,6 +194,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         errorName: '',
         data: {
           authToken: 'oauth-auth-token',
+          accessToken: 'oauth-access-token',
           refreshToken: 'oauth-refresh-token',
           tokenType: 'Bearer',
           expiresIn: 3600,
@@ -183,7 +210,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/qr/status/qr-login-1')) {
+  if (url.endsWith('/app/v3/api/open_platform/qr_auth/sessions/qr-login-1')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -191,7 +218,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         requestId: 'req-qr-status',
         errorName: '',
         data: {
-          status: 'confirmed',
+          status: 'completed',
           userInfo: {
             username: 'wechat-user',
             email: 'wechat-user@example.com',
@@ -200,6 +227,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
           },
           token: {
             authToken: 'qr-auth-token',
+            accessToken: 'qr-access-token',
             refreshToken: 'qr-refresh-token',
             tokenType: 'Bearer',
             expiresIn: 3600,
@@ -288,7 +316,7 @@ await runTest('useAuthStore sends password reset requests through the backend au
   });
 
   const resetRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/password/reset/request'),
+    String(input).endsWith('/app/v3/api/auth/password_reset_requests'),
   );
 
   assert.ok(resetRequest);
@@ -313,11 +341,12 @@ await runTest('useAuthStore signs in with phone verification codes', async () =>
   assert.equal(user.displayName, 'Phone Operator');
 
   const phoneLoginRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/phone/login'),
+    String(input).endsWith('/app/v3/api/auth/sessions'),
   );
 
   assert.ok(phoneLoginRequest);
   assert.deepEqual(JSON.parse(String(phoneLoginRequest.init?.body ?? '{}')), {
+    grantType: 'phone_code',
     phone: '13800138000',
     code: '123456',
   });
@@ -337,11 +366,12 @@ await runTest('useAuthStore signs in with email verification codes', async () =>
   assert.equal(user.displayName, 'Email Operator');
 
   const emailLoginRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/email/login'),
+    String(input).endsWith('/app/v3/api/auth/sessions'),
   );
 
   assert.ok(emailLoginRequest);
   assert.deepEqual(JSON.parse(String(emailLoginRequest.init?.body ?? '{}')), {
+    grantType: 'email_code',
     email: 'operator@example.com',
     code: '654321',
   });
@@ -359,7 +389,7 @@ await runTest('useAuthStore confirms password reset with verification codes', as
   });
 
   const resetPasswordRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/password/reset'),
+    String(input).endsWith('/app/v3/api/auth/password_resets'),
   );
 
   assert.ok(resetPasswordRequest);
@@ -414,7 +444,7 @@ await runTest('useAuthStore signs in with OAuth providers and persists the retur
   assert.equal(user.displayName, 'Octo Cat');
 
   const oauthLoginRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth/login'),
+    String(input).endsWith('/app/v3/api/auth/oauth_sessions'),
   );
 
   assert.ok(oauthLoginRequest);

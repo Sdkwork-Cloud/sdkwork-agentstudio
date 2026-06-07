@@ -8,11 +8,11 @@
 
 ## Standard Remote Path
 
-Use this path for any business capability backed by `spring-ai-plus-app-api`:
+Use this path for remote business capability:
 
-`host -> shell/core -> feature package service or store -> shared app-sdk wrapper -> @sdkwork/app-sdk -> spring-ai-plus-app-api`
+`host -> shell/core -> feature package service or store -> core service -> declared dependency SDK or typed product app client port`
 
-The preferred wrapper ownership is a shared core layer, not a host-only package.
+The preferred wrapper ownership is a shared core layer, not a host-only package. Concrete clients are constructed by runtime/bootstrap and injected through the standard SDKWork app composition boundary.
 
 ## Local And Native Path
 
@@ -22,7 +22,7 @@ Keep these concerns on their original boundaries:
 - local files, shell processes, dialogs, device integration
 - package boundary checks and workspace orchestration
 
-Local-only capability should stay local even while adjacent business modules move to the generated SDK.
+Local-only capability should stay local even while adjacent business modules move to dependency SDKs, generated product SDKs, or typed product ports.
 
 ## Replace Or Remove
 
@@ -33,11 +33,12 @@ Local-only capability should stay local even while adjacent business modules mov
 
 ## Contract Closure Rule
 
-If a feature package needs a method that the generated app SDK does not expose:
+If a feature package needs a method that no declared dependency SDK, product SDK family, or typed product port exposes:
 
-1. Fix the contract in `spring-ai-plus-app-api` and required backend modules.
-2. Regenerate the shared app SDK from the repository-standard generator flow.
-3. Reconnect the feature package through the shared wrapper.
-4. Delete the temporary bypass.
+1. Resolve the owning application-root SDK family or dependency SDK family.
+2. Fix the contract and required backend modules under that owner.
+3. Regenerate through the repository-standard generator flow when generated SDK output exists.
+4. Reconnect the feature package through the shared core service or typed port.
+5. Delete the temporary bypass.
 
 If that backend work would touch schema, migration, or embedded DB layout, pause and ask the user first.

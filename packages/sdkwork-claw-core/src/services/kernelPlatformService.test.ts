@@ -257,7 +257,7 @@ if (kernelPlatformServiceModule) {
           restart: async () => null,
           testLocalAiProxyRoute: async () => null,
           listLocalAiProxyRequestLogs: async (query) => {
-            calls.push(`requestLogs:${query.page}:${query.pageSize}:${query.search || ''}`);
+            calls.push(`requestLogs:${query.page}:${query.page_size}:${query.q || ''}`);
             return {
               items: [
                 {
@@ -285,12 +285,12 @@ if (kernelPlatformServiceModule) {
               ],
               total: 1,
               page: query.page || 1,
-              pageSize: query.pageSize || 20,
+              pageSize: query.page_size || 20,
               hasMore: false,
             };
           },
           listLocalAiProxyMessageLogs: async (query) => {
-            calls.push(`messageLogs:${query.page}:${query.pageSize}:${query.search || ''}`);
+            calls.push(`messageLogs:${query.page}:${query.page_size}:${query.q || ''}`);
             return {
               items: [
                 {
@@ -314,7 +314,7 @@ if (kernelPlatformServiceModule) {
               ],
               total: 1,
               page: query.page || 1,
-              pageSize: query.pageSize || 20,
+              pageSize: query.page_size || 20,
               hasMore: false,
             };
           },
@@ -330,13 +330,13 @@ if (kernelPlatformServiceModule) {
 
       const requestLogs = await service.listLocalAiProxyRequestLogs({
         page: 2,
-        pageSize: 10,
-        search: 'openai',
+        page_size: 10,
+        q: 'openai',
       });
       const messageLogs = await service.listLocalAiProxyMessageLogs({
         page: 1,
-        pageSize: 5,
-        search: 'summarize',
+        page_size: 5,
+        q: 'summarize',
       });
       const capture = await service.updateLocalAiProxyMessageCapture(true);
 

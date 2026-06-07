@@ -185,7 +185,7 @@ The bundled OpenClaw release metadata is now pinned to `2026.4.2` in `config/ope
 
 22. Shared SDK preparation still escalated a missing package-local link into a full workspace `pnpm install`.
    - Root cause:
-     - `scripts/prepare-shared-sdk-packages.mjs` previously treated a missing `@sdkwork/sdk-common` link inside the sibling `@sdkwork/app-sdk` checkout as a signal to rerun `pnpm install` for the entire Claw Studio workspace
+     - `scripts/prepare-shared-sdk-packages.mjs` previously treated a missing `@sdkwork/sdk-common` link inside the sibling `retired generic app SDK package` checkout as a signal to rerun `pnpm install` for the entire Claw Studio workspace
      - that conflated two separate concerns:
        - workspace root dependency installation
        - package-local dependency link hydration for the sibling shared SDK checkouts
@@ -237,7 +237,7 @@ The bundled OpenClaw release metadata is now pinned to `2026.4.2` in `config/ope
      - that meant the verifier could prove `runtime.zip` shape and sidecar contents without proving that the packaged archive could be expanded into a runtime install tree matching `manifest.json`, `.sdkwork-openclaw-runtime.json`, bundled Node, and CLI entrypoints at the paths the desktop runtime service checks on first launch
    - Impact:
      - the packaged release verifier could still miss regressions where an archive looked structurally valid but no longer produced an install-root layout compatible with the runtime sidecar fast path
-     - smoke reports and final release manifests could not distinguish between “archive looks valid” and “archive has been proven install-ready for startup reuse”
+     - smoke reports and final release manifests could not distinguish between “archive looks valid�?and “archive has been proven install-ready for startup reuse�?
    - Status: fixed. The desktop OpenClaw release verifier now simulates archive-prewarm materialization for Windows and Linux in a disposable temp install-root, validates the resulting manifest/sidecar/entrypoint layout against the same startup readiness assumptions as the desktop runtime service, returns a normalized `installReadyLayout` summary per platform, and desktop smoke plus final release manifests now persist that summary alongside the installer contract evidence. Desktop smoke now rejects verifier results that do not prove an install-ready layout or whose `installReadyLayout.mode` drifts from the current target platform contract, and release finalization now rejects desktop smoke reports that omit, corrupt, or mode-drift that proof.
 
 28. The GitHub desktop release workflow and public release contract still did not promote desktop installer smoke to a mandatory release step even after finalization started requiring smoke evidence.
@@ -340,7 +340,7 @@ Additional verification notes for the shared SDK preparation hardening:
 
 - The new regression coverage for `scripts/prepare-shared-sdk-packages.mjs` passed inside `node scripts/release-flow-contract.test.mjs`.
 - A direct end-to-end run of `node scripts/prepare-shared-sdk-packages.mjs` could not be completed inside this Codex sandbox because the script now correctly repairs `node_modules` links inside sibling shared SDK workspaces outside the writable root, and the sandbox rejected that write with:
-  - `EPERM: operation not permitted, mkdir '...sdkwork-app-sdk-typescript\\node_modules\\@sdkwork'`
+  - `EPERM: operation not permitted, mkdir '...retired generic app SDK TypeScript package\\node_modules\\@sdkwork'`
 - This `EPERM` is a sandbox boundary in the current review environment, not the old `ERR_PNPM_ENOSPC` behavior. The previous full-workspace install escalation path has been removed from the preparation script.
 - `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml host_platform_status_ -- --nocapture`
 - `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_serves_root_html_with_desktop_combined_host_metadata -- --nocapture`

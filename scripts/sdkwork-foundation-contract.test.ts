@@ -129,7 +129,9 @@ runTest('sdkwork-claw-web pins stable build chunks for infrastructure without sh
   assert.match(buildHelperSource, /app-state/);
   assert.match(buildHelperSource, /app-ui/);
   assert.doesNotMatch(buildHelperSource, /markdown-highlight/);
-  assert.match(buildHelperSource, /sdkwork-app-sdk/);
+  assert.match(buildHelperSource, /sdkwork-appbase-app-sdk/);
+  assert.match(buildHelperSource, /sdkwork-messaging-app-sdk/);
+  assert.match(buildHelperSource, /sdkwork-sdk-common/);
   assert.match(buildHelperSource, /sdkwork-claw-infrastructure/);
   assert.match(buildHelperSource, /claw-platform-web-studio/);
   assert.match(registrySource, /LazyWebStudioPlatform/);
@@ -194,10 +196,14 @@ runTest('infrastructure root keeps legacy raw-http auth helpers private instead 
   assert.doesNotMatch(servicesIndexSource, /export \* from '.\/notificationClient\.ts'/);
 });
 
-runTest('desktop update client uses generated app-sdk instead of handwritten raw HTTP', () => {
+runTest('desktop update client requires an injected product app SDK client instead of legacy sdk or raw HTTP', () => {
   const updateClientSource = read('packages/sdkwork-claw-infrastructure/src/updates/updateClient.ts');
 
-  assert.match(updateClientSource, /@sdkwork\/app-sdk/);
+  assert.match(updateClientSource, /clientFactory\?: AppUpdateSdkClientFactory/);
+  assert.match(updateClientSource, /await resolveAppSdkClientFactory\(\)/);
+  assert.match(updateClientSource, /client\.app\.checkAppUpdate/);
+  assert.match(updateClientSource, /requires an injected product app SDK client factory or approved composed app client/);
+  assert.doesNotMatch(updateClientSource, /@sdkwork\/app-sdk/);
   assert.doesNotMatch(updateClientSource, /postJson/);
   assert.doesNotMatch(updateClientSource, /getApiUrl/);
   assert.doesNotMatch(updateClientSource, /httpClient/);
@@ -252,7 +258,7 @@ runTest('foundation removes legacy api-router runtime bridge files and dead loca
   assert.match(upstreamReferenceZhSource, /OpenClaw/);
 });
 
-runTest('foundation removes local legacy api-router provider-id helpers after extracting them into shared local-api-proxy', () => {
+runTest('foundation removes local legacy api-router provider-id helpers after extracting them into local-router owned facade', () => {
   const matches = findFilesContaining('packages', /api-router-/, {
     excludeTestFiles: true,
   });
@@ -260,7 +266,7 @@ runTest('foundation removes local legacy api-router provider-id helpers after ex
   assert.deepEqual(matches, []);
 });
 
-runTest('foundation composes local api proxy from shared sdkwork-local-api-proxy packages instead of reviving local compat helpers', () => {
+runTest('foundation composes local api proxy from sdkwork-local-router instead of appbase or local compat helpers', () => {
   const corePackage = readJson<{ dependencies?: Record<string, string> }>(
     'packages/sdkwork-claw-core/package.json',
   );
@@ -292,15 +298,15 @@ runTest('foundation composes local api proxy from shared sdkwork-local-api-proxy
 
   assert.equal(
     corePackage.dependencies?.['@sdkwork/local-api-proxy'],
-    'link:../../../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy',
+    'link:../../../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy',
   );
   assert.equal(
     settingsPackage.dependencies?.['@sdkwork/local-api-proxy'],
-    'link:../../../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy',
+    'link:../../../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy',
   );
   assert.match(
     desktopCargoSource,
-    /sdkwork-local-api-proxy-native = \{ path = "\.\.\/\.\.\/\.\.\/\.\.\/sdkwork-appbase\/packages\/pc-react\/intelligence\/sdkwork-local-api-proxy\/native\/tauri-rust" \}/,
+    /sdkwork-local-api-proxy-native = \{ path = "\.\.\/\.\.\/\.\.\/\.\.\/sdkwork-local-router\/packages\/pc-react\/intelligence\/sdkwork-local-api-proxy\/native\/tauri-rust" \}/,
   );
 
   assert.match(openClawConfigServiceSource, /from '@sdkwork\/local-api-proxy'/);
@@ -327,7 +333,7 @@ runTest('foundation sources Hermes kernel-config path semantics from the shared 
     'packages/sdkwork-claw-core/src/services/hermesPathResolutionService.ts',
   );
   const sharedHermesKernelConfigSource = read(
-    '../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy/src/kernel/hermesKernelConfig.ts',
+    '../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy/src/kernel/hermesKernelConfig.ts',
   );
 
   assert.match(hermesKernelConfigPathServiceSource, /from '@sdkwork\/local-api-proxy'/);
@@ -629,12 +635,12 @@ runTest('foundation sources local ai proxy generic support, upstream, and probe 
   );
 });
 
-runTest('foundation sources local ai proxy generic server launch from the shared native runtime boundary', () => {
+runTest('foundation sources local ai proxy generic server launch from the local-router native runtime boundary', () => {
   const localAiProxyServiceSource = read(
     'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
   );
   const sharedRuntimeSource = read(
-    '../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy/native/tauri-rust/src/runtime/mod.rs',
+    '../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy/native/tauri-rust/src/runtime/mod.rs',
   );
 
   assert.match(

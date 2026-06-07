@@ -1,4 +1,9 @@
-import type { OrderVO, PageOrderVO, PageProductVO, ProductVO, SdkworkAppClient } from '@sdkwork/app-sdk';
+import type {
+  OrderVO,
+  PageOrderVO,
+  PageProductVO,
+  ProductVO,
+} from '../sdk/appSdkPort.ts';
 import { unwrapAppSdkResponse } from '../sdk/appSdkResult.ts';
 
 export type DashboardCommerceGranularity = 'day' | 'hour';
@@ -99,7 +104,10 @@ export interface DashboardCommerceSnapshot {
   productPerformance: DashboardCommerceProductPerformance[];
 }
 
-type DashboardCommerceClient = Pick<SdkworkAppClient, 'order' | 'product'>;
+type DashboardCommerceClient = {
+  order: import('../sdk/appSdkPort.ts').ClawStudioOrderClient;
+  product: import('../sdk/appSdkPort.ts').ClawStudioProductClient;
+};
 type DashboardCommerceSessionTokens = { authToken?: string | null };
 type DashboardCommerceSdkRuntime = typeof import('../sdk/useAppSdkClient.ts');
 
@@ -128,8 +136,8 @@ function loadDashboardCommerceSdkRuntime(): Promise<DashboardCommerceSdkRuntime>
 }
 
 async function getDefaultClient(): Promise<DashboardCommerceClient> {
-  const { getAppSdkClientWithSession } = await loadDashboardCommerceSdkRuntime();
-  return getAppSdkClientWithSession();
+  const { getClawStudioAppClientWithSession } = await loadDashboardCommerceSdkRuntime();
+  return getClawStudioAppClientWithSession() as DashboardCommerceClient;
 }
 
 async function getDefaultSessionTokens(): Promise<DashboardCommerceSessionTokens> {

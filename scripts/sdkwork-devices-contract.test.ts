@@ -74,3 +74,24 @@ runTest('sdkwork-claw-devices renders truthful pairing and token controls instea
   assert.doesNotMatch(pageSource, /battery/);
   assert.doesNotMatch(pageSource, /installedSkills/);
 });
+
+runTest('sdkwork-claw-types does not export a generic hardware Device DTO', () => {
+  const typesSource = read('packages/sdkwork-claw-types/src/index.ts');
+
+  assert.doesNotMatch(typesSource, /export interface Device\b/);
+  assert.doesNotMatch(typesSource, /\bbattery\b/);
+  assert.doesNotMatch(typesSource, /\bip_address\b/);
+  assert.doesNotMatch(typesSource, /\bhardwareSpecs\b/);
+});
+
+runTest('sdkwork-claw-devices is explicitly scoped to local runtime device pairing', () => {
+  const spec = readJson<{ component?: { domain?: string; capability?: string } }>(
+    'packages/sdkwork-claw-devices/specs/component.spec.json',
+  );
+  const serviceSource = read('packages/sdkwork-claw-devices/src/services/deviceService.ts');
+
+  assert.equal(spec.component?.domain, 'device');
+  assert.equal(spec.component?.capability, 'runtime-device-pairing');
+  assert.match(serviceSource, /openClawGatewayClient/);
+  assert.doesNotMatch(serviceSource, /@sdkwork\/aiot-app-sdk/);
+});

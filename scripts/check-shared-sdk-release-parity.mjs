@@ -45,11 +45,11 @@ export function shouldIgnoreParityPath(relativePath) {
 
 export const paritySources = [
   {
-    id: 'app-sdk',
-    label: '@sdkwork/app-sdk',
+    id: 'appbase-app-sdk',
+    label: '@sdkwork/appbase-app-sdk',
     localRoot: path.resolve(
       workspaceRootDir,
-      '../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript',
+      '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi',
     ),
   },
   {
@@ -57,7 +57,7 @@ export const paritySources = [
     label: '@sdkwork/sdk-common',
     localRoot: path.resolve(
       workspaceRootDir,
-      '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript',
+      '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript',
     ),
   },
   {
@@ -73,7 +73,7 @@ export const paritySources = [
     label: '@sdkwork/local-api-proxy',
     localRoot: path.resolve(
       workspaceRootDir,
-      '../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy',
+      '../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy',
     ),
   },
   {
@@ -85,11 +85,19 @@ export const paritySources = [
     ),
   },
   {
+    id: 'messaging-app-sdk',
+    label: '@sdkwork/messaging-app-sdk',
+    localRoot: path.resolve(
+      workspaceRootDir,
+      '../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi',
+    ),
+  },
+  {
     id: 'rtc-sdk',
     label: '@sdkwork/rtc-sdk',
     localRoot: path.resolve(
       workspaceRootDir,
-      '../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript',
+      '../sdkwork-rtc/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript',
     ),
   },
 ];

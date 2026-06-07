@@ -9,7 +9,7 @@
 ## Problems Found
 
 1. `release-2026-04-07-05` was documented as published even though the GitHub Actions release run failed and no successful GitHub Release publication was confirmed.
-2. In a clean-room Claw Studio workspace, `pnpm prepare:shared-sdk` only built `@sdkwork/sdk-common` and `@sdkwork/app-sdk`, leaving the IM TypeScript packages without `dist` type output even though `@sdkwork/core-pc-react` imports them during `pnpm lint`.
+2. In a clean-room Claw Studio workspace, `pnpm prepare:shared-sdk` only built `@sdkwork/sdk-common` and `retired generic app SDK package`, leaving the IM TypeScript packages without `dist` type output even though `@sdkwork/core-pc-react` imports them during `pnpm lint`.
 3. On Windows, `scripts/prepare-shared-sdk-packages.mjs` assumed `.pnpm` virtual-store directories always kept the full package name prefix, which breaks when pnpm shortens long directory names.
 4. Even after IM package roots were materialized, `Sdkwork-Cloud/sdkwork-im-sdk` still failed in the clean-room release workspace because the TypeScript `composed` and `adapter-wukongim` packages invoked `vite` and `tsc` through hard-coded `../../../node_modules/*` paths.
 5. The first Claw Studio pin update used an incorrect full Git SHA for the new IM SDK commit, which parity verification correctly rejected before release.

@@ -30,11 +30,15 @@ export function createSharedSdkPackageContext({
     canonicalWorkspaceRoot,
     sharedAppSdkRoot: path.resolve(
       canonicalWorkspaceRoot,
-      '../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript',
+      '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi',
+    ),
+    sharedMessagingAppSdkRoot: path.resolve(
+      canonicalWorkspaceRoot,
+      '../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi',
     ),
     sharedSdkCommonRoot: path.resolve(
       canonicalWorkspaceRoot,
-      '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript',
+      '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript',
     ),
     sharedCorePcReactRoot: path.resolve(
       canonicalWorkspaceRoot,
@@ -42,7 +46,7 @@ export function createSharedSdkPackageContext({
     ),
     sharedLocalApiProxyRoot: path.resolve(
       canonicalWorkspaceRoot,
-      '../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy',
+      '../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy',
     ),
     sharedImSdkRoot: path.resolve(
       canonicalWorkspaceRoot,
@@ -50,7 +54,7 @@ export function createSharedSdkPackageContext({
     ),
     sharedRtcSdkRoot: path.resolve(
       canonicalWorkspaceRoot,
-      '../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript',
+      '../sdkwork-rtc/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript',
     ),
     mode: resolveSharedSdkMode(env),
   };
@@ -101,7 +105,7 @@ export function createSharedSdkBuildEnv(context, env = process.env) {
     : '';
   const generatorRoot = explicitGeneratorRoot.length > 0
     ? path.resolve(explicitGeneratorRoot)
-    : path.resolve(context.canonicalWorkspaceRoot, '../../sdk/sdkwork-sdk-generator');
+    : path.resolve(context.canonicalWorkspaceRoot, '../sdkwork-sdk-generator');
   const sdkWorkGeneratorRoot = exists(generatorRoot)
     ? generatorRoot
     : context.workspaceRoot;
@@ -138,7 +142,9 @@ function assertPackageRootExists(packageRoot, packageName) {
 }
 
 function hasRequiredSharedSdkSources(context) {
-  return exists(context.sharedSdkCommonRoot) && exists(context.sharedAppSdkRoot);
+  return exists(context.sharedSdkCommonRoot)
+    && exists(context.sharedAppSdkRoot)
+    && exists(context.sharedMessagingAppSdkRoot);
 }
 
 function hasOptionalSharedImSdkSources(context) {
@@ -372,7 +378,8 @@ export function prepareSharedSdkPackages({
   }
 
   assertPackageRootExists(context.sharedSdkCommonRoot, '@sdkwork/sdk-common');
-  assertPackageRootExists(context.sharedAppSdkRoot, '@sdkwork/app-sdk');
+  assertPackageRootExists(context.sharedAppSdkRoot, '@sdkwork/appbase-app-sdk');
+  assertPackageRootExists(context.sharedMessagingAppSdkRoot, '@sdkwork/messaging-app-sdk');
   const prepareOptionalSharedSdkPackages = shouldPrepareOptionalSharedSdkPackages(env);
 
   const needsSharedSdkCommonBuild = shouldBuildPackage(context.sharedSdkCommonRoot);
@@ -389,7 +396,16 @@ export function prepareSharedSdkPackages({
       '@sdkwork/sdk-common': context.sharedSdkCommonRoot,
     },
   });
-  ensurePackageBuilt('@sdkwork/app-sdk', context.sharedAppSdkRoot, context.workspaceRoot, sharedSdkBuildEnv);
+  ensurePackageBuilt('@sdkwork/appbase-app-sdk', context.sharedAppSdkRoot, context.workspaceRoot, sharedSdkBuildEnv);
+  const needsSharedMessagingAppSdkBuild = shouldBuildPackage(context.sharedMessagingAppSdkRoot);
+  ensurePackageDependencyLinks(context.sharedMessagingAppSdkRoot, context.workspaceRoot, {
+    includeDependencies: true,
+    includeDevDependencies: needsSharedMessagingAppSdkBuild,
+    localPackageRoots: {
+      '@sdkwork/sdk-common': context.sharedSdkCommonRoot,
+    },
+  });
+  ensurePackageBuilt('@sdkwork/messaging-app-sdk', context.sharedMessagingAppSdkRoot, context.workspaceRoot, sharedSdkBuildEnv);
 
   if (prepareOptionalSharedSdkPackages && hasOptionalPcReactSharedSources(context)) {
     ensurePackageDependencyLinks(context.sharedCorePcReactRoot, context.workspaceRoot, {
@@ -397,9 +413,10 @@ export function prepareSharedSdkPackages({
       includeDevDependencies: shouldBuildPackage(context.sharedCorePcReactRoot),
       includePeerDependencies: true,
       localPackageRoots: {
-        '@sdkwork/app-sdk': context.sharedAppSdkRoot,
+        '@sdkwork/appbase-app-sdk': context.sharedAppSdkRoot,
         '@sdkwork/sdk-common': context.sharedSdkCommonRoot,
         '@sdkwork/im-sdk': context.sharedImSdkRoot,
+        '@sdkwork/messaging-app-sdk': context.sharedMessagingAppSdkRoot,
         '@sdkwork/rtc-sdk': context.sharedRtcSdkRoot,
       },
     });

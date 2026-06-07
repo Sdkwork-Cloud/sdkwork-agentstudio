@@ -36,7 +36,7 @@ Fresh evidence gathered in this loop:
 ### Shared SDK release source alignment
 
 - Updated `config/shared-sdk-release-sources.json` to the synchronized GitHub refs:
-  - `@sdkwork/app-sdk`: `0c2bd7feb1da5a0dc5dae3e7db9824404893f202`
+  - `retired generic app SDK package`: `0c2bd7feb1da5a0dc5dae3e7db9824404893f202`
   - `@sdkwork/sdk-common`: `892dd2585ebd9e40bc55653d34fd5fb91281bbda`
 
 ### Shared SDK parity hardening

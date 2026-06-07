@@ -1,20 +1,30 @@
 packages:
   - 'packages/sdkwork-claw-*'
+  - '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi'
+  - '../sdkwork-appbase/sdks/sdkwork-appbase-backend-sdk/sdkwork-appbase-backend-sdk-typescript/generated/server-openapi'
+  - '../sdkwork-appbase/packages/common/foundation/sdkwork-runtime-bootstrap'
+  - '../sdkwork-appbase/packages/common/iam/sdkwork-iam-contracts'
+  - '../sdkwork-appbase/packages/common/iam/sdkwork-iam-runtime'
+  - '../sdkwork-appbase/packages/common/iam/sdkwork-iam-sdk-adapter'
+  - '../sdkwork-appbase/packages/common/iam/sdkwork-iam-sdk-ports'
+  - '../sdkwork-appbase/packages/common/iam/sdkwork-iam-service'
+  - '../sdkwork-appbase/packages/pc-react/foundation/sdkwork-appbase-pc-react'
+  - '../sdkwork-appbase/packages/pc-react/foundation/sdkwork-i18n-pc-react'
+  - '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-pc-react'
   - '../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript'
-  - '../../../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript'
-  - '../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript'
-  - '../../../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript'
+  - '../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi'
+  - '../sdkwork-rtc/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript'
   - '../sdkwork-core/sdkwork-core-pc-react'
-  - '../../../sdkwork-core/sdkwork-core-pc-react'
-  - '../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript'
-  - '../../../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript'
-  - '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript'
-  - '../../../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript'
+  - '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript'
   - '../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript'
+  - '../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy'
+  - '../sdkwork-ui/sdkwork-ui-pc-react'
 
 catalog:
   '@types/react': ^19.2.14
   '@types/react-dom': ^19.2.3
+  lucide-react: ^1.7.0
+  qrcode: ^1.5.4
   react: ^19.2.4
   react-dom: ^19.2.4
   typescript: ^6.0.2

@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { createClient } from '@sdkwork/app-sdk';
 import { createFeedbackCenterService } from './feedbackCenterService.ts';
 
 function runTest(name: string, callback: () => void | Promise<void>) {
@@ -249,171 +248,101 @@ await runTest(
 );
 
 await runTest(
-  'feedbackCenterService issues generated app sdk HTTP requests for feedback center resources',
+  'feedbackCenterService delegates feedback operations to the injected app client port',
   async () => {
-    const originalFetch = globalThis.fetch;
-    const fetchCalls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
-
-    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      fetchCalls.push({ input, init });
-
-      const rawUrl =
-        typeof input === 'string'
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url;
-      const url = new URL(rawUrl);
-
-      if (url.pathname === '/app/v3/api/feedback' && init?.method === 'POST') {
-        return new Response(JSON.stringify({ code: '2000', data: { id: '1001' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/app/v3/api/feedback/1001' && (!init?.method || init.method === 'GET')) {
-        return new Response(JSON.stringify({ code: '2000', data: { id: '1001', followUps: [] } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/app/v3/api/feedback/1001/followup') {
-        return new Response(JSON.stringify({ code: '2000', data: { id: '1001', followUps: [] } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/app/v3/api/feedback/1001/close') {
-        return new Response(JSON.stringify({ code: '2000', data: { id: '1001', status: 'CLOSED' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/app/v3/api/feedback/faq/categories') {
-        return new Response(JSON.stringify({ code: '2000', data: [] }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/app/v3/api/feedback/faq/search') {
-        return new Response(JSON.stringify({ code: '2000', data: [] }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/app/v3/api/feedback/faq/faq-1') {
-        return new Response(JSON.stringify({ code: '2000', data: { id: 'faq-1' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/app/v3/api/feedback/support') {
-        return new Response(JSON.stringify({ code: '2000', data: {} }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      return new Response(
-        JSON.stringify({
-          code: '2000',
-          data: {
-            content: [],
-            totalElements: 0,
-            number: 0,
-            size: 10,
-            last: true,
+    const calls: Array<{ method: string; args: unknown[] }> = [];
+    const service = createFeedbackCenterService({
+      getClient: () =>
+        ({
+          feedback: {
+            listFeedback: async (...args: unknown[]) => {
+              calls.push({ method: 'listFeedback', args });
+              return {
+                code: '2000',
+                data: { content: [], totalElements: 0, number: 0, size: 10, last: true },
+              };
+            },
+            submit: async (...args: unknown[]) => {
+              calls.push({ method: 'submit', args });
+              return { code: '2000', data: { id: '1001' } };
+            },
+            getFeedbackDetail: async (...args: unknown[]) => {
+              calls.push({ method: 'getFeedbackDetail', args });
+              return { code: '2000', data: { id: '1001', followUps: [] } };
+            },
+            followUp: async (...args: unknown[]) => {
+              calls.push({ method: 'followUp', args });
+              return { code: '2000', data: { id: '1001', followUps: [] } };
+            },
+            close: async (...args: unknown[]) => {
+              calls.push({ method: 'close', args });
+              return { code: '2000', data: { id: '1001', status: 'CLOSED' } };
+            },
+            listFaqCategories: async (...args: unknown[]) => {
+              calls.push({ method: 'listFaqCategories', args });
+              return { code: '2000', data: [] };
+            },
+            listFaqs: async (...args: unknown[]) => {
+              calls.push({ method: 'listFaqs', args });
+              return {
+                code: '2000',
+                data: { content: [], totalElements: 0, number: 0, size: 10, last: true },
+              };
+            },
+            searchFaqs: async (...args: unknown[]) => {
+              calls.push({ method: 'searchFaqs', args });
+              return { code: '2000', data: [] };
+            },
+            getFaqDetail: async (...args: unknown[]) => {
+              calls.push({ method: 'getFaqDetail', args });
+              return { code: '2000', data: { id: 'faq-1' } };
+            },
+            getSupportInfo: async (...args: unknown[]) => {
+              calls.push({ method: 'getSupportInfo', args });
+              return { code: '2000', data: {} };
+            },
           },
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      );
-    }) as typeof fetch;
-
-    try {
-      const service = createFeedbackCenterService({
-        getClient: () =>
-          createClient({
-            baseUrl: 'https://api.sdkwork.test',
-            accessToken: 'access-token',
-          }) as any,
-      });
-
-      await service.listFeedback({ status: 'PENDING', page: 2, pageSize: 5 });
-      await service.submitFeedback({
-        type: 'BUG_REPORT',
-        content: 'Dashboard order list is empty.',
-      });
-      await service.getFeedback('1001');
-      await service.followUpFeedback('1001', 'Attached extra screenshots.');
-      await service.closeFeedback('1001', 'resolved locally');
-      await service.listFaqCategories();
-      await service.listFaqs({ categoryId: 'cat-1', page: 1, pageSize: 10 });
-      await service.searchFaqs('password');
-      await service.getFaq('faq-1');
-      await service.getSupportInfo();
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-
-    assert.equal(fetchCalls.length, 10);
-
-    const urls = fetchCalls.map(({ input }) => {
-      const rawUrl =
-        typeof input === 'string'
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url;
-      return new URL(rawUrl);
+        }) as any,
     });
 
-    assert.ok(
-      urls.some(
-        (url) =>
-          url.pathname === '/app/v3/api/feedback' &&
-          url.searchParams.get('status') === 'PENDING' &&
-          url.searchParams.get('page') === '2' &&
-          url.searchParams.get('size') === '5',
-      ),
-    );
-    assert.ok(urls.some((url) => url.pathname === '/app/v3/api/feedback' && url.search === ''));
-    assert.ok(urls.some((url) => url.pathname === '/app/v3/api/feedback/1001'));
-    assert.ok(urls.some((url) => url.pathname === '/app/v3/api/feedback/1001/followup'));
-    assert.ok(
-      urls.some(
-        (url) =>
-          url.pathname === '/app/v3/api/feedback/1001/close' &&
-          url.searchParams.get('reason') === 'resolved locally',
-      ),
-    );
-    assert.ok(urls.some((url) => url.pathname === '/app/v3/api/feedback/faq/categories'));
-    assert.ok(
-      urls.some(
-        (url) =>
-          url.pathname === '/app/v3/api/feedback/faq' &&
-          url.searchParams.get('categoryId') === 'cat-1' &&
-          url.searchParams.get('page') === '1' &&
-          url.searchParams.get('size') === '10',
-      ),
-    );
-    assert.ok(
-      urls.some(
-        (url) =>
-          url.pathname === '/app/v3/api/feedback/faq/search' &&
-          url.searchParams.get('keyword') === 'password',
-      ),
-    );
-    assert.ok(urls.some((url) => url.pathname === '/app/v3/api/feedback/faq/faq-1'));
-    assert.ok(urls.some((url) => url.pathname === '/app/v3/api/feedback/support'));
+    await service.listFeedback({ status: 'PENDING', page: 2, pageSize: 5 });
+    await service.submitFeedback({
+      type: 'BUG_REPORT',
+      content: 'Dashboard order list is empty.',
+    });
+    await service.getFeedback('1001');
+    await service.followUpFeedback('1001', 'Attached extra screenshots.');
+    await service.closeFeedback('1001', 'resolved locally');
+    await service.listFaqCategories();
+    await service.listFaqs({ categoryId: 'cat-1', page: 1, pageSize: 10 });
+    await service.searchFaqs('password');
+    await service.getFaq('faq-1');
+    await service.getSupportInfo();
+
+    assert.deepEqual(calls.map((call) => call.method), [
+      'listFeedback',
+      'submit',
+      'getFeedbackDetail',
+      'followUp',
+      'close',
+      'listFaqCategories',
+      'listFaqs',
+      'searchFaqs',
+      'getFaqDetail',
+      'getSupportInfo',
+    ]);
+    assert.deepEqual(calls[0]?.args[0], { status: 'PENDING', page: 2, size: 5 });
+    assert.deepEqual(calls[1]?.args[0], {
+      type: 'BUG_REPORT',
+      content: 'Dashboard order list is empty.',
+      contact: undefined,
+      attachmentUrl: undefined,
+      screenshotUrl: undefined,
+    });
+    assert.equal(calls[2]?.args[0], '1001');
+    assert.deepEqual(calls[4]?.args, ['1001', { reason: 'resolved locally' }]);
+    assert.deepEqual(calls[6]?.args[0], { categoryId: 'cat-1', page: 1, size: 10 });
+    assert.deepEqual(calls[7]?.args[0], { keyword: 'password' });
+    assert.equal(calls[8]?.args[0], 'faq-1');
   },
 );

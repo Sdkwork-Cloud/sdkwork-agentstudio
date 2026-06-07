@@ -1,5 +1,13 @@
-import { projectKernelConfig } from '@sdkwork/local-api-proxy';
+import {
+  projectKernelConfig,
+  type KernelConfigDescriptor,
+  type KernelConfigProjectionInput,
+} from '@sdkwork/local-api-proxy';
 import type { KernelConfig } from '@sdkwork/claw-types';
+import {
+  resolveOpenClawStateRootFromConfigFile,
+  resolveOpenClawUserRootFromConfigFile,
+} from './openClawPathResolutionService.ts';
 
 export interface KernelConfigBackedRoute {
   scope: string;
@@ -35,7 +43,146 @@ export interface KernelConfigBackedDetail {
 }
 
 function normalizePath(path?: string | null) {
-  return path?.replace(/\\/g, '/').trim() || null;
+  return path?.replace(/\\/g, '/').trim().replace(/\/+/g, '/') || null;
+}
+
+function trimTrailingSlash(path: string) {
+  return path.length > 1 ? path.replace(/\/+$/g, '') : path;
+}
+
+function joinPath(root: string, ...segments: string[]) {
+  return normalizePath(
+    [
+      trimTrailingSlash(root),
+      ...segments.map((segment) => segment.replace(/^\/+/g, '')),
+    ].filter(Boolean).join('/'),
+  ) || '';
+}
+
+function normalizeId(value?: string | null) {
+  return value?.trim().toLowerCase() || null;
+}
+
+function isOpenClawProjectionInput(input: KernelConfigProjectionInput) {
+  return (
+    normalizeId(input.kernelId) === 'openclaw'
+    || normalizeId(input.runtimeKind) === 'openclaw'
+  );
+}
+
+function buildStandardOpenClawStateRoot(userRoot?: string | null) {
+  const normalizedUserRoot = normalizePath(userRoot);
+  return normalizedUserRoot ? joinPath(normalizedUserRoot, '.openclaw') : '';
+}
+
+function buildStandardOpenClawConfigFilePath(userRoot?: string | null) {
+  const standardStateRoot = buildStandardOpenClawStateRoot(userRoot);
+  return standardStateRoot ? joinPath(standardStateRoot, 'openclaw.json') : '';
+}
+
+function resolveOpenClawUserRootFromWorkspacePath(workspacePath?: string | null) {
+  const normalizedWorkspacePath = normalizePath(workspacePath);
+  const workspaceSuffix = '/.openclaw/workspace';
+  if (!normalizedWorkspacePath?.endsWith(workspaceSuffix)) {
+    return null;
+  }
+
+  return normalizedWorkspacePath.slice(0, -workspaceSuffix.length) || null;
+}
+
+function isBuiltInOpenClawProjectionInput(input: KernelConfigProjectionInput) {
+  return (
+    normalizeId(input.runtimeKind) === 'openclaw'
+    && input.isBuiltIn === true
+    && normalizeId(input.deploymentMode) === 'local-managed'
+  );
+}
+
+function normalizeOpenClawConfigFile(input: KernelConfigProjectionInput) {
+  const normalizedConfigFile = normalizePath(input.configFile);
+  if (!normalizedConfigFile) {
+    return null;
+  }
+
+  if (normalizedConfigFile.endsWith('/.openclaw/openclaw.json')) {
+    return normalizedConfigFile;
+  }
+
+  if (!isBuiltInOpenClawProjectionInput(input)) {
+    return normalizedConfigFile;
+  }
+
+  const userRoot = resolveOpenClawUserRootFromWorkspacePath(input.workspacePath);
+  return buildStandardOpenClawConfigFilePath(userRoot) || normalizedConfigFile;
+}
+
+function projectOpenClawKernelConfig(input: KernelConfigProjectionInput): KernelConfig | null {
+  if (!isOpenClawProjectionInput(input)) {
+    return null;
+  }
+
+  const configFile = normalizeOpenClawConfigFile(input);
+  if (!configFile) {
+    return null;
+  }
+
+  const userRoot = resolveOpenClawUserRootFromConfigFile(configFile) || null;
+  const stateRoot = resolveOpenClawStateRootFromConfigFile(configFile) || null;
+  const standardStateRoot = buildStandardOpenClawStateRoot(userRoot) || null;
+  const standardConfigFile = buildStandardOpenClawConfigFilePath(userRoot) || null;
+  const isStandardUserRootLayout =
+    Boolean(standardConfigFile) && configFile === standardConfigFile;
+
+  return {
+    kernelId: 'openclaw',
+    runtimeKind: normalizeId(input.runtimeKind) || 'openclaw',
+    configFile,
+    configRoot: stateRoot,
+    stateRoot,
+    userRoot,
+    standardStateRoot,
+    standardConfigFile,
+    format: 'json',
+    access: 'localFs',
+    provenance: isStandardUserRootLayout ? 'standardUserRoot' : 'runtimeReported',
+    writable: input.configWritable === true,
+    resolved: true,
+    schemaVersion: input.schemaVersion || null,
+    isStandardUserRootLayout,
+  };
+}
+
+function mapKernelConfigDescriptor(descriptor: KernelConfigDescriptor): KernelConfig {
+  return {
+    kernelId: descriptor.kernelId,
+    runtimeKind: descriptor.runtimeKind,
+    configFile: descriptor.configFile,
+    configRoot: descriptor.configRoot,
+    stateRoot: descriptor.stateRoot,
+    userRoot: descriptor.userRoot,
+    standardStateRoot: descriptor.standardStateRoot,
+    standardConfigFile: descriptor.standardConfigFile,
+    format: descriptor.format,
+    access: descriptor.access,
+    provenance: descriptor.provenance,
+    writable: descriptor.writable,
+    resolved: descriptor.resolved,
+    schemaVersion: descriptor.schemaVersion,
+    isStandardUserRootLayout: descriptor.isStandardUserRootLayout,
+  };
+}
+
+export type BuildKernelConfigProjectionInput = KernelConfigProjectionInput;
+
+export function buildKernelConfigProjection(
+  input: BuildKernelConfigProjectionInput,
+): KernelConfig | null {
+  const descriptor = projectKernelConfig(input);
+  if (descriptor) {
+    return mapKernelConfigDescriptor(descriptor);
+  }
+
+  return projectOpenClawKernelConfig(input);
 }
 
 function resolveReportedConfigFile(detail: KernelConfigBackedDetail | null | undefined) {
@@ -81,7 +228,7 @@ export function resolveAttachedKernelConfig(
     return null;
   }
 
-  const descriptor = projectKernelConfig({
+  return buildKernelConfigProjection({
     kernelId: detail?.instance?.runtimeKind,
     runtimeKind: detail?.instance?.runtimeKind,
     deploymentMode: detail?.instance?.deploymentMode,
@@ -91,27 +238,6 @@ export function resolveAttachedKernelConfig(
     configWritable: detail?.lifecycle?.configWritable === true,
     schemaVersion: null,
   });
-  if (!descriptor) {
-    return null;
-  }
-
-  return {
-    kernelId: descriptor.kernelId,
-    runtimeKind: descriptor.runtimeKind,
-    configFile: descriptor.configFile,
-    configRoot: descriptor.configRoot,
-    stateRoot: descriptor.stateRoot,
-    userRoot: descriptor.userRoot,
-    standardStateRoot: descriptor.standardStateRoot,
-    standardConfigFile: descriptor.standardConfigFile,
-    format: descriptor.format,
-    access: descriptor.access,
-    provenance: descriptor.provenance,
-    writable: descriptor.writable,
-    resolved: descriptor.resolved,
-    schemaVersion: descriptor.schemaVersion,
-    isStandardUserRootLayout: descriptor.isStandardUserRootLayout,
-  };
 }
 
 export function resolveAttachedKernelConfigFile(

@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { createClient } from '@sdkwork/app-sdk';
 import { createDashboardCommerceService } from './dashboardCommerceService.ts';
 
 function runTest(name: string, callback: () => void | Promise<void>) {
@@ -194,103 +193,61 @@ await runTest(
 );
 
 await runTest(
-  'dashboardCommerceService issues current generated app sdk HTTP requests when an auth session is available',
+  'dashboardCommerceService delegates commerce queries to the injected app client port when auth exists',
   async () => {
-    const originalFetch = globalThis.fetch;
-    const fetchCalls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
-
-    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      fetchCalls.push({ input, init });
-
-      const rawUrl =
-        typeof input === 'string'
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url;
-      const url = new URL(rawUrl);
-
-      if (url.pathname === '/app/v3/api/orders') {
-        return new Response(
-          JSON.stringify({
-            code: '2000',
-            data: {
-              content: [],
-              totalElements: 0,
-              number: 0,
-              size: 100,
-              last: true,
+    const calls: Array<{ method: string; params?: Record<string, unknown> }> = [];
+    const service = createDashboardCommerceService({
+      getNow: () => new Date('2026-03-24T12:00:00.000Z'),
+      getSessionTokens: () => ({
+        authToken: 'session-auth-token',
+      }),
+      getClient: () =>
+        ({
+          order: {
+            listOrders: async (params?: Record<string, unknown>) => {
+              calls.push({ method: 'listOrders', params });
+              return {
+                code: '2000',
+                data: {
+                  content: [],
+                  totalElements: 0,
+                  number: 0,
+                  size: 100,
+                  last: true,
+                },
+              };
             },
-          }),
-          {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
           },
-        );
-      }
-
-      return new Response(
-        JSON.stringify({
-          code: '2000',
-          data: {
-            content: [],
-            totalElements: 0,
-            number: 0,
-            size: 50,
-            last: true,
+          product: {
+            getProducts: async (params?: Record<string, unknown>) => {
+              calls.push({ method: 'getProducts', params });
+              return {
+                code: '2000',
+                data: {
+                  content: [],
+                  totalElements: 0,
+                  number: 0,
+                  size: 50,
+                  last: true,
+                },
+              };
+            },
           },
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      );
-    }) as typeof fetch;
-
-    try {
-      const service = createDashboardCommerceService({
-        getNow: () => new Date('2026-03-24T12:00:00.000Z'),
-        getSessionTokens: () => ({
-          authToken: 'session-auth-token',
-        }),
-        getClient: () =>
-          createClient({
-            baseUrl: 'https://api.sdkwork.test',
-            accessToken: 'access-token',
-          }) as any,
-      });
-
-      await service.getCommerceSnapshot({
-        granularity: 'day',
-        rangeMode: 'month',
-        monthKey: '2026-03',
-      });
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-
-    assert.ok(fetchCalls.length >= 2);
-
-    const urls = fetchCalls.map(({ input }) => {
-      const rawUrl =
-        typeof input === 'string'
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url;
-      return new URL(rawUrl);
+        }) as any,
     });
-    const orderUrl = urls.find((url) => url.pathname === '/app/v3/api/orders');
-    const productUrl = urls.find((url) => url.pathname === '/app/v3/api/products');
 
-    assert.ok(orderUrl);
-    assert.ok(productUrl);
-    assert.equal(orderUrl?.searchParams.get('page'), '1');
-    assert.equal(orderUrl?.searchParams.get('size'), '100');
-    assert.ok(orderUrl?.searchParams.get('startTime'));
-    assert.ok(orderUrl?.searchParams.get('endTime'));
-    assert.equal(productUrl?.searchParams.get('page'), '1');
-    assert.equal(productUrl?.searchParams.get('size'), '50');
-    assert.ok(urls.every((url) => url.pathname !== '/app/v3/api/dashboard/statistics/commerce'));
+    await service.getCommerceSnapshot({
+      granularity: 'day',
+      rangeMode: 'month',
+      monthKey: '2026-03',
+    });
+
+    assert.deepEqual(calls.map((call) => call.method), ['listOrders', 'getProducts']);
+    assert.equal(calls[0]?.params?.page, '1');
+    assert.equal(calls[0]?.params?.size, '100');
+    assert.equal(typeof calls[0]?.params?.startTime, 'string');
+    assert.equal(typeof calls[0]?.params?.endTime, 'string');
+    assert.equal(calls[1]?.params?.page, '1');
+    assert.equal(calls[1]?.params?.size, '50');
   },
 );

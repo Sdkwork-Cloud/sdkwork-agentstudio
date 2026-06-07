@@ -9,7 +9,7 @@
     "root": "claw-studio/packages/sdkwork-claw-devices",
     "domain": "device",
     "declaredDomain": null,
-    "capability": "component",
+    "capability": "runtime-device-pairing",
     "status": "standardizing",
     "languages": [
       "typescript",

@@ -158,8 +158,8 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
   );
   assert.doesNotMatch(
     reusableWorkflow,
-    /SDKWORK_SHARED_SDK_APP_REPO_URL:/,
-    'release workflow should be self-contained and must not require an external app SDK repo URL',
+    /SDKWORK_SHARED_SDK_APPBASE_APP_REPO_URL:/,
+    'release workflow should be self-contained and must not require an external appbase SDK repo URL',
   );
   assert.doesNotMatch(
     reusableWorkflow,
@@ -881,11 +881,15 @@ test('shared sdk package preparation resolves the workspace root consistently fr
       canonicalWorkspaceRoot: expectedCanonicalWorkspaceRoot,
       sharedAppSdkRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
-        '../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript',
+        '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi',
+      ),
+      sharedMessagingAppSdkRoot: path.resolve(
+        expectedCanonicalWorkspaceRoot,
+        '../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi',
       ),
       sharedSdkCommonRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
-        '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript',
+        '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript',
       ),
       sharedCorePcReactRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
@@ -893,7 +897,7 @@ test('shared sdk package preparation resolves the workspace root consistently fr
       ),
       sharedLocalApiProxyRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
-        '../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy',
+        '../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy',
       ),
       sharedImSdkRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
@@ -901,7 +905,7 @@ test('shared sdk package preparation resolves the workspace root consistently fr
       ),
       sharedRtcSdkRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
-        '../craw-chat/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript',
+        '../sdkwork-rtc/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript',
       ),
       mode: 'git',
     },
@@ -923,9 +927,12 @@ test('shared sdk package preparation repairs package-local dependency links from
   const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
   const sharedAppSdkRoot = path.join(
     tempRoot,
-    'spring-ai-plus-app-api',
-    'sdkwork-sdk-app',
-    'sdkwork-app-sdk-typescript',
+    'sdkwork-appbase',
+    'sdks',
+    'sdkwork-appbase-app-sdk',
+    'sdkwork-appbase-app-sdk-typescript',
+    'generated',
+    'server-openapi',
   );
   const sharedSdkCommonRoot = path.join(
     tempRoot,
@@ -967,7 +974,7 @@ test('shared sdk package preparation repairs package-local dependency links from
     path.join(sharedAppSdkRoot, 'package.json'),
     JSON.stringify(
       {
-        name: '@sdkwork/app-sdk',
+        name: '@sdkwork/appbase-app-sdk',
         dependencies: {
           '@sdkwork/sdk-common': '^1.0.2',
         },
@@ -1039,9 +1046,12 @@ test('shared sdk package preparation preserves existing package-local dependency
   const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
   const sharedAppSdkRoot = path.join(
     tempRoot,
-    'spring-ai-plus-app-api',
-    'sdkwork-sdk-app',
-    'sdkwork-app-sdk-typescript',
+    'sdkwork-appbase',
+    'sdks',
+    'sdkwork-appbase-app-sdk',
+    'sdkwork-appbase-app-sdk-typescript',
+    'generated',
+    'server-openapi',
   );
   const sharedSdkCommonRoot = path.join(
     tempRoot,
@@ -1083,7 +1093,7 @@ test('shared sdk package preparation preserves existing package-local dependency
     path.join(sharedAppSdkRoot, 'package.json'),
     JSON.stringify(
       {
-        name: '@sdkwork/app-sdk',
+        name: '@sdkwork/appbase-app-sdk',
         dependencies: {
           '@sdkwork/sdk-common': '^1.0.2',
         },
@@ -1350,15 +1360,29 @@ test('shared sdk package preparation skips optional external source package muta
   const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
   const sharedSdkCommonRoot = path.join(
     tempRoot,
-    'sdk',
+    'apps',
     'sdkwork-sdk-commons',
     'sdkwork-sdk-common-typescript',
   );
   const sharedAppSdkRoot = path.join(
     tempRoot,
-    'spring-ai-plus-app-api',
-    'sdkwork-sdk-app',
-    'sdkwork-app-sdk-typescript',
+    'apps',
+    'sdkwork-appbase',
+    'sdks',
+    'sdkwork-appbase-app-sdk',
+    'sdkwork-appbase-app-sdk-typescript',
+    'generated',
+    'server-openapi',
+  );
+  const sharedMessagingAppSdkRoot = path.join(
+    tempRoot,
+    'apps',
+    'sdkwork-messaging',
+    'sdks',
+    'sdkwork-messaging-app-sdk',
+    'sdkwork-messaging-app-sdk-typescript',
+    'generated',
+    'server-openapi',
   );
   const sharedCorePcReactRoot = path.join(
     tempRoot,
@@ -1369,7 +1393,7 @@ test('shared sdk package preparation skips optional external source package muta
   const sharedLocalApiProxyRoot = path.join(
     tempRoot,
     'apps',
-    'sdkwork-appbase',
+    'sdkwork-local-router',
     'packages',
     'pc-react',
     'intelligence',
@@ -1386,7 +1410,7 @@ test('shared sdk package preparation skips optional external source package muta
   const sharedRtcSdkRoot = path.join(
     tempRoot,
     'apps',
-    'craw-chat',
+    'sdkwork-rtc',
     'sdks',
     'sdkwork-rtc-sdk',
     'sdkwork-rtc-sdk-typescript',
@@ -1431,8 +1455,15 @@ test('shared sdk package preparation skips optional external source package muta
 
   writePackage(sharedSdkCommonRoot, { name: '@sdkwork/sdk-common', version: '1.0.2' });
   writePackage(sharedAppSdkRoot, {
-    name: '@sdkwork/app-sdk',
-    version: '1.0.55',
+    name: '@sdkwork/appbase-app-sdk',
+    version: '0.1.0',
+    dependencies: {
+      '@sdkwork/sdk-common': '^1.0.2',
+    },
+  });
+  writePackage(sharedMessagingAppSdkRoot, {
+    name: '@sdkwork/messaging-app-sdk',
+    version: '0.1.0',
     dependencies: {
       '@sdkwork/sdk-common': '^1.0.2',
     },
@@ -1441,7 +1472,9 @@ test('shared sdk package preparation skips optional external source package muta
     name: '@sdkwork/core-pc-react',
     version: '0.1.1',
     dependencies: {
-      '@sdkwork/app-sdk': '^1.0.55',
+      '@sdkwork/appbase-app-sdk': '^0.1.0',
+      '@sdkwork/messaging-app-sdk': '^0.1.0',
+      '@sdkwork/sdk-common': '^1.0.2',
       '@sdkwork/im-sdk': '^0.1.1',
       '@sdkwork/rtc-sdk': '^0.1.1',
     },
@@ -1518,7 +1551,12 @@ test('shared sdk package preparation skips optional external source package muta
     assert.equal(
       realpathSync(path.join(sharedAppSdkRoot, 'node_modules', '@sdkwork', 'sdk-common')),
       realpathSync(sharedSdkCommonRoot),
-      'required app sdk preparation must remain active for app builds',
+      'required appbase app sdk preparation must remain active for app builds',
+    );
+    assert.equal(
+      realpathSync(path.join(sharedMessagingAppSdkRoot, 'node_modules', '@sdkwork', 'sdk-common')),
+      realpathSync(sharedSdkCommonRoot),
+      'required messaging app sdk preparation must remain active for app builds',
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -1533,15 +1571,29 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
   const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
   const sharedSdkCommonRoot = path.join(
     tempRoot,
-    'sdk',
+    'apps',
     'sdkwork-sdk-commons',
     'sdkwork-sdk-common-typescript',
   );
   const sharedAppSdkRoot = path.join(
     tempRoot,
-    'spring-ai-plus-app-api',
-    'sdkwork-sdk-app',
-    'sdkwork-app-sdk-typescript',
+    'apps',
+    'sdkwork-appbase',
+    'sdks',
+    'sdkwork-appbase-app-sdk',
+    'sdkwork-appbase-app-sdk-typescript',
+    'generated',
+    'server-openapi',
+  );
+  const sharedMessagingAppSdkRoot = path.join(
+    tempRoot,
+    'apps',
+    'sdkwork-messaging',
+    'sdks',
+    'sdkwork-messaging-app-sdk',
+    'sdkwork-messaging-app-sdk-typescript',
+    'generated',
+    'server-openapi',
   );
   const sharedCorePcReactRoot = path.join(
     tempRoot,
@@ -1552,7 +1604,7 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
   const sharedLocalApiProxyRoot = path.join(
     tempRoot,
     'apps',
-    'sdkwork-appbase',
+    'sdkwork-local-router',
     'packages',
     'pc-react',
     'intelligence',
@@ -1598,8 +1650,15 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
 
   writePackage(sharedSdkCommonRoot, { name: '@sdkwork/sdk-common', version: '1.0.2' });
   writePackage(sharedAppSdkRoot, {
-    name: '@sdkwork/app-sdk',
-    version: '1.0.55',
+    name: '@sdkwork/appbase-app-sdk',
+    version: '0.1.0',
+    dependencies: {
+      '@sdkwork/sdk-common': '^1.0.2',
+    },
+  });
+  writePackage(sharedMessagingAppSdkRoot, {
+    name: '@sdkwork/messaging-app-sdk',
+    version: '0.1.0',
     dependencies: {
       '@sdkwork/sdk-common': '^1.0.2',
     },
@@ -1608,7 +1667,9 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
     name: '@sdkwork/core-pc-react',
     version: '0.1.1',
     dependencies: {
-      '@sdkwork/app-sdk': '^1.0.55',
+      '@sdkwork/appbase-app-sdk': '^0.1.0',
+      '@sdkwork/messaging-app-sdk': '^0.1.0',
+      '@sdkwork/sdk-common': '^1.0.2',
     },
     peerDependencies: {
       react: '>=18.2.0',
@@ -1685,15 +1746,29 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
   const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
   const sharedSdkCommonRoot = path.join(
     tempRoot,
-    'sdk',
+    'apps',
     'sdkwork-sdk-commons',
     'sdkwork-sdk-common-typescript',
   );
   const sharedAppSdkRoot = path.join(
     tempRoot,
-    'spring-ai-plus-app-api',
-    'sdkwork-sdk-app',
-    'sdkwork-app-sdk-typescript',
+    'apps',
+    'sdkwork-appbase',
+    'sdks',
+    'sdkwork-appbase-app-sdk',
+    'sdkwork-appbase-app-sdk-typescript',
+    'generated',
+    'server-openapi',
+  );
+  const sharedMessagingAppSdkRoot = path.join(
+    tempRoot,
+    'apps',
+    'sdkwork-messaging',
+    'sdks',
+    'sdkwork-messaging-app-sdk',
+    'sdkwork-messaging-app-sdk-typescript',
+    'generated',
+    'server-openapi',
   );
   const sharedCorePcReactRoot = path.join(
     tempRoot,
@@ -1704,7 +1779,7 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
   const sharedLocalApiProxyRoot = path.join(
     tempRoot,
     'apps',
-    'sdkwork-appbase',
+    'sdkwork-local-router',
     'packages',
     'pc-react',
     'intelligence',
@@ -1721,7 +1796,7 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
   const sharedRtcSdkRoot = path.join(
     tempRoot,
     'apps',
-    'craw-chat',
+    'sdkwork-rtc',
     'sdks',
     'sdkwork-rtc-sdk',
     'sdkwork-rtc-sdk-typescript',
@@ -1766,8 +1841,15 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
 
   writePackage(sharedSdkCommonRoot, { name: '@sdkwork/sdk-common', version: '1.0.2' });
   writePackage(sharedAppSdkRoot, {
-    name: '@sdkwork/app-sdk',
-    version: '1.0.55',
+    name: '@sdkwork/appbase-app-sdk',
+    version: '0.1.0',
+    dependencies: {
+      '@sdkwork/sdk-common': '^1.0.2',
+    },
+  });
+  writePackage(sharedMessagingAppSdkRoot, {
+    name: '@sdkwork/messaging-app-sdk',
+    version: '0.1.0',
     dependencies: {
       '@sdkwork/sdk-common': '^1.0.2',
     },
@@ -1790,7 +1872,8 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
     name: '@sdkwork/core-pc-react',
     version: '0.1.1',
     dependencies: {
-      '@sdkwork/app-sdk': '^1.0.55',
+      '@sdkwork/appbase-app-sdk': '^0.1.0',
+      '@sdkwork/messaging-app-sdk': '^0.1.0',
       '@sdkwork/sdk-common': '^1.0.2',
       '@sdkwork/im-sdk': '^0.1.1',
       '@sdkwork/rtc-sdk': '^0.1.1',
@@ -1824,8 +1907,12 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
     });
 
     assert.equal(
-      realpathSync(path.join(sharedCorePcReactRoot, 'node_modules', '@sdkwork', 'app-sdk')),
+      realpathSync(path.join(sharedCorePcReactRoot, 'node_modules', '@sdkwork', 'appbase-app-sdk')),
       realpathSync(sharedAppSdkRoot),
+    );
+    assert.equal(
+      realpathSync(path.join(sharedCorePcReactRoot, 'node_modules', '@sdkwork', 'messaging-app-sdk')),
+      realpathSync(sharedMessagingAppSdkRoot),
     );
     assert.equal(
       realpathSync(path.join(sharedCorePcReactRoot, 'node_modules', '@sdkwork', 'sdk-common')),
@@ -1852,7 +1939,7 @@ test('shared sdk package preparation exposes a generator root for relocated IM a
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-generator-root-'));
   const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
-  const expectedGeneratorRoot = path.join(tempRoot, 'sdk', 'sdkwork-sdk-generator');
+  const expectedGeneratorRoot = path.join(tempRoot, 'apps', 'sdkwork-sdk-generator');
   const explicitGeneratorRoot = path.join(tempRoot, 'custom-generator-root');
 
   try {
@@ -1929,7 +2016,7 @@ test('git-backed shared sdk source detection resolves origin from nested directo
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-'));
   const repoRoot = path.join(tempRoot, 'shared-sdk-repo');
-  const nestedPackageRoot = path.join(repoRoot, 'packages', 'sdkwork-app-sdk');
+  const nestedPackageRoot = path.join(repoRoot, 'packages', 'sdkwork-appbase-app-sdk');
   const gitConfigPath = path.join(repoRoot, '.git', 'config');
 
   mkdirSync(repoRoot, { recursive: true });
@@ -2053,7 +2140,7 @@ test('git-backed shared sdk source helper authenticates private GitHub SDK clone
   assert.match(helperSource, /run\('git', buildGitRemoteArgs\(\['ls-remote'/);
 });
 
-test('git-backed shared sdk source helper parses monorepo submodule layouts and resolves config-backed package roots', async () => {
+test('git-backed shared sdk source helper parses current SDK family layouts and resolves config-backed package roots', async () => {
   const helperPath = path.join(rootDir, 'scripts', 'prepare-shared-sdk-git-sources.mjs');
   const helper = await import(pathToFileURL(helperPath).href);
 
@@ -2068,10 +2155,11 @@ test('git-backed shared sdk source helper parses monorepo submodule layouts and 
   assert.equal(typeof helper.resolveGitCloneRepoUrl, 'function');
   assert.equal(typeof helper.parseGitSubmodulePaths, 'function');
   assert.equal(typeof helper.materializePackageRootFromMonorepo, 'function');
-  assert.equal(helper.DEFAULT_SHARED_SDK_APP_REPO_URL, 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-app.git');
+  assert.equal(helper.DEFAULT_SHARED_SDK_APPBASE_APP_REPO_URL, 'https://github.com/Sdkwork-Cloud/sdkwork-appbase.git');
   assert.equal(helper.DEFAULT_SHARED_SDK_COMMON_REPO_URL, 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-commons.git');
   assert.equal(helper.DEFAULT_SHARED_SDK_CORE_REPO_URL, 'https://github.com/Sdkwork-Cloud/sdkwork-core.git');
-  assert.equal(helper.DEFAULT_SHARED_SDK_APPBASE_REPO_URL, 'https://github.com/Sdkwork-Cloud/sdkwork-appbase.git');
+  assert.equal(helper.DEFAULT_SHARED_SDK_LOCAL_ROUTER_REPO_URL, 'https://github.com/Sdkwork-Cloud/sdkwork-local-router.git');
+  assert.equal(helper.DEFAULT_SHARED_SDK_MESSAGING_REPO_URL, 'https://github.com/Sdkwork-Cloud/sdkwork-messaging.git');
   assert.equal(helper.DEFAULT_SHARED_SDK_RELEASE_CONFIG_PATH, 'config/shared-sdk-release-sources.json');
   assert.match(
     read('scripts/prepare-shared-sdk-git-sources.mjs'),
@@ -2082,64 +2170,65 @@ test('git-backed shared sdk source helper parses monorepo submodule layouts and 
   const repoRoot = path.join(rootDir, '.tmp', 'shared-sdk-layout');
   const spec = {
     repoRoot,
-    packageContainerDirName: 'sdkwork-sdk-app',
-    packageDirName: 'sdkwork-app-sdk-typescript',
-    monorepoSubmodulePath: 'spring-ai-plus-business/spring-ai-plus-app-api/sdkwork-sdk-app',
+    packageContainerDirName: 'sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated',
+    packageDirName: 'server-openapi',
+    monorepoSubmodulePath: 'sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated',
   };
 
   assert.equal(
     helper.resolveSourcePackageContainerRoot(spec).replaceAll('\\', '/'),
-    path.join(repoRoot, 'sdkwork-sdk-app').replaceAll('\\', '/'),
+    path.join(repoRoot, 'sdks', 'sdkwork-appbase-app-sdk', 'sdkwork-appbase-app-sdk-typescript', 'generated').replaceAll('\\', '/'),
   );
   assert.equal(
     helper.resolveSourcePackageRoot(spec).replaceAll('\\', '/'),
-    path.join(repoRoot, 'sdkwork-sdk-app', 'sdkwork-app-sdk-typescript').replaceAll('\\', '/'),
+    path.join(repoRoot, 'sdks', 'sdkwork-appbase-app-sdk', 'sdkwork-appbase-app-sdk-typescript', 'generated', 'server-openapi').replaceAll('\\', '/'),
   );
   assert.equal(
     helper.resolveMonorepoSubmoduleRoot(spec).replaceAll('\\', '/'),
-    path.join(repoRoot, 'spring-ai-plus-business', 'spring-ai-plus-app-api', 'sdkwork-sdk-app').replaceAll('\\', '/'),
+    path.join(repoRoot, 'sdks', 'sdkwork-appbase-app-sdk', 'sdkwork-appbase-app-sdk-typescript', 'generated').replaceAll('\\', '/'),
   );
   assert.equal(
     helper.resolveMonorepoPackageRoot(spec).replaceAll('\\', '/'),
     path.join(
       repoRoot,
-      'spring-ai-plus-business',
-      'spring-ai-plus-app-api',
-      'sdkwork-sdk-app',
-      'sdkwork-app-sdk-typescript',
+      'sdks',
+      'sdkwork-appbase-app-sdk',
+      'sdkwork-appbase-app-sdk-typescript',
+      'generated',
+      'server-openapi',
     ).replaceAll('\\', '/'),
   );
   assert.equal(
     helper.resolveCheckoutRootForRepoUrl(
       spec,
-      'https://github.com/Sdkwork-Cloud/sdkwork-sdk-app.git',
+      'https://github.com/Sdkwork-Cloud/sdkwork-appbase.git',
     ).replaceAll('\\', '/'),
-    path.join(repoRoot, 'sdkwork-sdk-app').replaceAll('\\', '/'),
+    repoRoot.replaceAll('\\', '/'),
   );
   assert.equal(
     helper.resolveCheckoutRootForRepoUrl(
       spec,
-      'https://github.com/Sdkwork-Cloud/sdkwork-app-sdk-typescript.git',
+      'https://github.com/Sdkwork-Cloud/server-openapi.git',
     ).replaceAll('\\', '/'),
-    path.join(repoRoot, 'sdkwork-sdk-app', 'sdkwork-app-sdk-typescript').replaceAll('\\', '/'),
+    path.join(repoRoot, 'sdks', 'sdkwork-appbase-app-sdk', 'sdkwork-appbase-app-sdk-typescript', 'generated', 'server-openapi').replaceAll('\\', '/'),
   );
   assert.equal(
     helper.resolvePackageRootForCheckoutRoot(
       spec,
-      path.join(repoRoot, 'sdkwork-sdk-app'),
+      repoRoot,
     ).replaceAll('\\', '/'),
-    path.join(repoRoot, 'sdkwork-sdk-app', 'sdkwork-app-sdk-typescript').replaceAll('\\', '/'),
+    path.join(repoRoot, 'sdks', 'sdkwork-appbase-app-sdk', 'sdkwork-appbase-app-sdk-typescript', 'generated', 'server-openapi').replaceAll('\\', '/'),
   );
 
   const parsedPaths = helper.parseGitSubmodulePaths(`
-[submodule "spring-ai-plus-business/sdk/sdkwork-sdk-commons"]
-    path = spring-ai-plus-business/sdk/sdkwork-sdk-commons
-[submodule "spring-ai-plus-business/spring-ai-plus-app-api/sdkwork-sdk-app"]
-    path = spring-ai-plus-business/spring-ai-plus-app-api/sdkwork-sdk-app
+[submodule "sdkwork-sdk-commons"]
+    path = sdkwork-sdk-commons
+[submodule "sdkwork-appbase"]
+    path = sdkwork-appbase
 `);
   assert.deepEqual([...parsedPaths], [
-    'spring-ai-plus-business/sdk/sdkwork-sdk-commons',
-    'spring-ai-plus-business/spring-ai-plus-app-api/sdkwork-sdk-app',
+    'sdkwork-sdk-commons',
+    'sdkwork-appbase',
   ]);
 
   const sharedSdkReleaseConfig = helper.readSharedSdkReleaseConfig(rootDir);
@@ -2147,11 +2236,12 @@ test('git-backed shared sdk source helper parses monorepo submodule layouts and 
     path.relative(rootDir, helper.resolveSharedSdkReleaseConfigPath(rootDir)).replaceAll('\\', '/'),
     'config/shared-sdk-release-sources.json',
   );
-  assert.equal(sharedSdkReleaseConfig.sources['app-sdk'].repoUrl, helper.DEFAULT_SHARED_SDK_APP_REPO_URL);
+  assert.equal(sharedSdkReleaseConfig.sources['appbase-app-sdk'].repoUrl, helper.DEFAULT_SHARED_SDK_APPBASE_APP_REPO_URL);
   assert.equal(sharedSdkReleaseConfig.sources['sdk-common'].repoUrl, helper.DEFAULT_SHARED_SDK_COMMON_REPO_URL);
   assert.equal(sharedSdkReleaseConfig.sources['core-pc-react'].repoUrl, helper.DEFAULT_SHARED_SDK_CORE_REPO_URL);
-  assert.equal(sharedSdkReleaseConfig.sources['local-api-proxy'].repoUrl, helper.DEFAULT_SHARED_SDK_APPBASE_REPO_URL);
+  assert.equal(sharedSdkReleaseConfig.sources['local-api-proxy'].repoUrl, helper.DEFAULT_SHARED_SDK_LOCAL_ROUTER_REPO_URL);
   assert.equal(sharedSdkReleaseConfig.sources['im-sdk'].repoUrl, helper.DEFAULT_SHARED_SDK_IM_REPO_URL);
+  assert.equal(sharedSdkReleaseConfig.sources['messaging-app-sdk'].repoUrl, helper.DEFAULT_SHARED_SDK_MESSAGING_REPO_URL);
   assert.equal(sharedSdkReleaseConfig.sources['rtc-sdk'].repoUrl, helper.DEFAULT_SHARED_SDK_RTC_REPO_URL);
   assert.doesNotMatch(JSON.stringify(sharedSdkReleaseConfig), /"ref"\s*:\s*"main"/);
 
@@ -2162,12 +2252,15 @@ test('git-backed shared sdk source helper parses monorepo submodule layouts and 
   assert.match(helperSource, /monorepoSubmodulePath/);
   assert.match(helperSource, /shared-sdk-release-sources\.json/);
   assert.match(helperSource, /FETCH_HEAD/);
+  assert.match(helperSource, /SDKWORK_SHARED_SDK_APPBASE_APP_REPO_URL/);
   assert.match(helperSource, /SDKWORK_SHARED_SDK_IM_REPO_URL/);
+  assert.match(helperSource, /SDKWORK_SHARED_SDK_MESSAGING_REPO_URL/);
   assert.match(helperSource, /SDKWORK_SHARED_SDK_RTC_REPO_URL/);
-  assert.match(helperSource, /SDKWORK_SHARED_SDK_APPBASE_REPO_URL/);
   assert.match(helperSource, /https:\/\/github\.com\/Sdkwork-Cloud\/sdkwork-im-sdk\.git/);
+  assert.match(helperSource, /https:\/\/github\.com\/Sdkwork-Cloud\/sdkwork-messaging\.git/);
   assert.match(helperSource, /https:\/\/github\.com\/Sdkwork-Cloud\/sdkwork-rtc-sdk\.git/);
   assert.match(helperSource, /https:\/\/github\.com\/Sdkwork-Cloud\/sdkwork-appbase\.git/);
+  assert.match(helperSource, /https:\/\/github\.com\/Sdkwork-Cloud\/sdkwork-local-router\.git/);
 });
 
 test('git-backed shared sdk source helper can materialize pinned local git sources from the release config', async (t) => {
@@ -2178,17 +2271,33 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
   const configPath = path.join(workspaceRoot, 'config', 'shared-sdk-release-sources.json');
   const sourceRepoRoot = path.join(tempRoot, 'source-repos');
-  const appRepoRoot = path.join(sourceRepoRoot, 'sdkwork-sdk-app');
+  const appbaseAppRepoRoot = path.join(sourceRepoRoot, 'sdkwork-appbase');
   const commonRepoRoot = path.join(sourceRepoRoot, 'sdkwork-sdk-commons');
   const coreRepoRoot = path.join(sourceRepoRoot, 'sdkwork-core');
-  const appbaseRepoRoot = path.join(sourceRepoRoot, 'sdkwork-appbase');
+  const localRouterRepoRoot = path.join(sourceRepoRoot, 'sdkwork-local-router');
   const imRepoRoot = path.join(sourceRepoRoot, 'sdkwork-im-sdk');
+  const messagingRepoRoot = path.join(sourceRepoRoot, 'sdkwork-messaging');
   const rtcRepoRoot = path.join(sourceRepoRoot, 'sdkwork-rtc-sdk');
-  const appPackageRoot = path.join(appRepoRoot, 'sdkwork-app-sdk-typescript');
+  const appbaseAppPackageRoot = path.join(
+    appbaseAppRepoRoot,
+    'sdks',
+    'sdkwork-appbase-app-sdk',
+    'sdkwork-appbase-app-sdk-typescript',
+    'generated',
+    'server-openapi',
+  );
   const commonPackageRoot = path.join(commonRepoRoot, 'sdkwork-sdk-common-typescript');
   const corePackageRoot = path.join(coreRepoRoot, 'sdkwork-core-pc-react');
-  const localApiProxyPackageRoot = path.join(appbaseRepoRoot, 'packages', 'pc-react', 'intelligence', 'sdkwork-local-api-proxy');
+  const localApiProxyPackageRoot = path.join(localRouterRepoRoot, 'packages', 'pc-react', 'intelligence', 'sdkwork-local-api-proxy');
   const imPackageRoot = path.join(imRepoRoot, 'sdkwork-im-sdk-typescript');
+  const messagingPackageRoot = path.join(
+    messagingRepoRoot,
+    'sdks',
+    'sdkwork-messaging-app-sdk',
+    'sdkwork-messaging-app-sdk-typescript',
+    'generated',
+    'server-openapi',
+  );
   const rtcPackageRoot = path.join(rtcRepoRoot, 'sdkwork-rtc-sdk-typescript');
 
   function runGit(args, cwd) {
@@ -2205,17 +2314,18 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     return true;
   }
 
-  mkdirSync(appPackageRoot, { recursive: true });
+  mkdirSync(appbaseAppPackageRoot, { recursive: true });
   mkdirSync(commonPackageRoot, { recursive: true });
   mkdirSync(corePackageRoot, { recursive: true });
   mkdirSync(localApiProxyPackageRoot, { recursive: true });
   mkdirSync(imPackageRoot, { recursive: true });
+  mkdirSync(messagingPackageRoot, { recursive: true });
   mkdirSync(rtcPackageRoot, { recursive: true });
   mkdirSync(path.dirname(configPath), { recursive: true });
 
   writeFileSync(
-    path.join(appPackageRoot, 'package.json'),
-    JSON.stringify({ name: '@sdkwork/app-sdk', version: '1.0.53' }, null, 2),
+    path.join(appbaseAppPackageRoot, 'package.json'),
+    JSON.stringify({ name: '@sdkwork/appbase-app-sdk', version: '0.1.0' }, null, 2),
     'utf8',
   );
   writeFileSync(
@@ -2239,18 +2349,23 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     'utf8',
   );
   writeFileSync(
+    path.join(messagingPackageRoot, 'package.json'),
+    JSON.stringify({ name: '@sdkwork/messaging-app-sdk', version: '0.1.0' }, null, 2),
+    'utf8',
+  );
+  writeFileSync(
     path.join(rtcPackageRoot, 'package.json'),
     JSON.stringify({ name: '@sdkwork/rtc-sdk', version: '0.1.0' }, null, 2),
     'utf8',
   );
 
-  if (!runGit(['init', '--initial-branch', 'main'], appRepoRoot)) {
+  if (!runGit(['init', '--initial-branch', 'main'], appbaseAppRepoRoot)) {
     return;
   }
-  runGit(['config', 'user.name', 'Codex'], appRepoRoot);
-  runGit(['config', 'user.email', 'sdkwork@zowalk.com'], appRepoRoot);
-  runGit(['add', '.'], appRepoRoot);
-  runGit(['commit', '-m', 'seed-app-sdk'], appRepoRoot);
+  runGit(['config', 'user.name', 'Codex'], appbaseAppRepoRoot);
+  runGit(['config', 'user.email', 'sdkwork@zowalk.com'], appbaseAppRepoRoot);
+  runGit(['add', '.'], appbaseAppRepoRoot);
+  runGit(['commit', '-m', 'seed-appbase-app-sdk'], appbaseAppRepoRoot);
 
   if (!runGit(['init', '--initial-branch', 'main'], commonRepoRoot)) {
     return;
@@ -2268,13 +2383,13 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   runGit(['add', '.'], coreRepoRoot);
   runGit(['commit', '-m', 'seed-core-pc-react'], coreRepoRoot);
 
-  if (!runGit(['init', '--initial-branch', 'main'], appbaseRepoRoot)) {
+  if (!runGit(['init', '--initial-branch', 'main'], localRouterRepoRoot)) {
     return;
   }
-  runGit(['config', 'user.name', 'Codex'], appbaseRepoRoot);
-  runGit(['config', 'user.email', 'sdkwork@zowalk.com'], appbaseRepoRoot);
-  runGit(['add', '.'], appbaseRepoRoot);
-  runGit(['commit', '-m', 'seed-local-api-proxy'], appbaseRepoRoot);
+  runGit(['config', 'user.name', 'Codex'], localRouterRepoRoot);
+  runGit(['config', 'user.email', 'sdkwork@zowalk.com'], localRouterRepoRoot);
+  runGit(['add', '.'], localRouterRepoRoot);
+  runGit(['commit', '-m', 'seed-local-api-proxy'], localRouterRepoRoot);
 
   if (!runGit(['init', '--initial-branch', 'main'], imRepoRoot)) {
     return;
@@ -2283,6 +2398,14 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   runGit(['config', 'user.email', 'sdkwork@zowalk.com'], imRepoRoot);
   runGit(['add', '.'], imRepoRoot);
   runGit(['commit', '-m', 'seed-sdkwork-im-sdk'], imRepoRoot);
+
+  if (!runGit(['init', '--initial-branch', 'main'], messagingRepoRoot)) {
+    return;
+  }
+  runGit(['config', 'user.name', 'Codex'], messagingRepoRoot);
+  runGit(['config', 'user.email', 'sdkwork@zowalk.com'], messagingRepoRoot);
+  runGit(['add', '.'], messagingRepoRoot);
+  runGit(['commit', '-m', 'seed-sdkwork-messaging-app-sdk'], messagingRepoRoot);
 
   if (!runGit(['init', '--initial-branch', 'main'], rtcRepoRoot)) {
     return;
@@ -2297,8 +2420,8 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     JSON.stringify(
       {
         sources: {
-          'app-sdk': {
-            repoUrl: appRepoRoot,
+          'appbase-app-sdk': {
+            repoUrl: appbaseAppRepoRoot,
             ref: 'main',
           },
           'sdk-common': {
@@ -2310,11 +2433,15 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
             ref: 'main',
           },
           'local-api-proxy': {
-            repoUrl: appbaseRepoRoot,
+            repoUrl: localRouterRepoRoot,
             ref: 'main',
           },
           'im-sdk': {
             repoUrl: imRepoRoot,
+            ref: 'main',
+          },
+          'messaging-app-sdk': {
+            repoUrl: messagingRepoRoot,
             ref: 'main',
           },
           'rtc-sdk': {
@@ -2338,28 +2465,34 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
       syncExistingRepos: false,
     });
 
-    const preparedAppSdk = preparedSources.find((entry) => entry.id === 'app-sdk');
+    const preparedAppbaseAppSdk = preparedSources.find((entry) => entry.id === 'appbase-app-sdk');
     const preparedSdkCommon = preparedSources.find((entry) => entry.id === 'sdk-common');
     const preparedCorePcReact = preparedSources.find((entry) => entry.id === 'core-pc-react');
     const preparedLocalApiProxy = preparedSources.find((entry) => entry.id === 'local-api-proxy');
     const preparedImSdk = preparedSources.find((entry) => entry.id === 'im-sdk');
+    const preparedMessagingAppSdk = preparedSources.find((entry) => entry.id === 'messaging-app-sdk');
     const preparedRtcSdk = preparedSources.find((entry) => entry.id === 'rtc-sdk');
 
-    assert.equal(preparedAppSdk?.targetRef, 'main');
+    assert.equal(preparedAppbaseAppSdk?.targetRef, 'main');
     assert.equal(preparedSdkCommon?.targetRef, 'main');
     assert.equal(preparedCorePcReact?.targetRef, 'main');
     assert.equal(preparedLocalApiProxy?.targetRef, 'main');
     assert.equal(preparedImSdk?.targetRef, 'main');
+    assert.equal(preparedMessagingAppSdk?.targetRef, 'main');
     assert.equal(preparedRtcSdk?.targetRef, 'main');
-    assert.equal(realpathSync(preparedAppSdk.packageRoot), realpathSync(path.join(
+    assert.equal(realpathSync(preparedAppbaseAppSdk.packageRoot), realpathSync(path.join(
       tempRoot,
-      'spring-ai-plus-app-api',
-      'sdkwork-sdk-app',
-      'sdkwork-app-sdk-typescript',
+      'apps',
+      'sdkwork-appbase',
+      'sdks',
+      'sdkwork-appbase-app-sdk',
+      'sdkwork-appbase-app-sdk-typescript',
+      'generated',
+      'server-openapi',
     )));
     assert.equal(realpathSync(preparedSdkCommon.packageRoot), realpathSync(path.join(
       tempRoot,
-      'sdk',
+      'apps',
       'sdkwork-sdk-commons',
       'sdkwork-sdk-common-typescript',
     )));
@@ -2372,7 +2505,7 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     assert.equal(realpathSync(preparedLocalApiProxy.packageRoot), realpathSync(path.join(
       tempRoot,
       'apps',
-      'sdkwork-appbase',
+      'sdkwork-local-router',
       'packages',
       'pc-react',
       'intelligence',
@@ -2389,14 +2522,24 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     assert.equal(realpathSync(preparedRtcSdk.packageRoot), realpathSync(path.join(
       tempRoot,
       'apps',
-      'craw-chat',
+      'sdkwork-rtc',
       'sdks',
       'sdkwork-rtc-sdk',
       'sdkwork-rtc-sdk-typescript',
     )));
+    assert.equal(realpathSync(preparedMessagingAppSdk.packageRoot), realpathSync(path.join(
+      tempRoot,
+      'apps',
+      'sdkwork-messaging',
+      'sdks',
+      'sdkwork-messaging-app-sdk',
+      'sdkwork-messaging-app-sdk-typescript',
+      'generated',
+      'server-openapi',
+    )));
     assert.equal(
-      JSON.parse(readFileSync(path.join(preparedAppSdk.packageRoot, 'package.json'), 'utf8')).name,
-      '@sdkwork/app-sdk',
+      JSON.parse(readFileSync(path.join(preparedAppbaseAppSdk.packageRoot, 'package.json'), 'utf8')).name,
+      '@sdkwork/appbase-app-sdk',
     );
     assert.equal(
       JSON.parse(readFileSync(path.join(preparedSdkCommon.packageRoot, 'package.json'), 'utf8')).name,
@@ -2415,12 +2558,16 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
       '@sdkwork/im-sdk',
     );
     assert.equal(
+      JSON.parse(readFileSync(path.join(preparedMessagingAppSdk.packageRoot, 'package.json'), 'utf8')).name,
+      '@sdkwork/messaging-app-sdk',
+    );
+    assert.equal(
       JSON.parse(readFileSync(path.join(preparedRtcSdk.packageRoot, 'package.json'), 'utf8')).name,
       '@sdkwork/rtc-sdk',
     );
     assert.equal(
-      preparedAppSdk?.repoUrl,
-      appRepoRoot,
+      preparedAppbaseAppSdk?.repoUrl,
+      appbaseAppRepoRoot,
     );
     assert.equal(
       preparedSdkCommon?.repoUrl,
@@ -2432,11 +2579,15 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     );
     assert.equal(
       preparedLocalApiProxy?.repoUrl,
-      appbaseRepoRoot,
+      localRouterRepoRoot,
     );
     assert.equal(
       preparedImSdk?.repoUrl,
       imRepoRoot,
+    );
+    assert.equal(
+      preparedMessagingAppSdk?.repoUrl,
+      messagingRepoRoot,
     );
     assert.equal(
       preparedRtcSdk?.repoUrl,
@@ -2466,10 +2617,11 @@ test('shared sdk release parity compares every git materialized release source',
   assert.deepEqual(
     helper.paritySources.map((entry) => entry.id).sort(),
     [
-      'app-sdk',
+      'appbase-app-sdk',
       'core-pc-react',
       'im-sdk',
       'local-api-proxy',
+      'messaging-app-sdk',
       'rtc-sdk',
       'sdk-common',
     ],

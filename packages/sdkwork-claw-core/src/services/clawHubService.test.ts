@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { createClient } from '@sdkwork/app-sdk';
 import { createClawHubService } from './clawHubService.ts';
 
 function runTest(name: string, callback: () => void | Promise<void>) {
@@ -202,125 +201,68 @@ await runTest(
 );
 
 await runTest(
-  'clawHubService issues generated app sdk HTTP requests for ClawHub resources when auth exists',
+  'clawHubService delegates ClawHub requests to the injected app client port when auth exists',
   async () => {
-    const originalFetch = globalThis.fetch;
-    const fetchCalls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
-
-    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      fetchCalls.push({ input, init });
-
-      const rawUrl =
-        typeof input === 'string'
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url;
-      const url = new URL(rawUrl);
-
-      if (url.pathname === '/app/v3/api/skills/categories') {
-        return new Response(JSON.stringify({ code: '2000', data: [] }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/app/v3/api/skills/packages') {
-        return new Response(JSON.stringify({ code: '2000', data: [] }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/app/v3/api/skills/packages/11') {
-        return new Response(JSON.stringify({ code: '2000', data: { packageId: 11, skills: [] } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/app/v3/api/skills/7/reviews') {
-        return new Response(JSON.stringify({ code: '2000', data: [] }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (url.pathname === '/app/v3/api/skills/7') {
-        return new Response(JSON.stringify({ code: '2000', data: { skillId: 7 } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      return new Response(
-        JSON.stringify({
-          code: '2000',
-          data: {
-            content: [],
+    const calls: Array<{ method: string; args: unknown[] }> = [];
+    const service = createClawHubService({
+      getSessionTokens: () => ({
+        authToken: 'session-auth-token',
+      }),
+      getClient: () =>
+        ({
+          skill: {
+            listCategories: async (...args: unknown[]) => {
+              calls.push({ method: 'listCategories', args });
+              return { code: '2000', data: [] };
+            },
+            list: async (...args: unknown[]) => {
+              calls.push({ method: 'list', args });
+              return { code: '2000', data: { content: [], last: true } };
+            },
+            listPackages: async (...args: unknown[]) => {
+              calls.push({ method: 'listPackages', args });
+              return { code: '2000', data: [] };
+            },
+            detailPackage: async (...args: unknown[]) => {
+              calls.push({ method: 'detailPackage', args });
+              return { code: '2000', data: { packageId: 11, skills: [] } };
+            },
+            detail: async (...args: unknown[]) => {
+              calls.push({ method: 'detail', args });
+              return { code: '2000', data: { skillId: 7 } };
+            },
+            listReviews: async (...args: unknown[]) => {
+              calls.push({ method: 'listReviews', args });
+              return { code: '2000', data: [] };
+            },
           },
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      );
-    }) as typeof fetch;
-
-    try {
-      const service = createClawHubService({
-        getSessionTokens: () => ({
-          authToken: 'session-auth-token',
-        }),
-        getClient: () =>
-          createClient({
-            baseUrl: 'https://api.sdkwork.test',
-            accessToken: 'access-token',
-          }) as any,
-      });
-
-      await service.listCategories();
-      await service.listSkills({ categoryId: '1', keyword: 'github' });
-      await service.listPackages({ categoryId: '1', keyword: 'developer' });
-      await service.getPackage('11');
-      await service.getSkill('7');
-      await service.listReviews('7');
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-
-    assert.equal(fetchCalls.length, 6);
-
-    const urls = fetchCalls.map(({ input }) => {
-      const rawUrl =
-        typeof input === 'string'
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url;
-      return new URL(rawUrl);
+        }) as any,
     });
 
-    assert.ok(urls.some((url) => url.pathname === '/app/v3/api/skills/categories'));
-    assert.ok(
-      urls.some(
-        (url) =>
-          url.pathname === '/app/v3/api/skills' &&
-          url.searchParams.get('categoryId') === '1' &&
-          url.searchParams.get('keyword') === 'github',
-      ),
-    );
-    assert.ok(
-      urls.some(
-        (url) =>
-          url.pathname === '/app/v3/api/skills/packages' &&
-          !url.searchParams.get('categoryId') &&
-          !url.searchParams.get('keyword'),
-      ),
-    );
-    assert.ok(urls.some((url) => url.pathname === '/app/v3/api/skills/packages/11'));
-    assert.ok(urls.some((url) => url.pathname === '/app/v3/api/skills/7'));
-    assert.ok(urls.some((url) => url.pathname === '/app/v3/api/skills/7/reviews'));
+    await service.listCategories();
+    await service.listSkills({ categoryId: '1', keyword: 'github' });
+    await service.listPackages({ categoryId: '1', keyword: 'developer' });
+    await service.getPackage('11');
+    await service.getSkill('7');
+    await service.listReviews('7');
+
+    assert.deepEqual(calls.map((call) => call.method), [
+      'listCategories',
+      'list',
+      'listPackages',
+      'detailPackage',
+      'detail',
+      'listReviews',
+    ]);
+    assert.deepEqual(calls[1]?.args[0], {
+      pageNum: 1,
+      pageSize: 100,
+      categoryId: '1',
+      keyword: 'github',
+    });
+    assert.equal(calls[3]?.args[0], '11');
+    assert.equal(calls[4]?.args[0], '7');
+    assert.equal(calls[5]?.args[0], '7');
   },
 );
 

@@ -59,25 +59,43 @@ export default defineConfig(({ command, mode }) => {
     workspaceRootDir,
     process.env,
   );
-  const sharedAppSdkSourceEntry = path.resolve(
+  const sharedAppbaseAppSdkSourceEntry = path.resolve(
     canonicalWorkspaceRootDir,
-    '../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/src/index.ts',
+    '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi/src/index.ts',
+  );
+  const sharedMessagingAppSdkSourceEntry = path.resolve(
+    canonicalWorkspaceRootDir,
+    '../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi/src/index.ts',
   );
   const sharedSdkCommonSourceEntry = path.resolve(
     canonicalWorkspaceRootDir,
-    '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts',
+    '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts',
   );
-  const sharedAppSdkDistEntry = resolvePnpmPackageDistEntry('@sdkwork/app-sdk', workspaceRootDir) ?? path.resolve(
+  const sharedAppbaseAppSdkDistEntry = resolvePnpmPackageDistEntry('@sdkwork/appbase-app-sdk', workspaceRootDir) ?? path.resolve(
     canonicalWorkspaceRootDir,
-    '../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/dist/index.js',
+    '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi/dist/index.js',
+  );
+  const sharedMessagingAppSdkDistEntry = resolvePnpmPackageDistEntry('@sdkwork/messaging-app-sdk', workspaceRootDir) ?? path.resolve(
+    canonicalWorkspaceRootDir,
+    '../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi/dist/index.js',
   );
   const sharedSdkCommonDistEntry = resolvePnpmPackageDistEntry('@sdkwork/sdk-common', workspaceRootDir) ?? path.resolve(
     canonicalWorkspaceRootDir,
-    '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/dist/index.js',
+    '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript/dist/index.js',
   );
-  const sharedAppSdkChunkEntry = useSharedSdkSourceMode
-    ? sharedAppSdkSourceEntry
-    : sharedAppSdkDistEntry;
+  const sdkworkAuthPcReactAuthServiceEntry = path.resolve(
+    canonicalWorkspaceRootDir,
+    '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-pc-react/src/auth-service.ts',
+  );
+  const sharedAppbaseAppSdkChunkEntry = useSharedSdkSourceMode
+    ? sharedAppbaseAppSdkSourceEntry
+    : sharedAppbaseAppSdkDistEntry;
+  const sharedMessagingAppSdkChunkEntry = useSharedSdkSourceMode
+    ? sharedMessagingAppSdkSourceEntry
+    : sharedMessagingAppSdkDistEntry;
+  const sharedSdkCommonChunkEntry = useSharedSdkSourceMode
+    ? sharedSdkCommonSourceEntry
+    : sharedSdkCommonDistEntry;
 
   return {
     base: command === 'build' ? './' : '/',
@@ -92,15 +110,18 @@ export default defineConfig(({ command, mode }) => {
     resolve: {
       dedupe: [...DESKTOP_DEDUPE_PACKAGES],
       alias: [
+        { find: '@sdkwork/auth-pc-react/auth-service', replacement: sdkworkAuthPcReactAuthServiceEntry },
         { find: '@', replacement: path.resolve(__dirname, '.') },
         ...workspacePackageAliases,
         ...(useSharedSdkSourceMode
           ? [
-              { find: '@sdkwork/app-sdk', replacement: sharedAppSdkSourceEntry },
+              { find: '@sdkwork/appbase-app-sdk', replacement: sharedAppbaseAppSdkSourceEntry },
+              { find: '@sdkwork/messaging-app-sdk', replacement: sharedMessagingAppSdkSourceEntry },
               { find: '@sdkwork/sdk-common', replacement: sharedSdkCommonSourceEntry },
             ]
           : [
-              { find: '@sdkwork/app-sdk', replacement: sharedAppSdkDistEntry },
+              { find: '@sdkwork/appbase-app-sdk', replacement: sharedAppbaseAppSdkDistEntry },
+              { find: '@sdkwork/messaging-app-sdk', replacement: sharedMessagingAppSdkDistEntry },
               { find: '@sdkwork/sdk-common', replacement: sharedSdkCommonDistEntry },
             ]),
       ],
@@ -118,7 +139,11 @@ export default defineConfig(({ command, mode }) => {
       },
       rollupOptions: {
         output: {
-          manualChunks: createDesktopManualChunks(sharedAppSdkChunkEntry),
+          manualChunks: createDesktopManualChunks({
+            appbaseAppSdkEntry: sharedAppbaseAppSdkChunkEntry,
+            messagingAppSdkEntry: sharedMessagingAppSdkChunkEntry,
+            sdkCommonEntry: sharedSdkCommonChunkEntry,
+          }),
         },
       },
     },

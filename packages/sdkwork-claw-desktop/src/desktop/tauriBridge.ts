@@ -225,6 +225,35 @@ export type {
 
 const noopUnsubscribe: RuntimeEventUnsubscribe = () => {};
 
+function compactDesktopCommandObject<T extends Record<string, unknown>>(value: T): T {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined),
+  ) as T;
+}
+
+function toDesktopLocalAiProxyRequestLogsQuery(query: LocalAiProxyRequestLogsQuery) {
+  return compactDesktopCommandObject({
+    page: query.page,
+    pageSize: query.page_size,
+    search: query.q,
+    providerId: query.providerId,
+    modelId: query.modelId,
+    routeId: query.routeId,
+    status: query.status,
+  });
+}
+
+function toDesktopLocalAiProxyMessageLogsQuery(query: LocalAiProxyMessageLogsQuery) {
+  return compactDesktopCommandObject({
+    page: query.page,
+    pageSize: query.page_size,
+    search: query.q,
+    providerId: query.providerId,
+    modelId: query.modelId,
+    routeId: query.routeId,
+  });
+}
+
 function createEmbeddedInstallerRemovedError(action: string) {
   return new Error(
     `Embedded install integration was removed from the desktop runtime. Use docs, store pages, or download links instead of ${action}.`,
@@ -364,7 +393,7 @@ export async function listLocalAiProxyRequestLogs(
     () =>
       invokeDesktopCommand<PaginatedResult<LocalAiProxyRequestLogRecord>>(
         DESKTOP_COMMANDS.listLocalAiProxyRequestLogs,
-        { query },
+        { query: toDesktopLocalAiProxyRequestLogsQuery(query) },
         {
           operation: 'kernel.listLocalAiProxyRequestLogs',
         },
@@ -380,7 +409,7 @@ export async function listLocalAiProxyMessageLogs(
     () =>
       invokeDesktopCommand<PaginatedResult<LocalAiProxyMessageLogRecord>>(
         DESKTOP_COMMANDS.listLocalAiProxyMessageLogs,
-        { query },
+        { query: toDesktopLocalAiProxyMessageLogsQuery(query) },
         {
           operation: 'kernel.listLocalAiProxyMessageLogs',
         },

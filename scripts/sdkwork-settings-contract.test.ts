@@ -1,10 +1,8 @@
 ﻿import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { resolveCanonicalWorkspaceRootDir } from './workspace-root.mjs';
 
 const root = process.cwd();
-const canonicalWorkspaceRoot = resolveCanonicalWorkspaceRootDir(root);
 
 function read(relPath: string) {
   return fs.readFileSync(path.join(root, relPath), 'utf8');
@@ -59,14 +57,6 @@ function getLocaleValue(locale: Record<string, unknown>, key: string) {
   }, locale);
 }
 
-function readFromRepo(...segments: string[]) {
-  return fs.readFileSync(path.resolve(canonicalWorkspaceRoot, '..', '..', ...segments), 'utf8');
-}
-
-function existsInRepo(...segments: string[]) {
-  return fs.existsSync(path.resolve(canonicalWorkspaceRoot, '..', '..', ...segments));
-}
-
 function runTest(name: string, fn: () => void) {
   try {
     fn();
@@ -97,45 +87,19 @@ runTest('sdkwork-claw-settings parity checks use the shared Node TypeScript runn
   assert.match(nodeTypeScriptRunner, /ts-extension-loader\.mjs/);
 });
 
-runTest('notification settings SDK contract exposes the current app-api notification settings resources', () => {
-  const notificationSettingsType = readFromRepo(
-    'spring-ai-plus-app-api',
-    'sdkwork-sdk-app',
-    'sdkwork-app-sdk-typescript',
-    'src',
-    'types',
-    'notification-settings-vo.ts',
-  );
-  const notificationTypeSettingsForm = readFromRepo(
-    'spring-ai-plus-app-api',
-    'sdkwork-sdk-app',
-    'sdkwork-app-sdk-typescript',
-    'src',
-    'types',
-    'notification-type-settings-form.ts',
-  );
+runTest('settings service uses a local typed user port and local preference overlay without legacy notification SDK reads', () => {
+  const settingsServiceSource = read('packages/sdkwork-claw-core/src/services/settingsService.ts');
 
-  assert.ok(
-    existsInRepo(
-      'spring-ai-plus-app-api',
-      'sdkwork-sdk-app',
-      'sdkwork-app-sdk-typescript',
-      'src',
-      'types',
-      'notification-type-vo.ts',
-    ),
-    'generated notification type VO should exist',
-  );
-  assert.match(notificationSettingsType, /system\?: boolean/);
-  assert.match(notificationSettingsType, /message\?: boolean/);
-  assert.match(notificationSettingsType, /activity\?: boolean/);
-  assert.match(notificationSettingsType, /promotion\?: boolean/);
-  assert.match(notificationSettingsType, /sound\?: boolean/);
-  assert.match(notificationSettingsType, /vibration\?: boolean/);
-  assert.match(notificationTypeSettingsForm, /type: string/);
-  assert.match(notificationTypeSettingsForm, /enabled\?: boolean/);
-  assert.match(notificationTypeSettingsForm, /pushMethod\?: string/);
-  assert.match(notificationTypeSettingsForm, /needReminder\?: boolean/);
+  assert.match(settingsServiceSource, /interface SettingsSdkClient/);
+  assert.match(settingsServiceSource, /getUserProfile\(\)/);
+  assert.match(settingsServiceSource, /updateUserProfile\(body:/);
+  assert.match(settingsServiceSource, /changePassword\(body:/);
+  assert.match(settingsServiceSource, /getClawStudioAppClientWithSession/);
+  assert.match(settingsServiceSource, /SETTINGS_OVERLAY_STORAGE_KEY/);
+  assert.match(settingsServiceSource, /readSettingsOverlay/);
+  assert.match(settingsServiceSource, /writeSettingsOverlay/);
+  assert.doesNotMatch(settingsServiceSource, /client\.notification\./);
+  assert.doesNotMatch(settingsServiceSource, /from ['"]@sdkwork\/app/);
 });
 
 runTest('sdkwork-claw-settings routes the api tab to the dedicated API workspace instead of the legacy api-key page', () => {
@@ -504,49 +468,27 @@ runTest('sdkwork-claw-settings consumes Kernel Center install source from shared
   assert.doesNotMatch(kernelCenterSource, /dashboard\?\.snapshot\?\.raw\.provenance\.installSource/);
 });
 
-runTest('feedback SDK contract exposes feedback center resources needed by settings', () => {
-  const feedbackApiSource = readFromRepo(
-    'spring-ai-plus-app-api',
-    'sdkwork-sdk-app',
-    'sdkwork-app-sdk-typescript',
-    'src',
-    'api',
-    'feedback.ts',
-  );
-  const feedbackTypeSource = readFromRepo(
-    'spring-ai-plus-app-api',
-    'sdkwork-sdk-app',
-    'sdkwork-app-sdk-typescript',
-    'src',
-    'types',
-    'feedback-submit-form.ts',
-  );
+runTest('feedback center contract is expressed through the local product app client port', () => {
+  const appSdkPortSource = read('packages/sdkwork-claw-core/src/sdk/appSdkPort.ts');
+  const feedbackServiceSource = read('packages/sdkwork-claw-core/src/services/feedbackCenterService.ts');
 
-  assert.ok(
-    existsInRepo(
-      'spring-ai-plus-app-api',
-      'sdkwork-sdk-app',
-      'sdkwork-app-sdk-typescript',
-      'src',
-      'types',
-      'feedback-detail-vo.ts',
-    ),
-    'generated feedback detail VO should exist',
-  );
-  assert.match(feedbackApiSource, /listFeedback/);
-  assert.match(feedbackApiSource, /submit/);
-  assert.match(feedbackApiSource, /getFeedbackDetail/);
-  assert.match(feedbackApiSource, /followUp/);
-  assert.match(feedbackApiSource, /close/);
-  assert.match(feedbackApiSource, /listFaqCategories/);
-  assert.match(feedbackApiSource, /listFaqs/);
-  assert.match(feedbackApiSource, /searchFaqs/);
-  assert.match(feedbackApiSource, /getSupportInfo/);
-  assert.match(feedbackTypeSource, /type: string/);
-  assert.match(feedbackTypeSource, /content: string/);
+  assert.match(appSdkPortSource, /export interface ClawStudioFeedbackClient/);
+  assert.match(appSdkPortSource, /listFeedback\(params\?: Record<string, unknown>\)/);
+  assert.match(appSdkPortSource, /submit\(body: Record<string, unknown>\)/);
+  assert.match(appSdkPortSource, /getFeedbackDetail\(feedbackId: string \| number\)/);
+  assert.match(appSdkPortSource, /followUp\(/);
+  assert.match(appSdkPortSource, /close\(/);
+  assert.match(appSdkPortSource, /listFaqCategories\(\)/);
+  assert.match(appSdkPortSource, /listFaqs\(params\?: Record<string, unknown>\)/);
+  assert.match(appSdkPortSource, /searchFaqs\(params\?: Record<string, unknown>\)/);
+  assert.match(appSdkPortSource, /getSupportInfo\(\)/);
+  assert.match(feedbackServiceSource, /from '\.\.\/sdk\/appSdkPort\.ts'/);
+  assert.match(feedbackServiceSource, /getClawStudioAppClientWithSession/);
+  assert.doesNotMatch(feedbackServiceSource, /fetch\(/);
+  assert.doesNotMatch(feedbackServiceSource, /from ['"]@sdkwork\/app/);
 });
 
-runTest('sdkwork-claw-settings service uses shared app sdk wrapper instead of infrastructure business http', () => {
+runTest('sdkwork-claw-settings service uses claw-core typed app client port instead of infrastructure business http', () => {
   const settingsServiceSource = read('packages/sdkwork-claw-settings/src/services/settingsService.ts');
   const coreSettingsServiceSource = read('packages/sdkwork-claw-core/src/services/settingsService.ts');
 
@@ -554,9 +496,9 @@ runTest('sdkwork-claw-settings service uses shared app sdk wrapper instead of in
   assert.match(settingsServiceSource, /from '@sdkwork\/claw-core'/);
   assert.match(settingsServiceSource, /createSettingsService/);
   assert.doesNotMatch(settingsServiceSource, /@sdkwork\/claw-core\/services\//);
-  assert.doesNotMatch(settingsServiceSource, /getAppSdkClientWithSession/);
+  assert.doesNotMatch(settingsServiceSource, /getClawStudioAppClientWithSession/);
   assert.doesNotMatch(settingsServiceSource, /unwrapAppSdkResponse/);
-  assert.match(coreSettingsServiceSource, /getAppSdkClientWithSession/);
+  assert.match(coreSettingsServiceSource, /getClawStudioAppClientWithSession/);
   assert.match(coreSettingsServiceSource, /unwrapAppSdkResponse/);
   assert.doesNotMatch(settingsServiceSource, /@sdkwork\/claw-infrastructure/);
   assert.doesNotMatch(settingsServiceSource, /studioMockService/);
@@ -584,7 +526,7 @@ runTest('sdkwork-claw-settings exposes a feedback settings entry backed by claw-
   assert.doesNotMatch(feedbackSettingsSource, /@sdkwork\/claw-infrastructure/);
   assert.doesNotMatch(feedbackSettingsSource, /\bfetch\(/);
   assert.doesNotMatch(feedbackSettingsSource, /\baxios\./);
-  assert.doesNotMatch(feedbackSettingsSource, /getAppSdkClientWithSession/);
+  assert.doesNotMatch(feedbackSettingsSource, /getClawStudioAppClientWithSession/);
 
   assert.match(enLocaleSource, /"feedback": "Feedback"/);
   assert.match(zhLocaleSource, /"feedback": "反馈"/);

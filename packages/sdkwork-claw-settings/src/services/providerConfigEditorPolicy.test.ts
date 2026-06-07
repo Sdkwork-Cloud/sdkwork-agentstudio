@@ -192,7 +192,7 @@ await runTest(
       { id: 'atlas-index', name: 'Atlas Index' },
     ]);
     assert.equal(draft.notes, 'shared form');
-    assert.deepEqual(draft.exposeTo, ['openclaw']);
+    assert.deepEqual(draft.exposeTo, ['sdkwork']);
     assert.deepEqual(draft.config, {
       temperature: 0.35,
       topP: 1,

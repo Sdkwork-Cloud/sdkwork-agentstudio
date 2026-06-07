@@ -1,9 +1,24 @@
 declare module '@sdkwork/core-pc-react/app' {
-  import type {
-    SdkworkAppClient,
-    SdkworkAppConfig,
-  } from '@sdkwork/app-sdk';
   import type { PcReactEnvSource, PcReactRuntimeSession } from './sdkwork-core-pc-react-shared.d.ts';
+
+  export interface SdkworkAppConfig {
+    baseUrl?: string;
+    timeout?: number;
+    apiKey?: string;
+    authToken?: string;
+    accessToken?: string;
+    tenantId?: string;
+    organizationId?: string;
+    platform?: string;
+    authMode?: 'apikey' | 'dual-token';
+    headers?: Record<string, string>;
+  }
+
+  export interface SdkworkAppClient {
+    setAuthToken(token: string): void;
+    setAccessToken(token: string): void;
+    [resourceName: string]: unknown;
+  }
 
   export interface PcReactAppClientConfig extends SdkworkAppConfig {
     env: string;

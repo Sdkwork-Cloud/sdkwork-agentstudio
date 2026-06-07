@@ -25,6 +25,10 @@ test('tauriBridge removes api-router runtime bootstrap helpers while keeping des
   assert.match(tauriBridgeSource, /export async function listLocalAiProxyRequestLogs/);
   assert.match(tauriBridgeSource, /export async function listLocalAiProxyMessageLogs/);
   assert.match(tauriBridgeSource, /export async function updateLocalAiProxyMessageCapture/);
+  assert.match(tauriBridgeSource, /function toDesktopLocalAiProxyRequestLogsQuery/);
+  assert.match(tauriBridgeSource, /function toDesktopLocalAiProxyMessageLogsQuery/);
+  assert.match(tauriBridgeSource, /pageSize:\s*query\.page_size/);
+  assert.match(tauriBridgeSource, /search:\s*query\.q/);
   assert.match(tauriBridgeSource, /from '\.\/studioCommandCompat';/);
   assert.match(tauriBridgeSource, /getStatus:\s*getDesktopKernelStatus/);
   assert.match(tauriBridgeSource, /ensureRunning:\s*ensureDesktopKernelRunning/);

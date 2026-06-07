@@ -197,8 +197,8 @@ export function ApiSettings() {
       setRequestLogs(
         await localAiProxyLogsService.listRequestLogs({
           page: requestPage,
-          pageSize: requestPageSize,
-          search: requestSearch,
+          page_size: requestPageSize,
+          q: requestSearch,
         }),
       );
     } catch (error: any) {
@@ -222,8 +222,8 @@ export function ApiSettings() {
       setMessageLogs(
         await localAiProxyLogsService.listMessageLogs({
           page: messagePage,
-          pageSize: messagePageSize,
-          search: messageSearch,
+          page_size: messagePageSize,
+          q: messageSearch,
         }),
       );
     } catch (error: any) {

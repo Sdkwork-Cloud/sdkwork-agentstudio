@@ -22,21 +22,6 @@ export interface Agent {
   creator: string;
 }
 
-export interface Device {
-  id: string;
-  name: string;
-  battery: number;
-  ip_address: string;
-  status?: 'online' | 'offline' | 'starting' | 'error';
-  created_at?: string;
-  hardwareSpecs?: {
-    soc: string;
-    ram: string;
-    storage: string;
-    latency: string;
-  };
-}
-
 export interface InstalledSkill {
   id: string;
   name: string;
@@ -222,16 +207,21 @@ export interface LocalAiProxyLoggedMessage {
   kind?: string | null;
 }
 
-export interface LocalAiProxyRequestLogsQuery extends PaginationParams {
-  search?: string;
+export interface LocalAiProxyLogsPaginationQuery {
+  page?: number;
+  page_size?: number;
+}
+
+export interface LocalAiProxyRequestLogsQuery extends LocalAiProxyLogsPaginationQuery {
+  q?: string;
   providerId?: string;
   modelId?: string;
   routeId?: string;
   status?: LocalAiProxyRequestLogStatus | 'all';
 }
 
-export interface LocalAiProxyMessageLogsQuery extends PaginationParams {
-  search?: string;
+export interface LocalAiProxyMessageLogsQuery extends LocalAiProxyLogsPaginationQuery {
+  q?: string;
   providerId?: string;
   modelId?: string;
   routeId?: string;

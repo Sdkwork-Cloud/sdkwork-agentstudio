@@ -1,4 +1,4 @@
 interface:
   display_name: "Claw Studio App SDK Real Logic"
   short_description: "Standardize Claw Studio on generated app SDKs."
-  default_prompt: "Use $claw-studio-app-sdk-real-logic to standardize Claw Studio modules on spring-ai-plus-app-api and close missing app-sdk contracts end to end."
+  default_prompt: "Use $claw-studio-app-sdk-real-logic to standardize Claw Studio modules on declared dependency SDKs, typed product app client ports, and application-root SDK contracts."

@@ -64,7 +64,7 @@ runTest('sdkwork-claw-account is implemented locally instead of re-exporting cla
   assert.doesNotMatch(accountServiceSource, /@sdkwork\/claw-core\/services\//);
   assert.doesNotMatch(accountServiceSource, /getAppSdkClientWithSession/);
   assert.doesNotMatch(accountServiceSource, /unwrapAppSdkResponse/);
-  assert.match(coreAccountServiceSource, /getAppSdkClientWithSession/);
+  assert.match(coreAccountServiceSource, /getClawStudioAppClientWithSession/);
   assert.match(coreAccountServiceSource, /unwrapAppSdkResponse/);
   assert.doesNotMatch(accountServiceSource, /@sdkwork\/claw-infrastructure/);
 });

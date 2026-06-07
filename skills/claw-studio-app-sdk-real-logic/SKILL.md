@@ -1,17 +1,17 @@
 ---
 name: claw-studio-app-sdk-real-logic
-description: Guides Claw Studio onto generated app SDK contracts. Use when integrating or repairing apps/claw-studio remote business modules so they consume spring-ai-plus-app-api instead of @sdkwork/claw-infrastructure raw HTTP, or when a missing contract must be closed end to end before the app can ship.
+description: Guides Claw Studio onto SDKWork v3 app SDK composition. Use when integrating or repairing remote business modules so they consume declared dependency SDKs or typed product client ports instead of infrastructure raw HTTP.
 ---
 
 # Claw Studio App SDK Real Logic
 
 ## Overview
 
-Drive `apps/claw-studio` to one remote-business path:
+Drive `apps/claw-studio` to the current remote-business path:
 
-`host / feature package / store -> shared app-sdk wrapper -> @sdkwork/app-sdk -> spring-ai-plus-app-api -> backend`
+`host / feature package / store -> core service -> declared dependency SDK or typed product app client port -> approved runtime/composed client`
 
-Keep Tauri, filesystem, process, and device work on native boundaries. Route only remote business capability through the generated app SDK. If a method is missing, close the backend/OpenAPI/generator gap first, then return and delete the workaround.
+Keep Tauri, filesystem, process, and device work on native boundaries. Route remote business capability through declared dependency SDKs such as appbase, drive, and messaging, or through explicit product ports backed by the runtime app client. If a product SDK family is introduced later, close the application-root SDK family contract first, regenerate through the standard generator, then return and delete the temporary port gap.
 
 Treat every round as a recursive closure loop: self-review the touched app or client code, decide whether the next fix belongs in app or frontend code, backend or service code, or generator inputs, regenerate the SDK when contracts move, then review again until no higher-value gap remains.
 
@@ -25,8 +25,9 @@ Treat every round as a recursive closure loop: self-review the touched app or cl
 
 ## Hard Rules
 
-- Use `spring-ai-plus-app-api` as the single contract source for remote business capability.
-- Use `spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript` as the only shared TypeScript SDK source and consume it through `@sdkwork/app-sdk`.
+- Use `sdkwork.app.config.json`, `specs/component.spec.json`, and application-root `sdks/` as the contract source for remote business capability.
+- Consume appbase, drive, messaging, and local-router through their declared dependency SDKs or host adapters.
+- When Claw Studio lacks a product SDK family for a remote method, expose a narrow typed product port and require runtime/composed client injection instead of inventing transport code.
 - If the shared wrapper is incomplete, finish it in the approved core layer before editing feature packages.
 - Keep Tauri, local files, shell commands, and device adapters out of the app SDK path.
 - Replace `@sdkwork/claw-infrastructure` business HTTP with the wrapper path. Do not add raw `fetch`, generic HTTP helpers, manual auth headers, mock branches, or app-local SDK forks.
@@ -37,9 +38,9 @@ Treat every round as a recursive closure loop: self-review the touched app or cl
 
 1. Classify the target as remote-business, local-native, or mixed.
 2. Audit for raw HTTP, duplicated DTO mapping, manual headers, mock branches, or stale infrastructure shortcuts.
-3. Verify the real generated SDK export and the shared wrapper surface.
+3. Verify the declared dependency SDK export, typed product port, or approved composed wrapper surface.
 4. If the method exists, refactor to the standard wrapper path and delete the bypass.
-5. If the method is missing, close the gap in `spring-ai-plus-app-api` and backend modules, regenerate the SDK, then finish the app integration.
+5. If the method is missing from an owned product SDK family, close the gap in the application-root contract and backend modules, regenerate the SDK, then finish the app integration.
 6. If gap closure needs any schema change, stop and ask the user before touching DB structure.
 7. Self-review the touched path. If a better next fix still belongs in app or frontend code, backend or service code, generator inputs, or adjacent cleanup, keep iterating instead of stopping at the first pass.
 8. Run verification, then rescan adjacent packages and one extra global pass.
@@ -53,7 +54,7 @@ Treat every round as a recursive closure loop: self-review the touched app or cl
 
 ## Completion Bar
 
-- Remote business modules use the shared wrapper and generated app SDK.
+- Remote business modules use declared dependency SDKs, typed product ports, or generated product SDKs.
 - Local-only features still stay on the correct native boundary.
 - No raw HTTP, manual header, mock bypass, or temporary fallback remains.
 - Missing contracts are closed in backend/OpenAPI/generator inputs, and no schema change happened without approval.

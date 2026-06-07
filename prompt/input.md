@@ -1,4 +1,0 @@
-按照spring-ai-plus-business\apps\claw-studio\prompt\execute.md描述，执行spring-ai-plus-business\apps\claw-studio\packages\sdkwork-react-notifications和spring-ai-plus-business\apps\claw-studio\packages\sdkwork-react-drive模块功能接入SDK服务落地，不要询问我，按照标准执行，直到完成任务为止。
-工程spring-ai-plus-business\spring-ai-plus-app-api是后端api实现，对应的entity定义在：spring-ai-plus-business\spring-ai-plus-business-entity中。
-service通用业务逻辑处理在：spring-ai-plus-business\spring-ai-plus-business-service
-逐个检查spring-ai-plus-business\apps\claw-studio中的package，确保对已经按照标准规范，直接在前端里，通过service，使用sdk client 的方式直接调用服务端的接口实现，假如sdk不存在，需要检查后端api是否缺失，假如缺失，应该在后端api中实现并重新生成sdk，再修改前端代码，反复循环执行，确保整体系统功能实现完美。

@@ -240,8 +240,8 @@ function toUserProfile(profile: {
 }
 
 async function getDefaultSettingsClient(): Promise<SettingsSdkClient> {
-  const { getAppSdkClientWithSession } = await import('../sdk/useAppSdkClient.ts');
-  return getAppSdkClientWithSession() as unknown as SettingsSdkClient;
+  const { getClawStudioAppClientWithSession } = await import('../sdk/useAppSdkClient.ts');
+  return getClawStudioAppClientWithSession() as unknown as SettingsSdkClient;
 }
 
 class SettingsService implements ISettingsService {

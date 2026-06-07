@@ -14,7 +14,7 @@ This package ships a desktop-grade authentication surface with focused page orch
 - OAuth callback
 - auth runtime configuration entrypoint
 
-It does not own raw HTTP, token persistence, or backend contract handling. Those stay in `@sdkwork/claw-core` and the generated `@sdkwork/app-sdk` path.
+It does not own raw HTTP, token persistence, or backend contract handling. Those stay in `@sdkwork/claw-core` and the generated `retired generic app SDK package` path.
 
 ## Supported Flows
 

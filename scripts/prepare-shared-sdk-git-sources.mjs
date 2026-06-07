@@ -5,27 +5,30 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 
-export const SHARED_SDK_APP_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_APP_REPO_URL';
+export const SHARED_SDK_APPBASE_APP_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_APPBASE_APP_REPO_URL';
 export const SHARED_SDK_COMMON_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_COMMON_REPO_URL';
 export const SHARED_SDK_CORE_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_CORE_REPO_URL';
-export const SHARED_SDK_APPBASE_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_APPBASE_REPO_URL';
+export const SHARED_SDK_LOCAL_ROUTER_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_LOCAL_ROUTER_REPO_URL';
 export const SHARED_SDK_IM_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_IM_REPO_URL';
+export const SHARED_SDK_MESSAGING_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_MESSAGING_REPO_URL';
 export const SHARED_SDK_RTC_REPO_URL_ENV_VAR = 'SDKWORK_SHARED_SDK_RTC_REPO_URL';
-export const SHARED_SDK_APP_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_APP_GIT_REF';
+export const SHARED_SDK_APPBASE_APP_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_APPBASE_APP_GIT_REF';
 export const SHARED_SDK_COMMON_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_COMMON_GIT_REF';
 export const SHARED_SDK_CORE_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_CORE_GIT_REF';
-export const SHARED_SDK_APPBASE_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_APPBASE_GIT_REF';
+export const SHARED_SDK_LOCAL_ROUTER_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_LOCAL_ROUTER_GIT_REF';
 export const SHARED_SDK_IM_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_IM_GIT_REF';
+export const SHARED_SDK_MESSAGING_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_MESSAGING_GIT_REF';
 export const SHARED_SDK_RTC_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_RTC_GIT_REF';
 export const SHARED_SDK_GIT_REF_ENV_VAR = 'SDKWORK_SHARED_SDK_GIT_REF';
 export const SHARED_SDK_GIT_FORCE_SYNC_ENV_VAR = 'SDKWORK_SHARED_SDK_GIT_FORCE_SYNC';
 export const SHARED_SDK_RELEASE_CONFIG_PATH_ENV_VAR = 'SDKWORK_SHARED_SDK_RELEASE_CONFIG_PATH';
 export const SHARED_SDK_GITHUB_TOKEN_ENV_VAR = 'SDKWORK_SHARED_SDK_GITHUB_TOKEN';
-export const DEFAULT_SHARED_SDK_APP_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-app.git';
+export const DEFAULT_SHARED_SDK_APPBASE_APP_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-appbase.git';
 export const DEFAULT_SHARED_SDK_COMMON_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-sdk-commons.git';
 export const DEFAULT_SHARED_SDK_CORE_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-core.git';
-export const DEFAULT_SHARED_SDK_APPBASE_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-appbase.git';
+export const DEFAULT_SHARED_SDK_LOCAL_ROUTER_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-local-router.git';
 export const DEFAULT_SHARED_SDK_IM_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-im-sdk.git';
+export const DEFAULT_SHARED_SDK_MESSAGING_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-messaging.git';
 export const DEFAULT_SHARED_SDK_RTC_REPO_URL = 'https://github.com/Sdkwork-Cloud/sdkwork-rtc-sdk.git';
 export const DEFAULT_SHARED_SDK_RELEASE_CONFIG_PATH = 'config/shared-sdk-release-sources.json';
 
@@ -132,23 +135,23 @@ function parseBooleanFlag(value) {
 function createSourceSpecs(workspaceRootDir) {
   return [
     {
-      id: 'app-sdk',
-      label: '@sdkwork/app-sdk',
-      repoRoot: path.resolve(workspaceRootDir, '../../spring-ai-plus-app-api'),
-      packageContainerDirName: 'sdkwork-sdk-app',
-      packageDirName: 'sdkwork-app-sdk-typescript',
-      monorepoSubmodulePath: 'spring-ai-plus-business/spring-ai-plus-app-api/sdkwork-sdk-app',
-      repoUrlEnvVar: SHARED_SDK_APP_REPO_URL_ENV_VAR,
-      refEnvVar: SHARED_SDK_APP_GIT_REF_ENV_VAR,
-      defaultRepoUrl: DEFAULT_SHARED_SDK_APP_REPO_URL,
+      id: 'appbase-app-sdk',
+      label: '@sdkwork/appbase-app-sdk',
+      repoRoot: path.resolve(workspaceRootDir, '../sdkwork-appbase'),
+      packageContainerDirName: 'sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated',
+      packageDirName: 'server-openapi',
+      monorepoSubmodulePath: '',
+      repoUrlEnvVar: SHARED_SDK_APPBASE_APP_REPO_URL_ENV_VAR,
+      refEnvVar: SHARED_SDK_APPBASE_APP_GIT_REF_ENV_VAR,
+      defaultRepoUrl: DEFAULT_SHARED_SDK_APPBASE_APP_REPO_URL,
     },
     {
       id: 'sdk-common',
       label: '@sdkwork/sdk-common',
-      repoRoot: path.resolve(workspaceRootDir, '../../sdk'),
-      packageContainerDirName: 'sdkwork-sdk-commons',
+      repoRoot: path.resolve(workspaceRootDir, '../sdkwork-sdk-commons'),
+      packageContainerDirName: '',
       packageDirName: 'sdkwork-sdk-common-typescript',
-      monorepoSubmodulePath: 'spring-ai-plus-business/sdk/sdkwork-sdk-commons',
+      monorepoSubmodulePath: '',
       repoUrlEnvVar: SHARED_SDK_COMMON_REPO_URL_ENV_VAR,
       refEnvVar: SHARED_SDK_COMMON_GIT_REF_ENV_VAR,
       defaultRepoUrl: DEFAULT_SHARED_SDK_COMMON_REPO_URL,
@@ -167,13 +170,13 @@ function createSourceSpecs(workspaceRootDir) {
     {
       id: 'local-api-proxy',
       label: '@sdkwork/local-api-proxy',
-      repoRoot: path.resolve(workspaceRootDir, '../sdkwork-appbase'),
+      repoRoot: path.resolve(workspaceRootDir, '../sdkwork-local-router'),
       packageContainerDirName: 'packages/pc-react/intelligence',
       packageDirName: 'sdkwork-local-api-proxy',
       monorepoSubmodulePath: '',
-      repoUrlEnvVar: SHARED_SDK_APPBASE_REPO_URL_ENV_VAR,
-      refEnvVar: SHARED_SDK_APPBASE_GIT_REF_ENV_VAR,
-      defaultRepoUrl: DEFAULT_SHARED_SDK_APPBASE_REPO_URL,
+      repoUrlEnvVar: SHARED_SDK_LOCAL_ROUTER_REPO_URL_ENV_VAR,
+      refEnvVar: SHARED_SDK_LOCAL_ROUTER_GIT_REF_ENV_VAR,
+      defaultRepoUrl: DEFAULT_SHARED_SDK_LOCAL_ROUTER_REPO_URL,
     },
     {
       id: 'im-sdk',
@@ -187,9 +190,20 @@ function createSourceSpecs(workspaceRootDir) {
       defaultRepoUrl: DEFAULT_SHARED_SDK_IM_REPO_URL,
     },
     {
+      id: 'messaging-app-sdk',
+      label: '@sdkwork/messaging-app-sdk',
+      repoRoot: path.resolve(workspaceRootDir, '../sdkwork-messaging'),
+      packageContainerDirName: 'sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated',
+      packageDirName: 'server-openapi',
+      monorepoSubmodulePath: '',
+      repoUrlEnvVar: SHARED_SDK_MESSAGING_REPO_URL_ENV_VAR,
+      refEnvVar: SHARED_SDK_MESSAGING_GIT_REF_ENV_VAR,
+      defaultRepoUrl: DEFAULT_SHARED_SDK_MESSAGING_REPO_URL,
+    },
+    {
       id: 'rtc-sdk',
       label: '@sdkwork/rtc-sdk',
-      repoRoot: path.resolve(workspaceRootDir, '../craw-chat/sdks/sdkwork-rtc-sdk'),
+      repoRoot: path.resolve(workspaceRootDir, '../sdkwork-rtc/sdks/sdkwork-rtc-sdk'),
       packageContainerDirName: '',
       packageDirName: 'sdkwork-rtc-sdk-typescript',
       monorepoSubmodulePath: '',

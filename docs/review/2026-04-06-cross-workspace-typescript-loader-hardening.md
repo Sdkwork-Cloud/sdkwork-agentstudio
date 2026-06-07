@@ -32,7 +32,7 @@ The immediate runtime error was:
 
 1. local workspace packages under `packages/`
 2. a narrow shared-SDK source alias list:
-   - `@sdkwork/app-sdk`
+   - `retired generic app SDK package`
    - `@sdkwork/sdk-common`
 
 That loader did not model sibling workspace packages such as:

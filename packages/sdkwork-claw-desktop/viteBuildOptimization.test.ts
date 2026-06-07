@@ -17,7 +17,11 @@ function runTest(name: string, fn: () => void) {
 }
 
 runTest('desktop build optimization keeps core shared runtime in stable chunks', () => {
-  const manualChunks = createDesktopManualChunks('C:/repo/shared-sdk/index.ts');
+  const manualChunks = createDesktopManualChunks({
+    appbaseAppSdkEntry: 'C:/repo/shared-appbase-sdk/index.ts',
+    messagingAppSdkEntry: 'C:/repo/shared-messaging-sdk/index.ts',
+    sdkCommonEntry: 'C:/repo/shared-sdk-common/index.ts',
+  });
 
   assert.equal(
     manualChunks(
@@ -50,12 +54,16 @@ runTest('desktop build optimization keeps core shared runtime in stable chunks',
     'claw-i18n-zh',
   );
   assert.equal(
-    manualChunks('C:/repo/shared-sdk/index.ts'),
-    'sdkwork-app-sdk',
+    manualChunks('C:/repo/shared-appbase-sdk/index.ts'),
+    'sdkwork-appbase-app-sdk',
   );
   assert.equal(
-    manualChunks('C:/repo/shared-sdk/api/client.ts'),
-    'sdkwork-app-sdk',
+    manualChunks('C:/repo/shared-messaging-sdk/api/client.ts'),
+    'sdkwork-messaging-app-sdk',
+  );
+  assert.equal(
+    manualChunks('C:/repo/shared-sdk-common/http/index.ts'),
+    'sdkwork-sdk-common',
   );
   assert.equal(
     manualChunks('C:/repo/node_modules/react-dom/client.js'),

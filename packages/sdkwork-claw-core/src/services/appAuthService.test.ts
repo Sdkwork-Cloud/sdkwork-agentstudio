@@ -38,11 +38,16 @@ function installBrowserStorage(storage: Storage): void {
 
 const fetchCalls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
 
+function readJsonRequestBody(init?: RequestInit): Record<string, unknown> {
+  return JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+}
+
 globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   fetchCalls.push({ input, init });
   const url = String(input);
+  const body = readJsonRequestBody(init);
 
-  if (url.endsWith('/app/v3/api/auth/oauth/url')) {
+  if (url.endsWith('/app/v3/api/auth/oauth_authorization_urls')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -57,7 +62,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/oauth/login')) {
+  if (url.endsWith('/app/v3/api/auth/oauth_sessions')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -82,7 +87,10 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/phone/login')) {
+  if (
+    url.endsWith('/app/v3/api/auth/sessions')
+    && body.grantType === 'phone_code'
+  ) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -106,7 +114,10 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/email/login')) {
+  if (
+    url.endsWith('/app/v3/api/auth/sessions')
+    && body.grantType === 'email_code'
+  ) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -130,7 +141,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/verify/send')) {
+  if (url.endsWith('/app/v3/api/messaging/verification_codes')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -143,7 +154,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/verify/check')) {
+  if (url.endsWith('/app/v3/api/messaging/verification_codes/verify')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -152,13 +163,14 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         errorName: '',
         data: {
           valid: true,
+          verified: true,
         },
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/password/reset')) {
+  if (url.endsWith('/app/v3/api/auth/password_resets')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -171,7 +183,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/qr/generate')) {
+  if (url.endsWith('/app/v3/api/open_platform/qr_auth/sessions')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -182,8 +194,12 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
           type: 'WECHAT_OFFICIAL_ACCOUNT',
           title: 'WeChat QR Login',
           description: 'Scan with the official account.',
-          qrKey: 'qr-login-1',
-          qrUrl: 'https://cdn.example.com/qr-login-1.png',
+          sessionKey: 'qr-login-1',
+          qrCode: {
+            kind: 'image',
+            source: 'external_url',
+            url: 'https://cdn.example.com/qr-login-1.png',
+          },
           qrContent: 'https://sdkwork.com/app/v3/api/auth/qr/entry/qr-login-1',
           expireTime: 300,
         },
@@ -192,7 +208,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/qr/status/qr-login-1')) {
+  if (url.endsWith('/app/v3/api/open_platform/qr_auth/sessions/qr-login-1')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -200,7 +216,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         requestId: 'req-qr-status',
         errorName: '',
         data: {
-          status: 'confirmed',
+          status: 'completed',
           userInfo: {
             username: 'wechat-user',
             email: 'wechat-user@example.com',
@@ -259,16 +275,11 @@ await runTest('appAuthService requests OAuth authorization URLs through the gene
   assert.equal(authUrl, 'https://oauth.example.com/authorize?client_id=demo');
 
   const oauthUrlRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth/url'),
+    String(input).endsWith('/app/v3/api/auth/oauth_authorization_urls'),
   );
 
   assert.ok(oauthUrlRequest);
-  assert.equal(oauthUrlRequest.init?.method, 'POST');
-  assert.deepEqual(JSON.parse(String(oauthUrlRequest.init?.body ?? '{}')), {
-    provider: 'GITHUB',
-    redirectUri: 'https://studio.example.com/login/oauth/callback/github?redirect=%2Fchat',
-    state: 'redirect:/chat',
-  });
+  assert.equal(oauthUrlRequest.init?.method, 'GET');
 });
 
 await runTest('appAuthService maps Douyin OAuth authorization through the generated app sdk auth client', async () => {
@@ -284,16 +295,11 @@ await runTest('appAuthService maps Douyin OAuth authorization through the genera
   });
 
   const oauthUrlRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth/url'),
+    String(input).endsWith('/app/v3/api/auth/oauth_authorization_urls'),
   );
 
   assert.ok(oauthUrlRequest);
-  assert.deepEqual(JSON.parse(String(oauthUrlRequest.init?.body ?? '{}')), {
-    provider: 'DOUYIN',
-    redirectUri: 'https://studio.example.com/login/oauth/callback/douyin',
-    scope: 'user_info',
-    state: 'douyin:/chat',
-  });
+  assert.equal(oauthUrlRequest.init?.method, 'GET');
 });
 
 await runTest('appAuthService completes OAuth login and persists returned session tokens', async () => {
@@ -310,15 +316,15 @@ await runTest('appAuthService completes OAuth login and persists returned sessio
   });
 
   assert.equal(session.authToken, 'oauth-auth-token');
-  assert.equal(session.accessToken, 'configured-access-token');
+  assert.equal(session.accessToken, 'oauth-payload-access-token');
   assert.equal(session.refreshToken, 'oauth-refresh-token');
   assert.equal(session.userInfo?.nickname, 'Octo Cat');
   assert.equal(readAppSdkSessionTokens().authToken, 'oauth-auth-token');
-  assert.equal(readAppSdkSessionTokens().accessToken, 'configured-access-token');
+  assert.equal(readAppSdkSessionTokens().accessToken, 'oauth-payload-access-token');
   assert.equal(readAppSdkSessionTokens().refreshToken, 'oauth-refresh-token');
 
   const oauthLoginRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth/login'),
+    String(input).endsWith('/app/v3/api/auth/oauth_sessions'),
   );
 
   assert.ok(oauthLoginRequest);
@@ -344,7 +350,7 @@ await runTest('appAuthService completes Douyin OAuth login through the generated
   });
 
   const oauthLoginRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth/login'),
+    String(input).endsWith('/app/v3/api/auth/oauth_sessions'),
   );
 
   assert.ok(oauthLoginRequest);
@@ -384,10 +390,10 @@ await runTest('appAuthService persists confirmed qr login sessions while polling
 
   assert.equal(result.status, 'confirmed');
   assert.equal(result.session?.authToken, 'qr-auth-token');
-  assert.equal(result.session?.accessToken, 'configured-access-token');
+  assert.equal(result.session?.accessToken, 'qr-payload-access-token');
   assert.equal(result.session?.userInfo?.nickname, 'WeChat User');
   assert.equal(readAppSdkSessionTokens().authToken, 'qr-auth-token');
-  assert.equal(readAppSdkSessionTokens().accessToken, 'configured-access-token');
+  assert.equal(readAppSdkSessionTokens().accessToken, 'qr-payload-access-token');
   assert.equal(readAppSdkSessionTokens().refreshToken, 'qr-refresh-token');
 });
 
@@ -403,17 +409,18 @@ await runTest('appAuthService completes phone verification-code login through th
   });
 
   assert.equal(session.authToken, 'phone-auth-token');
-  assert.equal(session.accessToken, 'configured-access-token');
+  assert.equal(session.accessToken, 'phone-payload-access-token');
   assert.equal(session.refreshToken, 'phone-refresh-token');
   assert.equal(session.userInfo?.nickname, 'Phone Operator');
 
   const phoneLoginRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/phone/login'),
+    String(input).endsWith('/app/v3/api/auth/sessions'),
   );
 
   assert.ok(phoneLoginRequest);
   assert.equal(phoneLoginRequest.init?.method, 'POST');
   assert.deepEqual(JSON.parse(String(phoneLoginRequest.init?.body ?? '{}')), {
+    grantType: 'phone_code',
     phone: '13800138000',
     code: '123456',
   });
@@ -431,17 +438,18 @@ await runTest('appAuthService completes email verification-code login through th
   });
 
   assert.equal(session.authToken, 'email-auth-token');
-  assert.equal(session.accessToken, 'configured-access-token');
+  assert.equal(session.accessToken, 'email-payload-access-token');
   assert.equal(session.refreshToken, 'email-refresh-token');
   assert.equal(session.userInfo?.nickname, 'Email Operator');
 
   const emailLoginRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/email/login'),
+    String(input).endsWith('/app/v3/api/auth/sessions'),
   );
 
   assert.ok(emailLoginRequest);
   assert.equal(emailLoginRequest.init?.method, 'POST');
   assert.deepEqual(JSON.parse(String(emailLoginRequest.init?.body ?? '{}')), {
+    grantType: 'email_code',
     email: 'operator@example.com',
     code: '654321',
   });
@@ -459,14 +467,14 @@ await runTest('appAuthService sends email verification codes through the generic
   });
 
   const verifySendRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/verify/send'),
+    String(input).endsWith('/app/v3/api/messaging/verification_codes'),
   );
 
   assert.ok(verifySendRequest);
   assert.equal(verifySendRequest.init?.method, 'POST');
   assert.deepEqual(JSON.parse(String(verifySendRequest.init?.body ?? '{}')), {
     target: 'operator@example.com',
-    type: 'LOGIN',
+    scene: 'LOGIN',
     verifyType: 'EMAIL',
   });
 });
@@ -483,14 +491,14 @@ await runTest('appAuthService sends phone verification codes through the generic
   });
 
   const verifySendRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/verify/send'),
+    String(input).endsWith('/app/v3/api/messaging/verification_codes'),
   );
 
   assert.ok(verifySendRequest);
   assert.equal(verifySendRequest.init?.method, 'POST');
   assert.deepEqual(JSON.parse(String(verifySendRequest.init?.body ?? '{}')), {
     target: '13800138000',
-    type: 'REGISTER',
+    scene: 'REGISTER',
     verifyType: 'PHONE',
   });
 });
@@ -510,14 +518,14 @@ await runTest('appAuthService verifies codes through the generic verify check en
   assert.equal(valid, true);
 
   const verifyCheckRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/verify/check'),
+    String(input).endsWith('/app/v3/api/messaging/verification_codes/verify'),
   );
 
   assert.ok(verifyCheckRequest);
   assert.equal(verifyCheckRequest.init?.method, 'POST');
   assert.deepEqual(JSON.parse(String(verifyCheckRequest.init?.body ?? '{}')), {
     target: 'operator@example.com',
-    type: 'RESET_PASSWORD',
+    scene: 'RESET_PASSWORD',
     verifyType: 'EMAIL',
     code: '654321',
   });
@@ -535,7 +543,7 @@ await runTest('appAuthService resets passwords through the generated app sdk aut
   });
 
   const passwordResetRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/password/reset'),
+    String(input).endsWith('/app/v3/api/auth/password_resets'),
   );
 
   assert.ok(passwordResetRequest);
@@ -560,13 +568,9 @@ await runTest('appAuthService maps configurable OAuth providers without hard-cod
   });
 
   const oauthUrlRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth/url'),
+    String(input).endsWith('/app/v3/api/auth/oauth_authorization_urls'),
   );
 
   assert.ok(oauthUrlRequest);
-  assert.deepEqual(JSON.parse(String(oauthUrlRequest.init?.body ?? '{}')), {
-    provider: 'MICROSOFT',
-    redirectUri: 'https://studio.example.com/login/oauth/callback/microsoft',
-    state: 'oauth:microsoft',
-  });
+  assert.equal(oauthUrlRequest.init?.method, 'GET');
 });

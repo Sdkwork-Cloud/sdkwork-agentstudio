@@ -25,7 +25,7 @@ rusqlite = { version = "0.39.0", features = ["bundled"] }
 sdkwork-claw-host-core = { path = "../../sdkwork-claw-host-core/src-host" }
 sdkwork-claw-host-studio = { path = "../../sdkwork-claw-host-studio/src-host" }
 sdkwork-claw-server = { path = "../../sdkwork-claw-server/src-host" }
-sdkwork-local-api-proxy-native = { path = "../../../../sdkwork-appbase/packages/pc-react/intelligence/sdkwork-local-api-proxy/native/tauri-rust" }
+sdkwork-local-api-proxy-native = { path = "../../../../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy/native/tauri-rust" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"

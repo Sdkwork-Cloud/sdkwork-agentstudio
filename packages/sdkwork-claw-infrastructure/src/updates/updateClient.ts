@@ -1,8 +1,3 @@
-import type {
-  AppUpdateCheckForm,
-  AppUpdateCheckVO,
-  PlusApiResultAppUpdateCheckVO,
-} from '@sdkwork/app-sdk';
 import { type AppEnvConfig, APP_ENV } from '../config/env.ts';
 import type {
   AppInstallPackage,
@@ -19,10 +14,13 @@ interface AppSdkResult<T> {
 }
 
 type AppUpdateSdkObjectMap = Record<string, unknown>;
-type AppUpdateSdkRequest = Omit<AppUpdateCheckForm, 'capabilities' | 'metadata'> & {
+type AppUpdateCheckForm = Omit<AppUpdateCheckRequest, 'capabilities' | 'metadata'> & {
   capabilities?: AppUpdateSdkObjectMap;
   metadata?: AppUpdateSdkObjectMap;
 };
+type AppUpdateCheckVO = AppUpdateCheckResult;
+type PlusApiResultAppUpdateCheckVO = AppSdkResult<AppUpdateCheckVO>;
+type AppUpdateSdkRequest = AppUpdateCheckForm;
 type AppUpdateSdkClientConfig = {
   baseUrl: string;
   timeout: number;
@@ -170,20 +168,7 @@ export async function checkAppUpdate(
 export { APP_UPDATE_CHECK_PATH };
 
 async function resolveAppSdkClientFactory(): Promise<AppUpdateSdkClientFactory> {
-  try {
-    const appSdkModule = await import('@sdkwork/app-sdk');
-    const clientFactory = appSdkModule.createClient;
-
-    if (typeof clientFactory !== 'function') {
-      throw new Error('The generated @sdkwork/app-sdk client factory is unavailable.');
-    }
-
-    return clientFactory as AppUpdateSdkClientFactory;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      'App update check is unavailable because the generated @sdkwork/app-sdk package has not been prepared for source-mode runtime checks. Run `node scripts/prepare-shared-sdk-packages.mjs` before invoking update checks in this environment.\n'
-        + `Original error: ${message}`,
-    );
-  }
+  throw new Error(
+    'App update check requires an injected product app SDK client factory or approved composed app client.',
+  );
 }

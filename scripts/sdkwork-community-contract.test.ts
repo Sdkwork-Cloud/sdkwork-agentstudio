@@ -180,7 +180,8 @@ runTest('sdkwork-claw-community routes classifieds through the shared app sdk in
   assert.doesNotMatch(serviceSource, /client\.comment\.createComment/);
   assert.doesNotMatch(serviceSource, /client\.category\.listCategories/);
   assert.match(coreServiceSource, /createCommunityService/);
-  assert.match(coreServiceSource, /getAppSdkClientWithSession/);
+  assert.match(coreServiceSource, /getClawStudioAppClientWithSession/);
+  assert.doesNotMatch(coreServiceSource, /getAppSdkClientWithSession/);
   assert.match(coreServiceSource, /unwrapAppSdkResponse/);
   assert.match(coreServiceSource, /client\.feed\.getFeedList/);
   assert.match(coreServiceSource, /client\.feed\.getFeedDetail/);

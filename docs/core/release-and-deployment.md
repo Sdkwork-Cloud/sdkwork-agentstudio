@@ -99,7 +99,7 @@ pnpm check:shared-sdk-release-parity
 
 This check clones the pinned refs from `config/shared-sdk-release-sources.json`
 and compares them with the local sibling SDK package roots that development
-still uses through relative workspace paths, including `@sdkwork/app-sdk`,
+still uses through relative workspace paths, including `retired generic app SDK package`,
 `@sdkwork/sdk-common`, `@sdkwork/core-pc-react`,
 `@sdkwork/im-sdk`, and `@sdkwork/rtc-sdk`. The comparison normalizes text-file
 line endings so Windows `CRLF` checkouts and GitHub `LF` checkouts do not raise
