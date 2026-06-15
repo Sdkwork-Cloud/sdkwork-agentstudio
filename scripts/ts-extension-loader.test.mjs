@@ -148,6 +148,24 @@ assert.equal(
 );
 
 assert.equal(
+  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/auth-runtime-pc-react'),
+  path.resolve(
+    canonicalWorkspaceRoot,
+    '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-runtime-pc-react/src/index.ts',
+  ),
+  'workspace package resolution must map appbase PC auth runtime to its source entry',
+);
+
+assert.equal(
+  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/iam-runtime'),
+  path.resolve(
+    canonicalWorkspaceRoot,
+    '../sdkwork-appbase/packages/common/iam/sdkwork-iam-runtime/src/index.ts',
+  ),
+  'workspace package resolution must keep appbase internal IAM runtime available for appbase wrappers',
+);
+
+assert.equal(
   loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/craw-chat-sdk'),
   null,
   'workspace package resolution must not shadow the craw-chat SDK package with a claw host shim',

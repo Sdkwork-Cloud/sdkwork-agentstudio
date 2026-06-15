@@ -261,14 +261,14 @@ function createAuthClient(): SdkworkAuthClient {
       verificationCodes: {
         create: (payload: Record<string, unknown>) =>
           messagingClient.messaging.verificationCodes.create(
-            payload as Parameters<typeof messagingClient.messaging.verificationCodes.create>[0],
+            payload as unknown as Parameters<typeof messagingClient.messaging.verificationCodes.create>[0],
             {
               idempotencyKey: createIdempotencyKey('verification-code-create'),
             },
           ),
         verify: (payload: Record<string, unknown>) =>
           messagingClient.messaging.verificationCodes.verify(
-            payload as Parameters<typeof messagingClient.messaging.verificationCodes.verify>[0],
+            payload as unknown as Parameters<typeof messagingClient.messaging.verificationCodes.verify>[0],
             {
               idempotencyKey: createIdempotencyKey('verification-code-verify'),
             },

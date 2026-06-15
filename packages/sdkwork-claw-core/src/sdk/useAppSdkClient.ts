@@ -12,13 +12,10 @@ import {
   type SdkworkAppClient as MessagingAppSdkClientType,
 } from '@sdkwork/messaging-app-sdk';
 import {
-  createIamRuntime,
-  type AuthTokenManager,
-  type IamRuntime,
-  type IamStoredSession,
-  type IamTokenStore,
-} from '@sdkwork/iam-runtime';
-import { createIamSdkAdapters } from '@sdkwork/iam-sdk-adapter';
+  createSdkworkAppbasePcAuthRuntime,
+  type CreateSdkworkAppbasePcAuthRuntimeOptions,
+  type SdkworkAppbasePcAuthRuntimeComposition,
+} from '@sdkwork/auth-runtime-pc-react';
 import {
   createAppClientConfigFromEnv,
   getAppClientWithSession as getRuntimeAppClientWithSession,
@@ -50,14 +47,18 @@ export type AppSdkClient = AppbaseAppSdkClient;
 export type ClawStudioAppClient = ClawStudioRemoteAppClient;
 export type DriveAppSdkClient = SdkworkDriveAppClient;
 export type MessagingAppSdkClient = MessagingAppSdkClientType;
+type AppSdkAuthRuntime = SdkworkAppbasePcAuthRuntimeComposition['runtime'];
+type AppSdkAuthTokenManager = SdkworkAppbasePcAuthRuntimeComposition['tokenManager'];
+type AppSdkIamTokenStore = NonNullable<CreateSdkworkAppbasePcAuthRuntimeOptions['tokenStore']>;
+type AppSdkIamStoredSession = Awaited<ReturnType<AppSdkIamTokenStore['get']>>;
 
 export interface AppSdkRuntime {
   appbaseClient: AppbaseAppSdkClient;
   config: AppSdkClientConfig;
   driveClient: SdkworkDriveAppClient;
-  iamRuntime: IamRuntime;
+  iamRuntime: AppSdkAuthRuntime;
   messagingClient: MessagingAppSdkClient;
-  tokenManager: AuthTokenManager;
+  tokenManager: AppSdkAuthTokenManager;
 }
 
 export interface AppSdkSessionTokens {
@@ -139,11 +140,11 @@ function clearUserCenterSessionTokens(): void {
   createAppSdkUserCenterTokenStore().clearTokenBundle();
 }
 
-function createAppSdkIamTokenStore(): IamTokenStore {
+function createAppSdkIamTokenStore(): AppSdkIamTokenStore {
   return {
     clear: clearUserCenterSessionTokens,
-    get: (): IamStoredSession => readUserCenterSessionTokens(),
-    set: (session: IamStoredSession): void => {
+    get: (): AppSdkIamStoredSession => readUserCenterSessionTokens(),
+    set: (session: AppSdkIamStoredSession): void => {
       persistUserCenterSessionTokens(session);
       persistPcReactRuntimeSession(session);
     },
@@ -172,45 +173,36 @@ function resolveIamDeploymentMode(config: AppSdkClientConfig): 'local' | 'privat
   return 'saas';
 }
 
-function createTokenManagerAwareIamAppClient(
-  appbaseClient: AppbaseAppSdkClient,
-) {
-  const { appbaseApp } = createIamSdkAdapters({ appbaseApp: appbaseClient });
-
-  return {
-    ...appbaseApp,
-    setTokenManager: (manager: AuthTokenManager) => appbaseClient.setTokenManager(manager),
-  };
-}
-
 function createComposedSdkRuntime(
   overrides: Partial<SdkworkAppConfig> = {},
 ): AppSdkRuntime {
   const config = createAppSdkClientConfig(overrides);
-  const appbaseClient = createAppbaseAppClient(config);
   const driveClient = createDriveAppClient(config);
   const messagingClient = createMessagingAppClient(config);
-  const iamRuntime = createIamRuntime({
-    clients: {
-      appbaseApp: createTokenManagerAwareIamAppClient(appbaseClient),
-      sdkClients: [driveClient, messagingClient],
-    },
-    config: {
-      appApiBaseUrl: config.baseUrl,
+  const authRuntime = createSdkworkAppbasePcAuthRuntime({
+    app: {
       appId: CLAW_STUDIO_APP_ID,
       deploymentMode: resolveIamDeploymentMode(config),
       environment: resolveIamEnvironment(config.env),
     },
+    baseUrls: {
+      appbaseAppApiBaseUrl: config.baseUrl,
+    },
+    createAppbaseAppClient: (clientConfig) => createAppbaseAppClient({
+      ...config,
+      ...clientConfig,
+    }),
+    sdkClients: [driveClient, messagingClient],
     tokenStore: createAppSdkIamTokenStore(),
   });
 
   return {
-    appbaseClient,
+    appbaseClient: authRuntime.appbaseApp,
     config,
     driveClient,
-    iamRuntime,
+    iamRuntime: authRuntime.runtime,
     messagingClient,
-    tokenManager: iamRuntime.tokenManager,
+    tokenManager: authRuntime.tokenManager,
   };
 }
 

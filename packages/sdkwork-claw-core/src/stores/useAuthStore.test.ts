@@ -57,7 +57,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
           refreshToken: 'refresh-token',
           tokenType: 'Bearer',
           expiresIn: 3600,
-          userInfo: {
+          user: {
             username: body.username,
             email: body.username,
             nickname: 'Night Operator',
@@ -80,7 +80,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         refreshToken: 'register-refresh-token',
         tokenType: 'Bearer',
         expiresIn: 3600,
-        userInfo: {
+        user: {
           username: body.username,
           email: body.email,
           nickname: 'Night Operator',
@@ -131,6 +131,22 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     });
   }
 
+  if (url.endsWith('/app/v3/api/messaging/verification_codes/verify')) {
+    return new Response(
+      JSON.stringify({
+        code: '2000',
+        msg: 'success',
+        requestId: 'req-verify-check',
+        errorName: '',
+        data: {
+          valid: true,
+          verified: true,
+        },
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
   if (
     url.endsWith('/app/v3/api/auth/sessions')
     && body.grantType === 'phone_code'
@@ -147,7 +163,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
           refreshToken: 'phone-refresh-token',
           tokenType: 'Bearer',
           expiresIn: 3600,
-          userInfo: {
+          user: {
             username: '13800138000',
             phone: '13800138000',
             nickname: 'Phone Operator',
@@ -174,7 +190,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
           refreshToken: 'email-refresh-token',
           tokenType: 'Bearer',
           expiresIn: 3600,
-          userInfo: {
+          user: {
             username: 'operator@example.com',
             email: 'operator@example.com',
             nickname: 'Email Operator',
@@ -185,7 +201,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/oauth_sessions')) {
+  if (url.endsWith('/app/v3/api/oauth/sessions')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -198,7 +214,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
           refreshToken: 'oauth-refresh-token',
           tokenType: 'Bearer',
           expiresIn: 3600,
-          userInfo: {
+          user: {
             username: `${(body.provider || 'oauth').toLowerCase()}-user`,
             email: 'octocat@example.com',
             nickname: 'Octo Cat',
@@ -210,7 +226,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/open_platform/qr_auth/sessions/qr-login-1')) {
+  if (url.endsWith('/app/v3/api/oauth/device_authorizations/qr-login-1')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -218,20 +234,22 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         requestId: 'req-qr-status',
         errorName: '',
         data: {
+          deviceAuthorizationId: 'qr-login-1',
+          id: 'qr-login-1',
           status: 'completed',
-          userInfo: {
+          user: {
             username: 'wechat-user',
             email: 'wechat-user@example.com',
             nickname: 'WeChat User',
             avatar: 'https://cdn.example.com/wechat-user.png',
           },
-          token: {
+          session: {
             authToken: 'qr-auth-token',
             accessToken: 'qr-access-token',
             refreshToken: 'qr-refresh-token',
             tokenType: 'Bearer',
             expiresIn: 3600,
-            userInfo: {
+            user: {
               username: 'wechat-user',
               email: 'wechat-user@example.com',
               nickname: 'WeChat User',
@@ -444,7 +462,7 @@ await runTest('useAuthStore signs in with OAuth providers and persists the retur
   assert.equal(user.displayName, 'Octo Cat');
 
   const oauthLoginRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth_sessions'),
+    String(input).endsWith('/app/v3/api/oauth/sessions'),
   );
 
   assert.ok(oauthLoginRequest);

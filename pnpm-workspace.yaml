@@ -10,6 +10,7 @@ packages:
   - '../sdkwork-appbase/packages/common/iam/sdkwork-iam-service'
   - '../sdkwork-appbase/packages/pc-react/foundation/sdkwork-appbase-pc-react'
   - '../sdkwork-appbase/packages/pc-react/foundation/sdkwork-i18n-pc-react'
+  - '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-runtime-pc-react'
   - '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-pc-react'
   - '../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript'
   - '../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi'

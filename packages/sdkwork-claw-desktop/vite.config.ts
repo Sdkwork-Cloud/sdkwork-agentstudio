@@ -83,6 +83,10 @@ export default defineConfig(({ command, mode }) => {
     canonicalWorkspaceRootDir,
     '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript/dist/index.js',
   );
+  const sdkworkAuthRuntimePcReactEntry = path.resolve(
+    canonicalWorkspaceRootDir,
+    '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-runtime-pc-react/src/index.ts',
+  );
   const sdkworkAuthPcReactAuthServiceEntry = path.resolve(
     canonicalWorkspaceRootDir,
     '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-pc-react/src/auth-service.ts',
@@ -110,6 +114,7 @@ export default defineConfig(({ command, mode }) => {
     resolve: {
       dedupe: [...DESKTOP_DEDUPE_PACKAGES],
       alias: [
+        { find: '@sdkwork/auth-runtime-pc-react', replacement: sdkworkAuthRuntimePcReactEntry },
         { find: '@sdkwork/auth-pc-react/auth-service', replacement: sdkworkAuthPcReactAuthServiceEntry },
         { find: '@', replacement: path.resolve(__dirname, '.') },
         ...workspacePackageAliases,

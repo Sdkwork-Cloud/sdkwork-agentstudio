@@ -44,6 +44,16 @@ const EXTRA_WORKSPACE_PACKAGE_SOURCE_SPECS = [
     },
   },
   {
+    packageName: '@sdkwork/auth-runtime-pc-react',
+    packageRoot: path.resolve(
+      CANONICAL_WORKSPACE_ROOT,
+      '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-runtime-pc-react',
+    ),
+    entryBySubpath: {
+      '.': 'src/index.ts',
+    },
+  },
+  {
     packageName: '@sdkwork/runtime-bootstrap',
     packageRoot: path.resolve(
       CANONICAL_WORKSPACE_ROOT,

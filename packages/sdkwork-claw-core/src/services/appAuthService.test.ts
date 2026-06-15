@@ -47,7 +47,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = String(input);
   const body = readJsonRequestBody(init);
 
-  if (url.endsWith('/app/v3/api/auth/oauth_authorization_urls')) {
+  if (url.endsWith('/app/v3/api/oauth/authorization_urls')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -62,7 +62,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/auth/oauth_sessions')) {
+  if (url.endsWith('/app/v3/api/oauth/sessions')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -75,7 +75,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
           refreshToken: 'oauth-refresh-token',
           tokenType: 'Bearer',
           expiresIn: 3600,
-          userInfo: {
+          user: {
             username: 'octocat',
             email: 'octocat@example.com',
             nickname: 'Octo Cat',
@@ -103,7 +103,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
           refreshToken: 'phone-refresh-token',
           tokenType: 'Bearer',
           expiresIn: 3600,
-          userInfo: {
+          user: {
             username: '13800138000',
             phone: '13800138000',
             nickname: 'Phone Operator',
@@ -130,7 +130,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
           refreshToken: 'email-refresh-token',
           tokenType: 'Bearer',
           expiresIn: 3600,
-          userInfo: {
+          user: {
             username: 'operator@example.com',
             email: 'operator@example.com',
             nickname: 'Email Operator',
@@ -183,7 +183,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/open_platform/qr_auth/sessions')) {
+  if (url.endsWith('/app/v3/api/oauth/device_authorizations')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -191,16 +191,18 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         requestId: 'req-qr-generate',
         errorName: '',
         data: {
+          deviceAuthorizationId: 'qr-login-1',
+          id: 'qr-login-1',
           type: 'WECHAT_OFFICIAL_ACCOUNT',
           title: 'WeChat QR Login',
           description: 'Scan with the official account.',
-          sessionKey: 'qr-login-1',
           qrCode: {
             kind: 'image',
             source: 'external_url',
             url: 'https://cdn.example.com/qr-login-1.png',
           },
-          qrContent: 'https://sdkwork.com/app/v3/api/auth/qr/entry/qr-login-1',
+          qrContent: 'https://sdkwork.com/app/v3/oauth/device/qr-login-1',
+          fallbackUrl: 'https://sdkwork.com/app/v3/oauth/device/qr-login-1',
           expireTime: 300,
         },
       }),
@@ -208,7 +210,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   }
 
-  if (url.endsWith('/app/v3/api/open_platform/qr_auth/sessions/qr-login-1')) {
+  if (url.endsWith('/app/v3/api/oauth/device_authorizations/qr-login-1')) {
     return new Response(
       JSON.stringify({
         code: '2000',
@@ -216,20 +218,22 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         requestId: 'req-qr-status',
         errorName: '',
         data: {
+          deviceAuthorizationId: 'qr-login-1',
+          id: 'qr-login-1',
           status: 'completed',
-          userInfo: {
+          user: {
             username: 'wechat-user',
             email: 'wechat-user@example.com',
             nickname: 'WeChat User',
             avatar: 'https://cdn.example.com/wechat-user.png',
           },
-          token: {
+          session: {
             authToken: 'qr-auth-token',
             accessToken: 'qr-payload-access-token',
             refreshToken: 'qr-refresh-token',
             tokenType: 'Bearer',
             expiresIn: 3600,
-            userInfo: {
+            user: {
               username: 'wechat-user',
               email: 'wechat-user@example.com',
               nickname: 'WeChat User',
@@ -275,11 +279,16 @@ await runTest('appAuthService requests OAuth authorization URLs through the gene
   assert.equal(authUrl, 'https://oauth.example.com/authorize?client_id=demo');
 
   const oauthUrlRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth_authorization_urls'),
+    String(input).endsWith('/app/v3/api/oauth/authorization_urls'),
   );
 
   assert.ok(oauthUrlRequest);
-  assert.equal(oauthUrlRequest.init?.method, 'GET');
+  assert.equal(oauthUrlRequest.init?.method, 'POST');
+  assert.deepEqual(JSON.parse(String(oauthUrlRequest.init?.body ?? '{}')), {
+    provider: 'GITHUB',
+    redirectUri: 'https://studio.example.com/login/oauth/callback/github?redirect=%2Fchat',
+    state: 'redirect:/chat',
+  });
 });
 
 await runTest('appAuthService maps Douyin OAuth authorization through the generated app sdk auth client', async () => {
@@ -295,11 +304,17 @@ await runTest('appAuthService maps Douyin OAuth authorization through the genera
   });
 
   const oauthUrlRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth_authorization_urls'),
+    String(input).endsWith('/app/v3/api/oauth/authorization_urls'),
   );
 
   assert.ok(oauthUrlRequest);
-  assert.equal(oauthUrlRequest.init?.method, 'GET');
+  assert.equal(oauthUrlRequest.init?.method, 'POST');
+  assert.deepEqual(JSON.parse(String(oauthUrlRequest.init?.body ?? '{}')), {
+    provider: 'DOUYIN',
+    redirectUri: 'https://studio.example.com/login/oauth/callback/douyin',
+    scope: 'user_info',
+    state: 'douyin:/chat',
+  });
 });
 
 await runTest('appAuthService completes OAuth login and persists returned session tokens', async () => {
@@ -324,7 +339,7 @@ await runTest('appAuthService completes OAuth login and persists returned sessio
   assert.equal(readAppSdkSessionTokens().refreshToken, 'oauth-refresh-token');
 
   const oauthLoginRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth_sessions'),
+    String(input).endsWith('/app/v3/api/oauth/sessions'),
   );
 
   assert.ok(oauthLoginRequest);
@@ -350,7 +365,7 @@ await runTest('appAuthService completes Douyin OAuth login through the generated
   });
 
   const oauthLoginRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth_sessions'),
+    String(input).endsWith('/app/v3/api/oauth/sessions'),
   );
 
   assert.ok(oauthLoginRequest);
@@ -375,7 +390,7 @@ await runTest('appAuthService generates login qr payloads from backend qr metada
     description: 'Scan with the official account.',
     qrKey: 'qr-login-1',
     qrUrl: 'https://cdn.example.com/qr-login-1.png',
-    qrContent: 'https://sdkwork.com/app/v3/api/auth/qr/entry/qr-login-1',
+    qrContent: 'https://sdkwork.com/app/v3/oauth/device/qr-login-1',
     expireTime: 300,
   });
 });
@@ -568,9 +583,14 @@ await runTest('appAuthService maps configurable OAuth providers without hard-cod
   });
 
   const oauthUrlRequest = fetchCalls.find(({ input }) =>
-    String(input).endsWith('/app/v3/api/auth/oauth_authorization_urls'),
+    String(input).endsWith('/app/v3/api/oauth/authorization_urls'),
   );
 
   assert.ok(oauthUrlRequest);
-  assert.equal(oauthUrlRequest.init?.method, 'GET');
+  assert.equal(oauthUrlRequest.init?.method, 'POST');
+  assert.deepEqual(JSON.parse(String(oauthUrlRequest.init?.body ?? '{}')), {
+    provider: 'MICROSOFT',
+    redirectUri: 'https://studio.example.com/login/oauth/callback/microsoft',
+    state: 'oauth:microsoft',
+  });
 });

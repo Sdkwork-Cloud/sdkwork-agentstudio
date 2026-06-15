@@ -84,6 +84,10 @@ export default defineConfig(({ mode }) => {
     canonicalWorkspaceRootDir,
     '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript/dist/index.js',
   );
+  const sdkworkAuthRuntimePcReactEntry = path.resolve(
+    canonicalWorkspaceRootDir,
+    '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-runtime-pc-react/src/index.ts',
+  );
   const sdkworkAuthPcReactAuthServiceEntry = path.resolve(
     canonicalWorkspaceRootDir,
     '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-pc-react/src/auth-service.ts',
@@ -99,6 +103,12 @@ export default defineConfig(({ mode }) => {
   const sharedAppbaseAppSdkChunkEntry = useSharedSdkSourceMode
     ? sharedAppbaseAppSdkSourceEntry
     : sharedAppbaseAppSdkDistEntry;
+  const sharedMessagingAppSdkChunkEntry = useSharedSdkSourceMode
+    ? sharedMessagingAppSdkSourceEntry
+    : sharedMessagingAppSdkDistEntry;
+  const sharedSdkCommonChunkEntry = useSharedSdkSourceMode
+    ? sharedSdkCommonSourceEntry
+    : sharedSdkCommonDistEntry;
 
   return {
     envDir: workspaceRootDir,
@@ -112,6 +122,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       dedupe: [...CLAW_VITE_DEDUPE_PACKAGES],
       alias: [
+        { find: '@sdkwork/auth-runtime-pc-react', replacement: sdkworkAuthRuntimePcReactEntry },
         { find: '@sdkwork/auth-pc-react/auth-service', replacement: sdkworkAuthPcReactAuthServiceEntry },
         { find: /^@sdkwork\/auth-pc-react$/, replacement: sdkworkAuthPcReactShimEntry },
         { find: /^@sdkwork\/user-pc-react$/, replacement: sdkworkUserPcReactShimEntry },

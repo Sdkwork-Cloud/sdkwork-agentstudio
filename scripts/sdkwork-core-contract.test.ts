@@ -61,8 +61,9 @@ runTest('sdkwork-claw-core exposes local stores and hooks instead of re-exportin
   assert.ok(!pkg.dependencies?.['@sdkwork/claw-studio-business']);
   assert.ok(!pkg.dependencies?.['@google/genai']);
   assert.equal(pkg.dependencies?.['@sdkwork/appbase-app-sdk'], 'workspace:*');
-  assert.equal(pkg.dependencies?.['@sdkwork/iam-runtime'], 'workspace:*');
-  assert.equal(pkg.dependencies?.['@sdkwork/iam-sdk-adapter'], 'workspace:*');
+  assert.equal(pkg.dependencies?.['@sdkwork/auth-runtime-pc-react'], 'workspace:*');
+  assert.equal(pkg.dependencies?.['@sdkwork/iam-runtime'], undefined);
+  assert.equal(pkg.dependencies?.['@sdkwork/iam-sdk-adapter'], undefined);
   assert.equal(pkg.dependencies?.['@sdkwork/drive-app-sdk'], 'workspace:*');
   assert.equal(pkg.dependencies?.['@sdkwork/messaging-app-sdk'], 'workspace:*');
   assert.equal(pkg.dependencies?.[retiredGenericAppSdkPackage], undefined);
@@ -292,8 +293,10 @@ runTest('claw host vite configs switch shared sdk resolution by explicit mode wh
   assert.match(webViteConfig, /isSharedSdkSourceMode/);
   assert.match(webViteConfig, /resolvePnpmPackageDistEntry/);
   assert.match(webViteConfig, /@sdkwork\/appbase-app-sdk/);
+  assert.match(webViteConfig, /@sdkwork\/auth-runtime-pc-react/);
   assert.match(webViteConfig, /@sdkwork\/messaging-app-sdk/);
   assert.match(webViteConfig, /sdkwork-appbase-app-sdk-typescript/);
+  assert.match(webViteConfig, /sdkwork-auth-runtime-pc-react/);
   assert.match(webViteConfig, /sdkwork-messaging-app-sdk-typescript/);
   assert.match(webViteConfig, /generated\/server-openapi\/src\/index\.ts/);
   assert.doesNotMatch(webViteConfig, /@sdkwork\/app-sdk/);
@@ -301,8 +304,10 @@ runTest('claw host vite configs switch shared sdk resolution by explicit mode wh
 
   assert.match(desktopViteConfig, /isSharedSdkSourceMode/);
   assert.match(desktopViteConfig, /@sdkwork\/appbase-app-sdk/);
+  assert.match(desktopViteConfig, /@sdkwork\/auth-runtime-pc-react/);
   assert.match(desktopViteConfig, /@sdkwork\/messaging-app-sdk/);
   assert.match(desktopViteConfig, /sdkwork-appbase-app-sdk-typescript/);
+  assert.match(desktopViteConfig, /sdkwork-auth-runtime-pc-react/);
   assert.match(desktopViteConfig, /sdkwork-messaging-app-sdk-typescript/);
   assert.match(desktopViteConfig, /generated\/server-openapi\/src\/index\.ts/);
   assert.doesNotMatch(desktopViteConfig, /@sdkwork\/app-sdk/);
@@ -328,6 +333,7 @@ runTest('claw host tsconfig paths align TypeScript shared sdk resolution with th
 
   for (const source of [webTsconfig, desktopTsconfig]) {
     assert.match(source, /"@sdkwork\/appbase-app-sdk"/);
+    assert.match(source, /"@sdkwork\/auth-runtime-pc-react"/);
     assert.match(source, /"@sdkwork\/messaging-app-sdk"/);
     assert.match(source, /"@sdkwork\/auth-pc-react\/auth-service"/);
     assert.match(source, /"@sdkwork\/core-pc-react\/app"/);
@@ -509,17 +515,18 @@ runTest('claw workspace keeps current relative-path shared sdk development while
   assert.doesNotMatch(workspaceManifest, /craw-chat\/sdks\/sdkwork-craw-chat-sdk\/sdkwork-craw-chat-sdk-typescript\/generated\/server-openapi/);
   assert.doesNotMatch(workspaceManifest, retiredChatBrandPattern);
   assert.match(workspaceManifest, /'\.\.\/sdkwork-appbase\/sdks\/sdkwork-appbase-app-sdk\/sdkwork-appbase-app-sdk-typescript\/generated\/server-openapi'/);
-  assert.match(workspaceManifest, /'\.\.\/\.\.\/\.\.\/sdkwork-appbase\/sdks\/sdkwork-appbase-app-sdk\/sdkwork-appbase-app-sdk-typescript\/generated\/server-openapi'/);
+  assert.doesNotMatch(workspaceManifest, /'\.\.\/\.\.\/\.\.\/sdkwork-appbase\/sdks\/sdkwork-appbase-app-sdk\/sdkwork-appbase-app-sdk-typescript\/generated\/server-openapi'/);
+  assert.match(workspaceManifest, /'\.\.\/sdkwork-appbase\/packages\/pc-react\/iam\/sdkwork-auth-runtime-pc-react'/);
   assert.match(workspaceManifest, /'\.\.\/sdkwork-sdk-commons\/sdkwork-sdk-common-typescript'/);
-  assert.match(workspaceManifest, /'\.\.\/\.\.\/\.\.\/sdkwork-sdk-commons\/sdkwork-sdk-common-typescript'/);
+  assert.doesNotMatch(workspaceManifest, /'\.\.\/\.\.\/\.\.\/sdkwork-sdk-commons\/sdkwork-sdk-common-typescript'/);
   assert.match(workspaceManifest, /'\.\.\/sdkwork-core\/sdkwork-core-pc-react'/);
-  assert.match(workspaceManifest, /'\.\.\/\.\.\/\.\.\/sdkwork-core\/sdkwork-core-pc-react'/);
+  assert.doesNotMatch(workspaceManifest, /'\.\.\/\.\.\/\.\.\/sdkwork-core\/sdkwork-core-pc-react'/);
   assert.match(workspaceManifest, /'\.\.\/craw-chat\/sdks\/sdkwork-im-sdk\/sdkwork-im-sdk-typescript'/);
-  assert.match(workspaceManifest, /'\.\.\/\.\.\/\.\.\/craw-chat\/sdks\/sdkwork-im-sdk\/sdkwork-im-sdk-typescript'/);
+  assert.doesNotMatch(workspaceManifest, /'\.\.\/\.\.\/\.\.\/craw-chat\/sdks\/sdkwork-im-sdk\/sdkwork-im-sdk-typescript'/);
   assert.match(workspaceManifest, /'\.\.\/sdkwork-messaging\/sdks\/sdkwork-messaging-app-sdk\/sdkwork-messaging-app-sdk-typescript\/generated\/server-openapi'/);
-  assert.match(workspaceManifest, /'\.\.\/\.\.\/\.\.\/sdkwork-messaging\/sdks\/sdkwork-messaging-app-sdk\/sdkwork-messaging-app-sdk-typescript\/generated\/server-openapi'/);
+  assert.doesNotMatch(workspaceManifest, /'\.\.\/\.\.\/\.\.\/sdkwork-messaging\/sdks\/sdkwork-messaging-app-sdk\/sdkwork-messaging-app-sdk-typescript\/generated\/server-openapi'/);
   assert.match(workspaceManifest, /'\.\.\/sdkwork-rtc\/sdks\/sdkwork-rtc-sdk\/sdkwork-rtc-sdk-typescript'/);
-  assert.match(workspaceManifest, /'\.\.\/\.\.\/\.\.\/sdkwork-rtc\/sdks\/sdkwork-rtc-sdk\/sdkwork-rtc-sdk-typescript'/);
+  assert.doesNotMatch(workspaceManifest, /'\.\.\/\.\.\/\.\.\/sdkwork-rtc\/sdks\/sdkwork-rtc-sdk\/sdkwork-rtc-sdk-typescript'/);
   assert.match(workspaceManifest, /'\.\.\/sdkwork-local-router\/packages\/pc-react\/intelligence\/sdkwork-local-api-proxy'/);
   assert.doesNotMatch(workspaceManifest, /'\.\.\/craw-chat\/sdks\/sdkwork-craw-chat-sdk\/sdkwork-craw-chat-sdk-typescript\/composed'/);
   assert.doesNotMatch(workspaceManifest, /'\.\.\/\.\.\/\.\.\/craw-chat\/sdks\/sdkwork-craw-chat-sdk\/sdkwork-craw-chat-sdk-typescript\/composed'/);
@@ -682,16 +689,18 @@ runTest('claw core runtime wrapper delegates desktop env and session handling to
 
   assert.match(workspaceManifest, /\.\.\/sdkwork-core\/sdkwork-core-pc-react/);
   assert.match(workspaceManifest, /\.\.\/sdkwork-ui\/sdkwork-ui-pc-react/);
+  assert.match(workspaceManifest, /\.\.\/sdkwork-appbase\/packages\/pc-react\/iam\/sdkwork-auth-runtime-pc-react/);
   assert.equal(pkg.dependencies?.['@sdkwork/core-pc-react'], 'workspace:*');
   assert.equal(pkg.dependencies?.['@sdkwork/appbase-app-sdk'], 'workspace:*');
-  assert.equal(pkg.dependencies?.['@sdkwork/iam-runtime'], 'workspace:*');
-  assert.equal(pkg.dependencies?.['@sdkwork/iam-sdk-adapter'], 'workspace:*');
+  assert.equal(pkg.dependencies?.['@sdkwork/auth-runtime-pc-react'], 'workspace:*');
+  assert.equal(pkg.dependencies?.['@sdkwork/iam-runtime'], undefined);
+  assert.equal(pkg.dependencies?.['@sdkwork/iam-sdk-adapter'], undefined);
   assert.equal(pkg.dependencies?.['@sdkwork/messaging-app-sdk'], 'workspace:*');
   assert.equal(pkg.dependencies?.[retiredGenericAppSdkPackage], undefined);
   assert.match(appSdkSource, /@sdkwork\/appbase-app-sdk/);
   assert.match(appSdkSource, /@sdkwork\/messaging-app-sdk/);
-  assert.match(appSdkSource, /@sdkwork\/iam-runtime/);
-  assert.match(appSdkSource, /createIamRuntime/);
+  assert.match(appSdkSource, /@sdkwork\/auth-runtime-pc-react/);
+  assert.match(appSdkSource, /createSdkworkAppbasePcAuthRuntime/);
   assert.match(appSdkSource, /tokenManager/);
   assert.match(appSdkSource, /@sdkwork\/core-pc-react\/app/);
   assert.match(appSdkSource, /@sdkwork\/core-pc-react\/runtime/);
@@ -707,12 +716,20 @@ runTest('claw core runtime wrapper delegates desktop env and session handling to
   assert.match(appSdkSource, /getAppSdkClientWithSession\(\s*overrides: Partial<SdkworkAppConfig> = \{\},\s*\): AppSdkClient/);
   assert.match(appSdkSource, /useAppSdkClient\(\s*overrides: Partial<SdkworkAppConfig> = \{\},\s*\): AppSdkClient/);
   assert.match(appSdkSource, /createComposedSdkRuntime/);
-  assert.match(appSdkSource, /createAppbaseAppClient\(config\)/);
+  assert.match(appSdkSource, /appbaseAppApiBaseUrl:\s*config\.baseUrl/);
+  assert.match(appSdkSource, /createAppbaseAppClient:\s*\(clientConfig\)\s*=>\s*createAppbaseAppClient/);
   assert.match(appSdkSource, /createDriveAppClient\(config\)/);
   assert.match(appSdkSource, /createMessagingAppClient\(config\)/);
-  assert.match(appSdkSource, /createTokenManagerAwareIamAppClient/);
   assert.match(appSdkSource, /sdkClients:\s*\[driveClient,\s*messagingClient\]/);
   assert.match(appSdkSource, /tokenStore:\s*createAppSdkIamTokenStore\(\)/);
+  assert.match(appSdkSource, /appbaseClient:\s*authRuntime\.appbaseApp/);
+  assert.doesNotMatch(appSdkSource, /@sdkwork\/iam-runtime/);
+  assert.doesNotMatch(appSdkSource, /@sdkwork\/iam-sdk-adapter/);
+  assert.doesNotMatch(appSdkSource, /createIamRuntime/);
+  assert.doesNotMatch(appSdkSource, /createIamSdkAdapters/);
+  assert.doesNotMatch(appSdkSource, /createTokenManagerAwareIamAppClient/);
+  assert.doesNotMatch(appSdkSource, /appbaseBackendApiBaseUrl/);
+  assert.doesNotMatch(appSdkSource, /createAppbaseBackendClient/);
   assert.doesNotMatch(appSdkSource, /initAppSdkClient\(overrides: Partial<SdkworkAppConfig> = \{\}\): SdkworkAppClient/);
   assert.doesNotMatch(appSdkSource, /getAppSdkClient\(\): SdkworkAppClient/);
   assert.doesNotMatch(appSdkSource, /getAppSdkClientWithSession\(\s*overrides: Partial<SdkworkAppConfig> = \{\},\s*\): SdkworkAppClient/);
