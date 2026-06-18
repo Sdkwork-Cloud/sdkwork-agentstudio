@@ -81,7 +81,7 @@ export const paritySources = [
     label: '@sdkwork/im-sdk',
     localRoot: path.resolve(
       workspaceRootDir,
-      '../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript',
+      '../sdkwork-im/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript',
     ),
   },
   {

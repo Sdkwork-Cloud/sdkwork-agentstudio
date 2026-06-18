@@ -50,7 +50,7 @@ export function createSharedSdkPackageContext({
     ),
     sharedImSdkRoot: path.resolve(
       canonicalWorkspaceRoot,
-      '../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript',
+      '../sdkwork-im/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript',
     ),
     sharedRtcSdkRoot: path.resolve(
       canonicalWorkspaceRoot,

@@ -181,7 +181,7 @@ function createSourceSpecs(workspaceRootDir) {
     {
       id: 'im-sdk',
       label: '@sdkwork/im-sdk',
-      repoRoot: path.resolve(workspaceRootDir, '../craw-chat/sdks/sdkwork-im-sdk'),
+      repoRoot: path.resolve(workspaceRootDir, '../sdkwork-im/sdks/sdkwork-im-sdk'),
       packageContainerDirName: '',
       packageDirName: 'sdkwork-im-sdk-typescript',
       monorepoSubmodulePath: '',

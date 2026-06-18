@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync, symlinkSync } from 'node:fs';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -901,7 +901,7 @@ test('shared sdk package preparation resolves the workspace root consistently fr
       ),
       sharedImSdkRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
-        '../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript',
+        '../sdkwork-im/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript',
       ),
       sharedRtcSdkRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
@@ -1402,7 +1402,7 @@ test('shared sdk package preparation skips optional external source package muta
   const sharedImSdkRoot = path.join(
     tempRoot,
     'apps',
-    'craw-chat',
+    'sdkwork-im',
     'sdks',
     'sdkwork-im-sdk',
     'sdkwork-im-sdk-typescript',
@@ -1788,7 +1788,7 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
   const sharedImSdkRoot = path.join(
     tempRoot,
     'apps',
-    'craw-chat',
+    'sdkwork-im',
     'sdks',
     'sdkwork-im-sdk',
     'sdkwork-im-sdk-typescript',
@@ -2514,7 +2514,7 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     assert.equal(realpathSync(preparedImSdk.packageRoot), realpathSync(path.join(
       tempRoot,
       'apps',
-      'craw-chat',
+      'sdkwork-im',
       'sdks',
       'sdkwork-im-sdk',
       'sdkwork-im-sdk-typescript',

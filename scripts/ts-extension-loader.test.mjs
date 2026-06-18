@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -166,15 +166,15 @@ assert.equal(
 );
 
 assert.equal(
-  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/craw-chat-sdk'),
+  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/sdkwork-im-sdk'),
   null,
-  'workspace package resolution must not shadow the craw-chat SDK package with a claw host shim',
+  'workspace package resolution must not shadow the sdkwork-im SDK package with a claw host shim',
 );
 
 assert.equal(
-  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/craw-chat-backend-sdk'),
+  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/sdkwork-im-backend-sdk'),
   null,
-  'workspace package resolution must not remap craw-chat backend sdk imports through the claw studio workspace',
+  'workspace package resolution must not remap sdkwork-im backend sdk imports through the claw studio workspace',
 );
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdkwork-ts-loader-'));

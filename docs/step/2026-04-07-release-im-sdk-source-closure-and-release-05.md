@@ -78,8 +78,8 @@ node scripts/check-shared-sdk-release-parity.mjs
 git -C ../sdkwork-core status --short -- sdkwork-core-pc-react
 git -C ../../retired Spring app SDK source tree status --short -- retired generic app SDK TypeScript package
 git -C ../../sdk/sdkwork-sdk-commons status --short -- sdkwork-sdk-common-typescript
-git -C ../craw-chat/sdks/sdkwork-im-sdk status --short -- sdkwork-im-sdk-typescript
-git -C ../craw-chat/sdks/sdkwork-rtc-sdk status --short -- sdkwork-rtc-sdk-typescript
+git -C ../sdkwork-im/sdks/sdkwork-im-sdk status --short -- sdkwork-im-sdk-typescript
+git -C ../sdkwork-im/sdks/sdkwork-rtc-sdk status --short -- sdkwork-rtc-sdk-typescript
 ```
 
 Observed result:
