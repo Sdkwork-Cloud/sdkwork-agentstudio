@@ -100,7 +100,7 @@ Start from [`.env.example`](./.env.example). The most important variables are:
 
 - an active OpenClaw-compatible instance plus Provider Center configuration for AI generation features
 - `VITE_API_BASE_URL`: backend API base URL used by typed clients and desktop update checks
-- `VITE_ACCESS_TOKEN`: optional bearer token for update and backend calls
+- `SDKWORK_ACCESS_TOKEN`: optional private bootstrap access token for protected API calls before login
 - `VITE_APP_ID`, `VITE_RELEASE_CHANNEL`, `VITE_DISTRIBUTION_ID`, `VITE_PLATFORM`, `VITE_TIMEOUT`: desktop runtime and update configuration
 
 Desktop-specific examples are also available in [`packages/sdkwork-claw-desktop/.env.example`](./packages/sdkwork-claw-desktop/.env.example).

@@ -127,4 +127,4 @@ There is no repo-wide `pnpm test` script or coverage gate yet. Keep logic-heavy 
 Recent history follows Conventional Commits such as `feat:` and `docs:`. Keep each commit scoped to one package or one architectural concern. PRs should include a short summary, affected packages, verification commands, linked issues, and screenshots for UI changes.
 
 ### Security & Configuration Tips
-Never commit secrets. Start from `.env.example`; `GEMINI_API_KEY` is required for AI endpoints, and `VITE_ACCESS_TOKEN` is optional for update checks. Document every new environment variable in the relevant package docs or example env file.
+Never commit secrets. Start from `.env.example`; `GEMINI_API_KEY` is required for AI endpoints, and `SDKWORK_ACCESS_TOKEN` is optional for protected API bootstrap before login. Document every new environment variable in the relevant package docs or example env file.

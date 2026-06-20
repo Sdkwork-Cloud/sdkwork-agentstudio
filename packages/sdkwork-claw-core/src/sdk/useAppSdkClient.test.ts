@@ -67,7 +67,7 @@ afterEach(() => {
   delete process.env.VITE_OWNER_MODE;
   delete process.env.VITE_API_BASE_URL;
   delete process.env.VITE_ORGANIZATION_API_BASE_URL;
-  delete process.env.VITE_ACCESS_TOKEN;
+  delete process.env.SDKWORK_ACCESS_TOKEN;
   delete process.env.VITE_ORGANIZATION_ACCESS_TOKEN;
   delete process.env.VITE_PLATFORM;
 });
@@ -79,7 +79,7 @@ describe('createAppSdkClientConfig', () => {
     stubRuntimeEnv('VITE_OWNER_MODE', 'organization');
     stubRuntimeEnv('VITE_API_BASE_URL', 'https://api-root.sdkwork.com');
     stubRuntimeEnv('VITE_ORGANIZATION_API_BASE_URL', 'https://api-org.sdkwork.com/');
-    stubRuntimeEnv('VITE_ACCESS_TOKEN', 'root-access-token');
+    stubRuntimeEnv('SDKWORK_ACCESS_TOKEN', 'root-access-token');
     stubRuntimeEnv('VITE_ORGANIZATION_ACCESS_TOKEN', 'organization-access-token');
     stubRuntimeEnv('VITE_PLATFORM', 'desktop');
 

@@ -103,6 +103,9 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     base: command === 'build' ? './' : '/',
+    define: {
+      'process.env.SDKWORK_ACCESS_TOKEN': JSON.stringify(env.SDKWORK_ACCESS_TOKEN ?? ''),
+    },
     envDir: workspaceRootDir,
     plugins: [
       ...(enableWorktreeWorkspaceResolver

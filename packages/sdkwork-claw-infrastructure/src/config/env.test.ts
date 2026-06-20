@@ -27,7 +27,7 @@ runTest('createAppEnvConfig applies defaults and normalizes the base URL', () =>
 
 runTest('createAppEnvConfig ignores browser-side root access tokens', () => {
   const env = createAppEnvConfig({
-    VITE_ACCESS_TOKEN: '  Bearer test-token  ',
+    SDKWORK_ACCESS_TOKEN: '  Bearer test-token  ',
   });
 
   assert.equal(Object.prototype.hasOwnProperty.call(env, 'auth'), false);

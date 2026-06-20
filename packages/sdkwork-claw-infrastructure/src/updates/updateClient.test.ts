@@ -88,7 +88,7 @@ await runTest('checkAppUpdate never applies browser root tokens to the generated
   const appSdk = createMockSdkClientFactory();
   const env = createAppEnvConfig({
     VITE_API_BASE_URL: 'http://localhost:8080/',
-    VITE_ACCESS_TOKEN: 'Bearer desktop-token',
+    SDKWORK_ACCESS_TOKEN: 'Bearer desktop-token',
     VITE_APP_ID: '42',
   });
 

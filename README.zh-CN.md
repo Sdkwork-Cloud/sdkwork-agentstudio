@@ -77,7 +77,7 @@ pnpm --filter @sdkwork/claw-desktop tauri:info
 
 - `GEMINI_API_KEY`：Gemini AI 相关能力所需
 - `VITE_API_BASE_URL`：类型化客户端与桌面更新检查使用的后端地址
-- `VITE_ACCESS_TOKEN`：可选的后端访问令牌
+- `SDKWORK_ACCESS_TOKEN`：可选的私有 bootstrap 访问令牌（通过 vite define 注入，禁止 `VITE_*` 凭证 env）
 - `VITE_APP_ID`、`VITE_RELEASE_CHANNEL`、`VITE_DISTRIBUTION_ID`、`VITE_PLATFORM`、`VITE_TIMEOUT`：桌面运行时与更新相关配置
 
 桌面端示例可参考 [`packages/sdkwork-claw-desktop/.env.example`](./packages/sdkwork-claw-desktop/.env.example)。
