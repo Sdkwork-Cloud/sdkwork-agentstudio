@@ -1,0 +1,36 @@
+> Migrated from `docs/release/release-2026-04-08-01.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- 推进 `Step 03`：把 OpenClaw Install Bootstrap 从“依赖可选 ClawHub 目录服务才能继续”收口为“先保护配置定位、托管 Provider 投影和同步实例主链，再补目录增强面”。
+- 保持 Kernel `openClawRuntime.homeDir` 作为 `openclaw.json` 的优先定位事实源，继续压实 Install Bootstrap 与 Kernel Runtime 的统一真相源。
+- 在不放宽 `@sdkwork/claw-core` Node-safe root 入口边界的前提下，修复 guided install 在 Node 合约测试与离线目录场景下的可用性。
+
+## Attempt Outcome
+
+- `openClawBootstrapService` 不再静态依赖 `clawHubService`，而是改为按需解析目录服务；当当前运行面不暴露目录服务时，自动回退为 `packs=[]`、`skills=[]`。
+- 该调整避免了“可选目录数据阻断 install/bootstrap 主链”的错误优先级，让 `openclaw.json` 定位、托管 Provider 投影与同步实例创建继续作为 Step 03 的主链事实。
+- `Step 03` 仍未闭环；Runtime 热点拆分、升级/回滚执行证据与多模式发布 smoke 仍需继续推进。
+
+## Change Scope
+
+- `packages/removed-install-feature/src/services/openClawBootstrapService.ts`
+- `docs/review/step-03-执行卡-2026-04-07.md`
+- `docs/review/step-03-install-bootstrap-目录降级与内核真相源收口-2026-04-08.md`
+- `docs/架构/12-安装、部署、发布与商业化交付标准.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node --experimental-strip-types scripts/sdkwork-core-contract.test.ts`
+- `node --experimental-strip-types packages/removed-install-feature/src/services/openClawBootstrapService.test.ts`
+- `pnpm.cmd check:sdkwork-install`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-proof desktop_kernel_info_exposes_extended_runtime_directories`
+
+## Risks And Rollback
+
+- 风险：当前回退策略把 ClawHub package / skill 目录视为增强面；若后续流程把目录数据重新当成主链前置，Install Bootstrap 仍可能再次被目录面故障拖死。
+- 回退：可只回退本轮 `openClawBootstrapService` 的目录惰性解析与文档更新，不影响已落地的 Kernel `openClawRuntime.homeDir` 配置定位主链。
+

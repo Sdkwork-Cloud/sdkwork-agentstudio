@@ -1,0 +1,193 @@
+> Migrated from `docs/架构/02-架构标准与总体设计.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 02-架构标准与总体设计
+
+## 1. 总体目标
+
+总体架构必须同时满足四个目标：
+
+1. 支撑桌面 AI 工作台的快速交互与高可维护性。
+2. 支撑内置 OpenClaw 的托管运行、灵活升级与功能正确性。
+3. 支撑 Local Proxy API Gateway 统一承载 OpenClaw 的全部模型访问。
+4. 支撑商业化交付所需的安装、部署、发布、审计与回滚能力。
+
+## 2. 总体架构形态
+
+```text
+Web / Desktop Host
+        ->
+      Shell
+        ->
+   Feature Packages
+        ->
+Core / Infrastructure / Types / UI / i18n / Commons
+```
+
+桌面运行时在上述前端分层之外，增加一条托管执行链：
+
+```text
+Bundled Components
+  -> Bundled OpenClaw Runtime
+  -> OpenClaw Gateway
+  -> Local Proxy API Gateway
+  -> Desktop Kernel / Supervisor
+```
+
+### 2.1 四态统一要求
+
+- `desktop`、`server`、`docker`、`k8s` 必须共用同一套 Host Core、Host Runtime Contract、API 分层和发布元数据标准。
+- 允许差异仅限：`hostMode`、`distributionFamily`、`deploymentFamily`、`acceleratorProfile`、启动 owner、打包形态、部署编排。
+- `docker`、`k8s` 是 `server` 模式的交付包装，不是第二套业务实现。
+- `chat`、`channels`、`instances`、`ClawHub`、`plugins`、`Instance Detail`、`Kernel Center` 必须建立在同一套 `core/infrastructure` 事实源上，不允许按模式分叉业务逻辑。
+
+## 3. 运行时控制平面
+
+系统应拆分为四个平面：
+
+- 交互平面：Shell、Chat、Settings、Instances、Market 等 UI。
+- 控制平面：Studio API、Manage API、Provider Center、Kernel Center。
+- 契约平面：`/claw/*` Native API、Hosted Studio API、OpenClaw Gateway API、Local Proxy API。
+- 执行平面：OpenClaw Runtime、Gateway、Local Proxy、Tasks、Agents、Skills。
+- 交付平面：打包、安装、升级、发布、回滚、证据归档。
+
+统一控制面必须以两类事实源为准：
+
+- 宿主事实源：`RuntimeStartupContext(hostMode/distributionFamily/deploymentFamily/acceleratorProfile/hostEndpoint/runtimeDataDir)`。
+- OpenClaw 事实源：Kernel `openClawRuntime` 快照，优先级高于旧 `provenance` 或路径启发式。
+
+## 4. 内置 OpenClaw 集成机制
+
+### 4.1 集成原则
+
+- OpenClaw 是内置托管组件，不是可有可无的外挂依赖。
+- 桌面是内置 OpenClaw 的主交付形态；`server/container/k8s` 必须复用同一套宿主内核、管理 API、Proxy 契约与升级元数据，不允许另起一套“服务端版 OpenClaw 逻辑”。
+- 内置组件清单必须暴露版本、默认启动项、安装源、运行目录和配置路径。
+- Desktop 启动时必须先完成 OpenClaw Gateway 配置，再确保 Local Proxy 就绪，再投影托管 Provider。
+
+### 4.2 启动链标准
+
+标准启动链必须满足：
+
+1. 激活内置 OpenClaw Runtime。
+2. 配置 OpenClaw Gateway。
+3. 启动并校验 Local Proxy API Gateway。
+4. 将本地代理 Provider 投影写入 OpenClaw 配置。
+5. 再进入桌面 Kernel 与实例工作台逻辑。
+
+## 5. Local Proxy API Gateway 标准
+
+### 5.1 强制约束
+
+- 对内置 OpenClaw，所有大模型相关访问统一经 Local Proxy API Gateway。
+- 对 `server/container/k8s` 中启用的托管 OpenClaw / Provider 投影，也必须沿用同一套 Local Proxy 协议与配置模型。
+- OpenClaw 不直接持有多家上游模型供应商的分散接入逻辑。
+- 代理必须承担协议归一、模型映射、流式翻译、默认路由和可观测职责。
+
+### 5.2 覆盖范围
+
+本地代理必须完整覆盖 OpenClaw 使用到的能力：
+
+- 聊天与生成
+- 推理模型
+- Embedding
+- 流式输出
+- OpenAI/Anthropic/Gemini 协议投影
+- 统一 API Key 与本地 Loopback 访问
+- 与 `/claw/*` 原生宿主 API 解耦的兼容协议入口
+
+## 6. 分层标准
+
+### 6.1 Host 层
+
+只做平台启动、环境注入、宿主桥接、Shell 挂载。禁止沉积业务服务、业务 Store、业务配置拼装。
+
+### 6.2 Shell 层
+
+负责路由、布局、Provider、导航与全局框架体验，不承担细粒度业务实现。
+
+### 6.3 Feature 层
+
+按业务域划分 `pages/components/services` 最小边界，对外只允许包根导出。
+
+### 6.4 Foundation 层
+
+- `core`：共享服务、状态、编排
+- `infrastructure`：平台桥、HTTP、运行时契约、宿主能力
+- `types`：共享类型与模型
+- `ui`：复用组件
+- `i18n`：国际化
+- `commons`：轻量复用业务组件
+
+## 7. 内置组件与升级机制
+
+### 7.1 标准要求
+
+- OpenClaw 版本必须有单一版本源。
+- 内置资源必须带 `manifest`，包含 `openclawVersion` 等关键元数据。
+- 当前仓库版本源来自 `config/kernel-releases/openclaw.json`，稳定基线与外部 Node.js 运行时要求必须由该配置派生，并与桌面资源 `manifest` 对齐。
+- `desktop/server/container/k8s` 的 release profile 必须共用同一份 OpenClaw 版本源、release metadata、verify/readiness 规则；只允许产物封装不同。
+- 升级前必须运行 readiness/preflight 检查。
+- 当升级版本引入新的 `pnpm.onlyBuiltDependencies` 或下载型原生运行时资产时，`prepare-openclaw-runtime` 必须在关闭 install scripts 的前提下显式补齐这些二进制，并让 smoke load 覆盖它们。
+- 升级后必须校验资源、版本、可启动性与功能关键链路。
+- 失败时必须支持修复或回滚，不允许把用户留在半升级状态。
+
+### 7.2 目标状态
+
+- 升级是托管流程，不是人工散装替换。
+- 升级影响面可见，可验证，可追责。
+- OpenClaw 版本变更不应破坏 Proxy、Provider 投影、Instance Detail 与发布链路。
+
+## 8. 当前优势
+
+- 薄 Host 架构清晰。
+- 桌面端已具备内置 OpenClaw、Gateway、Local Proxy、Kernel 的分工基础。
+- 代理、配置中心、内核中心和实例工作台已形成多面协同。
+- OpenClaw 升级与发布已有脚本化基础。
+
+## 9. 关键差距
+
+- 代理标准、实例治理标准、升级标准还需要统一写成“强约束”而不只是实现事实。
+- API 分层、发布边界、鉴权与错误契约需要长期按第 `16` 章统一治理。
+- Instance Detail 与 OpenClaw/Control UI 的一致性矩阵仍需长期维护。
+- 商业化视角下的审计、回滚、权限边界仍可继续增强。
+- `desktop/server/docker/k8s` 的统一标准已经明确，但仍需继续用 contract test、release smoke、review 证据长期锁定，避免后续回到“同功能多实现”。
+
+## 10. 评估标准
+
+| 评估项 | 合格线 | 领先线 | 当前判断 |
+| --- | --- | --- | --- |
+| 分层清晰度 | 有明确分层与依赖方向 | 有脚本与 CI 强校验 | `L4` |
+| OpenClaw 集成成熟度 | 能稳定托管内置 Runtime | 具备版本、升级、修复、回滚体系 | `L4` |
+| Proxy 一致性 | OpenClaw 模型访问统一经过本地代理 | 全协议、全能力、全观测覆盖 | `L4` |
+| 多形态统一性 | `desktop/server/container/k8s` 共用一套宿主与契约 | 模式切换不复制业务逻辑，只切换启动与交付 profile | `L4` |
+| 架构扩展性 | 可增量扩展模块与部署形态 | 可在不重构基础层前提下持续演进 | `L4` |
+
+## 11. 结论
+
+当前总体架构方向正确。后续重点不是重构分层，而是把“内置 OpenClaw 托管化 + Local Proxy 统一化 + 升级工程化 + 工作台完整化”固化为长期标准。
+
+## 12. 2026-04-07 Host/Shell/Foundation 收口补充
+
+- `web` Host 源码根目录已冻结为启动薄层，只允许 `App.tsx`、`main.tsx` 等入口文件。
+- `desktop` Host 源码根目录已冻结为 `desktop/` 子树加根入口文件，不再允许业务沉积。
+- `shell` 源码根目录已冻结为 `application/`、`components/`、`styles/` 与根 `index.ts`。
+- `check-arch-boundaries` 与 `check-sdkwork-claw-hosts` 已成为 Step 02 的实际门禁，而不是文档建议。
+- `sync-feature-packages` 已被校正为“feature public surface 同步器”，不再误改 host 包，也不再把深层 `pages/...` 路径暴露到 package root。
+
+## 13. 2026-04-07 Hosted Browser 平台真值补充
+
+- Hosted Browser 只是交付通道，不是业务平台类型；`runtime.getRuntimeInfo().platform` 必须反映真实宿主，而不是一律回落为 `web`。
+- 统一规则为：`server -> platform=server`，`desktopCombined -> platform=desktop`，`docker/k8s -> platform=server + deploymentFamily=container|kubernetes`。
+- UI、Install、Kernel Center、Settings 统一从 `RuntimeStartupContext + Kernel openClawRuntime` 读取事实源；浏览器承载形态仅通过 `startup.hostedBrowser/browserBaseUrl` 表达。
+- 该标准用于冻结 `desktop/server/docker/k8s` 共核架构，防止后续因交付形态差异重新分叉 Host Runtime、API 或 Proxy 语义。
+- 面向功能开关时，`platform.getPlatform()` 可把 `desktopCombined` hosted browser 视为 `desktop`；但面向宿主 authority 仲裁时，必须继续叠加 `supportsNativeScreenshot()` 等原生能力判据，避免把 hosted browser 误认成原生桌面接管者。
+
+## 14. 2026-04-16 多内核治理总纲补充
+
+- 总体架构从“内置 OpenClaw 托管化”进一步升级为“多内核统一治理”，即在保持 OpenClaw 一等公民地位的同时，把 Hermes 和未来更多 kernel 纳入同一控制平面。
+- 正式推荐建立统一的 `Kernel Governance Plane`，详见 `18-多内核治理与升级维护设计.md`。
+- 该治理平面统一管理 kernel catalog、release registry、package profile、authority state、path resolver、adapter registry 与 upgrade orchestrator。
+- OpenClaw、Hermes 与未来 kernel 可以拥有不同的 `installStrategy`、`managementTransport` 与 doctor 规则，但不得再要求 Host 核心层为某个 kernel 增长平台级特例。
+- 总体架构的扩展性评估从现在开始不再只看“能否继续支持 OpenClaw”，而要看“新增一个 kernel 时，是否只需新增配置与 adapter，而不需要重构平台核心”。
+

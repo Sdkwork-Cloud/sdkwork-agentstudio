@@ -1,0 +1,90 @@
+> Migrated from `docs/架构/13-演进路线图与阶段评估.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 13-演进路线图与阶段评估
+
+## 1. 演进主线
+
+后续演进必须围绕四条主线持续推进：
+
+- 内置 OpenClaw 托管化
+- Local Proxy 模型访问统一化
+- Instance Detail 功能一致性与体验领先化
+- OpenClaw 升级与商业交付工程化
+
+## 2. 阶段划分
+
+### 阶段 A：标准收口
+
+- 固化代理强约束
+- 固化内置组件集成标准
+- 固化升级与发布门禁
+
+### 阶段 B：治理完善
+
+- 建立 Instance Detail 与 OpenClaw/Control UI 一致性矩阵
+- 建立代理、实例、升级三类回归清单
+- 强化变更提示、差异展示、回滚提示
+
+### 阶段 C：商业化增强
+
+- 强化审计、权限、运营能力
+- 强化发布证据、changelog、版本追踪
+- 支持更成熟的企业部署与服务化扩展
+
+## 3. 当前优先级
+
+### P0
+
+- 文档明确内置 OpenClaw 与本地 Proxy 架构标准
+- 聊天链和 Provider 应用链保持统一走代理
+- 升级链具备可验证标准
+
+### P1
+
+- 建立 Instance Detail 功能一致性矩阵
+- 建立升级后的业务级回归检查
+- 完善 Provider/Kernel/Instance 三面联动体验
+
+### P2
+
+- 权限、审计、批量治理、企业化扩展
+- 更完善的商业交付与多租户能力
+
+## 4. 阶段评估标准
+
+| 阶段 | 达成条件 |
+| --- | --- |
+| A | 架构标准清晰，代理与升级红线明确 |
+| B | 工作台能力完整，一致性矩阵建立，关键链路可回归 |
+| C | 商业化交付、审计、发布与运营能力成熟 |
+
+## 5. 当前判断
+
+- 阶段 A：接近完成
+- 阶段 B：已启动，仍需补一致性矩阵与回归门禁
+- 阶段 C：具备基础，但离完全商业化仍有增强空间
+
+## 6. 结论
+
+当前产品已进入“高质量骨架已成、需要把标准真正压实”的阶段。优先级应坚定聚焦在托管标准、代理标准、工作台标准和升级标准。
+
+## 2026-04-10 Step 11 评估增量
+
+- Step 11 工程化进展：
+  - release profile、manifest、server runtime smoke 已进入真实产物闭环
+  - windows server packaged bundle 现在可通过真实 `/claw/health/ready` 证据自证
+  - kubernetes bundle 已能稳定出包并写回 skip-aware smoke 记录
+- 当前未闭环项：
+  - desktop packaged launch 仍受当前主机 child-process `EPERM` 约束
+  - container bundle 仍受 linux target / linker / WSL 缺失约束
+  - kubernetes live chart smoke 仍需带 `helm` 的目标主机
+
+## 2026-04-10 Step 11 优先级修正
+
+- `P0`
+  - 在允许 installer / packaged app 原生执行的 Windows 主机上补齐 desktop startup evidence
+  - 在具备 WSL 或 linux toolchain 的主机上补齐 container bundle 与 live deployment smoke
+- `P1`
+  - 为 release 主机补齐 `helm`，把 kubernetes bundle 从 `skipped` 推进到 `passed`
+

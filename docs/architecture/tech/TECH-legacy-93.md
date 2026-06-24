@@ -1,0 +1,41 @@
+> Migrated from `docs/step/93-波次里程碑与阶段总验收矩阵.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 波次里程碑与阶段总验收矩阵
+
+## 1. 波次划分
+
+| 波次 | Step | 目标 |
+| --- | --- | --- |
+| A | `00-04` | 规则、边界、Runtime、API 主脊柱稳定 |
+| B | `05-08` | 配置、聊天、工作台、生态资产形成闭环 |
+| C | `09-12` | 性能、安全、发布、商业化达标 |
+| D | `13` | 总收口、发布准入、下一轮迭代入口 |
+
+## 2. 波次准入/退出
+
+| 波次 | 准入条件 | 退出条件 |
+| --- | --- | --- |
+| A | Step 00 完成 | 包边界、Runtime、API 面全部冻结 |
+| B | 波次 A 通过 | Provider/Chat/Instance/Ecosystem 闭环完成 |
+| C | 波次 B 通过 | 质量门禁、发布链、商业化证据完成 |
+| D | 波次 C 通过 | 发布准入、回滚单、change log、backlog 完成 |
+
+## 3. 总验收命令建议
+
+- 波次 A：`pnpm.cmd check:arch` `pnpm.cmd check:sdkwork-hosts` `pnpm.cmd check:desktop-openclaw-runtime` `pnpm.cmd check:sdkwork-host-runtime`
+- 波次 B：`pnpm.cmd check:sdkwork-settings` `pnpm.cmd check:sdkwork-chat` `pnpm.cmd check:sdkwork-instances` `pnpm.cmd check:sdkwork-market` `pnpm.cmd check:sdkwork-channels` `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts` `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts` `node --experimental-strip-types packages/sdkwork-claw-channels/src/services/channelService.test.ts` `node --experimental-strip-types packages/sdkwork-claw-market/src/services/marketService.test.ts` `node --experimental-strip-types packages/sdkwork-claw-agent/src/services/agentInstallService.test.ts`
+- 波次 C：`pnpm.cmd lint` `pnpm.cmd check:parity` `pnpm.cmd check:automation` `pnpm.cmd check:release-flow`
+- 波次 D：`pnpm.cmd check:multi-mode` `pnpm.cmd release:plan`
+
+## 4. 最快闭环退出标准
+
+- 波次 A：只有当 `02/03/04` 的共享边界 owner 已冻结包边界、Runtime 主链、API 五分层，才允许放开业务并行。
+- 波次 B：只有当全局 channels、chat 路由、Instance Detail 十分区、ClawHub 默认 Agent 安装语义都通过 OpenClaw 事实源校对，才允许进入波次 C。
+- 波次 C：只有当质量门禁、release profile、OpenClaw 关键可用性 smoke、商业化证据链全部成型，才允许进入波次 D。
+- 波次 D：只有当 `93/95/97`、`docs/release/`、架构回写三侧一致，才允许宣告本轮完成。
+
+## 5. 结论
+
+单个 step 通过不代表波次通过；只有波次通过，才允许进入下一阶段。
+

@@ -1,0 +1,67 @@
+> Migrated from `docs/release/release-2026-04-09-97.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Claw Studio release-2026-04-09-97
+
+## Highlights
+
+- Moved the remaining shared managed-config save sequencing out of `InstanceDetail.tsx` and into the dedicated `openClawManagedConfigMutationSupport` helper.
+- Added focused helper coverage plus contract evidence so the page must keep using the shared managed-config runner boundary while retaining all real OpenClaw write authority.
+
+## Attempt Outcome
+
+- RED already established earlier in this loop:
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.test.ts`
+  - failed first because `openClawManagedConfigMutationSupport.ts` did not exist yet
+  - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - failed first because the shared managed-config runner helper did not exist yet
+- Implemented the Step 07 extraction:
+  - added `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.ts`
+  - rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now builds one injected managed-config runner from the shared helper and removes the inline save-orchestration cluster
+  - added `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.test.ts`
+  - updated `packages/sdkwork-claw-instances/src/services/index.ts`
+  - updated `scripts/sdkwork-instances-contract.test.ts` to enforce the new managed-config runner boundary and preserve page-side write authority
+- Current hotspot profile after the fresh current-worktree re-baseline:
+  - `InstanceDetail.tsx`: `1930`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `373`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- `CP07-3` remains open. This loop materially improves the remaining page-side managed-config orchestration boundary, but it does not claim Step 07 closure.
+
+## Change Scope
+
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.test.ts`
+- `packages/sdkwork-claw-instances/src/services/index.ts`
+- `scripts/sdkwork-instances-contract.test.ts`
+- `docs/review/step-07-managed-config-save-runner-extraction-2026-04-09.md`
+- `docs/鏋舵瀯/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+- `docs/release/release-2026-04-09-97.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- RED:
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.test.ts`
+  - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+- GREEN:
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.test.ts`
+  - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - `pnpm check:sdkwork-instances`
+  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm build`
+- YELLOW:
+  - `pnpm lint`
+
+## Risks And Rollback
+
+- The main Step 07 risk remains future page-side re-growth if managed-config save sequencing drifts back into `InstanceDetail.tsx`.
+- This loop intentionally does not alter transport selection, Provider Center managed authority, Local Proxy routing, or desktop plugin/runtime boundaries.
+- Rollback is limited to the new managed-config helper and test, the page rewiring, the contract/barrel updates, and the matching review / architecture / release writebacks.
+

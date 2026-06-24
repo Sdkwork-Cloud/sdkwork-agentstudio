@@ -1,0 +1,57 @@
+> Migrated from `docs/release/release-2026-04-08-64.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Continued the real `Step 07` frontier by moving the remaining managed `memory` and `tools` composition wrappers out of `InstanceDetail.tsx` into dedicated components.
+- Kept the page as the owner of UI side effects and write-path callbacks only: toast feedback, saving flags, section state, and workbench reloads still stay in `InstanceDetail.tsx`.
+- Reduced the full `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` hotspot from `2618` to `2596` lines on fresh measurement, and pushed the tools/memory loading-empty-state composition out of the page hotspot frontier.
+
+## Attempt Outcome
+
+- Added dedicated managed wrapper components:
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`
+- Exported reusable props contracts from the lower-level section components:
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailMemorySection.tsx`
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailToolsSection.tsx`
+- Rewired page orchestration so the page now hands off memory loading/empty-state composition and tools empty-state/runtime-surface aggregation to the new managed components:
+  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- Tightened contract coverage so the page cannot regress back to directly owning the managed memory/tools wrapper responsibility:
+  - `scripts/sdkwork-instances-contract.test.ts`
+- Updated the ongoing Step 07 progress evidence:
+  - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+  - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+
+## Change Scope
+
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailMemorySection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailToolsSection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`
+- `packages/sdkwork-claw-instances/src/components/index.ts`
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `scripts/sdkwork-instances-contract.test.ts`
+- `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+- `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+- `docs/release/release-2026-04-08-64.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
+- `pnpm.cmd check:sdkwork-instances`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+
+## Risks And Rollback
+
+- `Step 07` is still not closable. `CP07-3` remains open because `handleSubmitProviderModelDialog`, `handleSubmitProviderDialog`, and `handleSaveWebSearchConfig` still keep the page oversized, and the two service-core hotspots remain at `3819` and `1664` lines.
+- The extraction intentionally changes render ownership only, not truth-source semantics: OpenClaw memory/tools authority still comes from `openClawManagementCapabilities.ts`, `openClawProviderWorkspacePresentation.ts`, `instanceService.test.ts`, and `webStudio.test.ts`.
+- Rollback must revert the new managed wrapper components, the page rewiring, the contract assertions, and the matching review/architecture/release evidence together; reverting only one side would reintroduce ownership drift.
+

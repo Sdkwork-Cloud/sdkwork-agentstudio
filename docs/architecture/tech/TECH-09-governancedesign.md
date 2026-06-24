@@ -1,0 +1,122 @@
+> Migrated from `docs/架构/09-数据、状态与配置治理设计.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 09-数据、状态与配置治理设计
+
+## 1. 设计目标
+
+数据、状态与配置治理必须保证三件事：
+
+1. 配置来源清晰。
+2. 运行状态可追踪。
+3. OpenClaw 与本地代理配置关系可验证。
+
+## 2. 配置域划分
+
+### 2.1 桌面宿主配置
+
+- 宿主配置
+- Kernel 运行配置
+- 内置组件清单
+- OpenClaw 资源 manifest
+
+### 2.2 Provider / Proxy 配置
+
+- Provider 路由记录
+- 默认路由
+- 客户端协议与上游协议
+- 模型清单
+- 路由测试结果
+- 运行指标
+
+### 2.3 OpenClaw 实例配置
+
+- OpenClaw 主配置文件
+- 托管 Provider 投影
+- Agent 模型选择
+- 运行时参数
+
+### 2.4 工作台派生状态
+
+- Instance Workbench Snapshot
+- Kernel Center Dashboard
+- Provider Center 列表与详情视图
+- ApiSettings 请求/消息日志与消息捕获视图
+
+## 3. 关键配置链
+
+OpenClaw 模型访问的标准配置链必须是：
+
+```text
+Provider Route Record
+-> Local Proxy Runtime Snapshot
+-> OpenClaw Local Proxy Projection
+-> OpenClaw Config Provider
+-> Agent Model Reference
+-> Chat / Task / Tool Runtime
+```
+
+这条链是当前产品最关键的配置治理主线。
+
+## 4. 本地代理投影标准
+
+- 统一投影 Provider ID：`sdkwork-local-proxy`
+- 统一本地代理 API Key 来源
+- 统一基于本地 Loopback Base URL 投影
+- 统一写入默认模型、推理模型、Embedding 模型
+- 统一写入运行参数与请求覆盖配置
+
+## 5. 状态治理要求
+
+- 状态必须区分原始事实、派生事实、UI 展示态。
+- Kernel Center 负责宿主和运行时事实。
+- Provider Center 负责路由配置事实与路由运行态。
+- ApiSettings 负责代理请求日志、消息日志与消息捕获开关的派生态，但事实源仍是 Kernel / Local Proxy 观测仓。
+- Instance Detail 负责实例工作台派生态。
+- 禁止页面直接混写底层配置文件造成状态漂移。
+
+## 6. API 真相源分层
+
+- 宿主与端口事实以 `kernelPlatformService` 为主，对应 `/claw/internal/v1/*`、`/claw/manage/v1/*` 与 runtime bridge。
+- 实例目录与治理骨架以 `studioApi` 为主，对应 `/claw/api/v1/studio/*`。
+- OpenClaw 运行态细节以 `openClawGatewayClient` 为主，对应 Gateway `/tools/invoke` 与 Chat WebSocket。
+- 模型请求、路由测试、消息捕获证据以 Local Proxy Snapshot/Logs 为主，不从聊天 UI 反推。
+- 配置持久化必须回到 `openClawConfigService` 或 Hosted Studio 写入接口，不允许页面私自形成影子配置。
+
+## 7. 配置写入要求
+
+- 写入前必须校验目标实例是否为可写 OpenClaw 实例。
+- 写入后必须刷新快照与工作台状态。
+- 对托管投影写入，禁止遗留旧字段污染新配置。
+- 对 Agent 应用必须可选择目标 Agent 范围。
+- 写入完成后必须可从 `Provider Center`、`Kernel Center`、`ApiSettings`、`Instance Detail` 四处读回同一条代理链事实。
+
+## 8. 升级与配置兼容
+
+- OpenClaw 升级不能破坏 Provider 路由记录。
+- 升级后必须自动校验本地代理投影仍然有效。
+- 配置 schema 变更必须具备迁移或兼容策略。
+- 关键配置必须可恢复或可重新投影。
+
+## 9. 评估标准
+
+| 评估项 | 合格线 | 领先线 | 当前判断 |
+| --- | --- | --- | --- |
+| 配置链清晰度 | 能追踪配置来源与去向 | 可从 UI 一路追踪到 OpenClaw Runtime | `L4` |
+| 状态一致性 | 页面与运行态基本一致 | 派生态、事实态、持久态严格分层 | `L4` |
+| 投影标准化 | OpenClaw 可通过代理 Provider 运行 | 投影可重复、可验证、可恢复 | `L4` |
+| 升级兼容性 | 升级后配置不丢失 | 升级后自动校验与修复关键链路 | `L3.5` |
+
+## 10. 结论
+
+当前配置治理最关键的资产不是某个页面，而是“Provider Route -> Local Proxy -> OpenClaw Projection”这条标准链。后续所有模型相关能力都应围绕这条链建设。
+
+## 11. 2026-04-16 多内核状态治理补充
+
+- 在保持 OpenClaw 配置链标准不变的前提下，kernel 治理层必须升级为按 `kernelId` 命名空间管理的统一状态模型，详见 `18-多内核治理与升级维护设计.md`。
+- 平台级聚合状态文件如 `active.json`、`inventory.json`、`pinned.json`、`channels.json`、`sources.json` 只承担索引和汇总职责，不再承载某个 kernel 的完整 authority 事实。
+- 单个 kernel 的 authority、upgrade、migration、doctor、install、instance 状态统一落在 `machine/state/kernels/<kernelId>/` 下管理。
+- `KernelAuthorityState`、`RuntimeUpgradesState` 等状态结构必须去除 OpenClaw 默认值偏置，改为由 kernel registry 按 catalog 动态初始化。
+- 版本显示、控制台入口、实例详情、升级入口都必须基于同一套 authority 与 version resolver 推导，禁止不同页面自行拼装事实导致漂移。
+- `paths.rs` 中不再允许继续为单个 kernel 扩展顶层专属路径字段，路径解析必须收敛到统一的 kernel path resolver。
+

@@ -1,0 +1,151 @@
+> Migrated from `docs/架构/03-模块规划与边界.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 03-模块规划与边界
+
+## 1. 规划原则
+
+- 一个模块只解决一个层次的问题。
+- 控制面、执行面、交付面边界清晰。
+- OpenClaw 托管与模型访问标准必须内聚，不得分散到多个业务包。
+
+## 2. 核心模块分区
+
+### 2.1 Host 与 Shell
+
+- `sdkwork-claw-web`：Web 预览宿主
+- `sdkwork-claw-desktop`：桌面宿主与 Tauri 运行时
+- `sdkwork-claw-shell`：路由、布局、全局入口
+
+### 2.2 业务 Feature
+
+- `sdkwork-claw-chat`
+- `sdkwork-claw-instances`
+- `sdkwork-claw-settings`
+- `sdkwork-claw-market`
+- `removed-install-feature`
+
+### 2.3 基础能力
+
+- `sdkwork-claw-core`
+- `sdkwork-claw-infrastructure`
+- `sdkwork-claw-types`
+- `sdkwork-claw-ui`
+- `sdkwork-claw-i18n`
+
+## 3. OpenClaw 托管相关边界
+
+### 3.1 Bundled Components
+
+职责：
+
+- 内置组件清单
+- 默认启动组件集合
+- OpenClaw 版本与资源清单
+- 交付资源与安装布局对齐
+
+禁止：
+
+- 在业务页面直接感知具体资源复制与安装细节
+
+### 3.2 OpenClaw Runtime
+
+职责：
+
+- 激活内置 OpenClaw
+- 维护安装目录、工作目录、配置路径、版本信息
+- 对升级、修复、镜像导入导出提供稳定基础
+
+禁止：
+
+- 直接承担多家模型供应商协议适配
+
+### 3.3 OpenClaw Gateway
+
+职责：
+
+- 作为 OpenClaw 控制与交互入口
+- 承载实例级会话路由与管理接口
+
+禁止：
+
+- 直接绕过 Local Proxy 访问上游模型 API
+
+### 3.4 Local Proxy API Gateway
+
+职责：
+
+- 统一协议入口
+- 统一上游路由
+- 模型能力封装
+- 流式翻译
+- 路由测试与可观测
+- 本地 Loopback 安全边界
+
+禁止：
+
+- 演变为 UI 页面层或实例业务层
+
+### 3.5 Provider Center / Kernel Center
+
+职责：
+
+- Provider Center：路由配置、路由测试、应用到实例与 Agent
+- Kernel Center：运行状态、版本、内置组件、代理状态、路径与日志
+
+禁止：
+
+- 页面直接篡改底层运行时结构，不经过服务层约束
+
+## 4. Instance Detail 模块边界
+
+`Instance Detail` 必须作为“运行治理工作台”而不是详情页。其标准边界为：
+
+- `overview`：运行概况、健康、接入信息
+- `channels`：渠道连接与状态
+- `cronTasks`：任务定义与执行历史
+- `llmProviders`：Provider 与模型配置
+- `agents`：Agent 配置与默认模型
+- `skills`：技能安装、启停、状态
+- `files`：工作区文件
+- `memory`：记忆与索引
+- `tools`：工具清单与权限
+- `config`：配置文件与差异
+
+## 5. 组件化设计要求
+
+- 页面组件负责表达，不负责底层协议与持久化。
+- 服务组件负责编排，不负责视觉展示。
+- Runtime/Platform 组件负责宿主与执行，不向业务页面泄漏实现细节。
+- OpenClaw 代理投影必须由专用服务负责，不允许多个页面各自拼装。
+
+## 6. 评估标准
+
+| 评估项 | 合格线 | 领先线 | 当前判断 |
+| --- | --- | --- | --- |
+| 模块边界清晰度 | 控制面、执行面、页面层有分工 | OpenClaw/Proxy/Upgrade 三条主线边界稳定 | `L4` |
+| OpenClaw 相关内聚度 | 托管逻辑集中 | 升级、投影、代理、版本均有明确归属 | `L4` |
+| Instance Detail 完整度 | 十个工作台分区完整 | 与 OpenClaw/Control UI 建立长期一致性矩阵 | `L4` |
+| 组件化可维护性 | 页面、服务、运行时分离 | 所有关键能力都有稳定组件边界 | `L4` |
+
+## 7. 结论
+
+模块规划已具备良好基础，下一步关键是把 OpenClaw 托管链和 Local Proxy 链定义为一级架构模块，而不是零散功能点。
+
+## 8. 2026-04-07 基线审计补充
+
+- 当前工作区实际包含 `35` 个包，不只本文列出的核心模块；`sdkwork-claw-account`、`apps`、`auth`、`center`、`community`、`dashboard`、`devices`、`docs`、`extensions`、`github`、`host-*`、`huggingface`、`mall`、`model-purchase`、`points`、`tasks` 等扩展包已进入同一分层体系，`Step 02` 必须补齐全量映射。
+- 当前主风险来自实现热点而不是边界原则缺失：`local_ai_proxy.rs` `8081` 行、`studio.rs` `8074` 行、`InstanceDetail.tsx` `5328` 行、`prepare-openclaw-runtime.mjs` `3290` 行、`openClawGatewaySessionStore.ts` `2767` 行、`openClawGatewayClient.ts` `2737` 行。
+- 基线审计已确认 OpenClaw 主链存在且有效：桌面侧已具备 `gateway` 投影与托管调用，`Local Proxy` 已覆盖多协议模型访问与 Provider 投影，`Instance Detail` 已形成十个工作台分区。
+- 因此后续重点不是继续堆功能，而是把 `Host/Shell/Foundation -> Runtime/Proxy -> API 契约 -> Feature Workbench` 从大文件拆成稳定模块。
+
+## 9. 2026-04-07 Step 02 边界兑现
+
+- Host/Shell 顶层结构已经脚本化冻结：
+  - `web/src` 仅允许入口薄层文件；
+  - `desktop/src` 仅允许 `desktop/` 与根入口；
+  - `shell/src` 仅允许 `application/`、`components/`、`styles/` 与根导出。
+- Feature 公共面已通过 `sync:features` 同步到 package root、`services/index.ts`、`components/index.ts` 三类出口。
+- `host-core`、`host-studio`、`server` 已从 feature sync 面排除，避免宿主包被错误纳入 feature wiring。
+- 这意味着 `Step 03/04` 可以在不再返工 Host/Shell 边界的前提下，专注 Runtime 与 API 主链。
+

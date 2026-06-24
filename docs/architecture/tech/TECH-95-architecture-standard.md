@@ -1,0 +1,43 @@
+> Migrated from `docs/step/95-架构能力闭环验收标准.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 架构能力闭环验收标准
+
+## 1. 判定原则
+
+某个 step 只有同时满足“代码落地 + 测试通过 + 结果可读回 + 文档已回写”，才算真正闭环。
+
+## 2. Step 闭环标准
+
+| Step | 闭环最低标准 |
+| --- | --- |
+| `00` | 有统一门禁、统一证据、统一回写规则 |
+| `01` | 有热点清单、差距矩阵、step 归属 |
+| `02` | 分层稳定、导出稳定、边界脚本可阻断 |
+| `03` | 内置 OpenClaw、Local Proxy、Manifest、Upgrade smoke 成链，版本源唯一 |
+| `04` | 对外/管理/内部/Gateway/Proxy 五类 API 清晰，Feature 不直拼 transport |
+| `05` | Provider Route -> Proxy -> Projection -> Agent 可回读，托管模型统一经本地代理，channels/config 投影与 `webStudio.ts/test.ts` 一致 |
+| `06` | Chat 三模式可解释、可恢复、可测试，多实例切换与会话状态一致 |
+| `07` | 十个分区有真相源、有写链、有回归，Control UI section 顺序与 `plugins.entries.*` 配置语义一致 |
+| `08` | 技能/渠道/生态资产以实例为中心闭环，ClawHub 安装落点与默认 Agent 工作区一致 |
+| `09` | 有性能基线、有观测面、有业务级 smoke，关键热点具备容量和恢复验证，且口径可回溯 `local_ai_proxy.rs`、`webStudio.test.ts`、`openClawManagementCapabilities.ts` |
+| `10` | 有安全默认值、有回归矩阵、有发布门禁，且 OpenClaw 事实源测试纳入正式 gate |
+| `11` | 有 release profile、有 installer/packaged/server smoke、有 change log，并覆盖 OpenClaw 关键可用性，且可证明 runtime bundle、plugin bootstrap、全局 channels、Instance Detail 发布后可用 |
+| `12` | 商业能力有边界、有权限、有审计、有发布说明，且 feature flag/权益模型不污染 OpenClaw 主链与本地代理入口 |
+| `13` | 有总验收、有回滚单、有架构回写和下一轮入口 |
+
+## 3. 否决条件
+
+出现以下任一情况，不得宣称该 step 完成：
+
+- 只改代码，没测
+- 只测命令，没证据
+- 只补文档，没实现或没回读
+- 改了核心链路，但没回写架构与 release 文档
+- 声称“与 OpenClaw 对齐”，但没有引用或通过对应源码/测试事实源
+- 改动发布链或商业链，但没有证明 `local_ai_proxy.rs`、`plugins/mod.rs`、`openClawManagementCapabilities.ts` 等事实源未被破坏
+
+## 4. 结论
+
+闭环标准的作用，是防止“部分完成”被误判成“架构兑现”。
+

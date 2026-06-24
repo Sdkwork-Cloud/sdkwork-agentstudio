@@ -1,0 +1,140 @@
+> Migrated from `docs/架构/05-功能架构与核心业务流程.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 05-功能架构与核心业务流程
+
+## 1. 功能架构总览
+
+产品功能应围绕六类核心能力构建：
+
+- Chat Workspace
+- Instance Governance
+- Provider/Proxy Governance
+- Channels / ClawHub Ecosystem
+- Kernel / Runtime Governance
+- Install / Deploy / Release
+
+## 2. 核心流程一：内置 OpenClaw 启动
+
+```text
+Desktop App Start
+-> Activate Bundled OpenClaw Runtime
+-> Configure OpenClaw Gateway
+-> Ensure Local Proxy Ready
+-> Project Managed Local Proxy Provider
+-> Ensure Desktop Kernel
+-> Load Chat / Instances / Settings
+```
+
+要求：
+
+- Gateway 配置先于 Local Proxy 投影。
+- Local Proxy 就绪先于 Kernel 运行。
+- 失败必须给出可诊断原因和恢复路径。
+
+## 3. 核心流程二：Provider 配置到实例生效
+
+```text
+Provider Center
+-> Save Route Record
+-> Ensure Local Proxy Runtime
+-> Test Route
+-> Resolve Proxy Base URL
+-> Create OpenClaw Local Proxy Projection
+-> Save Managed Projection into OpenClaw Config
+-> Optional Apply to Selected Agents
+```
+
+该流程是“管理与配置”的标准入口，也是 OpenClaw 模型访问统一走代理的落地点。
+
+补充要求：
+
+- `Provider Center`、`Kernel Center`、`ApiSettings` 必须共用同一份 Local Proxy 运行态与观测事实源。
+- `Save -> Test -> Apply -> Readback` 四步必须可从 Provider、Kernel、ApiSettings、Instance Detail 读回同一条代理链结果。
+
+## 4. 核心流程三：聊天执行
+
+```text
+User Send Message
+-> Resolve Authoritative Instance Detail
+-> Resolve Chat Route Mode
+-> If route = instanceOpenClawGatewayWs:
+     Hydrate Gateway Session Store
+     Route to OpenClaw Gateway
+     OpenClaw uses Local Proxy Provider
+     Local Proxy forwards to selected upstream
+-> Else if route = instanceOpenAiHttp / instanceSseHttp:
+     Stream through compatible HTTP endpoint
+     Persist conversation through Studio conversation storage
+-> Else if route = directLlm:
+     Keep unified Chat entry and local session scope
+-> Else:
+     Surface explicit route reason and recovery hint
+-> Return stream / response / usage
+```
+
+关键原则：
+
+- 对托管 OpenClaw，模型访问路径必须稳定且唯一。
+- UI 只感知聊天与上下文，不感知上游协议细节。
+- 聊天路由必须以 `studio.getInstanceDetail()` 为第一真相源，缺失时才允许回退到实例快照。
+- OpenClaw Gateway 会话以 Gateway 状态为权威，不得经 `studio` 会话快照本地持久化。
+- 托管实例在路由未解出、实例离线或端点缺失时，不允许静默回退到本地 HTTP 或浏览器直连 provider。
+
+## 5. 核心流程四：Instance Detail 工作台
+
+```text
+Select Instance
+-> Load Base Snapshot
+-> Render Overview
+-> Lazy Load Files / Memory / Heavy Panels
+-> Edit Providers / Agents / Skills / Config
+-> Persist Config
+-> Refresh Runtime State
+```
+
+目标是把实例详情页提升为完整运行治理面。
+
+## 6. 核心流程五：OpenClaw 升级
+
+```text
+Resolve Pinned Version
+-> Run Upgrade Readiness Check
+-> Prepare OpenClaw Runtime Assets
+-> Sync Bundled Components
+-> Build / Package / Install
+-> Verify Release Assets
+-> Restart Managed Runtime
+-> Re-check Gateway / Proxy / Workbench Availability
+```
+
+升级成功的判定不能只看版本号，还必须看关键能力链路。
+
+## 7. 当前事实
+
+- 已有 Provider Center、Kernel Center、Instance Detail、Chat 路由服务。
+- 已有本地代理路由、投影与应用到实例/Agent 的服务链。
+- 已有权威实例详情驱动的聊天路由解析、Gateway Session Store、会话恢复与 transcript 同步链。
+- 已有 OpenClaw 升级就绪、打包同步与资源校验脚本。
+
+## 8. 流程到 API 面映射
+
+- 启动与宿主治理主走 `Internal API + Manage API + Gateway + Local Proxy`。
+- 实例目录、详情、配置、任务、文件等主走 `Hosted Studio API`。
+- OpenClaw 运行态能力主走 `OpenClaw Gateway API`，包括配置、Agent、Skill、Cron、Memory、Tools。
+- 内置 OpenClaw 的模型调用主走 `Local Proxy API Gateway`，不直连外部模型商。
+- 详细调用矩阵以第 `17` 章为准，禁止页面自行发散出第二套 API 路径。
+
+## 9. 评估标准
+
+| 评估项 | 合格线 | 领先线 | 当前判断 |
+| --- | --- | --- | --- |
+| 功能闭环完整性 | 配置、运行、治理、发布串联起来 | 每条链路都有校验与证据 | `L4` |
+| 流程一致性 | 用户入口统一 | 控制面、执行面、交付面全链路一致 | `L4` |
+| 故障可恢复性 | 失败可提示 | 失败可诊断、可修复、可回滚 | `L3.5` |
+| 工程可持续性 | 流程已脚本化 | 流程有契约测试与发布标准 | `L4` |
+
+## 10. 结论
+
+当前功能架构已从“页面集合”演进为“流程型产品”。继续强化代理链、升级链与实例治理链，即可形成行业领先的桌面 AI 控制台闭环。
+

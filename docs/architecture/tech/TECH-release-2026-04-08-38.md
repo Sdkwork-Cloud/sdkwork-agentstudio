@@ -1,0 +1,62 @@
+> Migrated from `docs/release/release-2026-04-08-38.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Step 03 advanced `CP03-4` and added a shared desktop startup-evidence publication chain plus a `Kernel Center` consumer.
+- The Settings shell now shows persisted desktop startup evidence without reading desktop diagnostics files directly.
+- Fresh UI-level, service-level, Rust-level, and desktop-gate verification stayed green.
+
+## Attempt Outcome
+
+- The loop repaired one missing `CP03-4` shell-facing evidence link:
+  - desktop bootstrap already persisted startup evidence, but the desktop kernel/runtime surface did not publish it
+  - `Kernel Center` therefore had no shared fact surface to consume and could only have shown that evidence by violating host/shell boundaries
+  - Step 03 still needed one explicit publication-and-consumption chain for persisted desktop startup evidence
+- Implemented the narrow repairs:
+  - published desktop startup-evidence summary fields on the desktop kernel/runtime contract
+  - loaded and summarized the persisted startup-evidence document in the desktop kernel service
+  - mapped the published summary into `kernelCenterService`
+  - added a bounded `Kernel Center` startup-evidence section and the minimum locale copy required to expose it
+  - added a new UI/source-level contract test to freeze the shell consumer and locale presence
+- Fresh verification:
+  - RED: `node --experimental-strip-types packages/sdkwork-claw-settings/src/kernelCenter.test.ts`
+  - GREEN: `node --experimental-strip-types packages/sdkwork-claw-settings/src/kernelCenter.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/kernelCenterService.test.ts`
+  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-green desktop_kernel_info_exposes_persisted_startup_evidence_summary`
+  - `pnpm.cmd check:desktop-openclaw-runtime`
+  - `pnpm.cmd check:desktop`
+
+## Change Scope
+
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/kernel.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/kernel.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/mod.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/commands/desktop_kernel.rs`
+- `packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-claw-settings/src/services/kernelCenterService.ts`
+- `packages/sdkwork-claw-settings/src/services/kernelCenterService.test.ts`
+- `packages/sdkwork-claw-settings/src/KernelCenter.tsx`
+- `packages/sdkwork-claw-settings/src/kernelCenter.test.ts`
+- `packages/sdkwork-claw-i18n/src/locales/en/settings.json`
+- `packages/sdkwork-claw-i18n/src/locales/zh/settings.json`
+- `docs/review/step-03-kernel-center-startup-evidence-convergence-2026-04-08.md`
+- `docs/架构/123-2026-04-08-desktop-startup-evidence-kernel-publication-owner.md`
+- `docs/review/step-03-执行卡-2026-04-07.md`
+- `docs/release/release-2026-04-08-38.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node --experimental-strip-types packages/sdkwork-claw-settings/src/kernelCenter.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/kernelCenterService.test.ts`
+- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-green desktop_kernel_info_exposes_persisted_startup_evidence_summary`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+- `pnpm.cmd check:desktop`
+
+## Risks And Rollback
+
+- The new shell section is thin and intentionally depends on the published startup-evidence summary; the main risk is future drift if the summary contract changes without updating both publication and consumption together.
+- This loop intentionally keeps raw desktop diagnostics parsing inside the desktop kernel layer.
+- Rollback is limited to the listed runtime-contract, `Kernel Center`, locale, and document writeback files.
+

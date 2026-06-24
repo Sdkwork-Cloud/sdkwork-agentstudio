@@ -1,0 +1,143 @@
+> Migrated from `docs/架构/11-安全、测试与质量治理.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 11-安全、测试与质量治理
+
+## 1. 安全目标
+
+- 控制模型访问面。
+- 控制配置写入面。
+- 控制升级风险面。
+- 控制商业交付风险面。
+
+## 2. Local Proxy 安全标准
+
+### 2.1 访问边界
+
+- 本地代理必须以 Loopback 为主暴露边界。
+- 对托管 OpenClaw，外部模型调用不得绕过本地代理。
+- 代理应统一承载本地 API Key、默认路由和上游访问策略。
+
+### 2.2 暴露控制
+
+- 仅暴露必要本地地址与端口。
+- `exposeTo` 必须可控，默认以 OpenClaw 为核心暴露目标。
+- 不允许将调试路由默认为公网暴露。
+
+## 3. 配置安全标准
+
+- 仅可写 OpenClaw 实例允许执行快速应用。
+- 托管 Provider 投影写入必须经过服务层。
+- Agent 模型变更必须明确目标范围。
+- 升级过程不得破坏现有可恢复配置。
+
+## 4. 测试标准
+
+### 4.1 契约测试
+
+必须覆盖：
+
+- Local Proxy 桌面契约
+- OpenClaw 发布契约
+- OpenClaw 升级就绪契约
+- OpenClaw 资源校验契约
+- Provider Center 应用与投影契约
+
+### 4.2 单元与集成测试
+
+必须覆盖：
+
+- 路由归一与默认路由选择
+- 本地代理投影
+- OpenClaw 配置写入
+- Provider 应用到实例与 Agent
+- Kernel Center 数据映射
+
+### 4.3 回归检查
+
+每次 OpenClaw 升级必须重点回归：
+
+- Gateway 能否启动
+- Local Proxy 能否就绪
+- Provider 投影能否生效
+- Chat 能否通过托管链路访问模型
+- Instance Detail 是否仍能完整工作
+
+## 5. 质量门禁
+
+- `lint` / 分层检查通过
+- 文档构建通过
+- 关键脚本与契约测试通过
+- 升级相关脚本在目标版本上通过
+- 发布资产校验通过
+
+## 6. 当前事实
+
+- 已有 `desktop-local-ai-proxy-contract` 契约测试。
+- 已有 OpenClaw 升级 readiness 与 release asset verify 测试/脚本。
+- 已有 Provider Center、OpenClaw Config Service、Kernel Center 等测试基础。
+
+## 7. 关键差距
+
+- 需要把 Instance Detail 与 OpenClaw/Control UI 的一致性回归纳入质量门禁。
+- 需要继续加强商业化发布前的安全清单与证据输出。
+
+## 8. 评估标准
+
+| 评估项 | 合格线 | 领先线 | 当前判断 |
+| --- | --- | --- | --- |
+| 模型访问安全 | 托管 OpenClaw 统一走本地代理 | 本地代理具备最小暴露与统一治理 | `L4` |
+| 配置写入安全 | 关键写入有约束 | 写入可审计、可恢复、可验证 | `L3.5` |
+| 测试完备性 | 有单测和契约测试 | 升级、代理、工作台全链路回归 | `L4` |
+| 质量门禁强度 | 基础检查可执行 | 发布前具备商业级证据链 | `L3.5` |
+
+## 9. 结论
+
+当前安全与质量基础较强，尤其是代理契约和升级契约已形成骨架。接下来需要把这些骨架延展到实例工作台一致性与商业发布证据。
+## 10. 2026-04-10 Step 10 closure writeback
+
+## 10. 2026-04-10 Step 10 closure writeback
+
+- Step 10 is now closed.
+- The security and quality baseline is no longer documented only as guidance; it is frozen behind executable gates.
+
+### 10.1 Formal gate set
+
+- `pnpm.cmd lint` is the top-level blocker and now covers:
+  - workspace web lint
+  - architecture boundary checks
+  - parity gates
+  - automation gates
+- `pnpm.cmd check:desktop` remains a separate release blocker for:
+  - desktop hosted runtime authority
+  - built-in OpenClaw startup evidence
+  - local AI proxy desktop contracts
+  - desktop packaging/runtime preparation coverage
+- `pnpm.cmd check:server` remains a separate release blocker for:
+  - loopback-default host binding
+  - explicit public-bind opt-in rules
+  - manage-credential enforcement
+
+### 10.2 OpenClaw fact-source gate promotion
+
+- The approved OpenClaw fact-source tests are now part of the formal parity graph rather than manual review only.
+- Promoted parity coverage now includes:
+  - `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+  - `packages/sdkwork-claw-channels/src/services/channelService.test.ts`
+  - `packages/sdkwork-claw-market/src/services/marketService.test.ts`
+  - `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+  - `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.test.ts`
+  - `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
+- `check:automation` now runs `scripts/openclaw-quality-gate-contract.test.mjs` so the gate wiring itself is contract-tested.
+
+### 10.3 Exposure-boundary freeze
+
+- The packaged deployment command surface is frozen to the real `deploy/docker/*` bundle layout in both docs and contract tests.
+- Desktop bootstrap is allowed to read only `kernel.getInfo().localAiProxy` for persisted startup evidence.
+- Broader kernel/runtime authority in shell bootstrap still must come from the hosted readiness contract, not ad hoc `kernelInfo` reads.
+
+### 10.4 Outcome
+
+- Security defaults, regression coverage, and release-blocking rules are now auditable from scripts, tests, and documentation together.
+- This satisfies the Step 10 requirement that release decisions no longer depend on manual interpretation of drift-sensitive contracts.
+

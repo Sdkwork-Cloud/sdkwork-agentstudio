@@ -1,0 +1,99 @@
+> Migrated from `docs/架构/06-聊天能力与多实例路由设计.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 06-聊天能力与多实例路由设计
+
+## 1. 设计目标
+
+聊天能力必须同时满足三类场景：
+
+- 无实例场景下的直接模型体验。
+- 托管 OpenClaw 实例驱动的统一聊天体验。
+- 多协议、多实例、多模型、多 Agent 的稳定路由。
+
+## 2. 当前路由模式
+
+| 模式 | 说明 |
+| --- | --- |
+| `directLlm` | Studio 直接模型模式 |
+| `instanceOpenClawGatewayWs` | OpenClaw Gateway 优先模式 |
+| `instanceOpenAiHttp` | OpenAI HTTP 实例模式 |
+| `instanceSseHttp` | SSE/HTTP 实例模式 |
+| `instanceWebSocket` | 自定义 WebSocket 实例模式 |
+| `unsupported` | 配置缺失或状态不满足 |
+
+## 3. 托管 OpenClaw 的模型访问标准
+
+### 3.1 强制要求
+
+- 对内置或被 Studio 托管的 OpenClaw，所有大模型相关 API 访问统一经本地 Proxy API Gateway。
+- OpenClaw Gateway 负责实例级聊天入口，本地 Proxy 负责模型协议入口。
+- UI 不直接决定上游厂商 API 细节，所有厂商差异必须沉淀在代理路由与投影层。
+
+### 3.2 能力覆盖
+
+本地 Proxy 必须覆盖：
+
+- 默认聊天模型
+- 推理模型
+- Embedding 模型
+- 流式输出
+- OpenAI 兼容接口
+- Anthropic Messages 接口
+- Google Generative AI 接口
+
+## 4. 聊天上下文控制
+
+当前聊天已具备以下控制位：
+
+- 活动实例
+- 会话上下文
+- Agent 选择
+- Skill 选择
+- 渠道/模型选择
+- Gateway 会话参数，如 reasoning、thinking、verbose 等
+
+这使产品更接近“AI 工作台”而非普通聊天页。
+
+## 5. 多实例设计原则
+
+- 用户只面对统一 Chat 入口。
+- 路由策略由实例状态、实例类型、端点协议和托管能力共同决定。
+- 无论底层实例如何差异，聊天结果都应提供统一的状态、错误提示和恢复建议。
+
+## 6. 直接模式与托管模式边界
+
+- `directLlm` 允许 Studio 独立直连场景存在，用于无实例或纯前端体验。
+- 一旦进入托管 OpenClaw 链路，必须切换到 `OpenClaw Gateway -> Local Proxy -> Upstream` 的唯一标准路径。
+- 不允许“部分能力走代理、部分能力直连”的混合模式污染托管实例。
+
+## 7. 性能与稳定性要求
+
+- 路由判定必须优先回读 `studio.getInstanceDetail()` 的实例元数据，并仅在 detail 不可用时回退到实例快照。
+- 托管 OpenClaw 只有在 runtime ready 且 endpoint metadata 发布完备时才允许进入 `instanceOpenClawGatewayWs`。
+- 托管实例的路由未解出时，不允许静默回退到 local HTTP、browser-direct provider 或本地快照会话权威。
+- 路由决策必须可缓存且低延迟。
+- 流式响应不能因协议翻译导致明显卡顿。
+- 路由失败必须给出明确原因，如实例离线、端点缺失、代理不可用、模型未映射。
+
+## 8. 会话权威、恢复与错误语义
+
+- `directLlm` 与 compatible HTTP 会话可以走 Studio 会话持久化链，但 `instanceOpenClawGatewayWs` 会话必须以 Gateway 为权威。
+- Gateway 会话禁止写入本地 `studio` conversation snapshot；本地快照只用于 direct / compatible 路由。
+- Chat bootstrap 必须等待 route mode 与 sync state 收敛，避免在托管 Gateway 路径下误建本地会话。
+- Gateway transcript、history refresh、reconnect、gap re-sync、active-run 合并与最终历史回补必须由同一 session store 裁决。
+- 错误语义必须可解释，包括实例未就绪、endpoint 缺失、`operator.read` 授权不足、chat send/abort 失败、鉴权漂移与 reconnect 恢复建议。
+
+## 9. 评估标准
+
+| 评估项 | 合格线 | 领先线 | 当前判断 |
+| --- | --- | --- | --- |
+| 路由正确性 | 不同实例可稳定命中正确模式 | 新协议接入主要落在路由注册与代理适配 | `L4` |
+| 托管 OpenClaw 一致性 | 模型访问统一走本地代理 | 全能力统一走代理且可观测 | `L4` |
+| 上下文灵活性 | 支持模型/Agent/Skill/会话控制 | 支持复杂编排与回放审计 | `L3.5` |
+| 用户可解释性 | 失败可提示 | 失败可诊断、可恢复、可引导修复 | `L3.5` |
+
+## 10. 结论
+
+当前聊天架构最重要的方向是“统一 Chat 入口 + 明确路由策略 + 托管 OpenClaw 模型访问统一走本地代理 + Gateway 会话权威与恢复语义统一裁决”。这一点必须作为长期不变的架构红线。
+

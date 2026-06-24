@@ -1,0 +1,96 @@
+> Migrated from `docs/step/11-打包、安装、部署、发布与升级工程化.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Step 11 - 打包、安装、部署、发布与升级工程化
+
+## 1. Step Card
+
+| 项 | 内容 |
+| --- | --- |
+| 执行模式 | 波次内并行 |
+| 前置 | `03` `09` `10` |
+| 主写入范围 | `packages/sdkwork-claw-distribution` `packages/removed-install-feature` `scripts/release` `scripts/prepare-openclaw-runtime.mjs` `scripts/sync-bundled-components.mjs` `docs/release/` |
+| 执行输入 | `12` 架构文档；现有 Desktop、Server、Container、Kubernetes、Release 脚本 |
+| 本步非目标 | 不做业务功能扩展 |
+| 最小输出 | 多形态交付、统一 release profile、统一 smoke、统一 changelog/版本证据 |
+
+## 2. 设计
+
+- 桌面交付要把 OpenClaw、Gateway、Proxy、Manifest 一次带齐。
+- Server/Container/Kubernetes 都必须有明确 profile、资产清单、smoke 逻辑。
+- 发布结果必须可验证、可回滚、可追踪到版本和证据。
+
+## 3. 实施落地规划
+
+1. 固化 desktop dev/prod、server、container、kubernetes 的 release profile。
+2. 收口安装前准备、运行时资源同步、打包、校验、smoke、finalize 脚本。
+3. 为 `docs/release/` 建立专业 release 记录与 change log 更新规则。
+4. 把“升级成功”的判定从版本号提升到业务级 smoke 与工作台可用性。
+5. 为商业发布准备 installer、packaged launch、server release、deployment release 的证据包。
+
+## 4. 测试计划
+
+- `pnpm.cmd check:release-flow`
+- `pnpm.cmd check:multi-mode`
+- `pnpm.cmd release:plan`
+- `pnpm.cmd release:smoke:desktop`
+- `pnpm.cmd release:smoke:server`
+- `pnpm.cmd release:smoke:container`
+
+## 5. 结果验证
+
+- 所有交付形态都有清晰产物、校验、smoke 与证据。
+- OpenClaw 升级后能证明聊天、Provider、工作台仍可用。
+- `docs/release/` 中的版本、changelog、资产记录与实际脚本一致。
+
+## 6. 检查点
+
+- `CP11-1`：release profile 与产物清单冻结。
+- `CP11-2`：desktop/server/container/k8s smoke 建立。
+- `CP11-3`：upgrade success 判定升级为业务级 smoke。
+- `CP11-4`：release 证据和 changelog 规则冻结。
+
+### 6.1 推荐并行车道
+
+- `11-A`：Desktop Packaging / Installer
+- `11-B`：Server / Container / Kubernetes
+- `11-C`：Release Evidence / Change Log / Finalize
+- 收口要求：版本号、release profile、smoke 结果由 `11-Owner` 统一
+
+### 6.2 完成后必须回写的架构文档
+
+- `docs/架构/12-安装、部署、发布与商业化交付标准.md`
+- `docs/架构/13-演进路线图与阶段评估.md`
+
+### 6.3 推荐 review 产物
+
+- `docs/review/step-11-执行卡-YYYY-MM-DD.md`
+- `docs/review/step-11-release-profile与产物清单-YYYY-MM-DD.md`
+- `docs/review/step-11-installer-smoke与升级证据-YYYY-MM-DD.md`
+
+### 6.4 架构能力闭环判定
+
+- Desktop、Server、Container、Kubernetes 四类交付都有 profile、产物清单、smoke、changelog 和回滚证据。
+- 发布 smoke 必须覆盖 OpenClaw 内置 Runtime、全局 channels、Instance Detail、ClawHub/技能安装结果的关键可用性。
+- 打包与升级证据必须能回溯 `scripts/prepare-openclaw-runtime.mjs`、`scripts/sync-bundled-components.mjs`、`packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`、`packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs` 的实际产物、启动链和插件注册结果。
+- 若 OpenClaw 升级后仍只能看版本号而不能证明聊天、Provider、工作台可用，本 step 不算闭环。
+
+### 6.5 快速完整执行建议
+
+- 先冻结 release profile、资产清单和 smoke 口径，再并行推进 Desktop、Server/Container/K8s、Release Evidence 三车道。
+- 先收证据链，再优化发布说明格式，避免脚本和 release 文档脱节。
+- 最快打法：先锁定 runtime bundle、bundled components manifest、release manifest，再并行跑三车道；把 OpenClaw 启动、插件注册、全局 channels、Instance Detail smoke 合并为同一发布门禁。
+
+## 7. 风险与回滚
+
+- 风险：只有打包没有 smoke，会把缺陷推迟到用户安装后暴露。
+- 回滚：保留旧打包链，增量引入新 profile 和 smoke，成熟后再切主。
+
+## 8. 完成定义
+
+- 交付链、升级链、smoke 链、release 证据链全部成型。
+
+## 9. 下一步准入条件
+
+- 商业化权限、运营、版本与证据体系可以在稳定交付链上继续收口。
+

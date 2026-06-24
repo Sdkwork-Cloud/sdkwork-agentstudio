@@ -1,0 +1,67 @@
+> Migrated from `docs/release/release-2026-04-08-58.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Continued the real `Step 07` frontier with five tools-adjacent managed config panel extractions.
+- Added dedicated render components for:
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebSearchPanel.tsx`
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebFetchPanel.tsx`
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebSearchNativeCodexPanel.tsx`
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedXSearchPanel.tsx`
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedAuthCooldownsPanel.tsx`
+- Reduced the full `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` hotspot from `4414` to `3590` lines on fresh measurement.
+- Reduced the page-owned helper sizes as follows:
+  - `renderManagedWebSearchPanel`: `217 -> 24`
+  - `renderManagedWebFetchPanel`: `200 -> 21`
+  - `renderManagedWebSearchNativeCodexPanel`: `191 -> 19`
+  - `renderManagedXSearchPanel`: `169 -> 19`
+  - `renderManagedAuthCooldownsPanel`: `156 -> 19`
+
+## Attempt Outcome
+
+- Extended contract coverage in:
+  - `scripts/sdkwork-instances-contract.test.ts`
+- Added the new managed-config components:
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebSearchPanel.tsx`
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebFetchPanel.tsx`
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebSearchNativeCodexPanel.tsx`
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedXSearchPanel.tsx`
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedAuthCooldownsPanel.tsx`
+- Updated orchestration and barrel exports:
+  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+  - `packages/sdkwork-claw-instances/src/components/index.ts`
+- Updated the ongoing Step 07 progress evidence:
+  - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+  - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+
+## Change Scope
+
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-claw-instances/src/components/index.ts`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebSearchPanel.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebFetchPanel.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebSearchNativeCodexPanel.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedXSearchPanel.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedAuthCooldownsPanel.tsx`
+- `scripts/sdkwork-instances-contract.test.ts`
+- `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+- `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+- `docs/release/release-2026-04-08-58.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+- `pnpm.cmd check:sdkwork-instances`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+
+## Risks And Rollback
+
+- `Step 07` is still not closable. `CP07-3` remains open because `renderSectionContent`, `renderAgentsSection`, `instanceWorkbenchServiceCore.ts`, and `instanceServiceCore.ts` are still oversized.
+- The page intentionally retains managed config draft state, readonly gating, save handlers, and reload wiring so the existing OpenClaw truth-source semantics from `webStudio.ts`, `openClawManagementCapabilities.ts`, and `openClawProviderWorkspacePresentation.ts` remain unchanged.
+- Rollback must revert the new managed-config components, the `InstanceDetail.tsx` wiring, the contract assertions, and the matching review/release evidence together; reverting only one side would recreate ownership drift.
+

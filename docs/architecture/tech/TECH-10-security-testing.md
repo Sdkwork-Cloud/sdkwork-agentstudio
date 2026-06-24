@@ -1,0 +1,99 @@
+> Migrated from `docs/step/10-安全、测试与质量门禁落地.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Step 10 - 安全、测试与质量门禁落地
+
+## 1. Step Card
+
+| 项 | 内容 |
+| --- | --- |
+| 执行模式 | 波次内并行 |
+| 前置 | `04-09` |
+| 主写入范围 | `scripts/` `package.json` `packages/sdkwork-claw-server` `packages/sdkwork-claw-desktop` 各包 `*.test.*` `docs/review/` |
+| 执行输入 | `11` 架构文档；现有 lint/parity/desktop/server/release 测试矩阵 |
+| 本步非目标 | 不在本步内直接做新功能 |
+| 最小输出 | 安全基线、质量门禁、全链路回归矩阵、发布阻断规则 |
+
+## 2. 设计
+
+- 安全默认值优先：Loopback、最小暴露、最小写入、显式鉴权、显式错误体。
+- 测试以契约、关键链路、升级回归、发布 smoke 为主，不追求无差别堆测试。
+- 任何影响托管链、工作台链、发布链的改动，都必须具备阻断门禁。
+
+## 3. 实施落地规划
+
+1. 固化 Loopback、`/claw/*` 鉴权、Gateway Token、Local Proxy 暴露策略。
+2. 固化配置写入、Provider Apply、Agent 模型变更、Instance Config Apply 的权限与回滚要求。
+3. 建立回归矩阵：Provider、Chat、Instance Detail、Channels、Skills、Upgrade、Release。
+4. 把 `lint/check:parity/check:desktop/check:server/check:release-flow` 组织成发布阻断门。
+5. 将 Instance Detail 一致性和业务级 smoke 纳入正式门禁。
+
+## 4. 测试计划
+
+- `pnpm.cmd lint`
+- `pnpm.cmd check:parity`
+- `pnpm.cmd check:automation`
+- `pnpm.cmd check:desktop`
+- `pnpm.cmd check:server`
+- `pnpm.cmd check:release-flow`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-channels/src/services/channelService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-market/src/services/marketService.test.ts`
+- `pnpm.cmd docs:build` 在允许 `esbuild` 子进程的环境中执行
+
+## 5. 结果验证
+
+- 安全默认值可从配置、脚本、UI 和测试四层读回。
+- 任一核心链路回退时，CI/本地门禁能阻断发布。
+- 文档、代码、脚本的门禁口径一致。
+
+## 6. 检查点
+
+- `CP10-1`：安全默认值与暴露边界冻结。
+- `CP10-2`：关键链路回归矩阵冻结。
+- `CP10-3`：门禁命令与发布阻断规则冻结。
+- `CP10-4`：工作台一致性和升级回归纳入正式质量门。
+
+### 6.1 推荐并行车道
+
+- `10-A`：安全策略与写入约束
+- `10-B`：测试矩阵与 contract/regression
+- `10-C`：CI/脚本/发布阻断门
+- 收口要求：发布阻断规则由 `10-Owner` 统一
+
+### 6.2 完成后必须回写的架构文档
+
+- `docs/架构/11-安全、测试与质量治理.md`
+- `docs/架构/15-Instance Detail 功能一致性基线与验收矩阵.md`
+
+### 6.3 推荐 review 产物
+
+- `docs/review/step-10-执行卡-YYYY-MM-DD.md`
+- `docs/review/step-10-安全默认值与暴露边界-YYYY-MM-DD.md`
+- `docs/review/step-10-回归矩阵与发布阻断规则-YYYY-MM-DD.md`
+
+### 6.4 架构能力闭环判定
+
+- Loopback、鉴权、写入约束、回归矩阵、发布阻断门都能从脚本、测试和文档三侧读回。
+- OpenClaw 对齐事实源的关键测试已纳入正式门禁，而不是只依赖人工 review。
+- 若核心链路回退仍需人工判断是否可发布，本 step 不算闭环。
+
+### 6.5 快速完整执行建议
+
+- 先冻结发布阻断命令集和暴露边界，再并行推进安全策略、回归矩阵、CI/脚本门禁三车道。
+- `docs:build` 仅在允许 `esbuild` 子进程的环境执行，不把当前环境限制误判为文档缺陷。
+
+## 7. 风险与回滚
+
+- 风险：门禁不够硬，后续发布阶段会用人工判断代替证据。
+- 回滚：允许先保留旧测试，再增量纳入新门禁，避免一次性清洗失败。
+
+## 8. 完成定义
+
+- 安全、测试、门禁三条线形成统一发布阻断规则。
+
+## 9. 下一步准入条件
+
+- Step 11 可直接基于门禁矩阵建设打包、安装、部署、发布工程链。
+

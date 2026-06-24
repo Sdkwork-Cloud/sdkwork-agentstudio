@@ -1,0 +1,58 @@
+> Migrated from `docs/release/release-2026-04-08-35.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Step 03 continued on the serial `CP03-2` frontier and extracted the local AI proxy route surface into a dedicated Rust router module.
+- The same loop also closed a hidden shared-types leakage by forcing `request_translation.rs` and `upstream.rs` to consume `ProxyHttpResult` directly from `types.rs`.
+- Fresh desktop structural, Rust, OpenClaw runtime, and full desktop evidence stayed green.
+
+## Attempt Outcome
+
+- The loop repaired one remaining local proxy ownership hotspot:
+  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned the HTTP route-surface builder even after the earlier protocol and shared-contract splits
+  - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that route boundary, so the parent runtime file could continue mixing lifecycle/state ownership with path assembly
+  - GREEN verification then exposed two remaining consumers, `request_translation.rs` and `upstream.rs`, that still relied on `ProxyHttpResult` through the parent module namespace instead of `types.rs`
+- Implemented the narrow repairs:
+  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/router.rs` as the dedicated route owner for health, OpenAI-compatible, Anthropic-native, and Gemini-native path assembly
+  - changed `local_ai_proxy.rs` to declare `mod router;` and serve Axum through `router::build_router(state)`
+  - tightened the desktop foundation gate to require the router module, runtime-side router ownership, and removal of the obsolete in-file route assembly
+  - added a second gate requirement for direct `types::ProxyHttpResult` usage in `request_translation.rs` and `upstream.rs`
+  - repointed those two consumers to the shared types owner and removed the now-unneeded parent-scope alias import
+  - ran `cargo fmt` after the split and kept the structure gate green
+- Fresh verification:
+  - RED 1: `node scripts/check-desktop-platform-foundation.mjs`
+  - RED 2: `node scripts/check-desktop-platform-foundation.mjs`
+  - GREEN: `node scripts/check-desktop-platform-foundation.mjs`
+  - `cargo fmt --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml`
+  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-router local_ai_proxy_`
+  - `pnpm.cmd check:desktop-openclaw-runtime`
+  - `pnpm.cmd check:desktop`
+
+## Change Scope
+
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/router.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs`
+- `scripts/check-desktop-platform-foundation.mjs`
+- `docs/review/step-03-local-ai-proxy-router-hotspot-split-2026-04-08.md`
+- `docs/架构/120-2026-04-08-local-ai-proxy-router-module-boundary.md`
+- `docs/review/step-03-执行卡-2026-04-07.md`
+- `docs/release/release-2026-04-08-35.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node scripts/check-desktop-platform-foundation.mjs`
+- `cargo fmt --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml`
+- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-router local_ai_proxy_`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+- `pnpm.cmd check:desktop`
+
+## Risks And Rollback
+
+- The split is intended to be behavior-preserving; the main risk is future drift if route assembly moves back into `local_ai_proxy.rs` or if future callers again consume shared proxy result typing through the parent module namespace.
+- The parent runtime file intentionally still owns lifecycle/state transitions plus `is_loopback_host(...)` and `append_proxy_log(...)`; later movement should happen only if it closes another coherent owner boundary.
+- Rollback is limited to the listed Rust/script files and the associated review, architecture, execution-card, and release writebacks.
+

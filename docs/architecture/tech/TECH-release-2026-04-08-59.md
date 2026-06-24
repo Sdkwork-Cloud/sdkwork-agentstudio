@@ -1,0 +1,49 @@
+> Migrated from `docs/release/release-2026-04-08-59.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Continued the real `Step 07` frontier with a dedicated agents workbench extraction.
+- Added `packages/sdkwork-claw-instances/src/components/InstanceDetailAgentsSection.tsx` so `InstanceDetail.tsx` keeps only page-owned agent state, callbacks, readonly gating, and reload orchestration.
+- Reduced the full `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` hotspot from `3590` to `3290` lines on fresh measurement.
+- Reduced the page-owned `renderAgentsSection` helper from `320` lines to `61` lines, and the section router now measures `27` lines.
+
+## Attempt Outcome
+
+- Extended contract coverage in:
+  - `scripts/sdkwork-instances-contract.test.ts`
+- Added the new section component:
+  - `packages/sdkwork-claw-instances/src/components/InstanceDetailAgentsSection.tsx`
+- Updated orchestration and barrel exports:
+  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+  - `packages/sdkwork-claw-instances/src/components/index.ts`
+- Updated the ongoing Step 07 progress evidence:
+  - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+  - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+
+## Change Scope
+
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailAgentsSection.tsx`
+- `packages/sdkwork-claw-instances/src/components/index.ts`
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `scripts/sdkwork-instances-contract.test.ts`
+- `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+- `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+- `docs/release/release-2026-04-08-59.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+- `pnpm.cmd check:sdkwork-instances`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+
+## Risks And Rollback
+
+- `Step 07` is still not closable. `CP07-3` remains open because the page still carries sizeable operational handler clusters and the two service hotspots remain at `3818` and `1663` lines.
+- The page intentionally retains selected-agent state, agent CRUD callbacks, readonly gating, and reload wiring so the existing OpenClaw truth-source semantics from `webStudio.ts`, `openClawManagementCapabilities.ts`, and `openClawProviderWorkspacePresentation.ts` remain unchanged.
+- Rollback must revert `InstanceDetailAgentsSection.tsx`, the `InstanceDetail.tsx` wiring, the contract assertions, and the matching review/architecture/release evidence together; reverting only one side would recreate ownership drift.
+

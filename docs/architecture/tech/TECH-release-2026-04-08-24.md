@@ -1,0 +1,51 @@
+> Migrated from `docs/release/release-2026-04-08-24.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Step 03 continued on the serial `CP03-2` hotspot-splitting frontier and extracted shared local-proxy response translation into a dedicated Rust submodule.
+- This release candidate keeps Step 03 open overall, but it closes another real runtime-boundary slice and preserves fresh desktop-gate evidence.
+
+## Attempt Outcome
+
+- The loop repaired one remaining local proxy response-translation hotspot:
+  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned shared provider response parsing, stop-reason mapping, OpenAI chat-completion shaping, OpenAI responses-api shaping, and embeddings translation even though those helpers served multiple translated response paths
+  - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that response-translation boundary
+- Implemented the narrow repairs:
+  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs`
+  - delegated `response_translation::build_openai_chat_completion_from_anthropic(...)`, `response_translation::build_openai_chat_completion_from_gemini(...)`, `response_translation::build_openai_chat_completion_from_ollama(...)`, `response_translation::build_openai_response_from_anthropic(...)`, `response_translation::build_openai_response_from_gemini(...)`, `response_translation::build_openai_response_from_ollama(...)`, `response_translation::build_openai_embeddings_from_gemini(...)`, and `response_translation::build_openai_embeddings_from_ollama(...)` from `local_ai_proxy.rs`
+  - moved the shared provider response parsers, stop-reason mappers, and buffered response builders into the same module
+  - updated `streaming.rs` to import the shared provider response helpers from the new response-translation boundary
+  - removed the obsolete in-file response-translation helper stack from `local_ai_proxy.rs`
+  - tightened the desktop foundation gate so the response-translation module file, declaration, and explicit delegations are now required
+- Fresh verification:
+  - `node scripts/check-desktop-platform-foundation.mjs`
+  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-response-translation local_ai_proxy_`
+  - `pnpm.cmd check:desktop-openclaw-runtime`
+  - `pnpm.cmd check:desktop`
+
+## Change Scope
+
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs`
+- `scripts/check-desktop-platform-foundation.mjs`
+- `docs/review/step-03-local-ai-proxy-response-translation-hotspot-split-2026-04-08.md`
+- `docs/架构/109-2026-04-08-local-ai-proxy-response-translation-module-boundary.md`
+- `docs/review/step-03-执行卡-2026-04-07.md`
+- `docs/release/release-2026-04-08-24.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node scripts/check-desktop-platform-foundation.mjs`
+- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-response-translation local_ai_proxy_`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+- `pnpm.cmd check:desktop`
+
+## Risks And Rollback
+
+- The split is intended to be behavior-preserving; the main risk is future drift if response parsing or provider response builders are copied back into `local_ai_proxy.rs`.
+- Shared response-translation helpers now live behind one explicit submodule owner, and `streaming.rs` depends on that shared owner for a small helper surface; later refactors must preserve that boundary rather than fragment it again.
+- Rollback is limited to the listed Rust/script files and the associated review, architecture, and release writebacks.
+

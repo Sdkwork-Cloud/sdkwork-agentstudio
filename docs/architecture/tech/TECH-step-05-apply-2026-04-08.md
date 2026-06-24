@@ -1,0 +1,82 @@
+> Migrated from `docs/review/step-05-apply目标与回读闭环-2026-04-08.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- `Provider Center` apply is explicit and instance/agent-scoped: only writable OpenClaw instances are exposed, and agent selection is read back from the target config snapshot before apply.
+- Managed provider projection persists through `openClawConfigService` and agent model refs, not through raw upstream provider writes.
+- Channels、skills、agent install、Kernel Center、ApiSettings all continue to read/write through the same managed config or kernel/local-proxy truth chain, so `Step 05` does not introduce a second control plane.
+
+## Attempt Outcome
+
+- Apply target gate:
+  - `listApplyInstances()` restricts apply targets to `runtimeKind === 'openclaw'` instances with a writable managed config route.
+  - `getInstanceApplyTarget()` reads `agentSnapshots` from `openClawConfigService.readConfigSnapshot()`, so the agent picker is derived from the same persisted config state that apply will modify.
+- Apply and writeback chain:
+  - `applyProviderConfig()` resolves the managed config path, ensures Local Proxy is running, resolves the protocol-aware proxy base URL, creates the local-proxy projection, saves `saveManagedLocalProxyProjection()`, then updates only the explicitly selected agents with `sdkwork-local-proxy/<model>` refs and reasoning fallbacks.
+  - `openClawConfigService.test.ts` confirms that the managed local proxy projection is canonicalized as the only provider/default-model source and that protocol-aware adapters are written for translated routes.
+- Readback and downstream workspace alignment:
+  - `channelService` routes managed channel reads/writes through `openClawConfigService.readConfigSnapshot()` / `saveChannelConfiguration()` / `setChannelEnabled()`, and only falls back to browser workbench persistence when no writable config path exists.
+  - `webStudio.test.ts` keeps browser workbench channel save/enable/readback behavior aligned with the managed channel workspace contract.
+  - `marketService` still resolves the install target from the default OpenClaw agent workspace, and `agentInstallService` still resolves `configPath`, agent paths, `saveAgent()`, and multi-agent support through `openClawConfigService`, so ecosystem writes do not bypass the managed config chain.
+- Managed capability and presentation guard:
+  - `openClawManagementCapabilities.ts` still defines when a detail may be treated as managed OpenClaw.
+  - `openClawProviderWorkspacePresentation.ts` still derives managed/read-only Provider Center presentation from that capability gate instead of a feature-local heuristic.
+- Actual workspace result:
+  - no production code changes were required in this loop
+  - the meaningful delta is formal closure evidence that the apply target and readback chain is already stable on the current worktree
+
+## OpenClaw Fact Sources
+
+- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
+  - remains the browser-hosted managed workbench persistence baseline for channels, files, providers, and tasks.
+- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+  - keeps browser-side workbench read/write semantics aligned with the managed channel/workbench contract.
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+  - remains the shell-facing workbench that consumes authoritative provider, agent, config, and channel surfaces.
+- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+  - remains the config workbench schema/editing baseline for native OpenClaw config management.
+- `packages/sdkwork-claw-channels/src/services/channelService.ts`
+  - remains the managed channel read/write service that must follow `openClawConfigService` when config paths are writable.
+- `packages/sdkwork-claw-market/src/services/marketService.ts`
+  - remains the skill installation surface that must keep using the resolved default agent workspace.
+- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
+  - remains the explicit agent path, save, and multi-agent configuration write chain.
+- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
+  - remains the authoritative managed OpenClaw capability gate.
+- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
+  - remains the authoritative managed/read-only provider workspace presentation layer.
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+  - remains the Local Proxy runtime owner behind route tests, request logs, message logs, and capture settings.
+- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+  - remains the unchanged desktop plugin-registration boundary through this loop.
+
+## Verification Focus
+
+- `pnpm.cmd check:sdkwork-settings`
+- `pnpm.cmd check:desktop`
+- `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/providerConfigCenterService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-core/src/services/openClawConfigService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-channels/src/services/channelService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node scripts/desktop-local-ai-proxy-contract.test.mjs`
+
+## Architecture Writeback
+
+- `docs/架构/05-功能架构与核心业务流程.md`
+  - now freezes the `Save -> Test -> Apply -> Readback` chain across Provider、Kernel、ApiSettings、Instance Detail.
+- `docs/架构/09-数据、状态与配置治理设计.md`
+  - now freezes `ApiSettings` as derived observability state on top of the same kernel / Local Proxy fact source and requires four-surface readback after writes.
+- `docs/架构/10-性能、可靠性与可观测性设计.md`
+  - now freezes Local Proxy request logs, message logs, and message capture toggles as formal observability deliverables.
+
+## Remaining Gaps
+
+- `Step 05` apply-target and readback loop is closed on the current worktree.
+- 波次 B 后续仍需推进 `Step 06`、`Step 07`、`Step 08`，当前不应把单步闭环误判成整波次完成。
+
+## Risks And Rollback
+
+- This loop changes review / architecture / release records only.
+- The main risk is future drift if later work introduces a second control plane for provider apply, channel writes, or logs/capture reads without re-running the same `Step 05` verification matrix.
+

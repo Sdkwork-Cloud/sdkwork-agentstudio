@@ -1,0 +1,52 @@
+> Migrated from `docs/release/release-2026-04-08-81.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Claw Studio release-2026-04-08-81
+
+## Highlights
+
+- Continued the real `Step 07 / CP07-3` page hotspot work by moving provider config save-input parsing and config-save mutation metadata into the shared provider drafts helper.
+- Preserved the authority split so `InstanceDetail.tsx` still owns the real `updateInstanceLlmProviderConfig(...)` write call and the provider config reload policy.
+- Re-baselined the current active hotspot profile for that loop at `InstanceDetail.tsx = 2827`, `openClawProviderDrafts.ts = 461`, `instanceWorkbenchServiceCore.ts = 1132`, and `instanceServiceCore.ts = 1431`.
+
+## Attempt Outcome
+
+- Expanded shared provider draft helpers in:
+  - `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`
+- Expanded focused helper coverage in:
+  - `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- Rewired provider config save into the shared page-owned mutation runner in:
+  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- Extended the contract suite so `handleSaveProviderConfig` no longer keeps inline parse/save orchestration in:
+  - `scripts/sdkwork-instances-contract.test.ts`
+- Updated the ongoing Step 07 evidence set:
+  - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+  - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+
+## Change Scope
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `scripts/sdkwork-instances-contract.test.ts`
+- `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+- `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+- `docs/release/release-2026-04-08-81.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `pnpm.cmd check:sdkwork-instances`
+
+## Risks And Rollback
+
+- `Step 07` is still not closable. `CP07-3` remains open because this loop improved orchestration consistency but did not yet reduce the page hotspot by raw line count.
+- This loop intentionally touched only provider config save orchestration and did not move Provider Center managed authority, Control UI section order, or Local Proxy / plugin runtime boundaries.
+- Rollback must revert the provider config save helper additions, the page runner rewiring, the helper/contract test updates, and the matching review/architecture/release evidence together.
+

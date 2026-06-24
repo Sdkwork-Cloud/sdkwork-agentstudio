@@ -1,0 +1,190 @@
+> Migrated from `docs/架构/10-性能、可靠性与可观测性设计.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 10-性能、可靠性与可观测性设计
+
+## 1. 目标
+
+- 聊天链路低延迟、可流式、可恢复。
+- OpenClaw 与本地代理运行稳定。
+- 关键链路有指标、有日志、有测试证据。
+
+## 2. 性能设计
+
+### 2.1 前端
+
+- Host 保持薄层，降低冷启动复杂度。
+- Instance Detail 的文件、记忆等重面板按需懒加载。
+- Chat 保持统一入口，避免多套 UI 分叉。
+
+### 2.2 运行时
+
+- Local Proxy 绑定本地端口，减少跨进程与跨网络抖动。
+- 路由默认值按协议预置，减少每次请求的配置分支判断。
+- Gateway 与 Proxy 分层，避免单点逻辑过载。
+- `desktop/server/docker/k8s` 必须复用同一条运行时主链：`host runtime -> OpenClaw runtime -> gateway -> local proxy -> workbench/chat`。
+
+## 3. 可靠性设计
+
+- Local Proxy 具备独立生命周期：`running`、`stopped`、`failed`。
+- Kernel Center 必须可展示 OpenClaw 版本、代理生命周期、默认路由、日志路径。
+- Provider 路由保存、删除后必须同步本地代理运行态。
+- 升级前后必须经过 readiness、prepare、sync、verify 关键步骤。
+- 模式切换不得改变健康语义；`desktop/server/docker/k8s` 必须共享 `RuntimeStartupContext` 与 `openClawRuntime` 快照口径。
+- 安装/引导链在 assessment 路径漂移时，必须优先复用 Kernel `openClawRuntime.homeDir`，避免配置定位分叉。
+
+## 4. 可观测性设计
+
+### 4.1 Local Proxy 观测项
+
+- 默认路由
+- 路由健康
+- 请求量
+- 成功/失败数
+- RPM
+- Token 使用量
+- 平均延迟
+- 最近错误
+- 最近测试结果
+- 请求日志分页查询
+- 消息日志分页查询
+- 消息捕获开关与更新时间
+- 快照与日志路径
+
+### 4.2 工作台观测项
+
+- 实例健康分
+- 活跃任务
+- 已连接渠道
+- 已就绪工具
+- Agent/Skill 数量
+
+### 4.3 跨模式观测基线
+
+- 宿主模式：`hostMode/distributionFamily/deploymentFamily/acceleratorProfile`
+- Host 端点：`browserBaseUrl`、`hostEndpointId`、`requested/active port`
+- OpenClaw：`runtimeId/lifecycle/homeDir/installDir/configPath/startupChain`
+- Proxy：`baseUrl/defaultRoutes/modelCount/metrics/tests/logPath`
+- 发布：artifact family、manifest、release metadata、smoke report
+
+## 5. 升级可靠性
+
+- 升级不是简单替换文件，而是版本源、资源同步、就绪检查、资源校验的组合流程。
+- 必须检测旧产物污染和版本偏斜。
+- 必须验证打包后的资源清单与安装目录一致。
+
+## 6. 当前事实
+
+- Local Proxy 已有生命周期、健康信息、默认路由、路由指标、路由测试与日志。
+- Kernel Center 已具备 OpenClaw 版本、内置组件、Local Proxy 的可视化展示。
+- ApiSettings 已通过共享的 Local Proxy 日志服务消费请求日志、消息日志与消息捕获设置，不再形成第二观测面。
+- 升级链路已有 readiness、prepare、sync、verify、target clean 等脚本。
+- `RuntimeStartupContext` 已提供宿主模式、分发族、部署族与 Host 端点事实源。
+- Kernel `openClawRuntime` 快照已作为 OpenClaw 版本、路径、启动链的专用事实源。
+- 安装引导链已开始复用 Kernel `openClawRuntime.homeDir` 解析 `openclaw.json`，减少 assessment/runtime 路径漂移。
+
+## 7. 关键差距
+
+- 还需把更多指标纳入长期监控基线，而不只停留在调试或 smoke。
+- 需对升级后关键能力链做更明确的业务级回归。
+- 多实例高负载场景仍需建立容量压测标准。
+- `docker/k8s` 的真实打包启动 smoke 仍依赖目标环境执行，当前仓库内主要是 contract 与 packaged smoke 证据。
+
+## 8. 评估标准
+
+| 评估项 | 合格线 | 领先线 | 当前判断 |
+| --- | --- | --- | --- |
+| 前端性能 | 页面可流畅使用 | 大面板按需加载、长链路反馈明确 | `L4` |
+| 运行可靠性 | Proxy/Gateway/OpenClaw 可稳定协作 | 故障可恢复且状态可视化 | `L4` |
+| 可观测性 | 有状态、有日志 | 有指标、有测试、有路径、有错误上下文 | `L4` |
+| 跨模式一致性 | 多模式共享健康与观测口径 | 模式切换不改变监控语义 | `L4` |
+| 升级稳定性 | 升级可执行 | 升级前后都有自动校验和污染防护 | `L4` |
+
+## 9. 结论
+
+当前性能与可靠性设计的关键优势在于：本地代理、内核中心、升级脚本已经形成闭环。继续补强业务级观测和容量标准，即可达到行业领先水位。
+## 2026-04-10 Step 09 Loop - Kernel Center Local Proxy Observability Readback
+
+- Decision:
+  - `Kernel Center` must read local AI proxy observability from `RuntimeDesktopLocalAiProxyInfo`.
+  - The settings layer must not recompute route health, invent route tests, or infer observability artifact paths.
+- Frozen truth chain:
+  - desktop local proxy services produce `routeMetrics`, `routeTests`, `messageCaptureEnabled`, and `observabilityDbPath`
+  - `packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts` freezes those fields in `RuntimeDesktopLocalAiProxyInfo`
+  - `packages/sdkwork-claw-settings/src/services/kernelCenterService.ts` forwards them unchanged into `KernelCenterDashboard.localAiProxy`
+  - `packages/sdkwork-claw-settings/src/KernelCenter.tsx` formats readback only
+- UI obligations in this slice:
+  - show message capture state
+  - show observability database path
+  - show route metric count and route test count
+  - show per-route metric summaries and latest test summaries keyed by `routeId`
+- Non-goals in this slice:
+  - no new desktop-side observability collection
+  - no automatic repair flow
+  - no cross-surface aggregation beyond the existing runtime truth path
+
+## 2026-04-10 Step 09 Loop - ApiSettings Local Proxy Runtime Evidence Readback
+
+- Decision:
+  - `ApiSettings` must consume local proxy runtime evidence from the same runtime truth already used by `Kernel Center`.
+  - request/message log views may expose evidence, but they must not infer lifecycle or filesystem paths from log contents.
+- Frozen truth chain:
+  - `RuntimeDesktopLocalAiProxyInfo` already publishes `lifecycle`, `observabilityDbPath`, `snapshotPath`, and `logPath`
+  - `packages/sdkwork-claw-settings/src/services/localAiProxyLogsService.ts` now exposes `getRuntimeSummary()` by reading `kernelPlatformService.getInfo()?.localAiProxy`
+  - `packages/sdkwork-claw-settings/src/ApiSettings.tsx` renders readback only
+- UI obligations in this slice:
+  - show proxy lifecycle
+  - show log path
+  - show snapshot path
+  - show observability DB path
+  - refresh runtime evidence together with request/message log reloads
+- Non-goals in this slice:
+  - no new desktop-side observability collection
+  - no lifecycle heuristics derived from request/message rows
+  - no path synthesis from packaging defaults
+
+## 2026-04-10 Step 09 Loop - Packaged Desktop Local Proxy Runtime Smoke Evidence
+
+- Decision:
+  - packaged desktop startup smoke must preserve the same local AI proxy runtime facts already exposed by `Kernel Center` and `ApiSettings`
+  - packaged smoke and release finalization must not infer proxy lifecycle or artifact paths from installer layout heuristics
+- Frozen truth chain:
+  - desktop bootstrap captures `kernel.getInfo().localAiProxy`
+  - `desktop-startup-evidence.json` persists a sanitized `localAiProxy` block
+  - `desktop-startup-smoke-report.json` lifts that summary as `localAiProxyRuntime`
+  - release finalization verifies the startup smoke summary matches the captured evidence
+  - OpenClaw upgrade-smoke aggregation exposes the same summary through `packagedLaunchSmokeSummary`
+- Required packaged fields in this slice:
+  - `lifecycle`
+  - `messageCaptureEnabled`
+  - `observabilityDbPath`
+  - `snapshotPath`
+  - `logPath`
+- Non-goals in this slice:
+  - no new proxy-side observability collection
+  - no synthetic packaged-health inference
+  - no second truth source outside the runtime contract
+
+## 2026-04-10 Step 09 Closure - Performance Baseline And Capacity Red Lines
+
+- Frozen frontend baseline:
+  - `InstanceDetail` route chunk stays split from the heavy `config` and `files` panels
+  - current fresh build baseline:
+    - `InstanceDetail`: `179.73 kB`
+    - `InstanceConfigWorkbenchPanel`: `63.33 kB`
+    - `InstanceDetailFilesSection`: `2.38 kB`
+  - the old eager-loaded `InstanceDetail` baseline of about `262.56 kB` remains the regression floor that later quality gates should prevent
+- Frozen runtime baseline:
+  - local proxy route metrics must keep runtime-backed request counts and latency records
+  - local proxy route tests must keep runtime-backed probe latency and outcome records
+  - local proxy streaming first chunk must stay below the existing `650ms` synthetic threshold
+- Closure result:
+  - `CP09-1`: green
+  - `CP09-2`: green
+  - `CP09-3`: green
+  - `CP09-4`: green
+  - `Step 09`: closed
+- Follow-up:
+  - Step 10 can promote these baselines into formal quality gates
+  - Step 11 can keep using the packaged startup-smoke contract as a release-blocking rule
+

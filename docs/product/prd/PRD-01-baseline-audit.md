@@ -1,0 +1,106 @@
+> Migrated from `docs/step/01-现状基线冻结与差距审计.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Step 01 - 现状基线冻结与差距审计
+
+## 1. Step Card
+
+| 项 | 内容 |
+| --- | --- |
+| 执行模式 | 强串行 |
+| 前置 | `00` |
+| 主写入范围 | `docs/review/` `docs/step/90*` 审计清单与矩阵 |
+| 执行输入 | `docs/架构/01-17`、`packages/`、`scripts/`、`config/`、现有测试与发布脚本 |
+| 本步非目标 | 不直接拆文件；不直接改功能；不提前改发布链 |
+| 最小输出 | 热点清单、差距矩阵、优先级、后续 step 归属 |
+
+## 2. 设计
+
+- 审计对象必须覆盖包结构、平台桥、桌面 Runtime、Settings、Chat、Instances、Scripts、Release。
+- 审计输出必须能直接指导后续 step，而不是泛泛总结。
+- 差距统一按 `P0/P1/P2` 与 `强串行/可并行` 双维度排序。
+
+## 3. 实施落地规划
+
+1. 盘点真实模块：Host、Shell、Feature、Foundation、Server、Desktop Runtime、Release Scripts。
+2. 盘点热点文件：
+   `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` 约 `8081` 行、
+   `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs` 约 `8074` 行、
+   `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` 约 `5328` 行、
+   `packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.ts` 约 `2767` 行、
+   `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.ts` 约 `2737` 行、
+   `scripts/prepare-openclaw-runtime.mjs` 约 `3290` 行。
+3. 盘点高风险测试资产：
+   `instanceWorkbenchService.test.ts`、`openClawGatewayClient.test.ts`、`providerConfigCenterService.test.ts`、`prepare-openclaw-runtime.test.mjs`。
+4. 强制盘点 OpenClaw 对齐事实源：
+   `webStudio.ts/webStudio.test.ts`、`InstanceDetail.tsx`、`openClawConfigSchemaSupport.test.ts`、
+   `channelService.ts`、`marketService.ts`、`agentInstallService.ts`、
+   `openClawManagementCapabilities.ts`、`openClawProviderWorkspacePresentation.ts`。
+5. 把问题归档到：分层边界、Runtime 主链、API 契约、Provider 投影、聊天路由、工作台一致性、生态/插件机制、发布工程化八类。
+6. 给每项问题绑定后续 step。
+
+## 4. 测试计划
+
+- `pnpm.cmd lint`
+- `pnpm.cmd check:arch`
+- `pnpm.cmd check:parity`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+- `pnpm.cmd check:release-flow`
+
+## 5. 结果验证
+
+- 能明确说出“先改哪些包、哪些文件必须先拆、哪些链路不能并行”。
+- 能明确说出“哪些能力已经具备基础，不需要推倒重来”。
+- 差距矩阵能够直接喂给 `02-13`。
+
+## 6. 检查点
+
+- `CP01-1`：包、脚本、平台链、发布链盘点完成。
+- `CP01-2`：热点文件与热点测试清单完成。
+- `CP01-3`：差距按 step 归类完成。
+- `CP01-4`：形成 `P0/P1/P2` 改造优先级。
+
+### 6.1 推荐并行车道
+
+- `01-A`：包结构与依赖方向盘点
+- `01-B`：热点文件与测试资产盘点
+- `01-C`：架构能力到 step 的归属判断
+- 收口要求：只允许 `01-Owner` 输出统一差距矩阵
+
+### 6.2 完成后必须回写的架构文档
+
+- `docs/架构/03-模块规划与边界.md`
+- `docs/架构/14-综合评估矩阵与优先级清单.md`
+- `docs/架构/17-能力到API调用矩阵.md`
+
+### 6.3 推荐 review 产物
+
+- `docs/review/step-01-执行卡-YYYY-MM-DD.md`
+- `docs/review/step-01-热点清单-YYYY-MM-DD.md`
+- `docs/review/step-01-差距优先级矩阵-YYYY-MM-DD.md`
+- `docs/review/step-01-openclaw对齐差距矩阵-YYYY-MM-DD.md`
+
+### 6.4 架构能力闭环判定
+
+- Runtime、API、Provider、Chat、Instance、Release 六类热点都已映射到后续 step，且不存在未归属的 `P0/P1` 问题。
+- `webStudio.ts/webStudio.test.ts`、`InstanceDetail.tsx`、`channelService.ts`、`marketService.ts` 等 OpenClaw 真相文件都已形成差距结论。
+- 若仍说不清哪些文件先拆、哪些链路不可并行、哪些 OpenClaw 细节尚未对齐，本 step 不算闭环。
+
+### 6.5 快速完整执行建议
+
+- 先并行完成“包结构盘点、热点文件盘点、step 归属判断”，再由 `01-Owner` 一次冻结差距矩阵。
+- 本步结束前不进入实现阶段，先把优先级、串并行边界和高风险清单压实。
+
+## 7. 风险与回滚
+
+- 风险：只按直觉拆包会漏掉 Runtime/API/Release 热点。
+- 回滚：审计结论错误时，先修订审计文档，不直接推进实现。
+
+## 8. 完成定义
+
+- 热点清单、差距矩阵、优先级、step 归属四项齐全。
+
+## 9. 下一步准入条件
+
+- Step 02 能拿到明确的边界收口对象和高风险文件清单。
+

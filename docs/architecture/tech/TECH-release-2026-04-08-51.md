@@ -1,0 +1,56 @@
+> Migrated from `docs/release/release-2026-04-08-51.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Fresh `Step 05` full verification confirms the `Provider Center -> Local Proxy -> Projection -> OpenClaw Config -> Agent` chain is green on the current worktree.
+- `Provider Center`、`Kernel Center`、`ApiSettings` already share the same kernel / Local Proxy truth sources, so this loop closes `Step 05` with formal evidence rather than new production code.
+- The architecture ledger now explicitly records the shared Provider/Projection/observability chain, and the next frontier advances to `Step 06`.
+
+## Attempt Outcome
+
+- Re-ran the full `Step 05` verification set:
+  - `pnpm.cmd check:sdkwork-settings`
+  - `pnpm.cmd check:desktop`
+  - `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/providerConfigCenterService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-core/src/services/openClawConfigService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-channels/src/services/channelService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+  - `node scripts/desktop-local-ai-proxy-contract.test.mjs`
+- Re-audited the current implementation and OpenClaw fact sources:
+  - `providerConfigCenterService` route save/delete/test/apply/readback chain
+  - `openClawLocalProxyProjectionService` protocol-aware proxy-base resolution and selection validation
+  - `openClawConfigService` canonical managed local-proxy projection and agent writeback
+  - `channelService` / `webStudio.test.ts` managed channel alignment
+  - `localAiProxyLogsService` / `KernelCenter` / `ApiSettings` shared Local Proxy observability surface
+  - `local_ai_proxy.rs` route metrics/tests and request/message log ownership, with `plugins/mod.rs` unchanged
+- No production code changes were required.
+- This loop instead writes the formal `Step 05` execution and review evidence, updates the architecture docs `05/09/10`, and appends the release ledger entry that advances the frontier to `Step 06`.
+
+## Change Scope
+
+- `docs/review/step-05-执行卡-2026-04-08.md`
+- `docs/review/step-05-provider-route与projection矩阵-2026-04-08.md`
+- `docs/review/step-05-apply目标与回读闭环-2026-04-08.md`
+- `docs/架构/05-功能架构与核心业务流程.md`
+- `docs/架构/09-数据、状态与配置治理设计.md`
+- `docs/架构/10-性能、可靠性与可观测性设计.md`
+- `docs/release/release-2026-04-08-51.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `pnpm.cmd check:sdkwork-settings`
+- `pnpm.cmd check:desktop`
+- `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/providerConfigCenterService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-core/src/services/openClawConfigService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-channels/src/services/channelService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node scripts/desktop-local-ai-proxy-contract.test.mjs`
+
+## Risks And Rollback
+
+- This loop changes governance evidence and architecture/release records only; rollback is limited to those documents.
+- The primary remaining risk is future status drift if later loops keep treating `Step 05` as “entry probes only” instead of using this fresh full-closure evidence.
+- 波次 B 仍未退出；`Step 06/07/08` 仍需后续继续闭环。
+

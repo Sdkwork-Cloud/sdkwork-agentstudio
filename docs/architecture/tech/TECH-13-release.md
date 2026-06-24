@@ -1,0 +1,96 @@
+> Migrated from `docs/step/13-发布就绪与持续迭代闭环.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Step 13 - 发布就绪与持续迭代闭环
+
+## 1. Step Card
+
+| 项 | 内容 |
+| --- | --- |
+| 执行模式 | 强串行 |
+| 前置 | `00-12` |
+| 主写入范围 | 全仓 `docs/架构/` `docs/release/` `docs/review/` `docs/step/` |
+| 执行输入 | 所有 step 结果、所有 review 记录、所有 release 证据、所有回归结果 |
+| 本步非目标 | 不新增大功能；不再做跨波次结构性改造 |
+| 最小输出 | 最终验收、发布准入、change log、回写架构、下一轮 backlog |
+
+## 2. 设计
+
+- 最终完成不是“功能差不多”，而是“架构承诺、实现结果、测试证据、发布证据”四者一致。
+- 任何未形成证据的能力，都不能进入发布完成口径。
+- 最终文档必须支持重复执行下一轮迭代。
+
+## 3. 实施落地规划
+
+1. 用 `93/95` 对全部波次和能力闭环做总验收。
+2. 汇总 `docs/release/` 的版本、变更、风险、验证、已知问题。
+3. 回写所有受影响 `docs/架构/*` 文档，删除“已规划未落地”的失真描述。
+4. 形成最终发布准入单、回滚单、下一轮 backlog。
+5. 固化 changelog 更新规则：每次功能迭代完成后必须同步更新 `docs/release/`。
+
+## 4. 测试计划
+
+- `pnpm.cmd lint`
+- `pnpm.cmd check:multi-mode`
+- `pnpm.cmd check:release-flow`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- 各波次汇总 smoke 与业务级回归
+- `pnpm.cmd release:plan`
+
+## 5. 结果验证
+
+- 能以文档和命令证明产品已达到本轮商业交付标准。
+- 架构文档、step 文档、release 文档之间没有相互矛盾。
+- 下一轮迭代可以直接从当前 step/release/review 体系继续推进。
+
+## 6. 检查点
+
+- `CP13-1`：波次总验收通过。
+- `CP13-2`：release/changelog/风险说明齐备。
+- `CP13-3`：架构回写完成。
+- `CP13-4`：下一轮 backlog 与执行入口冻结。
+
+### 6.1 推荐并行车道
+
+- `13-A`：最终回归与证据汇总
+- `13-B`：release/changelog/风险说明
+- `13-C`：架构回写与 backlog
+- 收口要求：仅 `13-Owner` 可以宣告“本轮完成”
+
+### 6.2 完成后必须回写的架构文档
+
+- `docs/架构/README.md`
+- `docs/架构/13-演进路线图与阶段评估.md`
+- `docs/架构/14-综合评估矩阵与优先级清单.md`
+
+### 6.3 推荐 review 产物
+
+- `docs/review/step-13-最终总验收-YYYY-MM-DD.md`
+- `docs/review/step-13-架构兑现与回写决议-YYYY-MM-DD.md`
+- `docs/review/step-13-下一轮backlog冻结-YYYY-MM-DD.md`
+
+### 6.4 架构能力闭环判定
+
+- 全部 step 已通过 `93/95/97` 三重口径，release、changelog、回滚单、架构回写、backlog 五项齐全。
+- `webStudio.ts/webStudio.test.ts`、`InstanceDetail.tsx`、`channelService.ts`、`marketService.ts`、`agentInstallService.ts`、`openClawConfigSchemaSupport.test.ts` 所定义的 OpenClaw 行为标准均已被兑现。
+- 若仍存在“功能已做但无证据”或“文档未回写”的能力，本 step 不算闭环。
+
+### 6.5 快速完整执行建议
+
+- 先汇总所有证据和未闭环点，再并行推进“最终回归”“release/changelog”“架构回写/backlog”三车道。
+- 只允许 `13-Owner` 宣告完成，避免多个车道各自给出不一致完成口径。
+
+## 7. 风险与回滚
+
+- 风险：缺少总收口，会让产品进入“功能很多、证据很散”的伪完成状态。
+- 回滚：未达标能力继续保留在下一轮 backlog，不以文字补丁假装完成。
+
+## 8. 完成定义
+
+- 发布准入单、回滚单、change log、架构回写、下一轮 backlog 五项齐全。
+
+## 9. 下一步准入条件
+
+- 下一轮迭代必须沿用当前 step/review/release 体系，不重新发明流程。
+

@@ -1,0 +1,51 @@
+> Migrated from `docs/release/release-2026-04-08-26.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Step 03 continued on the serial `CP03-2` hotspot-splitting frontier and extracted the Gemini native protocol handler layer into a dedicated Rust submodule.
+- This release candidate keeps Step 03 open overall, but it closes another real runtime-boundary slice and preserves fresh desktop-gate evidence.
+
+## Attempt Outcome
+
+- The loop repaired one remaining Gemini native request-serving hotspot:
+  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned the Gemini-native models and model-action handlers even though they formed a self-contained native protocol boundary
+  - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that Gemini native boundary
+- Implemented the narrow repairs:
+  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
+  - delegated router registration through `get(gemini_native::models_handler_v1beta)`, `post(gemini_native::model_action_handler_v1beta)`, and `post(gemini_native::model_action_handler_v1)` from `local_ai_proxy.rs`
+  - moved the Gemini native model-list handler, model-action handlers, model-action parser, and supported-generation-method helper into the same module
+  - removed the obsolete in-file Gemini native handler stack from `local_ai_proxy.rs`
+  - tightened the desktop foundation gate so the Gemini native module file, declaration, router delegations, and old-handler removal are now required
+- Fresh verification:
+  - `node scripts/check-desktop-platform-foundation.mjs`
+  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_gemini_`
+  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_`
+  - `pnpm.cmd check:desktop-openclaw-runtime`
+  - `pnpm.cmd check:desktop`
+
+## Change Scope
+
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
+- `scripts/check-desktop-platform-foundation.mjs`
+- `docs/review/step-03-local-ai-proxy-gemini-native-hotspot-split-2026-04-08.md`
+- `docs/架构/111-2026-04-08-local-ai-proxy-gemini-native-module-boundary.md`
+- `docs/review/step-03-执行卡-2026-04-07.md`
+- `docs/release/release-2026-04-08-26.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node scripts/check-desktop-platform-foundation.mjs`
+- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_gemini_`
+- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+- `pnpm.cmd check:desktop`
+
+## Risks And Rollback
+
+- The split is intended to be behavior-preserving; the main risk is future drift if Gemini native handlers are copied back into `local_ai_proxy.rs`.
+- Shared runtime owners for observability, streaming, and upstream URL building must remain shared; later refactors should not fork Gemini-native-only copies.
+- Rollback is limited to the listed Rust/script files and the associated review, architecture, and release writebacks.
+

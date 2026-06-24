@@ -1,0 +1,95 @@
+> Migrated from `docs/step/12-商业化能力、权限与运营闭环.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Step 12 - 商业化能力、权限与运营闭环
+
+## 1. Step Card
+
+| 项 | 内容 |
+| --- | --- |
+| 执行模式 | 波次内并行 |
+| 前置 | `08` `10` `11` |
+| 主写入范围 | `packages/sdkwork-claw-account` `packages/sdkwork-claw-dashboard` `packages/sdkwork-claw-mall` `packages/sdkwork-claw-model-purchase` `packages/sdkwork-claw-points` `docs/release/` |
+| 执行输入 | `01`、`13`、`14` 架构文档；现有账户、积分、模型购买、仪表盘能力 |
+| 本步非目标 | 不改变核心 Runtime 主链；不改变发布脚本主结构 |
+| 最小输出 | 商业化能力面、权限/权益边界、运营与审计证据、版本运营规则 |
+
+## 2. 设计
+
+- 商业化能力必须建立在稳定的聊天、实例、生态、发布主链之上，不反向污染核心 Runtime。
+- 权限、权益、积分、模型购买、运营仪表盘应走独立业务面和独立契约，不侵入 Host 与 Foundation 边界。
+- 商业化证据必须与 `docs/release/` 和 changelog 同步。
+
+## 3. 实施落地规划
+
+1. 收口账户、权益、积分、模型购买、商城、仪表盘的业务边界和入口。
+2. 明确这些能力与聊天、Provider、实例、技能、发布之间的授权关系。
+3. 建立商业化必备证据：版本记录、功能开关、运营指标、审计日志、变更说明。
+4. 为后续企业化能力预留权限、审计、团队治理、订阅/授权位。
+5. 将商业能力纳入统一发布说明和 change log 规范。
+
+## 4. 测试计划
+
+- `pnpm.cmd check:sdkwork-account`
+- `pnpm.cmd check:sdkwork-dashboard`
+- `pnpm.cmd check:sdkwork-mall`
+- `pnpm.cmd check:sdkwork-model-purchase`
+- `pnpm.cmd check:sdkwork-points`
+
+## 5. 结果验证
+
+- 商业化能力有清晰入口、清晰权限、清晰审计、清晰变更说明。
+- 不会因商业模块改动而破坏聊天、实例、Provider、Release 主链。
+- 发布说明可清晰区分免费能力、商业能力、企业预留能力。
+
+## 6. 检查点
+
+- `CP12-1`：商业化模块边界冻结。
+- `CP12-2`：权限/权益/购买/积分关系冻结。
+- `CP12-3`：商业化运营与审计证据链建立。
+- `CP12-4`：变更说明与 release/changelog 规则打通。
+
+### 6.1 推荐并行车道
+
+- `12-A`：账户/权益/积分
+- `12-B`：商城/模型购买/仪表盘
+- `12-C`：商业化审计、说明、运营证据
+- 收口要求：权限与权益模型由 `12-Owner` 统一
+
+### 6.2 完成后必须回写的架构文档
+
+- `docs/架构/01-产品设计与需求范围.md`
+- `docs/架构/12-安装、部署、发布与商业化交付标准.md`
+- `docs/架构/14-综合评估矩阵与优先级清单.md`
+
+### 6.3 推荐 review 产物
+
+- `docs/review/step-12-执行卡-YYYY-MM-DD.md`
+- `docs/review/step-12-权限权益模型-YYYY-MM-DD.md`
+- `docs/review/step-12-商业化审计与发布说明-YYYY-MM-DD.md`
+
+### 6.4 架构能力闭环判定
+
+- 账户、权益、积分、模型购买、商城、仪表盘形成独立业务面，且变更不会污染 Runtime 主链。
+- 商业化能力不得绕过本地 Proxy，不得改写 `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`、`packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts` 定义的托管 OpenClaw 语义，也不得破坏全局 channels、Instance Detail、chat 真相源。
+- 若权限/权益/审计不能与发布说明、feature flag、运营证据对齐，本 step 不算闭环。
+
+### 6.5 快速完整执行建议
+
+- 先冻结权限与权益模型，再并行推进“账户/积分”“商城/购买/仪表盘”“审计/发布说明”三车道。
+- 默认以 feature flag 和独立模块接入，先保边界，再补运营细节。
+- 最快打法：先冻结 feature flag、权限矩阵、审计字段，再并行推进三车道；所有商业入口默认挂在独立业务面，禁止反向侵入 Runtime、Proxy、Provider 配置主链。
+
+## 7. 风险与回滚
+
+- 风险：商业化入口若绕开权限和发布规则，会把商业能力做成高风险外挂。
+- 回滚：优先以 feature flag 与独立模块方式接入，避免直接侵入主链。
+
+## 8. 完成定义
+
+- 商业化能力形成清晰边界、清晰证据、清晰发布说明。
+
+## 9. 下一步准入条件
+
+- Step 13 可以基于完整产品面做最终总验收与下一轮计划。
+

@@ -1,0 +1,65 @@
+> Migrated from `docs/review/2026-04-09-openclaw-2026.4.8-upgrade-review.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- 2026-04-09 重新核对 upstream 后，确认 `openclaw` 官方 latest 已升级到 `2026.4.8`，GitHub latest release 对应 `v2026.4.8`，发布时间为 `2026-04-08`。
+- 仓库内置 OpenClaw 版本源、桌面组件注册表、bundled manifest、generated manifest 与 prepared runtime 现已统一到 `2026.4.8`。
+- 升级过程中发现并修复了真实 runtime 问题：`@discordjs/opus` 在 `npm install --ignore-scripts` 下不会自动拉取 `node-pre-gyp` 预编译包，导致 smoke load 缺失 `prebuild/.../opus.node`。
+- 针对这个失败点补了红绿回归，并让 `prepare-openclaw-runtime` 能解析并解包 `@discordjs/opus` 的下载型 tar.gz 原生资产。
+
+## Attempt Outcome
+
+- Official latest verification:
+  - `npm view openclaw version dist-tags --json` 返回 `latest = 2026.4.8`
+  - `https://api.github.com/repos/openclaw/openclaw/releases/latest` 返回 tag `v2026.4.8`
+- Upstream release notes re-read:
+  - Telegram/setup 与 bundled channels/setup 切换为加载打包后的 top-level sidecars
+  - bundled plugin compatibility metadata 对齐到 `2026.4.8`
+  - OpenAI-family runs 保持 `update_plan` 可用
+  - `/exec` 默认上报与 host-aware runtime 行为重新对齐
+  - Slack proxy/token 与 trusted env-proxy fetch guard 有修复
+- Real failure and fix:
+  - 初次执行 `node scripts/prepare-openclaw-runtime.mjs --force` 在 `@discordjs/opus` smoke load 处失败
+  - 根因是 runtime install 采用 `--ignore-scripts`，`node-pre-gyp install --fallback-to-build` 没有实际执行
+  - 先新增 `scripts/prepare-openclaw-runtime.test.mjs` 的红灯回归，再补 `scripts/prepare-openclaw-runtime.mjs` 对 `@discordjs/opus` 下载型预编译 tar.gz 的解析与解包
+- Actual workspace result:
+  - `node scripts/openclaw-upgrade-readiness.mjs 2026.4.8` 现在报告 `versionSourcesAligned: true`
+  - 真实 runtime prepare 已完成并输出 `Prepared bundled OpenClaw runtime 2026.4.8 for windows-x64`
+  - OpenClaw 专项 runtime gate 与完整桌面 gate 都重新通过
+
+## OpenClaw Fact Sources
+
+- `config/openclaw-release.json`
+  - `stableVersion` 已更新为 `2026.4.8`
+- `packages/sdkwork-claw-desktop/src-tauri/foundation/components/component-registry.json`
+  - bundled OpenClaw 版本已更新为 `2026.4.8`
+- `scripts/openclaw-release-contract.test.mjs`
+  - 版本契约基线已更新到 `2026.4.8`
+- `scripts/verify-desktop-openclaw-release-assets.test.mjs`
+  - 桌面 release asset verifier 基线已更新到 `2026.4.8`
+- `scripts/prepare-openclaw-runtime.mjs`
+  - 现在会在 runtime 准备期补齐 `@discordjs/opus` 的下载型 tar.gz 原生预编译资产
+- `packages/sdkwork-claw-desktop/src-tauri/resources/openclaw`
+  - bundled manifest、generated manifest 和 prepared runtime 都已重新生成并对齐到 `2026.4.8`
+
+## Verification Focus
+
+- RED: `node scripts/prepare-openclaw-runtime.test.mjs`
+- GREEN: `node scripts/prepare-openclaw-runtime.test.mjs`
+- `node scripts/openclaw-release-contract.test.mjs`
+- `node scripts/openclaw-upgrade-readiness.mjs 2026.4.8`
+- `OPENCLAW_PACKAGE_TARBALL=... OPENCLAW_FORCE_PREPARE=true node scripts/prepare-openclaw-runtime.mjs --force`
+- `pnpm check:desktop-openclaw-runtime`
+- `pnpm check:desktop`
+
+## Risks And Rollback
+
+- 当前主要风险不是版本源漂移，而是未来 upstream 再新增新的下载型原生依赖时，如果没有同步补 runtime 补水逻辑，prepare 仍可能在 smoke load 阶段失败。
+- 本次修复刻意只扩展运行时准备链，不改变 Gateway、Local Proxy、Provider 投影或桌面宿主路由语义。
+- 回滚需要一起回退：
+  - `2026.4.8` 版本源与组件注册表
+  - `prepare-openclaw-runtime` 对下载型原生资产的补水逻辑
+  - 重生成的桌面 OpenClaw 资源
+  - 对应 review / architecture / release 记录
+

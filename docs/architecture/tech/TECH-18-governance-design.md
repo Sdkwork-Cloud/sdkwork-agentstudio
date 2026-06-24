@@ -1,0 +1,579 @@
+> Migrated from `docs/架构/18-多内核治理与升级维护设计.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 18-多内核治理与升级维护设计
+
+## 1. 目标
+
+本设计用于把当前以 OpenClaw 为主的运行时治理能力，升级为同时兼容 `openclaw`、`hermes` 和未来更多 kernel 的统一治理架构。
+
+目标不是把所有 kernel 做成完全相同的运行方式，而是建立一套统一的治理平面，让不同 kernel 在以下维度上按统一标准接入：
+
+- 版本源与升级源统一管理
+- 目录结构与状态落盘统一规范
+- 安装、激活、回滚、清理链路统一抽象
+- kernel 能力、实例、控制台、配置入口统一投影
+- OpenClaw、Hermes 与未来 kernel 都可以通过同一套 adapter 接入，而不再向 Host 核心层渗透特例
+
+## 2. 当前问题
+
+当前仓库已经具备多内核目录和 package profile 雏形，但治理层仍然明显偏向 OpenClaw。
+
+### 2.1 版本治理碎片化
+
+- `config/kernels/openclaw.json`、`config/kernels/hermes.json` 定义了 kernel 元数据。
+- `config/kernel-profiles/dual-kernel.json` 已经声明了多内核打包组合。
+- OpenClaw 版本源已收敛到 `config/kernel-releases/openclaw.json`，不再保留 `config/openclaw-release.json` 兼容入口。
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/openclaw_release.rs` 又引入了编译期版本投影。
+- UI 显示版本、authority 状态、active 状态、manifest 版本之间缺少统一优先级规则，容易产生版本漂移。
+
+### 2.2 目录模型不是多内核标准化模型
+
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/paths.rs` 中存在大量 `openclaw_*` 顶层路径字段。
+- 这会导致每增加一个 kernel，都需要继续在 `AppPaths` 里添加一组新字段。
+- 目录标准无法沉淀为平台规范，只能演变成不断追加特例。
+
+### 2.3 authority 与升级抽象名义通用、实现单核
+
+- `kernel_runtime/adapter.rs` 已经定义了 `KernelRuntimeAdapter`。
+- 但 `services/kernel_runtime_authority.rs` 仍然只有 `openclaw_contract`、`active_openclaw_config_path`、`record_openclaw_activation_result` 这类 OpenClaw 专用接口。
+- `services/upgrades.rs` 中的升级流程也通过 `OPENCLAW_RUNTIME_ID` 做显式分支。
+- 结果是 adapter 只做了“入口抽象”，没有形成真正的平台治理抽象。
+
+### 2.4 状态模型部分通用、部分硬编码
+
+- `layout.rs` 中的 `ActiveState`、`InventoryState`、`PinnedState`、`ChannelState` 看上去已经支持 `runtimes: BTreeMap<String, ...>`。
+- 但 `KernelAuthorityState` 默认 `runtime_id = "openclaw"`。
+- `RuntimeUpgradesState` 默认也只为 `openclaw` 初始化。
+- 这说明状态模型还没有真正完成“按 kernel 分区”的标准化。
+
+### 2.5 Bundled 组件层与 kernel 治理层职责混杂
+
+- `services/components.rs` 中的 `BundledKernelPackageManifest` 只管理 included kernel ids / default enabled kernel ids。
+- `components.rs` 中 `bundled_component_defaults()` 仍为空，说明 bundled component 体系尚未成为可靠的 kernel 治理中心。
+- 继续把 kernel 生命周期与 bundled component 混用，会让 release、upgrade、doctor、authority 边界越来越混乱。
+
+## 3. 方案比较
+
+### 方案 A：继续以 OpenClaw 为主，逐步给 Hermes 打补丁
+
+优点：
+
+- 变更最小
+- 短期能继续推进 OpenClaw 功能
+
+缺点：
+
+- 架构债继续累积
+- Hermes 和后续 kernel 仍然要复制 OpenClaw 例外逻辑
+- 版本、目录、状态漂移问题不会消失
+
+结论：不推荐。
+
+### 方案 B：只抽象安装与升级，不抽象 authority 与目录模型
+
+优点：
+
+- 能较快统一 release 和 activate 流程
+- 对现有 UI 和实例层影响较小
+
+缺点：
+
+- 路径、状态、配置文件仍然是 OpenClaw 专属模型
+- 未来扩更多 kernel 时依然会重复修改 `paths.rs`、`layout.rs`、`studio.rs`
+- 仍然不能从根本上降低漂移风险
+
+结论：可过渡，但不适合作为正式标准。
+
+### 方案 C：建立统一的 Kernel Governance Plane
+
+优点：
+
+- 版本、目录、状态、升级、实例、控制台统一治理
+- OpenClaw 与 Hermes 走同一平台标准，只在 adapter 内保留差异
+- 未来接入更多 kernel 时不需要再重构 Host 核心
+
+缺点：
+
+- 首轮改造范围更大
+- 需要对 `paths.rs`、`layout.rs`、`authority`、`upgrade`、`studio projection` 做硬切换
+
+结论：推荐方案。
+
+本设计采用方案 C，并将其定义为当前工程的正式标准。
+
+## 4. 目标架构：Kernel Governance Plane
+
+平台统一拆分为六个标准层。
+
+### 4.1 Kernel Catalog
+
+定义系统中“有哪些 kernel”。
+
+标准来源：
+
+- `config/kernels/<kernelId>.json`
+
+必须描述：
+
+- `kernelId`
+- `displayName`
+- `vendor`
+- `launcherKinds`
+- `platformSupport`
+- `runtimeRequirements`
+- `optionalRuntimeRequirements`
+- `installStrategy`
+- `managementTransport`
+- `capabilityMatrix`
+- `sourceMetadata`
+
+职责边界：
+
+- 只描述静态事实
+- 不保存机器当前安装结果
+- 不保存升级状态
+
+### 4.2 Kernel Release Registry
+
+定义每个 kernel 的“版本从哪里来、当前支持哪些版本、升级依据是什么”。
+
+推荐标准来源：
+
+- `config/kernel-releases/openclaw.json`
+- `config/kernel-releases/hermes.json`
+- `config/kernel-releases/<future-kernel>.json`
+
+已淘汰旧的单内核 OpenClaw release 入口；所有内核都必须进入 `config/kernel-releases/<kernelId>.json` 标准目录。
+
+每个 release 文件至少包含：
+
+- `kernelId`
+- `stableVersion`
+- `supportedChannels`
+- `defaultChannel`
+- `platformSupport`
+- `packageMetadata`
+- `runtimeRequirements`
+- `releaseSource`
+- `releaseVerification`
+
+设计原则：
+
+- 每个 kernel 独立维护自己的 release source，避免一个大文件随着 kernel 增长而难以 review
+- 编译期常量只允许作为 build projection，不允许继续成为主版本源
+- UI 显示版本、安装版本、升级候选版本都必须从 release registry + authority state 组合推导
+
+### 4.3 Kernel Package Profile
+
+定义“一个发行包包含哪些 kernel，以及默认启用哪些 kernel”。
+
+标准来源：
+
+- `config/kernel-profiles/<profileId>.json`
+
+职责：
+
+- 管理内核组合
+- 管理首启启用策略
+- 管理 doctor 规则集合
+
+禁止：
+
+- 直接承担 machine state
+- 直接承担运行时 authority
+- 混入实例状态
+
+### 4.4 Kernel Authority Store
+
+定义“当前机器上某个 kernel 的权威事实”。
+
+权威事实包括：
+
+- 当前激活 install
+- 回退 install
+- 受控根目录
+- 受控配置文件
+- 最后一次激活结果
+- 最后一次错误
+- 迁移历史
+
+authority 是平台治理核心，所有 UI、工作台、升级逻辑、控制台入口都必须基于 authority 而不是基于散落文件推断。
+
+### 4.5 Kernel Adapter Registry
+
+定义“不同 kernel 怎样接入统一治理平面”。
+
+标准接口建议扩展为：
+
+- `runtime_id`
+- `definition`
+- `doctor`
+- `resolve_release`
+- `stage_install`
+- `verify_install`
+- `activate_install`
+- `rollback_install`
+- `project_instance`
+- `resolve_console_entry`
+- `resolve_management_paths`
+
+要求：
+
+- Host 核心层不得继续按 `if runtime_id == "openclaw"` 增长特例
+- OpenClaw、Hermes、未来 kernel 的差异只能留在 adapter 内部
+- kernel id 必须以 canonical lowercase 形态参与落盘和路径派生；UI、配置和 adapter 输入可以在边界归一化，但不得把不同大小写写成不同目录或状态键
+- kernel path resolver 必须同时负责 install、machine authority、runtime home、runtime state、workspace 这些路径；host、supervisor、snapshot、workbench 不得绕过 resolver 直接读取单 kernel 兼容字段
+- 影响运行时身份的 adapter 子路径也必须由 kernel path resolver 统一派生。OpenClaw 中 `main` 固定映射到主 workspace 和 `agents/main/{agent,sessions}`；非主 agent 固定映射到 `.openclaw/workspace-<normalizedAgentId>` 与 `.openclaw/agents/<normalizedAgentId>/agent`，其中 `normalizedAgentId` 必须是小写、路径安全、最长 64 字符的 canonical id
+- OpenClaw built-in 模式不得持久化 `agents.defaults.workspace` 或 `agents.defaults.agentDir`；这两个字段会触发全局 fallback，破坏标准的 per-agent 目录契约
+
+### 4.6 Kernel Upgrade Orchestrator
+
+定义统一升级流水线。
+
+标准流程：
+
+1. 读取 release registry
+2. 执行 doctor/preflight
+3. stage install
+4. verify install
+5. activate install
+6. 写 authority / active / inventory / receipt
+7. 失败时自动 rollback
+8. 做 retention cleanup
+
+要求：
+
+- 升级成功必须以 authority 写入和健康校验为准
+- 不能仅以“目录替换成功”作为升级成功判据
+- 所有升级结果必须留下审计回执
+- 启动链路不得从 canonical kernel path resolver 静默回退到旧的单 kernel 字段；resolver 失败代表标准体系错误，应显式失败
+
+## 5. 统一目录标准
+
+为避免 `openclaw_*` 路径继续扩散，目录必须统一为按 `kernelId` 命名空间管理。
+
+### 5.1 配置目录
+
+```text
+config/
+  kernels/
+    openclaw.json
+    hermes.json
+  kernel-releases/
+    openclaw.json
+    hermes.json
+  kernel-profiles/
+    openclaw-only.json
+    hermes-only.json
+    dual-kernel.json
+```
+
+### 5.2 安装目录
+
+```text
+install/
+  runtimes/
+    <kernelId>/
+      releases/
+        <installKey>/
+      current/
+```
+
+说明：
+
+- `current/` 只表示当前激活 install 的挂载点
+- 真实版本目录统一放在 `releases/<installKey>/`
+- `installKey` 与 `versionLabel` 必须分离，避免版本显示和目录命名强耦合
+
+### 5.3 机器状态目录
+
+```text
+machine/
+  state/
+    kernels/
+      <kernelId>/
+        authority.json
+        upgrades.json
+        migrations.json
+        installs.json
+        instances.json
+        doctor.json
+        managed-config/
+```
+
+说明：
+
+- 每个 kernel 独立维护自己的 authority 与升级状态
+- 平台级聚合文件只保留索引能力，不再承担 OpenClaw 专属状态
+
+### 5.4 用户数据目录
+
+```text
+app-user-root/
+  kernels/
+    <kernelId>/
+      home/
+      state/
+      workspace/
+      cache/
+```
+
+说明：
+
+- OpenClaw 可以映射到自己的 home/state/workspace
+- Hermes 如果是外部 local / WSL / remote，也仍然通过同一命名空间记录其映射关系
+- 不再允许把 OpenClaw 特有 home 目录直接写成平台顶层字段
+
+## 6. 版本治理标准
+
+### 6.1 单一真相源
+
+每个 kernel 的版本主真相源是：
+
+- `config/kernel-releases/<kernelId>.json`
+
+以下内容都只能是投影，不是主真相源：
+
+- 编译期环境变量
+- 资源 manifest 中的 bundled version
+- UI 上的 display version
+- active state 的旧版 `activeVersion`
+
+### 6.2 版本显示优先级
+
+为消除版本漂移，实例详情和 Kernel Center 中的版本展示统一按以下优先级计算：
+
+1. authority 中 `active_install_key` 对应 install manifest 的 `versionLabel`
+2. authority 中显式写入的 `active_version_label`
+3. 当前 `current/` 安装目录 manifest 的 `versionLabel`
+4. release registry 中当前 channel 的稳定版本
+5. 编译期 bundled version
+
+规则：
+
+- 只要机器上存在权威激活 install，就不得退回显示 bundled version
+- 不允许因为“存在更新的 staged install”而覆盖当前激活版本显示
+- UI 展示、控制台页头、实例详情、升级卡片必须使用同一套 resolver
+
+### 6.3 OpenClaw 与 Hermes 的差异处理
+
+- OpenClaw 支持 `managedArchiveActivation`，可以完整托管 install / activate / rollback
+- Hermes 当前主要是 `externalSourceCheckout` 或 remote attach，但仍然必须纳入统一 release registry
+- 未来若 Hermes 支持更强的本地托管，只扩展 Hermes adapter，不修改平台治理模型
+
+## 7. 状态模型标准
+
+### 7.1 平台聚合状态
+
+平台聚合状态保留：
+
+- `active.json`
+- `inventory.json`
+- `pinned.json`
+- `channels.json`
+- `sources.json`
+
+但这些文件中的 `runtimes` 只承担聚合索引，不承担单个 kernel 的全部细节。
+
+### 7.2 每个 kernel 的专属状态
+
+每个 kernel 在 `machine/state/kernels/<kernelId>/` 下维护：
+
+- `authority.json`
+- `upgrades.json`
+- `migrations.json`
+- `installs.json`
+- `instances.json`
+- `doctor.json`
+
+要求：
+
+- `KernelAuthorityState` 不再内建默认 `runtime_id = "openclaw"`
+- `RuntimeUpgradesState` 不再默认创建 `openclaw` 唯一入口
+- 状态默认值必须由 kernel registry 初始化
+
+### 7.3 authority schema 规范
+
+推荐 authority 基本字段：
+
+- `kernelId`
+- `activeInstallKey`
+- `fallbackInstallKey`
+- `activeVersionLabel`
+- `fallbackVersionLabel`
+- `managedConfigPath`
+- `ownedRuntimeRoots`
+- `legacyRuntimeRoots`
+- `quarantinedPaths`
+- `lastActivationAt`
+- `lastDoctorAt`
+- `lastError`
+
+补充原则：
+
+- schema 使用 kernel-neutral 命名
+- schema 允许 OpenClaw 与 Hermes 填充不同字段值，但不允许再分裂成不同结构
+
+## 8. 升级与维护标准
+
+### 8.1 标准升级流水线
+
+每个 kernel 升级都必须经过以下状态机：
+
+```text
+resolved
+-> doctorPassed
+-> staged
+-> verified
+-> activated
+-> observedHealthy
+```
+
+失败路径：
+
+```text
+any_failed_state
+-> rollbackStarted
+-> rollbackCompleted
+-> repairRequired
+```
+
+### 8.2 审计与回执
+
+每次升级至少生成：
+
+- upgrade receipt
+- activate receipt
+- rollback receipt（如发生回滚）
+- doctor report
+
+写入位置建议：
+
+- `machine/receipts/updates/runtime-<kernelId>-<installKey>.json`
+
+### 8.3 清理策略
+
+统一 retention 策略：
+
+- 至少保留 1 个 active install
+- 至少保留 1 个 fallback install
+- 历史安装保留数量由 `RetentionState.runtimes` 控制
+- 清理动作只允许删除 authority 明确不再引用的 install
+
+## 9. Kernel 分类与兼容策略
+
+平台统一兼容三类 kernel。
+
+### 9.1 托管本地 kernel
+
+示例：
+
+- OpenClaw
+
+特点：
+
+- Host 可直接 install / activate / start / stop / probe
+- Host 拥有完整 authority 和目录所有权
+
+### 9.2 外部本地 / WSL kernel
+
+示例：
+
+- Hermes
+
+特点：
+
+- Host 负责 catalog、doctor、attach、instance projection、console entry
+- Host 可以维护受控配置映射和状态，但不强制要求完全拥有外部运行时目录
+
+### 9.3 远程 kernel
+
+示例：
+
+- 未来远程部署的 Hermes / Zeroclaw / Ironclaw
+
+特点：
+
+- Host 负责版本兼容矩阵、instance registry、endpoint projection、capability routing
+- 安装与升级可能退化为 remote rollout contract
+
+统一要求：
+
+- 三类 kernel 都必须进入同一 `Kernel Governance Plane`
+- 差异只体现为 adapter 能力矩阵和 install strategy，不允许体现为平台分叉
+
+## 10. 安全与漂移控制
+
+### 10.1 边界控制
+
+- 一个 kernel 不能修改另一个 kernel 的 install root
+- 一个 kernel 不能写入另一个 kernel 的 managed config
+- Host 只能通过 authority 声明的 owned roots 做清理与迁移
+
+### 10.2 漂移控制
+
+以下漂移必须重点消除：
+
+- 版本漂移：UI 展示版本与真实激活版本不一致
+- 目录漂移：同一 kernel 的状态分散在多个不一致目录
+- authority 漂移：active state、authority、manifest 各自为政
+- projection 漂移：Kernel Center、Instance Detail、console entry 使用不同事实源
+
+控制手段：
+
+- 单一 release registry
+- 单一 authority store
+- 单一 version resolver
+- 单一 console entry resolver
+- 单一 path resolver
+
+## 11. 推荐落地顺序
+
+### 阶段 1：基础治理抽象
+
+- 新增 `kernel-releases/` 目录
+- 引入 generic kernel path resolver
+- 引入 generic kernel authority service
+- 引入 adapter registry
+
+### 阶段 2：OpenClaw 硬切到新治理模型
+
+- 移除 `openclaw_*` 顶层路径特例
+- 用 generic authority / upgrades / version resolver 替换 OpenClaw 专用实现
+- 保留 OpenClaw 功能行为，但不再保留 OpenClaw 专属治理模型
+
+### 阶段 3：Hermes 接入统一治理平面
+
+- Hermes 走统一 catalog / release / doctor / instance projection
+- Hermes 使用外部 local / WSL / remote 的 install strategy
+- Hermes 控制台、实例详情、版本显示、doctor 状态与 OpenClaw 使用同一平台标准
+
+### 阶段 4：未来 kernel 标准接入
+
+- 仅新增 kernel 定义、release 文件、profile 配置与 adapter
+- 不再修改平台核心状态模型与目录模型
+
+## 12. 验收标准
+
+达到以下标准后，才认为多内核治理设计完成：
+
+- OpenClaw、Hermes 与未来 kernel 的版本源都通过 `config/kernel-releases/<kernelId>.json` 管理
+- `paths.rs` 不再为某个 kernel 继续增加顶层专用字段
+- authority、upgrade、migration、install、instance 状态都落在 `machine/state/kernels/<kernelId>/`
+- `upgrades.rs` 不再通过 `OPENCLAW_RUNTIME_ID` 进行平台级分支
+- UI 中 kernel 版本、控制台入口、实例详情、升级入口使用同一套 projection resolver
+- 新增一个 kernel 时，只需要新增配置与 adapter，不需要再重构平台核心
+
+## 13. 结论
+
+当前工程下一步不应继续围绕 OpenClaw 专用实现做补丁式升级，而应明确切换到统一的 `Kernel Governance Plane`。
+
+这套标准的核心价值有三点：
+
+- 对 OpenClaw：消除版本漂移、authority 漂移和升级链路特例
+- 对 Hermes：在不强制其变成 OpenClaw 的前提下，纳入统一治理平面
+- 对未来 kernel：把接入成本从“改平台”降为“补配置 + 写 adapter”
+
+本设计作为 `claw-studio` 多内核升级维护、版本统一治理、目录规范化与长期商业交付的正式架构基线。
+

@@ -1,0 +1,52 @@
+> Migrated from `docs/release/release-2026-04-08-19.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Step 03 continued on the serial `CP03-2` hotspot-splitting frontier and extracted local proxy config loading plus public-host normalization into its own Rust submodule.
+- This release candidate keeps Step 03 open overall, but it closes another real runtime-boundary slice and preserves fresh desktop-gate evidence.
+
+## Attempt Outcome
+
+- The loop repaired one remaining local proxy control-plane hotspot:
+  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned config-file loading, public-host normalization, and loopback-safe host resolution even though those concerns are distinct from request-serving, observability, and projection logic
+  - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that boundary
+- Implemented the narrow repairs:
+  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/config.rs`
+  - delegated `config::ensure_local_ai_proxy_config(...)` from `local_ai_proxy.rs`
+  - updated the desktop bootstrap test import to consume `local_ai_proxy::config::default_local_ai_proxy_public_host`
+  - tightened the desktop foundation gate so the config module file, declaration, and delegation are now required
+- Fresh verification:
+  - RED: `node scripts/check-desktop-platform-foundation.mjs`
+  - GREEN: `node scripts/check-desktop-platform-foundation.mjs`
+  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-config local_ai_proxy_default_public_host_`
+  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-config project_managed_openclaw_provider`
+  - `pnpm.cmd check:desktop`
+  - `pnpm.cmd check:desktop-openclaw-runtime`
+
+## Change Scope
+
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/config.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/app/bootstrap.rs`
+- `scripts/check-desktop-platform-foundation.mjs`
+- `docs/review/step-03-local-ai-proxy-config-hotspot-split-2026-04-08.md`
+- `docs/架构/104-2026-04-08-local-ai-proxy-config-module-boundary.md`
+- `docs/review/step-03-执行卡-2026-04-07.md`
+- `docs/release/release-2026-04-08-19.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node scripts/check-desktop-platform-foundation.mjs`
+- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-config local_ai_proxy_default_public_host_`
+- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-config project_managed_openclaw_provider`
+- `pnpm.cmd check:desktop`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+
+## Risks And Rollback
+
+- The split is intended to be behavior-preserving; the main risk is future drift if config parsing or public-host selection is reintroduced into `local_ai_proxy.rs`.
+- The bootstrap test import is now intentionally pointed at the config submodule; later visibility changes must preserve that contract or update the import deliberately.
+- Rollback is limited to the listed Rust/script files and the associated review, architecture, and release writebacks.
+

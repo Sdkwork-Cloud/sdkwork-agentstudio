@@ -1,0 +1,38 @@
+> Migrated from `docs/release/release-2026-04-07-10.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- 完成 `Step 01` 现状基线冻结与差距审计，新增执行卡、热点清单、优先级矩阵、OpenClaw 对齐差距矩阵四份 review 证据。
+- 冻结当前 Claw Studio 基线：`packages/` 共 `35` 包，OpenClaw 主链、Hosted Studio、Channels、ClawHub、Skill 安装与 Instance Detail 十分区能力均已存在。
+- 回写 `docs/架构/03`、`14`、`17`，把下一阶段主攻方向收敛为包边界显式化、Runtime/Proxy 主链拆分、API 五分层契约收口。
+
+## Attempt Outcome
+
+- 本次迭代是文档、审计和架构回写闭环，不改运行时行为。
+- `pnpm.cmd check:arch` 通过，当前包边界约束仍然有效。
+- `pnpm.cmd check:desktop-openclaw-runtime` 通过，OpenClaw 升级 readiness、runtime 准备和 release asset 校验保持可用。
+- `Step 01` 已具备进入 `Step 02` 的条件，但 `Runtime/API/Workbench` 重构尚未开始。
+
+## Change Scope
+
+- `docs/review/step-01-执行卡-2026-04-07.md`
+- `docs/review/step-01-热点清单-2026-04-07.md`
+- `docs/review/step-01-差距优先级矩阵-2026-04-07.md`
+- `docs/review/step-01-openclaw对齐差距矩阵-2026-04-07.md`
+- `docs/架构/03-模块规划与边界.md`
+- `docs/架构/14-综合评估矩阵与优先级清单.md`
+- `docs/架构/17-能力到API调用矩阵.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `pnpm.cmd check:arch`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+
+## Risks And Rollback
+
+- 风险：审计已收口，但 `local_ai_proxy.rs`、`studio.rs`、`InstanceDetail.tsx` 仍是高风险单体。
+- 回退：本次仅修改 `docs/`，若需撤回仅回退本轮文档与 release 记录即可，不影响运行时产物。
+
+

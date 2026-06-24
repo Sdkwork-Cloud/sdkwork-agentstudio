@@ -1,0 +1,94 @@
+> Migrated from `docs/step/09-性能、可靠性与可观测性提升.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Step 09 - 性能、可靠性与可观测性提升
+
+## 1. Step Card
+
+| 项 | 内容 |
+| --- | --- |
+| 执行模式 | 波次内并行 |
+| 前置 | `05` `06` `07` `08` |
+| 主写入范围 | `packages/sdkwork-claw-chat` `packages/sdkwork-claw-instances` `packages/sdkwork-claw-settings` `packages/sdkwork-claw-desktop` `scripts/` |
+| 执行输入 | `10` 架构文档；Kernel Center、Local Proxy Logs、懒加载与升级脚本现状 |
+| 本步非目标 | 不在本步内定义商业策略；不在本步内替代发布流程 |
+| 最小输出 | 关键链路性能基线、可观测指标、恢复策略、升级后业务级回归 |
+
+## 2. 设计
+
+- 前端优先做重面板拆分、懒加载和长链路反馈优化。
+- Runtime 优先做 Local Proxy、Gateway、Kernel 的状态、指标、日志、错误上下文统一。
+- 可观测不是只给调试看，而是发布后可用于定位和验收。
+
+## 3. 实施落地规划
+
+1. 对 Chat、Instance Detail、Settings 的重面板做按需加载和状态分层。
+2. 固化 Local Proxy 的默认路由、路由健康、请求量、成功率、延迟、最近错误、消息捕获等观测项。
+3. 固化 Kernel Center 的 Runtime/Proxy/路径/日志/版本证据面。
+4. 建立升级后业务级 smoke：聊天、Provider 投影、工作台、技能、渠道。
+5. 定义多实例、长会话、长日志场景的性能基线和容量红线。
+
+## 4. 测试计划
+
+- `pnpm.cmd check:sdkwork-settings`
+- `pnpm.cmd check:sdkwork-chat`
+- `pnpm.cmd check:sdkwork-instances`
+- `pnpm.cmd check:desktop`
+- `node scripts/openclaw-upgrade-readiness.test.mjs`
+
+## 5. 结果验证
+
+- 聊天、工作台、设置页的关键重面板加载更快且反馈更清晰。
+- Proxy/Kernel/Upgrade 相关问题可以从 UI 与日志双向定位。
+- 升级后能用业务级 smoke 而不只是版本号判断成功。
+
+## 6. 检查点
+
+- `CP09-1`：重面板懒加载与状态分层完成。
+- `CP09-2`：Proxy/Kernel 观测项与日志齐备。
+- `CP09-3`：升级后业务级 smoke 建立。
+- `CP09-4`：容量与性能基线冻结。
+
+### 6.1 推荐并行车道
+
+- `09-A`：前端性能与重面板治理
+- `09-B`：Runtime/Proxy/Kernel 观测
+- `09-C`：业务级 smoke 与容量基线
+- 收口要求：观测字段与 smoke 口径由 `09-Owner` 统一
+
+### 6.2 完成后必须回写的架构文档
+
+- `docs/架构/10-性能、可靠性与可观测性设计.md`
+- `docs/架构/12-安装、部署、发布与商业化交付标准.md`
+
+### 6.3 推荐 review 产物
+
+- `docs/review/step-09-执行卡-YYYY-MM-DD.md`
+- `docs/review/step-09-性能基线与容量红线-YYYY-MM-DD.md`
+- `docs/review/step-09-runtime观测字段与升级smoke-YYYY-MM-DD.md`
+
+### 6.4 架构能力闭环判定
+
+- 重面板性能、Runtime 观测、升级后业务级 smoke 三条线都建立稳定基线。
+- 涉及内置 OpenClaw Runtime、实例工作台、聊天主链的观测与 smoke，必须能回溯 `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`、`packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`、`packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`、`packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts` 的事实源。
+- 若只有 UI 优化而没有 Proxy/Kernel 观测与业务级恢复验证，本 step 不算闭环。
+
+### 6.5 快速完整执行建议
+
+- 先冻结指标字典、SLO、业务级 smoke 场景，再并行推进前端性能、Runtime 观测、容量基线三车道。
+- 以“可定位问题”优先于“视觉更顺滑”；观测字段未定前不做大规模日志改名。
+- 最快打法：先由 Runtime 车道冻结代理指标和日志字段，再由 Chat/Instances 车道冻结 `webStudio.test.ts` 对齐的 smoke 口径，最后收 UI 懒加载拆分，避免先改界面再返工观测口径。
+
+## 7. 风险与回滚
+
+- 风险：只做 UI 优化不做 Runtime 观测，会让问题更难定位。
+- 回滚：先保留现有日志入口，增量补指标与 smoke，不一次性替换。
+
+## 8. 完成定义
+
+- 有性能基线、有可观测面、有恢复与 smoke 证据。
+
+## 9. 下一步准入条件
+
+- Step 10 和 Step 11 可以把这些基线直接升级为质量门禁和发布门禁。
+

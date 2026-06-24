@@ -1,0 +1,107 @@
+> Migrated from `docs/review/step-10-回归矩阵与发布阻断规则-2026-04-10.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Step 10 Regression Matrix And Release Blocking Rules - 2026-04-10
+
+## Scope
+
+- Step: `10`
+- Checkpoint focus:
+  - `CP10-2`
+  - `CP10-3`
+  - `CP10-4`
+- Current loop goal:
+  - promote OpenClaw fact-source verification into the mandatory gate graph
+  - document the exact blocking commands required before Step 11 release engineering work can be considered trustworthy
+
+## Root Cause
+
+- Step 09 had already produced the real evidence surfaces, but Step 10 still lacked a frozen automation rule that said:
+  - which OpenClaw truth sources must remain in parity runners
+  - which commands are release blockers
+  - which release/deployment contract tests must stay live for packaged delivery
+- Without that rule, regression could reappear as silent gate drift:
+  - a fact-source test could fall out of `check:parity`
+  - automation could still pass without noticing the drift
+  - packaged deployment docs/tests could diverge from the real bundle layout again
+
+## Implemented Gate Graph
+
+- Top-level release blocker:
+  - `pnpm.cmd lint`
+    - `@sdkwork/claw-web lint`
+    - `pnpm check:arch`
+    - `pnpm check:parity`
+    - `pnpm check:automation`
+- Formal parity promotion:
+  - `pnpm.cmd check:sdkwork-foundation`
+    - includes `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+  - `pnpm.cmd check:sdkwork-channels`
+    - includes `packages/sdkwork-claw-channels/src/services/channelService.test.ts`
+  - `pnpm.cmd check:sdkwork-market`
+    - includes `packages/sdkwork-claw-market/src/services/marketService.test.ts`
+  - `pnpm.cmd check:sdkwork-instances`
+    - includes current Instance Detail / OpenClaw workbench regression coverage, including:
+      - `openClawConfigSchemaSupport.test.ts`
+      - `openClawManagementCapabilities.test.ts`
+      - `openClawProviderWorkspacePresentation.test.ts`
+      - the wider Instance Detail service matrix
+- Automation integrity rule:
+  - `check:automation` now runs `node scripts/openclaw-quality-gate-contract.test.mjs`
+  - that contract fails if the official parity scripts stop executing the approved fact-source tests
+- Independent Step 10 release blockers:
+  - `pnpm.cmd check:desktop`
+  - `pnpm.cmd check:server`
+  - `check:release-flow` is already nested inside `check:automation`
+
+## Fresh Verification Evidence
+
+- Fresh green in this closure pass:
+  - `pnpm.cmd lint`
+  - `pnpm.cmd check:desktop`
+  - `pnpm.cmd check:server`
+  - `pnpm.cmd check:sdkwork-host-runtime`
+- Session-known green from the same Step 10 workstream:
+  - `pnpm.cmd check:sdkwork-foundation`
+  - `pnpm.cmd check:sdkwork-channels`
+  - `pnpm.cmd check:sdkwork-market`
+  - `pnpm.cmd check:sdkwork-instances`
+  - `pnpm.cmd check:automation`
+  - `node scripts/release-flow-contract.test.mjs`
+  - `node scripts/release-deployment-contract.test.mjs`
+  - `node scripts/package-release-assets.test.mjs`
+
+## Release Blocking Rule
+
+Step 10 now freezes the minimum releasable command set as:
+
+1. `pnpm.cmd lint`
+2. `pnpm.cmd check:desktop`
+3. `pnpm.cmd check:server`
+
+The first command already contains:
+
+- parity gate coverage
+- automation gate coverage
+- release-flow contract coverage
+- CI flow contract coverage
+
+That means Step 10 no longer depends on manual memory of which OpenClaw fact-source or release-contract checks should run.
+
+## Instance Detail Consequence
+
+- `CP10-4` specifically required Instance Detail consistency and upgrade-sensitive regressions to stop living only in review notes.
+- After this loop, the Instance Detail lane is part of the formal blocking surface through:
+  - `check:sdkwork-instances`
+  - `scripts/sdkwork-instances-contract.test.ts`
+  - `pnpm.cmd check:desktop`
+  - `pnpm.cmd lint`
+
+## Closure Status
+
+- `CP10-2`: green
+- `CP10-3`: green
+- `CP10-4`: green
+
+The regression matrix and release-blocking rules are now explicit, executable, and stable enough to hand off to Step 11.
+

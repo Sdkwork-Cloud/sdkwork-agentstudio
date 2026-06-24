@@ -1,0 +1,55 @@
+> Migrated from `docs/release/release-2026-04-08-69.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Continued the real `Step 07` service hotspot decomposition by moving OpenClaw file path normalization and request-path derivation out of `instanceWorkbenchServiceCore.ts` into a dedicated helper module.
+- Kept OpenClaw authority unchanged: the workbench core still owns section merge logic, gateway/studio selection, and truth-source decisions; only pure path helper logic moved.
+- Reduced the fresh `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` hotspot from `3797` to `3693` lines.
+
+## Attempt Outcome
+
+- Added dedicated helper ownership in:
+  - `packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.ts`
+- Added focused helper coverage in:
+  - `packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.test.ts`
+- Rewired the workbench core so OpenClaw file path normalization, workspace prefix trimming, basename derivation, and request-path derivation no longer live inline in:
+  - `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`
+- Tightened the contract suite so OpenClaw file path helper logic stays outside the service-core hotspot file:
+  - `scripts/sdkwork-instances-contract.test.ts`
+- Updated the ongoing Step 07 evidence set:
+  - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+  - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+
+## Change Scope
+
+- `packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.test.ts`
+- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`
+- `scripts/sdkwork-instances-contract.test.ts`
+- `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+- `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+- `docs/release/release-2026-04-08-69.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderConfigPatch.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.test.ts`
+- `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
+- `pnpm.cmd check:sdkwork-instances`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+
+## Risks And Rollback
+
+- `Step 07` is still not closable. `CP07-3` remains open because `InstanceDetail.tsx` still holds the provider submit orchestration hotspot at `2792` lines, and `instanceWorkbenchServiceCore.ts` remains the largest unresolved hotspot even after dropping to `3693` lines.
+- The extraction intentionally moves pure helper logic only. OpenClaw file catalog truth, workspace-relative path selection rules, and downstream gateway request behavior remain governed by the workbench core as before.
+- Rollback must revert the new file path helper module, the workbench core rewire, the contract assertions, and the matching review/architecture/release evidence together; reverting only one side would reintroduce helper drift inside the hotspot file.
+

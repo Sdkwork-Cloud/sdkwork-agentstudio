@@ -1,0 +1,160 @@
+> Migrated from `docs/架构/07-实例治理与实例工作台设计.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 07-实例治理与实例工作台设计
+
+## 1. 实例模型定位
+
+实例不是附属能力，而是 OpenClaw Studio 的核心资源模型。聊天、渠道、Provider、Agent、Skill、文件、任务和配置最终都挂靠在实例上。
+
+## 2. 当前实例类型
+
+| 类型 | 模式 | 说明 |
+| --- | --- | --- |
+| 内置实例 | `local-managed` | 由 Studio 托管的内置 OpenClaw |
+| 本地外部实例 | `local-external` | 接入本机已有 OpenClaw |
+| 远程实例 | `remote` | 接入外部主机上的 OpenClaw |
+
+## 3. 实例治理原则
+
+- 实例接入后即成为治理对象。
+- 实例详情页即运行治理工作台。
+- 实例治理必须覆盖运行、配置、模型、任务、文件、技能、审计和升级影响。
+
+## 4. Instance Detail 标准能力
+
+当前工作台已覆盖十个分区：
+
+- `overview`
+- `channels`
+- `cronTasks`
+- `llmProviders`
+- `agents`
+- `skills`
+- `files`
+- `memory`
+- `tools`
+- `config`
+
+这是正确方向，但标准还需继续收紧。
+
+## 5. 当前已实现的关键工作台能力
+
+### 5.1 页面级动作
+
+- 设为活动实例
+- 打开 OpenClaw Console
+- 启动、停止、重启、卸载实例
+
+### 5.2 `overview`
+
+- 身份、生命周期、版本、存储、健康、管理说明
+- 连接信息、能力汇总、数据访问、工件信息
+- 健康检查、日志预览、运行备注
+
+### 5.3 `channels`
+
+- 渠道列表、状态、配置字段、保存与删除
+
+### 5.4 `cronTasks`
+
+- 任务目录、执行历史、克隆、立即执行、启停、删除
+
+### 5.5 `llmProviders`
+
+- Provider 增删改查
+- Provider 模型增删改查
+- 默认模型、推理模型、Embedding 模型配置
+- Request Overrides 编辑
+- 运行参数编辑，如 temperature、streaming、timeout
+- Managed Web Search
+- Managed Web Fetch
+- Managed Native Codex Web Search
+- Managed X Search
+- Managed Auth Cooldowns
+- Dreaming 配置
+
+### 5.6 `agents`
+
+- Agent 创建、更新、删除
+- Agent 主模型与回退模型配置
+- 技能安装、启停、删除
+
+### 5.7 `files / memory / tools / config`
+
+- 网关配置与工作区文件
+- 记忆条目、Dream Diary、来源与保留策略
+- 工具清单、访问方式、最后使用情况
+- 配置工作台与配置文件编辑
+
+## 6. 与 OpenClaw 源码和 Control UI 的功能一致性标准
+
+### 6.1 基线要求
+
+- 以 OpenClaw 源码中的可管理能力为事实基线。
+- 以 Control UI 的操作范围为治理基线。
+- Studio 不能为了追求“更美观”而缩减治理能力。
+
+### 6.2 目标标准
+
+- 功能覆盖不低于 OpenClaw Control UI。
+- 在功能一致基础上，交互必须更好，具体表现为：
+  - 更清晰的信息架构
+  - 更强的状态反馈
+  - 更好的批量操作
+  - 更明确的变更影响提示
+  - 更强的配置差异与回滚提示
+
+## 7. 内置 OpenClaw 与 Instance Detail 的关系
+
+- 对内置 OpenClaw 实例，Instance Detail 必须直接体现托管运行时事实，包括版本、路径、配置可写性、代理投影状态、网关状态。
+- `llmProviders` 分区必须优先体现本地代理投影而不是多套散装外部配置。
+- `agents` 分区必须能反映代理投影后的模型选择结果。
+
+## 8. 工作台设计要求
+
+- `overview`：展示健康、版本、托管方式、关键路径和运行态。
+- `channels`：展示渠道清单、状态、能力与配置入口。
+- `cronTasks`：展示任务定义、调度、运行历史和失败定位。
+- `llmProviders`：展示托管 Provider、模型映射、默认模型、推理模型、Embedding 模型。
+- `llmProviders`：除基础 Provider 外，还必须覆盖搜索、抓取、冷却策略、Dreaming 等与模型运行密切相关的托管配置。
+- `agents`：展示默认 Agent、主模型、回退模型与应用目标。
+- `skills`：展示已安装技能、来源、状态与生效范围。
+- `files`：展示工作区文件和配置相关文件。
+- `memory`：展示记忆条目、来源与索引状态。
+- `tools`：展示工具清单、访问权限、最后使用情况。
+- `config`：展示配置文件、差异、可写状态与保存结果。
+
+## 9. 当前优势
+
+- Instance Detail 已具备完整工作台结构，不再是传统只读详情页。
+- 已有懒加载、配置编辑、Agent/Provider 管理等产品化能力。
+- 与聊天、设置、安装链路已经建立关联。
+
+## 10. Instance Detail API 边界
+
+- 实例骨架、生命周期、配置入口以 `studioApi` 为主，映射到 `/claw/api/v1/studio/*`。
+- 运行态工作台以 `openClawGatewayClient` 为主，映射到实例级 Gateway `/tools/invoke` 与 Chat WebSocket。
+- 配置写入优先走 `OpenClaw Gateway` 或 `openClawConfigService` 的单一写入链，避免页面直接写文件。
+- 对托管 Provider，不允许在 Instance Detail 内发散出绕过 Provider Center 的第二控制面。
+- 十个分区的细化调用矩阵与验收要求以第 `17` 章为准。
+
+## 11. 关键差距
+
+- 还需要建立“OpenClaw 源码/Control UI -> Studio”一致性矩阵并持续验收。
+- 变更审计、批量治理、回滚预览仍可加强。
+- 对升级后的兼容性检查应纳入实例治理标准。
+
+## 12. 评估标准
+
+| 评估项 | 合格线 | 领先线 | 当前判断 |
+| --- | --- | --- | --- |
+| 实例工作台完整度 | 十个分区完整可用 | 覆盖 OpenClaw/Control UI 全治理面且体验更优 | `L4` |
+| 功能一致性 | 主要能力不缺项 | 建立长期一致性矩阵与回归检查 | `L3.5` |
+| 托管实例可视化 | 能展示托管状态 | 能展示版本、代理、路径、写入状态、升级影响 | `L4` |
+| 运维效率 | 降低 CLI 和手工成本 | 形成企业级实例控制台 | `L3.5` |
+
+## 13. 结论
+
+实例治理是产品最有潜力的核心竞争力之一。只要坚持“完整功能一致性 + 更优交互”，Instance Detail 就能成为行业领先的桌面 AI 运行工作台。
+

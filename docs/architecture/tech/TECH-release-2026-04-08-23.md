@@ -1,0 +1,49 @@
+> Migrated from `docs/release/release-2026-04-08-23.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Step 03 continued on the serial `CP03-2` hotspot-splitting frontier and extracted shared local-proxy request translation into a dedicated Rust submodule.
+- This release candidate keeps Step 03 open overall, but it closes another real runtime-boundary slice and preserves fresh desktop-gate evidence.
+
+## Attempt Outcome
+
+- The loop repaired one remaining local proxy request-translation hotspot:
+  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned shared OpenAI request text extraction, conversation normalization, max-token shaping, and Anthropic/Gemini/Ollama request builders even though those helpers served multiple translated request paths
+  - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that request-translation boundary
+- Implemented the narrow repairs:
+  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs`
+  - delegated `request_translation::build_anthropic_request_from_openai_chat(...)`, `request_translation::build_anthropic_request_from_openai_response(...)`, `request_translation::build_gemini_request_from_openai_chat(...)`, `request_translation::build_gemini_request_from_openai_response(...)`, `request_translation::build_gemini_request_from_openai_embeddings(...)`, `request_translation::build_ollama_request_from_openai_chat(...)`, `request_translation::build_ollama_request_from_openai_response(...)`, and `request_translation::build_ollama_request_from_openai_embeddings(...)` from `local_ai_proxy.rs`
+  - moved the shared OpenAI text/conversation/max-token helpers and provider request builders into the same module
+  - removed the obsolete in-file request-translation helper stack from `local_ai_proxy.rs`
+  - tightened the desktop foundation gate so the request-translation module file, declaration, and explicit delegations are now required
+- Fresh verification:
+  - `node scripts/check-desktop-platform-foundation.mjs`
+  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-request-translation local_ai_proxy_`
+  - `pnpm.cmd check:desktop-openclaw-runtime`
+  - `pnpm.cmd check:desktop`
+
+## Change Scope
+
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs`
+- `scripts/check-desktop-platform-foundation.mjs`
+- `docs/review/step-03-local-ai-proxy-request-translation-hotspot-split-2026-04-08.md`
+- `docs/架构/108-2026-04-08-local-ai-proxy-request-translation-module-boundary.md`
+- `docs/review/step-03-执行卡-2026-04-07.md`
+- `docs/release/release-2026-04-08-23.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node scripts/check-desktop-platform-foundation.mjs`
+- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-request-translation local_ai_proxy_`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+- `pnpm.cmd check:desktop`
+
+## Risks And Rollback
+
+- The split is intended to be behavior-preserving; the main risk is future drift if request normalization or provider request builders are copied back into `local_ai_proxy.rs`.
+- Shared request-translation helpers now live behind one explicit submodule owner; later refactors must preserve that boundary rather than fragment it again.
+- Rollback is limited to the listed Rust/script files and the associated review, architecture, and release writebacks.
+

@@ -1,0 +1,50 @@
+> Migrated from `docs/release/release-2026-04-08-28.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Step 03 continued on the serial `CP03-2` hotspot-splitting frontier and extracted the local proxy health/status projection layer into a dedicated Rust submodule.
+- This release candidate keeps Step 03 open overall, but it closes another real runtime-boundary slice and preserves fresh desktop-gate evidence.
+
+## Attempt Outcome
+
+- The loop repaired one remaining local proxy health/status hotspot:
+  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned `/health` request handling, runtime health snapshot shaping, route metrics/test projection, and observability-store reconciliation even though they formed a coherent status-projection boundary
+  - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that health/status boundary
+- Implemented the narrow repairs:
+  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
+  - delegated router registration through `get(health::health_handler)` from `local_ai_proxy.rs`
+  - moved health snapshot building, route metrics/test projection, default-route health shaping, route-health derivation, and observability-store reconciliation into the same module
+  - removed the obsolete in-file health/status helper stack from `local_ai_proxy.rs`
+  - tightened the desktop foundation gate so the health module file, declaration, router delegation, delegated projection usage, and old-helper removal are now required
+- Fresh verification:
+  - RED: `node scripts/check-desktop-platform-foundation.mjs`
+  - GREEN: `node scripts/check-desktop-platform-foundation.mjs`
+  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-health local_ai_proxy_`
+  - `pnpm.cmd check:desktop-openclaw-runtime`
+  - `pnpm.cmd check:desktop`
+
+## Change Scope
+
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
+- `scripts/check-desktop-platform-foundation.mjs`
+- `docs/review/step-03-local-ai-proxy-health-status-hotspot-split-2026-04-08.md`
+- `docs/架构/113-2026-04-08-local-ai-proxy-health-status-module-boundary.md`
+- `docs/review/step-03-执行卡-2026-04-07.md`
+- `docs/release/release-2026-04-08-28.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node scripts/check-desktop-platform-foundation.mjs`
+- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-health local_ai_proxy_`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+- `pnpm.cmd check:desktop`
+
+## Risks And Rollback
+
+- The split is intended to be behavior-preserving; the main risk is future drift if health/status projection is copied back into `local_ai_proxy.rs`.
+- Shared runtime owners for observability, snapshot/auth, and provider request handling must remain shared; later refactors should not fork health-only copies.
+- Rollback is limited to the listed Rust/script files and the associated review, architecture, and release writebacks.
+

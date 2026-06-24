@@ -1,0 +1,58 @@
+> Migrated from `docs/release/release-2026-04-08-52.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Fresh `Step 06` verification confirms the Claw Studio chat workspace now closes its authoritative route matrix, Gateway session authority, and recovery/error semantics on the current worktree.
+- Chat route resolution is anchored to the same `studio.getInstanceDetail()` truth chain used by the workbench, while managed OpenClaw chat remains on the `Gateway -> Local Proxy -> Upstream` path.
+- No production chat code changes were required in this loop; the delta is formal closure evidence, architecture writeback, and the release ledger entry that advances the next frontier to `Step 07`.
+
+## Attempt Outcome
+
+- Re-ran the full `Step 06` verification set:
+  - `pnpm.cmd check:sdkwork-chat`
+  - `node --experimental-strip-types scripts/sdkwork-chat-contract.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/chatService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/instanceChatRouteService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/studioConversationGateway.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/connectGatewayInstances.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/chatSessionBootstrap.test.ts`
+- Re-audited the current implementation and OpenClaw fact sources:
+  - `resolveAuthoritativeInstanceChatRoute()` and `instanceChatRouteService` authoritative route resolution
+  - `chatService` compatible HTTP send chain and managed Gateway handoff
+  - `chatStore` / `openClawGatewaySessionStore` route-driven hydration, transcript synchronization, reconnect and gap recovery
+  - `studioConversationGateway` local snapshot blocking for Gateway sessions
+  - `webStudio.ts/test.ts` endpoint publication and instance-detail truth
+  - `local_ai_proxy.rs` managed model path ownership, with `plugins/mod.rs` unchanged
+- No production code changes were required.
+- This loop instead writes the formal `Step 06` review evidence, updates the architecture docs `05/06/17`, and appends the release ledger entry that advances the frontier to `Step 07`.
+
+## Change Scope
+
+- `docs/review/step-06-执行卡-2026-04-08.md`
+- `docs/review/step-06-chat路由模式矩阵-2026-04-08.md`
+- `docs/review/step-06-gateway-session恢复与错误语义-2026-04-08.md`
+- `docs/架构/05-功能架构与核心业务流程.md`
+- `docs/架构/06-聊天能力与多实例路由设计.md`
+- `docs/架构/17-能力到API调用矩阵.md`
+- `docs/release/release-2026-04-08-52.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `pnpm.cmd check:sdkwork-chat`
+- `node --experimental-strip-types scripts/sdkwork-chat-contract.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/chatService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/instanceChatRouteService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/studioConversationGateway.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/connectGatewayInstances.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/chatSessionBootstrap.test.ts`
+
+## Risks And Rollback
+
+- This loop changes governance evidence and architecture/release records only; rollback is limited to those documents.
+- The primary remaining risk is future drift if later work bypasses `resolveAuthoritativeInstanceChatRoute()`, reintroduces local persistence for Gateway sessions, or weakens reconnect/gap recovery without rerunning the same `Step 06` matrix.
+- 波次 B 仍未退出；`Step 07/08` 仍需后续继续闭环。
+

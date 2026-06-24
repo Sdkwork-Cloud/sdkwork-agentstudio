@@ -1,0 +1,70 @@
+> Migrated from `docs/release/release-2026-04-09-89.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Claw Studio release-2026-04-09-89
+
+## Highlights
+
+- Extracted the lower `InstanceDetail` workbench chrome into a dedicated component and presentation-descriptor layer, materially shrinking the page hotspot again without moving any OpenClaw write authority.
+- Added fresh red/green coverage for the new summary/resource descriptor builders and the new workbench chrome component render contract.
+- Cleared the current worktree's local TypeScript and architecture-boundary drift uncovered during verification, while recording that repo-wide `pnpm lint` is still blocked later by an unrelated install-contract `.gitmodules` mismatch.
+
+## Attempt Outcome
+
+- Fresh RED in this loop was explicit:
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+  - `pnpm exec tsx packages/sdkwork-claw-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
+  - both failed first because the new summary/resource builders and the new chrome component did not exist yet
+- Implemented the Step 07 extraction:
+  - added `buildInstanceWorkbenchSummaryMetrics(...)` and `buildInstanceWorkbenchResourceMetrics(...)` to `packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.ts`
+  - added `packages/sdkwork-claw-instances/src/components/InstanceDetailWorkbenchChrome.tsx`
+  - rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` to delegate the lower summary deck, section sidebar, resource cards, and section heading shell to the dedicated component
+  - updated `scripts/sdkwork-instances-contract.test.ts` so the summary-card contract follows the new page -> chrome -> presentation boundary
+- Fixed verification-only drift found during the same loop:
+  - corrected the `updatingSkillKeys` / `removingSkillKeys` prop values in `InstanceDetail.tsx` to the actual `updatingAgentSkillKeys` / `removingAgentSkillKeys` state
+  - restored missing type imports in `instanceWorkbenchServiceCore.ts`
+  - switched `InstanceDetailOverviewSection.tsx` back to the public service barrel for `InstanceManagementSummary`
+- Current hotspot profile after the extraction:
+  - `InstanceDetail.tsx`: `2073`
+  - `InstanceDetailWorkbenchChrome.tsx`: `159`
+  - `instanceDetailWorkbenchPresentation.ts`: `273`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- `CP07-3` remains open. This loop materially reduces the page hotspot, but it does not claim Step 07 closure.
+
+## Change Scope
+
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailWorkbenchChrome.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
+- `packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.ts`
+- `packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailOverviewSection.tsx`
+- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`
+- `scripts/sdkwork-instances-contract.test.ts`
+- `docs/review/step-07-workbench-chrome-extraction-2026-04-09.md`
+- `docs/鏋舵瀯/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+- `docs/release/release-2026-04-09-89.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- RED:
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+  - `pnpm exec tsx packages/sdkwork-claw-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
+- GREEN:
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+  - `pnpm exec tsx packages/sdkwork-claw-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
+  - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - `pnpm check:sdkwork-instances`
+  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm build`
+- YELLOW:
+  - `pnpm lint`
+
+## Risks And Rollback
+
+- The main Step 07 risk remains page-side re-growth inside `InstanceDetail.tsx` if future work drifts the lower workbench chrome back inline or starts mixing truth-source / write-path logic into the new presentation boundary.
+- This loop intentionally does not alter transport selection, Provider Center managed authority, Local Proxy routing, or desktop plugin/runtime boundaries.
+- Rollback is limited to the new chrome component, the new descriptor builders and their tests, the page rewiring, the small verification-driven import fixes, and the matching review / architecture / release writebacks.
+

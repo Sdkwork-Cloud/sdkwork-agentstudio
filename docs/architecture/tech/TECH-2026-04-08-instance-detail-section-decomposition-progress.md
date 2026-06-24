@@ -1,0 +1,3914 @@
+> Migrated from `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 134-2026-04-08 Instance Detail Section Decomposition Progress
+
+## Context
+
+`Step 07` remains open because `CP07-3` requires hotspot decomposition, not just green behavior verification. This note now also records the next service-core shifts in the current worktree: remote provider patch construction now lives in `openClawProviderConfigPatch.ts`, the shared fallback config-path resolver now lives in `openClawConfigPathFallback.ts`, and OpenClaw file path derivation now lives in `openClawFilePathSupport.ts`. The page still owns the actual OpenClaw write-path invocation, toast dispatch, and reload authority, while the cores still own authority checks and transport selection.
+
+## Confirmed Page-Level Boundary
+
+`packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now acts more clearly as an orchestration shell:
+
+- section routing
+- workbench loading and refresh
+- truth-source selection and write-path callback wiring
+- section availability decisions
+- provider and agent dialog state, managed config draft state, and delete-confirmation ownership
+- page-owned side effects such as `toast`, `setIsSaving*`, `set*Error`, and `loadWorkbench`
+
+The page no longer owns:
+
+- provider dialog draft-state type definitions
+- provider dialog draft factory helpers
+- workbench label formatting
+- provider model text parsing
+- the `llmProviders` section/dialog composition wrapper
+
+## Extracted Boundaries
+
+### Dedicated render components
+
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailOverviewSection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailFilesSection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailChannelsSection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailSkillsSection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailMemorySection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailToolsSection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailLlmProvidersSection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailLlmProviderDialogs.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedLlmProvidersSection.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebSearchPanel.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebFetchPanel.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebSearchNativeCodexPanel.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedXSearchPanel.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedAuthCooldownsPanel.tsx`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailAgentsSection.tsx`
+
+### Shared presentation shell
+
+- `packages/sdkwork-claw-instances/src/components/InstanceWorkbenchPrimitives.tsx`
+
+### Pure helper layers
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawProviderConfigPatch.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.ts`
+- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.ts`
+
+## Architectural Meaning
+
+- `overview`, `files`, `channels`, `skills`, `memory`, `tools`, `managed webSearch`, `managed webFetch`, `managed webSearch native codex`, `managed xSearch`, `managed auth cooldowns`, and `agents` continue to have explicit render ownership boundaries.
+- `memory` now has a two-level render boundary:
+  - `InstanceDetailMemorySection.tsx` owns the memory surface.
+  - `InstanceDetailManagedMemorySection.tsx` owns loading and empty-state composition.
+- `tools` now has a two-level render boundary:
+  - `InstanceDetailToolsSection.tsx` owns the tools surface.
+  - `InstanceDetailManagedToolsSection.tsx` owns empty-state and runtime-surface aggregation composition.
+- The page now prebuilds `managedWebSearchPanel`, `managedWebFetchPanel`, `managedWebSearchNativeCodexPanel`, `managedXSearchPanel`, and `managedAuthCooldownsPanel` as JSX values instead of keeping a second layer of wrapper functions around those managed surfaces.
+- `llmProviders` now has a two-level render boundary:
+  - `InstanceDetailLlmProvidersSection.tsx` owns the list and config-panel surface.
+  - `InstanceDetailLlmProviderDialogs.tsx` owns the dialog surface.
+  - `InstanceDetailManagedLlmProvidersSection.tsx` owns the composition and dismiss-reset bridging between those two surfaces.
+- Managed config save-input parsing still lives in dedicated service helpers instead of the page:
+  - webSearch
+  - xSearch
+  - native codex webSearch
+  - webFetch
+  - auth cooldowns
+- Managed config save side effects now also share one page-owned runner:
+  - saving flag transitions
+  - error clearing and failure mapping
+  - success toast dispatch
+  - workbench reload without spinner
+- Provider dialog helper ownership still includes:
+  - provider dialog draft-state type definitions
+  - provider dialog draft factory helpers
+  - provider id trimming
+  - default/reasoning/embedding model validation
+  - provider-model create/update input validation
+  - request-override parsing
+  - provider model text parsing
+  - provider runtime default config construction
+- Provider dialog helpers now also own provider and provider-model mutation-plan construction, so the page no longer computes submit metadata inline before dispatching the real write-path calls.
+- The page now routes provider and provider-model post-save success toast, dialog dismiss/reset, workbench reload, and provider reselection through `completeProviderCatalogMutation`, while keeping the real `instanceService` write calls in the page.
+- `openClawProviderConfigPatch.ts` now owns remote provider request-override patch normalization, model streaming inference, runtime param patch construction, and final remote provider patch payload assembly.
+- `openClawConfigPathFallback.ts` now owns the shared precedence rule between writable config routes and fallback config artifacts.
+- `openClawFilePathSupport.ts` now owns OpenClaw file path normalization, case-insensitive Windows/share workspace prefix trimming, basename derivation, and final request-path derivation.
+- Workbench label formatting remains centralized in a shared helper instead of staying embedded in the page.
+- Contract tests now enforce four categories of boundary:
+  - render ownership must stay outside the page
+  - llmProviders composition ownership must stay outside the page
+  - save-input parsing must stay outside the page
+  - shared service-core pure helpers must stay outside the core hotspot files
+  - formatting/parsing utilities must stay outside the page
+- The page hotspot has moved from `2811` lines to `2792` in this loop.
+- `instanceServiceCore.ts` has moved from `1663` lines to `1431`.
+- `instanceWorkbenchServiceCore.ts` has moved from `3818` lines to `3693`.
+- Fresh comparison confirms:
+  - `renderOpenClawProviderDialogs` is fully removed from the page
+  - `renderManagedLlmProviderSection` is fully removed from the page
+  - `renderAgentsSection` drops from `60` lines to `7`
+  - `renderLlmProvidersSection` drops to `18`
+  - memory loading and empty-state composition is removed from the page and owned by `InstanceDetailManagedMemorySection.tsx`
+  - tools empty-state and runtime-surface aggregation is removed from the page and owned by `InstanceDetailManagedToolsSection.tsx`
+  - `renderMemorySection` is fully removed from the page
+  - `renderToolsSection` is fully removed from the page
+  - `renderManagedWebSearchPanel` is fully removed from the page
+  - `renderManagedWebFetchPanel` is fully removed from the page
+  - `renderManagedWebSearchNativeCodexPanel` is fully removed from the page
+  - `renderManagedXSearchPanel` is fully removed from the page
+  - `renderManagedAuthCooldownsPanel` is fully removed from the page
+  - provider submit mutation metadata is removed from the page and owned by `openClawProviderDrafts.ts`
+  - provider dialog draft types and draft factories are removed from the page and owned by `openClawProviderDrafts.ts`
+  - managed config save side effects are centralized in `runManagedConfigSave`
+  - provider and provider-model success side effects are centralized in `completeProviderCatalogMutation`
+  - remote provider config patch building is removed from `instanceServiceCore.ts` and owned by `openClawProviderConfigPatch.ts`
+  - fallback config-path resolution is removed from both service cores and owned by `openClawConfigPathFallback.ts`
+  - OpenClaw file path normalization and request-path derivation are removed from `instanceWorkbenchServiceCore.ts` and owned by `openClawFilePathSupport.ts`
+
+## Remaining Frontier
+
+The page hotspot is still above closure threshold. The next architectural decomposition targets are:
+
+- `handleSubmitProviderModelDialog` in `InstanceDetail.tsx`
+- `handleSubmitProviderDialog` in `InstanceDetail.tsx`
+
+After the page hotspot is reduced further, the same discipline still needs to be applied to:
+
+- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` at `3693` lines
+- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts` at `1431` lines
+
+## Verification Backing This Note
+
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderConfigPatch.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
+- `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+- `pnpm.cmd check:sdkwork-instances`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+
+All commands passed on fresh execution in the same loop that produced this note.
+
+## Latest Progress Addendum
+
+- `openClawTaskNormalization.ts` now owns the remaining task-id normalization, enum coercion, latest-execution normalization, collection deduplication, and merge/clone behavior that previously lived inline in `instanceWorkbenchServiceCore.ts`.
+- `openClawRuntimeMemorySupport.ts` now owns runtime memory hit summarization, line-range formatting, dream diary extraction, and final runtime memory entry construction that previously lived inline in `instanceWorkbenchServiceCore.ts`.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces two more architecture boundaries:
+  - the agents surface is page composition in `InstanceDetail.tsx`, section composition in `InstanceDetailAgentsSection.tsx`, and master-detail rendering in `AgentWorkbenchPanel.tsx`
+  - task normalization and runtime memory summarization stay outside the service-core hotspot file
+- The current active hotspot profile after these extractions is:
+  - `InstanceDetail.tsx`: `2553`
+  - `instanceWorkbenchServiceCore.ts`: `2924`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the previously recorded Step 07 service baseline, `instanceWorkbenchServiceCore.ts` has now moved from `3693` to `2924` without changing authority routing.
+- The next decomposition candidates inside `instanceWorkbenchServiceCore.ts` are the channel and agent collection helpers, because they remain pure data-shaping code while the core still keeps the real gateway/studio/backend routing decisions.
+- `Step 07 / CP07-3` remains in progress; these extractions materially improved the service-core frontier but do not yet close the page-level provider submit orchestration hotspot.
+
+## Latest Progress Addendum II
+
+- `openClawChannelWorkbenchSupport.ts` now owns managed-channel mapping, config-definition mapping, managed-channel cloning, and channel collection merge behavior that previously lived inline in `instanceWorkbenchServiceCore.ts`.
+- `openClawAgentWorkbenchSupport.ts` now owns agent focus-area scoring, runtime-agent mapping, managed-agent mapping, agent normalization, agent merge behavior, and managed-agent overlay construction that previously lived inline in `instanceWorkbenchServiceCore.ts`.
+- `buildManagedOpenClawAgents` now normalizes managed snapshot ids before runtime overlay, which fixes a real duplication defect where malformed managed ids could leave duplicate runtime agents in the final workbench snapshot.
+- `scripts/sdkwork-instances-contract.test.ts` now points the `configSource: 'managedConfig'` evidence to `openClawAgentWorkbenchSupport.ts`, while still proving that `instanceWorkbenchServiceCore.ts` imports the helper and routes `managedConfigSnapshot?.agentSnapshots` through it.
+- `packages/sdkwork-claw-instances/src/services/index.ts` now exports both new helpers through the public service barrel so cross-package consumers keep using package-root boundaries instead of subpaths.
+- The current active hotspot profile after the channel and agent extraction is:
+  - `InstanceDetail.tsx`: `2553`
+  - `instanceWorkbenchServiceCore.ts`: `2635`
+  - `instanceServiceCore.ts`: `1274`
+  - `openClawChannelWorkbenchSupport.ts`: `101`
+  - `openClawAgentWorkbenchSupport.ts`: `216`
+- Relative to the prior `2924`-line service-core measurement, `instanceWorkbenchServiceCore.ts` is now reduced to `2635` without changing gateway selection, studio bridge routing, backend truth-source precedence, or page-owned write-path authority.
+- The next decomposition candidates inside `instanceWorkbenchServiceCore.ts` are the remaining managed-config clone helpers and provider/workbench snapshot shaping helpers, because those are still pure data-shaping responsibilities while the core continues to own transport and truth-source selection.
+- `Step 07 / CP07-3` remains in progress; the page hotspot is still open, but the service-core hotspot frontier moved materially again in this loop.
+
+## Latest Progress Addendum III
+
+- `openClawManagedConfigWorkbenchSupport.ts` now owns empty managed config snapshot construction, managed config section-count derivation, managed config insights derivation, and deep-clone shaping for managed webSearch, xSearch, native codex webSearch, webFetch, auth cooldowns, and dreaming config surfaces that previously lived inline in `instanceWorkbenchServiceCore.ts`.
+- `instanceWorkbenchServiceCore.ts` now consumes `buildManagedConfigWorkbenchState(...)` in three places:
+  - backend-authored workbench mapping
+  - finalized OpenClaw snapshot assembly
+  - detail-only fallback snapshot assembly
+- `instanceWorkbenchServiceCore.ts` now also consumes `createEmptyManagedOpenClawConfigSnapshot(...)` from the helper for the default dependency fallback path.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more architecture boundary:
+  - managed config workbench shaping must stay outside the service-core hotspot file
+- `packages/sdkwork-claw-instances/src/services/index.ts` now exports the helper through the service barrel so consumers continue to use package-root boundaries.
+- The current active hotspot profile after the managed config extraction is:
+  - `InstanceDetail.tsx`: `2553`
+  - `instanceWorkbenchServiceCore.ts`: `2462`
+  - `instanceServiceCore.ts`: `1274`
+  - `openClawManagedConfigWorkbenchSupport.ts`: `207`
+  - `openClawChannelWorkbenchSupport.ts`: `101`
+  - `openClawAgentWorkbenchSupport.ts`: `216`
+- Relative to the prior `2635`-line service-core measurement, `instanceWorkbenchServiceCore.ts` is now reduced to `2462` without changing gateway selection, studio bridge routing, backend truth-source precedence, or page-owned write-path authority.
+- The next decomposition candidates inside `instanceWorkbenchServiceCore.ts` are the remaining provider/workbench snapshot shaping helpers, especially the managed-provider mapping and live-provider composition cluster, because those are still pure data-shaping responsibilities while the core continues to own transport and truth-source selection.
+- `Step 07 / CP07-3` remains in progress; the page hotspot is still open, but the service-core hotspot frontier moved materially again in this loop.
+
+## Latest Progress Addendum IV
+
+- `openClawProviderWorkbenchSupport.ts` now owns managed-provider snapshot mapping, live provider catalog mapping, provider id matching, and final provider composition for the OpenClaw workbench snapshot that previously lived inline in `instanceWorkbenchServiceCore.ts`.
+- `instanceWorkbenchServiceCore.ts` now consumes:
+  - `mapManagedProvider(...)` for managed provider snapshot shaping
+  - `mapLlmProvider(...)` for live provider catalog shaping
+  - `buildOpenClawLlmProviders(...)` for the final merged provider collection
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more architecture boundary:
+  - provider workbench shaping must stay outside the service-core hotspot file
+- `packages/sdkwork-claw-instances/src/services/index.ts` now exports the helper through the service barrel so consumers continue to use package-root boundaries.
+- The current active hotspot profile after the provider extraction is:
+  - `InstanceDetail.tsx`: `2553`
+  - `instanceWorkbenchServiceCore.ts`: `2379`
+  - `instanceServiceCore.ts`: `1274`
+  - `openClawManagedConfigWorkbenchSupport.ts`: `207`
+  - `openClawChannelWorkbenchSupport.ts`: `101`
+  - `openClawAgentWorkbenchSupport.ts`: `216`
+  - `openClawProviderWorkbenchSupport.ts`: `111`
+- Relative to the prior `2462`-line service-core measurement, `instanceWorkbenchServiceCore.ts` is now reduced to `2379` without changing gateway selection, studio bridge routing, backend truth-source precedence, or page-owned write-path authority.
+- The next decomposition candidates inside `instanceWorkbenchServiceCore.ts` are the remaining skill and tool catalog shaping helpers, because those are still pure data-shaping responsibilities while the core continues to own transport and truth-source selection.
+- `Step 07 / CP07-3` remains in progress; the page hotspot is still open, but the service-core hotspot frontier moved materially again in this loop.
+
+## Latest Progress Addendum V
+
+- Fresh contract verification on `2026-04-09` exposed a boundary regression instead of a behavior regression:
+  - `InstanceDetail.tsx` had drifted back to owning inline `SectionHeading(...)`
+  - `InstanceDetail.tsx` had drifted back to owning inline `SectionAvailabilityNotice(...)`
+- `packages/sdkwork-claw-instances/src/components/InstanceWorkbenchPrimitives.tsx` now owns both section chrome helpers again.
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now imports those helpers from the shared primitive module and no longer defines them inline.
+- The page still owns section-availability routing and still passes `statusLabel`, `statusTone`, and `detail` into the primitive boundary, so:
+  - `instanceDetailWorkbenchPresentation.ts` continues to own tone mapping
+  - `instanceWorkbenchFormatting.ts` continues to own label humanization
+  - page-owned truth selection, write-path calls, `toast`, and `loadWorkbench(...)` authority remain unchanged
+- OpenClaw fact sources re-read in the same loop confirm no authority drift across:
+  - `webStudio.test.ts`
+  - `openClawConfigSchemaSupport.test.ts`
+  - `openClawManagementCapabilities.ts`
+  - `openClawProviderWorkspacePresentation.ts`
+  - `channelService.ts`
+  - `marketService.ts`
+  - `agentInstallService.ts`
+  - `local_ai_proxy.rs`
+  - `plugins/mod.rs`
+- The current active hotspot profile after the shared primitive repair is:
+  - `InstanceDetail.tsx`: `2423`
+  - `InstanceWorkbenchPrimitives.tsx`: `87`
+  - `instanceDetailWorkbenchPresentation.ts`: `206`
+  - `instanceWorkbenchServiceCore.ts`: `1132`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately pre-fix page state (`2453`), this loop reduces the page hotspot to `2423` while restoring the intended shared section-chrome boundary.
+- Fresh verification after this repair:
+  - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+  - `pnpm check:sdkwork-instances`
+- `CP07-3` remains open. This loop restores an already-decided boundary and re-locks the contract; it does not claim Step 07 closure.
+
+## Latest Progress Addendum V
+
+- `openClawSkillWorkbenchSupport.ts` now owns skill category inference and gateway skill status-entry shaping that previously lived inline in `instanceWorkbenchServiceCore.ts`.
+- `openClawToolWorkbenchSupport.ts` now owns tool category inference, tool access inference, scoped tool catalog shaping, multi-agent tool merge behavior, and supporting status/value merge helpers that previously lived inline in `instanceWorkbenchServiceCore.ts`.
+- `instanceWorkbenchServiceCore.ts` now consumes:
+  - `buildOpenClawSkills(...)` for gateway skill shaping
+  - `buildOpenClawScopedTools(...)` for final merged tool catalog shaping
+- `scripts/sdkwork-instances-contract.test.ts` now enforces two more architecture boundaries:
+  - skill workbench shaping must stay outside the service-core hotspot file
+  - tool workbench shaping must stay outside the service-core hotspot file
+- `packages/sdkwork-claw-instances/src/services/index.ts` now exports both helpers through the service barrel so consumers continue to use package-root boundaries.
+- The current active hotspot profile after the skill/tool extraction is:
+  - `InstanceDetail.tsx`: `2553`
+  - `instanceWorkbenchServiceCore.ts`: `2361`
+  - `instanceServiceCore.ts`: `1274`
+  - `openClawManagedConfigWorkbenchSupport.ts`: `207`
+  - `openClawChannelWorkbenchSupport.ts`: `101`
+  - `openClawAgentWorkbenchSupport.ts`: `216`
+  - `openClawProviderWorkbenchSupport.ts`: `111`
+  - `openClawSkillWorkbenchSupport.ts`: `55`
+  - `openClawToolWorkbenchSupport.ts`: `186`
+- Relative to the prior `2379`-line service-core measurement, `instanceWorkbenchServiceCore.ts` is now reduced to `2361` without changing gateway selection, studio bridge routing, backend truth-source precedence, or page-owned write-path authority.
+- The next decomposition candidates inside `instanceWorkbenchServiceCore.ts` are the remaining file/memory shaping or registry projection helpers, because those are still localized responsibilities while the core continues to own transport and truth-source selection.
+- `Step 07 / CP07-3` remains in progress; the page hotspot is still open, but the service-core hotspot frontier moved materially again in this loop.
+
+## Latest Progress Addendum VI
+
+- `openClawFileWorkbenchSupport.ts` now owns file category inference, gateway file-entry to workbench-file mapping, merged file collection overlay behavior, and backend memory summary synthesis from file snapshots that previously lived inline in `instanceWorkbenchServiceCore.ts`.
+- `instanceWorkbenchServiceCore.ts` now consumes:
+  - `mapOpenClawFileEntryToWorkbenchFile(...)` for gateway file snapshot shaping
+  - `mergeOpenClawFileCollections(...)` for backend/live file overlay behavior
+  - `buildOpenClawMemories(...)` for config-backed memory summary synthesis
+- `openClawFilePathSupport.ts` remains the shared path-truth helper, but it is now consumed through `openClawFileWorkbenchSupport.ts` instead of being imported directly by the service core.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more architecture boundary:
+  - file workbench shaping must stay outside the service-core hotspot file
+- `packages/sdkwork-claw-instances/src/services/index.ts` now exports the helper through the service barrel so consumers continue to use package-root boundaries.
+- The current active hotspot profile after the file extraction is:
+  - `InstanceDetail.tsx`: `2553`
+  - `instanceWorkbenchServiceCore.ts`: `2192`
+  - `instanceServiceCore.ts`: `1274`
+  - `openClawManagedConfigWorkbenchSupport.ts`: `207`
+  - `openClawChannelWorkbenchSupport.ts`: `101`
+  - `openClawAgentWorkbenchSupport.ts`: `216`
+  - `openClawProviderWorkbenchSupport.ts`: `111`
+  - `openClawSkillWorkbenchSupport.ts`: `55`
+  - `openClawToolWorkbenchSupport.ts`: `186`
+  - `openClawFileWorkbenchSupport.ts`: `188`
+- Relative to the prior `2361`-line service-core measurement, `instanceWorkbenchServiceCore.ts` is now reduced to `2192` without changing gateway selection, studio bridge routing, backend truth-source precedence, or page-owned write-path authority.
+- The next decomposition candidates inside `instanceWorkbenchServiceCore.ts` are the remaining registry projection or section-availability helpers, because those are still localized responsibilities while the core continues to own transport and truth-source selection.
+- `Step 07 / CP07-3` remains in progress; the page hotspot is still open, but the service-core hotspot frontier moved materially again in this loop.
+
+## Latest Progress Addendum VII
+
+- `instanceRegistryWorkbenchSupport.ts` now owns registry-backed detail projection for fallback workbench snapshots, including:
+  - runtime kind inference
+  - deployment mode inference
+  - transport kind inference
+  - storage binding and storage-capability shaping
+  - storage-status inference
+  - lifecycle-owner inference
+  - default runtime-capability shaping
+  - connectivity endpoint shaping
+  - loopback host detection
+  - final `buildRegistryBackedDetail(...)` assembly
+- `instanceWorkbenchServiceCore.ts` now consumes:
+  - `buildRegistryBackedDetail(...)` for registry-backed detail fallback projection
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more architecture boundary:
+  - registry-backed detail projection must stay outside the service-core hotspot file
+- `packages/sdkwork-claw-instances/src/services/index.ts` now exports the helper through the service barrel so consumers continue to use package-root boundaries.
+- Fresh verification during this loop also exposed one service-core regression:
+  - `buildOpenClawChannels(...)` still depended on `isNonEmptyString`
+  - the missing import was swallowing gateway channel shaping behind `safelyBuildOpenClawSection(...)`
+  - the fix restored the import instead of moving channel authority, so runtime-backed channel truth stays in the service core
+- OpenClaw authority evidence was re-checked against the declared fact-source set:
+  - `webStudio.ts` and `webStudio.test.ts` still hold the host bridge contract
+  - `InstanceDetail.tsx` still holds page-owned write-path dispatch
+  - `openClawManagementCapabilities.ts` and `openClawProviderWorkspacePresentation.ts` still hold managed-provider truth
+  - `channelService.ts`, `marketService.ts`, and `agentInstallService.ts` remain the external feature consumers
+  - `local_ai_proxy.rs` and `plugins/mod.rs` remain the local proxy/plugin runtime boundary
+- The current active hotspot profile after the registry projection extraction is:
+  - `InstanceDetail.tsx`: `2553`
+  - `instanceWorkbenchServiceCore.ts`: `1675`
+  - `instanceServiceCore.ts`: `1274`
+  - `instanceRegistryWorkbenchSupport.ts`: `365`
+  - `openClawManagedConfigWorkbenchSupport.ts`: `207`
+  - `openClawChannelWorkbenchSupport.ts`: `101`
+  - `openClawAgentWorkbenchSupport.ts`: `216`
+  - `openClawProviderWorkbenchSupport.ts`: `111`
+  - `openClawSkillWorkbenchSupport.ts`: `55`
+  - `openClawToolWorkbenchSupport.ts`: `186`
+  - `openClawFileWorkbenchSupport.ts`: `188`
+- Relative to the prior `2192`-line service-core measurement, `instanceWorkbenchServiceCore.ts` is now reduced to `1675` without changing gateway selection, studio bridge routing, backend truth-source precedence, page-owned write-path authority, or provider-management classification.
+- The next decomposition candidates inside `instanceWorkbenchServiceCore.ts` are the remaining snapshot-assembly and section-availability helpers, because those still look like localized composition responsibilities while the core continues to own transport and truth-source selection.
+- `Step 07 / CP07-3` remains in progress; the page hotspot is still the largest remaining frontier, but the service-core hotspot moved materially again in this loop.
+
+## Latest Progress Addendum VIII
+
+- `instanceWorkbenchSnapshotSupport.ts` now owns backend-authored OpenClaw workbench snapshot assembly and section-availability composition that previously lived inline in `instanceWorkbenchServiceCore.ts`, including:
+  - backend workbench mapping
+  - live-section snapshot assembly
+  - managed-config overlay finalization
+  - detail-only fallback snapshot construction
+  - section-count derivation
+  - overview-count derivation
+  - capability-to-section availability mapping
+- `instanceWorkbenchServiceCore.ts` no longer owns the following pure composition helpers inline:
+  - `mapBackendWorkbench`
+  - `mapStudioInstance`
+  - `mapStudioConfig`
+  - `getCapabilityMap`
+  - `resolveCapabilityAvailability`
+  - `buildSectionAvailability`
+  - `countOverviewEntries`
+  - `buildOpenClawSectionCounts`
+  - `buildOpenClawSnapshotFromSections`
+  - `mergeOpenClawSnapshots`
+  - `finalizeOpenClawSnapshot`
+  - `buildDetailOnlyWorkbenchSnapshot`
+- `instanceWorkbenchServiceCore.ts` now imports the snapshot helper boundary and keeps only the authority-bearing work:
+  - gateway/studio/backend truth-source routing
+  - lazy section fetch timing
+  - managed-config loading decisions
+  - fallback selection
+  - task/file/memory/channel fetch orchestration
+- `scripts/sdkwork-instances-contract.test.ts` now captures the current architecture more accurately:
+  - snapshot assembly must stay outside the service-core hotspot file
+  - `dataAccess` and `artifacts` overview evidence now comes from the snapshot helper boundary
+  - managed-agent overlay evidence now comes from the snapshot helper boundary
+  - channel helper routing is now proven through the two-hop path `instanceWorkbenchServiceCore.ts -> instanceWorkbenchSnapshotSupport.ts -> openClawChannelWorkbenchSupport.ts`
+- Focused helper coverage now exists in `packages/sdkwork-claw-instances/src/services/instanceWorkbenchSnapshotSupport.test.ts`, which verifies the extracted composition layer without re-entering the full service-core flow.
+- Fresh verification in this loop first exposed stale boundary assumptions in tests rather than a runtime regression:
+  - the detail-only snapshot fixture produced `8` overview entries
+  - contract assertions still assumed several snapshot responsibilities lived in `instanceWorkbenchServiceCore.ts`
+  - the evidence was corrected to match the real helper boundary before closure claims were updated
+- The current active hotspot profile after the snapshot assembly extraction is:
+  - `InstanceDetail.tsx`: `2553`
+  - `instanceWorkbenchServiceCore.ts`: `1209`
+  - `instanceServiceCore.ts`: `1274`
+  - `instanceWorkbenchSnapshotSupport.ts`: `498`
+  - `instanceRegistryWorkbenchSupport.ts`: `365`
+  - `openClawManagedConfigWorkbenchSupport.ts`: `207`
+  - `openClawChannelWorkbenchSupport.ts`: `101`
+  - `openClawAgentWorkbenchSupport.ts`: `216`
+  - `openClawProviderWorkbenchSupport.ts`: `111`
+  - `openClawSkillWorkbenchSupport.ts`: `55`
+  - `openClawToolWorkbenchSupport.ts`: `186`
+  - `openClawFileWorkbenchSupport.ts`: `188`
+- Relative to the prior `1675`-line service-core measurement, `instanceWorkbenchServiceCore.ts` is now reduced to `1209` without changing gateway selection, studio bridge routing, backend truth-source precedence, page-owned write-path authority, provider-management classification, or OpenClaw channel truth.
+- The next decomposition candidates inside `instanceWorkbenchServiceCore.ts` are the remaining gateway-backed channel/status shaping and runtime section-loader helpers, because the pure snapshot composition layer is now fully outside the core hotspot.
+- `Step 07 / CP07-3` remains in progress; the page hotspot is still the largest remaining frontier, but the service-core hotspot moved materially again in this loop.
+
+## Latest Progress Addendum IX
+
+- `openClawChannelWorkbenchSupport.ts` now owns the full OpenClaw channel workbench shaping surface:
+  - managed-channel snapshot mapping
+  - config-definition mapping
+  - channel merge behavior
+  - configured-value inference
+  - connection-status normalization
+  - account presentation formatting
+  - gateway channel account overlay shaping
+  - final `buildOpenClawChannels(...)` runtime channel snapshot assembly
+- `instanceWorkbenchServiceCore.ts` no longer owns the following channel-shaping helpers inline:
+  - `isConfiguredValue`
+  - `normalizeChannelConnectionStatus`
+  - `formatChannelAccountState`
+  - `buildOpenClawChannelAccounts`
+  - `buildOpenClawChannels`
+- `instanceWorkbenchServiceCore.ts` now keeps only the authority-bearing channel work:
+  - deciding whether OpenClaw gateway probing is allowed
+  - calling `getChannelStatus(...)`
+  - applying `safelyBuildOpenClawSection(...)`
+  - merging the resulting channel collection into the broader workbench flow
+- `scripts/sdkwork-instances-contract.test.ts` now enforces the expanded channel-helper boundary so the removed runtime channel-shaping helpers cannot drift back into the service-core hotspot file.
+- Focused helper coverage now exists in `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.test.ts` for runtime channel order, account detail shaping, and `sdkworkchat` configuration-free semantics.
+- The current active hotspot profile after the channel runtime extraction is:
+  - `InstanceDetail.tsx`: `2553`
+  - `instanceWorkbenchServiceCore.ts`: `1030`
+  - `instanceServiceCore.ts`: `1274`
+  - `instanceWorkbenchSnapshotSupport.ts`: `498`
+  - `instanceRegistryWorkbenchSupport.ts`: `365`
+  - `openClawChannelWorkbenchSupport.ts`: `290`
+  - `openClawManagedConfigWorkbenchSupport.ts`: `207`
+  - `openClawAgentWorkbenchSupport.ts`: `216`
+  - `openClawProviderWorkbenchSupport.ts`: `111`
+  - `openClawSkillWorkbenchSupport.ts`: `55`
+  - `openClawToolWorkbenchSupport.ts`: `186`
+  - `openClawFileWorkbenchSupport.ts`: `188`
+- Relative to the prior `1209`-line service-core measurement, `instanceWorkbenchServiceCore.ts` is now reduced to `1030` without changing gateway selection, studio bridge routing, backend truth-source precedence, page-owned write-path authority, provider-management classification, or OpenClaw channel truth.
+- The next decomposition frontier should now pivot back to `InstanceDetail.tsx`, because the page-level provider submit orchestration is once again the dominant `CP07-3` hotspot after the service-core reductions.
+- `Step 07 / CP07-3` remains in progress; the page hotspot is still the largest remaining frontier, but the service-core hotspot moved materially again in this loop.
+
+## Latest Progress Addendum X
+
+- `openClawProviderDrafts.ts` now exposes explicit page-facing provider submit action kinds:
+  - `providerCreate`
+  - `providerModelCreate`
+  - `providerModelUpdate`
+- `InstanceDetail.tsx` now owns a shared page-level `runProviderCatalogMutation(...)` runner for provider and provider-model submit flows.
+- The page still owns all authority-bearing work in this provider workspace slice:
+  - `instanceService.createInstanceLlmProvider(...)`
+  - `instanceService.createInstanceLlmProviderModel(...)`
+  - `instanceService.updateInstanceLlmProviderModel(...)`
+  - success/error toast dispatch
+  - dialog dismiss/reset state
+  - `loadWorkbench(...)`
+- The submit handlers now only:
+  - build save input
+  - build mutation metadata
+  - hand off execution to the shared page runner
+- `openClawProviderDrafts.test.ts` now verifies the action-kind metadata, while `scripts/sdkwork-instances-contract.test.ts` now proves the shared runner boundary and still asserts that the write-path calls remain page-owned.
+- Fresh red/green verification in this loop was explicit:
+  - the helper test failed first because the mutation plans did not yet expose `kind`
+  - the contract test failed first because the page had not yet consolidated submit execution through `runProviderCatalogMutation(...)`
+  - the implementation landed only after those failures were observed
+- OpenClaw authority evidence was re-checked again for this loop:
+  - `webStudio.test.ts` still proves provider edits persist through browser-backed workbench detail
+  - `openClawManagementCapabilities.ts` and `openClawProviderWorkspacePresentation.ts` still keep Provider Center managed classification and read-only provider catalog semantics outside the page
+  - `openClawConfigSchemaSupport.test.ts` still preserves Control UI section order
+  - `channelService.ts`, `marketService.ts`, and `agentInstallService.ts` remain the external feature owners for channel writes, market installs, and agent template/workspace materialization
+  - `local_ai_proxy.rs` and `plugins/mod.rs` remain the local proxy and desktop plugin runtime boundary
+- The current active hotspot profile after the provider submit runner extraction is:
+  - `InstanceDetail.tsx`: `2803`
+  - `instanceWorkbenchServiceCore.ts`: `1132`
+  - `instanceServiceCore.ts`: `1431`
+  - `openClawProviderDrafts.ts`: `345`
+- The current worktree no longer matches the previously recorded `2553 / 1030 / 1274` profile, so subsequent `CP07-3` planning should use the fresh `2803 / 1132 / 1431` baseline instead of the stale earlier snapshot.
+- This loop improves the provider workspace orchestration boundary, but `Step 07 / CP07-3` remains in progress because the page hotspot still dominates by raw size.
+- The next decomposition candidates inside `InstanceDetail.tsx` are the remaining provider workspace mutation flows around provider config save and provider/provider-model delete behavior, because those still duplicate page-owned success/error/reload sequencing even after submit creation/update has been centralized.
+
+## Latest Progress Addendum XI
+
+- `openClawProviderDrafts.ts` now also owns the page-facing delete mutation plan builders:
+  - `buildOpenClawProviderModelDeleteMutationPlan(...)`
+  - `buildOpenClawProviderDeleteMutationPlan(...)`
+- `OpenClawProviderCatalogMutationPlan` now spans the full provider catalog lifecycle inside the page:
+  - provider create
+  - provider-model create
+  - provider-model update
+  - provider-model delete
+  - provider delete
+- `InstanceDetail.tsx` now routes both delete handlers through the same page-owned `runProviderCatalogMutation(...)` runner that already handled submit flows.
+- `completeProviderCatalogMutation(...)` now centralizes the remaining page-owned success lifecycle shared by all provider catalog mutations:
+  - toast success
+  - local cleanup callback
+  - workbench reload without spinner
+  - provider reselection / deselection
+- The page still explicitly owns every authority-bearing write call. This loop did not move provider delete authority into helpers or services outside the page.
+- `openClawProviderDrafts.test.ts` now verifies the delete mutation metadata, and `scripts/sdkwork-instances-contract.test.ts` now proves the delete handlers no longer duplicate local success/reload orchestration inline.
+- Fresh red/green verification in this loop was explicit:
+  - the helper test failed first because the delete builders were missing
+  - the contract test failed first because the delete handlers still performed inline toast/reload orchestration
+  - implementation landed only after those failures were observed
+- The current active hotspot profile after the provider delete runner expansion is:
+  - `InstanceDetail.tsx`: `2816`
+  - `instanceWorkbenchServiceCore.ts`: `1132`
+  - `instanceServiceCore.ts`: `1431`
+  - `openClawProviderDrafts.ts`: `396`
+- Relative to the immediately prior `2803` page baseline in this same worktree, the page hotspot still does not close by raw length. The architectural gain in this loop is lifecycle coherence and contract coverage, not line-count reduction.
+- `Step 07 / CP07-3` remains in progress, and the next decomposition candidate inside `InstanceDetail.tsx` is now the standalone provider config update flow `handleSaveProviderConfig`, because it is the last provider workspace mutation path still outside the shared runner boundary.
+
+## Latest Progress Addendum XII
+
+- `openClawProviderDrafts.ts` now owns provider config save-input parsing and provider config mutation-plan construction through:
+  - `buildOpenClawProviderConfigSaveInput(...)`
+  - `buildOpenClawProviderConfigMutationPlan(...)`
+- `InstanceDetail.tsx` now routes `handleSaveProviderConfig` through the existing page-owned `runProviderCatalogMutation(...)` runner, so the provider catalog lifecycle now shares one execution boundary for:
+  - provider config update
+  - provider create
+  - provider-model create
+  - provider-model update
+  - provider-model delete
+  - provider delete
+- The page still owns the real `instanceService.updateInstanceLlmProviderConfig(...)` call, request-override error surfacing, reload policy, and toast semantics. This loop changed orchestration shape, not authority.
+- The active hotspot profile after the provider config save runner integration was:
+  - `InstanceDetail.tsx`: `2827`
+  - `openClawProviderDrafts.ts`: `461`
+  - `instanceWorkbenchServiceCore.ts`: `1132`
+  - `instanceServiceCore.ts`: `1431`
+- That loop improved lifecycle consistency but did not yet reduce page size by raw count.
+
+## Latest Progress Addendum XIII
+
+- `openClawProviderDrafts.ts` now also owns the pure provider draft baseline and dirty-state layer through:
+  - `createOpenClawProviderConfigDraft(...)`
+  - `createOpenClawProviderRequestDraft(...)`
+  - `hasPendingOpenClawProviderConfigChanges(...)`
+- `InstanceDetail.tsx` now consumes those helpers for selected draft fallback, request baseline derivation, pending-change detection, and reset behavior, removing another repeated provider baseline object literal cluster from the page.
+- `openClawProviderDrafts.test.ts` now verifies cloned baseline shaping and pending-change behavior, while `scripts/sdkwork-instances-contract.test.ts` now proves the page uses the helper boundary.
+- The current active hotspot profile after the provider draft baseline extraction is:
+  - `InstanceDetail.tsx`: `2810`
+  - `openClawProviderDrafts.ts`: `510`
+  - `instanceWorkbenchServiceCore.ts`: `1132`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `2827` page baseline, the page hotspot now moves down to `2810` while the provider draft layer becomes more cohesive and reusable.
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates inside `InstanceDetail.tsx` are the remaining pure provider draft mutation handlers:
+  - `handleProviderFieldChange`
+  - `handleProviderConfigChange`
+  - `handleProviderRequestOverridesChange`
+
+## Latest Progress Addendum XIV
+
+- `openClawProviderDrafts.ts` now also owns the pure provider draft mutation helpers through:
+  - `applyOpenClawProviderFieldDraftChange(...)`
+  - `applyOpenClawProviderConfigDraftChange(...)`
+  - `applyOpenClawProviderRequestDraftChange(...)`
+- `InstanceDetail.tsx` now consumes those helpers inside the three remaining provider draft mutation handlers:
+  - `handleProviderFieldChange`
+  - `handleProviderConfigChange`
+  - `handleProviderRequestOverridesChange`
+- The page still owns the actual state authority for this slice:
+  - readonly and selected-provider guards remain in `InstanceDetail.tsx`
+  - `setProviderDrafts(...)` and `setProviderRequestDrafts(...)` still execute in the page
+  - no provider write-path invocation, toast dispatch, workbench reload policy, Provider Center managed classification, Local Proxy routing, or desktop runtime/plugin boundary moved
+- `openClawProviderDrafts.test.ts` now verifies the new helper boundary directly, including:
+  - draft-map cloning
+  - optional reasoning-model clearing to `undefined`
+  - config cloning and field replacement
+  - request-draft map replacement without mutating the original map
+- `scripts/sdkwork-instances-contract.test.ts` now enforces that those handlers no longer keep:
+  - inline `nextDraft` assembly
+  - inline config object reconstruction
+  - inline request-draft map literals
+- Fresh red/green verification in this loop was explicit:
+  - the helper test failed first because the new exports were missing
+  - the contract test failed first because the page still kept inline provider draft mutation logic
+  - implementation landed only after those failures were observed
+- The current active hotspot profile after the provider draft mutation helper extraction is:
+  - `InstanceDetail.tsx`: `2811`
+  - `openClawProviderDrafts.ts`: `561`
+  - `instanceWorkbenchServiceCore.ts`: `1132`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `2810` page baseline, the page hotspot is effectively flat at `2811`. This loop improves the architectural boundary and contract coverage, but it does not yet reduce the page hotspot by raw length.
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates inside `InstanceDetail.tsx` should stay page-side and be re-evaluated around the remaining provider draft reset and dialog dismiss/reset lifecycle helpers before pivoting elsewhere.
+
+## Latest Progress Addendum XV
+
+- `instanceDetailWorkbenchPresentation.ts` now owns the pure page-facing workbench presentation layer that previously lived inline in `InstanceDetail.tsx`, including:
+  - `workbenchSections`
+  - `getRuntimeStatusTone(...)`
+  - `getStatusBadge(...)`
+  - `getDangerBadge(...)`
+  - `buildTaskScheduleSummary(...)`
+- `InstanceDetail.tsx` now imports those helpers from the dedicated presentation module instead of keeping section metadata, badge tone mapping, and task summary formatting inline.
+- This loop intentionally kept all authority-bearing work in the page and services:
+  - workbench loading and truth-source routing remain in `InstanceDetail.tsx`
+  - provider/agent/config write-path invocation remains in `InstanceDetail.tsx`
+  - Provider Center managed classification remains in `openClawManagementCapabilities.ts` and `openClawProviderWorkspacePresentation.ts`
+  - Local Proxy and desktop plugin/runtime boundaries remain in `local_ai_proxy.rs` and `plugins/mod.rs`
+- `instanceDetailWorkbenchPresentation.test.ts` now verifies the extracted presentation boundary directly:
+  - section order and translation keys
+  - runtime/status/danger badge tone mapping
+  - interval/datetime/fallback task schedule summary formatting
+- `scripts/sdkwork-instances-contract.test.ts` now enforces that the page keeps consuming the dedicated presentation module and no longer drifts those helpers back inline.
+- Fresh red/green verification in this loop was explicit:
+  - the new helper test failed first because the presentation module did not exist
+  - the contract test failed first because the page still kept the metadata and helpers inline
+  - a follow-up contract failure exposed stale assumptions about where the sidebar/icon evidence had to live, and the contract was corrected to match the new boundary before closure claims were updated
+- The current active hotspot profile after the presentation-module extraction is:
+  - `InstanceDetail.tsx`: `2640`
+  - `instanceDetailWorkbenchPresentation.ts`: `183`
+  - `openClawProviderDrafts.ts`: `561`
+  - `instanceWorkbenchServiceCore.ts`: `1132`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `2811` page baseline, the page hotspot is now reduced to `2640`. This is the first material raw page reduction after the recent provider-draft helper loops.
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates inside `InstanceDetail.tsx` should now pivot to the remaining pure form-state factory cluster near the top of the page before returning to smaller provider lifecycle helpers.
+
+## Latest Progress Addendum XVI
+
+- `openClawManagedConfigDrafts.ts` now also owns the pure managed-config form-state factory layer that previously lived inline in `InstanceDetail.tsx`, including:
+  - `createOpenClawWebSearchSharedDraft(...)`
+  - `createOpenClawWebSearchProviderDraft(...)`
+  - `createOpenClawXSearchDraft(...)`
+  - `createOpenClawWebSearchNativeCodexDraft(...)`
+  - `createOpenClawWebFetchSharedDraft(...)`
+  - `createOpenClawWebFetchFallbackDraft(...)`
+  - `createOpenClawAuthCooldownsDraft(...)`
+- `InstanceDetail.tsx` now consumes those helpers and their draft-value types through import aliases, so the page no longer keeps:
+  - local managed-config form-state interfaces
+  - local snapshot-to-draft mapping functions
+  - local whole-number-to-string draft formatting
+- This loop intentionally kept all authority-bearing work in the page and services:
+  - `useState(...)`, `useEffect(...)`, save handlers, truth-source routing, and all write-path invocation remain in `InstanceDetail.tsx`
+  - the helper boundary owns only pure draft shaping and save-input construction
+  - Provider Center managed classification remains in `openClawManagementCapabilities.ts` and `openClawProviderWorkspacePresentation.ts`
+  - Local Proxy and desktop plugin/runtime boundaries remain in `local_ai_proxy.rs` and `plugins/mod.rs`
+- `openClawManagedConfigDrafts.test.ts` now verifies the extracted draft-factory boundary directly, including:
+  - snapshot-to-draft mapping for managed webSearch, xSearch, native codex, webFetch, and auth cooldowns
+  - null passthrough for absent managed-config snapshots
+  - empty provider/fallback defaults
+- `scripts/sdkwork-instances-contract.test.ts` now enforces that the page keeps consuming the shared managed-config draft helper and no longer drifts those types/factories back inline.
+- Fresh red/green verification in this loop was explicit:
+  - the helper test failed first because the new draft-factory exports were missing
+  - the contract test failed first because the page still kept local types and factory functions inline
+  - implementation landed only after those failures were observed
+- The current active hotspot profile after the managed-config draft factory extraction is:
+  - `InstanceDetail.tsx`: `2474`
+  - `instanceDetailWorkbenchPresentation.ts`: `183`
+  - `openClawManagedConfigDrafts.ts`: `506`
+  - `openClawProviderDrafts.ts`: `561`
+  - `instanceWorkbenchServiceCore.ts`: `1132`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `2640` page baseline, the page hotspot is now reduced to `2474`. This loop materially advanced `CP07-3` again through a pure page-side extraction.
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates inside `InstanceDetail.tsx` should now stay near the top of the page and target the remaining pure presentation/notice helpers before returning to smaller lifecycle cleanup helpers.
+
+## Latest Progress Addendum XVII
+
+- `instanceDetailWorkbenchPresentation.ts` now also owns the remaining pure overview tone helpers that had still been left inline in `InstanceDetail.tsx`:
+  - `getCapabilityTone(...)`
+  - `getManagementEntryTone(...)`
+- `InstanceDetail.tsx` now consumes those helpers through the dedicated presentation module import rather than defining them locally near the page header helpers.
+- This loop keeps the architectural authority split intact:
+  - `InstanceDetail.tsx` still owns all write-path orchestration, `instanceService.*`, `toast.*`, `loadWorkbench(...)`, selection state, dialog state, and readonly gating
+  - `instanceDetailWorkbenchPresentation.ts` still owns only pure presentation shaping and no truth-source or mutation authority
+  - Provider Center managed classification remains in `openClawManagementCapabilities.ts` and `openClawProviderWorkspacePresentation.ts`
+  - Local Proxy and desktop plugin/runtime boundaries remain in `local_ai_proxy.rs` and `plugins/mod.rs`
+- `instanceDetailWorkbenchPresentation.test.ts` now covers the new boundary directly by pinning:
+  - `ready`, `degraded`, `planned`, and fallback capability tones
+  - `success`, `warning`, and `neutral` management-entry tones
+- `scripts/sdkwork-instances-contract.test.ts` now enforces that:
+  - the page keeps importing the dedicated presentation module
+  - local `getCapabilityTone(...)` and `getManagementEntryTone(...)` helpers do not drift back into `InstanceDetail.tsx`
+  - the dedicated presentation module continues exporting both helpers
+- Fresh red/green verification in this loop was explicit:
+  - the helper test failed first because the presentation module did not export the two helpers yet
+  - the contract test failed first because the page still contained the two local helper definitions
+  - implementation landed only after those failures were observed
+- The current active hotspot profile after the tone-helper extraction is:
+  - `InstanceDetail.tsx`: `2242`
+  - `instanceDetailWorkbenchPresentation.ts`: `195`
+  - `openClawManagedConfigDrafts.ts`: `455`
+  - `openClawProviderDrafts.ts`: `511`
+  - `instanceWorkbenchServiceCore.ts`: `1030`
+  - `instanceServiceCore.ts`: `1274`
+- This addendum records the fresh current-worktree hotspot profile after the presentation-boundary refinement. Because the worktree already carried ongoing `CP07-3` decomposition changes before this slice resumed, the architectural claim for this loop is the explicit helper-boundary closure and verified re-baseline, not authorship of the entire historical line-count delta.
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates in `InstanceDetail.tsx` should continue at the page top with `SectionAvailabilityNotice` and `SectionHeading` before considering lower-value utility residue.
+
+## Latest Progress Addendum XVIII
+
+- `instanceDetailWorkbenchPresentation.ts` now also owns two pure descriptor builders for the lower workbench chrome:
+  - `buildInstanceWorkbenchSummaryMetrics(...)`
+  - `buildInstanceWorkbenchResourceMetrics(...)`
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailWorkbenchChrome.tsx` is now the dedicated lower chrome boundary for:
+  - the six-card workbench summary deck
+  - the section sidebar shell
+  - the CPU / memory resource cards
+  - the active-section `SectionHeading(...)` composition
+- `InstanceDetail.tsx` now consumes `InstanceDetailWorkbenchChrome` and no longer keeps that lower chrome block inline.
+- The page still explicitly owns:
+  - `activeSection` state
+  - all write-path orchestration and authority-bearing service calls
+  - all `toast` / `loadWorkbench(...)` side effects
+  - header action buttons and lifecycle control
+- Verification follow-up repairs in the same loop kept the workspace honest but did not move architectural authority:
+  - `InstanceDetail.tsx` now passes `updatingAgentSkillKeys` / `removingAgentSkillKeys` through the expected prop names
+  - `instanceWorkbenchServiceCore.ts` now imports the missing `OpenClawChannelStatusResult` and `InstanceWorkbenchMemoryEntry` types so workspace type-checking reflects the real code
+  - `InstanceDetailOverviewSection.tsx` now imports `InstanceManagementSummary` through the public service barrel instead of a direct subpath, which restores the local architecture boundary gate
+- `scripts/sdkwork-instances-contract.test.ts` now follows the current page -> chrome -> presentation boundary for the agents / skills summary-card contract instead of requiring the page to keep those i18n keys inline forever.
+- The current active hotspot profile after the workbench chrome extraction is:
+  - `InstanceDetail.tsx`: `2073`
+  - `InstanceDetailWorkbenchChrome.tsx`: `159`
+  - `instanceDetailWorkbenchPresentation.ts`: `273`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the prior `2423` page baseline from the immediately previous loop, the page hotspot is now reduced to `2073` without changing OpenClaw truth-source routing, Provider Center managed classification, Local Proxy boundaries, or desktop runtime/plugin ownership.
+- Fresh verification in this loop reached:
+  - green: focused presentation test, new chrome render test, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidate should stay page-side and target the remaining header / action chrome cluster before revisiting lower-yield helper cleanup.
+
+## Latest Progress Addendum XIX
+
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailHeader.tsx` is now the dedicated top header boundary for:
+  - instance title and badge chrome
+  - runtime badge and metadata row
+  - instance-level action buttons for lifecycle, console access, and uninstall
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailHeader.test.tsx` now locks that render contract directly.
+- `InstanceDetail.tsx` now consumes `InstanceDetailHeader` and no longer keeps the hero / action chrome inline.
+- The page still explicitly owns:
+  - all action handlers and navigation
+  - all `instanceService.*` writes and other authority-bearing calls
+  - all `toast`, reload, and selection side effects
+  - lifecycle/read-only gating decisions and truth-source routing
+- `scripts/sdkwork-instances-contract.test.ts` now follows the current page -> header boundary for:
+  - header destructive-action presence
+  - lifecycle gating evidence
+- The current active hotspot profile after the header extraction is:
+  - `InstanceDetail.tsx`: `1981`
+  - `InstanceDetailHeader.tsx`: `159`
+  - `InstanceDetailWorkbenchChrome.tsx`: `159`
+  - `instanceDetailWorkbenchPresentation.ts`: `273`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `2073` page baseline, the page hotspot is now reduced to `1981` without changing OpenClaw authority routing, Provider Center managed classification, Local Proxy boundaries, or desktop runtime/plugin ownership.
+- Fresh verification in this loop reached:
+  - green: new header render test, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should now pivot from visual chrome to the remaining page-owned orchestration clusters.
+
+## Latest Progress Addendum XX
+
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` now owns the next page-side pure orchestration boundary for:
+  - `buildAgentSectionProps(...)`
+  - `buildLlmProviderSectionProps(...)`
+  - `buildLlmProviderDialogProps(...)`
+- `InstanceDetail.tsx` now consumes those builders instead of keeping the `agentSectionProps`, `llmProviderSectionProps`, and `llmProviderDialogProps` object literals inline.
+- This helper boundary intentionally owns only pure section-model assembly:
+  - prop shaping
+  - dialog field-change setter wrapping
+  - agent workbench reload composition with `withSpinner: false`
+- The page still explicitly owns:
+  - all `instanceService.*` and `agentSkillManagementService.*` writes
+  - all `toast` dispatch and reload authority
+  - all state ownership and readonly/truth-source gating
+  - Provider Center managed classification, Local Proxy routing, and desktop runtime/plugin ownership through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx` now verifies the new boundary directly, including:
+  - `updatingAgentSkillKeys` -> `updatingSkillKeys`
+  - `removingAgentSkillKeys` -> `removingSkillKeys`
+  - no-spinner `loadWorkbench(...)` reload wiring
+  - provider availability notice passthrough
+  - provider delete-id passthrough and dialog field change handlers
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route agent and llm-provider section models through the dedicated helper instead of drifting those object literals back inline
+- The current active hotspot profile after this helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `2161`
+  - `instanceDetailSectionModels.ts`: `145`
+  - `InstanceDetailHeader.tsx`: `162`
+  - `InstanceDetailWorkbenchChrome.tsx`: `166`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Because the worktree already carried additional in-flight Step 07 edits beyond the earlier release-90 snapshot, this addendum records a verified boundary improvement and fresh hotspot re-baseline rather than claiming a clean raw page-size reduction from that historical note.
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates in `InstanceDetail.tsx` should stay page-side and target the remaining `memorySectionProps` / managed-tools panel assembly cluster before moving elsewhere.
+
+## Latest Progress Addendum XXI
+
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx` now owns the remaining managed-memory section composition boundary for:
+  - loading-state rendering
+  - empty-state routing
+  - `InstanceDetailMemorySectionProps` assembly from page-owned memory workbench state and dreaming draft state
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx` now owns the remaining managed-tools section composition boundary for:
+  - managed web-search panel aggregation
+  - managed web-fetch panel aggregation
+  - managed native-codex web-search panel aggregation
+  - managed x-search panel aggregation
+  - managed auth-cooldowns panel aggregation
+  - `InstanceDetailToolsSectionProps` assembly
+  - final runtime-surface / empty-state gating
+- `InstanceDetail.tsx` now passes raw page state and handlers into those managed section components instead of keeping:
+  - `memorySectionProps`
+  - `managedWebSearchPanel`
+  - `managedWebFetchPanel`
+  - `managedWebSearchNativeCodexPanel`
+  - `managedXSearchPanel`
+  - `managedAuthCooldownsPanel`
+  - `toolsSectionProps`
+- The page still explicitly owns:
+  - all `instanceService.*` and `agentSkillManagementService.*` writes
+  - all `toast` dispatch and reload authority
+  - all page state, readonly gating, truth-source routing, navigation, and dialog ownership
+  - Provider Center managed classification, Local Proxy routing, and desktop runtime/plugin ownership through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.test.tsx` and `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.test.tsx` now verify the new boundaries directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route memory and tools section composition through the dedicated managed section components instead of drifting those literals back inline
+  - the wider detail canvas / row-shell contract now reads `RowMetric` evidence from `InstanceDetailToolsSection.tsx`, which matches the real current ownership boundary
+- The current active hotspot profile after this managed memory/tools composition extraction is:
+  - `InstanceDetail.tsx`: `2102`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `2161` page baseline from the section-model helper loop, the page hotspot is now reduced to `2102` without changing OpenClaw authority routing, Provider Center managed classification, Local Proxy boundaries, or desktop runtime/plugin ownership.
+- Fresh verification in this loop reached:
+  - green: the two new managed section tests, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining orchestration clusters outside the `memory` / `tools` composition boundary.
+
+## Latest Progress Addendum XXII
+
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.tsx` now owns the remaining page-side section router boundary for:
+  - shared section-availability rendering through `renderInstanceDetailSectionAvailability(...)`
+  - active-section switching for `overview`, `channels`, `cronTasks`, `llmProviders`, `agents`, `skills`, `files`, `memory`, `tools`, and `config`
+  - section-level composition for overview / channels / skills / files / config
+  - pass-through routing for the already separated agents / llmProviders / memory / tools / cronTasks section nodes
+- `InstanceDetail.tsx` now delegates section switching and availability routing to the dedicated section-content component instead of keeping:
+  - `renderSectionAvailability(...)`
+  - `renderOverviewSection()`
+  - `renderChannelsSection()`
+  - `renderTasksSection()`
+  - `renderSkillsSection()`
+  - `renderFilesSection()`
+  - `renderConfigSection()`
+  - `renderSectionContent()`
+- The page still explicitly owns:
+  - all `instanceService.*` and `agentSkillManagementService.*` writes
+  - all `toast` dispatch and reload authority
+  - all page state, readonly gating, truth-source routing, navigation, and dialog ownership
+  - page-built precomposed nodes for agents / llmProviders / memory / tools / cronTasks
+  - Provider Center managed classification, Local Proxy routing, and desktop runtime/plugin ownership through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.test.tsx` now verifies the new boundary directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route section switching and availability through the dedicated section-content component instead of drifting the router back inline
+  - shared primitive, overview, files, and managed-file evidence now follow the real section-content / channels boundaries instead of stale page assumptions
+- The current active hotspot profile after this section-router extraction is:
+  - `InstanceDetail.tsx`: `2009`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `2102` page baseline, the page hotspot is now reduced to `2009` without changing OpenClaw authority routing, Provider Center managed classification, Local Proxy boundaries, or desktop runtime/plugin ownership.
+- Fresh verification in this loop reached:
+  - green: new section-content render test, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining orchestration clusters around provider catalog mutation lifecycle and managed-channel runtime orchestration.
+
+## Latest Progress Addendum XXIII
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts` now owns the remaining provider-catalog mutation-request construction boundary for:
+  - provider-config save request construction
+  - provider-create request construction
+  - provider-model create/update request construction
+  - provider-model delete request construction
+  - provider delete request construction
+  - translation-aware `skip` / `error` / `mutation` result shaping for the page shell
+- `InstanceDetail.tsx` now consumes those shared request builders instead of keeping inline:
+  - provider save-input validation
+  - provider dialog save-input validation
+  - provider model dialog save-input validation
+  - direct provider mutation-plan construction inside the five provider handlers
+- The page still explicitly owns:
+  - `runProviderCatalogMutation(...)`
+  - `completeProviderCatalogMutation(...)`
+  - all `instanceService.*` writes
+  - all `toast` dispatch and reload authority
+  - all provider selection state, dialog state, and dismiss/reset ownership
+  - Provider Center managed classification, Local Proxy routing, and desktop runtime/plugin ownership through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts` now verifies the new request-construction boundary directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route provider catalog mutation request construction through the dedicated helper instead of drifting save-input and mutation-plan construction back inline
+  - the helper must not absorb `instanceService.*`, `toast`, or `loadWorkbench(...)` authority
+- The current active hotspot profile after this provider-catalog request extraction is:
+  - `InstanceDetail.tsx`: `1972`
+  - `openClawProviderCatalogMutationSupport.ts`: `241`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `2009` page baseline, the page hotspot is now reduced to `1972` without changing OpenClaw authority routing, Provider Center managed classification, Local Proxy boundaries, or desktop runtime/plugin ownership.
+- Fresh verification in this loop reached:
+  - green: new provider-catalog request helper test, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining provider runner/completion helpers or the managed-channel runtime orchestration cluster.
+
+## Latest Progress Addendum XXIV
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts` now owns the remaining managed-channel helper boundary for:
+  - selected-channel draft patching
+  - toggle/save/delete mutation-request construction
+  - save required-field validation
+  - delete empty-value shaping
+  - shared mutation execution sequencing through injected page-owned callbacks
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - direct managed-channel draft patch logic
+  - direct toggle/save/delete mutation-plan construction
+  - repeated save/toggle/reload/toast orchestration across the three managed-channel handlers
+- The page still explicitly owns:
+  - all `instanceService.saveOpenClawChannelConfig(...)`
+  - all `instanceService.setOpenClawChannelEnabled(...)`
+  - all `toast` dispatch and reload authority
+  - selected managed-channel state, draft-map state, and delete follow-up cleanup
+  - Provider Center managed classification, Local Proxy routing, and desktop runtime/plugin ownership through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.test.ts` now verifies the new helper boundary directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route managed-channel draft patching and mutation construction through the dedicated helper
+  - the page must call `runOpenClawManagedChannelMutation(...)` instead of drifting back to a deleted local runner
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this managed-channel helper extraction is:
+  - `InstanceDetail.tsx`: `1823`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `InstanceDetailSectionContent.tsx`: `215`
+  - `InstanceDetailManagedMemorySection.tsx`: `87`
+  - `InstanceDetailManagedToolsSection.tsx`: `247`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1972` page baseline, the page hotspot is now reduced to `1823` without changing OpenClaw authority routing, Provider Center managed classification, Local Proxy boundaries, or desktop runtime/plugin ownership.
+- Fresh verification in this loop reached:
+  - green: new managed-channel helper test, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining provider runner/completion helpers or other page-owned orchestration clusters outside the new managed-channel helper boundary.
+
+## Latest Progress Addendum XXV
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts` now also owns the remaining provider-catalog execution boundary for:
+  - provider update/create/delete mutation execution switching
+  - provider-model update/create/delete mutation execution switching
+  - translated success/failure reporting through injected page-owned callbacks
+  - post-mutation reload and selected-provider restoration sequencing
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - `completeProviderCatalogMutation(...)`
+  - the full `runProviderCatalogMutation(...)` mutation-kind switch
+- The page still explicitly owns:
+  - all `instanceService.*` writes
+  - all `toast` dispatch and reload authority
+  - all provider selection state, provider dialog state, provider-model dialog state, and delete dialog cleanup ownership
+  - Provider Center managed classification, Local Proxy routing, and desktop runtime/plugin ownership through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts` now verifies the new injected runner boundary directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must create the provider-catalog runner through the dedicated helper instead of drifting the completion/switch cluster back inline
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this provider-catalog runner extraction is:
+  - `InstanceDetail.tsx`: `1770`
+  - `openClawProviderCatalogMutationSupport.ts`: `353`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `InstanceDetailSectionContent.tsx`: `215`
+  - `InstanceDetailManagedMemorySection.tsx`: `87`
+  - `InstanceDetailManagedToolsSection.tsx`: `247`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1823` page baseline, the page hotspot is now reduced to `1770` without changing OpenClaw authority routing, Provider Center managed classification, Local Proxy boundaries, or desktop runtime/plugin ownership.
+- Fresh verification in this loop reached:
+  - green: updated provider helper test, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining managed-config save runner or agent/skill action orchestration clusters.
+
+## Latest Progress Addendum XXVI
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.ts` now owns the remaining shared managed-config save runner boundary for:
+  - save-state toggling
+  - page error reset before save
+  - translated success reporting through injected page-owned callbacks
+  - post-save workbench reload sequencing through injected page-owned callbacks
+  - fallback failure mapping into injected page-owned error setters
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - the local `const runManagedConfigSave = async (...) => { ... }` cluster
+  - repeated save/toggle-success/reload sequencing across managed web search, x search, native Codex web search, web fetch, auth cooldowns, and dreaming handlers
+- The page still explicitly owns:
+  - all `instanceService.saveOpenClaw*Config(...)` writes
+  - all `toast` dispatch and reload authority
+  - readonly/truth-source routing decisions
+  - all managed-config draft state, error state, and saving state ownership
+  - Provider Center managed classification, Local Proxy routing, and desktop runtime/plugin ownership through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.test.ts` now verifies the new injected runner boundary directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must create the managed-config runner through the dedicated helper instead of drifting back to a deleted local runner
+  - all managed-config save handlers must still keep the real `instanceService.saveOpenClaw*Config(...)` calls in the page
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this managed-config runner extraction and fresh re-baseline is:
+  - `InstanceDetail.tsx`: `1930`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `373`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Because the dirty worktree already carries additional in-flight Step 07 edits beyond the prior release-note snapshot, this addendum records a verified boundary improvement and fresh hotspot re-baseline rather than claiming a clean raw page-size delta from the earlier `1770` page note.
+- Fresh verification in and after this loop reached:
+  - green: `openClawManagedConfigMutationSupport.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should move to the remaining page-owned agent/skill orchestration frontier or another shared runner boundary that preserves page write authority.
+
+## Latest Progress Addendum XXVII
+
+- `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts` now owns the remaining shared agent CRUD mutation runner boundary for:
+  - create / update / delete mutation execution switching
+  - optional dialog save-state toggling
+  - translated success / failure reporting through injected page-owned callbacks
+  - post-success cleanup sequencing through injected page-owned callbacks
+  - workbench reload sequencing through injected page-owned callbacks
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - the create / update / delete try/catch switch inside `handleSaveAgentDialog(...)`
+  - the inline delete try/catch sequence inside `handleDeleteAgent(...)`
+- The page still explicitly owns:
+  - `buildOpenClawAgentInputFromForm(...)`
+  - required agent-id validation and its direct validation toast
+  - all `instanceService.createOpenClawAgent(...)`
+  - all `instanceService.updateOpenClawAgent(...)`
+  - all `instanceService.deleteOpenClawAgent(...)`
+  - all `toast` dispatch and reload authority
+  - agent dialog draft state, editing-agent state, selected agent state, and delete-dialog state ownership
+  - Provider Center managed classification, Local Proxy routing, and desktop runtime/plugin ownership through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts` now verifies the new injected runner boundary directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must create the agent CRUD runner through the dedicated helper instead of drifting create/update/delete execution back inline
+  - the page must keep `buildOpenClawAgentInputFromForm(...)` and real `instanceService.*` agent writes in the page
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this agent mutation runner extraction and fresh re-baseline is:
+  - `InstanceDetail.tsx`: `1938`
+  - `openClawAgentMutationSupport.ts`: `65`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `373`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1930` page baseline from Addendum XXVI, the raw page line count now re-measures at `1938`. This loop still improves the page-side authority boundary, but it is not a raw shrink because the current worktree keeps explicit injected runner wiring and agent-input validation in the page shell.
+- Fresh verification in this loop reached:
+  - green: `openClawAgentMutationSupport.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining agent skill orchestration or agent dialog request-construction frontier.
+
+## Latest Progress Addendum XXVIII
+
+- `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.ts` now owns the remaining shared agent skill mutation runner boundary for:
+  - boolean pending toggling for install actions
+  - keyed pending-set add/remove for toggle and remove actions
+  - translated success / failure reporting through injected page-owned callbacks
+  - workbench reload sequencing through injected page-owned callbacks
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - the install skill try/catch and boolean pending sequence
+  - the enable/disable skill try/catch and keyed pending sequence
+  - the remove skill try/catch and keyed pending sequence
+  - the local `addPendingId(...)` / `removePendingId(...)` helpers
+- The page still explicitly owns:
+  - all `agentSkillManagementService.installSkill(...)`
+  - all `agentSkillManagementService.setSkillEnabled(...)`
+  - all `agentSkillManagementService.removeSkill(...)`
+  - all `toast` dispatch and reload authority
+  - all `selectedAgentWorkbench` request construction, including workspace path, base dir, and file path
+  - Provider Center managed classification, Local Proxy routing, and desktop runtime/plugin ownership through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.test.ts` now verifies the new injected runner boundary directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must create the agent skill runner through the dedicated helper instead of drifting pending/toast/reload orchestration back inline
+  - the page must keep real `agentSkillManagementService.*` calls in the page
+  - the page must no longer own `addPendingId(...)` / `removePendingId(...)`
+  - the helper must not absorb `agentSkillManagementService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this agent skill mutation runner extraction and fresh re-baseline is:
+  - `InstanceDetail.tsx`: `1931`
+  - `openClawAgentSkillMutationSupport.ts`: `68`
+  - `openClawAgentMutationSupport.ts`: `65`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `373`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1938` page baseline from Addendum XXVII, the page hotspot now moves down to `1931`.
+- Fresh verification in this loop reached:
+  - green: `openClawAgentSkillMutationSupport.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining agent dialog request-construction frontier or another page-owned orchestration cluster.
+
+## Latest Progress Addendum XXIX
+
+- `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts` now also owns the remaining shared agent dialog request-construction boundary for:
+  - save-form to `OpenClawAgentInput` conversion through `buildOpenClawAgentInputFromForm(...)`
+  - translated missing-id validation shaping for save requests
+  - create vs update mutation-kind selection
+  - success/failure key selection for save and delete flows
+  - delete request construction and cleanup callback wiring
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - `buildOpenClawAgentInputFromForm(agentDialogDraft)` inside `handleSaveAgentDialog(...)`
+  - direct required-id validation and the translated validation branch
+  - save mutation metadata construction for create/update
+  - delete mutation metadata construction inside `handleDeleteAgent(...)`
+- The page still explicitly owns:
+  - all `instanceService.createOpenClawAgent(...)`
+  - all `instanceService.updateOpenClawAgent(...)`
+  - all `instanceService.deleteOpenClawAgent(...)`
+  - all `toast` dispatch and reload authority
+  - `setIsSavingAgentDialog(...)`, agent dialog close/reset cleanup, delete-dialog cleanup, selected-agent state, and editing-agent state ownership
+  - Provider Center managed classification, Local Proxy routing, and desktop runtime/plugin ownership through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts` now verifies the new request builders directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route agent save/delete request construction through dedicated helper builders instead of drifting that cluster back inline
+  - the page must keep real `instanceService.*` agent writes in the page
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this agent dialog request extraction and fresh re-baseline is:
+  - `InstanceDetail.tsx`: `1926`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `68`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `373`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1931` page baseline from Addendum XXVIII, the page hotspot now moves down to `1926`.
+- Fresh verification in this loop reached:
+  - green: `openClawAgentMutationSupport.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target dialog-open draft setup or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XXX
+
+- `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.ts` now also owns the remaining shared agent skill request-construction boundary for:
+  - install request shaping from selected-agent metadata and slug
+  - toggle request shaping from skill key and enabled state
+  - remove request shaping from selected-agent workspace metadata and skill entry metadata
+  - success/failure key selection for install/toggle/remove flows
+  - pending setter / pending key metadata selection
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - install payload construction inside `handleInstallAgentSkill(...)`
+  - toggle payload construction inside `handleSetAgentSkillEnabled(...)`
+  - remove payload construction inside `handleRemoveAgentSkill(...)`
+- The page still explicitly owns:
+  - all `agentSkillManagementService.installSkill(...)`
+  - all `agentSkillManagementService.setSkillEnabled(...)`
+  - all `agentSkillManagementService.removeSkill(...)`
+  - all `toast` dispatch and reload authority
+  - selected-agent workbench truth, workspace path ownership, and pending-state ownership
+  - Provider Center managed classification, Local Proxy routing, and desktop runtime/plugin ownership through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.test.ts` now verifies the new request builders directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route agent skill install/toggle/remove request construction through dedicated helper builders instead of drifting that cluster back inline
+  - the page must keep real `agentSkillManagementService.*` calls in the page
+  - the helper must not absorb `agentSkillManagementService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this agent skill request extraction and fresh re-baseline is:
+  - `InstanceDetail.tsx`: `1906`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `373`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1926` page baseline from Addendum XXIX, the page hotspot now moves down to `1906`.
+- Fresh verification in this loop reached:
+  - green: `openClawAgentSkillMutationSupport.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target dialog-open draft setup, lifecycle action orchestration, or another remaining page-owned cluster.
+
+## Latest Progress Addendum XXXI
+
+- `packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.ts` now owns the remaining shared lifecycle action orchestration boundary for:
+  - restart / stop / start execution sequencing
+  - translated success reporting through injected page-owned callbacks
+  - post-success workbench reload sequencing through injected page-owned callbacks
+  - translated fallback failure reporting through injected page-owned callbacks
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - the restart try/catch sequence inside `handleRestart(...)`
+  - the stop try/catch sequence inside `handleStop(...)`
+  - the start try/catch sequence inside `handleStart(...)`
+- The page still explicitly owns:
+  - all `instanceService.restartInstance(...)`
+  - all `instanceService.stopInstance(...)`
+  - all `instanceService.startInstance(...)`
+  - all `toast` dispatch and reload authority
+  - lifecycle entry-point ownership and capability gating through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.test.ts` now verifies the new lifecycle runner directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must create the lifecycle runner through the dedicated helper instead of drifting restart/stop/start orchestration back inline
+  - the page must keep real `instanceService.*` lifecycle calls in the page
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this lifecycle runner extraction and fresh re-baseline is:
+  - `InstanceDetail.tsx`: `1911`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `373`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1906` page baseline from Addendum XXX, the raw page line count now re-measures at `1911`. This loop is still a verified boundary improvement, but not a raw shrink, because the current worktree keeps explicit injected lifecycle runner wiring in the page shell while moving the repeated orchestration cluster into the shared helper.
+- Fresh verification in this loop reached:
+  - green: `instanceLifecycleActionSupport.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target dialog-open draft setup or another remaining page-owned cluster.
+
+## Latest Progress Addendum XXXII
+
+- `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.ts` now also owns the remaining shared agent dialog draft-selection boundary for:
+  - create-dialog reset state shaping
+  - edit-dialog draft shaping
+  - active-agent model-source inheritance selection from `selectedAgentWorkbench`
+  - shared create/edit dialog state payload construction
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - the create-dialog reset construction inside `openCreateAgentDialog(...)`
+  - the edit-dialog model-source selection and draft construction inside `openEditAgentDialog(...)`
+  - the same create-dialog reset baseline inside the page reset effect
+- The page still explicitly owns:
+  - `selectedAgentWorkbench` truth
+  - `setIsAgentDialogOpen(...)`
+  - `setAgentDialogDraft(...)`
+  - `setEditingAgentId(...)`
+  - all `instanceService.*` agent writes
+  - all `toast` dispatch and reload authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.test.ts` now verifies the new dialog-state helpers directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route agent dialog draft selection through dedicated presentation helpers instead of drifting create/edit draft shaping back inline
+  - the page must keep dialog visibility control in the page
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this dialog-state extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1741`
+  - `openClawAgentPresentation.ts`: `263`
+  - `openClawAgentMutationSupport.ts`: `135`
+  - `openClawAgentSkillMutationSupport.ts`: `187`
+  - `instanceLifecycleActionSupport.ts`: `26`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `openClawProviderCatalogMutationSupport.ts`: `353`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `InstanceDetailSectionContent.tsx`: `215`
+  - `InstanceDetailManagedMemorySection.tsx`: `87`
+  - `InstanceDetailManagedToolsSection.tsx`: `247`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1911` page baseline from Addendum XXXI, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1741`. This addendum records the fresh measured baseline after the current loop rather than claiming the entire raw delta belongs only to this single helper extraction.
+- Fresh verification in this loop reached:
+  - green: `openClawAgentPresentation.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-103`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another remaining agent dialog state/reset cluster or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XXXIII
+
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` now also owns the remaining shared agent dialog dismiss/reset callback boundary for:
+  - section-facing `onAgentDialogOpenChange(...)` construction
+  - close-time reset-to-create baseline selection through `createOpenClawAgentCreateDialogState(...)`
+  - close-time editing-agent cleanup through injected page-owned setters
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - the direct `onAgentDialogOpenChange: setIsAgentDialogOpen` pass-through in `buildAgentSectionProps(...)`
+- The page still explicitly owns:
+  - `setIsAgentDialogOpen(...)`
+  - `setEditingAgentId(...)`
+  - `setAgentDialogDraft(...)`
+  - `selectedAgentWorkbench` truth
+  - all `instanceService.*` agent writes
+  - all `toast` dispatch and reload authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx` now verifies the new dismiss/reset behavior directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must no longer pass `onAgentDialogOpenChange: setIsAgentDialogOpen` directly
+  - the section-model helper must own dialog dismiss/reset callback shaping
+  - the helper must still rely on injected page-owned setters rather than absorbing write-path authority
+- The current active hotspot profile after this dialog dismiss/reset extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1742`
+  - `instanceDetailSectionModels.ts`: `148`
+  - `openClawAgentPresentation.ts`: `263`
+  - `openClawAgentMutationSupport.ts`: `135`
+  - `openClawAgentSkillMutationSupport.ts`: `187`
+  - `instanceLifecycleActionSupport.ts`: `26`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `openClawProviderCatalogMutationSupport.ts`: `353`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `InstanceDetailSectionContent.tsx`: `215`
+  - `InstanceDetailManagedMemorySection.tsx`: `87`
+  - `InstanceDetailManagedToolsSection.tsx`: `247`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1741` page baseline from Addendum XXXII, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1742`. This addendum records a verified boundary improvement rather than a raw shrink, because the shared helper now owns more callback sequencing while the page still injects explicit setter authority.
+- Fresh verification in this loop reached:
+  - green: `instanceDetailSectionModels.test.tsx`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-104`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another remaining dialog reset cluster or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XXXIV
+
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` now also owns the shared provider dialog dismiss/reset callback boundary for:
+  - provider dialog close/reset callback shaping
+  - provider model dialog close/reset callback shaping
+  - provider delete-dialog dismiss cleanup callback shaping
+  - provider model delete-dialog dismiss cleanup callback shaping
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedLlmProvidersSection.tsx` no longer bridges dialog dismiss/reset behavior and now only composes:
+  - `InstanceDetailLlmProvidersSection.tsx`
+  - `InstanceDetailLlmProviderDialogs.tsx`
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - `resetProviderDialogDraft(...)`
+  - `resetProviderModelDialogDraft(...)`
+  - `dismissProviderDialog(...)`
+  - `dismissProviderModelDialog(...)`
+  - managed wrapper dismiss/reset props for provider dialogs and delete dialogs
+- The page still explicitly owns:
+  - `setIsProviderDialogOpen(...)`
+  - `setProviderDialogDraft(...)`
+  - `setIsProviderModelDialogOpen(...)`
+  - `setProviderModelDialogDraft(...)`
+  - `setProviderDeleteId(...)`
+  - `setProviderModelDeleteId(...)`
+  - `selectedProvider` truth
+  - all `instanceService.*` provider writes
+  - all `toast` dispatch and reload authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx` now verifies the new provider dialog state helper directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must create provider dialog dismiss/reset callbacks through the shared section-model helper
+  - the page must no longer keep the named provider dialog reset/dismiss helpers inline
+  - the helper must still rely on injected page-owned setters rather than absorbing write-path authority
+- The current active hotspot profile after this provider dialog dismiss/reset extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1909`
+  - `instanceDetailSectionModels.ts`: `207`
+  - `InstanceDetailManagedLlmProvidersSection.tsx`: `26`
+  - `openClawAgentPresentation.ts`: `284`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `373`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1742` page baseline from Addendum XXXIII, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1909`. This addendum records a verified boundary improvement rather than a raw shrink, because the worktree advanced elsewhere while the shared helper now owns more provider dialog callback sequencing and the managed composition wrapper became thinner.
+- Fresh verification in this loop reached:
+  - green: `instanceDetailSectionModels.test.tsx`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-105`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another provider dialog open/create draft setup cluster or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XXXV
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderPresentation.ts` now owns the remaining shared provider dialog draft-selection boundary for:
+  - provider create-dialog draft baselines
+  - provider-model create-dialog draft baselines
+  - provider-model edit-dialog draft shaping from the selected model
+  - shared create-baseline reuse for page reset and provider dialog reset callbacks
+- `InstanceDetail.tsx` now consumes that helper boundary instead of keeping inline:
+  - direct `createEmptyProviderForm()` create-baseline selection
+  - direct `createEmptyProviderModelForm()` create-baseline selection
+  - direct `createProviderModelForm(model)` edit-draft shaping
+  - the same raw provider draft factory calls during page reset
+- The page still explicitly owns:
+  - `setIsProviderDialogOpen(...)`
+  - `setProviderDialogDraft(...)`
+  - `setIsProviderModelDialogOpen(...)`
+  - `setProviderModelDialogDraft(...)`
+  - `selectedProvider` truth
+  - all `instanceService.*` provider writes
+  - all `toast` dispatch and reload authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawProviderPresentation.test.ts` now verifies the new provider dialog create/edit draft helpers directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route provider dialog create/edit draft selection through the dedicated provider presentation helper
+  - the page must keep provider dialog visibility state in the page
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this provider dialog draft-selection extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1924`
+  - `openClawProviderPresentation.ts`: `38`
+  - `instanceDetailSectionModels.ts`: `207`
+  - `InstanceDetailManagedLlmProvidersSection.tsx`: `26`
+  - `openClawAgentPresentation.ts`: `284`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `373`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1909` page baseline from Addendum XXXIV, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1924`. This addendum records a verified boundary improvement rather than a raw shrink, because the worktree advanced elsewhere while the new helper now owns the remaining provider create/edit draft-selection baseline.
+- Fresh verification in this loop reached:
+  - green: `openClawProviderPresentation.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-106`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another remaining page-owned provider dialog visibility/open callback cluster or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XXXVI
+
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` now owns the remaining section-facing provider dialog launch callback boundary for:
+  - create-provider dialog launch orchestration
+  - create-provider-model dialog launch orchestration
+  - edit-provider-model dialog launch orchestration
+- `InstanceDetail.tsx` now consumes that section-model helper boundary instead of keeping inline:
+  - `openCreateProviderDialog(...)`
+  - `openCreateProviderModelDialog(...)`
+  - `openEditProviderModelDialog(...)`
+- The page still explicitly owns:
+  - `setIsProviderDialogOpen(...)`
+  - `setProviderDialogDraft(...)`
+  - `setIsProviderModelDialogOpen(...)`
+  - `setProviderModelDialogDraft(...)`
+  - `selectedProvider` truth
+  - all `instanceService.*` provider writes
+  - all `toast` dispatch and reload authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx` now verifies the new provider dialog launch helper boundary directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route provider dialog launch callbacks through the section-model helper
+  - the page must inject visibility setters and draft setters instead of raw launch callbacks
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this provider dialog launch callback extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1898`
+  - `instanceDetailSectionModels.ts`: `249`
+  - `InstanceDetailManagedLlmProvidersSection.tsx`: `26`
+  - `openClawProviderPresentation.ts`: `38`
+  - `openClawAgentPresentation.ts`: `284`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `373`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1924` page baseline from Addendum XXXV, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1898`. This addendum records a verified page shrink while the section-model helper absorbed the section-facing provider dialog launch orchestration.
+- Fresh verification in this loop reached:
+  - green: `instanceDetailSectionModels.test.tsx`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-107`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another remaining provider dialog or provider-config orchestration cluster, or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XXXVII
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts` now owns the remaining provider workspace selection-state boundary for:
+  - selected-provider lookup
+  - provider delete-target lookup
+  - provider-model delete-target lookup
+  - selected-provider config draft baseline selection
+  - selected-provider request draft baseline selection
+  - selected-provider request parse-error shaping
+  - selected-provider pending-change detection
+- `InstanceDetail.tsx` now consumes that provider workspace helper boundary instead of keeping inline:
+  - `selectedProvider`
+  - `deletingProvider`
+  - `deletingProviderModel`
+  - `selectedProviderDraft`
+  - `selectedProviderRequestDraft`
+  - `selectedProviderRequestParseError`
+  - `hasPendingProviderChanges`
+- The page still explicitly owns:
+  - `selectedProviderId`
+  - `providerDeleteId`
+  - `providerModelDeleteId`
+  - `providerDrafts`
+  - `providerRequestDrafts`
+  - all `instanceService.*` provider writes
+  - all `toast` dispatch and reload authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.test.ts` now verifies the new provider selection-state helper directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route provider workspace selection-state derivation through the shared provider workspace helper
+  - the page must not keep selected-provider draft/request/pending derivations inline
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this provider workspace selection-state extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1881`
+  - `openClawProviderWorkspacePresentation.ts`: `111`
+  - `instanceDetailSectionModels.ts`: `249`
+  - `openClawProviderPresentation.ts`: `38`
+  - `InstanceDetailManagedLlmProvidersSection.tsx`: `26`
+  - `openClawAgentPresentation.ts`: `284`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `373`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1898` page baseline from Addendum XXXVI, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1881`. This addendum records another verified page shrink while the provider workspace helper absorbed the selected-provider read-side derivation.
+- Fresh verification in this loop reached:
+  - green: `openClawProviderWorkspacePresentation.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-108`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another provider draft/reset or dialog cluster, or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XXXVIII
+
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` now owns the remaining provider workspace draft callback boundary for:
+  - selected-provider field draft updates
+  - selected-provider config draft updates
+  - selected-provider request-overrides draft updates
+  - selected-provider draft reset baselines
+- `InstanceDetail.tsx` now consumes that section-model helper boundary instead of keeping inline:
+  - `handleProviderFieldChange(...)`
+  - `handleProviderConfigChange(...)`
+  - `handleProviderRequestOverridesChange(...)`
+  - `handleResetProviderDraft(...)`
+- The page still explicitly owns:
+  - `selectedProviderId`
+  - `providerDrafts`
+  - `providerRequestDrafts`
+  - `selectedProvider` truth through the provider workspace selection helper
+  - all `instanceService.*` provider writes
+  - all `toast` dispatch and reload authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx` now verifies the new provider workspace draft callback boundary directly, including readonly gating and reset baselines.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route provider workspace draft callbacks through the section-model helper
+  - the page must inject `setProviderDrafts(...)` and `setProviderRequestDrafts(...)` instead of raw page-owned callbacks
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this provider workspace draft callback extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1648`
+  - `instanceDetailSectionModels.ts`: `316`
+  - `openClawProviderWorkspacePresentation.ts`: `101`
+  - `openClawProviderPresentation.ts`: `33`
+  - `InstanceDetailManagedLlmProvidersSection.tsx`: `24`
+  - `openClawAgentPresentation.ts`: `263`
+  - `openClawAgentMutationSupport.ts`: `135`
+  - `openClawAgentSkillMutationSupport.ts`: `187`
+  - `instanceLifecycleActionSupport.ts`: `26`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `openClawProviderCatalogMutationSupport.ts`: `353`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `InstanceDetailSectionContent.tsx`: `215`
+  - `InstanceDetailManagedMemorySection.tsx`: `87`
+  - `InstanceDetailManagedToolsSection.tsx`: `247`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1881` page baseline from Addendum XXXVII, the fresh current-worktree re-baseline now measures `InstanceDetail.tsx` at `1648`. This addendum records a verified boundary improvement while the section-model helper absorbed the remaining provider workspace draft callback shaping from the page.
+- Fresh verification in this loop reached:
+  - green: `instanceDetailSectionModels.test.tsx`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-109`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another provider workspace request-parse or save-request cluster, or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XXXIX
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderPresentation.ts` now owns the remaining provider dialog presentation-derivation boundary for:
+  - provider dialog model parsing from `modelsText`
+  - provider dialog request-overrides parse-error shaping
+- `InstanceDetail.tsx` now consumes that provider presentation helper boundary instead of keeping inline:
+  - `providerDialogModels`
+  - `providerDialogRequestParseError`
+- The page still explicitly owns:
+  - `providerDialogDraft`
+  - `isProviderDialogOpen`
+  - all `instanceService.*` provider writes
+  - all `toast` dispatch and reload authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawProviderPresentation.test.ts` now verifies the new provider dialog presentation helper directly, including preserved duplicate-model parsing semantics and request-parse error shaping.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route provider dialog presentation derivation through the shared provider presentation helper
+  - the page must not keep inline provider dialog model parsing or request-parse shaping
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this provider dialog presentation extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1647`
+  - `openClawProviderPresentation.ts`: `59`
+  - `instanceDetailSectionModels.ts`: `316`
+  - `openClawProviderWorkspacePresentation.ts`: `101`
+  - `InstanceDetailManagedLlmProvidersSection.tsx`: `24`
+  - `openClawAgentPresentation.ts`: `263`
+  - `openClawAgentMutationSupport.ts`: `135`
+  - `openClawAgentSkillMutationSupport.ts`: `187`
+  - `instanceLifecycleActionSupport.ts`: `26`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `openClawProviderCatalogMutationSupport.ts`: `353`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `InstanceDetailSectionContent.tsx`: `215`
+  - `InstanceDetailManagedMemorySection.tsx`: `87`
+  - `InstanceDetailManagedToolsSection.tsx`: `247`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1648` page baseline from Addendum XXXVIII, the fresh current-worktree re-baseline now measures `InstanceDetail.tsx` at `1647`. This addendum records another verified page-side boundary improvement while the provider presentation helper absorbed the remaining provider dialog presentation derivation.
+- Fresh verification in this loop reached:
+  - green: `openClawProviderPresentation.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-110`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another provider dialog submit-request or save-orchestration cluster, or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XL
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts` now owns the remaining provider mutation build-result dispatch boundary for:
+  - provider config save result dispatch
+  - provider dialog submit result dispatch
+  - provider model submit result dispatch
+  - provider-model delete result dispatch
+  - provider delete result dispatch
+- `InstanceDetail.tsx` now consumes that provider mutation support helper boundary instead of keeping inline:
+  - `skip / error / mutation` branching for `handleSaveProviderConfig(...)`
+  - the same branching for `handleSubmitProviderDialog(...)`
+  - the same branching for `handleSubmitProviderModelDialog(...)`
+  - the same branching for `handleDeleteProviderModel(...)`
+  - the same branching for `handleDeleteProvider(...)`
+- The page still explicitly owns:
+  - `runProviderCatalogMutation(...)`
+  - `toast.error(...)`
+  - all `instanceService.*` provider writes through the injected runner
+  - all `loadWorkbench(...)` authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts` now verifies the new provider mutation build-result dispatch helper directly.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route provider mutation build-result dispatch through the shared provider catalog mutation support helper
+  - the page must keep `toast.error(...)` and the real provider mutation runner injected from the page shell
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this provider mutation build-result dispatch extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1636`
+  - `openClawProviderCatalogMutationSupport.ts`: `367`
+  - `openClawProviderPresentation.ts`: `59`
+  - `instanceDetailSectionModels.ts`: `316`
+  - `openClawProviderWorkspacePresentation.ts`: `101`
+  - `InstanceDetailManagedLlmProvidersSection.tsx`: `24`
+  - `openClawAgentPresentation.ts`: `263`
+  - `openClawAgentMutationSupport.ts`: `135`
+  - `openClawAgentSkillMutationSupport.ts`: `187`
+  - `instanceLifecycleActionSupport.ts`: `26`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `InstanceDetailSectionContent.tsx`: `215`
+  - `InstanceDetailManagedMemorySection.tsx`: `87`
+  - `InstanceDetailManagedToolsSection.tsx`: `247`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1647` page baseline from Addendum XXXIX, the fresh current-worktree re-baseline now measures `InstanceDetail.tsx` at `1636`. This addendum records another verified page-side boundary improvement while the provider catalog mutation support helper absorbed the repeated provider mutation build-result dispatch boilerplate.
+- Fresh verification in this loop reached:
+  - green: `openClawProviderCatalogMutationSupport.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-111`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another provider dialog state-reset input cluster, or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XLI
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts` now also owns the remaining provider page-handler construction boundary for:
+  - provider config save handler construction
+  - provider dialog submit handler construction
+  - provider model submit handler construction
+  - provider delete handler construction
+  - provider-model delete handler construction
+- `InstanceDetail.tsx` now consumes that provider mutation support helper boundary instead of keeping inline:
+  - `handleSaveProviderConfig(...)`
+  - `handleSubmitProviderDialog(...)`
+  - `handleSubmitProviderModelDialog(...)`
+  - `handleDeleteProvider(...)`
+  - `handleDeleteProviderModel(...)`
+- The page still explicitly owns:
+  - `runProviderCatalogMutation(...)`
+  - `toast.error(...)`
+  - all `instanceService.*` provider writes through the injected runner
+  - all `loadWorkbench(...)` authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts` now verifies the new provider handler-construction helper directly, including valid mutation dispatch and invalid translated error reporting.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route provider mutation handlers through the shared provider catalog mutation support helper
+  - the page must keep `toast.error(...)` and the real provider mutation runner injected from the page shell
+  - the helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this provider mutation handler-construction extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1731`
+  - `openClawProviderCatalogMutationSupport.ts`: `486`
+  - `openClawProviderPresentation.ts`: `69`
+  - `instanceDetailSectionModels.ts`: `336`
+  - `openClawProviderWorkspacePresentation.ts`: `111`
+  - `InstanceDetailManagedLlmProvidersSection.tsx`: `26`
+  - `openClawAgentPresentation.ts`: `284`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+- `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1636` page baseline from Addendum XL, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1731`. This addendum records a verified boundary improvement rather than a raw page shrink, because the shared helper now owns the remaining provider handler construction while the worktree has also advanced elsewhere.
+- Fresh verification in this loop reached:
+  - green: `openClawProviderCatalogMutationSupport.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-112`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another provider dialog state-reset input cluster, or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XLII
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderPresentation.ts` now also owns the remaining provider dialog reset-drafts bundle boundary through `createOpenClawProviderDialogResetDrafts()`.
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` now consumes dialog draft setters directly and resets both provider dialogs by calling the shared reset-drafts helper instead of requiring page-owned reset callbacks.
+- `InstanceDetail.tsx` now consumes that reset-drafts helper during instance-switch reset and injects the dialog draft setters directly into `buildLlmProviderDialogStateHandlers(...)`.
+- The page still explicitly owns:
+  - `runProviderCatalogMutation(...)`
+  - `toast.error(...)`
+  - all `instanceService.*` provider writes through the injected runner
+  - all `loadWorkbench(...)` authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `packages/sdkwork-claw-instances/src/services/openClawProviderPresentation.test.ts` now verifies the new reset-drafts helper directly.
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx` now verifies that provider dialog dismiss/reset uses the shared reset-drafts bundle through injected setters.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must inject provider dialog setters into `buildLlmProviderDialogStateHandlers(...)`
+  - the section-model helper must own shared provider dialog reset-draft orchestration
+  - the shared helper must not absorb `instanceService.*`, `toast`, or direct `loadWorkbench(...)` authority
+- The current active hotspot profile after this provider dialog reset-drafts extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1725`
+  - `openClawProviderCatalogMutationSupport.ts`: `486`
+  - `openClawProviderPresentation.ts`: `84`
+  - `instanceDetailSectionModels.ts`: `343`
+  - `openClawProviderWorkspacePresentation.ts`: `111`
+  - `InstanceDetailManagedLlmProvidersSection.tsx`: `26`
+  - `openClawAgentPresentation.ts`: `284`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+- `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1731` page baseline from Addendum XLI, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1725`. This addendum records both a verified boundary improvement and a small page shrink while the shared provider presentation helper absorbed the reset-drafts bundle.
+- Fresh verification in this loop reached:
+  - green: `openClawProviderPresentation.test.ts`, `instanceDetailSectionModels.test.tsx`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-113`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target remaining provider dialog draft initialization or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XLIII
+
+- `InstanceDetail.tsx` no longer depends directly on `createOpenClawProviderCreateDialogState()` or `createOpenClawProviderModelCreateDialogState()` for provider dialog lazy initialization.
+- The page now initializes both provider dialog drafts through `createOpenClawProviderDialogResetDrafts()`, which keeps the initial draft baseline aligned with the shared reset baseline already used by the page and section-model helper.
+- The page still explicitly owns:
+  - all page state containers
+  - `runProviderCatalogMutation(...)`
+  - `toast.error(...)`
+  - all `instanceService.*` provider writes through the injected runner
+  - all `loadWorkbench(...)` authority
+  - Provider Center managed classification, Local Proxy routing, desktop runtime/plugin ownership, and transport/truth-source routing through the existing authoritative layers
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must initialize both provider dialog drafts through the shared reset-drafts helper
+  - the page must not call the lower-level provider create-state factories directly
+- The current active hotspot profile after this provider dialog initial-state extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1720`
+  - `openClawProviderPresentation.ts`: `84`
+  - `instanceDetailSectionModels.ts`: `343`
+  - `openClawProviderCatalogMutationSupport.ts`: `486`
+  - `openClawProviderWorkspacePresentation.ts`: `111`
+  - `InstanceDetailManagedLlmProvidersSection.tsx`: `26`
+  - `openClawAgentPresentation.ts`: `284`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+- `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1725` page baseline from Addendum XLII, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1720`. This addendum records another verified page shrink while the page stopped depending directly on the lower-level provider create-state factories.
+- Fresh verification in this loop reached:
+  - green: `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-114`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target remaining provider dialog launch-state construction or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XLIV
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts` now also owns the remaining managed webFetch draft-state pairing boundary through `createOpenClawWebFetchDraftState(...)`.
+- `InstanceDetail.tsx` now consumes that helper for:
+  - the managed webFetch fallback lazy initializer
+  - the managed webFetch workbench-sync effect that sets both the shared and fallback drafts
+- The page still explicitly owns:
+  - all page state containers
+  - `buildOpenClawWebFetchSaveInput(...)`
+  - `instanceService.saveOpenClawWebFetchConfig(...)`
+  - all `toast.success(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned webFetch error and saving state
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts` now verifies the combined webFetch draft-state helper directly, including preserved null and empty fallback behavior.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route managed webFetch draft-state shaping through `createOpenClawWebFetchDraftState(...)`
+  - the page must not coordinate the lower-level shared and fallback draft factories directly
+- The current active hotspot profile after this managed webFetch draft-state extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1566`
+  - `openClawManagedConfigDrafts.ts`: `467`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `InstanceDetailManagedWebFetchPanel.tsx`: `255`
+  - `InstanceDetailManagedWebSearchPanel.tsx`: `277`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `openClawProviderPresentation.ts`: `84`
+  - `instanceDetailSectionModels.ts`: `343`
+  - `openClawProviderWorkspacePresentation.ts`: `111`
+  - `openClawAgentPresentation.ts`: `284`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Because the dirty worktree already carries adjacent Step 07 edits, this addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than attributing the whole page delta only to the webFetch helper extraction.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedConfigDrafts.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-115`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another managed-config draft-state cluster or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XLV
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts` now also owns the remaining managed webSearch draft-state sync boundary through `createOpenClawWebSearchDraftState(...)`.
+- `InstanceDetail.tsx` now consumes that helper for:
+  - managed webSearch selected-provider fallback derivation
+  - managed webSearch shared draft shaping
+  - managed webSearch provider-draft reset during workbench sync
+- The page still explicitly owns:
+  - all page state containers
+  - `buildOpenClawWebSearchSaveInput(...)`
+  - `instanceService.saveOpenClawWebSearchConfig(...)`
+  - all `toast.success(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned webSearch error, saving state, and post-sync per-provider draft editing
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts` now verifies the combined webSearch draft-state helper directly, including preserved current-provider fallback and empty-state behavior.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route managed webSearch sync shaping through `createOpenClawWebSearchDraftState(...)`
+  - the page must not keep inline provider-selection fallback or direct shared-draft mapping for that sync effect
+- The current active hotspot profile after this managed webSearch draft-state extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1554`
+  - `openClawManagedConfigDrafts.ts`: `499`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `InstanceDetailManagedWebSearchPanel.tsx`: `277`
+  - `InstanceDetailManagedWebFetchPanel.tsx`: `255`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `openClawProviderPresentation.ts`: `84`
+  - `instanceDetailSectionModels.ts`: `343`
+  - `openClawProviderWorkspacePresentation.ts`: `111`
+  - `openClawAgentPresentation.ts`: `284`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1566` page baseline from Addendum XLIV, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1554`. This addendum records another verified page shrink while the shared managed-config helper absorbed the remaining managed webSearch sync shaping.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedConfigDrafts.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-116`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another managed-config draft-state cluster or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XLVI
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts` now also owns the remaining managed webSearch provider selection and provider-draft patch boundary through:
+  - `buildOpenClawWebSearchProviderSelectionState(...)`
+  - `applyOpenClawWebSearchProviderDraftChange(...)`
+- `InstanceDetail.tsx` now consumes those helpers for:
+  - selected managed webSearch provider lookup
+  - selected provider draft fallback construction
+  - managed webSearch provider-draft map updates
+- The page still explicitly owns:
+  - all page state containers
+  - `buildOpenClawWebSearchSaveInput(...)`
+  - `instanceService.saveOpenClawWebSearchConfig(...)`
+  - all `toast.success(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned webSearch error and saving state
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts` now verifies both new helpers directly, including selected-provider draft fallback and the no-provider no-op update case.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route managed webSearch provider selection/draft fallback through `buildOpenClawWebSearchProviderSelectionState(...)`
+  - the page must route managed webSearch provider-draft patching through `applyOpenClawWebSearchProviderDraftChange(...)`
+  - the page must not depend directly on `createOpenClawWebSearchProviderDraft(...)`
+- The current active hotspot profile after this managed webSearch provider helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1557`
+  - `openClawManagedConfigDrafts.ts`: `541`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `InstanceDetailManagedWebSearchPanel.tsx`: `277`
+  - `InstanceDetailManagedWebFetchPanel.tsx`: `255`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `openClawProviderPresentation.ts`: `84`
+  - `instanceDetailSectionModels.ts`: `343`
+  - `openClawProviderWorkspacePresentation.ts`: `111`
+  - `openClawAgentPresentation.ts`: `284`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Because the dirty worktree already carries adjacent Step 07 edits and this loop traded inline page logic for shared helper surface, this addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than claiming a raw page shrink.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedConfigDrafts.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-117`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another managed-config draft-state/update cluster or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XLVII
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts` now also owns the repeated managed-config draft field patching boundary through:
+  - `applyOpenClawNullableDraftFieldChange(...)`
+  - `applyOpenClawDraftFieldChange(...)`
+- `InstanceDetail.tsx` now consumes those helpers for:
+  - webSearch shared draft updates
+  - xSearch draft updates
+  - native Codex webSearch draft updates
+  - webFetch shared draft updates
+  - webFetch fallback draft updates
+  - auth cooldowns draft updates
+  - dreaming draft updates
+- The page still explicitly owns:
+  - all page state containers
+  - all `buildOpenClaw*SaveInput(...)` calls
+  - all `instanceService.saveOpenClaw*Config(...)` write calls
+  - all `toast.success(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned error and saving state across all managed-config surfaces
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts` now verifies both new draft patch helpers directly, including nullable no-op behavior and non-null patch behavior.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the nullable managed-config draft patch handlers through `applyOpenClawNullableDraftFieldChange(...)`
+  - the page must route the webFetch fallback draft patch handler through `applyOpenClawDraftFieldChange(...)`
+  - the page must not keep the repeated inline spread-and-patch lambdas in those handlers
+- The current active hotspot profile after this managed-config draft patch helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1510`
+  - `openClawManagedConfigDrafts.ts`: `562`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `InstanceDetailManagedWebSearchPanel.tsx`: `277`
+  - `InstanceDetailManagedWebFetchPanel.tsx`: `255`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `openClawProviderPresentation.ts`: `84`
+  - `instanceDetailSectionModels.ts`: `343`
+  - `openClawProviderWorkspacePresentation.ts`: `111`
+  - `openClawAgentPresentation.ts`: `284`
+  - `openClawAgentMutationSupport.ts`: `146`
+  - `openClawAgentSkillMutationSupport.ts`: `204`
+  - `instanceLifecycleActionSupport.ts`: `29`
+  - `openClawManagedChannelMutationSupport.ts`: `239`
+  - `InstanceDetailSectionContent.tsx`: `222`
+  - `InstanceDetailManagedMemorySection.tsx`: `93`
+  - `InstanceDetailManagedToolsSection.tsx`: `258`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1557` page baseline from Addendum XLVI, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1510`. This addendum records both a verified boundary improvement and another page shrink while the repeated managed-config draft patch lambdas moved into shared helpers.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedConfigDrafts.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-118`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target managed-config init/reset shaping or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XLVIII
+
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now fully reuses the existing null-aware managed-config draft factories for the remaining page sync effects:
+  - `createOpenClawAuthCooldownsDraft(...)`
+  - `createOpenClawDreamingFormState(...)`
+  - `createOpenClawXSearchDraft(...)`
+  - `createOpenClawWebSearchNativeCodexDraft(...)`
+- The page no longer keeps redundant inline null-guard branches for:
+  - auth cooldowns draft sync
+  - dreaming draft sync
+  - xSearch draft sync
+  - native Codex webSearch draft sync
+- The page still explicitly owns:
+  - all page state containers
+  - all page `set*Error(null)` resets
+  - all `buildOpenClaw*SaveInput(...)` calls
+  - all `instanceService.saveOpenClaw*Config(...)` write calls
+  - all `toast.success(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned error and saving state across all managed-config surfaces
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route those four managed-config sync effects directly through the existing null-aware draft factories
+  - the page must not keep the repeated inline null-guard branches around those sync effects
+- The current active hotspot profile after this managed-config null-aware sync reuse and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1490`
+  - `openClawManagedConfigDrafts.ts`: `562`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `InstanceDetailManagedWebSearchPanel.tsx`: `277`
+  - `InstanceDetailManagedWebFetchPanel.tsx`: `255`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `openClawProviderPresentation.ts`: `71`
+  - `instanceDetailSectionModels.ts`: `323`
+  - `openClawProviderWorkspacePresentation.ts`: `101`
+  - `openClawAgentPresentation.ts`: `263`
+  - `openClawAgentMutationSupport.ts`: `135`
+  - `openClawAgentSkillMutationSupport.ts`: `187`
+  - `instanceLifecycleActionSupport.ts`: `26`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `InstanceDetailSectionContent.tsx`: `215`
+  - `InstanceDetailManagedMemorySection.tsx`: `87`
+  - `InstanceDetailManagedToolsSection.tsx`: `247`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1510` page baseline from Addendum XLVII, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1490`. This addendum records another verified page shrink while the page stopped duplicating null-aware draft sync logic that already lived in shared helpers.
+- Because the dirty worktree already carries adjacent Step 07 edits, this addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than attributing every hotspot delta only to this loop.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-119`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target a managed-config reset bundle or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum XLIX
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts` now also owns the remaining managed-config instance-switch reset baseline through:
+  - `OpenClawManagedConfigResetState`
+  - `createOpenClawManagedConfigResetState(...)`
+- The new reset helper composes the existing null-aware draft factories instead of re-encoding reset values inline:
+  - `createOpenClawWebSearchDraftState({ config: null })`
+  - `createOpenClawXSearchDraft(null)`
+  - `createOpenClawWebSearchNativeCodexDraft(null)`
+  - `createOpenClawWebFetchDraftState(null)`
+  - `createOpenClawAuthCooldownsDraft(null)`
+  - `createOpenClawDreamingFormState(null)`
+- `InstanceDetail.tsx` now consumes that helper for:
+  - managed webSearch reset state during instance switches
+  - xSearch reset state during instance switches
+  - native Codex webSearch reset state during instance switches
+  - managed webFetch reset state during instance switches
+  - auth cooldowns reset state during instance switches
+  - dreaming reset state during instance switches
+- The page still explicitly owns:
+  - all page state containers
+  - all page setter dispatch
+  - all `buildOpenClaw*SaveInput(...)` calls
+  - all `instanceService.saveOpenClaw*Config(...)` write calls
+  - all `toast.success(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned error and saving state across all managed-config surfaces
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the managed-config instance-switch reset cluster through `createOpenClawManagedConfigResetState(...)`
+  - the page must not keep the remaining inline reset baselines for those managed-config surfaces inside the instance-switch effect
+- The current active hotspot profile after this managed-config reset-bundle extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1496`
+  - `openClawManagedConfigDrafts.ts`: `642`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `InstanceDetailManagedWebSearchPanel.tsx`: `277`
+  - `InstanceDetailManagedWebFetchPanel.tsx`: `255`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `openClawProviderPresentation.ts`: `71`
+  - `instanceDetailSectionModels.ts`: `323`
+  - `openClawProviderWorkspacePresentation.ts`: `101`
+  - `openClawAgentPresentation.ts`: `263`
+  - `openClawAgentMutationSupport.ts`: `135`
+  - `openClawAgentSkillMutationSupport.ts`: `187`
+  - `instanceLifecycleActionSupport.ts`: `26`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `InstanceDetailSectionContent.tsx`: `215`
+  - `InstanceDetailManagedMemorySection.tsx`: `87`
+  - `InstanceDetailManagedToolsSection.tsx`: `247`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1490 / 562` baseline from Addendum XLVIII, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1496` and `openClawManagedConfigDrafts.ts` at `642`. This addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than claiming a raw page shrink.
+- This loop also brings managed webFetch reset behavior into the same shared reset bundle during instance switches.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-120`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum L
+
+- `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.ts` now also owns the remaining agent instance-switch reset baseline through:
+  - `OpenClawAgentWorkspaceResetState`
+  - `createOpenClawAgentWorkspaceResetState(...)`
+- The new reset helper composes `createOpenClawAgentCreateDialogState()` and centralizes the page-consumed reset baselines for:
+  - agent dialog visibility
+  - selected agent id
+  - selected agent workbench snapshot
+  - agent workbench error/loading state
+  - agent delete/install/update/remove transient state
+- `InstanceDetail.tsx` now consumes that helper for:
+  - agent dialog reset state during instance switches
+  - selected agent workbench reset state during instance switches
+  - agent skill transient reset state during instance switches
+- The page still explicitly owns:
+  - all page state containers
+  - all page setter dispatch
+  - all real agent CRUD and skill-mutation execution
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned loading/error state
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the agent instance-switch reset cluster through `createOpenClawAgentWorkspaceResetState(...)`
+  - the page must not keep the remaining inline agent reset baselines inside the instance-switch effect
+- The current active hotspot profile after this agent reset-bundle extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1498`
+  - `openClawAgentPresentation.ts`: `289`
+  - `openClawManagedConfigDrafts.ts`: `642`
+  - `openClawManagedConfigMutationSupport.ts`: `36`
+  - `InstanceDetailManagedWebSearchPanel.tsx`: `277`
+  - `InstanceDetailManagedWebFetchPanel.tsx`: `255`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `openClawProviderPresentation.ts`: `71`
+  - `instanceDetailSectionModels.ts`: `323`
+  - `openClawProviderWorkspacePresentation.ts`: `101`
+  - `openClawAgentMutationSupport.ts`: `135`
+  - `openClawAgentSkillMutationSupport.ts`: `187`
+  - `instanceLifecycleActionSupport.ts`: `26`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `InstanceDetailSectionContent.tsx`: `215`
+  - `InstanceDetailManagedMemorySection.tsx`: `87`
+  - `InstanceDetailManagedToolsSection.tsx`: `247`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1496 / 263` baseline from Addendum XLIX, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1498` and `openClawAgentPresentation.ts` at `289`. This addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than claiming a raw page shrink.
+- This loop also brings `removingAgentSkillKeys` into the same shared reset bundle during instance switches.
+- Fresh verification in this loop reached:
+  - green: `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-121`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining provider-side reset cluster or another remaining page-owned orchestration cluster.
+
+## Latest Progress Addendum LI
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderPresentation.ts` now also owns the remaining provider instance-switch reset baseline through:
+  - `OpenClawProviderWorkspaceResetState`
+  - `createOpenClawProviderWorkspaceResetState(...)`
+- The new reset helper composes `createOpenClawProviderDialogResetDrafts()` and centralizes the page-consumed reset baselines for:
+  - provider dialog visibility
+  - provider dialog draft
+  - provider request draft map
+  - provider-model dialog visibility
+  - provider-model dialog draft
+  - provider/provider-model delete transient state
+- `InstanceDetail.tsx` now consumes that helper for:
+  - provider dialog reset state during instance switches
+  - provider request draft reset state during instance switches
+  - provider-model dialog reset state during instance switches
+  - provider/provider-model delete transient reset state during instance switches
+- The page still explicitly owns:
+  - all page state containers
+  - all page setter dispatch
+  - all real provider and provider-model mutation execution
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned loading/error state
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the provider instance-switch reset cluster through `createOpenClawProviderWorkspaceResetState(...)`
+  - the page must not keep the remaining inline provider reset baselines inside the instance-switch effect
+- The current active hotspot profile after this provider reset-bundle extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1637`
+  - `openClawProviderPresentation.ts`: `108`
+  - `openClawAgentPresentation.ts`: `312`
+  - `openClawManagedConfigDrafts.ts`: `713`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `486`
+  - `instanceDetailSectionModels.ts`: `343`
+  - `openClawProviderWorkspacePresentation.ts`: `111`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1498 / 71` baseline from Addendum L, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1637` and `openClawProviderPresentation.ts` at `108`. This addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than claiming a raw page shrink, because the dirty worktree already carries adjacent Step 07 edits beyond this provider reset extraction.
+- Fresh verification in this loop reached:
+  - green: `openClawProviderPresentation.test.ts`, `openClawProviderWorkspacePresentation.test.ts`, `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-122`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another small page-owned orchestration cluster, especially the remaining workbench file/memory loading reset pair or another effect-owned transient bundle.
+
+## Latest Progress Addendum LII
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts` now also owns the remaining provider workspace collection sync-state shaping through:
+  - `BuildOpenClawProviderWorkspaceSyncStateInput`
+  - `OpenClawProviderWorkspaceSyncState`
+  - `buildOpenClawProviderWorkspaceSyncState(...)`
+- The new sync helper centralizes the page-consumed provider collection change baselines for:
+  - selected provider fallback resolution via `resolveSelectedProviderId`
+  - provider config draft reset map shaping
+  - provider request draft reset map shaping
+- `InstanceDetail.tsx` now consumes that helper for:
+  - provider selection fallback during provider collection changes
+  - provider config draft reset state during provider collection changes
+  - provider request draft reset state during provider collection changes
+- The page still explicitly owns:
+  - all page state containers
+  - all page setter dispatch
+  - all real provider and provider-model mutation execution
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned loading/error state
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the provider workspace sync cluster through `buildOpenClawProviderWorkspaceSyncState(...)`
+  - the page must not keep the remaining inline empty-state branch, provider fallback selection logic, or raw draft reset maps inside the `workbench?.llmProviders` effect
+- The current active hotspot profile after this provider workspace sync-state extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1632`
+  - `openClawProviderWorkspacePresentation.ts`: `142`
+  - `openClawProviderPresentation.ts`: `108`
+  - `openClawAgentPresentation.ts`: `312`
+  - `openClawManagedConfigDrafts.ts`: `713`
+  - `openClawManagedConfigMutationSupport.ts`: `39`
+  - `openClawProviderCatalogMutationSupport.ts`: `486`
+  - `instanceDetailSectionModels.ts`: `343`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Relative to the immediately prior `1637 / 111` baseline from Addendum LI, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1632` and `openClawProviderWorkspacePresentation.ts` at `142`. This addendum records both a verified boundary improvement and a small page shrink while the provider workspace sync-state logic moved out of the page.
+- Fresh verification in this loop reached:
+  - green: `openClawProviderWorkspacePresentation.test.ts`, `openClawProviderPresentation.test.ts`, `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-123`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the managed-channel sync effect or another remaining transient/reset cluster.
+
+## Latest Progress Addendum LIII
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.ts` now owns the remaining managed-channel workspace collection sync-state shaping through:
+  - `BuildOpenClawManagedChannelWorkspaceSyncStateInput`
+  - `OpenClawManagedChannelWorkspaceSyncState`
+  - `buildOpenClawManagedChannelWorkspaceSyncState(...)`
+- The new sync helper centralizes the page-consumed managed-channel collection change baselines for:
+  - selected managed-channel validity resolution via `resolveSelectedManagedChannelId`
+  - managed-channel draft reset-map shaping
+  - managed-channel error reset shaping
+- `packages/sdkwork-claw-instances/src/services/index.ts` now exports the helper through the public service barrel so consumers continue to stay on package-root boundaries.
+- `InstanceDetail.tsx` now consumes that helper for:
+  - managed-channel selection validity updates during managed-channel collection changes
+  - managed-channel draft reset state during managed-channel collection changes
+  - managed-channel error reset state during managed-channel collection changes
+- The page still explicitly owns:
+  - all page state containers
+  - all page setter dispatch
+  - all real managed-channel mutation execution
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned saving/error state outside the collection-sync helper
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the managed-channel workspace sync cluster through `buildOpenClawManagedChannelWorkspaceSyncState(...)`
+  - the page must not keep the remaining inline empty-state branch, managed-channel selection validity check, or raw draft/error reset baselines inside the `workbench?.managedChannels` effect
+- The current active hotspot profile after this managed-channel workspace sync-state extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1494`
+  - `openClawManagedChannelPresentation.ts`: `24`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `openClawProviderWorkspacePresentation.ts`: `127`
+  - `openClawProviderPresentation.ts`: `93`
+  - `openClawAgentPresentation.ts`: `289`
+  - `openClawManagedConfigDrafts.ts`: `642`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `instanceDetailSectionModels.ts`: `323`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Because the dirty worktree already carries adjacent Step 07 edits, this addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than attributing every hotspot delta only to this extraction.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedChannelPresentation.test.ts`, `openClawManagedChannelMutationSupport.test.ts`, `openClawProviderWorkspacePresentation.test.ts`, `openClawProviderPresentation.test.ts`, `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-124`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining workbench file/memory loading reset pair or another small transient/reset cluster.
+
+## Latest Progress Addendum LIV
+
+- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchHydration.ts` now also owns the remaining workbench lazy-loading reset baselines through:
+  - `InstanceWorkbenchHydrationResetState`
+  - `createInstanceWorkbenchHydrationResetState(...)`
+- The new reset helper centralizes the page-consumed hydration reset baselines for:
+  - file lazy-load loading-state reset during instance switches
+  - memory lazy-load loading-state reset during instance switches
+- `InstanceDetail.tsx` now consumes that helper for:
+  - workbench files loading reset during instance switches
+  - workbench memory loading reset during instance switches
+- The page still explicitly owns:
+  - all page state containers
+  - all page setter dispatch
+  - actual lazy-load effect execution for files and memory
+  - cancellation guards for the async lazy-load effects
+  - `instanceWorkbenchService.listInstanceFiles(...)`
+  - `instanceWorkbenchService.listInstanceMemories(...)`
+  - merge application into the current workbench snapshot
+  - all `loadWorkbench(...)` authority
+  - page-owned logging and failure handling
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the workbench hydration reset pair through `createInstanceWorkbenchHydrationResetState(...)`
+  - the page must not keep the remaining inline `false` resets for workbench file and memory loading inside the instance-switch effect
+- The current active hotspot profile after this hydration reset extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1496`
+  - `instanceWorkbenchHydration.ts`: `101`
+  - `openClawManagedChannelPresentation.ts`: `24`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `openClawProviderWorkspacePresentation.ts`: `127`
+  - `openClawProviderPresentation.ts`: `93`
+  - `openClawAgentPresentation.ts`: `289`
+  - `openClawManagedConfigDrafts.ts`: `642`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `instanceDetailSectionModels.ts`: `323`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Because the dirty worktree already carries adjacent Step 07 edits, this addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than attributing every hotspot delta only to this extraction.
+- Fresh verification in this loop reached:
+  - green: `instanceWorkbenchHydration.test.ts`, `openClawManagedChannelPresentation.test.ts`, `openClawManagedChannelMutationSupport.test.ts`, `openClawProviderWorkspacePresentation.test.ts`, `openClawProviderPresentation.test.ts`, `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-125`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining managed-channel selection/draft derivation cluster or another small transient/reset bundle.
+
+## Latest Progress Addendum LV
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.ts` now also owns the remaining managed-channel selection-state derivation through:
+  - `BuildOpenClawManagedChannelSelectionStateInput`
+  - `OpenClawManagedChannelSelectionState`
+  - `buildOpenClawManagedChannelSelectionState(...)`
+- The new selection helper centralizes the page-consumed managed-channel selection baselines for:
+  - selected managed-channel lookup by id
+  - explicit draft fallback when page-managed draft state exists
+  - fallback to the current channel values when no explicit draft exists
+- `InstanceDetail.tsx` now consumes that helper for:
+  - selected managed-channel lookup
+  - selected managed-channel draft fallback
+- The page still explicitly owns:
+  - all page state containers
+  - all page setter dispatch
+  - all real managed-channel mutation execution
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned saving/error state outside the shared presentation helper
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the managed-channel selection cluster through `buildOpenClawManagedChannelSelectionState(...)`
+  - the page must not keep the remaining inline `selectedManagedChannel` `useMemo(...)` or raw draft fallback derivation in `InstanceDetail.tsx`
+- The current active hotspot profile after this managed-channel selection-state extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1500`
+  - `openClawManagedChannelPresentation.ts`: `48`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `openClawProviderWorkspacePresentation.ts`: `127`
+  - `openClawProviderPresentation.ts`: `93`
+  - `openClawAgentPresentation.ts`: `289`
+  - `openClawManagedConfigDrafts.ts`: `642`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `instanceDetailSectionModels.ts`: `323`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Because the dirty worktree already carries adjacent Step 07 edits, this addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than attributing every hotspot delta only to this extraction.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedChannelPresentation.test.ts`, `openClawManagedChannelMutationSupport.test.ts`, `instanceWorkbenchHydration.test.ts`, `openClawProviderWorkspacePresentation.test.ts`, `openClawProviderPresentation.test.ts`, `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-126`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining managed-channel workspace projection cluster or the inline managed-channel lookup inside `onToggleManagedChannel`.
+
+## Latest Progress Addendum LVI
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.ts` now also owns the remaining managed-channel workspace projection through:
+  - `BuildOpenClawManagedChannelWorkspaceItemsInput`
+  - `buildOpenClawManagedChannelWorkspaceItems(...)`
+- The new workspace projection helper centralizes the page-consumed managed-channel workspace shaping for:
+  - runtime channel metadata fallback
+  - explicit draft fallback over managed-channel values
+  - configured field counting
+  - derived `connected` / `disconnected` / `not_configured` status shaping
+  - cloned setup steps, fields, and values for the workspace surface
+- `InstanceDetail.tsx` now consumes that helper for:
+  - `managedChannelWorkspaceItems`
+- The page still explicitly owns:
+  - all page state containers
+  - all page setter dispatch
+  - all real managed-channel mutation execution
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - the final inline managed-channel lookup inside `onToggleManagedChannel`
+  - page-owned saving/error state outside the shared presentation helper
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the managed-channel workspace projection through `buildOpenClawManagedChannelWorkspaceItems(...)`
+  - the page must not keep the inline configured-field counting or derived status shaping inside `InstanceDetail.tsx`
+- The current active hotspot profile after this managed-channel workspace projection extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1473`
+  - `openClawManagedChannelPresentation.ts`: `93`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `openClawProviderWorkspacePresentation.ts`: `127`
+  - `openClawProviderPresentation.ts`: `93`
+  - `openClawAgentPresentation.ts`: `289`
+  - `openClawManagedConfigDrafts.ts`: `642`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `instanceDetailSectionModels.ts`: `323`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Because the dirty worktree already carries adjacent Step 07 edits, this addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than attributing every hotspot delta only to this extraction.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedChannelPresentation.test.ts`, `openClawManagedChannelMutationSupport.test.ts`, `instanceWorkbenchHydration.test.ts`, `openClawProviderWorkspacePresentation.test.ts`, `openClawProviderPresentation.test.ts`, `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-127`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the inline managed-channel lookup inside `onToggleManagedChannel` or another small transient/reset bundle.
+
+## Latest Progress Addendum LVII
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.ts` now also owns the remaining null-safe managed-channel lookup used by page-side action targeting through:
+  - `findOpenClawManagedChannelById(...)`
+- The new lookup helper centralizes the page-consumed managed-channel target resolution for:
+  - matching a managed channel by id
+  - null-safe fallback for missing ids and empty collections
+- `buildOpenClawManagedChannelSelectionState(...)` now also reuses that lookup helper instead of repeating its own inline `find(...)`.
+- `InstanceDetail.tsx` now consumes that helper for:
+  - the `onToggleManagedChannel` target lookup before the page-owned `handleToggleManagedChannel(...)` mutation runner executes
+- The page still explicitly owns:
+  - all page state containers
+  - all page setter dispatch
+  - all real managed-channel mutation execution
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned saving/error state outside the shared presentation helper
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the managed-channel toggle target lookup through `findOpenClawManagedChannelById(...)`
+  - the page must not keep the inline `managedChannels.find(...)` lookup inside `onToggleManagedChannel`
+- The current active hotspot profile after this managed-channel toggle target lookup extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1474`
+  - `openClawManagedChannelPresentation.ts`: `103`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `openClawProviderWorkspacePresentation.ts`: `127`
+  - `openClawProviderPresentation.ts`: `93`
+  - `openClawAgentPresentation.ts`: `289`
+  - `openClawManagedConfigDrafts.ts`: `642`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `instanceDetailSectionModels.ts`: `323`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Because the dirty worktree already carries adjacent Step 07 edits, this addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than attributing every hotspot delta only to this extraction.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedChannelPresentation.test.ts`, `openClawManagedChannelMutationSupport.test.ts`, `instanceWorkbenchHydration.test.ts`, `openClawProviderWorkspacePresentation.test.ts`, `openClawProviderPresentation.test.ts`, `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-128`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the readonly channel projection cluster or another small pure projection bundle.
+
+## Latest Progress Addendum LVIII
+
+- `packages/sdkwork-claw-instances/src/services/openClawChannelPresentation.ts` now owns the readonly channel workspace projection through:
+  - `buildReadonlyChannelWorkspaceItems(...)`
+- The new helper centralizes the page-consumed readonly channel workspace shaping for:
+  - cloned setup-step arrays
+  - empty editable `fields`
+  - empty editable `values`
+  - null-safe fallback when no runtime channel collection exists
+- `packages/sdkwork-claw-instances/src/services/index.ts` now exports the helper through the public service barrel so consumers continue to stay on package-root boundaries.
+- `InstanceDetail.tsx` now consumes that helper for:
+  - `readonlyChannelWorkspaceItems`
+- The page no longer keeps:
+  - the intermediate `readonlyChannelCatalogItems` projection
+  - the inline readonly workspace-item map that cleared `fields` and `values`
+- The page still explicitly owns:
+  - all page state containers
+  - all page setter dispatch
+  - all real managed-channel mutation execution
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly/truth-source routing
+  - page-owned saving/error state outside the shared presentation helpers
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the readonly channel workspace projection through `buildReadonlyChannelWorkspaceItems(...)`
+  - the page must not keep the intermediate `readonlyChannelCatalogItems` projection or the inline readonly workspace-item map
+- The current active hotspot profile after this readonly channel workspace projection extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1460`
+  - `openClawChannelPresentation.ts`: `12`
+  - `openClawManagedChannelPresentation.ts`: `103`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `openClawProviderWorkspacePresentation.ts`: `127`
+  - `openClawProviderPresentation.ts`: `93`
+  - `openClawAgentPresentation.ts`: `289`
+  - `openClawManagedConfigDrafts.ts`: `642`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `instanceDetailSectionModels.ts`: `323`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1474` page baseline, this loop produces a real page-size drop while preserving page authority boundaries.
+- Fresh verification in this loop reached:
+  - green: `openClawChannelPresentation.test.ts`, `openClawManagedChannelPresentation.test.ts`, `openClawManagedChannelMutationSupport.test.ts`, `instanceWorkbenchHydration.test.ts`, `openClawProviderWorkspacePresentation.test.ts`, `openClawProviderPresentation.test.ts`, `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-129`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target `availableAgentModelOptions` or another small pure projection bundle.
+
+## Latest Progress Addendum LIX
+
+- `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.ts` now also owns the remaining agent model option projection through:
+  - `buildOpenClawAgentModelOptions(...)`
+- The new helper centralizes the page-consumed agent dialog model option shaping for:
+  - legacy provider id normalization
+  - null-safe provider/model iteration
+  - duplicate model-ref suppression
+  - final `{ value, label }[]` option shaping for the agent editor
+- `InstanceDetail.tsx` now consumes that helper for:
+  - `availableAgentModelOptions`
+- The page still explicitly owns:
+  - all page state containers
+  - all page setter dispatch
+  - all real agent mutation execution
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - page-owned dialog visibility and saving flags
+  - truth-source routing and readonly/writable decisions
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route the agent model option projection through `buildOpenClawAgentModelOptions(...)`
+  - the page must not keep the inline `availableAgentModelOptions` `Map`/normalization projection inside `InstanceDetail.tsx`
+- The current active hotspot profile after this agent model option extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1444`
+  - `openClawAgentPresentation.ts`: `324`
+  - `openClawChannelPresentation.ts`: `12`
+  - `openClawManagedChannelPresentation.ts`: `103`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `openClawProviderWorkspacePresentation.ts`: `127`
+  - `openClawProviderPresentation.ts`: `93`
+  - `openClawManagedConfigDrafts.ts`: `642`
+  - `openClawProviderCatalogMutationSupport.ts`: `461`
+  - `instanceDetailSectionModels.ts`: `323`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Relative to the immediately prior `1460` page baseline, this loop produces another real page-size drop while preserving page authority boundaries.
+- Fresh verification in this loop reached:
+  - green: `openClawChannelPresentation.test.ts`, `openClawManagedChannelPresentation.test.ts`, `openClawManagedChannelMutationSupport.test.ts`, `instanceWorkbenchHydration.test.ts`, `openClawProviderWorkspacePresentation.test.ts`, `openClawProviderPresentation.test.ts`, `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, `pnpm build`, and the `releases.json` latest-tag parse check for `release-2026-04-09-130`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target another small pure projection/reset bundle or move into section-level lazy split design.
+
+## Latest Progress Addendum LX
+
+- `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.tsx` now also owns section-router lazy composition for the two heaviest route-owned panels through:
+  - `LazyInstanceDetailFilesSection`
+  - `LazyInstanceConfigWorkbenchPanel`
+  - `React.Suspense` router fallback presentation
+- The section router no longer statically imports:
+  - `InstanceDetailFilesSection.tsx`
+  - `InstanceConfigWorkbenchPanel.tsx`
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more architecture boundary:
+  - the section router must lazy-load the heavy `files` and `config` sections through `React.lazy(...)`
+  - the router must not drift back to static imports for those panels
+- The current active hotspot profile after this router-side lazy split and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1444`
+  - `InstanceDetailSectionContent.tsx`: `232`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-CO9QGjPk.js`: `179.55 kB`
+  - `InstanceConfigWorkbenchPanel-BoVtLBcy.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-BEBOjm48.js`: `2.38 kB`
+- Relative to the immediately prior `InstanceDetail` chunk baseline of about `262.56 kB`, the main route chunk is materially smaller while the heavy sections now split into dedicated async assets.
+- The router split does not change page authority:
+  - `InstanceDetail.tsx` still owns all write-path execution, `toast`, `loadWorkbench(...)`, truth-source routing, and transient page state
+  - `files` and `config` still keep their existing internal behavior after they hydrate
+- Fresh verification in this loop reached:
+  - green: `InstanceDetailSectionContent.test.tsx`, `openClawChannelPresentation.test.ts`, `openClawManagedChannelPresentation.test.ts`, `openClawManagedChannelMutationSupport.test.ts`, `instanceWorkbenchHydration.test.ts`, `openClawProviderWorkspacePresentation.test.ts`, `openClawProviderPresentation.test.ts`, `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, and `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should return to page-side pure projection/reset bundles so the page hotspot keeps shrinking while the new lazy boundary stays stable.
+
+## Latest Progress Addendum LXI
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailDerivedState.ts` now owns the remaining page-facing pure derived presentation cluster through:
+  - `buildInstanceDetailDerivedState(...)`
+- The new helper centralizes the page-consumed read-side shaping for:
+  - OpenClaw config writability and lifecycle action booleans
+  - Provider Center readonly/catalog capability state
+  - management summary and memory workbench presentation
+  - provider selection state
+  - managed-channel selection state
+  - managed web-search provider selection state
+  - provider dialog presentation
+  - agent model option projection
+  - readonly and managed channel workspace projection
+- `InstanceDetail.tsx` now consumes that helper for the full cluster above while keeping:
+  - all page state containers
+  - all page setter dispatch
+  - all real mutation execution
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - truth-source routing and readonly/writable decisions
+- `scripts/sdkwork-instances-contract.test.ts` now enforces two more page-side architecture boundaries:
+  - the `configWritable` ownership contract must point at `instanceDetailDerivedState.ts`
+  - `handleOpenOpenClawConsole(...)` must read `detail?.consoleAccess` instead of a removed local variable
+- Fresh verification in this loop also exposed a real regression rather than a contract-only drift:
+  - `pnpm --filter @sdkwork/claw-web lint` failed because `handleOpenOpenClawConsole(...)` still referenced the removed `consoleAccess`
+  - the page now reads `detail?.consoleAccess` directly, preserving the detail truth source while `canOpenOpenClawConsole` remains helper-owned
+- The current active hotspot profile after this derived-state extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1527`
+  - `instanceDetailDerivedState.ts`: `200`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-Cas29TB5.js`: `175.16 kB`
+  - `InstanceConfigWorkbenchPanel-CnJPMEfq.js`: `61.84 kB`
+  - `InstanceDetailFilesSection-ByFS8voq.js`: `2.33 kB`
+- Because the dirty worktree already carries adjacent Step 07 edits, this addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than claiming a direct page-size drop from the immediately prior note.
+- Fresh verification in this loop reached:
+  - green: `instanceDetailDerivedState.test.ts`, `openClawChannelPresentation.test.ts`, `openClawManagedChannelPresentation.test.ts`, `openClawManagedChannelMutationSupport.test.ts`, `instanceWorkbenchHydration.test.ts`, `openClawProviderWorkspacePresentation.test.ts`, `openClawProviderPresentation.test.ts`, `openClawAgentPresentation.test.ts`, `openClawManagedConfigDrafts.test.ts`, `instanceMemoryWorkbenchPresentation.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, and `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining transient or presentation bundles without moving write-path authority out of the page shell.
+
+## Latest Progress Addendum LXII
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts` now also owns the repeated managed-channel mutation dependency bundle through:
+  - `CreateOpenClawManagedChannelMutationRunnerArgs`
+  - `createOpenClawManagedChannelMutationRunner(...)`
+- `InstanceDetail.tsx` now constructs one shared `runManagedChannelMutation` and routes:
+  - `handleToggleManagedChannel(...)`
+  - `handleSaveManagedChannel(...)`
+  - `handleDeleteManagedChannelConfiguration(...)`
+  through that runner instead of repeating the same inline `runOpenClawManagedChannelMutation(...)` dependency object three times.
+- The page still explicitly owns:
+  - all real `instanceService.saveOpenClawChannelConfig(...)`
+  - all real `instanceService.setOpenClawChannelEnabled(...)`
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - delete follow-up draft reset and selection cleanup
+  - readonly and truth-source routing
+- Fresh verification in this loop exposed one real regression instead of a contract-only drift:
+  - the delete wrapper initially read `baseRequest.mutationPlan.emptyValues` without stable narrowing
+  - `pnpm --filter @sdkwork/claw-web lint` failed
+  - the page now captures `emptyValues` inside the narrowed `deleteConfig` branch before building the follow-up callback
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must construct one shared managed-channel mutation runner
+  - the three managed-channel handlers must not drift back to repeated inline save/toggle/reload/toast dependency bundles
+- The current active hotspot profile after this runner extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1504`
+  - `openClawManagedChannelMutationSupport.ts`: `275`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-Dwuvrazg.js`: `178.64 kB`
+  - `InstanceConfigWorkbenchPanel-DOJc8SB6.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-CuOu19Fl.js`: `2.38 kB`
+- Because the dirty worktree already carries adjacent Step 07 edits, this addendum records a verified boundary improvement and a fresh current-worktree re-baseline rather than claiming a pure size win from the runner extraction alone.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedChannelMutationSupport.test.ts`, `pnpm check:sdkwork-instances`, `pnpm --filter @sdkwork/claw-web lint`, and `pnpm build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining async hydration or managed-config orchestration clusters without moving write authority out of the page shell.
+
+## Latest Progress Addendum LXIII
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.ts` now also owns the remaining managed-config save handler construction cluster through:
+  - `BuildOpenClawManagedConfigMutationHandlersArgs`
+  - `buildOpenClawManagedConfigMutationHandlers(...)`
+- `InstanceDetail.tsx` now constructs one shared `managedConfigMutationHandlers` bundle and routes:
+  - webSearch save
+  - xSearch save
+  - native Codex web search save
+  - webFetch save
+  - auth cooldowns save
+  - dreaming save
+  through that builder instead of keeping six page-local save handlers inline.
+- The page still explicitly owns:
+  - all page state containers
+  - all draft-change handlers
+  - all real `instanceService.saveOpenClaw*Config(...)` callbacks
+  - all `toast.success(...)` through the page-owned `runManagedConfigSave(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly and truth-source routing
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route managed-config save handler construction through `buildOpenClawManagedConfigMutationHandlers(...)`
+  - the page must inject the real `instanceService.saveOpenClaw*Config(...)` callbacks from the shell
+  - the six inline managed-config save handlers must not drift back into `InstanceDetail.tsx`
+- The current active hotspot profile after this managed-config handler-builder extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1416`
+  - `openClawManagedConfigMutationSupport.ts`: `338`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-CiQXJyxQ.js`: `177.52 kB`
+  - `InstanceConfigWorkbenchPanel-z1ow0i3W.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-BLTjOn7c.js`: `2.38 kB`
+- Relative to the immediately prior `1504` page baseline from Addendum LXII, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1416`. This addendum records another verified page shrink while the managed-config request-shaping cluster moved into the shared helper.
+- Fresh verification in this loop reached:
+  - green: `openClawManagedConfigMutationSupport.test.ts`, `scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining transient or navigation bundles without moving write authority out of the page shell.
+
+## Latest Progress Addendum LXIV
+
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` now also owns the remaining managed memory / tools section prop assembly through:
+  - `BuildManagedMemorySectionPropsInput`
+  - `BuildManagedToolsSectionPropsInput`
+  - `buildManagedMemorySectionProps(...)`
+  - `buildManagedToolsSectionProps(...)`
+- `InstanceDetail.tsx` now constructs one shared `renderWorkbenchSectionAvailability(...)` bridge and routes:
+  - the `llmProviders` availability notice
+  - the managed memory section props
+  - the managed tools section props
+  through the shared section-model helper instead of keeping the `memory` / `tools` fallback-key and prop literals inline.
+- The page still explicitly owns:
+  - all page state and draft containers
+  - all real `instanceService.saveOpenClaw*Config(...)` callbacks
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly gating and truth-source routing
+  - navigation and dialog ownership
+- `scripts/sdkwork-instances-contract.test.ts` now enforces one more page-side architecture boundary:
+  - the page must route managed memory / tools prop assembly through `buildManagedMemorySectionProps(...)` and `buildManagedToolsSectionProps(...)`
+  - the `memory` / `tools` fallback keys must not drift back into `InstanceDetail.tsx`
+- The current active hotspot profile after this prop-builder extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1414`
+  - `instanceDetailSectionModels.ts`: `388`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-zJw2KVxb.js`: `177.56 kB`
+  - `InstanceConfigWorkbenchPanel-B6hfgQIq.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-DjP3j9kO.js`: `2.38 kB`
+- Relative to the immediately prior `1416` page baseline from Addendum LXIII, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1414`. This addendum records another verified page-side reduction while keeping write authority in the page shell.
+- Fresh verification in this loop reached:
+  - green: `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: direct execution of `instanceDetailSectionModels.test.tsx` remains blocked in this sandbox by `pnpm.cmd exec tsx ...` returning `spawn EPERM`, although the new test coverage was typechecked by the web lint pass
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining tail content composition nodes without moving mutation authority out of the page shell.
+
+## Latest Progress Addendum LXV
+
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` now also owns the remaining page-tail section content composition through:
+  - `buildAgentSectionContent(...)`
+  - `buildLlmProvidersSectionContent(...)`
+  - `buildTasksSectionContent(...)`
+- `InstanceDetail.tsx` now routes:
+  - `agentSectionContent`
+  - `llmProvidersSectionContent`
+  - `tasksSectionContent`
+  through those shared builders instead of keeping the direct component wrappers inline.
+- The page no longer imports:
+  - `CronTasksManager`
+  - `InstanceDetailAgentsSection`
+  - `InstanceDetailManagedLlmProvidersSection`
+  directly for those three section tails.
+- `BuildTasksSectionContentInput` now accepts `InstanceWorkbenchSnapshot | null`, which repairs the follow-up typing drift exposed by web lint after the page was rewired to pass the full `workbench` truth source.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces the new boundary consistently:
+  - the page must reference `buildAgentSectionContent(...)`
+  - the page must reference `buildLlmProvidersSectionContent(...)`
+  - the page must reference `buildTasksSectionContent(...)`
+  - direct ownership evidence for `CronTasksManager`, `InstanceDetailManagedLlmProvidersSection`, and `InstanceDetailAgentsSection` must live in `instanceDetailSectionModels.ts`
+- The page still explicitly owns:
+  - all page state containers and draft stores
+  - all real `instanceService.*` write callbacks
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly gating, truth-source routing, navigation, and dialog ownership
+- The current active hotspot profile after this page-tail content-builder extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1408`
+  - `instanceDetailSectionModels.ts`: `435`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-CU1YTAaV.js`: `177.80 kB`
+  - `InstanceConfigWorkbenchPanel-8Iev9096.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-DMukTGq0.js`: `2.38 kB`
+- Relative to the immediately prior `1414` page baseline from Addendum LXIV, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1408`. This addendum records another verified page-side reduction while moving one more pure content-composition cluster into the shared helper.
+- Fresh verification in this loop reached:
+  - green: `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: direct execution of `instanceDetailSectionModels.test.tsx` remains blocked in this sandbox by `pnpm.cmd exec tsx ...` returning `spawn EPERM`, although the helper coverage remains typechecked by the web lint pass
+- `Step 07 / CP07-3` remains in progress. The next decomposition candidates should stay page-side and target the remaining managed memory / tools section content wrappers without moving mutation authority out of the page shell.
+
+## Latest Progress Addendum LXVI
+
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` now also owns the remaining managed memory / tools section content composition through:
+  - `buildManagedMemorySectionContent(...)`
+  - `buildManagedToolsSectionContent(...)`
+- `InstanceDetail.tsx` now routes:
+  - `memorySectionContent`
+  - `toolsSectionContent`
+  through those shared builders instead of rendering `InstanceDetailManagedMemorySection` and `InstanceDetailManagedToolsSection` directly in the page shell.
+- `instanceDetailSectionModels.test.tsx` now contains focused helper coverage for the two new builders, preserving direct evidence that the section-model layer transparently passes managed section props through to the corresponding components.
+- `scripts/sdkwork-instances-contract.test.ts` now enforces the updated boundary:
+  - the page must reference `buildManagedMemorySectionContent(...)`
+  - the page must reference `buildManagedToolsSectionContent(...)`
+  - direct ownership evidence for `InstanceDetailManagedMemorySection` and `InstanceDetailManagedToolsSection` must live in `instanceDetailSectionModels.ts`
+- The page still explicitly owns:
+  - all page state containers and draft stores
+  - all real `instanceService.saveOpenClaw*Config(...)` callbacks
+  - all `toast.success(...)` / `toast.error(...)`
+  - all `loadWorkbench(...)` authority
+  - readonly gating, truth-source routing, navigation, and dialog ownership
+- The current active hotspot profile after this managed memory / tools content-builder extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1408`
+  - `instanceDetailSectionModels.ts`: `457`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-2G0EP9cl.js`: `177.93 kB`
+  - `InstanceConfigWorkbenchPanel-BynCO4E3.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-DQ1yuoCn.js`: `2.38 kB`
+- Relative to the immediately prior `1408` page baseline from Addendum LXV, this loop keeps the page hotspot flat while finishing the remaining managed memory / tools content-wrapper extraction. The page-tail composition cluster is now effectively exhausted.
+- Fresh verification in this loop reached:
+  - green: `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: direct execution of `instanceDetailSectionModels.test.tsx` remains blocked in this sandbox by `pnpm.cmd exec tsx ...` returning `spawn EPERM`, although the helper coverage remains typechecked by the web lint pass
+- `Step 07 / CP07-3` remains in progress. The next move should return to a fresh gap audit and select the next highest-value pure page-side or service-side bundle rather than continuing the now-exhausted section-tail extraction pattern mechanically.
+
+## Latest Progress Addendum LXVII
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailResetState.ts` now owns the shared instance-switch reset bridge through `applyInstanceDetailInstanceSwitchResetState(...)`.
+- `InstanceDetail.tsx` now routes the `[id]` reset effect through that helper instead of directly:
+  - creating the provider workspace reset baseline
+  - creating the managed-config reset baseline
+  - creating the agent workspace reset baseline
+  - creating the lazy hydration reset baseline
+  - fanning those values into a long sequence of inline setter calls
+- The new helper stays within the approved boundary:
+  - it only reads shared reset baselines
+  - it only applies those baselines through page-owned setter callbacks
+  - it does not own `instanceService`, `toast`, navigation, reload policy, or truth-source routing
+- `packages/sdkwork-claw-instances/src/services/instanceDetailResetState.test.ts` now provides direct coverage that the helper routes all four reset bundles through injected setter ownership.
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must call `applyInstanceDetailInstanceSwitchResetState({...})`
+  - the page must pass setter ownership into the helper
+  - the helper must own the shared reset-state application bridge
+- The current active hotspot profile after this instance-switch reset-applier extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1401`
+  - `instanceDetailResetState.ts`: `113`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-kG1tjTB4.js`: `177.92 kB`
+  - `InstanceConfigWorkbenchPanel-BVEHLPYn.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-CZuj3pDg.js`: `2.38 kB`
+- Relative to the immediately prior `1408` page baseline from Addendum LXVI, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1401`. This addendum records another verified page-side reduction while moving the reset-setter bridge into a dedicated helper.
+- Fresh verification in this loop reached:
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailResetState.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should continue the gap audit against the remaining page-side state orchestration hotspots rather than revisiting the now-extracted reset fan-out.
+
+## Latest Progress Addendum LXVIII
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailManagedConfigSyncState.ts` now owns the shared managed-config sync bridge through:
+  - `applyInstanceDetailManagedWebSearchSyncState(...)`
+  - `applyInstanceDetailManagedAuthCooldownsSyncState(...)`
+  - `applyInstanceDetailManagedDreamingSyncState(...)`
+  - `applyInstanceDetailManagedXSearchSyncState(...)`
+  - `applyInstanceDetailManagedWebSearchNativeCodexSyncState(...)`
+  - `applyInstanceDetailManagedWebFetchSyncState(...)`
+- `InstanceDetail.tsx` now routes the six existing managed-config sync effects through those helpers instead of directly:
+  - deriving draft state from the shared factories inline
+  - fanning draft results into page-owned setters inline
+  - clearing page-owned error state inline
+- The new helper stays within the approved boundary:
+  - it only reads shared draft factories
+  - it only applies the derived draft state through page-owned setter callbacks
+  - it only clears the corresponding page-owned error state
+  - it does not own `instanceService`, `toast`, navigation, reload policy, or truth-source routing
+- `packages/sdkwork-claw-instances/src/services/instanceDetailManagedConfigSyncState.test.ts` now provides focused direct coverage that all six managed-config sync appliers route shared draft state through injected setter ownership.
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must call the six managed-config sync appliers
+  - the page must pass setter ownership into those helpers
+  - the managed `webFetch` sync effect must not recreate `createOpenClawWebFetchDraftState(...)` inline
+  - the page may still keep the valid `webFetch` initial-state baseline from `createOpenClawWebFetchDraftState(null).fallbackDraft`
+- The current active hotspot profile after this managed-config sync-applier extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1297`
+  - `instanceDetailManagedConfigSyncState.ts`: `106`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-DVHUn05d.js`: `178.17 kB`
+  - `InstanceConfigWorkbenchPanel-3yxDTn4F.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-DcVlwd9r.js`: `2.38 kB`
+- Relative to the immediately prior `1401` page baseline from Addendum LXVII, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1297`. This addendum records another verified page-side reduction while moving the remaining managed-config sync setter bridges into a dedicated helper.
+- Fresh verification in this loop reached:
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailManagedConfigSyncState.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should continue the gap audit against the remaining page-side state orchestration hotspots after the now-extracted managed-config sync cluster.
+
+## Latest Progress Addendum LXIX
+
+- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchHydration.ts` now also owns the remaining lazy-load async orchestration through:
+  - `startLazyLoadInstanceWorkbenchFiles(...)`
+  - `startLazyLoadInstanceWorkbenchMemory(...)`
+- `InstanceDetail.tsx` now routes the two lazy-load effects through those helpers instead of directly:
+  - creating `cancelled` guards inline
+  - toggling the file and memory loading flags inline
+  - merging files and memories back into the current workbench inline
+- The hydration helper now owns:
+  - lazy-load eligibility checks
+  - cancellation guard orchestration
+  - merge application into the current snapshot
+  - loading-state lifecycle while the request stays active
+- The page still explicitly owns:
+  - the real `instanceWorkbenchService.listInstanceFiles(...)` and `.listInstanceMemories(...)` entry points
+  - `setWorkbench`
+  - the two loading setters
+  - page-owned error reporting
+  - `loadWorkbench(...)`, truth-source routing, navigation, and all write-path authority
+- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchHydration.test.ts` now provides focused direct coverage that:
+  - files hydrate and merge through the injected loader
+  - memory failures route through the injected error reporter
+  - cancellation suppresses stale merge and loading reset
+- `scripts/run-sdkwork-instances-check.mjs` now includes the hydration helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must call the two lazy-load helpers
+  - the page must inject real file and memory loaders
+  - the page must inject `setWorkbench`, loading setters, and error reporters
+  - `instanceWorkbenchHydration.ts` must own the lazy-load guard and merge orchestration
+- The current active hotspot profile after this lazy-load orchestration extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1251`
+  - `instanceWorkbenchHydration.ts`: `222`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-CeMwRuSz.js`: `178.00 kB`
+  - `InstanceConfigWorkbenchPanel-DjkZ4z1l.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-BM8lkLhr.js`: `2.38 kB`
+- Relative to the immediately prior `1297` page baseline from Addendum LXVIII, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1251`. This addendum records another verified page-side reduction while moving the remaining lazy-load async orchestration into the shared hydration helper.
+- Fresh verification in this loop reached:
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchHydration.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should continue the gap audit against the remaining page-side orchestration hotspots after the now-extracted lazy-load async cluster.
+
+## Latest Progress Addendum LXX
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailAgentWorkbenchState.ts` now owns the remaining selected-agent sync and async load orchestration through:
+  - `applyInstanceDetailAgentWorkbenchSyncState(...)`
+  - `startLoadInstanceDetailAgentWorkbench(...)`
+- `InstanceDetail.tsx` now routes:
+  - the selected-agent validity / reset bridge
+  - the selected-agent async load lifecycle
+  through those helpers instead of directly:
+  - checking whether the current selected agent id is still valid
+  - clearing selected-agent workbench state inline
+  - clearing agent error state inline
+  - toggling agent loading inline
+  - creating `cancelled` guards inline
+  - applying blank-error fallback mapping inline
+- The page still explicitly owns:
+  - all page state containers
+  - all real setter ownership
+  - the real `agentWorkbenchService.getAgentWorkbench(...)` entry point
+  - page-owned `console.error(...)` reporting
+  - `loadWorkbench(...)`, truth-source routing, readonly gating, dialogs, navigation, and all write-path authority
+- `packages/sdkwork-claw-instances/src/services/instanceDetailAgentWorkbenchState.test.ts` now provides focused direct coverage that:
+  - empty agent collections reset the page-owned baseline
+  - valid selections are preserved and missing selections fall back to the first agent
+  - async selected-agent loading resolves through the injected loader
+  - failures report through the injected reporter and use the fallback error message when the thrown error is blank
+  - cancellation suppresses stale post-resolution updates
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must call the two new agent-workbench helpers
+  - the page must inject the real `agentWorkbenchService.getAgentWorkbench(...)` loader
+  - the page must inject page-owned setters and error reporting
+  - the helper must own the selected-agent sync and load orchestration
+  - the helper must stay free of `toast`, `loadWorkbench(...)`, and direct runtime-service authority
+- The helper also now imports request and snapshot types from `agentWorkbenchServiceCore.ts` instead of `agentWorkbenchService.ts`, which keeps the service-authority boundary anchored in the page shell instead of drifting into the helper.
+- The current active hotspot profile after this selected-agent workbench extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1220`
+  - `instanceDetailAgentWorkbenchState.ts`: `95`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-BEfG3ppb.js`: `177.95 kB`
+  - `InstanceConfigWorkbenchPanel-BlBE5ojh.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-DuLtB6bZ.js`: `2.38 kB`
+- Relative to the immediately prior `1251` page baseline from Addendum LXIX, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1220`. This addendum records another verified page-side reduction while moving the remaining selected-agent state bridge into a dedicated helper.
+- Fresh verification in this loop reached:
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailAgentWorkbenchState.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should continue the gap audit against the remaining page-side orchestration hotspots after the selected-agent sync/load cluster.
+
+## Latest Progress Addendum LXXI
+
+- `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.ts` now also owns the remaining agent dialog handler composition through `buildOpenClawAgentDialogStateHandlers(...)`.
+- `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts` now also owns the remaining save/delete handler composition through `buildOpenClawAgentMutationHandlers(...)`.
+- `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.ts` now also owns the remaining skill install/toggle/remove handler composition through `buildOpenClawAgentSkillMutationHandlers(...)`.
+- `InstanceDetail.tsx` now routes:
+  - create-agent dialog launch
+  - edit-agent dialog launch
+  - save-agent dialog execution
+  - delete-agent execution
+  - install-skill execution
+  - toggle-skill execution
+  - remove-skill execution
+  through those shared builders instead of directly composing the last handler bridge inline.
+- The page still explicitly owns:
+  - all page state containers and setters
+  - the real `instanceService.createOpenClawAgent(...)`, `.updateOpenClawAgent(...)`, and `.deleteOpenClawAgent(...)` callbacks
+  - the real `agentSkillManagementService.installSkill(...)`, `.setSkillEnabled(...)`, and `.removeSkill(...)` callbacks
+  - page-owned `toast.success(...)` / `toast.error(...)`
+  - `loadWorkbench(...)`, truth-source routing, readonly gating, dialogs, navigation, and all write-path authority
+- The three existing agent helper test files now also provide focused direct coverage that:
+  - dialog handlers route create/edit state through injected page setters
+  - agent mutation handlers route save validation and delete execution through injected page-owned callbacks
+  - skill mutation handlers route install/toggle/remove through injected page-owned mutation execution
+- `scripts/run-sdkwork-instances-check.mjs` now includes those three agent helper test files, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must build `agentDialogStateHandlers`
+  - the page must build `agentMutationHandlers`
+  - the page must build `agentSkillMutationHandlers`
+  - the page must keep only injected runner and service authority for those agent flows
+- The current active hotspot profile after this agent handler-builder extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1160`
+  - `openClawAgentPresentation.ts`: `358`
+  - `openClawAgentMutationSupport.ts`: `187`
+  - `openClawAgentSkillMutationSupport.ts`: `249`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-BJa_XrpF.js`: `177.64 kB`
+  - `InstanceConfigWorkbenchPanel-DQEspCaN.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-CaTehgZh.js`: `2.38 kB`
+- Relative to the immediately prior `1220` page baseline from Addendum LXX, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1160`. This addendum records another verified page-side reduction while moving the remaining agent handler composition into the shared support layers.
+- Fresh verification in this loop reached:
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.test.ts`, `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts`, `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should continue the gap audit against the remaining lifecycle, managed-channel, and navigation-side orchestration hotspots.
+
+## Latest Progress Addendum LXXII
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.ts` now also owns the remaining managed-channel state handler composition through `buildOpenClawManagedChannelStateHandlers(...)`.
+- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts` now also owns the remaining managed-channel mutation handler composition through `buildOpenClawManagedChannelMutationHandlers(...)`.
+- `InstanceDetail.tsx` now routes:
+  - selected managed-channel changes
+  - managed-channel draft field patching
+  - managed-channel toggle execution
+  - managed-channel save execution
+  - managed-channel delete execution plus post-delete empty-draft restoration
+  through those shared builders instead of directly composing the last managed-channel handler bridge inline.
+- The page still explicitly owns:
+  - all page state containers and setters
+  - the real `instanceService.saveOpenClawChannelConfig(...)` and `instanceService.setOpenClawChannelEnabled(...)` callbacks
+  - page-owned `toast.success(...)` / `toast.error(...)`
+  - `loadWorkbench(...)`, truth-source routing, readonly gating, dialogs, navigation, and all write-path authority
+- The managed-channel helper tests now also provide focused direct coverage that:
+  - state handlers route selected-channel changes and draft patches through injected page setters
+  - mutation handlers route toggle/save/delete through injected page-owned mutation execution
+  - validation errors stay in page-owned error state
+  - delete success restores the empty draft through injected setter ownership
+- `scripts/run-sdkwork-instances-check.mjs` now includes those two managed-channel helper test files, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must build `managedChannelStateHandlers`
+  - the page must build `managedChannelMutationHandlers`
+  - the page must pass section props from those builders instead of inline managed-channel closures
+  - the shared helpers must stay free of direct `instanceService`, `toast`, and page-owned reload authority
+- Fresh web lint in this loop exposed a real delete-path narrowing regression around `emptyValues`; the shared delete handler now narrows the `deleteConfig` plan before reading `emptyValues`, which keeps the helper boundary correct and removes the compile failure.
+- The current active hotspot profile after this managed-channel handler-builder extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1171`
+  - `openClawManagedChannelPresentation.ts`: `155`
+  - `openClawManagedChannelMutationSupport.ts`: `383`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-DNb6XXMi.js`: `177.33 kB`
+  - `InstanceConfigWorkbenchPanel-DEX6_qRy.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-BiBxRpAO.js`: `2.38 kB`
+- Relative to the immediately prior `1160` page baseline from Addendum LXXI, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1171`. This loop still removes the remaining inline managed-channel orchestration cluster from the page, but the fresh baseline is slightly higher because the page now carries explicit shared-builder wiring and stable prop injection points instead of opaque inline closures.
+- Fresh verification in this loop reached:
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.test.ts`, `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should continue the gap audit against the remaining lifecycle, console-launch, and navigation-side orchestration hotspots.
+
+## Latest Progress Addendum LXXIII
+
+- `packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.ts` now also owns the remaining lifecycle and console handler composition through:
+  - `buildInstanceLifecycleActionHandlers(...)`
+  - `buildOpenClawConsoleHandlers(...)`
+- `InstanceDetail.tsx` now routes:
+  - restart
+  - stop
+  - start
+  - open OpenClaw console
+  - open official setup links
+  through those shared builders instead of directly composing the last lifecycle and console closures inline.
+- The page still explicitly owns:
+  - all page state containers and setters
+  - the real `instanceService.restartInstance(...)`, `.stopInstance(...)`, and `.startInstance(...)` callbacks
+  - page-owned `toast.success(...)`, `toast.info(...)`, and `toast.error(...)`
+  - the real `openExternalUrl(...)` host bridge
+  - `loadWorkbench(...)`, truth-source routing, readonly gating, dialogs, navigation, and all write-path authority
+- `packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.test.ts` now provides focused direct coverage that:
+  - lifecycle handlers package restart, stop, and start requests through the injected page-owned runner
+  - console handlers resolve console targets, surface manual-login hints, and pass official links through unchanged
+  - missing-target and failed-open errors remain in injected page reporters
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must build `lifecycleActionHandlers`
+  - the page must build `consoleHandlers`
+  - the page must pass lifecycle and console props from those builders instead of inline closures
+  - the shared helper must stay free of direct `instanceService`, `toast`, `loadWorkbench(...)`, and `openExternalUrl(...)`
+- The current active hotspot profile after this lifecycle and console handler-builder extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1055`
+  - `instanceLifecycleActionSupport.ts`: `118`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-AYuQo3Ke.js`: `176.77 kB`
+  - `InstanceConfigWorkbenchPanel-DLxzRCKk.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-BmF0Xbpo.js`: `2.38 kB`
+- Relative to the immediately prior `1171` page baseline from Addendum LXXII, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1055`. This addendum records another verified page-side reduction while moving the remaining lifecycle and console handler composition into the shared support layer.
+- Fresh verification in this loop reached:
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should continue the gap audit against the remaining navigation, destructive-flow, and provider-submit orchestration hotspots after the now-extracted lifecycle and console cluster.
+
+## Latest Progress Addendum LXXIV
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigPresentation.ts` now also owns the remaining managed-config draft-change handler composition through `buildOpenClawManagedConfigDraftChangeHandlers(...)`.
+- `InstanceDetail.tsx` now routes:
+  - webSearch shared draft changes
+  - webSearch provider draft changes
+  - xSearch draft changes
+  - native Codex webSearch draft changes
+  - webFetch shared draft changes
+  - webFetch fallback draft changes
+  - auth cooldowns draft changes
+  - dreaming draft changes
+  through that shared builder instead of directly composing the last managed-config draft-change closures inline.
+- The page still explicitly owns:
+  - all page state containers and setters
+  - the real `instanceService.saveOpenClawWebSearchConfig(...)`, `.saveOpenClawXSearchConfig(...)`, `.saveOpenClawWebSearchNativeCodexConfig(...)`, `.saveOpenClawWebFetchConfig(...)`, `.saveOpenClawAuthCooldownsConfig(...)`, and `.saveOpenClawDreamingConfig(...)` callbacks
+  - page-owned `toast.success(...)`
+  - `loadWorkbench(...)`, truth-source routing, readonly gating, dialogs, navigation, and all write-path authority
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigPresentation.test.ts` now provides focused direct coverage that:
+  - webSearch shared and provider draft changes route through injected page-owned setters
+  - the selected-provider guard preserves provider drafts when no provider is selected
+  - xSearch, native Codex webSearch, webFetch, auth cooldowns, and dreaming draft patches clear the correct page-owned error state before applying the injected setter update
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must build `managedConfigDraftChangeHandlers`
+  - the page must pass managed-config draft-change props from that builder instead of inline closures
+  - the page must stop directly using `applyOpenClawWebSearchProviderDraftChange(...)`, `applyOpenClawNullableDraftFieldChange(...)`, and `applyOpenClawDraftFieldChange(...)`
+  - the shared helper must stay free of direct `instanceService`, `toast`, and `loadWorkbench(...)`
+- The current active hotspot profile after this managed-config draft-change handler-builder extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1006`
+  - `openClawManagedConfigPresentation.ts`: `119`
+  - `openClawManagedConfigMutationSupport.ts`: `318`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-CjwdbUAz.js`: `177.00 kB`
+  - `InstanceConfigWorkbenchPanel-B-98b5zm.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-CQ4NdCce.js`: `2.38 kB`
+- Relative to the immediately prior `1055` page baseline from Addendum LXXIII, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1006`. This addendum records another verified page-side reduction while moving the remaining managed-config draft-change handler composition into the shared presentation layer.
+- Fresh verification in this loop reached:
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigPresentation.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should continue the gap audit against the remaining navigation and destructive-flow orchestration hotspots after the now-extracted managed-config draft-change cluster.
+
+## Latest Progress Addendum LXXV
+
+- `packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.ts` now also owns the remaining instance-delete destructive-flow handler composition through `buildInstanceDeleteHandler(...)`.
+- `InstanceDetail.tsx` now routes:
+  - uninstall eligibility guarding
+  - translated uninstall confirmation prompt routing
+  - injected delete execution
+  - active-instance clear handling
+  - post-delete navigation
+  through that shared builder instead of directly composing the last inline instance-delete destructive-flow closure.
+- The page still explicitly owns:
+  - all page state containers and setters
+  - the real `instanceService.deleteInstance(...)` callback
+  - the real browser `window.confirm(...)` bridge
+  - page-owned `toast.success(...)` and `toast.error(...)`
+  - `navigate(...)`, truth-source routing, readonly gating, dialogs, navigation, and all write-path authority
+- `packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.test.ts` now also provides focused direct coverage that:
+  - delete handlers route confirmation prompts, delete execution, active-instance clearing, and post-delete navigation through injected page-owned callbacks
+  - missing ids and declined confirmations stay as safe no-ops
+  - fallback delete failures stay in injected page-owned error reporting
+- `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must build `deleteHandler`
+  - the page must pass `onDelete={deleteHandler}` into `InstanceDetailHeader`
+  - the page must stop keeping inline `handleDelete`
+  - the page must stop carrying the dead `openTaskWorkspace` wrapper
+  - the shared helper must stay free of direct `instanceService`, `toast`, `navigate(...)`, and `window.confirm(...)`
+- The current active hotspot profile after this delete-flow handler-builder extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `991`
+  - `instanceLifecycleActionSupport.ts`: `150`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-CSlA3mgV.js`: `176.98 kB`
+  - `InstanceConfigWorkbenchPanel-BBx3G-_M.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-DrzbmVik.js`: `2.38 kB`
+- Relative to the immediately prior `1006` page baseline from Addendum LXXIV, the current dirty worktree now re-measures `InstanceDetail.tsx` at `991`. This addendum records another verified page-side reduction while moving the remaining instance-delete destructive-flow handler composition into shared lifecycle support and removing dead page-local navigation code.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should continue the gap audit against the remaining section-availability and navigation-side orchestration hotspots after the now-extracted delete-flow cluster.
+
+## Latest Progress Addendum LXXVI
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailNavigationSupport.ts` now owns the remaining lightweight navigation and shared-status label wrapper composition through:
+  - `createSharedStatusLabelGetter(...)`
+  - `buildInstanceDetailNavigationHandlers(...)`
+- `InstanceDetail.tsx` now routes:
+  - back-to-instances navigation
+  - provider-center navigation
+  - agent-market navigation with optional `instanceId` query shaping
+  - set-active callback packaging
+  - shared instance-status translation key shaping
+  through that shared helper instead of directly composing those remaining wrappers inline.
+- The page still explicitly owns:
+  - all page state containers and setters
+  - the real `navigate(...)`
+  - the real `setActiveInstanceId(...)`
+  - the loaded `instance` truth and route `id`
+  - all mutation authority, toasts, dialogs, truth-source routing, and reload authority
+- `packages/sdkwork-claw-instances/src/services/instanceDetailNavigationSupport.test.ts` now provides focused direct coverage that:
+  - shared status-label mapping routes through the injected translator
+  - back, provider-center, agent-market, and set-active handlers route through injected page-owned callbacks
+  - agent-market falls back to the generic route when no instance id exists
+  - set-active becomes a safe no-op when no instance is loaded
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createSharedStatusLabelGetter(...)`
+  - the page must use `buildInstanceDetailNavigationHandlers(...)`
+  - the page must route agent-market, provider-center, back-to-instances, and set-active callbacks through that helper
+  - the shared helper must stay free of direct `toast`, `instanceService`, `window.confirm(...)`, and delete-path authority
+- The current active hotspot profile after this navigation-support extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `998`
+  - `instanceDetailNavigationSupport.ts`: `37`
+  - `instanceLifecycleActionSupport.ts`: `150`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-Bjkb8t9q.js`: `177.00 kB`
+  - `InstanceConfigWorkbenchPanel-CZ5k-XbN.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-ByLqIfq4.js`: `2.38 kB`
+- Relative to the immediately prior `991` page baseline from Addendum LXXV, the current dirty worktree now re-measures `InstanceDetail.tsx` at `998`. This addendum records a verified boundary improvement for the remaining navigation and status-label wrapper cluster, while also noting that the fresh page baseline is slightly higher because the page now carries another explicit shared-helper wiring point.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailNavigationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailNavigationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should continue the gap audit against the remaining section-availability and presentation-side wrapper hotspots after the now-extracted navigation cluster.
+
+## Latest Progress Addendum LXXVII
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailSectionAvailabilitySupport.ts` now owns the remaining page-side section-availability renderer pre-binding through `createInstanceDetailSectionAvailabilityRenderer(...)`.
+- `InstanceDetail.tsx` now routes:
+  - workbench availability snapshot injection
+  - translation injection
+  - workbench label formatting injection
+  - capability tone formatting injection
+  - per-call `sectionId` and `fallbackKey` forwarding
+  through that shared helper instead of directly composing the inline availability arrow wrapper.
+- The page still explicitly owns:
+  - all page state containers and setters
+  - the real `workbench` truth
+  - the real `t`
+  - the real `formatWorkbenchLabel(...)`
+  - the real `getCapabilityTone(...)`
+  - the choice to use `renderInstanceDetailSectionAvailability(...)`
+  - all mutation authority, navigation, dialogs, toasts, truth-source routing, and reload authority
+- `packages/sdkwork-claw-instances/src/services/instanceDetailSectionAvailabilitySupport.test.ts` now provides focused direct coverage that:
+  - the helper pre-binds page-owned availability context once
+  - subsequent per-section calls still forward the correct `sectionId` and `fallbackKey`
+  - translation and formatting helpers stay injected from the page
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailSectionAvailabilityRenderer(...)`
+  - the page must stop keeping the inline availability arrow wrapper
+  - the page must inject `renderInstanceDetailSectionAvailability` as the renderer implementation
+  - the shared helper must stay free of direct `toast`, `instanceService`, and navigation authority
+- The current active hotspot profile after this section-availability renderer extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `994`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `30`
+  - `instanceDetailNavigationSupport.ts`: `37`
+  - `instanceLifecycleActionSupport.ts`: `150`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-oxDUJZdg.js`: `176.99 kB`
+  - `InstanceConfigWorkbenchPanel-gDi1y5gM.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-Dqu9ntwT.js`: `2.38 kB`
+- Relative to the immediately prior `998` page baseline from Addendum LXXVI, the current dirty worktree now re-measures `InstanceDetail.tsx` at `994`. This addendum records another verified page reduction while moving the remaining section-availability renderer wrapper into a focused shared helper.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailSectionAvailabilitySupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailSectionAvailabilitySupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should continue the gap audit against the remaining tiny presentation-side wrapper hotspots after the now-extracted availability-renderer cluster.
+
+## Latest Progress Addendum LXXVIII
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailReloadSupport.ts` now owns the remaining shared current-instance silent reload pre-binding through `createInstanceDetailSilentWorkbenchReloadHandler(...)`.
+- `InstanceDetail.tsx` now routes:
+  - current route `id` injection
+  - page-owned `loadWorkbench(...)` injection
+  - spinnerless reload pre-binding reuse for both files and config section callbacks
+  through that shared helper instead of keeping duplicate inline reload arrows in the page tail.
+- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` now routes:
+  - agent-section `instanceId`
+  - agent-section `loadWorkbench(...)`
+  - spinnerless agent reload pre-binding
+  through that same helper instead of keeping the inline section-model reload arrow.
+- The page and section model still explicitly own:
+  - the real `loadWorkbench(...)` implementation
+  - the choice to expose reload callbacks
+  - all mutation authority, navigation, dialogs, toasts, truth-source routing, and lifecycle control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailReloadSupport.test.ts` now provides focused direct coverage that:
+  - the helper injects `{ withSpinner: false }`
+  - the helper routes the current instance id through the injected loader
+  - the helper becomes a safe no-op when no current instance id exists
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailSilentWorkbenchReloadHandler(...)`
+  - the page must stop keeping inline spinnerless reload callbacks for files/config
+  - `instanceDetailSectionModels.ts` must use the same helper for the agent-section reload callback
+  - the shared helper must stay free of direct `toast`, `instanceService`, and navigation authority
+- The current active hotspot profile after this silent reload helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1056`
+  - `instanceDetailReloadSupport.ts`: `16`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `34`
+  - `instanceDetailNavigationSupport.ts`: `42`
+  - `instanceLifecycleActionSupport.ts`: `165`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-BmHVheOA.js`: `176.99 kB`
+  - `InstanceConfigWorkbenchPanel-BLGh9sbs.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-3NqzV9rd.js`: `2.38 kB`
+- Relative to the immediately prior `994` page baseline from Addendum LXXVII, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1056`. This addendum records a verified boundary improvement for the shared silent reload wrapper cluster while also documenting that the broader page baseline has shifted upward in the current dirty worktree and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailReloadSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailReloadSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1056`-line baseline before choosing the next tiny wrapper extraction.
+
+## Latest Progress Addendum LXXIX
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailReloadSupport.ts` now owns the remaining shared page-owned `loadWorkbench(...)` adapter family through `createInstanceDetailWorkbenchReloadHandlers(...)`.
+- `InstanceDetail.tsx` now routes:
+  - pass-through workbench reload binding for provider, agent-skill, agent, managed-channel, and managed-config mutation runners
+  - default-spinner workbench reload binding for the lifecycle runner
+  - the previously extracted current-instance silent reload helper through the new shared reload binding
+  through one reload-support helper family instead of keeping repeated inline `loadWorkbench` adapters in the page.
+- The page still explicitly owns:
+  - the real `loadWorkbench(...)` implementation
+  - the choice to expose pass-through, immediate, and silent reload callbacks
+  - all mutation authority, navigation, dialogs, toasts, truth-source routing, and lifecycle control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailReloadSupport.test.ts` now provides focused direct coverage that:
+  - the helper forwards explicit reload requests with pass-through options
+  - the helper exposes a default-spinner reload path for lifecycle-style callers
+  - the existing silent current-instance reload path still injects `{ withSpinner: false }`
+- `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailWorkbenchReloadHandlers(...)`
+  - the page must stop keeping inline `loadWorkbench` pass-through wrappers for runner wiring
+  - lifecycle wiring must use `reloadWorkbenchImmediately`
+  - the reload support helper must stay free of direct `toast`, `instanceService`, and navigation authority
+- The current active hotspot profile after this reload-binding helper expansion and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1060`
+  - `instanceDetailReloadSupport.ts`: `30`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `34`
+  - `instanceDetailNavigationSupport.ts`: `42`
+  - `instanceLifecycleActionSupport.ts`: `165`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-xpkNywC6.js`: `177.09 kB`
+  - `InstanceConfigWorkbenchPanel-DBRg4QRE.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-CWdp6zFZ.js`: `2.38 kB`
+- Relative to the immediately prior `1056` page baseline from Addendum LXXVIII, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1060`. This addendum records a verified boundary improvement for the shared `loadWorkbench(...)` adapter family while also documenting that the broader page baseline has again shifted upward and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailReloadSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailReloadSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1060`-line baseline before choosing the next tiny wrapper extraction.
+
+## Latest Progress Addendum LXXX
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailToastSupport.ts` now owns the remaining shared page-owned toast reporter binding through `createInstanceDetailToastReporters(...)`.
+- `InstanceDetail.tsx` now routes:
+  - provider, agent-skill, agent, lifecycle, delete, managed-channel, and managed-config success/error reporters
+  - console info/error reporters
+  through that shared helper instead of keeping repeated inline `toast.success/error/info` wrappers in the page shell.
+- The page still explicitly owns:
+  - the imported `toast` dependency
+  - the choice to wire reporters into each runner/handler
+  - all mutation authority, navigation, dialogs, truth-source routing, reload behavior, and lifecycle control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailToastSupport.test.ts` now provides focused direct coverage that:
+  - success messages route through the injected toast surface
+  - error messages route through the injected toast surface
+  - info messages route through the injected toast surface
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailToastReporters(...)`
+  - the page must stop keeping inline `toast.success/error/info` wrappers
+  - the relevant feedback paths must route through `toastReporters`
+  - the shared helper must stay free of direct `instanceService`, navigation, and reload authority
+- The current active hotspot profile after this toast-reporter helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1064`
+  - `instanceDetailToastSupport.ts`: `17`
+  - `instanceDetailReloadSupport.ts`: `30`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `34`
+  - `instanceDetailNavigationSupport.ts`: `42`
+  - `instanceLifecycleActionSupport.ts`: `165`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-CIO8VtU-.js`: `177.12 kB`
+  - `InstanceConfigWorkbenchPanel-R9LGj4E2.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-DExMSe6A.js`: `2.38 kB`
+- Relative to the immediately prior `1060` page baseline from Addendum LXXIX, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1064`. This addendum records a verified boundary improvement for the shared toast reporter family while also documenting that the broader page baseline has again shifted upward and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailToastSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailToastSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1064`-line baseline before choosing the next tiny wrapper extraction.
+
+## Latest Progress Addendum LXXXI
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailConsoleErrorSupport.ts` now owns the remaining shared page-owned console error reporter binding through `createInstanceDetailConsoleErrorReporters(...)`.
+- `InstanceDetail.tsx` now routes:
+  - workbench-load catch logging
+  - agent workbench load error reporting
+  - files and memories lazy-load error reporting
+  through that shared helper instead of keeping repeated inline `console.error(...)` wrappers in the page shell.
+- The page still explicitly owns:
+  - the global `console` dependency
+  - the choice to wire failure logging into each load path
+  - all service-loader authority, mutation authority, navigation, dialogs, toasts, truth-source routing, reload behavior, and lifecycle control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailConsoleErrorSupport.test.ts` now provides focused direct coverage that:
+  - workbench-load failures route through the injected console surface
+  - agent-workbench failures route through the injected console surface
+  - files and memories lazy-load failures route through the injected console surface
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailConsoleErrorReporters(...)`
+  - the page must stop keeping inline workbench, agent, files, and memories `console.error(...)` wrappers
+  - the shared helper must stay free of direct `instanceService`, navigation, and reload authority
+- The current active hotspot profile after this console-error helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1011`
+  - `instanceDetailConsoleErrorSupport.ts`: `20`
+  - `instanceDetailReloadSupport.ts`: `26`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `30`
+  - `instanceDetailNavigationSupport.ts`: `37`
+  - `instanceLifecycleActionSupport.ts`: `150`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-D9LWttFL.js`: `177.06 kB`
+  - `InstanceConfigWorkbenchPanel-TT8xdRhq.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-Da_Dg1BG.js`: `2.38 kB`
+- Relative to the immediately prior `1064` page baseline from Addendum LXXX, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1011`. This addendum records a verified boundary improvement for the shared console error reporter family while also documenting that the broader page baseline has shifted again and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailConsoleErrorSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailConsoleErrorSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1011`-line baseline before choosing the next tiny wrapper extraction.
+
+## Latest Progress Addendum LXXXII
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailProviderCatalogMutationSupport.ts` now owns the remaining shared page-owned provider catalog executor binding through `createInstanceDetailProviderCatalogMutationExecutors(...)`.
+- `InstanceDetail.tsx` now routes:
+  - provider-config update executor binding
+  - provider create executor binding
+  - provider-model update/create/delete executor binding
+  - provider delete executor binding
+  through that shared helper instead of keeping repeated inline `instanceService.*` provider executor wrappers in the page shell.
+- The page still explicitly owns:
+  - the real `instanceService` dependency
+  - the choice to expose provider catalog executors to the runner
+  - all provider mutation planning, reload wiring, toast reporting, dialog state, truth-source routing, and lifecycle control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailProviderCatalogMutationSupport.test.ts` now provides focused direct coverage that:
+  - all six provider catalog executor paths route through the injected `instanceService` surface
+  - the helper stays limited to executor binding rather than mutation orchestration
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailProviderCatalogMutationExecutors(...)`
+  - the provider runner must consume `...providerCatalogMutationExecutors`
+  - the page must stop keeping inline provider catalog executor wrappers
+  - the shared helper must stay free of direct toast, navigation, and reload authority
+- The current active hotspot profile after this provider-catalog executor helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1004`
+  - `instanceDetailProviderCatalogMutationSupport.ts`: `41`
+  - `instanceDetailConsoleErrorSupport.ts`: `20`
+  - `instanceDetailReloadSupport.ts`: `26`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `30`
+  - `instanceDetailNavigationSupport.ts`: `37`
+  - `instanceLifecycleActionSupport.ts`: `150`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-DKOx-fW4.js`: `176.66 kB`
+  - `InstanceConfigWorkbenchPanel-DtYVJtPW.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-fotvmGzW.js`: `2.38 kB`
+- Relative to the immediately prior `1011` page baseline from Addendum LXXXI, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1004`. This addendum records a verified boundary improvement for the shared provider catalog executor family while also documenting that the broader page baseline has shifted again and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailProviderCatalogMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailProviderCatalogMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1004`-line baseline before choosing the next tiny wrapper extraction.
+
+## Latest Progress Addendum LXXXIII
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailAgentSkillMutationSupport.ts` now owns the remaining shared page-owned agent-skill executor binding through `createInstanceDetailAgentSkillMutationExecutors(...)`.
+- `InstanceDetail.tsx` now routes:
+  - skill install executor binding
+  - skill enable or disable executor binding
+  - skill remove executor binding
+  through that shared helper instead of keeping repeated inline `agentSkillManagementService.*` executor wrappers in the page shell.
+- The page still explicitly owns:
+  - the real `agentSkillManagementService` dependency
+  - the choice to expose agent-skill executors to the mutation handler builder
+  - all mutation request construction, pending-state wiring, reload behavior, toast reporting, dialog state, truth-source routing, and lifecycle control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailAgentSkillMutationSupport.test.ts` now provides focused direct coverage that:
+  - install, toggle, and remove executor paths route through the injected `agentSkillManagementService` surface
+  - the helper stays limited to executor binding rather than mutation orchestration
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailAgentSkillMutationExecutors(...)`
+  - the handler builder must consume `...agentSkillMutationExecutors`
+  - the page must stop keeping inline agent-skill executor wrappers
+  - the shared helper must stay free of direct toast, navigation, and reload authority
+- The current active hotspot profile after this agent-skill executor helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1006`
+  - `instanceDetailAgentSkillMutationSupport.ts`: `19`
+  - `instanceDetailProviderCatalogMutationSupport.ts`: `41`
+  - `instanceDetailConsoleErrorSupport.ts`: `20`
+  - `instanceDetailReloadSupport.ts`: `26`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `30`
+  - `instanceDetailNavigationSupport.ts`: `37`
+  - `instanceLifecycleActionSupport.ts`: `150`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-DU8ILXUB.js`: `176.60 kB`
+  - `InstanceConfigWorkbenchPanel-C9gscZG4.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-DS0BlFgb.js`: `2.38 kB`
+- Relative to the immediately prior `1004` page baseline from Addendum LXXXII, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1006`. This addendum records a verified boundary improvement for the shared agent-skill executor family while also documenting that the broader page baseline has shifted again and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailAgentSkillMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailAgentSkillMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1006`-line baseline before choosing the next tiny wrapper extraction.
+
+## Latest Progress Addendum LXXXIV
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationSupport.ts` now owns the remaining shared page-owned agent executor binding through `createInstanceDetailAgentMutationExecutors(...)`.
+- `InstanceDetail.tsx` now routes:
+  - agent create executor binding
+  - agent update executor binding
+  - agent delete executor binding
+  through that shared helper instead of keeping repeated inline `instanceService.*OpenClawAgent(...)` executor wrappers in the page shell.
+- The page still explicitly owns:
+  - the real `instanceService` dependency
+  - the choice to expose agent executors to the mutation runner
+  - all mutation request construction, dialog state, pending-state wiring, reload behavior, toast reporting, truth-source routing, and lifecycle control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationSupport.test.ts` now provides focused direct coverage that:
+  - create, update, and delete executor paths route through the injected `instanceService` surface
+  - the helper stays limited to executor binding rather than mutation orchestration
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailAgentMutationExecutors(...)`
+  - the agent mutation runner must consume `...agentMutationExecutors`
+  - the page must stop keeping inline agent executor wrappers
+  - the shared helper must stay free of direct toast, navigation, and reload authority
+- The current active hotspot profile after this agent-executor helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1062`
+  - `instanceDetailAgentMutationSupport.ts`: `24`
+  - `instanceDetailAgentSkillMutationSupport.ts`: `22`
+  - `instanceDetailProviderCatalogMutationSupport.ts`: `44`
+  - `instanceDetailConsoleErrorSupport.ts`: `22`
+  - `instanceDetailReloadSupport.ts`: `30`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `34`
+  - `instanceDetailNavigationSupport.ts`: `42`
+  - `instanceLifecycleActionSupport.ts`: `165`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-C0XL-uCi.js`: `176.50 kB`
+  - `InstanceConfigWorkbenchPanel-CUplMxGx.js`: `63.32 kB`
+  - `InstanceDetailFilesSection-CT7_RDAK.js`: `2.38 kB`
+- Relative to the immediately prior `1006` page baseline from Addendum LXXXIII, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1062`. This addendum records a verified boundary improvement for the shared agent executor family while also documenting that the broader page baseline has shifted again and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1062`-line baseline before choosing the next tiny wrapper extraction.
+
+## Latest Progress Addendum LXXXV
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailManagedChannelMutationSupport.ts` now owns the remaining shared page-owned managed-channel executor binding through `createInstanceDetailManagedChannelMutationExecutors(...)`.
+- `InstanceDetail.tsx` now routes:
+  - managed-channel save-config executor binding
+  - managed-channel toggle-enabled executor binding
+  through that shared helper instead of keeping repeated inline `instanceService` managed-channel executor wrappers in the page shell.
+- The page still explicitly owns:
+  - the real `instanceService` dependency
+  - the choice to expose managed-channel executors to the mutation runner
+  - all mutation-plan construction, selection state, draft-state wiring, pending-state wiring, reload behavior, toast reporting, truth-source routing, and lifecycle control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailManagedChannelMutationSupport.test.ts` now provides focused direct coverage that:
+  - save and toggle executor paths route through the injected `instanceService` surface
+  - the helper stays limited to executor binding rather than mutation orchestration
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailManagedChannelMutationExecutors(...)`
+  - the managed-channel mutation runner must consume `...managedChannelMutationExecutors`
+  - the page must stop keeping inline managed-channel executor wrappers
+  - the shared helper must stay free of direct toast, navigation, and reload authority
+- The current active hotspot profile after this managed-channel-executor helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1063`
+  - `instanceDetailManagedChannelMutationSupport.ts`: `22`
+  - `instanceDetailAgentMutationSupport.ts`: `24`
+  - `instanceDetailAgentSkillMutationSupport.ts`: `22`
+  - `instanceDetailProviderCatalogMutationSupport.ts`: `44`
+  - `instanceDetailConsoleErrorSupport.ts`: `22`
+  - `instanceDetailReloadSupport.ts`: `30`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `34`
+  - `instanceDetailNavigationSupport.ts`: `42`
+  - `instanceLifecycleActionSupport.ts`: `165`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-BTy41hdP.js`: `176.41 kB`
+  - `InstanceConfigWorkbenchPanel-Cn02zlbl.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-h9RJSFSU.js`: `2.38 kB`
+- Relative to the immediately prior `1062` page baseline from Addendum LXXXIV, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1063`. This addendum records a verified boundary improvement for the shared managed-channel executor family while also documenting that the broader page baseline has shifted again and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailManagedChannelMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailManagedChannelMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1063`-line baseline before choosing the next tiny wrapper extraction.
+
+## Latest Progress Addendum LXXXVI
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailLifecycleMutationSupport.ts` now owns the remaining shared page-owned lifecycle executor binding through `createInstanceDetailLifecycleMutationExecutors(...)`.
+- `InstanceDetail.tsx` now routes:
+  - lifecycle restart executor binding
+  - lifecycle stop executor binding
+  - lifecycle start executor binding
+  through that shared helper instead of keeping repeated inline `instanceService` lifecycle executor wrappers in the page shell.
+- The page still explicitly owns:
+  - the real `instanceService` dependency
+  - the choice to expose lifecycle executors to the handler builder
+  - all lifecycle orchestration, reload behavior, console access, delete flow, toast reporting, truth-source routing, and broader page control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailLifecycleMutationSupport.test.ts` now provides focused direct coverage that:
+  - restart, stop, and start executor paths route through the injected `instanceService` surface
+  - the helper stays limited to executor binding rather than lifecycle orchestration
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailLifecycleMutationExecutors(...)`
+  - the lifecycle handler builder must consume `...lifecycleMutationExecutors`
+  - the page must stop keeping inline lifecycle executor wrappers
+  - the shared helper must stay free of direct toast, navigation, and reload authority
+- The current active hotspot profile after this lifecycle-executor helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1065`
+  - `instanceDetailLifecycleMutationSupport.ts`: `22`
+  - `instanceDetailManagedChannelMutationSupport.ts`: `22`
+  - `instanceDetailAgentMutationSupport.ts`: `24`
+  - `instanceDetailAgentSkillMutationSupport.ts`: `22`
+  - `instanceDetailProviderCatalogMutationSupport.ts`: `44`
+  - `instanceDetailConsoleErrorSupport.ts`: `22`
+  - `instanceDetailReloadSupport.ts`: `30`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `34`
+  - `instanceDetailNavigationSupport.ts`: `42`
+  - `instanceLifecycleActionSupport.ts`: `165`
+  - `instanceWorkbenchServiceCore.ts`: `1134`
+  - `instanceServiceCore.ts`: `1431`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-CI3cO9q_.js`: `176.33 kB`
+  - `InstanceConfigWorkbenchPanel-ChyP7aeU.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-BryJrg_d.js`: `2.38 kB`
+- Relative to the immediately prior `1063` page baseline from Addendum LXXXV, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1065`. This addendum records a verified boundary improvement for the shared lifecycle executor family while also documenting that the broader page baseline has shifted again and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailLifecycleMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailLifecycleMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1065`-line baseline before choosing the next tiny wrapper extraction.
+
+## Latest Progress Addendum LXXXVII
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailManagedConfigMutationSupport.ts` now owns the remaining shared page-owned managed-config executor binding through `createInstanceDetailManagedConfigMutationExecutors(...)`.
+- `InstanceDetail.tsx` now routes:
+  - managed web-search save executor binding
+  - managed x-search save executor binding
+  - managed native-codex save executor binding
+  - managed web-fetch save executor binding
+  - managed auth-cooldowns save executor binding
+  - managed dreaming save executor binding
+  through that shared helper instead of keeping repeated inline `instanceService` managed-config executor wrappers in the page shell.
+- The page still explicitly owns:
+  - the real `instanceService` dependency
+  - the choice to expose managed-config executors to the handler builder
+  - all draft selection, validation, saving-state wiring, page error-state wiring, reload behavior, toast reporting, truth-source routing, and broader page control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailManagedConfigMutationSupport.test.ts` now provides focused direct coverage that:
+  - all six managed-config save executor paths route through the injected `instanceService` surface
+  - the helper stays limited to executor binding rather than mutation orchestration
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailManagedConfigMutationExecutors(...)`
+  - the managed-config mutation handler builder must consume explicit `managedConfigMutationExecutors.<surface>.executeSave` bindings
+  - the page must stop keeping inline managed-config save executor wrappers
+  - the shared helper must stay free of direct reload, toast, and broader page authority
+- The current active hotspot profile after this managed-config-executor helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1068`
+  - `instanceDetailManagedConfigMutationSupport.ts`: `53`
+  - `instanceDetailLifecycleMutationSupport.ts`: `23`
+  - `instanceDetailManagedChannelMutationSupport.ts`: `23`
+  - `instanceDetailAgentMutationSupport.ts`: `25`
+  - `instanceDetailAgentSkillMutationSupport.ts`: `23`
+  - `instanceDetailProviderCatalogMutationSupport.ts`: `45`
+  - `instanceDetailConsoleErrorSupport.ts`: `23`
+  - `instanceDetailReloadSupport.ts`: `31`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `35`
+  - `instanceDetailNavigationSupport.ts`: `43`
+  - `instanceLifecycleActionSupport.ts`: `166`
+  - `instanceWorkbenchServiceCore.ts`: `1135`
+  - `instanceServiceCore.ts`: `1432`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-DPThmOAT.js`: `176.26 kB`
+  - `InstanceConfigWorkbenchPanel-BQ4V-dDF.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-DBo8cPpm.js`: `2.38 kB`
+- Relative to the immediately prior `1065` page baseline from Addendum LXXXVI, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1068`. This addendum records a verified boundary improvement for the shared managed-config executor family while also documenting that the broader page baseline has shifted again and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - inherited red: `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailManagedConfigMutationSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1068`-line baseline before choosing the next tiny wrapper extraction.
+
+## Latest Progress Addendum LXXXVIII
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailDeleteSupport.ts` now owns the remaining shared page-owned delete handler binding through `createInstanceDetailDeleteHandlerBindings(...)`.
+- `InstanceDetail.tsx` now routes:
+  - browser confirm binding
+  - instance delete executor binding
+  - instance-list navigation binding
+  through that shared helper instead of keeping repeated inline delete wrappers in the page shell.
+- The page still explicitly owns:
+  - the real `instanceService` dependency
+  - the browser `navigate` authority it passes into the helper
+  - the choice to expose delete bindings to the handler builder
+  - `instanceId`, `canDelete`, `activeInstanceId`, `setActiveInstanceId`, toast reporting, translation, and broader page control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailDeleteSupport.test.ts` now provides focused direct coverage that:
+  - confirm, delete, and instance-list navigation all route through the injected page-owned authorities
+  - the helper stays limited to binding composition rather than delete orchestration
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailDeleteHandlerBindings(...)`
+  - the delete handler builder must consume `...deleteHandlerBindings`
+  - the page must stop keeping inline `confirmDelete`, `executeDelete`, and `navigateToInstances` wrappers
+  - the shared helper must stay free of active-instance reset and user-facing feedback authority
+- The current active hotspot profile after this delete-binding helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1072`
+  - `instanceDetailDeleteSupport.ts`: `23`
+  - `instanceDetailManagedConfigMutationSupport.ts`: `53`
+  - `instanceDetailLifecycleMutationSupport.ts`: `23`
+  - `instanceDetailManagedChannelMutationSupport.ts`: `23`
+  - `instanceDetailAgentMutationSupport.ts`: `25`
+  - `instanceDetailAgentSkillMutationSupport.ts`: `23`
+  - `instanceDetailProviderCatalogMutationSupport.ts`: `45`
+  - `instanceDetailConsoleErrorSupport.ts`: `23`
+  - `instanceDetailReloadSupport.ts`: `31`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `35`
+  - `instanceDetailNavigationSupport.ts`: `43`
+  - `instanceLifecycleActionSupport.ts`: `166`
+  - `instanceWorkbenchServiceCore.ts`: `1135`
+  - `instanceServiceCore.ts`: `1432`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-k8YEvh91.js`: `176.23 kB`
+  - `InstanceConfigWorkbenchPanel-CymDu054.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-CwfHzR4d.js`: `2.38 kB`
+- Relative to the immediately prior `1068` page baseline from Addendum LXXXVII, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1072`. This addendum records a verified boundary improvement for the shared delete binding family while also documenting that the broader page baseline has shifted again and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailDeleteSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailDeleteSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1072`-line baseline before choosing the next tiny wrapper extraction.
+
+## Latest Progress Addendum LXXXIX
+
+- `InstanceDetail.tsx` now passes `openExternalUrl` directly into `buildOpenClawConsoleHandlers(...)` instead of wrapping it in a redundant arrow adapter.
+- This loop intentionally does not add a new helper module because the existing host bridge function already matched the shared console-handler contract.
+- The shared lifecycle/console support still explicitly owns:
+  - console target resolution
+  - manual-login info reporting
+  - fallback error reporting
+  - official-link execution orchestration
+- The page still explicitly owns:
+  - the `detail` snapshot
+  - the chosen host bridge function `openExternalUrl`
+  - toast reporters
+  - translation
+- The current active hotspot profile after this console-link pass-through simplification and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1072`
+  - `instanceDetailDeleteSupport.ts`: `23`
+  - `instanceDetailManagedConfigMutationSupport.ts`: `53`
+  - `instanceDetailLifecycleMutationSupport.ts`: `23`
+  - `instanceDetailManagedChannelMutationSupport.ts`: `23`
+  - `instanceDetailAgentMutationSupport.ts`: `25`
+  - `instanceDetailAgentSkillMutationSupport.ts`: `23`
+  - `instanceDetailProviderCatalogMutationSupport.ts`: `45`
+  - `instanceDetailConsoleErrorSupport.ts`: `23`
+  - `instanceDetailReloadSupport.ts`: `31`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `35`
+  - `instanceDetailNavigationSupport.ts`: `43`
+  - `instanceLifecycleActionSupport.ts`: `166`
+  - `instanceWorkbenchServiceCore.ts`: `1135`
+  - `instanceServiceCore.ts`: `1432`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-C4lYz_CB.js`: `176.22 kB`
+  - `InstanceConfigWorkbenchPanel-B8dWc4tM.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-CQ4qv1OQ.js`: `2.38 kB`
+- Relative to the immediately prior `1072` page baseline from Addendum LXXXVIII, the fresh current dirty worktree still re-measures `InstanceDetail.tsx` at `1072`. This addendum records a verified contract simplification for the console-link binding while also documenting that the page hotspot remains unchanged in line count and is still the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning
+- `Step 07 / CP07-3` remains in progress. The next move should re-scan `InstanceDetail.tsx` against the fresh `1072`-line baseline before choosing the next tiny hotspot simplification.
+
+## Latest Progress Addendum XC
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailProviderDeleteStateSupport.ts` now owns the remaining shared page-owned provider delete-state setter and clear callback binding through `createInstanceDetailProviderDeleteStateBindings(...)`.
+- `InstanceDetail.tsx` now routes:
+  - provider delete-id setter binding
+  - provider-model delete-id setter binding
+  - provider delete-id clear binding
+  - provider-model delete-id clear binding
+  through that shared helper instead of keeping repeated inline delete-state wrappers in the page shell.
+- The page still explicitly owns:
+  - the real React state setters
+  - provider dialog visibility
+  - provider mutation execution
+  - reload wiring
+  - toast reporting
+  - truth-source routing
+  - broader page control
+- `packages/sdkwork-claw-instances/src/services/instanceDetailProviderDeleteStateSupport.test.ts` now provides focused direct coverage that:
+  - request and clear paths route through the injected page-owned setters
+  - the helper stays limited to setter binding rather than provider mutation orchestration
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper test, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailProviderDeleteStateBindings(...)`
+  - dialog-state and provider-mutation wiring must consume the returned binding bundle
+  - the page must stop keeping inline provider delete-state wrappers
+  - the shared helper must stay free of dialog visibility, mutation execution, toast, and broader page authority
+- The current active hotspot profile after this provider delete-state helper extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1019`
+  - `instanceDetailProviderDeleteStateSupport.ts`: `19`
+  - `instanceDetailDeleteSupport.ts`: `23`
+  - `instanceDetailManagedConfigMutationSupport.ts`: `53`
+  - `instanceDetailLifecycleMutationSupport.ts`: `23`
+  - `instanceDetailManagedChannelMutationSupport.ts`: `23`
+  - `instanceDetailAgentMutationSupport.ts`: `25`
+  - `instanceDetailAgentSkillMutationSupport.ts`: `23`
+  - `instanceDetailProviderCatalogMutationSupport.ts`: `45`
+  - `instanceDetailConsoleErrorSupport.ts`: `23`
+  - `instanceDetailReloadSupport.ts`: `31`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `35`
+  - `instanceDetailNavigationSupport.ts`: `43`
+  - `instanceLifecycleActionSupport.ts`: `166`
+  - `instanceWorkbenchServiceCore.ts`: `1135`
+  - `instanceServiceCore.ts`: `1432`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-BIS6s_AZ.js`: `176.35 kB`
+  - `InstanceConfigWorkbenchPanel-BJrAF71h.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-9Om5DNvC.js`: `2.38 kB`
+- Relative to the immediately prior `1072` page baseline from Addendum LXXXIX, the fresh current dirty worktree re-measures `InstanceDetail.tsx` at `1019`. This addendum records a verified boundary improvement for the shared provider delete-state family while also documenting that the broader page baseline has shifted again and is now the operative truth for the next loop.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailProviderDeleteStateSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailProviderDeleteStateSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` remained in progress after this loop. The next move was to remove the final agent-state and loader-binding wrappers.
+
+## Latest Progress Addendum XCI
+
+- `packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationStateSupport.ts` now owns the remaining shared page-owned agent dialog dismiss and delete-id clear bindings through `createInstanceDetailAgentMutationStateBindings(...)`.
+- `packages/sdkwork-claw-instances/src/services/instanceDetailWorkbenchLoaderSupport.ts` now owns the remaining shared page-owned bound loader composition through `createInstanceDetailWorkbenchLoaderBindings(...)`.
+- `InstanceDetail.tsx` now routes:
+  - agent dialog dismiss binding
+  - agent delete-id clear binding
+  - bound agent workbench loader binding
+  - bound instance files lazy-loader binding
+  - bound instance memories lazy-loader binding
+  through those shared helpers instead of keeping the final inline wrapper families in the page shell.
+- The page still explicitly owns:
+  - the real React state setters
+  - the real `agentWorkbenchService` and `instanceWorkbenchService` instances
+  - lazy-load policy
+  - error reporting
+  - reload behavior
+  - toast reporting
+  - truth-source routing
+  - broader page control
+- The two new helper tests now provide focused direct coverage that:
+  - agent dialog dismissal and delete-id clearing route through injected page-owned setters
+  - agent/files/memories loaders route through injected page-owned services
+  - both helpers stay limited to binding composition rather than orchestration
+- `scripts/run-sdkwork-instances-check.mjs` now includes the new helper tests, and `scripts/sdkwork-instances-contract.test.ts` now enforces:
+  - the page must use `createInstanceDetailAgentMutationStateBindings(...)`
+  - the page must use `createInstanceDetailWorkbenchLoaderBindings(...)`
+  - agent mutation and lazy-loader flows must consume those returned binding bundles
+  - the page must stop keeping the final inline wrapper families
+  - the new shared helpers must stay free of toast, navigation, reload, and broader page authority
+- The current active hotspot profile after this final wrapper-family extraction and fresh current-worktree re-baseline is:
+  - `InstanceDetail.tsx`: `1031`
+  - `instanceDetailProviderDeleteStateSupport.ts`: `19`
+  - `instanceDetailAgentMutationStateSupport.ts`: `18`
+  - `instanceDetailWorkbenchLoaderSupport.ts`: `28`
+  - `instanceDetailDeleteSupport.ts`: `19`
+  - `instanceDetailManagedConfigMutationSupport.ts`: `49`
+  - `instanceDetailLifecycleMutationSupport.ts`: `19`
+  - `instanceDetailManagedChannelMutationSupport.ts`: `19`
+  - `instanceDetailAgentMutationSupport.ts`: `21`
+  - `instanceDetailAgentSkillMutationSupport.ts`: `19`
+  - `instanceDetailProviderCatalogMutationSupport.ts`: `41`
+  - `instanceDetailConsoleErrorSupport.ts`: `20`
+  - `instanceDetailReloadSupport.ts`: `26`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `30`
+  - `instanceDetailNavigationSupport.ts`: `37`
+  - `instanceLifecycleActionSupport.ts`: `150`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Fresh build evidence after this loop is:
+  - `InstanceDetail-B7qB1tcv.js`: `176.52 kB`
+  - `InstanceConfigWorkbenchPanel-CHqsvN9P.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-DVvFZx6U.js`: `2.38 kB`
+- Relative to the immediately prior `1019` page baseline from Addendum XC, the fresh current dirty worktree re-measures `InstanceDetail.tsx` at `1031`. This addendum records a verified closure of the final remaining wrapper families while also documenting that the broader page baseline has shifted again and is now the operative truth for step closure.
+- Fresh verification in this loop reached:
+  - red: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationStateSupport.test.ts`, `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailWorkbenchLoaderSupport.test.ts`, and `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - green: `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationStateSupport.test.ts`, `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailWorkbenchLoaderSupport.test.ts`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, and `pnpm.cmd build`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` prints a non-blocking Rolldown plugin timing warning while still succeeding
+- `Step 07 / CP07-3` is now green. The only remaining action was the explicit final closure writeback for `CP07-4`.
+
+## Latest Progress Addendum XCII
+
+- Final Step 07 closure writeback re-ran the page-wrapper scan:
+  - `rg -n "\w+: \([^)]*\) =>|\w+: \(\) =>" packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx -S`
+  - returned no matches
+- The current operative hotspot profile remains:
+  - `InstanceDetail.tsx`: `1031`
+  - `instanceDetailProviderDeleteStateSupport.ts`: `19`
+  - `instanceDetailAgentMutationStateSupport.ts`: `18`
+  - `instanceDetailWorkbenchLoaderSupport.ts`: `28`
+  - `instanceDetailDeleteSupport.ts`: `19`
+  - `instanceDetailManagedConfigMutationSupport.ts`: `49`
+  - `instanceDetailLifecycleMutationSupport.ts`: `19`
+  - `instanceDetailManagedChannelMutationSupport.ts`: `19`
+  - `instanceDetailAgentMutationSupport.ts`: `21`
+  - `instanceDetailAgentSkillMutationSupport.ts`: `19`
+  - `instanceDetailProviderCatalogMutationSupport.ts`: `41`
+  - `instanceDetailConsoleErrorSupport.ts`: `20`
+  - `instanceDetailReloadSupport.ts`: `26`
+  - `instanceDetailSectionAvailabilitySupport.ts`: `30`
+  - `instanceDetailNavigationSupport.ts`: `37`
+  - `instanceLifecycleActionSupport.ts`: `150`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- Build evidence carried forward from the verified `162` state remains:
+  - `InstanceDetail-B7qB1tcv.js`: `176.52 kB`
+  - `InstanceConfigWorkbenchPanel-CHqsvN9P.js`: `63.33 kB`
+  - `InstanceDetailFilesSection-DVvFZx6U.js`: `2.38 kB`
+- Fresh verification in this closure loop reached:
+  - green: `rg -n "\w+: \([^)]*\) =>|\w+: \(\) =>" packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx -S`, `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`, `pnpm.cmd check:sdkwork-instances`, `pnpm.cmd --filter @sdkwork/claw-web lint`, `pnpm.cmd build`, and `node -e "JSON.parse(require('fs').readFileSync('docs/release/releases.json','utf8')); console.log('ok')"`
+  - yellow: `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking `@buape/carbon@0.0.0-beta-20260327000044` warning, and `pnpm.cmd build` still prints the non-blocking Rolldown plugin timing warning while succeeding
+- `Step 07` is now fully closed:
+  - `CP07-1`: green
+  - `CP07-2`: green
+  - `CP07-3`: green
+  - `CP07-4`: green
+- The next frontier should move to the next pending wave goal after Step 07, using the same evidence-first loop discipline.
+

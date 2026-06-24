@@ -1,0 +1,63 @@
+> Migrated from `docs/release/release-2026-04-09-95.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Claw Studio release-2026-04-09-95
+
+## Highlights
+
+- Moved the remaining managed-channel draft patching, mutation-request construction, and shared mutation execution orchestration out of `InstanceDetail.tsx` and into a dedicated `openClawManagedChannelMutationSupport` helper.
+- Added focused helper coverage plus contract evidence so the page must keep using the shared managed-channel helper boundary while retaining page-owned write authority.
+- Re-baselined the current dirty-worktree Step 07 hotspot profile and kept the focused instance-detail verification chain green.
+
+## Attempt Outcome
+
+- Fresh RED in this loop was explicit:
+  - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - failed first because the contract still expected the deleted local marker `const runManagedChannelMutation = async`
+- Implemented and closed the unfinished Step 07 extraction loop:
+  - added `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts`
+  - rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now builds managed-channel draft and mutation requests through the dedicated helper and runs shared orchestration through injected page-owned callbacks
+  - added `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
+  - updated `packages/sdkwork-claw-instances/src/services/index.ts`
+  - updated `scripts/sdkwork-instances-contract.test.ts` to enforce the new managed-channel helper boundary and preserve page-side write authority
+- Current hotspot profile after the fresh current-worktree re-baseline:
+  - `InstanceDetail.tsx`: `1823`
+  - `openClawManagedChannelMutationSupport.ts`: `223`
+  - `InstanceDetailSectionContent.tsx`: `215`
+  - `InstanceDetailManagedMemorySection.tsx`: `87`
+  - `InstanceDetailManagedToolsSection.tsx`: `247`
+  - `instanceWorkbenchServiceCore.ts`: `1032`
+  - `instanceServiceCore.ts`: `1274`
+- `CP07-3` remains open. This loop materially improves the remaining page-side managed-channel orchestration boundary, but it does not claim Step 07 closure.
+
+## Change Scope
+
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
+- `packages/sdkwork-claw-instances/src/services/index.ts`
+- `scripts/sdkwork-instances-contract.test.ts`
+- `docs/review/step-07-managed-channel-mutation-helper-extraction-2026-04-09.md`
+- `docs/鏋舵瀯/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+- `docs/release/release-2026-04-09-95.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- RED:
+  - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+- GREEN:
+  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
+  - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+  - `pnpm check:sdkwork-instances`
+  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm build`
+- YELLOW:
+  - `pnpm lint`
+
+## Risks And Rollback
+
+- The main Step 07 risk remains future page-side re-growth if managed-channel request construction or injected mutation sequencing drifts back into `InstanceDetail.tsx`.
+- This loop intentionally does not alter transport selection, Provider Center managed authority, Local Proxy routing, or desktop plugin/runtime boundaries.
+- Rollback is limited to the new managed-channel helper and test, the page rewiring, the service-barrel export, the contract update, and the matching review / architecture / release writebacks.
+

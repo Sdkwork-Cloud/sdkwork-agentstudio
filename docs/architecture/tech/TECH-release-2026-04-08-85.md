@@ -1,0 +1,54 @@
+> Migrated from `docs/release/release-2026-04-08-85.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Claw Studio release-2026-04-08-85
+
+## Highlights
+
+- Continued the real `Step 07 / CP07-3` page hotspot work by moving managed-config form-state types and snapshot-to-draft factories into the shared managed-config draft helper.
+- Preserved the authority split so `InstanceDetail.tsx` still owns `useState`, `useEffect`, truth-source routing, and all write-path side effects while the helper layer owns only pure draft shaping and save-input construction.
+- Reduced the current page hotspot from the immediately prior `2640` baseline to a fresh `2474` lines while `instanceWorkbenchServiceCore.ts` remained at `1132`.
+
+## Attempt Outcome
+
+- Expanded the managed-config draft helper boundary in:
+  - `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts`
+- Expanded focused helper coverage in:
+  - `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- Rewired the page to consume the shared draft factories and draft-value types in:
+  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- Extended the contract suite so the page can no longer drift those types and factories back inline in:
+  - `scripts/sdkwork-instances-contract.test.ts`
+- Updated the ongoing Step 07 evidence set:
+  - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+  - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+
+## Change Scope
+
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `scripts/sdkwork-instances-contract.test.ts`
+- `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+- `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+- `docs/release/release-2026-04-08-85.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `pnpm.cmd check:sdkwork-instances`
+
+## Risks And Rollback
+
+- `Step 07` is still not closable. `CP07-3` remains open because `InstanceDetail.tsx` is still the dominant hotspot at a fresh `2474` lines.
+- This loop intentionally moved only pure managed-config draft shaping. Provider write authority, Provider Center managed classification, Local Proxy routing, and desktop plugin/runtime boundaries remained unchanged.
+- Rollback must revert the managed-config draft factories, the page rewiring, the helper/contract test updates, and the matching review/architecture/release evidence together.
+

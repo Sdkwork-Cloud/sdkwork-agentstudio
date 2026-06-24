@@ -1,0 +1,58 @@
+> Migrated from `docs/release/release-2026-04-08-50.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Fresh serial-trunk gate audits close the stale Step 03 “runtime/release evidence chain still open” status on the current worktree.
+- Step 04 API/platform-bridge gates are green without additional code changes.
+- The next real frontier advances into Step 05 wave-B Provider/Projection evidence rather than another Step 03/04 contract repair.
+
+## Attempt Outcome
+
+- Re-ran the serial-trunk and Step 03 closure gates:
+  - `pnpm.cmd check:arch`
+  - `pnpm.cmd check:sdkwork-hosts`
+  - `pnpm.cmd check:desktop-openclaw-runtime`
+  - `pnpm.cmd check:desktop`
+- Re-ran the Step 04 contract gates:
+  - `pnpm.cmd check:sdkwork-host-runtime`
+  - `pnpm.cmd check:sdkwork-instances`
+  - `pnpm.cmd check:server`
+- Probed Step 05 entry gates:
+  - `pnpm.cmd check:sdkwork-settings`
+  - `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/providerConfigCenterService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-channels/src/services/channelService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+  - `node scripts/desktop-local-ai-proxy-contract.test.mjs`
+- Every command above passed on the current worktree.
+- Because the current runtime, API, platform-bridge, and Provider/Projection entry contracts were already aligned, this loop made no production code changes and instead wrote back the new review and release evidence that advances the frontier.
+
+## Change Scope
+
+- `docs/review/step-03-执行卡-2026-04-07.md`
+- `docs/review/step-04-执行卡-2026-04-08.md`
+- `docs/review/step-04-api-boundaries-and-platform-bridge-gate-convergence-2026-04-08.md`
+- `docs/release/release-2026-04-08-50.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `pnpm.cmd check:arch`
+- `pnpm.cmd check:sdkwork-hosts`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+- `pnpm.cmd check:desktop`
+- `pnpm.cmd check:sdkwork-host-runtime`
+- `pnpm.cmd check:sdkwork-instances`
+- `pnpm.cmd check:server`
+- `pnpm.cmd check:sdkwork-settings`
+- `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/providerConfigCenterService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-channels/src/services/channelService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node scripts/desktop-local-ai-proxy-contract.test.mjs`
+
+## Risks And Rollback
+
+- This loop changes governance evidence only; rollback is limited to the review and release documents added here.
+- The primary risk is letting stale status text keep serial-trunk work pinned to Step 03/04 when fresh gates already show the frontier has moved to Step 05.
+- No runtime, host, proxy, or provider code paths changed in this loop.
+

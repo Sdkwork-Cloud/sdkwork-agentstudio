@@ -1,0 +1,52 @@
+> Migrated from `docs/release/release-2026-04-08-82.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# Claw Studio release-2026-04-08-82
+
+## Highlights
+
+- Continued the real `Step 07 / CP07-3` page hotspot work by moving provider draft baseline, request baseline, and dirty-state derivation into shared provider draft helpers.
+- Preserved the authority split so `InstanceDetail.tsx` still owns page state and provider write orchestration while the helper layer now owns only pure draft shaping.
+- Reduced the current page hotspot from the immediately prior `2827` baseline to a fresh `2810` lines while `instanceWorkbenchServiceCore.ts` stayed flat at `1132`.
+
+## Attempt Outcome
+
+- Expanded shared provider draft helpers in:
+  - `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`
+- Expanded focused helper coverage in:
+  - `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- Rewired provider draft fallback/reset/pending-change derivation in:
+  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- Extended the contract suite so the page consumes the new provider draft helper boundary in:
+  - `scripts/sdkwork-instances-contract.test.ts`
+- Updated the ongoing Step 07 evidence set:
+  - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+  - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+
+## Change Scope
+
+- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`
+- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `scripts/sdkwork-instances-contract.test.ts`
+- `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
+- `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
+- `docs/release/release-2026-04-08-82.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `pnpm.cmd check:sdkwork-instances`
+
+## Risks And Rollback
+
+- `Step 07` is still not closable. `CP07-3` remains open because `InstanceDetail.tsx` is still the dominant hotspot at a fresh `2810` lines.
+- This loop intentionally moved only pure provider draft derivation. Provider write authority, Provider Center managed classification, and runtime boundary files remained unchanged.
+- Rollback must revert the provider draft baseline helpers, the page rewiring, the helper/contract test updates, and the matching review/architecture/release evidence together.
+

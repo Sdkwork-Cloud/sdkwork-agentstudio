@@ -1,0 +1,45 @@
+> Migrated from `docs/架构/135-2026-04-09-openclaw-2026.4.8-native-prebuild-upgrade-guard.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+# 135-2026-04-09 OpenClaw 2026.4.8 Native Prebuild Upgrade Guard
+
+## Decision
+
+桌面 OpenClaw 升级链必须把“下载型原生运行时资产补水”视为 `prepare-openclaw-runtime` 的正式职责，而不是依赖包安装脚本偶然完成：
+
+- `config/openclaw-release.json`
+  继续作为 OpenClaw 稳定版本源，当前基线为 `2026.4.8`
+- `packages/sdkwork-claw-desktop/src-tauri/foundation/components/component-registry.json`
+  必须与版本源保持同一 bundled OpenClaw 版本
+- `scripts/prepare-openclaw-runtime.mjs`
+  继续作为 bundled OpenClaw runtime 准备 owner，并额外负责在 `npm install --ignore-scripts` 下补齐下载型原生运行时资产
+- `scripts/prepare-openclaw-runtime.test.mjs`
+  必须先用红灯回归锁定新增原生资产解析与落盘行为，再允许实现补齐
+
+当前显式覆盖的下载型原生运行时资产包括：
+
+- `@matrix-org/matrix-sdk-crypto-nodejs`
+- `@discordjs/opus`
+
+## Why
+
+- 2026-04-09 重新核对 upstream 后，`openclaw` 官方 latest 已更新到 `2026.4.8`，对应 GitHub latest release 为 `v2026.4.8`，发布时间是 `2026-04-08`。
+- 本仓库的 runtime 准备链为了可重复性使用 `npm install --ignore-scripts`，这意味着依赖自身的 `install` 脚本不会自动拉取 `node-pre-gyp` 预编译二进制。
+- 升级到 `2026.4.8` 后，真实失败点不是版本元数据，而是 `@discordjs/opus` smoke load 缺失 `prebuild/.../opus.node`。
+- 如果不把这类资产补水上升为正式 upgrade 标准，版本源、manifest 和 packaged release 都可能表面一致，但真实 runtime 仍然不可用。
+
+## Standard
+
+- 每次 OpenClaw 升级都必须先重新确认 upstream latest，再修改本仓库版本源。
+- 每次升级都必须重新审阅 upstream release notes，并把新增 runtime packaging 约束落实到准备链，而不是停留在文档层。
+- 当 upstream 新增 `pnpm.onlyBuiltDependencies` 中的原生依赖，或新增由安装脚本下载的运行时二进制时：
+  - 先补失败测试
+  - 再补 `prepare-openclaw-runtime` 的解析与落盘逻辑
+  - 最后重新执行真实 runtime prepare，而不是只改版本号
+- `check:desktop-openclaw-runtime` 与 `check:desktop` 必须在升级完成后重新通过。
+
+## Impact
+
+- OpenClaw `2026.4.8` 现在可以在当前桌面工作区完成真实 runtime 准备，而不是停在 smoke-load 失败。
+- 未来再遇到类似 `node-pre-gyp` / 下载型原生预编译包升级时，仓库已经有明确 owner、测试入口和升级标准。
+

@@ -1,0 +1,50 @@
+> Migrated from `docs/release/release-2026-04-08-21.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Step 03 continued on the serial `CP03-2` hotspot-splitting frontier and extracted shared local-proxy upstream request/url construction into a dedicated Rust submodule.
+- This release candidate keeps Step 03 open overall, but it closes another real runtime-boundary slice and preserves fresh desktop-gate evidence.
+
+## Attempt Outcome
+
+- The loop repaired one remaining local proxy shared-helper hotspot:
+  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned shared OpenAI-compatible request construction and Gemini/Ollama upstream URL builders even though those helpers now served both request translation and the extracted probe module
+  - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that shared upstream-builder boundary
+- Implemented the narrow repairs:
+  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs`
+  - delegated `upstream::build_openai_compatible_upstream_request(...)`, `upstream::build_gemini_upstream_request_url(...)`, and `upstream::build_ollama_upstream_request_url(...)` from `local_ai_proxy.rs`
+  - changed `probe.rs` to consume the same upstream module
+  - tightened the desktop foundation gate so the upstream module file, declaration, and explicit delegations are now required
+- Fresh verification:
+  - RED: `node scripts/check-desktop-platform-foundation.mjs`
+  - GREEN: `node scripts/check-desktop-platform-foundation.mjs`
+  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-upstream local_ai_proxy_`
+  - `pnpm.cmd check:desktop-openclaw-runtime`
+  - `pnpm.cmd check:desktop`
+
+## Change Scope
+
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
+- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs`
+- `scripts/check-desktop-platform-foundation.mjs`
+- `docs/review/step-03-local-ai-proxy-upstream-hotspot-split-2026-04-08.md`
+- `docs/架构/106-2026-04-08-local-ai-proxy-upstream-module-boundary.md`
+- `docs/review/step-03-执行卡-2026-04-07.md`
+- `docs/release/release-2026-04-08-21.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node scripts/check-desktop-platform-foundation.mjs`
+- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-upstream local_ai_proxy_`
+- `pnpm.cmd check:desktop-openclaw-runtime`
+- `pnpm.cmd check:desktop`
+
+## Risks And Rollback
+
+- The split is intended to be behavior-preserving; the main risk is future drift if shared upstream request/url construction is copied back into `local_ai_proxy.rs` or reimplemented independently by probe/request-serving code.
+- Shared upstream helpers now live behind one explicit submodule owner; later refactors must preserve that boundary rather than fragment it again.
+- Rollback is limited to the listed Rust/script files and the associated review, architecture, and release writebacks.
+

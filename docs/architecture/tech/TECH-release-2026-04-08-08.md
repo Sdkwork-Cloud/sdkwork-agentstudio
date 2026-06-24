@@ -1,0 +1,32 @@
+> Migrated from `docs/release/release-2026-04-08-08.md` on 2026-06-24.
+> Owner: SDKWork maintainers
+
+## Highlights
+
+- Step 03 continued with an OpenClaw fixture-alignment loop that refreshes the gateway history config test onto the current shared instance-detail and config-snapshot contracts.
+- No production behavior changed in this loop; the work is strictly test-contract repair.
+
+## Attempt Outcome
+
+- `packages/sdkwork-claw-chat/src/services/openClawGatewayHistoryConfigService.test.ts` now matches the live `StudioInstanceDetailRecord` contract used by `webStudio.ts` and the current `OpenClawConfigSnapshot` shape exposed by `@sdkwork/claw-core`.
+- The test runs cleanly under `node --experimental-strip-types`, and fresh lint evidence shows this file is no longer part of the current blocker stack.
+- The workspace lint frontier has advanced to `packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`.
+
+## Change Scope
+
+- `packages/sdkwork-claw-chat/src/services/openClawGatewayHistoryConfigService.test.ts`
+- `docs/review/step-03-openclaw-gateway-history-fixture-alignment-2026-04-08.md`
+- `docs/review/step-03-执行卡-2026-04-07.md`
+- `docs/release/release-2026-04-08-08.md`
+- `docs/release/releases.json`
+
+## Verification Focus
+
+- `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/openClawGatewayHistoryConfigService.test.ts`
+- targeted `pnpm.cmd lint` check for `openClawGatewayHistoryConfigService.test.ts`
+
+## Risks And Rollback
+
+- This iteration is test-only; rollback is isolated to one fixture file.
+- The broader workspace lint remains red, but this OpenClaw gateway-history slice has been removed from the current blocker stack with direct evidence.
+
