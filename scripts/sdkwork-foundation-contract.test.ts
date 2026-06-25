@@ -129,7 +129,7 @@ runTest('sdkwork-claw-web pins stable build chunks for infrastructure without sh
   assert.match(buildHelperSource, /app-state/);
   assert.match(buildHelperSource, /app-ui/);
   assert.doesNotMatch(buildHelperSource, /markdown-highlight/);
-  assert.match(buildHelperSource, /sdkwork-appbase-app-sdk/);
+  assert.match(buildHelperSource, /sdkwork-iam-app-sdk/);
   assert.match(buildHelperSource, /sdkwork-messaging-app-sdk/);
   assert.match(buildHelperSource, /sdkwork-sdk-common/);
   assert.match(buildHelperSource, /sdkwork-claw-infrastructure/);

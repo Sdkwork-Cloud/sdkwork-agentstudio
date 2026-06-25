@@ -55,7 +55,7 @@ runTest('desktop build optimization keeps core shared runtime in stable chunks',
   );
   assert.equal(
     manualChunks('C:/repo/shared-appbase-sdk/index.ts'),
-    'sdkwork-appbase-app-sdk',
+    'sdkwork-iam-app-sdk',
   );
   assert.equal(
     manualChunks('C:/repo/shared-messaging-sdk/api/client.ts'),

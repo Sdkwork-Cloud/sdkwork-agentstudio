@@ -46,10 +46,10 @@ export function shouldIgnoreParityPath(relativePath) {
 export const paritySources = [
   {
     id: 'appbase-app-sdk',
-    label: '@sdkwork/appbase-app-sdk',
+    label: '@sdkwork/iam-app-sdk',
     localRoot: path.resolve(
       workspaceRootDir,
-      '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi',
+      '../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi',
     ),
   },
   {

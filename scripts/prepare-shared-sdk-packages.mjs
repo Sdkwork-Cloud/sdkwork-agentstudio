@@ -30,7 +30,7 @@ export function createSharedSdkPackageContext({
     canonicalWorkspaceRoot,
     sharedAppSdkRoot: path.resolve(
       canonicalWorkspaceRoot,
-      '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi',
+      '../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi',
     ),
     sharedMessagingAppSdkRoot: path.resolve(
       canonicalWorkspaceRoot,
@@ -378,7 +378,7 @@ export function prepareSharedSdkPackages({
   }
 
   assertPackageRootExists(context.sharedSdkCommonRoot, '@sdkwork/sdk-common');
-  assertPackageRootExists(context.sharedAppSdkRoot, '@sdkwork/appbase-app-sdk');
+  assertPackageRootExists(context.sharedAppSdkRoot, '@sdkwork/iam-app-sdk');
   assertPackageRootExists(context.sharedMessagingAppSdkRoot, '@sdkwork/messaging-app-sdk');
   const prepareOptionalSharedSdkPackages = shouldPrepareOptionalSharedSdkPackages(env);
 
@@ -396,7 +396,7 @@ export function prepareSharedSdkPackages({
       '@sdkwork/sdk-common': context.sharedSdkCommonRoot,
     },
   });
-  ensurePackageBuilt('@sdkwork/appbase-app-sdk', context.sharedAppSdkRoot, context.workspaceRoot, sharedSdkBuildEnv);
+  ensurePackageBuilt('@sdkwork/iam-app-sdk', context.sharedAppSdkRoot, context.workspaceRoot, sharedSdkBuildEnv);
   const needsSharedMessagingAppSdkBuild = shouldBuildPackage(context.sharedMessagingAppSdkRoot);
   ensurePackageDependencyLinks(context.sharedMessagingAppSdkRoot, context.workspaceRoot, {
     includeDependencies: true,
@@ -413,7 +413,7 @@ export function prepareSharedSdkPackages({
       includeDevDependencies: shouldBuildPackage(context.sharedCorePcReactRoot),
       includePeerDependencies: true,
       localPackageRoots: {
-        '@sdkwork/appbase-app-sdk': context.sharedAppSdkRoot,
+        '@sdkwork/iam-app-sdk': context.sharedAppSdkRoot,
         '@sdkwork/sdk-common': context.sharedSdkCommonRoot,
         '@sdkwork/im-sdk': context.sharedImSdkRoot,
         '@sdkwork/messaging-app-sdk': context.sharedMessagingAppSdkRoot,

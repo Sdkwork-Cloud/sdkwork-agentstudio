@@ -79,7 +79,7 @@ export function createClawManualChunks(entries: ClawManualChunkEntries | string)
     }
 
     if (appbaseAppSdkRoot && isWithinDirectory(normalizedId, appbaseAppSdkRoot)) {
-      return 'sdkwork-appbase-app-sdk';
+      return 'sdkwork-iam-app-sdk';
     }
 
     if (messagingAppSdkRoot && isWithinDirectory(normalizedId, messagingAppSdkRoot)) {

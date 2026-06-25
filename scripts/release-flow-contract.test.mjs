@@ -881,7 +881,7 @@ test('shared sdk package preparation resolves the workspace root consistently fr
       canonicalWorkspaceRoot: expectedCanonicalWorkspaceRoot,
       sharedAppSdkRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
-        '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi',
+        '../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi',
       ),
       sharedMessagingAppSdkRoot: path.resolve(
         expectedCanonicalWorkspaceRoot,
@@ -929,8 +929,8 @@ test('shared sdk package preparation repairs package-local dependency links from
     tempRoot,
     'sdkwork-appbase',
     'sdks',
-    'sdkwork-appbase-app-sdk',
-    'sdkwork-appbase-app-sdk-typescript',
+    'sdkwork-iam-app-sdk',
+    'sdkwork-iam-app-sdk-typescript',
     'generated',
     'server-openapi',
   );
@@ -974,7 +974,7 @@ test('shared sdk package preparation repairs package-local dependency links from
     path.join(sharedAppSdkRoot, 'package.json'),
     JSON.stringify(
       {
-        name: '@sdkwork/appbase-app-sdk',
+        name: '@sdkwork/iam-app-sdk',
         dependencies: {
           '@sdkwork/sdk-common': '^1.0.2',
         },
@@ -1048,8 +1048,8 @@ test('shared sdk package preparation preserves existing package-local dependency
     tempRoot,
     'sdkwork-appbase',
     'sdks',
-    'sdkwork-appbase-app-sdk',
-    'sdkwork-appbase-app-sdk-typescript',
+    'sdkwork-iam-app-sdk',
+    'sdkwork-iam-app-sdk-typescript',
     'generated',
     'server-openapi',
   );
@@ -1093,7 +1093,7 @@ test('shared sdk package preparation preserves existing package-local dependency
     path.join(sharedAppSdkRoot, 'package.json'),
     JSON.stringify(
       {
-        name: '@sdkwork/appbase-app-sdk',
+        name: '@sdkwork/iam-app-sdk',
         dependencies: {
           '@sdkwork/sdk-common': '^1.0.2',
         },
@@ -1369,8 +1369,8 @@ test('shared sdk package preparation skips optional external source package muta
     'apps',
     'sdkwork-appbase',
     'sdks',
-    'sdkwork-appbase-app-sdk',
-    'sdkwork-appbase-app-sdk-typescript',
+    'sdkwork-iam-app-sdk',
+    'sdkwork-iam-app-sdk-typescript',
     'generated',
     'server-openapi',
   );
@@ -1455,7 +1455,7 @@ test('shared sdk package preparation skips optional external source package muta
 
   writePackage(sharedSdkCommonRoot, { name: '@sdkwork/sdk-common', version: '1.0.2' });
   writePackage(sharedAppSdkRoot, {
-    name: '@sdkwork/appbase-app-sdk',
+    name: '@sdkwork/iam-app-sdk',
     version: '0.1.0',
     dependencies: {
       '@sdkwork/sdk-common': '^1.0.2',
@@ -1472,7 +1472,7 @@ test('shared sdk package preparation skips optional external source package muta
     name: '@sdkwork/core-pc-react',
     version: '0.1.1',
     dependencies: {
-      '@sdkwork/appbase-app-sdk': '^0.1.0',
+      '@sdkwork/iam-app-sdk': '^0.1.0',
       '@sdkwork/messaging-app-sdk': '^0.1.0',
       '@sdkwork/sdk-common': '^1.0.2',
       '@sdkwork/im-sdk': '^0.1.1',
@@ -1580,8 +1580,8 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
     'apps',
     'sdkwork-appbase',
     'sdks',
-    'sdkwork-appbase-app-sdk',
-    'sdkwork-appbase-app-sdk-typescript',
+    'sdkwork-iam-app-sdk',
+    'sdkwork-iam-app-sdk-typescript',
     'generated',
     'server-openapi',
   );
@@ -1650,7 +1650,7 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
 
   writePackage(sharedSdkCommonRoot, { name: '@sdkwork/sdk-common', version: '1.0.2' });
   writePackage(sharedAppSdkRoot, {
-    name: '@sdkwork/appbase-app-sdk',
+    name: '@sdkwork/iam-app-sdk',
     version: '0.1.0',
     dependencies: {
       '@sdkwork/sdk-common': '^1.0.2',
@@ -1667,7 +1667,7 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
     name: '@sdkwork/core-pc-react',
     version: '0.1.1',
     dependencies: {
-      '@sdkwork/appbase-app-sdk': '^0.1.0',
+      '@sdkwork/iam-app-sdk': '^0.1.0',
       '@sdkwork/messaging-app-sdk': '^0.1.0',
       '@sdkwork/sdk-common': '^1.0.2',
     },
@@ -1755,8 +1755,8 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
     'apps',
     'sdkwork-appbase',
     'sdks',
-    'sdkwork-appbase-app-sdk',
-    'sdkwork-appbase-app-sdk-typescript',
+    'sdkwork-iam-app-sdk',
+    'sdkwork-iam-app-sdk-typescript',
     'generated',
     'server-openapi',
   );
@@ -1841,7 +1841,7 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
 
   writePackage(sharedSdkCommonRoot, { name: '@sdkwork/sdk-common', version: '1.0.2' });
   writePackage(sharedAppSdkRoot, {
-    name: '@sdkwork/appbase-app-sdk',
+    name: '@sdkwork/iam-app-sdk',
     version: '0.1.0',
     dependencies: {
       '@sdkwork/sdk-common': '^1.0.2',
@@ -1872,7 +1872,7 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
     name: '@sdkwork/core-pc-react',
     version: '0.1.1',
     dependencies: {
-      '@sdkwork/appbase-app-sdk': '^0.1.0',
+      '@sdkwork/iam-app-sdk': '^0.1.0',
       '@sdkwork/messaging-app-sdk': '^0.1.0',
       '@sdkwork/sdk-common': '^1.0.2',
       '@sdkwork/im-sdk': '^0.1.1',
@@ -2016,7 +2016,7 @@ test('git-backed shared sdk source detection resolves origin from nested directo
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-'));
   const repoRoot = path.join(tempRoot, 'shared-sdk-repo');
-  const nestedPackageRoot = path.join(repoRoot, 'packages', 'sdkwork-appbase-app-sdk');
+  const nestedPackageRoot = path.join(repoRoot, 'packages', 'sdkwork-iam-app-sdk');
   const gitConfigPath = path.join(repoRoot, '.git', 'config');
 
   mkdirSync(repoRoot, { recursive: true });
@@ -2170,30 +2170,30 @@ test('git-backed shared sdk source helper parses current SDK family layouts and 
   const repoRoot = path.join(rootDir, '.tmp', 'shared-sdk-layout');
   const spec = {
     repoRoot,
-    packageContainerDirName: 'sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated',
+    packageContainerDirName: 'sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated',
     packageDirName: 'server-openapi',
-    monorepoSubmodulePath: 'sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated',
+    monorepoSubmodulePath: 'sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated',
   };
 
   assert.equal(
     helper.resolveSourcePackageContainerRoot(spec).replaceAll('\\', '/'),
-    path.join(repoRoot, 'sdks', 'sdkwork-appbase-app-sdk', 'sdkwork-appbase-app-sdk-typescript', 'generated').replaceAll('\\', '/'),
+    path.join(repoRoot, 'sdks', 'sdkwork-iam-app-sdk', 'sdkwork-iam-app-sdk-typescript', 'generated').replaceAll('\\', '/'),
   );
   assert.equal(
     helper.resolveSourcePackageRoot(spec).replaceAll('\\', '/'),
-    path.join(repoRoot, 'sdks', 'sdkwork-appbase-app-sdk', 'sdkwork-appbase-app-sdk-typescript', 'generated', 'server-openapi').replaceAll('\\', '/'),
+    path.join(repoRoot, 'sdks', 'sdkwork-iam-app-sdk', 'sdkwork-iam-app-sdk-typescript', 'generated', 'server-openapi').replaceAll('\\', '/'),
   );
   assert.equal(
     helper.resolveMonorepoSubmoduleRoot(spec).replaceAll('\\', '/'),
-    path.join(repoRoot, 'sdks', 'sdkwork-appbase-app-sdk', 'sdkwork-appbase-app-sdk-typescript', 'generated').replaceAll('\\', '/'),
+    path.join(repoRoot, 'sdks', 'sdkwork-iam-app-sdk', 'sdkwork-iam-app-sdk-typescript', 'generated').replaceAll('\\', '/'),
   );
   assert.equal(
     helper.resolveMonorepoPackageRoot(spec).replaceAll('\\', '/'),
     path.join(
       repoRoot,
       'sdks',
-      'sdkwork-appbase-app-sdk',
-      'sdkwork-appbase-app-sdk-typescript',
+      'sdkwork-iam-app-sdk',
+      'sdkwork-iam-app-sdk-typescript',
       'generated',
       'server-openapi',
     ).replaceAll('\\', '/'),
@@ -2210,14 +2210,14 @@ test('git-backed shared sdk source helper parses current SDK family layouts and 
       spec,
       'https://github.com/Sdkwork-Cloud/server-openapi.git',
     ).replaceAll('\\', '/'),
-    path.join(repoRoot, 'sdks', 'sdkwork-appbase-app-sdk', 'sdkwork-appbase-app-sdk-typescript', 'generated', 'server-openapi').replaceAll('\\', '/'),
+    path.join(repoRoot, 'sdks', 'sdkwork-iam-app-sdk', 'sdkwork-iam-app-sdk-typescript', 'generated', 'server-openapi').replaceAll('\\', '/'),
   );
   assert.equal(
     helper.resolvePackageRootForCheckoutRoot(
       spec,
       repoRoot,
     ).replaceAll('\\', '/'),
-    path.join(repoRoot, 'sdks', 'sdkwork-appbase-app-sdk', 'sdkwork-appbase-app-sdk-typescript', 'generated', 'server-openapi').replaceAll('\\', '/'),
+    path.join(repoRoot, 'sdks', 'sdkwork-iam-app-sdk', 'sdkwork-iam-app-sdk-typescript', 'generated', 'server-openapi').replaceAll('\\', '/'),
   );
 
   const parsedPaths = helper.parseGitSubmodulePaths(`
@@ -2281,8 +2281,8 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   const appbaseAppPackageRoot = path.join(
     appbaseAppRepoRoot,
     'sdks',
-    'sdkwork-appbase-app-sdk',
-    'sdkwork-appbase-app-sdk-typescript',
+    'sdkwork-iam-app-sdk',
+    'sdkwork-iam-app-sdk-typescript',
     'generated',
     'server-openapi',
   );
@@ -2325,7 +2325,7 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
 
   writeFileSync(
     path.join(appbaseAppPackageRoot, 'package.json'),
-    JSON.stringify({ name: '@sdkwork/appbase-app-sdk', version: '0.1.0' }, null, 2),
+    JSON.stringify({ name: '@sdkwork/iam-app-sdk', version: '0.1.0' }, null, 2),
     'utf8',
   );
   writeFileSync(
@@ -2485,8 +2485,8 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
       'apps',
       'sdkwork-appbase',
       'sdks',
-      'sdkwork-appbase-app-sdk',
-      'sdkwork-appbase-app-sdk-typescript',
+      'sdkwork-iam-app-sdk',
+      'sdkwork-iam-app-sdk-typescript',
       'generated',
       'server-openapi',
     )));
@@ -2539,7 +2539,7 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
     )));
     assert.equal(
       JSON.parse(readFileSync(path.join(preparedAppbaseAppSdk.packageRoot, 'package.json'), 'utf8')).name,
-      '@sdkwork/appbase-app-sdk',
+      '@sdkwork/iam-app-sdk',
     );
     assert.equal(
       JSON.parse(readFileSync(path.join(preparedSdkCommon.packageRoot, 'package.json'), 'utf8')).name,

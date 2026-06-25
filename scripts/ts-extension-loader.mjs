@@ -36,7 +36,7 @@ const EXTRA_WORKSPACE_PACKAGE_SOURCE_SPECS = [
     packageName: '@sdkwork/auth-pc-react',
     packageRoot: path.resolve(
       CANONICAL_WORKSPACE_ROOT,
-      '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-pc-react',
+      '../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react',
     ),
     entryBySubpath: {
       '.': 'src/index.ts',
@@ -47,7 +47,7 @@ const EXTRA_WORKSPACE_PACKAGE_SOURCE_SPECS = [
     packageName: '@sdkwork/auth-runtime-pc-react',
     packageRoot: path.resolve(
       CANONICAL_WORKSPACE_ROOT,
-      '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-runtime-pc-react',
+      '../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-runtime-pc-react',
     ),
     entryBySubpath: {
       '.': 'src/index.ts',
@@ -67,7 +67,7 @@ const EXTRA_WORKSPACE_PACKAGE_SOURCE_SPECS = [
     packageName: '@sdkwork/iam-contracts',
     packageRoot: path.resolve(
       CANONICAL_WORKSPACE_ROOT,
-      '../sdkwork-appbase/packages/common/iam/sdkwork-iam-contracts',
+      '../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-contracts',
     ),
     entryBySubpath: {
       '.': 'src/index.ts',
@@ -77,7 +77,7 @@ const EXTRA_WORKSPACE_PACKAGE_SOURCE_SPECS = [
     packageName: '@sdkwork/iam-runtime',
     packageRoot: path.resolve(
       CANONICAL_WORKSPACE_ROOT,
-      '../sdkwork-appbase/packages/common/iam/sdkwork-iam-runtime',
+      '../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-runtime',
     ),
     entryBySubpath: {
       '.': 'src/index.ts',
@@ -87,7 +87,7 @@ const EXTRA_WORKSPACE_PACKAGE_SOURCE_SPECS = [
     packageName: '@sdkwork/iam-sdk-adapter',
     packageRoot: path.resolve(
       CANONICAL_WORKSPACE_ROOT,
-      '../sdkwork-appbase/packages/common/iam/sdkwork-iam-sdk-adapter',
+      '../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-sdk-adapter',
     ),
     entryBySubpath: {
       '.': 'src/index.ts',
@@ -97,7 +97,7 @@ const EXTRA_WORKSPACE_PACKAGE_SOURCE_SPECS = [
     packageName: '@sdkwork/iam-sdk-ports',
     packageRoot: path.resolve(
       CANONICAL_WORKSPACE_ROOT,
-      '../sdkwork-appbase/packages/common/iam/sdkwork-iam-sdk-ports',
+      '../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-sdk-ports',
     ),
     entryBySubpath: {
       '.': 'src/index.ts',
@@ -107,7 +107,7 @@ const EXTRA_WORKSPACE_PACKAGE_SOURCE_SPECS = [
     packageName: '@sdkwork/iam-service',
     packageRoot: path.resolve(
       CANONICAL_WORKSPACE_ROOT,
-      '../sdkwork-appbase/packages/common/iam/sdkwork-iam-service',
+      '../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-service',
     ),
     entryBySubpath: {
       '.': 'src/index.ts',
@@ -116,10 +116,10 @@ const EXTRA_WORKSPACE_PACKAGE_SOURCE_SPECS = [
 ];
 const SHARED_SDK_SOURCE_SPECS = [
   {
-    packageName: '@sdkwork/appbase-app-sdk',
+    packageName: '@sdkwork/iam-app-sdk',
     sourceRoot: path.resolve(
       CANONICAL_WORKSPACE_ROOT,
-      '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi/src',
+      '../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi/src',
     ),
   },
   {

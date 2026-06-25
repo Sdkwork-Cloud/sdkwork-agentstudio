@@ -61,7 +61,7 @@ export default defineConfig(({ command, mode }) => {
   );
   const sharedAppbaseAppSdkSourceEntry = path.resolve(
     canonicalWorkspaceRootDir,
-    '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi/src/index.ts',
+    '../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi/src/index.ts',
   );
   const sharedMessagingAppSdkSourceEntry = path.resolve(
     canonicalWorkspaceRootDir,
@@ -71,9 +71,9 @@ export default defineConfig(({ command, mode }) => {
     canonicalWorkspaceRootDir,
     '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts',
   );
-  const sharedAppbaseAppSdkDistEntry = resolvePnpmPackageDistEntry('@sdkwork/appbase-app-sdk', workspaceRootDir) ?? path.resolve(
+  const sharedAppbaseAppSdkDistEntry = resolvePnpmPackageDistEntry('@sdkwork/iam-app-sdk', workspaceRootDir) ?? path.resolve(
     canonicalWorkspaceRootDir,
-    '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi/dist/index.js',
+    '../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi/dist/index.js',
   );
   const sharedMessagingAppSdkDistEntry = resolvePnpmPackageDistEntry('@sdkwork/messaging-app-sdk', workspaceRootDir) ?? path.resolve(
     canonicalWorkspaceRootDir,
@@ -85,11 +85,11 @@ export default defineConfig(({ command, mode }) => {
   );
   const sdkworkAuthRuntimePcReactEntry = path.resolve(
     canonicalWorkspaceRootDir,
-    '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-runtime-pc-react/src/index.ts',
+    '../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-runtime-pc-react/src/index.ts',
   );
   const sdkworkAuthPcReactAuthServiceEntry = path.resolve(
     canonicalWorkspaceRootDir,
-    '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-pc-react/src/auth-service.ts',
+    '../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react/src/auth-service.ts',
   );
   const sharedAppbaseAppSdkChunkEntry = useSharedSdkSourceMode
     ? sharedAppbaseAppSdkSourceEntry
@@ -123,12 +123,12 @@ export default defineConfig(({ command, mode }) => {
         ...workspacePackageAliases,
         ...(useSharedSdkSourceMode
           ? [
-              { find: '@sdkwork/appbase-app-sdk', replacement: sharedAppbaseAppSdkSourceEntry },
+              { find: '@sdkwork/iam-app-sdk', replacement: sharedAppbaseAppSdkSourceEntry },
               { find: '@sdkwork/messaging-app-sdk', replacement: sharedMessagingAppSdkSourceEntry },
               { find: '@sdkwork/sdk-common', replacement: sharedSdkCommonSourceEntry },
             ]
           : [
-              { find: '@sdkwork/appbase-app-sdk', replacement: sharedAppbaseAppSdkDistEntry },
+              { find: '@sdkwork/iam-app-sdk', replacement: sharedAppbaseAppSdkDistEntry },
               { find: '@sdkwork/messaging-app-sdk', replacement: sharedMessagingAppSdkDistEntry },
               { find: '@sdkwork/sdk-common', replacement: sharedSdkCommonDistEntry },
             ]),

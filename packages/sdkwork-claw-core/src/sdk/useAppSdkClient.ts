@@ -2,7 +2,7 @@ import {
   createClient as createAppbaseAppClient,
   type SdkworkAppClient as AppbaseAppSdkClient,
   type SdkworkAppConfig,
-} from '@sdkwork/appbase-app-sdk';
+} from '@sdkwork/iam-app-sdk';
 import {
   createDriveAppClient,
   type SdkworkDriveAppClient,

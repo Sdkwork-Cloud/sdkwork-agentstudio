@@ -51,7 +51,7 @@ Root SDKWork standards remain authoritative. Local component specs can narrow or
 
 ## Dependency SDK Clients
 
-- `@sdkwork/appbase-app-sdk` from `../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi`.
+- `@sdkwork/iam-app-sdk` from `../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi`.
 - `@sdkwork/drive-app-sdk` from `../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript`.
 - `@sdkwork/messaging-app-sdk` from `../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi`.
 - `@sdkwork/local-api-proxy` from `../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy`.

@@ -30,12 +30,12 @@ assert.equal(
 );
 
 assert.equal(
-  loader.resolveSharedSdkSourceAliasPath('@sdkwork/appbase-app-sdk', { SDKWORK_SHARED_SDK_MODE: 'source' }),
+  loader.resolveSharedSdkSourceAliasPath('@sdkwork/iam-app-sdk', { SDKWORK_SHARED_SDK_MODE: 'source' }),
   path.resolve(
     canonicalWorkspaceRoot,
-    '../sdkwork-appbase/sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated/server-openapi/src/index.ts',
+    '../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi/src/index.ts',
   ),
-  'source mode must redirect @sdkwork/appbase-app-sdk to the sibling SDK source entry',
+  'source mode must redirect @sdkwork/iam-app-sdk to the sibling SDK source entry',
 );
 
 assert.equal(
@@ -57,7 +57,7 @@ assert.equal(
 );
 
 assert.equal(
-  loader.resolveSharedSdkSourceAliasPath('@sdkwork/appbase-app-sdk', { SDKWORK_SHARED_SDK_MODE: 'git' }),
+  loader.resolveSharedSdkSourceAliasPath('@sdkwork/iam-app-sdk', { SDKWORK_SHARED_SDK_MODE: 'git' }),
   null,
   'git mode must keep installed package resolution instead of forcing source aliases',
 );
@@ -151,7 +151,7 @@ assert.equal(
   loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/auth-runtime-pc-react'),
   path.resolve(
     canonicalWorkspaceRoot,
-    '../sdkwork-appbase/packages/pc-react/iam/sdkwork-auth-runtime-pc-react/src/index.ts',
+    '../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-runtime-pc-react/src/index.ts',
   ),
   'workspace package resolution must map appbase PC auth runtime to its source entry',
 );
@@ -160,7 +160,7 @@ assert.equal(
   loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/iam-runtime'),
   path.resolve(
     canonicalWorkspaceRoot,
-    '../sdkwork-appbase/packages/common/iam/sdkwork-iam-runtime/src/index.ts',
+    '../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-runtime/src/index.ts',
   ),
   'workspace package resolution must keep appbase internal IAM runtime available for appbase wrappers',
 );

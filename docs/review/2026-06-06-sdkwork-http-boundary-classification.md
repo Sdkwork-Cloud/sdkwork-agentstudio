@@ -16,7 +16,7 @@ Standards used:
 
 The retired `retired generic app SDK package` package is not a valid workspace dependency in this repository. It must not be reintroduced as a fake local package, a local SDK fork, or a raw HTTP compatibility wrapper.
 
-Appbase login, registration, session refresh, logout, OAuth, QR auth, password reset, and verification-code flows are no longer classified as raw HTTP. `packages/sdkwork-claw-core/src/services/appAuthService.ts` delegates to `@sdkwork/auth-pc-react/auth-service`, `@sdkwork/appbase-app-sdk`, and `@sdkwork/messaging-app-sdk`.
+Appbase login, registration, session refresh, logout, OAuth, QR auth, password reset, and verification-code flows are no longer classified as raw HTTP. `packages/sdkwork-claw-core/src/services/appAuthService.ts` delegates to `@sdkwork/auth-pc-react/auth-service`, `@sdkwork/iam-app-sdk`, and `@sdkwork/messaging-app-sdk`.
 
 ## Fixed SDKWork API Bypasses
 

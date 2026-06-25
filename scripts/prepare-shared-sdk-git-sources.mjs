@@ -136,9 +136,9 @@ function createSourceSpecs(workspaceRootDir) {
   return [
     {
       id: 'appbase-app-sdk',
-      label: '@sdkwork/appbase-app-sdk',
+      label: '@sdkwork/iam-app-sdk',
       repoRoot: path.resolve(workspaceRootDir, '../sdkwork-appbase'),
-      packageContainerDirName: 'sdks/sdkwork-appbase-app-sdk/sdkwork-appbase-app-sdk-typescript/generated',
+      packageContainerDirName: 'sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated',
       packageDirName: 'server-openapi',
       monorepoSubmodulePath: '',
       repoUrlEnvVar: SHARED_SDK_APPBASE_APP_REPO_URL_ENV_VAR,

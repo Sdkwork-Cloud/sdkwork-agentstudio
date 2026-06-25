@@ -7,7 +7,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@sdkwork/appbase-app-sdk": "workspace:*",
+    "@sdkwork/iam-app-sdk": "workspace:*",
     "@sdkwork/auth-runtime-pc-react": "workspace:*",
     "@sdkwork/auth-pc-react": "workspace:*",
     "@sdkwork/claw-i18n": "workspace:*",
