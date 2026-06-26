@@ -77,7 +77,7 @@ function createDriveUploadResult(overrides: {
     uploadItem: {
       id: 'upload-item-001',
       taskId: 'task-chat-001',
-      tenantId: 'tenant-001',
+      tenantId: '100001',
       actorType: 'anonymous',
       actorId: 'anonymous-claw-studio',
       appId: 'claw-studio',
@@ -105,7 +105,7 @@ function createDriveUploadResult(overrides: {
     },
     uploadSession: {
       id: 'upload-session-001',
-      tenantId: 'tenant-001',
+      tenantId: '100001',
       spaceId,
       nodeId,
       bucket: 'drive-internal',
@@ -140,8 +140,8 @@ await runTest('chatUploadService normalizes Drive uploader request attribution a
       },
     }),
     uploadContext: {
-      tenantId: 'tenant-001',
-      organizationId: 'org-001',
+      tenantId: '100001',
+      organizationId: '0',
       userId: 'user-001',
       appResourceId: 'draft-attachment',
     },
@@ -157,8 +157,8 @@ await runTest('chatUploadService normalizes Drive uploader request attribution a
 
   assert.equal(driveRequests.length, 1);
   assert.equal(driveRequests[0]?.file, blob);
-  assert.equal(driveRequests[0]?.tenantId, 'tenant-001');
-  assert.equal(driveRequests[0]?.organizationId, 'org-001');
+  assert.equal(driveRequests[0]?.tenantId, '100001');
+  assert.equal(driveRequests[0]?.organizationId, '0');
   assert.equal(driveRequests[0]?.userId, 'user-001');
   assert.equal(driveRequests[0]?.appId, 'claw-studio');
   assert.equal(driveRequests[0]?.appResourceType, 'chat-message-attachment');
@@ -216,7 +216,7 @@ await runTest('chatUploadService can fetch a remote URL, upload it with Drive up
       },
     }),
     uploadContext: {
-      tenantId: 'tenant-001',
+      tenantId: '100001',
       anonymousId: 'anonymous-chat',
       appResourceId: 'draft-audio',
     },
@@ -277,7 +277,7 @@ await runTest('chatUploadService prefers the desktop native remote fetch bridge 
         },
       }),
       uploadContext: {
-        tenantId: 'tenant-001',
+        tenantId: '100001',
         anonymousId: 'anonymous-native',
       },
     });
@@ -327,7 +327,7 @@ await runTest('chatUploadService resolves the desktop native remote fetch bridge
       },
     }),
     uploadContext: {
-      tenantId: 'tenant-001',
+      tenantId: '100001',
       anonymousId: 'anonymous-late',
     },
   });
@@ -373,7 +373,7 @@ await runTest('chatUploadService surfaces a helpful error when Drive uploader re
       },
     }),
     uploadContext: {
-      tenantId: 'tenant-001',
+      tenantId: '100001',
       anonymousId: 'anonymous-error',
     },
   });
