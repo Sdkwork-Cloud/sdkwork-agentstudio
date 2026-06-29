@@ -115,7 +115,7 @@ await runTest(
             text: [
               'Sender (untrusted metadata):',
               '```json',
-              '{"label":"Iris","id":"user-1"}',
+              '{"label":"Iris","id":"1"}',
               '```',
               '',
               'Conversation info (untrusted metadata):',
