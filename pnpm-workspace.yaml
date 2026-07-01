@@ -1,5 +1,6 @@
 packages:
-  - 'packages/sdkwork-claw-*'
+  - "apps/sdkwork-claw-studio-pc"
+  - "apps/sdkwork-claw-studio-pc/packages/*"
   - '../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi'
   - '../sdkwork-iam/sdks/sdkwork-iam-backend-sdk/sdkwork-iam-backend-sdk-typescript/generated/server-openapi'
   - '../sdkwork-appbase/packages/common/foundation/sdkwork-runtime-bootstrap'
@@ -12,13 +13,13 @@ packages:
   - '../sdkwork-appbase/packages/pc-react/foundation/sdkwork-i18n-pc-react'
   - '../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-runtime-pc-react'
   - '../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react'
-  - '../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript'
+  - '../sdkwork-im/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript'
   - '../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi'
   - '../sdkwork-rtc/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript'
   - '../sdkwork-core/sdkwork-core-pc-react'
   - '../sdkwork-sdk-commons/sdkwork-sdk-common-typescript'
   - '../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript'
-  - '../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy'
+  - '../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy'
   - '../sdkwork-ui/sdkwork-ui-pc-react'
 
 catalog:

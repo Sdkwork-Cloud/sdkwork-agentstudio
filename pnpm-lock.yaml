@@ -324,7 +324,7 @@ importers:
         specifier: ^5.8.2
         version: 5.9.3
 
-  ../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy:
+  ../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy:
     dependencies:
       '@sdkwork/core-pc-react':
         specifier: '*'
@@ -713,7 +713,7 @@ importers:
         version: link:../sdkwork-claw-ui
       '@sdkwork/local-api-proxy':
         specifier: workspace:*
-        version: link:../../../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy
+        version: link:../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
       '@tanstack/react-query':
         specifier: ^5.96.2
         version: 5.96.2(react@19.2.4)
@@ -860,7 +860,7 @@ importers:
         version: link:../../../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript
       '@sdkwork/local-api-proxy':
         specifier: workspace:*
-        version: link:../../../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy
+        version: link:../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
       '@sdkwork/messaging-app-sdk':
         specifier: workspace:*
         version: link:../../../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi
@@ -1114,7 +1114,7 @@ importers:
         version: link:../sdkwork-claw-ui
       '@sdkwork/local-api-proxy':
         specifier: workspace:*
-        version: link:../../../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy
+        version: link:../../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -1174,7 +1174,7 @@ importers:
         version: link:../sdkwork-claw-ui
       '@sdkwork/local-api-proxy':
         specifier: workspace:*
-        version: link:../../../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy
+        version: link:../../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14

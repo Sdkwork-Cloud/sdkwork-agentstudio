@@ -1,4 +1,4 @@
-# Claw Studio Container Deployment Templates
+# SdkWork Claw Studio Container Deployment Templates
 
 This directory is the source tree template location. In the source repository, review and diff:
 
@@ -37,7 +37,7 @@ docker compose -f deploy/docker/docker-compose.yml up -d
 
 Canonical user-center server integration modes:
 
-- `builtin-local`: private deployment with the Claw Studio server owning its local user-center data.
+- `builtin-local`: private deployment with the SdkWork Claw Studio server owning its local user-center data.
 - `sdkwork-cloud-app-api`: shared cloud identity backed by `sdkwork-cloud-app-api`.
 - `external-user-center`: third-party identity authority with the same token and handshake contract.
 

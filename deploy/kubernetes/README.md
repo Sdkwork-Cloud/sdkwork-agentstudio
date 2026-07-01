@@ -1,11 +1,11 @@
-# Claw Studio Kubernetes Deployment Templates
+# SdkWork Claw Studio Kubernetes Deployment Templates
 
 Use the extracted bundle root as the working directory.
 
 Base deployment:
 
 ```bash
-helm upgrade --install claw-studio ./chart \
+helm upgrade --install sdkwork-clawstudio ./chart \
   -f values.release.yaml \
   --set auth.manageUsername=claw-admin \
   --set auth.managePassword='replace-with-a-strong-secret'
@@ -14,13 +14,13 @@ helm upgrade --install claw-studio ./chart \
 NVIDIA CUDA overlay:
 
 ```bash
-helm upgrade --install claw-studio ./chart -f chart/values-nvidia-cuda.yaml -f values.release.yaml
+helm upgrade --install sdkwork-clawstudio ./chart -f chart/values-nvidia-cuda.yaml -f values.release.yaml
 ```
 
 AMD ROCm overlay:
 
 ```bash
-helm upgrade --install claw-studio ./chart -f chart/values-amd-rocm.yaml -f values.release.yaml
+helm upgrade --install sdkwork-clawstudio ./chart -f chart/values-amd-rocm.yaml -f values.release.yaml
 ```
 
 The chart already carries its default `chart/values.yaml`. The generated `values.release.yaml`

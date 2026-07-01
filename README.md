@@ -1,10 +1,11 @@
-# Claw Studio
+# SdkWork Claw Studio
+repository-kind: application
 
 [Chinese README](./README.zh-CN.md)
 
-Claw Studio is a package-first workspace for the modern Claw Studio application, shared browser shell, and Tauri desktop runtime. The current implementation is aligned to `upgrade/claw-studio-v5`, reorganized into maintainable feature packages with strict architecture boundaries and root-only cross-package imports.
+SdkWork Claw Studio is a package-first workspace for the modern Claw Studio application, shared browser shell, and Tauri desktop runtime. The current implementation is aligned to `upgrade/claw-studio-v5`, reorganized into maintainable feature packages with strict architecture boundaries and root-only cross-package imports.
 
-This repository focuses on the Claw Studio product. It also contains `packages/cc-switch` as a separate package family, but the primary workspace, scripts, and documentation here center on Claw Studio.
+This repository focuses on the SdkWork Claw Studio product. The primary workspace, scripts, and documentation here center on SdkWork Claw Studio.
 
 ## Highlights
 

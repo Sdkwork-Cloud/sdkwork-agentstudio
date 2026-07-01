@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "claw-studio.fullname" . }}
+  name: {{ include "sdkwork-clawstudio.fullname" . }}
   labels:
-    app.kubernetes.io/name: {{ include "claw-studio.name" . }}
+    app.kubernetes.io/name: {{ include "sdkwork-clawstudio.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   type: {{ .Values.service.type }}
   selector:
-    app.kubernetes.io/name: {{ include "claw-studio.name" . }}
+    app.kubernetes.io/name: {{ include "sdkwork-clawstudio.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
   ports:
     - name: http

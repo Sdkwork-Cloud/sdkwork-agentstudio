@@ -3,7 +3,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
-    image: claw-studio-server:local
+    image: sdkwork-clawstudio-server:local
     restart: unless-stopped
     env_file:
       - profiles/default.env

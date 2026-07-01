@@ -2,7 +2,7 @@
 replicaCount: 1
 
 image:
-  repository: claw-studio-server
+  repository: sdkwork-clawstudio-server
   tag: 0.1.0
   digest: ""
   pullPolicy: IfNotPresent

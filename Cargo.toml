@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "packages/sdkwork-claw-host-core/src-host",
-    "packages/sdkwork-claw-host-studio/src-host",
-    "packages/sdkwork-claw-server/src-host",
-    "packages/sdkwork-claw-desktop/src-tauri",
+    "apps/sdkwork-claw-studio-pc/packages/sdkwork-claw-host-core/src-host",
+    "apps/sdkwork-claw-studio-pc/packages/sdkwork-claw-host-studio/src-host",
+    "apps/sdkwork-claw-studio-pc/packages/sdkwork-claw-server/src-host",
+    "apps/sdkwork-claw-studio-pc/packages/sdkwork-claw-desktop/src-tauri",
 ]
 
 [workspace.package]
@@ -13,8 +13,32 @@ version = "0.1.0"
 
 [workspace.dependencies]
 # SDKWork workspace members - declared once at workspace root
-sdkwork-claw-host-core = { path = "packages/sdkwork-claw-host-core/src-host" }
-sdkwork-claw-host-studio = { path = "packages/sdkwork-claw-host-studio/src-host" }
-sdkwork-claw-server = { path = "packages/sdkwork-claw-server/src-host" }
-sdkwork-claw-desktop = { path = "packages/sdkwork-claw-desktop/src-tauri" }
-sdkwork-local-api-proxy-native = { path = "../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy/native/tauri-rust" }
+sdkwork-claw-host-core = { path = "apps/sdkwork-claw-studio-pc/packages/sdkwork-claw-host-core/src-host" }
+sdkwork-claw-host-studio = { path = "apps/sdkwork-claw-studio-pc/packages/sdkwork-claw-host-studio/src-host" }
+sdkwork-claw-server = { path = "apps/sdkwork-claw-studio-pc/packages/sdkwork-claw-server/src-host" }
+sdkwork-claw-desktop = { path = "apps/sdkwork-claw-studio-pc/packages/sdkwork-claw-desktop/src-tauri" }
+sdkwork-local-api-proxy-native = { path = "../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy/native/tauri-rust" }
+
+# SDKWork platform framework crates (sdkwork-web-framework)
+sdkwork-web-bootstrap = { path = "../sdkwork-web-framework/crates/sdkwork-web-bootstrap" }
+sdkwork-web-contract = { path = "../sdkwork-web-framework/crates/sdkwork-web-contract" }
+sdkwork-web-core = { path = "../sdkwork-web-framework/crates/sdkwork-web-core" }
+sdkwork-web-axum = { path = "../sdkwork-web-framework/crates/sdkwork-web-axum" }
+
+# SDKWork cross-language utility library (serde_int64, crypto, http_api, etc.)
+# API_SPEC §13 int64-as-string is enforced through this crate.
+sdkwork-utils-rust = { path = "../sdkwork-utils/packages/sdkwork-utils-rust" }
+
+# SDKWork database framework (lifecycle, SPI, sqlx)
+sdkwork-database-config = { path = "../sdkwork-database/crates/sdkwork-database-config" }
+sdkwork-database-lifecycle = { path = "../sdkwork-database/crates/sdkwork-database-lifecycle" }
+sdkwork-database-spi = { path = "../sdkwork-database/crates/sdkwork-database-spi" }
+sdkwork-database-sqlx = { path = "../sdkwork-database/crates/sdkwork-database-sqlx" }
+
+# Pin time to a version compatible with cookie 0.18.x (used by axum-extra).
+# time 0.3.38+ changed the parse() method signature, breaking cookie 0.18.1.
+time = "=0.3.37"
+
+[patch.crates-io]
+# xcap vendor patch — must be at workspace root per Cargo requirements.
+xcap = { path = "apps/sdkwork-claw-studio-pc/packages/sdkwork-claw-desktop/src-tauri/vendor/xcap" }

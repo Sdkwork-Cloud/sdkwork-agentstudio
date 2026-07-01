@@ -1,6 +1,6 @@
 apiVersion: v2
-name: claw-studio
-description: Claw Studio server mode deployment chart
+name: sdkwork-clawstudio
+description: SdkWork Claw Studio server mode deployment chart
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
