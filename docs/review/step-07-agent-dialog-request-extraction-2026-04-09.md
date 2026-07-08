@@ -31,13 +31,13 @@
 
 ## Implemented Extraction
 
-- Extended `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts` to also own:
+- Extended `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.ts` to also own:
   - `OpenClawAgentMutationBuildResult`
   - `buildOpenClawAgentSaveMutationRequest(...)`
   - `buildOpenClawAgentDeleteMutationRequest(...)`
 - Expanded focused helper coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts`
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.test.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds save requests through `buildOpenClawAgentSaveMutationRequest(...)`
   - builds delete requests through `buildOpenClawAgentDeleteMutationRequest(...)`
   - keeps the validation toast in the page by handling the helper's `error` result
@@ -66,57 +66,57 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
   - still defines browser-backed workbench agent snapshots and gateway-derived connectivity metadata
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
   - still verifies built-in OpenClaw gateway endpoint projection
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
   - remains the page-owned authority for agent write callbacks, toasts, reloads, and dialog state
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
   - still guards Control UI section order
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
   - still resolves agent paths and persists `agentSnapshots`, `allowAgentIds`, and `subagentDefaults`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
   - still owns Provider Center managed and gateway readiness decisions
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
   - still owns provider workspace managed/readonly presentation decisions
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
   - still routes skill installs to the default agent workspace
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   - still owns local proxy provider projection and default managed agent model projection
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
   - still owns desktop plugin bootstrap
 
 These sources remain the authority for browser workbench persistence, Control UI section alignment, managed-provider/readonly decisions, default-agent install targets, Local Proxy ownership, and desktop plugin/runtime ownership. The current loop only moves agent dialog request shaping.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1926`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts`: `146`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.ts`: `68`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.ts`: `39`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `373`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts`: `239`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1926`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.ts`: `146`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentSkillMutationSupport.ts`: `68`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigMutationSupport.ts`: `39`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `373`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts`: `239`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 
 Relative to the immediately prior `1931` page baseline from the agent skill runner note, the page hotspot now moves down to `1926`.
 
 ## Verification
 
 - RED established in this loop:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.test.ts`
   - failed first because `buildOpenClawAgentSaveMutationRequest(...)` and `buildOpenClawAgentDeleteMutationRequest(...)` did not exist yet
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because the page still owned the inline agent dialog request-construction cluster
 - GREEN in this loop:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm --filter @sdkwork/clawstudio-web lint`
   - `pnpm build`
 - Repo-wide lint status:
   - not rerun in this loop

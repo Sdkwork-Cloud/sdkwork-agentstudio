@@ -57,7 +57,7 @@ function writeRuntimeVersionState(workspaceRootDir, version) {
     path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-claw-desktop',
+      'sdkwork-clawstudio-desktop',
       'src-tauri',
       'resources',
       'openclaw',
@@ -76,7 +76,7 @@ function writeRuntimeVersionState(workspaceRootDir, version) {
     path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-claw-desktop',
+      'sdkwork-clawstudio-desktop',
       'src-tauri',
       'resources',
       'openclaw',
@@ -92,7 +92,7 @@ function writeRuntimeVersionState(workspaceRootDir, version) {
     path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-claw-desktop',
+      'sdkwork-clawstudio-desktop',
       'src-tauri',
       'generated',
       'release',

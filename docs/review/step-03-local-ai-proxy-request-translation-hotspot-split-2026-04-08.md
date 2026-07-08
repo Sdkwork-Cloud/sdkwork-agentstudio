@@ -6,11 +6,11 @@
 ## Attempt Outcome
 
 - Root cause:
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still mixed request-serving with shared OpenAI request normalization, text extraction, conversation shaping, max-token normalization, and Anthropic/Gemini/Ollama request-payload assembly in the same runtime hotspot.
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still mixed request-serving with shared OpenAI request normalization, text extraction, conversation shaping, max-token normalization, and Anthropic/Gemini/Ollama request-payload assembly in the same runtime hotspot.
   - The same request-translation helper layer was shared by OpenAI chat completions, responses, and embeddings paths, but it still had no dedicated owner after the upstream and streaming splits.
   - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that request-translation boundary, so the helper stack could drift back into `local_ai_proxy.rs` without tripping a Step 03 gate.
 - Implemented the narrow repair:
-  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs`
+  - added `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs`
   - moved shared OpenAI text extraction, chat/response conversation normalization, max-token normalization, and Anthropic/Gemini/Ollama request builders into that module
   - changed `local_ai_proxy.rs` to declare `mod request_translation;` and explicitly delegate through:
     - `request_translation::build_anthropic_request_from_openai_chat(...)`
@@ -29,22 +29,22 @@
 
 ## OpenClaw Fact Sources
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
   - the browser-host truth source still publishes the built-in OpenClaw instance as `runtimeKind: 'openclaw'`, `deploymentMode: 'local-managed'`, and `transportKind: 'openclawGatewayWs'`, so request translation in the local proxy remains part of the managed OpenClaw request chain rather than an optional side surface.
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
   - the managed OpenClaw editing surface still gates on `runtimeKind === 'openclaw'` and `lifecycle.configWritable === true`, so translated request behavior continues to belong to a writable and diagnosable managed runtime envelope.
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
   - managed capability logic still keys off the `local-managed` deployment, so request-translation correctness remains part of the same managed runtime control plane.
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   - the Rust host still owns runtime lifecycle, request-serving orchestration, route-test persistence, and observability, but it now delegates the shared request-translation layer to a dedicated module.
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
   - the plugin module still only performs host plugin registration, so request translation must stay in the runtime service layer rather than drifting into plugin bootstrap or host registration code.
 
 ## Verification Focus
 
 - RED (earlier in the same slice): `node scripts/check-desktop-platform-foundation.mjs`
 - GREEN: `node scripts/check-desktop-platform-foundation.mjs`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-request-translation local_ai_proxy_`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-request-translation local_ai_proxy_`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 
@@ -66,7 +66,7 @@
 - The split is intended to be behavior-preserving; the main risk is future drift if request-normalization or provider request-builder helpers are reintroduced into `local_ai_proxy.rs` or duplicated across provider-specific handlers.
 - `local_ai_proxy.rs` now deliberately depends on the `request_translation` submodule for shared OpenAI-to-provider request shaping; later refactors must preserve that owner instead of rebuilding ad hoc helpers.
 - Rollback is limited to:
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs`
   - `scripts/check-desktop-platform-foundation.mjs`
   - the corresponding review, architecture, and release writebacks

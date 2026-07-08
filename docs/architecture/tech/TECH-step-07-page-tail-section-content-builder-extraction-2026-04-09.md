@@ -32,7 +32,7 @@
 
 ## Implemented Fix
 
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now routes:
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now routes:
   - `agentSectionContent` through `buildAgentSectionContent(...)`
   - `llmProvidersSectionContent` through `buildLlmProvidersSectionContent(...)`
   - `tasksSectionContent` through `buildTasksSectionContent(...)`
@@ -40,7 +40,7 @@
   - `CronTasksManager`
   - `InstanceDetailAgentsSection`
   - `InstanceDetailManagedLlmProvidersSection`
-- Kept `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` as the single pure composition owner for:
+- Kept `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts` as the single pure composition owner for:
   - agent section content
   - managed provider section content
   - embedded cron task content
@@ -50,7 +50,7 @@
   - the page to reference `buildLlmProvidersSectionContent(...)`
   - the page to reference `buildTasksSectionContent(...)`
   - direct component ownership evidence for `CronTasksManager`, `InstanceDetailManagedLlmProvidersSection`, and `InstanceDetailAgentsSection` to live in `instanceDetailSectionModels.ts`
-- The focused helper coverage already added in `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx` remains aligned with the new builder boundary.
+- The focused helper coverage already added in `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx` remains aligned with the new builder boundary.
 
 ## Boundary Decision
 
@@ -67,26 +67,26 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed studio task/provider APIs, Provider Center managed-route detection, channel and market install flows, local proxy ownership, and desktop plugin/runtime registration. This loop only centralizes page-side content composition for already-authoritative workbench sections.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1408`
-- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts`: `435`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1408`
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`: `435`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 
 Relative to the immediately prior `1414` page baseline from `release-2026-04-09-135`, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1408`. This loop records another verified page-side reduction while deliberately moving pure tail content composition into the shared section-model helper.
 
@@ -103,10 +103,10 @@ Relative to the immediately prior `1414` page baseline from `release-2026-04-09-
 - GREEN:
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/claw-web lint`
+  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
   - `pnpm.cmd build`
 - YELLOW:
-  - `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx` still cannot be executed directly in this sandbox because `pnpm.cmd exec tsx ...` returns `spawn EPERM`; the helper coverage remains typechecked by the web lint pass
+  - `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx` still cannot be executed directly in this sandbox because `pnpm.cmd exec tsx ...` returns `spawn EPERM`; the helper coverage remains typechecked by the web lint pass
   - `pnpm.cmd check:sdkwork-instances` still emits the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version
 
 ## Closure Status

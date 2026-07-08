@@ -84,42 +84,42 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-claw-i18n is implemented locally instead of re-exporting claw-studio infrastructure', () => {
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-claw-i18n/package.json');
-  const source = read('packages/sdkwork-claw-i18n/src/index.ts');
+runTest('sdkwork-clawstudio-i18n is implemented locally instead of re-exporting claw-studio infrastructure', () => {
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-i18n/package.json');
+  const source = read('packages/sdkwork-clawstudio-i18n/src/index.ts');
 
-  assert.ok(exists('packages/sdkwork-claw-i18n/src/locales/en.json'));
-  assert.ok(exists('packages/sdkwork-claw-i18n/src/locales/zh.json'));
-  assert.ok(!pkg.dependencies?.['@sdkwork/claw-studio-infrastructure']);
+  assert.ok(exists('packages/sdkwork-clawstudio-i18n/src/locales/en.json'));
+  assert.ok(exists('packages/sdkwork-clawstudio-i18n/src/locales/zh.json'));
+  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-infrastructure']);
   assert.doesNotMatch(source, /@sdkwork\/claw-studio-infrastructure/);
   assert.match(source, /ensureI18n/);
 });
 
-runTest('sdkwork-claw-types is implemented locally instead of re-exporting claw-studio domain', () => {
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-claw-types/package.json');
-  const source = read('packages/sdkwork-claw-types/src/index.ts');
+runTest('sdkwork-clawstudio-types is implemented locally instead of re-exporting claw-studio domain', () => {
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-types/package.json');
+  const source = read('packages/sdkwork-clawstudio-types/src/index.ts');
 
-  assert.ok(exists('packages/sdkwork-claw-types/src/service.ts'));
-  assert.ok(!pkg.dependencies?.['@sdkwork/claw-studio-domain']);
+  assert.ok(exists('packages/sdkwork-clawstudio-types/src/service.ts'));
+  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-domain']);
   assert.doesNotMatch(source, /@sdkwork\/claw-studio-domain/);
   assert.match(source, /export \* from '.\/service(?:\.ts)?'/);
 });
 
-runTest('sdkwork-claw-distribution is implemented locally instead of re-exporting claw-studio distribution', () => {
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-claw-distribution/package.json');
-  const source = read('packages/sdkwork-claw-distribution/src/index.ts');
+runTest('sdkwork-clawstudio-distribution is implemented locally instead of re-exporting claw-studio distribution', () => {
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-distribution/package.json');
+  const source = read('packages/sdkwork-clawstudio-distribution/src/index.ts');
 
-  assert.ok(exists('packages/sdkwork-claw-distribution/src/manifests/cn/index.ts'));
-  assert.ok(exists('packages/sdkwork-claw-distribution/src/manifests/global/index.ts'));
-  assert.ok(!pkg.dependencies?.['@sdkwork/claw-studio-distribution']);
+  assert.ok(exists('packages/sdkwork-clawstudio-distribution/src/manifests/cn/index.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-distribution/src/manifests/global/index.ts'));
+  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-distribution']);
   assert.doesNotMatch(source, /@sdkwork\/claw-studio-distribution/);
   assert.match(source, /getDistributionManifest/);
 });
 
-runTest('sdkwork-claw-web pins stable build chunks for infrastructure without shipping mock-only chunks', () => {
-  const viteConfigSource = read('packages/sdkwork-claw-web/vite.config.ts');
+runTest('sdkwork-clawstudio-web pins stable build chunks for infrastructure without shipping mock-only chunks', () => {
+  const viteConfigSource = read('packages/sdkwork-clawstudio-web/vite.config.ts');
   const buildHelperSource = read('scripts/viteBuildOptimization.ts');
-  const registrySource = read('packages/sdkwork-claw-infrastructure/src/platform/registry.ts');
+  const registrySource = read('packages/sdkwork-clawstudio-infrastructure/src/platform/registry.ts');
 
   assert.match(viteConfigSource, /createClawManualChunks/);
   assert.match(viteConfigSource, /resolveClawModulePreloadDependencies/);
@@ -132,27 +132,27 @@ runTest('sdkwork-claw-web pins stable build chunks for infrastructure without sh
   assert.match(buildHelperSource, /sdkwork-iam-app-sdk/);
   assert.match(buildHelperSource, /sdkwork-messaging-app-sdk/);
   assert.match(buildHelperSource, /sdkwork-sdk-common/);
-  assert.match(buildHelperSource, /sdkwork-claw-infrastructure/);
+  assert.match(buildHelperSource, /sdkwork-clawstudio-infrastructure/);
   assert.match(buildHelperSource, /claw-platform-web-studio/);
   assert.match(registrySource, /LazyWebStudioPlatform/);
   assert.doesNotMatch(registrySource, /import \{ WebStudioPlatform \} from '\.\/webStudio\.ts';/);
   assert.doesNotMatch(registrySource, /studio:\s*new WebStudioPlatform\(\)/);
   assert.doesNotMatch(viteConfigSource, /studioMockService/);
   assert.doesNotMatch(viteConfigSource, /claw-studio-mock/);
-  assert.doesNotMatch(viteConfigSource, /sdkwork-claw-community\/src\/NewPost\.tsx/);
-  assert.doesNotMatch(viteConfigSource, /sdkwork-claw-community\/src\/pages\/community\/NewPost\.tsx/);
-  assert.doesNotMatch(viteConfigSource, /sdkwork-claw-community\/src\/CommunityPostDetail\.tsx/);
+  assert.doesNotMatch(viteConfigSource, /sdkwork-clawstudio-community\/src\/NewPost\.tsx/);
+  assert.doesNotMatch(viteConfigSource, /sdkwork-clawstudio-community\/src\/pages\/community\/NewPost\.tsx/);
+  assert.doesNotMatch(viteConfigSource, /sdkwork-clawstudio-community\/src\/CommunityPostDetail\.tsx/);
   assert.doesNotMatch(
     viteConfigSource,
-    /sdkwork-claw-community\/src\/pages\/community\/CommunityPostDetail\.tsx/,
+    /sdkwork-clawstudio-community\/src\/pages\/community\/CommunityPostDetail\.tsx/,
   );
-  assert.doesNotMatch(viteConfigSource, /sdkwork-claw-chat\/src\/components\/ChatMessage\.tsx/);
+  assert.doesNotMatch(viteConfigSource, /sdkwork-clawstudio-chat\/src\/components\/ChatMessage\.tsx/);
   assert.doesNotMatch(viteConfigSource, /@sdkwork\/claw-studio-infrastructure/);
   assert.match(viteConfigSource, /dedupe:\s*\[\.\.\.CLAW_VITE_DEDUPE_PACKAGES\]/);
 });
 
 runTest('web studio no longer references mock task services in the platform runtime path', () => {
-  const webStudioSource = read('packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts');
+  const webStudioSource = read('packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts');
 
   assert.doesNotMatch(
     webStudioSource,
@@ -168,9 +168,9 @@ runTest('web studio no longer references mock task services in the platform runt
 });
 
 runTest('infrastructure root keeps mock-service helpers private instead of exporting them to runtime consumers', () => {
-  const infrastructureIndexSource = read('packages/sdkwork-claw-infrastructure/src/index.ts');
-  const servicesIndexSource = read('packages/sdkwork-claw-infrastructure/src/services/index.ts');
-  const platformIndexSource = read('packages/sdkwork-claw-infrastructure/src/platform/index.ts');
+  const infrastructureIndexSource = read('packages/sdkwork-clawstudio-infrastructure/src/index.ts');
+  const servicesIndexSource = read('packages/sdkwork-clawstudio-infrastructure/src/services/index.ts');
+  const platformIndexSource = read('packages/sdkwork-clawstudio-infrastructure/src/platform/index.ts');
 
   assert.doesNotMatch(infrastructureIndexSource, /export \* from '.\/services\/studioMockService\.ts'/);
   assert.doesNotMatch(servicesIndexSource, /export \* from '.\/studioMockService\.ts'/);
@@ -181,8 +181,8 @@ runTest('infrastructure root keeps mock-service helpers private instead of expor
 });
 
 runTest('infrastructure root keeps legacy raw-http auth helpers private instead of exporting bypass clients', () => {
-  const infrastructureIndexSource = read('packages/sdkwork-claw-infrastructure/src/index.ts');
-  const servicesIndexSource = read('packages/sdkwork-claw-infrastructure/src/services/index.ts');
+  const infrastructureIndexSource = read('packages/sdkwork-clawstudio-infrastructure/src/index.ts');
+  const servicesIndexSource = read('packages/sdkwork-clawstudio-infrastructure/src/services/index.ts');
 
   assert.doesNotMatch(infrastructureIndexSource, /export \* from '.\/http\/httpClient\.ts'/);
   assert.doesNotMatch(infrastructureIndexSource, /export \* from '.\/http\/apiClient\.ts'/);
@@ -197,7 +197,7 @@ runTest('infrastructure root keeps legacy raw-http auth helpers private instead 
 });
 
 runTest('desktop update client requires an injected product app SDK client instead of legacy sdk or raw HTTP', () => {
-  const updateClientSource = read('packages/sdkwork-claw-infrastructure/src/updates/updateClient.ts');
+  const updateClientSource = read('packages/sdkwork-clawstudio-infrastructure/src/updates/updateClient.ts');
 
   assert.match(updateClientSource, /clientFactory\?: AppUpdateSdkClientFactory/);
   assert.match(updateClientSource, /await resolveAppSdkClientFactory\(\)/);
@@ -210,23 +210,23 @@ runTest('desktop update client requires an injected product app SDK client inste
 });
 
 runTest('mock studio helpers are removed from the production source tree', () => {
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/services/studioMockService.ts'));
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/services/studioMockServiceProxy.ts'));
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/services/studioMockService.test.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/services/studioMockService.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/services/studioMockServiceProxy.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/services/studioMockService.test.ts'));
 });
 
 runTest('dead raw-http business helper files are removed after app-sdk migration', () => {
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/http/apiClient.ts'));
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/services/authClient.ts'));
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/services/authClient.test.ts'));
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/services/userClient.ts'));
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/services/accountClient.ts'));
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/services/notificationClient.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/http/apiClient.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/services/authClient.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/services/authClient.test.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/services/userClient.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/services/accountClient.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/services/notificationClient.ts'));
 });
 
 runTest('foundation removes legacy api-router runtime bridge files and dead locale blocks after extraction', () => {
-  const enLocaleSource = read('packages/sdkwork-claw-i18n/src/locales/en.json');
-  const zhLocaleSource = read('packages/sdkwork-claw-i18n/src/locales/zh.json');
+  const enLocaleSource = read('packages/sdkwork-clawstudio-i18n/src/locales/en.json');
+  const zhLocaleSource = read('packages/sdkwork-clawstudio-i18n/src/locales/zh.json');
   const envExampleSource = read('.env.example');
   const envDevelopmentSource = read('.env.development');
   const envTestSource = read('.env.test');
@@ -237,9 +237,9 @@ runTest('foundation removes legacy api-router runtime bridge files and dead loca
 
   assert.doesNotThrow(() => JSON.parse(enLocaleSource));
   assert.doesNotThrow(() => JSON.parse(zhLocaleSource));
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/platform/webApiRouter.ts'));
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/platform/webApiRouter.test.ts'));
-  assert.ok(!exists('packages/sdkwork-claw-infrastructure/src/platform/contracts/apiRouter.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/platform/webApiRouter.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/platform/webApiRouter.test.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/apiRouter.ts'));
   assert.doesNotMatch(enLocaleSource, /"apiRouterComingSoon"/);
   assert.doesNotMatch(enLocaleSource, /"apiRouterPage"/);
   assert.doesNotMatch(enLocaleSource, /"apiRouterWorkspace"/);
@@ -252,7 +252,7 @@ runTest('foundation removes legacy api-router runtime bridge files and dead loca
   assert.doesNotMatch(envDevelopmentSource, /VITE_API_ROUTER_/);
   assert.doesNotMatch(envTestSource, /VITE_API_ROUTER_/);
   assert.doesNotMatch(envProductionSource, /VITE_API_ROUTER_/);
-  assert.doesNotMatch(pnpmLockSource, /packages\/sdkwork-claw-apirouter:/);
+  assert.doesNotMatch(pnpmLockSource, /packages\/sdkwork-clawstudio-apirouter:/);
   assert.doesNotMatch(pnpmLockSource, /@sdkwork\/claw-apirouter/);
   assert.match(upstreamReferenceSource, /OpenClaw/);
   assert.match(upstreamReferenceZhSource, /OpenClaw/);
@@ -268,32 +268,32 @@ runTest('foundation removes local legacy api-router provider-id helpers after ex
 
 runTest('foundation composes local api proxy from sdkwork-local-router instead of appbase or local compat helpers', () => {
   const corePackage = readJson<{ dependencies?: Record<string, string> }>(
-    'packages/sdkwork-claw-core/package.json',
+    'packages/sdkwork-clawstudio-core/package.json',
   );
   const settingsPackage = readJson<{ dependencies?: Record<string, string> }>(
-    'packages/sdkwork-claw-settings/package.json',
+    'packages/sdkwork-clawstudio-settings/package.json',
   );
-  const desktopCargoSource = read('packages/sdkwork-claw-desktop/src-tauri/Cargo.toml');
+  const desktopCargoSource = read('packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml');
   const openClawConfigServiceSource = read(
-    'packages/sdkwork-claw-core/src/services/openClawConfigService.ts',
+    'packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts',
   );
   const providerConfigImportServiceSource = read(
-    'packages/sdkwork-claw-settings/src/services/providerConfigImportService.ts',
+    'packages/sdkwork-clawstudio-settings/src/services/providerConfigImportService.ts',
   );
   const providerConfigEditorPolicySource = read(
-    'packages/sdkwork-claw-settings/src/services/providerConfigEditorPolicy.ts',
+    'packages/sdkwork-clawstudio-settings/src/services/providerConfigEditorPolicy.ts',
   );
   const localAiProxyLogsServiceSource = read(
-    'packages/sdkwork-claw-settings/src/services/localAiProxyLogsService.ts',
+    'packages/sdkwork-clawstudio-settings/src/services/localAiProxyLogsService.ts',
   );
   const localAiProxyConfigSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/config.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/config.rs',
   );
   const localAiProxySnapshotSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy_snapshot.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy_snapshot.rs',
   );
   const localAiProxyObservabilitySource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy_observability.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy_observability.rs',
   );
 
   assert.equal(
@@ -320,17 +320,17 @@ runTest('foundation composes local api proxy from sdkwork-local-router instead o
   assert.match(localAiProxySnapshotSource, /pub use sdkwork_local_api_proxy_native::snapshot::\{/);
   assert.match(localAiProxyObservabilitySource, /pub use sdkwork_local_api_proxy_native::observability::\*/);
 
-  assert.equal(exists('packages/sdkwork-claw-core/src/services/json5Compat.ts'), false);
-  assert.equal(exists('packages/sdkwork-claw-core/src/services/legacyProviderCompat.ts'), false);
-  assert.equal(exists('packages/sdkwork-claw-core/src/services/localAiProxyRouteService.ts'), false);
+  assert.equal(exists('packages/sdkwork-clawstudio-core/src/services/json5Compat.ts'), false);
+  assert.equal(exists('packages/sdkwork-clawstudio-core/src/services/legacyProviderCompat.ts'), false);
+  assert.equal(exists('packages/sdkwork-clawstudio-core/src/services/localAiProxyRouteService.ts'), false);
 });
 
 runTest('foundation sources Hermes kernel-config path semantics from the shared local-api-proxy package boundary', () => {
   const hermesKernelConfigPathServiceSource = read(
-    'packages/sdkwork-claw-core/src/services/hermesKernelConfigPathService.ts',
+    'packages/sdkwork-clawstudio-core/src/services/hermesKernelConfigPathService.ts',
   );
   const hermesPathResolutionServiceSource = read(
-    'packages/sdkwork-claw-core/src/services/hermesPathResolutionService.ts',
+    'packages/sdkwork-clawstudio-core/src/services/hermesPathResolutionService.ts',
   );
   const sharedHermesKernelConfigSource = read(
     '../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy/src/kernel/hermesKernelConfig.ts',
@@ -352,7 +352,7 @@ runTest('foundation sources Hermes kernel-config path semantics from the shared 
 
 runTest('foundation sources local ai proxy runtime status models from the shared native package boundary', () => {
   const localAiProxyTypesSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/types.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/types.rs',
   );
 
   assert.match(
@@ -371,10 +371,10 @@ runTest('foundation sources local ai proxy runtime status models from the shared
 
 runTest('foundation sources local ai proxy observability state and health projection from the shared native package boundary', () => {
   const observabilityStoreSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/observability_store.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/observability_store.rs',
   );
   const healthSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs',
   );
 
   assert.match(
@@ -407,7 +407,7 @@ runTest('foundation sources local ai proxy observability state and health projec
 
 runTest('foundation sources local ai proxy request-audit projection from the shared native package boundary', () => {
   const observabilitySource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs',
   );
 
   assert.match(
@@ -430,13 +430,13 @@ runTest('foundation sources local ai proxy request-audit projection from the sha
 
 runTest('foundation sources local ai proxy translation semantics from the shared native package boundary', () => {
   const requestTranslationSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs',
   );
   const responseTranslationSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs',
   );
   const openaiCompatibleSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',
   );
 
   assert.match(
@@ -486,7 +486,7 @@ runTest('foundation sources local ai proxy translation semantics from the shared
 
 runTest('foundation sources local ai proxy payload builders from the shared native package boundary', () => {
   const requestTranslationSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs',
   );
 
   assert.match(requestTranslationSource, /build_shared_anthropic_request_from_openai_chat/);
@@ -503,19 +503,19 @@ runTest('foundation sources local ai proxy payload builders from the shared nati
 
 runTest('foundation sources local ai proxy response semantics from the shared native package boundary', () => {
   const responseIoSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs',
   );
   const observabilitySource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs',
   );
   const openaiCompatibleSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',
   );
   const localAiProxyTypesSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/types.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/types.rs',
   );
   const streamingSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs',
   );
 
   assert.match(responseIoSource, /sdkwork_local_api_proxy_native::response::/);
@@ -573,34 +573,34 @@ runTest('foundation sources local ai proxy response semantics from the shared na
 
 runTest('foundation sources local ai proxy generic support, upstream, and probe helpers from the shared native package boundary', () => {
   const localAiProxyServiceSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
   );
   const anthropicNativeSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs',
   );
   const geminiNativeSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs',
   );
   const openaiCompatibleSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs',
   );
   const observabilitySource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs',
   );
   const healthSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs',
   );
   const requestContextSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs',
   );
   const requestTranslationSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs',
   );
   const responseIoSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs',
   );
   const streamingSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs',
   );
 
   assert.match(localAiProxyServiceSource, /sdkwork_local_api_proxy_native::probe::probe_route/);
@@ -622,22 +622,22 @@ runTest('foundation sources local ai proxy generic support, upstream, and probe 
   assert.match(streamingSource, /sdkwork_local_api_proxy_native::support::\{/);
 
   assert.equal(
-    exists('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/support.rs'),
+    exists('packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/support.rs'),
     false,
   );
   assert.equal(
-    exists('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs'),
+    exists('packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs'),
     false,
   );
   assert.equal(
-    exists('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs'),
+    exists('packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs'),
     false,
   );
 });
 
 runTest('foundation sources local ai proxy generic server launch from the local-router native runtime boundary', () => {
   const localAiProxyServiceSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
   );
   const sharedRuntimeSource = read(
     '../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy/native/tauri-rust/src/runtime/mod.rs',
@@ -663,7 +663,7 @@ runTest('foundation sources local ai proxy generic server launch from the local-
 runTest('foundation keeps obsolete gateway docs and implementation plans out of the workspace docs surface', () => {
   const matches = findFilesContaining(
     'docs',
-    /API Router|api router|@sdkwork\/claw-apirouter|sdkwork-claw-apirouter|api-router-|apirouter|apiRouter|ApiRouter|VITE_API_ROUTER_|openApiRouter/,
+    /API Router|api router|@sdkwork\/claw-apirouter|sdkwork-clawstudio-apirouter|api-router-|apirouter|apiRouter|ApiRouter|VITE_API_ROUTER_|openApiRouter/,
   );
 
   assert.deepEqual(matches, []);

@@ -32,10 +32,10 @@ Local upstream locale files currently present in
 Local app locale-source reality in this workspace:
 
 - Dedicated split source bundles are still maintained only for:
-  - `packages/sdkwork-claw-i18n/src/locales/en/*`
-  - `packages/sdkwork-claw-i18n/src/locales/zh/*`
+  - `packages/sdkwork-clawstudio-i18n/src/locales/en/*`
+  - `packages/sdkwork-clawstudio-i18n/src/locales/zh/*`
 - The app runtime already accepts a broader language surface in
-  `packages/sdkwork-claw-i18n/src/config.ts`.
+  `packages/sdkwork-clawstudio-i18n/src/config.ts`.
 - That means the language picker can expose more locale codes than the repo currently translates
   natively.
 
@@ -76,7 +76,7 @@ Accepted strategy:
 - Surface fallback notes directly in the settings selector and for the currently selected explicit
   language.
 - Preserve a truthful Chinese fallback string without directly patching the encoding-dirty
-  `packages/sdkwork-claw-i18n/src/locales/zh/settings.json` file in this environment.
+  `packages/sdkwork-clawstudio-i18n/src/locales/zh/settings.json` file in this environment.
 
 Rejected alternatives:
 
@@ -91,36 +91,36 @@ Rejected alternatives:
 
 ## Step 4: Files changed in this loop
 
-- `packages/sdkwork-claw-i18n/src/config.ts`
+- `packages/sdkwork-clawstudio-i18n/src/config.ts`
   - added dedicated-bundle metadata helpers and native language labels
-- `packages/sdkwork-claw-settings/src/GeneralSettings.tsx`
+- `packages/sdkwork-clawstudio-settings/src/GeneralSettings.tsx`
   - renders per-locale fallback notes and an explicit fallback note for the active language
-- `packages/sdkwork-claw-i18n/src/index.test.ts`
+- `packages/sdkwork-clawstudio-i18n/src/index.test.ts`
   - asserts language metadata truthfulness and bundle-source behavior
-- `packages/sdkwork-claw-i18n/src/locales/en/settings.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/settings.json`
   - adds the shared `settings.general.languageFallbackTo` copy
-- `packages/sdkwork-claw-i18n/src/locales/zh/index.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
   - injects the matching Chinese fallback string as a runtime override
-- `packages/sdkwork-claw-i18n/src/locales/README.md`
+- `packages/sdkwork-clawstudio-i18n/src/locales/README.md`
   - documents that fallback-backed locales must be surfaced honestly
 - `scripts/sdkwork-settings-contract.test.ts`
   - asserts the settings surface uses the new fallback metadata helpers
-- `packages/sdkwork-claw-i18n/src/locales/en.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
 
 Important implementation note:
 
-- The Chinese fallback string currently lives in `packages/sdkwork-claw-i18n/src/locales/zh/index.ts`
-  instead of `packages/sdkwork-claw-i18n/src/locales/zh/settings.json` because the split JSON file
+- The Chinese fallback string currently lives in `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
+  instead of `packages/sdkwork-clawstudio-i18n/src/locales/zh/settings.json` because the split JSON file
   is encoding-dirty in this environment and was not safe to patch directly in this loop.
 
 ## Step 5: Verification evidence
 
 Focused verification re-run for this landing:
 
-- `pnpm.cmd --filter @sdkwork/claw-i18n sync:locales`
+- `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales`
   - passed
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
   - passed
 - `node scripts/run-sdkwork-settings-check.mjs`
   - passed

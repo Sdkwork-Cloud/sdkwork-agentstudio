@@ -9,25 +9,25 @@
 ## Attempt Outcome
 
 - The loop repaired one remaining Anthropic native request-serving hotspot:
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned the Anthropic native `/v1/messages` handler even though it formed a self-contained native protocol boundary
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned the Anthropic native `/v1/messages` handler even though it formed a self-contained native protocol boundary
   - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that Anthropic native boundary
 - Implemented the narrow repairs:
-  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
+  - added `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
   - delegated router registration through `post(anthropic_native::messages_handler)` from `local_ai_proxy.rs`
   - moved the Anthropic native `/v1/messages` request handler into the same module
   - kept shared snapshot/auth, observability, streaming, and upstream buffering under their existing owners instead of duplicating them inside the Anthropic module
   - tightened the desktop foundation gate so the Anthropic native module file, declaration, and router delegation are now required
 - Fresh verification:
   - `node scripts/check-desktop-platform-foundation.mjs`
-  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-anthropic-native local_ai_proxy_anthropic_messages_endpoint_`
-  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-anthropic-native local_ai_proxy_`
+  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-anthropic-native local_ai_proxy_anthropic_messages_endpoint_`
+  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-anthropic-native local_ai_proxy_`
   - `pnpm.cmd check:desktop-openclaw-runtime`
   - `pnpm.cmd check:desktop`
 
 ## Change Scope
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
 - `scripts/check-desktop-platform-foundation.mjs`
 - `docs/review/step-03-local-ai-proxy-anthropic-native-hotspot-split-2026-04-08.md`
 - `docs/架构/112-2026-04-08-local-ai-proxy-anthropic-native-module-boundary.md`
@@ -38,8 +38,8 @@
 ## Verification Focus
 
 - `node scripts/check-desktop-platform-foundation.mjs`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-anthropic-native local_ai_proxy_anthropic_messages_endpoint_`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-anthropic-native local_ai_proxy_`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-anthropic-native local_ai_proxy_anthropic_messages_endpoint_`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-anthropic-native local_ai_proxy_`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 

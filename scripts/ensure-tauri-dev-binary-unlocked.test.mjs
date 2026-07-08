@@ -587,7 +587,7 @@ await (async () => {
                 targetDir,
                 'debug',
                 'build',
-                'sdkwork-claw-desktop-test',
+                'sdkwork-clawstudio-desktop-test',
                 'build-script-build.exe',
               ),
             },

@@ -19,7 +19,7 @@ The bug affected the shared Rust host surface across:
 
 Two projection paths had diverged from runtime truth:
 
-1. `packages/sdkwork-claw-host-studio/src-host/src/lib.rs`
+1. `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs`
    `build_console_access(...)`
    - built-in managed OpenClaw already gated console projection on live runtime
      authority
@@ -28,7 +28,7 @@ Two projection paths had diverged from runtime truth:
    - that meant registry-default `offline` instances still surfaced an
      "Open OpenClaw Console" affordance
 
-2. `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs`
+2. `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
    `build_openclaw_console_access(...)`
    - only the built-in bundled gateway respected runtime status
    - local-external and remote instances still treated known URL + token as
@@ -85,23 +85,23 @@ This avoids the false fix of simply disabling console launch everywhere.
 
 ## Files Changed
 
-- `packages/sdkwork-claw-host-studio/src-host/src/lib.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
 
 ## Verification
 
 Red evidence captured before implementation:
 
-- `cargo test --manifest-path packages/sdkwork-claw-host-studio/src-host/Cargo.toml hides_console_launch_while_runtime_is_offline`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml hides_console_launch_while_runtime_is_offline`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-host-studio/src-host/Cargo.toml hides_console_launch_while_runtime_is_offline`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml hides_console_launch_while_runtime_is_offline`
 
 Green evidence after implementation:
 
-- `cargo test --manifest-path packages/sdkwork-claw-host-studio/src-host/Cargo.toml console_launch`
-- `cargo test --manifest-path packages/sdkwork-claw-host-studio/src-host/Cargo.toml default_provider_local_external_openclaw_detail_exposes_console_access_without_workbench`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml console_launch`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml local_external_openclaw_detail_reads_install_record_for_console_auto_login`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml remote_openclaw_instance_detail_does_not_reuse_built_in_local_workbench`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-host-studio/src-host/Cargo.toml console_launch`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-host-studio/src-host/Cargo.toml default_provider_local_external_openclaw_detail_exposes_console_access_without_workbench`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml console_launch`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml local_external_openclaw_detail_reads_install_record_for_console_auto_login`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml remote_openclaw_instance_detail_does_not_reuse_built_in_local_workbench`
 
 ## Remaining Follow-Up
 

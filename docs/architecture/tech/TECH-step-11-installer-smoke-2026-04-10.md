@@ -30,11 +30,11 @@ The blocker is therefore not that the desktop artifact disappeared; it is that t
 
 Additional manual probing on the same host narrowed the remaining gap further:
 
-- direct shell launch of `artifacts/release/desktop/windows/x64/.sim-install-root2/sdkwork-claw-desktop.exe` could create isolated `AppData` / `Crashpad` side effects, but still did not emit `desktop-startup-evidence.json`
+- direct shell launch of `artifacts/release/desktop/windows/x64/.sim-install-root2/sdkwork-clawstudio-desktop.exe` could create isolated `AppData` / `Crashpad` side effects, but still did not emit `desktop-startup-evidence.json`
 - earlier probe directories `artifacts/release/desktop/windows/x64/.release-exe-smoke/` and `artifacts/release/desktop/windows/x64/.release-exe-smoke-gpuoff/` preserve `program-data/SdkWork/CrawStudio/logs/app/app.log` records showing:
   - `desktop embedded host bootstrapped`
   - `managed desktop state initialized`
-- the code path in `packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx` only persists the startup evidence after runtime readiness and the first shell paints complete, so the remaining failure is now narrowed to the packaged browser-shell mount / evidence-persist phase rather than to installer layout or embedded-host bootstrapping alone
+- the code path in `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx` only persists the startup evidence after runtime readiness and the first shell paints complete, so the remaining failure is now narrowed to the packaged browser-shell mount / evidence-persist phase rather than to installer layout or embedded-host bootstrapping alone
 
 ## Server Evidence
 
@@ -51,7 +51,7 @@ The Windows packaged server bundle moved from contract-only confidence to runtim
   - `/claw/manage/v1/host-endpoints returned canonical endpoints`
   - `/ returned 200`
 
-This smoke is materially stronger than the earlier state because it now validates the shipped `bin/sdkwork-claw-server.exe` bundle binary and the truthful server-mode readiness contract exposed by `/claw/health/ready`.
+This smoke is materially stronger than the earlier state because it now validates the shipped `bin/sdkwork-clawstudio-server.exe` bundle binary and the truthful server-mode readiness contract exposed by `/claw/health/ready`.
 
 ## Deployment Evidence
 
@@ -89,7 +89,7 @@ Step 09 and Step 10 had already frozen the desktop local-proxy / packaged-startu
 What did improve in Step 11 is the packaged server availability proof:
 
 - the default server state still keeps manage/OpenClaw runtime and gateway projections inactive unless they are actually ready
-- `packages/sdkwork-claw-server/src-host/src/http/routes/health.rs` now treats bundled server mode as ready when `claw-manage-http` is published with a reachable endpoint and `studio_public_api` is available
+- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/health.rs` now treats bundled server mode as ready when `claw-manage-http` is published with a reachable endpoint and `studio_public_api` is available
 - the packaged bundle smoke now proves server availability through that `/claw/health/ready` contract without falsifying control-plane projections
 
 ## Red / Yellow / Green

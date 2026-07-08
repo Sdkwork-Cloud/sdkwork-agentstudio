@@ -44,7 +44,7 @@ runTest('feature packages use the shared DateInput instead of direct type="date"
   for (const filePath of walkFiles(packagesRoot)) {
     const relativePath = path.relative(root, filePath).replaceAll(path.sep, '/');
 
-    if (relativePath.startsWith('packages/sdkwork-claw-ui/')) {
+    if (relativePath.startsWith('packages/sdkwork-clawstudio-ui/')) {
       continue;
     }
 
@@ -61,6 +61,6 @@ runTest('feature packages use the shared DateInput instead of direct type="date"
   assert.deepEqual(
     violations,
     [],
-    `Direct date input usage remains outside @sdkwork/claw-ui:\n${violations.join('\n')}`,
+    `Direct date input usage remains outside @sdkwork/clawstudio-ui:\n${violations.join('\n')}`,
   );
 });

@@ -6,7 +6,7 @@
 | --- | --- |
 | 执行模式 | 强串行 |
 | 前置 | `02` |
-| 主写入范围 | `packages/sdkwork-claw-desktop/src-tauri` `packages/sdkwork-claw-desktop/src/desktop` `config/kernel-releases/openclaw.json` `scripts/prepare-openclaw-runtime.mjs` `scripts/sync-bundled-components.mjs` `scripts/openclaw-release.mjs` |
+| 主写入范围 | `packages/sdkwork-clawstudio-desktop/src-tauri` `packages/sdkwork-clawstudio-desktop/src/desktop` `config/kernel-releases/openclaw.json` `scripts/prepare-openclaw-runtime.mjs` `scripts/sync-bundled-components.mjs` `scripts/openclaw-release.mjs` |
 | 执行输入 | `02`、`03`、`10`、`12` 架构文档；现有 OpenClaw 版本源、manifest、Runtime 脚本 |
 | 本步非目标 | 不做业务 UI 大改；不扩展外部供应商直连逻辑 |
 | 最小输出 | 稳定启动链、单一版本源、可升级可回滚的 Runtime 工程链 |
@@ -31,7 +31,7 @@
 
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
 - `node scripts/openclaw-release-contract.test.mjs`
 
 ## 5. 结果验证

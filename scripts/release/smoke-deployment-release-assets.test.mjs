@@ -187,7 +187,7 @@ test('container deployment smoke validates packaged bundles and writes runtime-b
             {
               id: 'persistent-storage',
               status: 'passed',
-              detail: 'packaged docker compose persists /var/lib/claw-server',
+              detail: 'packaged docker compose persists /var/lib/clawstudio-server',
             },
             {
               id: 'docker-compose-up',
@@ -319,14 +319,14 @@ test('container deployment bundle smoke requires packaged manage credentials, pe
       path.join(bundleRoot, 'deploy', 'docker', 'docker-compose.yml'),
       [
         'services:',
-        '  claw-server:',
+        '  clawstudio-server:',
         '    environment:',
         '      CLAW_SERVER_MANAGE_USERNAME: ${CLAW_SERVER_MANAGE_USERNAME:?set CLAW_SERVER_MANAGE_USERNAME before starting the public control plane}',
         '      CLAW_SERVER_MANAGE_PASSWORD: ${CLAW_SERVER_MANAGE_PASSWORD:?set CLAW_SERVER_MANAGE_PASSWORD before starting the public control plane}',
         '    volumes:',
-        '      - claw-server-data:/var/lib/claw-server',
+        '      - clawstudio-server-data:/var/lib/clawstudio-server',
         'volumes:',
-        '  claw-server-data:',
+        '  clawstudio-server-data:',
         '',
       ].join('\n'),
       'utf8',
@@ -336,7 +336,7 @@ test('container deployment bundle smoke requires packaged manage credentials, pe
       [
         'CLAW_DEPLOYMENT_FAMILY=container',
         'CLAW_ACCELERATOR_PROFILE=cpu',
-        'CLAW_SERVER_DATA_DIR=/var/lib/claw-server',
+        'CLAW_SERVER_DATA_DIR=/var/lib/clawstudio-server',
         'CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false',
         '',
       ].join('\n'),
@@ -373,7 +373,7 @@ test('container deployment bundle smoke requires packaged manage credentials, pe
         events.push('inspect');
         return [
           {
-            service: 'claw-server',
+            service: 'clawstudio-server',
             state: 'running',
             health: 'healthy',
           },
@@ -406,7 +406,7 @@ test('container deployment bundle smoke requires packaged manage credentials, pe
     assert.match(result.checks[0].detail, /deployment family/i);
     assert.match(result.checks[1].detail, /safe public bind/i);
     assert.match(result.checks[2].detail, /manage credentials/i);
-    assert.match(result.checks[3].detail, /var\/lib\/claw-server/i);
+    assert.match(result.checks[3].detail, /var\/lib\/clawstudio-server/i);
     assert.match(result.checks[5].detail, /healthy/i);
     assert.deepEqual(
       events,
@@ -440,14 +440,14 @@ test('container deployment bundle smoke rejects packaged runtime profiles that l
       path.join(bundleRoot, 'deploy', 'docker', 'docker-compose.yml'),
       [
         'services:',
-        '  claw-server:',
+        '  clawstudio-server:',
         '    environment:',
         '      CLAW_SERVER_MANAGE_USERNAME: ${CLAW_SERVER_MANAGE_USERNAME:?set CLAW_SERVER_MANAGE_USERNAME before starting the public control plane}',
         '      CLAW_SERVER_MANAGE_PASSWORD: ${CLAW_SERVER_MANAGE_PASSWORD:?set CLAW_SERVER_MANAGE_PASSWORD before starting the public control plane}',
         '    volumes:',
-        '      - claw-server-data:/var/lib/claw-server',
+        '      - clawstudio-server-data:/var/lib/clawstudio-server',
         'volumes:',
-        '  claw-server-data:',
+        '  clawstudio-server-data:',
         '',
       ].join('\n'),
       'utf8',
@@ -457,7 +457,7 @@ test('container deployment bundle smoke rejects packaged runtime profiles that l
       [
         'CLAW_DEPLOYMENT_FAMILY=container',
         'CLAW_ACCELERATOR_PROFILE=cpu',
-        'CLAW_SERVER_DATA_DIR=/var/lib/claw-server',
+        'CLAW_SERVER_DATA_DIR=/var/lib/clawstudio-server',
         'CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=true',
         '',
       ].join('\n'),
@@ -506,14 +506,14 @@ test('container deployment bundle smoke rejects accelerator bundles whose packag
       path.join(bundleRoot, 'deploy', 'docker', 'docker-compose.yml'),
       [
         'services:',
-        '  claw-server:',
+        '  clawstudio-server:',
         '    environment:',
         '      CLAW_SERVER_MANAGE_USERNAME: ${CLAW_SERVER_MANAGE_USERNAME:?set CLAW_SERVER_MANAGE_USERNAME before starting the public control plane}',
         '      CLAW_SERVER_MANAGE_PASSWORD: ${CLAW_SERVER_MANAGE_PASSWORD:?set CLAW_SERVER_MANAGE_PASSWORD before starting the public control plane}',
         '    volumes:',
-        '      - claw-server-data:/var/lib/claw-server',
+        '      - clawstudio-server-data:/var/lib/clawstudio-server',
         'volumes:',
-        '  claw-server-data:',
+        '  clawstudio-server-data:',
         '',
       ].join('\n'),
       'utf8',
@@ -523,7 +523,7 @@ test('container deployment bundle smoke rejects accelerator bundles whose packag
       [
         'CLAW_DEPLOYMENT_FAMILY=container',
         'CLAW_ACCELERATOR_PROFILE=cpu',
-        'CLAW_SERVER_DATA_DIR=/var/lib/claw-server',
+        'CLAW_SERVER_DATA_DIR=/var/lib/clawstudio-server',
         'CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false',
         '',
       ].join('\n'),
@@ -572,13 +572,13 @@ test('container deployment bundle smoke rejects packaged compose layouts missing
       path.join(bundleRoot, 'deploy', 'docker', 'docker-compose.yml'),
       [
         'services:',
-        '  claw-server:',
+        '  clawstudio-server:',
         '    environment:',
         '      CLAW_SERVER_INTERNAL_USERNAME: ${CLAW_SERVER_INTERNAL_USERNAME:-}',
         '    volumes:',
-        '      - claw-server-data:/var/lib/claw-server',
+        '      - clawstudio-server-data:/var/lib/clawstudio-server',
         'volumes:',
-        '  claw-server-data:',
+        '  clawstudio-server-data:',
         '',
       ].join('\n'),
       'utf8',
@@ -588,7 +588,7 @@ test('container deployment bundle smoke rejects packaged compose layouts missing
       [
         'CLAW_DEPLOYMENT_FAMILY=container',
         'CLAW_ACCELERATOR_PROFILE=cpu',
-        'CLAW_SERVER_DATA_DIR=/var/lib/claw-server',
+        'CLAW_SERVER_DATA_DIR=/var/lib/clawstudio-server',
         'CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false',
         '',
       ].join('\n'),
@@ -695,7 +695,7 @@ test('kubernetes deployment smoke validates packaged charts and writes render-ba
             {
               id: 'persistent-storage',
               status: 'passed',
-              detail: 'rendered manifests mount /var/lib/claw-server through a PersistentVolumeClaim',
+              detail: 'rendered manifests mount /var/lib/clawstudio-server through a PersistentVolumeClaim',
             },
             {
               id: 'kubectl-client-dry-run',
@@ -783,7 +783,7 @@ test('kubernetes deployment bundle smoke requires packaged image metadata, secre
           '                name: claw-studio-auth',
           '          volumeMounts:',
           '            - name: claw-data',
-          '              mountPath: /var/lib/claw-server',
+          '              mountPath: /var/lib/clawstudio-server',
           '          readinessProbe:',
           '            httpGet:',
           '              path: /claw/health/ready',
@@ -879,7 +879,7 @@ test('kubernetes deployment bundle smoke rejects release values whose packaged a
             '                name: claw-studio-auth',
             '          volumeMounts:',
             '            - name: claw-data',
-            '              mountPath: /var/lib/claw-server',
+            '              mountPath: /var/lib/clawstudio-server',
             '          readinessProbe:',
             '            httpGet:',
             '              path: /claw/health/ready',
@@ -940,7 +940,7 @@ test('kubernetes deployment bundle smoke rejects bundles missing immutable image
             '                name: claw-studio-auth',
             '          volumeMounts:',
             '            - name: claw-data',
-            '              mountPath: /var/lib/claw-server',
+            '              mountPath: /var/lib/clawstudio-server',
             '          readinessProbe:',
             '            httpGet:',
             '              path: /claw/health/ready',

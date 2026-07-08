@@ -27,12 +27,12 @@
 
 ## Implemented Extraction
 
-- Extended `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` so `buildAgentSectionProps(...)` now also owns:
+- Extended `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts` so `buildAgentSectionProps(...)` now also owns:
   - agent dialog close/reset callback construction
   - shared reset-to-create baseline selection through `createOpenClawAgentCreateDialogState(...)`
 - Added focused helper coverage in:
-  - `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx`
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+  - `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - passes `setIsAgentDialogOpen`
   - passes `setEditingAgentId`
   - keeps page-owned state authority
@@ -57,36 +57,36 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for workbench persistence, managed-provider decisions, marketplace/install ownership, Local Proxy routing, and desktop runtime/plugin ownership. This loop only moves agent dialog dismiss/reset callback shaping.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1742`
-- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts`: `148`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.ts`: `263`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts`: `135`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.ts`: `187`
-- `packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.ts`: `26`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.ts`: `36`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `353`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts`: `223`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.tsx`: `215`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `87`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `247`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1742`
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`: `148`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.ts`: `263`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.ts`: `135`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentSkillMutationSupport.ts`: `187`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.ts`: `26`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigMutationSupport.ts`: `36`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `353`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts`: `223`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`: `215`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `87`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `247`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
 
 Relative to the immediately prior `1741` page baseline from the dialog draft-selection note, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1742`. This loop is still a verified boundary improvement, but not a raw shrink, because the shared section-model helper now carries the dismiss/reset sequencing while the page keeps explicit state-setter injection.
 
@@ -96,9 +96,9 @@ Relative to the immediately prior `1741` page baseline from the dialog draft-sel
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` still passed `onAgentDialogOpenChange: setIsAgentDialogOpen` directly and the helper did not yet own dismiss/reset wiring
 - GREEN in and after this loop:
-  - `pnpm exec tsx packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm --filter @sdkwork/clawstudio-web lint`
   - `pnpm build`
   - `node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync('docs/release/releases.json','utf8')); const latest=data.releases[data.releases.length-1]; if(latest.tag!=='release-2026-04-09-104') throw new Error(latest.tag); console.log(latest.tag)"`
 - Repo-wide lint status:

@@ -30,25 +30,25 @@
 
 ## Implemented Fix
 
-- Added `packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationStateSupport.ts`.
+- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationStateSupport.ts`.
 - Added `createInstanceDetailAgentMutationStateBindings(...)` so the shared helper now owns only:
   - agent dialog dismiss binding
   - agent delete-id clear binding
-- Added `packages/sdkwork-claw-instances/src/services/instanceDetailWorkbenchLoaderSupport.ts`.
+- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailWorkbenchLoaderSupport.ts`.
 - Added `createInstanceDetailWorkbenchLoaderBindings(...)` so the shared helper now owns only:
   - bound agent workbench loader composition
   - bound instance files lazy-loader composition
   - bound instance memories lazy-loader composition
 - Added focused direct coverage in:
-  - `packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationStateSupport.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/instanceDetailWorkbenchLoaderSupport.test.ts`
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationStateSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceDetailWorkbenchLoaderSupport.test.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds `agentMutationStateBindings` once through `createInstanceDetailAgentMutationStateBindings({ setIsAgentDialogOpen, setEditingAgentId, setAgentDeleteId })`
   - builds `workbenchLoaderBindings` through `createInstanceDetailWorkbenchLoaderBindings({ agentWorkbenchService, instanceWorkbenchService })`
   - routes `buildOpenClawAgentMutationHandlers(...)` through `agentMutationStateBindings.dismissAgentDialog` and `agentMutationStateBindings.clearAgentDeleteId`
   - routes `startLoadInstanceDetailAgentWorkbench(...)`, `startLazyLoadInstanceWorkbenchFiles(...)`, and `startLazyLoadInstanceWorkbenchMemory(...)` through the shared bound loaders
   - stops keeping the final inline agent-state and service-method wrappers in the page shell
-- Exported the new helpers from `packages/sdkwork-claw-instances/src/services/index.ts`.
+- Exported the new helpers from `packages/sdkwork-clawstudio-instances/src/services/index.ts`.
 - Updated `scripts/run-sdkwork-instances-check.mjs` so both new helper tests run inside `pnpm.cmd check:sdkwork-instances`.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract now requires:
   - the page to use `createInstanceDetailAgentMutationStateBindings(...)`
@@ -81,27 +81,27 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for studio-backed workbench truth, runtime persistence, provider-center projection, Local Proxy routing, ecosystem/runtime ownership, and desktop plugin/runtime registration. This loop only centralizes the final page-side state and service binding layers.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1031` lines / `40947` bytes
-- `packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationStateSupport.ts`: `18` lines / `607` bytes
-- `packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationStateSupport.test.ts`: `43` lines / `1518` bytes
-- `packages/sdkwork-claw-instances/src/services/instanceDetailWorkbenchLoaderSupport.ts`: `28` lines / `1348` bytes
-- `packages/sdkwork-claw-instances/src/services/instanceDetailWorkbenchLoaderSupport.test.ts`: `74` lines / `2527` bytes
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1031` lines / `40947` bytes
+- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationStateSupport.ts`: `18` lines / `607` bytes
+- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationStateSupport.test.ts`: `43` lines / `1518` bytes
+- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailWorkbenchLoaderSupport.ts`: `28` lines / `1348` bytes
+- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailWorkbenchLoaderSupport.test.ts`: `74` lines / `2527` bytes
 
 Relative to the immediately prior `1019` page baseline from `release-2026-04-10-161`, the fresh current dirty worktree re-measures `InstanceDetail.tsx` at `1031`. This loop records a verified closure of the final remaining wrapper families while also documenting that the current dirty worktree baseline has shifted again and is now the operative truth for Step 07 closure.
 
@@ -132,18 +132,18 @@ Relative to the immediately prior `1019` page baseline from `release-2026-04-10-
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationStateSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationStateSupport.test.ts`
   - failed first because `instanceDetailAgentMutationStateSupport.ts` did not yet exist
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailWorkbenchLoaderSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailWorkbenchLoaderSupport.test.ts`
   - failed first because `instanceDetailWorkbenchLoaderSupport.ts` did not yet exist
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` still kept inline agent-state and loader-binding wrappers
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationStateSupport.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailWorkbenchLoaderSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationStateSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailWorkbenchLoaderSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/claw-web lint`
+  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

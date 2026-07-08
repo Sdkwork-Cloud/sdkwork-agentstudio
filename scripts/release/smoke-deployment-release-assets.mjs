@@ -510,9 +510,9 @@ export function inspectContainerDeploymentContract({
     }
   }
 
-  if (defaultProfileEntries.get('CLAW_SERVER_DATA_DIR') !== '/var/lib/claw-server') {
+  if (defaultProfileEntries.get('CLAW_SERVER_DATA_DIR') !== '/var/lib/clawstudio-server') {
     throw new Error(
-      `Packaged container runtime profile must pin CLAW_SERVER_DATA_DIR=/var/lib/claw-server in ${defaultProfilePath}.`,
+      `Packaged container runtime profile must pin CLAW_SERVER_DATA_DIR=/var/lib/clawstudio-server in ${defaultProfilePath}.`,
     );
   }
   if (defaultProfileEntries.get('CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND') !== 'false') {
@@ -530,9 +530,9 @@ export function inspectContainerDeploymentContract({
     );
   }
 
-  if (!/^\s*-\s+[^:\r\n]+:\/var\/lib\/claw-server\s*$/m.test(composeDefinition)) {
+  if (!/^\s*-\s+[^:\r\n]+:\/var\/lib\/clawstudio-server\s*$/m.test(composeDefinition)) {
     throw new Error(
-      `Packaged docker compose must persist /var/lib/claw-server in ${composePath}.`,
+      `Packaged docker compose must persist /var/lib/clawstudio-server in ${composePath}.`,
     );
   }
 
@@ -556,7 +556,7 @@ export function inspectContainerDeploymentContract({
       {
         id: 'persistent-storage',
         status: 'passed',
-        detail: 'packaged docker compose persists /var/lib/claw-server',
+        detail: 'packaged docker compose persists /var/lib/clawstudio-server',
       },
     ],
   };
@@ -923,16 +923,16 @@ export async function smokeKubernetesDeploymentBundle({
   if (
     !/kind:\s+PersistentVolumeClaim\b/m.test(renderedManifest)
     || !/persistentVolumeClaim:\s*\n\s*claimName:\s*[^\s]+/m.test(renderedManifest)
-    || !/mountPath:\s*\/var\/lib\/claw-server\b/m.test(renderedManifest)
+    || !/mountPath:\s*\/var\/lib\/clawstudio-server\b/m.test(renderedManifest)
   ) {
     throw new Error(
-      'Rendered kubernetes manifests must mount /var/lib/claw-server through a PersistentVolumeClaim.',
+      'Rendered kubernetes manifests must mount /var/lib/clawstudio-server through a PersistentVolumeClaim.',
     );
   }
   checks.push({
     id: 'persistent-storage',
     status: 'passed',
-    detail: 'rendered manifests mount /var/lib/claw-server through a PersistentVolumeClaim',
+    detail: 'rendered manifests mount /var/lib/clawstudio-server through a PersistentVolumeClaim',
   });
 
   if (capabilities.kubectl) {

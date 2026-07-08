@@ -258,7 +258,7 @@ function createDeploymentArchive({
     {
       name: launcherPath,
       content: family === 'container'
-        ? 'services:\n  claw-server:\n    image: claw-studio-server:fixture\n'
+        ? 'services:\n  clawstudio-server:\n    image: claw-studio-server:fixture\n'
         : 'apiVersion: v2\nname: claw-studio\nversion: 0.1.0\n',
     },
     {
@@ -304,7 +304,7 @@ function buildContainerChecks() {
     ['deployment-identity', 'packaged deployment identity matches the release target'],
     ['runtime-profile', 'packaged runtime profile preserves production-safe defaults'],
     ['manage-credentials', 'packaged compose layout requires explicit manage credentials'],
-    ['persistent-storage', 'packaged compose layout persists /var/lib/claw-server'],
+    ['persistent-storage', 'packaged compose layout persists /var/lib/clawstudio-server'],
     ['docker-compose-up', 'docker compose accepted the packaged layout'],
     ['docker-compose-healthy', 'docker reported packaged services healthy'],
     ['health-ready', '/claw/health/ready responded from the packaged deployment'],
@@ -325,7 +325,7 @@ function buildKubernetesChecks() {
     ['configmap-runtime-identity', 'rendered ConfigMap preserves runtime identity'],
     ['readiness-probe', 'rendered workload exposes readiness probe'],
     ['secret-ref', 'rendered workload wires manage credentials through Secret refs'],
-    ['persistent-storage', 'rendered workload requests /var/lib/claw-server persistence'],
+    ['persistent-storage', 'rendered workload requests /var/lib/clawstudio-server persistence'],
   ].map(([id, detail]) => ({
     id,
     status: 'passed',
@@ -687,7 +687,7 @@ function writeServerArtifacts({
     const extension = archiveFormat === 'zip' ? 'zip' : 'tar.gz';
     const baseName = `claw-studio-server-${releaseTag}-${entry.platform}-${entry.arch}`;
     const relativePath = `server/${entry.platform}/${entry.arch}/${baseName}.${extension}`;
-    const launcherFileName = entry.platform === 'windows' ? 'claw-server.exe' : 'claw-server';
+    const launcherFileName = entry.platform === 'windows' ? 'clawstudio-server.exe' : 'clawstudio-server';
     const launcherRelativePath = `server/${entry.platform}/${entry.arch}/${baseName}/${launcherFileName}`;
     const absolutePath = path.join(releaseAssetsDir, relativePath);
     writeBinaryFile(

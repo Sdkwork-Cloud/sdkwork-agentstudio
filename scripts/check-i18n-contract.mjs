@@ -5,38 +5,38 @@ import ts from 'typescript';
 const rootDir = process.cwd();
 const packagesDir = path.join(rootDir, 'packages');
 
-const localeSourceDir = path.join(packagesDir, 'sdkwork-claw-i18n', 'src', 'locales');
+const localeSourceDir = path.join(packagesDir, 'sdkwork-clawstudio-i18n', 'src', 'locales');
 const duplicateLocaleDir = path.join(
   packagesDir,
-  'sdkwork-claw-infrastructure',
+  'sdkwork-clawstudio-infrastructure',
   'src',
   'i18n',
   'locales',
 );
 const appStorePath = path.join(
   packagesDir,
-  'sdkwork-claw-core',
+  'sdkwork-clawstudio-core',
   'src',
   'stores',
   'useAppStore.ts',
 );
 const settingsPath = path.join(
   packagesDir,
-  'sdkwork-claw-settings',
+  'sdkwork-clawstudio-settings',
   'src',
   'GeneralSettings.tsx',
 );
-const i18nIndexPath = path.join(packagesDir, 'sdkwork-claw-i18n', 'src', 'index.ts');
+const i18nIndexPath = path.join(packagesDir, 'sdkwork-clawstudio-i18n', 'src', 'index.ts');
 const appProvidersPath = path.join(
   packagesDir,
-  'sdkwork-claw-shell',
+  'sdkwork-clawstudio-shell',
   'src',
   'application',
   'providers',
   'AppProviders.tsx',
 );
 const webServerPathCandidates = [
-  path.join(packagesDir, 'sdkwork-claw-web', 'server.ts'),
+  path.join(packagesDir, 'sdkwork-clawstudio-web', 'server.ts'),
   path.join(rootDir, 'server.ts'),
 ];
 
@@ -171,24 +171,24 @@ function collectStaticUiText(filePath) {
 function checkLocaleOwnership() {
   const localeFiles = listFiles(localeSourceDir, (filePath) => filePath.endsWith('.json'));
   if (localeFiles.length === 0) {
-    fail('packages/sdkwork-claw-i18n/src/locales must exist and own locale resources.');
+    fail('packages/sdkwork-clawstudio-i18n/src/locales must exist and own locale resources.');
   }
 
   const duplicateLocaleFiles = listFiles(duplicateLocaleDir, (filePath) => filePath.endsWith('.json'));
   if (duplicateLocaleFiles.length > 0) {
-    fail('packages/sdkwork-claw-infrastructure/src/i18n/locales must not exist; locale JSON must have a single owner.');
+    fail('packages/sdkwork-clawstudio-infrastructure/src/i18n/locales must not exist; locale JSON must have a single owner.');
   }
 }
 
 function checkSupportedLocales() {
   const appStoreSource = readFile(appStorePath);
   if (appStoreSource.includes("'ja'")) {
-    fail('packages/sdkwork-claw-core/src/stores/useAppStore.ts still exposes unsupported language "ja".');
+    fail('packages/sdkwork-clawstudio-core/src/stores/useAppStore.ts still exposes unsupported language "ja".');
   }
 
   const settingsSource = readFile(settingsPath);
   if (/value="ja"/.test(settingsSource)) {
-    fail('packages/sdkwork-claw-settings/src/GeneralSettings.tsx still exposes a Japanese language option.');
+    fail('packages/sdkwork-clawstudio-settings/src/GeneralSettings.tsx still exposes a Japanese language option.');
   }
 }
 
@@ -207,17 +207,17 @@ function checkRequestAwareRuntime() {
     const providersSource = readFile(appProvidersPath);
     if (!/ensureI18n/.test(providersSource)) {
       fail(
-        'packages/sdkwork-claw-shell/src/application/providers/AppProviders.tsx must bootstrap ensureI18n when no request-aware server runtime exists.',
+        'packages/sdkwork-clawstudio-shell/src/application/providers/AppProviders.tsx must bootstrap ensureI18n when no request-aware server runtime exists.',
       );
     }
   }
 
   const i18nSource = readFile(i18nIndexPath);
   if (!/cookie/i.test(i18nSource)) {
-    fail('packages/sdkwork-claw-i18n/src/index.ts must configure cookie-based language detection.');
+    fail('packages/sdkwork-clawstudio-i18n/src/index.ts must configure cookie-based language detection.');
   }
   if (!/supportedLngs/i.test(i18nSource)) {
-    fail('packages/sdkwork-claw-i18n/src/index.ts must declare supportedLngs.');
+    fail('packages/sdkwork-clawstudio-i18n/src/index.ts must declare supportedLngs.');
   }
 }
 
@@ -230,8 +230,8 @@ function checkChineseOutsideLocales() {
       !normalized.includes('\\dist\\') &&
       !normalized.includes('\\target\\') &&
       !normalized.includes('.test.') &&
-      !normalized.includes('\\sdkwork-claw-i18n\\src\\locales\\') &&
-      !normalized.includes('\\sdkwork-claw-infrastructure\\src\\i18n\\locales\\')
+      !normalized.includes('\\sdkwork-clawstudio-i18n\\src\\locales\\') &&
+      !normalized.includes('\\sdkwork-clawstudio-infrastructure\\src\\i18n\\locales\\')
     );
   });
 
@@ -267,7 +267,7 @@ function checkCorruptedLocaleValues() {
 
   if (corruptedEntries.length > 0) {
     fail(
-      `packages/sdkwork-claw-i18n/src/locales/zh.json contains corrupted placeholder values: ${corruptedEntries
+      `packages/sdkwork-clawstudio-i18n/src/locales/zh.json contains corrupted placeholder values: ${corruptedEntries
         .slice(0, 10)
         .join(', ')}`,
     );
@@ -285,7 +285,7 @@ function checkCorruptedLocaleValues() {
 
   if (missingChineseAnchors.length > 0) {
     fail(
-      `packages/sdkwork-claw-i18n/src/locales/zh.json contains mojibake or missing Chinese copy in: ${missingChineseAnchors.join(
+      `packages/sdkwork-clawstudio-i18n/src/locales/zh.json contains mojibake or missing Chinese copy in: ${missingChineseAnchors.join(
         ', ',
       )}`,
     );
@@ -342,49 +342,49 @@ function checkInstanceConfigWorkbenchTranslationKeys() {
   const targetFiles = [
     path.join(
       packagesDir,
-      'sdkwork-claw-instances',
+      'sdkwork-clawstudio-instances',
       'src',
       'components',
       'InstanceConfigWorkbenchPanel.tsx',
     ),
     path.join(
       packagesDir,
-      'sdkwork-claw-instances',
+      'sdkwork-clawstudio-instances',
       'src',
       'components',
       'InstanceConfigWorkbenchToolbar.tsx',
     ),
     path.join(
       packagesDir,
-      'sdkwork-claw-instances',
+      'sdkwork-clawstudio-instances',
       'src',
       'components',
       'InstanceConfigWorkbenchOverview.tsx',
     ),
     path.join(
       packagesDir,
-      'sdkwork-claw-instances',
+      'sdkwork-clawstudio-instances',
       'src',
       'components',
       'InstanceConfigWorkbenchRawPanel.tsx',
     ),
     path.join(
       packagesDir,
-      'sdkwork-claw-instances',
+      'sdkwork-clawstudio-instances',
       'src',
       'components',
       'InstanceConfigWorkbenchSectionHero.tsx',
     ),
     path.join(
       packagesDir,
-      'sdkwork-claw-instances',
+      'sdkwork-clawstudio-instances',
       'src',
       'components',
       'InstanceConfigWorkbenchConfigNavigation.tsx',
     ),
     path.join(
       packagesDir,
-      'sdkwork-claw-instances',
+      'sdkwork-clawstudio-instances',
       'src',
       'components',
       'InstanceConfigWorkbenchDiffPanel.tsx',

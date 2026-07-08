@@ -11,7 +11,7 @@ same truth as the rest of the shell.
 Across the application:
 
 - the global `activeInstanceId` store accepts any known instance id
-- the shared shell switchers in `sdkwork-claw-shell` and `sdkwork-claw-core`
+- the shared shell switchers in `sdkwork-clawstudio-shell` and `sdkwork-clawstudio-core`
   already allow selecting any listed instance
 - fallback activation also auto-selects `instances[0]` without checking
   `status === 'online'`
@@ -19,8 +19,8 @@ Across the application:
 But the explicit action entrypoints exposed from the instances feature still
 used a stricter local-only rule:
 
-- `packages/sdkwork-claw-instances/src/pages/Instances.tsx`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/pages/Instances.tsx`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
 
 Those pages hid "set as active" whenever `instance.status !== 'online'`.
 
@@ -54,20 +54,20 @@ Implemented contract:
 Code changes:
 
 - added `canSetActive` to
-  `packages/sdkwork-claw-instances/src/services/instanceActionCapabilities.ts`
+  `packages/sdkwork-clawstudio-instances/src/services/instanceActionCapabilities.ts`
 - `buildInstanceActionCapabilities(...)` now returns `canSetActive: true` for
   any existing instance and `false` only when no instance exists
-- `packages/sdkwork-claw-instances/src/pages/Instances.tsx` now uses
+- `packages/sdkwork-clawstudio-instances/src/pages/Instances.tsx` now uses
   `actionCapabilities.canSetActive` for both the inline button and the mobile
   dropdown action
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now uses the
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` now uses the
   same shared capability instead of `instance.status === 'online'`
 
 ## Regression Coverage
 
 Added and expanded coverage in:
 
-- `packages/sdkwork-claw-instances/src/services/instanceActionCapabilities.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceActionCapabilities.test.ts`
 
 The regression now freezes these rules:
 
@@ -80,7 +80,7 @@ The regression now freezes these rules:
 
 Executed in this iteration:
 
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-claw-instances/src/services/instanceActionCapabilities.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-instances/src/services/instanceActionCapabilities.test.ts']))"`
 - `node scripts/run-sdkwork-instances-check.mjs`
 
 ## Outcome

@@ -60,6 +60,6 @@ features:
 - `/claw/internal/v1/*`
 - `/claw/manage/v1/*`
 
-请结合 [API 总览](/zh-CN/reference/api-reference) 查看接口分层，再结合 [Claw Server 运行时](/zh-CN/reference/claw-server-runtime) 查看运行时行为细节。
+请结合 [API 总览](/zh-CN/reference/api-reference) 查看接口分层，再结合 [Claw Server 运行时](/zh-CN/reference/clawstudio-server-runtime) 查看运行时行为细节。
 
 > `docs/plans` 与 `docs/superpowers` 中的历史计划文档会继续保留，但它们不会进入公开搜索索引。对外文档只应描述当前已实现行为，或明确标注为未来规划的边界。

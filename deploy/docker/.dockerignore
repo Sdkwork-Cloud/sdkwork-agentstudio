@@ -1,9 +1,9 @@
 .git
 .github
 node_modules
-packages/sdkwork-claw-desktop
-packages/sdkwork-claw-server/src-host/target
-packages/sdkwork-claw-web/dist
+packages/sdkwork-clawstudio-desktop
+packages/sdkwork-clawstudio-server/src-host/target
+packages/sdkwork-clawstudio-web/dist
 docs/.vitepress/dist
 artifacts
 release-assets

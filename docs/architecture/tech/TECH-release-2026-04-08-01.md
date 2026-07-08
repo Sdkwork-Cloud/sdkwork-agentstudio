@@ -5,7 +5,7 @@
 
 - 推进 `Step 03`：把 OpenClaw Install Bootstrap 从“依赖可选 ClawHub 目录服务才能继续”收口为“先保护配置定位、托管 Provider 投影和同步实例主链，再补目录增强面”。
 - 保持 Kernel `openClawRuntime.homeDir` 作为 `openclaw.json` 的优先定位事实源，继续压实 Install Bootstrap 与 Kernel Runtime 的统一真相源。
-- 在不放宽 `@sdkwork/claw-core` Node-safe root 入口边界的前提下，修复 guided install 在 Node 合约测试与离线目录场景下的可用性。
+- 在不放宽 `@sdkwork/clawstudio-core` Node-safe root 入口边界的前提下，修复 guided install 在 Node 合约测试与离线目录场景下的可用性。
 
 ## Attempt Outcome
 
@@ -27,7 +27,7 @@
 - `node --experimental-strip-types packages/removed-install-feature/src/services/openClawBootstrapService.test.ts`
 - `pnpm.cmd check:sdkwork-install`
 - `pnpm.cmd check:desktop-openclaw-runtime`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-proof desktop_kernel_info_exposes_extended_runtime_directories`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-proof desktop_kernel_info_exposes_extended_runtime_directories`
 
 ## Risks And Rollback
 

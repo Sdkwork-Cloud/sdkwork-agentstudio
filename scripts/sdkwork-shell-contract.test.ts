@@ -22,18 +22,18 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-claw-shell keeps retained secondary routes addressable while the primary chrome stays simplified', () => {
+runTest('sdkwork-clawstudio-shell keeps retained secondary routes addressable while the primary chrome stays simplified', () => {
   const shellPackage = readJson<{ dependencies?: Record<string, string> }>(
-    'packages/sdkwork-claw-shell/package.json',
+    'packages/sdkwork-clawstudio-shell/package.json',
   );
-  const routesSource = read('packages/sdkwork-claw-shell/src/application/router/AppRoutes.tsx');
-  const routePathsSource = read('packages/sdkwork-claw-shell/src/application/router/routePaths.ts');
-  const routePrefetchSource = read('packages/sdkwork-claw-shell/src/application/router/routePrefetch.ts');
-  const sidebarSource = read('packages/sdkwork-claw-shell/src/components/Sidebar.tsx');
-  const settingsSource = read('packages/sdkwork-claw-settings/src/GeneralSettings.tsx');
-  const commandPaletteSource = read('packages/sdkwork-claw-shell/src/components/commandPaletteCommands.ts');
+  const routesSource = read('packages/sdkwork-clawstudio-shell/src/application/router/AppRoutes.tsx');
+  const routePathsSource = read('packages/sdkwork-clawstudio-shell/src/application/router/routePaths.ts');
+  const routePrefetchSource = read('packages/sdkwork-clawstudio-shell/src/application/router/routePrefetch.ts');
+  const sidebarSource = read('packages/sdkwork-clawstudio-shell/src/components/Sidebar.tsx');
+  const settingsSource = read('packages/sdkwork-clawstudio-settings/src/GeneralSettings.tsx');
+  const commandPaletteSource = read('packages/sdkwork-clawstudio-shell/src/components/commandPaletteCommands.ts');
 
-  assert.equal(shellPackage.dependencies?.['@sdkwork/claw-agent'], 'workspace:*');
+  assert.equal(shellPackage.dependencies?.['@sdkwork/clawstudio-agent'], 'workspace:*');
   assert.match(routePathsSource, /AGENTS: '\/agents'/);
   assert.match(routePathsSource, /KERNEL: '\/kernel'/);
   assert.match(routePathsSource, /NODES: '\/nodes'/);
@@ -64,17 +64,17 @@ runTest('sdkwork-claw-shell keeps retained secondary routes addressable while th
   assert.match(commandPaletteSource, /id: 'nav-usage'/);
 });
 
-runTest('sdkwork-claw-shell fully removes app store, third-party catalog, and commerce surfaces from retained host entrypoints', () => {
-  const routesSource = read('packages/sdkwork-claw-shell/src/application/router/AppRoutes.tsx');
-  const routePathsSource = read('packages/sdkwork-claw-shell/src/application/router/routePaths.ts');
-  const routePrefetchSource = read('packages/sdkwork-claw-shell/src/application/router/routePrefetch.ts');
-  const sidebarSource = read('packages/sdkwork-claw-shell/src/components/Sidebar.tsx');
-  const settingsSource = read('packages/sdkwork-claw-settings/src/GeneralSettings.tsx');
-  const commandPaletteSource = read('packages/sdkwork-claw-shell/src/components/commandPaletteCommands.ts');
-  const headerSource = read('packages/sdkwork-claw-shell/src/components/AppHeader.tsx');
-  const trayBridgeSource = read('packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopTrayRouteBridge.tsx');
-  const desktopBootstrapSource = read('packages/sdkwork-claw-desktop/src-tauri/src/app/bootstrap.rs');
-  const shellPackageSource = read('packages/sdkwork-claw-shell/package.json');
+runTest('sdkwork-clawstudio-shell fully removes app store, third-party catalog, and commerce surfaces from retained host entrypoints', () => {
+  const routesSource = read('packages/sdkwork-clawstudio-shell/src/application/router/AppRoutes.tsx');
+  const routePathsSource = read('packages/sdkwork-clawstudio-shell/src/application/router/routePaths.ts');
+  const routePrefetchSource = read('packages/sdkwork-clawstudio-shell/src/application/router/routePrefetch.ts');
+  const sidebarSource = read('packages/sdkwork-clawstudio-shell/src/components/Sidebar.tsx');
+  const settingsSource = read('packages/sdkwork-clawstudio-settings/src/GeneralSettings.tsx');
+  const commandPaletteSource = read('packages/sdkwork-clawstudio-shell/src/components/commandPaletteCommands.ts');
+  const headerSource = read('packages/sdkwork-clawstudio-shell/src/components/AppHeader.tsx');
+  const trayBridgeSource = read('packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopTrayRouteBridge.tsx');
+  const desktopBootstrapSource = read('packages/sdkwork-clawstudio-desktop/src-tauri/src/app/bootstrap.rs');
+  const shellPackageSource = read('packages/sdkwork-clawstudio-shell/package.json');
 
   for (const source of [
     routesSource,
@@ -101,8 +101,8 @@ runTest('sdkwork-claw-shell fully removes app store, third-party catalog, and co
   assert.doesNotMatch(desktopBootstrapSource, /open_apps/);
 });
 
-runTest('sdkwork-claw-shell migrates persisted sidebar visibility away from removed ecosystem ids', () => {
-  const appStoreSource = read('packages/sdkwork-claw-core/src/stores/useAppStore.ts');
+runTest('sdkwork-clawstudio-shell migrates persisted sidebar visibility away from removed ecosystem ids', () => {
+  const appStoreSource = read('packages/sdkwork-clawstudio-core/src/stores/useAppStore.ts');
 
   assert.match(appStoreSource, /const SIDEBAR_VISIBILITY_VERSION = 5;/);
   assert.match(appStoreSource, /const DEFAULT_HIDDEN_SIDEBAR_ITEMS = \['extensions'\] as const;/);
@@ -115,8 +115,8 @@ runTest('sdkwork-claw-shell migrates persisted sidebar visibility away from remo
   assert.match(appStoreSource, /item !== 'points'/);
 });
 
-runTest('sdkwork-claw-shell keeps header chrome focused on search, mobile guide, and account controls', () => {
-  const headerSource = read('packages/sdkwork-claw-shell/src/components/AppHeader.tsx');
+runTest('sdkwork-clawstudio-shell keeps header chrome focused on search, mobile guide, and account controls', () => {
+  const headerSource = read('packages/sdkwork-clawstudio-shell/src/components/AppHeader.tsx');
 
   assert.match(headerSource, /MobileAppDownloadDialog|install\.mobileGuide\.headerAction/);
   assert.match(headerSource, /OPEN_COMMAND_PALETTE_EVENT|commandPalette\.searchPlaceholder/);
@@ -127,10 +127,10 @@ runTest('sdkwork-claw-shell keeps header chrome focused on search, mobile guide,
   assert.doesNotMatch(headerSource, /@sdkwork\/claw-points/);
 });
 
-runTest('sdkwork-claw-shell keeps auth routes isolated while workspace chrome owns retained navigation surfaces', () => {
-  const layoutSource = read('packages/sdkwork-claw-shell/src/application/layouts/MainLayout.tsx');
-  const routesSource = read('packages/sdkwork-claw-shell/src/application/router/AppRoutes.tsx');
-  const sidebarSource = read('packages/sdkwork-claw-shell/src/components/Sidebar.tsx');
+runTest('sdkwork-clawstudio-shell keeps auth routes isolated while workspace chrome owns retained navigation surfaces', () => {
+  const layoutSource = read('packages/sdkwork-clawstudio-shell/src/application/layouts/MainLayout.tsx');
+  const routesSource = read('packages/sdkwork-clawstudio-shell/src/application/router/AppRoutes.tsx');
+  const sidebarSource = read('packages/sdkwork-clawstudio-shell/src/components/Sidebar.tsx');
 
   assert.match(routesSource, /path="\/login"/);
   assert.match(routesSource, /path="\/register"/);
@@ -142,8 +142,8 @@ runTest('sdkwork-claw-shell keeps auth routes isolated while workspace chrome ow
   assert.match(sidebarSource, /data-slot="sidebar-resize-handle"/);
 });
 
-runTest('sdkwork-claw-shell keeps sidebar labels color-aligned with sidebar icons across expanded and collapsed navigation items', () => {
-  const sidebarSource = read('packages/sdkwork-claw-shell/src/components/Sidebar.tsx');
+runTest('sdkwork-clawstudio-shell keeps sidebar labels color-aligned with sidebar icons across expanded and collapsed navigation items', () => {
+  const sidebarSource = read('packages/sdkwork-clawstudio-shell/src/components/Sidebar.tsx');
 
   assert.match(sidebarSource, /function getSidebarNavToneClasses\(isActive: boolean\)/);
   assert.match(sidebarSource, /labelClassName=\{tone\.label\}/);
@@ -154,8 +154,8 @@ runTest('sdkwork-claw-shell keeps sidebar labels color-aligned with sidebar icon
   assert.doesNotMatch(sidebarSource, /labelClassName=\{isActive \? 'text-primary-200' : undefined\}/);
 });
 
-runTest('sdkwork-claw-shell keeps sidebar light by default and scopes deep chrome to dark mode', () => {
-  const sidebarSource = read('packages/sdkwork-claw-shell/src/components/Sidebar.tsx');
+runTest('sdkwork-clawstudio-shell keeps sidebar light by default and scopes deep chrome to dark mode', () => {
+  const sidebarSource = read('packages/sdkwork-clawstudio-shell/src/components/Sidebar.tsx');
 
   assert.match(sidebarSource, /border-r border-zinc-200 bg-zinc-50\/95 text-zinc-700/);
   assert.match(
@@ -171,11 +171,11 @@ runTest('sdkwork-claw-shell keeps sidebar light by default and scopes deep chrom
   assert.match(sidebarSource, /dark:border-white\/8 dark:bg-white\/\[0\.04\] dark:text-zinc-300/);
 });
 
-runTest('sdkwork-claw-shell binds dark variants to the theme manager dark class and exposes the full theme color catalog', () => {
-  const themeManagerSource = read('packages/sdkwork-claw-shell/src/application/providers/ThemeManager.tsx');
-  const shellStylesSource = read('packages/sdkwork-claw-shell/src/styles/index.css');
-  const generalSettingsSource = read('packages/sdkwork-claw-settings/src/GeneralSettings.tsx');
-  const appStoreSource = read('packages/sdkwork-claw-core/src/stores/useAppStore.ts');
+runTest('sdkwork-clawstudio-shell binds dark variants to the theme manager dark class and exposes the full theme color catalog', () => {
+  const themeManagerSource = read('packages/sdkwork-clawstudio-shell/src/application/providers/ThemeManager.tsx');
+  const shellStylesSource = read('packages/sdkwork-clawstudio-shell/src/styles/index.css');
+  const generalSettingsSource = read('packages/sdkwork-clawstudio-settings/src/GeneralSettings.tsx');
+  const appStoreSource = read('packages/sdkwork-clawstudio-core/src/stores/useAppStore.ts');
 
   assert.match(themeManagerSource, /root\.classList\.add\('dark'\)/);
   assert.match(themeManagerSource, /root\.classList\.remove\('dark'\)/);
@@ -190,9 +190,9 @@ runTest('sdkwork-claw-shell binds dark variants to the theme manager dark class 
   assert.match(appStoreSource, /themeColor: 'tech-blue'/);
 });
 
-runTest('sdkwork-claw-shell gives light mode a flat graphite enterprise theme without changing layout source', () => {
-  const shellStylesSource = read('packages/sdkwork-claw-shell/src/styles/index.css');
-  const layoutSource = read('packages/sdkwork-claw-shell/src/application/layouts/MainLayout.tsx');
+runTest('sdkwork-clawstudio-shell gives light mode a flat graphite enterprise theme without changing layout source', () => {
+  const shellStylesSource = read('packages/sdkwork-clawstudio-shell/src/styles/index.css');
+  const layoutSource = read('packages/sdkwork-clawstudio-shell/src/application/layouts/MainLayout.tsx');
 
   assert.match(shellStylesSource, /--theme-neutral-50: #fafafa;/);
   assert.match(shellStylesSource, /--theme-neutral-950: #09090b;/);

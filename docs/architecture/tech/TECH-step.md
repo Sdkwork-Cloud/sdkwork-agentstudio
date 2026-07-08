@@ -18,17 +18,17 @@
 
 凡涉及 OpenClaw，对齐必须回读并引用以下事实源；无证据不得宣称已对齐：
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 ## 3. 核心循环
 

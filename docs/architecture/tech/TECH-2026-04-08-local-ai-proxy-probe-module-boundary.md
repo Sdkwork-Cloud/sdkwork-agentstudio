@@ -7,9 +7,9 @@
 
 The desktop local AI proxy must keep route probing in a dedicated module:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, request serving, route-test persistence, observability, and the runtime-facing service methods
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
   owns route-probe orchestration, probe capability classification, protocol-specific upstream probe requests, and upstream probe success/error interpretation
 
 `scripts/check-desktop-platform-foundation.mjs` must assert the module file, the `mod probe;` declaration, and explicit `probe::probe_route(...)` delegation.

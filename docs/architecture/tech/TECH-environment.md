@@ -19,7 +19,7 @@ Start from the root `.env.example`. Package-level `.env.example` files add runti
 | `VITE_PLATFORM` | Desktop runtime | Force or describe the current platform |
 | `VITE_TIMEOUT` | Optional | Shared HTTP timeout |
 | `VITE_ENABLE_STARTUP_UPDATE_CHECK` | Optional | Enable update checks during desktop startup |
-| `CLAW_SERVER_CONFIG` | Optional | JSON config file used by the native `claw-server` CLI |
+| `CLAW_SERVER_CONFIG` | Optional | JSON config file used by the native `clawstudio-server` CLI |
 | `CLAW_SERVER_HOST` | Server runtime | Native server bind host, defaults to loopback-only `127.0.0.1` |
 | `CLAW_SERVER_PORT` | Server runtime | Native server listen port |
 | `CLAW_SERVER_DATA_DIR` | Server runtime | Server rollout and node-session data directory |
@@ -44,9 +44,9 @@ Start from the root `.env.example`. Package-level `.env.example` files add runti
 - keep desktop-specific values consistent with the distribution and update flow
 - browser and desktop Vite env files must not inject root access tokens; privileged credentials stay in trusted hosts
 - AI generation now depends on an active OpenClaw-compatible instance plus Provider Center configuration, not a browser-side Gemini key
-- `claw-server` now resolves configuration with the precedence order `CLI overrides -> config file -> environment variables -> defaults`
-- `claw-server service print-manifest` reuses the same resolution order and falls back to `<CLAW_SERVER_DATA_DIR>/claw-server.config.json` when no explicit config path is supplied
-- `claw-server service install`, `start`, `stop`, `restart`, and `status` also reuse that same config path and require whatever privileges the current platform service manager expects
+- `clawstudio-server` now resolves configuration with the precedence order `CLI overrides -> config file -> environment variables -> defaults`
+- `clawstudio-server service print-manifest` reuses the same resolution order and falls back to `<CLAW_SERVER_DATA_DIR>/clawstudio-server.config.json` when no explicit config path is supplied
+- `clawstudio-server service install`, `start`, `stop`, `restart`, and `status` also reuse that same config path and require whatever privileges the current platform service manager expects
 - `CLAW_SERVER_MANAGE_USERNAME` and `CLAW_SERVER_MANAGE_PASSWORD` protect the browser shell, `/claw/manage/v1/rollouts*`, and `/claw/manage/v1/service*`, so the same-origin operator UI can safely drive native service lifecycle actions over HTTP
 - for server deployments, do not widen `CLAW_SERVER_HOST` beyond `127.0.0.1` unless ingress, auth, and network exposure are intentionally configured
 - once `CLAW_SERVER_HOST` widens beyond loopback, the Rust host now refuses startup unless control-plane credentials are configured or `CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=true` is set intentionally
@@ -60,6 +60,6 @@ Start from the root `.env.example`. Package-level `.env.example` files add runti
 ## Related Files
 
 - `./.env.example`
-- `./packages/sdkwork-claw-web/.env.example`
-- `./packages/sdkwork-claw-desktop/.env.example`
+- `./packages/sdkwork-clawstudio-web/.env.example`
+- `./packages/sdkwork-clawstudio-desktop/.env.example`
 

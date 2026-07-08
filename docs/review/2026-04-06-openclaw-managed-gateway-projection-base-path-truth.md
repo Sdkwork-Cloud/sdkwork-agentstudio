@@ -15,7 +15,7 @@ different websocket truth.
 ## Root Cause
 
 The bug was in
-`packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs`.
+`packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`.
 
 `managed_openclaw_gateway_endpoint(...)` still built the managed gateway
 projection with a hardcoded root websocket URL:
@@ -81,8 +81,8 @@ truth:
 
 Executed and passed:
 
-- `cargo test managed_openclaw_gateway_projection_projects_control_ui_base_path_into_websocket_url --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml`
-- `cargo test built_in_instance_detail_projects_control_ui_base_path_into_live_gateway_websocket_url --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml`
+- `cargo test managed_openclaw_gateway_projection_projects_control_ui_base_path_into_websocket_url --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
+- `cargo test built_in_instance_detail_projects_control_ui_base_path_into_live_gateway_websocket_url --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`
 
@@ -94,7 +94,7 @@ Still open:
 
 - launched-session proof that the managed websocket is not only projected
   correctly but is actually connectable after startup
-- browser-only fallback review in `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
+- browser-only fallback review in `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
   if any UI flow can still surface stale built-in websocket metadata
 - live validation for chat, notification, cron, proxy router, and instance
   detail flows on top of the now-aligned managed gateway projection

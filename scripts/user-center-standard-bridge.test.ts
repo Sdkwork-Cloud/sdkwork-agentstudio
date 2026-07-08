@@ -7,13 +7,13 @@ import {
   createClawAuthUserCenterPluginDefinition,
   createClawAuthUserCenterServerPluginDefinition,
   createClawAuthUserCenterServerValidationPluginDefinition,
-} from '../packages/sdkwork-claw-auth/src/userCenterStandard.ts';
+} from '../packages/sdkwork-clawstudio-auth/src/userCenterStandard.ts';
 
 const root = path.resolve(import.meta.dirname, '..');
-const bridgePath = path.join(root, 'packages', 'sdkwork-claw-auth', 'src', 'userCenterStandard.ts');
-const validationPath = path.join(root, 'packages', 'sdkwork-claw-auth', 'src', 'validation.ts');
-const runtimePath = path.join(root, 'packages', 'sdkwork-claw-auth', 'src', 'userCenterRuntime.ts');
-const indexPath = path.join(root, 'packages', 'sdkwork-claw-auth', 'src', 'index.ts');
+const bridgePath = path.join(root, 'packages', 'sdkwork-clawstudio-auth', 'src', 'userCenterStandard.ts');
+const validationPath = path.join(root, 'packages', 'sdkwork-clawstudio-auth', 'src', 'validation.ts');
+const runtimePath = path.join(root, 'packages', 'sdkwork-clawstudio-auth', 'src', 'userCenterRuntime.ts');
+const indexPath = path.join(root, 'packages', 'sdkwork-clawstudio-auth', 'src', 'index.ts');
 
 const bridgeSource = fs.readFileSync(bridgePath, 'utf8');
 const indexSource = fs.readFileSync(indexPath, 'utf8');

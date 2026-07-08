@@ -65,7 +65,7 @@ This keeps the card compact while restoring the upstream meaning of the two sess
 
 Failing tests were added first in two places:
 
-1. `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+1. `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
    - expected a helper that hides duplicate requester-session output when it matches the child
      execution session
 2. `scripts/sdkwork-tasks-contract.test.ts`
@@ -74,7 +74,7 @@ Failing tests were added first in two places:
 
 Fresh red evidence:
 
-- `node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
   failed because `getTaskFlowLinkedTaskRequesterSession` did not exist
 - `pnpm.cmd check:sdkwork-tasks`
   failed for the same missing export, confirming that the shared linked-task presentation layer was
@@ -95,8 +95,8 @@ After the implementation:
 
 Updated:
 
-- `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.ts`
-- `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
 
 Changes:
 
@@ -111,7 +111,7 @@ This gives the shared UI one truthful presentation seam instead of repeating ad 
 
 Updated:
 
-- `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
 
 Changes:
 
@@ -141,7 +141,7 @@ That gives future refactors a stable regression tripwire.
 Fresh commands run in this loop:
 
 ```bash
-node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts
 pnpm.cmd check:sdkwork-tasks
 pnpm.cmd build
 pnpm.cmd lint
@@ -149,7 +149,7 @@ pnpm.cmd lint
 
 Results:
 
-- `node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
   passed
 - `pnpm.cmd check:sdkwork-tasks`
   passed

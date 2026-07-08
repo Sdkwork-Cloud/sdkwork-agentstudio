@@ -4,11 +4,11 @@
 
 The desktop local AI proxy must keep shared upstream request and URL construction in a dedicated module:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, request serving, streaming translation, route-test persistence, observability, and the runtime-facing service methods
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
   owns route-probe orchestration and delegates shared upstream request/url shaping to the upstream module
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs`
   owns shared OpenAI-compatible upstream request construction plus Gemini and Ollama upstream URL shaping
 
 `scripts/check-desktop-platform-foundation.mjs` must assert the module file, the `mod upstream;` declaration, and explicit `upstream::...` delegation from both the main runtime hotspot and the probe module.

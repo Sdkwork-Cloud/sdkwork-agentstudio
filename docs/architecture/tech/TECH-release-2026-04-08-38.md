@@ -20,26 +20,26 @@
   - added a bounded `Kernel Center` startup-evidence section and the minimum locale copy required to expose it
   - added a new UI/source-level contract test to freeze the shell consumer and locale presence
 - Fresh verification:
-  - RED: `node --experimental-strip-types packages/sdkwork-claw-settings/src/kernelCenter.test.ts`
-  - GREEN: `node --experimental-strip-types packages/sdkwork-claw-settings/src/kernelCenter.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/kernelCenterService.test.ts`
-  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-green desktop_kernel_info_exposes_persisted_startup_evidence_summary`
+  - RED: `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/kernelCenter.test.ts`
+  - GREEN: `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/kernelCenter.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
+  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-green desktop_kernel_info_exposes_persisted_startup_evidence_summary`
   - `pnpm.cmd check:desktop-openclaw-runtime`
   - `pnpm.cmd check:desktop`
 
 ## Change Scope
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/kernel.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/kernel.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/mod.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/commands/desktop_kernel.rs`
-- `packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts`
-- `packages/sdkwork-claw-settings/src/services/kernelCenterService.ts`
-- `packages/sdkwork-claw-settings/src/services/kernelCenterService.test.ts`
-- `packages/sdkwork-claw-settings/src/KernelCenter.tsx`
-- `packages/sdkwork-claw-settings/src/kernelCenter.test.ts`
-- `packages/sdkwork-claw-i18n/src/locales/en/settings.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/settings.json`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/kernel.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/kernel.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/mod.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/desktop_kernel.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/KernelCenter.tsx`
+- `packages/sdkwork-clawstudio-settings/src/kernelCenter.test.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/settings.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/settings.json`
 - `docs/review/step-03-kernel-center-startup-evidence-convergence-2026-04-08.md`
 - `docs/架构/123-2026-04-08-desktop-startup-evidence-kernel-publication-owner.md`
 - `docs/review/step-03-执行卡-2026-04-07.md`
@@ -48,9 +48,9 @@
 
 ## Verification Focus
 
-- `node --experimental-strip-types packages/sdkwork-claw-settings/src/kernelCenter.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/kernelCenterService.test.ts`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-green desktop_kernel_info_exposes_persisted_startup_evidence_summary`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/kernelCenter.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-green desktop_kernel_info_exposes_persisted_startup_evidence_summary`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 

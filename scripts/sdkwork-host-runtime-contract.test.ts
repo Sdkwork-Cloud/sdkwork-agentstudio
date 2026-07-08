@@ -39,11 +39,11 @@ function extractTypeAlias(source: string, aliasName: string) {
 function extractDesktopLockImporter() {
   const lockSource = read('pnpm-lock.yaml').replace(/\r\n/g, '\n');
   const match = lockSource.match(
-    /packages\/sdkwork-claw-desktop:\r?\n([\s\S]*?)(?:\r?\n  packages\/|\r?\npackages:|\r?\nimporters:|$)/,
+    /packages\/sdkwork-clawstudio-desktop:\r?\n([\s\S]*?)(?:\r?\n  packages\/|\r?\npackages:|\r?\nimporters:|$)/,
   );
 
   if (!match) {
-    throw new Error('Unable to locate the packages/sdkwork-claw-desktop importer in pnpm-lock.yaml');
+    throw new Error('Unable to locate the packages/sdkwork-clawstudio-desktop importer in pnpm-lock.yaml');
   }
 
   return match[1];
@@ -70,7 +70,7 @@ function walkFiles(dir: string, predicate: (file: string) => boolean, result: st
 }
 
 function readGeneratedTauriBundleOverlay() {
-  const relativePath = 'packages/sdkwork-claw-desktop/src-tauri/generated/tauri.bundle.overlay.json';
+  const relativePath = 'packages/sdkwork-clawstudio-desktop/src-tauri/generated/tauri.bundle.overlay.json';
   if (exists(relativePath)) {
     return read(relativePath);
   }
@@ -105,13 +105,13 @@ async function runAsyncTest(name: string, fn: () => Promise<void>) {
   }
 }
 
-runTest('sdkwork-claw-web stays a Vite-only host without a business runtime server', () => {
+runTest('sdkwork-clawstudio-web stays a Vite-only host without a business runtime server', () => {
   const pkg = readJson<{
     scripts?: Record<string, string>;
     dependencies?: Record<string, string>;
     devDependencies?: Record<string, string>;
   }>(
-    'packages/sdkwork-claw-web/package.json',
+    'packages/sdkwork-clawstudio-web/package.json',
   );
 
   assert.equal(
@@ -121,11 +121,11 @@ runTest('sdkwork-claw-web stays a Vite-only host without a business runtime serv
   assert.equal(pkg.dependencies?.express, undefined);
   assert.equal(pkg.dependencies?.['sql.js'], undefined);
   assert.equal(pkg.devDependencies?.tsx, undefined);
-  assert.equal(exists('packages/sdkwork-claw-web/server.ts'), false);
+  assert.equal(exists('packages/sdkwork-clawstudio-web/server.ts'), false);
 });
 
-runTest('sdkwork-claw-web bootstraps shell runtime before mounting the React tree', () => {
-  const mainSource = read('packages/sdkwork-claw-web/src/main.tsx');
+runTest('sdkwork-clawstudio-web bootstraps shell runtime before mounting the React tree', () => {
+  const mainSource = read('packages/sdkwork-clawstudio-web/src/main.tsx');
 
   assert.match(mainSource, /bootstrapShellRuntime/);
   assert.doesNotMatch(mainSource, /@sdkwork\/claw-i18n/);
@@ -135,8 +135,8 @@ runTest('sdkwork-claw-web bootstraps shell runtime before mounting the React tre
   );
 });
 
-runTest('sdkwork-claw-web reports startup errors instead of leaving an unhandled blank screen', () => {
-  const mainSource = read('packages/sdkwork-claw-web/src/main.tsx');
+runTest('sdkwork-clawstudio-web reports startup errors instead of leaving an unhandled blank screen', () => {
+  const mainSource = read('packages/sdkwork-clawstudio-web/src/main.tsx');
 
   assert.doesNotMatch(mainSource, /document\.getElementById\('root'\)!\)/);
   assert.match(mainSource, /function resolveWebRootElement\(\): HTMLElement/);
@@ -173,9 +173,9 @@ runTest('production browser storage access goes through safe storage adapters', 
 });
 
 runTest('built-in OpenClaw hosts derive a real version label instead of the bundled placeholder', () => {
-  const webStudioSource = read('packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts');
+  const webStudioSource = read('packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts');
   const desktopStudioSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
   );
 
   assert.doesNotMatch(webStudioSource, /version:\s*'bundled'/);
@@ -189,34 +189,34 @@ runTest('built-in OpenClaw hosts derive a real version label instead of the bund
 
 runTest('desktop kernel host service descriptions do not treat OpenClaw as mandatory product infrastructure', () => {
   const serviceManagerSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/kernel_host/service_manager.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/kernel_host/service_manager.rs',
   );
 
   assert.doesNotMatch(serviceManagerSource, /required by Claw Studio/);
 });
 
-runTest('sdkwork-claw-desktop contains the Tauri runtime package surface', () => {
+runTest('sdkwork-clawstudio-desktop contains the Tauri runtime package surface', () => {
   const pkg = readJson<{
     scripts?: Record<string, string>;
     dependencies?: Record<string, string>;
   }>(
-    'packages/sdkwork-claw-desktop/package.json',
+    'packages/sdkwork-clawstudio-desktop/package.json',
   );
   const desktopLockImporter = extractDesktopLockImporter();
 
-  assert.ok(exists('packages/sdkwork-claw-desktop/.env.example'));
-  assert.ok(exists('packages/sdkwork-claw-desktop/src-tauri/Cargo.toml'));
-  assert.ok(exists('packages/sdkwork-claw-desktop/src-tauri/tauri.conf.json'));
+  assert.ok(exists('packages/sdkwork-clawstudio-desktop/.env.example'));
+  assert.ok(exists('packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml'));
+  assert.ok(exists('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.conf.json'));
   assert.equal(
     pkg.scripts?.['dev:tauri'],
     'sdkwork-run-node ../../scripts/run-vite-host.mjs serve --host 127.0.0.1 --port 1426 --strictPort',
   );
-  assert.equal(pkg.dependencies?.['@sdkwork/claw-core'], undefined);
+  assert.equal(pkg.dependencies?.['@sdkwork/clawstudio-core'], undefined);
   assert.doesNotMatch(desktopLockImporter, /'@sdkwork\/claw-core':/);
 });
 
 runTest('desktop Tauri entry point reports startup errors without panicking', () => {
-  const desktopLibSource = read('packages/sdkwork-claw-desktop/src-tauri/src/lib.rs');
+  const desktopLibSource = read('packages/sdkwork-clawstudio-desktop/src-tauri/src/lib.rs');
 
   assert.doesNotMatch(desktopLibSource, /\.run\([\s\S]*?\)\s*\.expect\(/);
   assert.match(desktopLibSource, /if let Err\(error\) = app::bootstrap::build\(\)[\s\S]*?\.run\(/);
@@ -224,33 +224,33 @@ runTest('desktop Tauri entry point reports startup errors without panicking', ()
   assert.match(desktopLibSource, /std::process::exit\(1\);/);
 });
 
-runTest('sdkwork-claw-server and sdkwork-claw-host-core expose the shared server host foundation', () => {
+runTest('sdkwork-clawstudio-server and sdkwork-clawstudio-host-core expose the shared server host foundation', () => {
   const serverPackage = readJson<{
     dependencies?: Record<string, string>;
-  }>('packages/sdkwork-claw-server/package.json');
+  }>('packages/sdkwork-clawstudio-server/package.json');
   const hostCorePackage = readJson<{
     name?: string;
-  }>('packages/sdkwork-claw-host-core/package.json');
+  }>('packages/sdkwork-clawstudio-host-core/package.json');
 
-  assert.ok(exists('packages/sdkwork-claw-server/src-host/Cargo.toml'));
-  assert.ok(exists('packages/sdkwork-claw-host-core/src-host/Cargo.toml'));
-  assert.equal(serverPackage.dependencies?.['@sdkwork/claw-host-core'], 'workspace:*');
-  assert.equal(hostCorePackage.name, '@sdkwork/claw-host-core');
+  assert.ok(exists('packages/sdkwork-clawstudio-server/src-host/Cargo.toml'));
+  assert.ok(exists('packages/sdkwork-clawstudio-host-core/src-host/Cargo.toml'));
+  assert.equal(serverPackage.dependencies?.['@sdkwork/clawstudio-host-core'], 'workspace:*');
+  assert.equal(hostCorePackage.name, '@sdkwork/clawstudio-host-core');
 });
 
 runTest('shared host runtime contracts freeze endpoint governance and canonical OpenClaw manage resources', () => {
   const manageContractSource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/contracts/manage.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/manage.ts',
   );
   const internalContractSource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/contracts/internal.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/internal.ts',
   );
   const runtimeContractSource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts',
   );
-  const platformIndexSource = read('packages/sdkwork-claw-infrastructure/src/platform/index.ts');
+  const platformIndexSource = read('packages/sdkwork-clawstudio-infrastructure/src/platform/index.ts');
   const serverBrowserBridgeSource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/serverBrowserBridge.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.ts',
   );
 
   assert.match(manageContractSource, /export interface ManageHostEndpointRecord/);
@@ -280,10 +280,10 @@ runTest('shared host runtime contracts freeze endpoint governance and canonical 
 
 runTest('desktop runtime authority contracts expose configFile and do not publish legacy configFilePath', () => {
   const runtimeContractSource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts',
   );
   const desktopKernelModelSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/kernel.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/kernel.rs',
   );
 
   assert.match(
@@ -321,24 +321,24 @@ runTest('desktop runtime authority contracts expose configFile and do not publis
 });
 
 runTest('shared kernel-platform types keep runtime, transport, console, and activation ids extensible for future kernels', () => {
-  const typesSource = read('packages/sdkwork-claw-types/src/index.ts');
+  const typesSource = read('packages/sdkwork-clawstudio-types/src/index.ts');
   const studioContractSource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/contracts/studio.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/studio.ts',
   );
   const runtimeContractSource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts',
   );
   const desktopStudioSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
   );
   const desktopBridgeSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts',
   );
   const desktopBootstrapAppSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
   );
   const desktopBackgroundRuntimeReadinessRecoverySource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopBackgroundRuntimeReadinessRecovery.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopBackgroundRuntimeReadinessRecovery.ts',
   );
   const knownRuntimeKindAlias = extractTypeAlias(typesSource, 'KnownStudioRuntimeKind');
   const runtimeKindAlias = extractTypeAlias(typesSource, 'StudioRuntimeKind');
@@ -460,10 +460,10 @@ runTest('shared kernel-platform types keep runtime, transport, console, and acti
 
 runTest('desktop and server hosts keep OpenClaw detail parity for built-in, local-external, and remote shapes', () => {
   const desktopStudioSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
   );
   const serverStudioSource = read(
-    'packages/sdkwork-claw-host-studio/src-host/src/lib.rs',
+    'packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs',
   );
 
   assert.match(desktopStudioSource, /fn build_console_access\(/);
@@ -536,10 +536,10 @@ runTest('desktop and server hosts keep OpenClaw detail parity for built-in, loca
 
 runTest('desktop bundled OpenClaw runtime reuses host-core port allocation instead of ad hoc loopback scanning', () => {
   const desktopRuntimeSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
   );
 
-  assert.match(desktopRuntimeSource, /sdkwork_claw_host_core::port_allocator::/);
+  assert.match(desktopRuntimeSource, /sdkwork_clawstudio_host_core::port_allocator::/);
   assert.match(desktopRuntimeSource, /allocate_tcp_listener/);
   assert.match(desktopRuntimeSource, /PortAllocationRequest/);
   assert.match(desktopRuntimeSource, /PortRange::new/);
@@ -547,30 +547,30 @@ runTest('desktop bundled OpenClaw runtime reuses host-core port allocation inste
   assert.doesNotMatch(desktopRuntimeSource, /fn is_loopback_port_available\(/);
 });
 
-runTest('sdkwork-claw-desktop bootstraps shell runtime before mounting the React tree', () => {
+runTest('sdkwork-clawstudio-desktop bootstraps shell runtime before mounting the React tree', () => {
   const createDesktopAppSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/createDesktopApp.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/createDesktopApp.tsx',
   );
   const desktopBootstrapAppSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
   );
   const desktopHostedBridgeSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts',
   );
   const desktopBootstrapRuntimeSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopBootstrapRuntime.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopBootstrapRuntime.ts',
   );
   const desktopRuntimeConnectionSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopRuntimeConnection.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopRuntimeConnection.ts',
   );
   const desktopBackgroundRuntimeReadinessToastSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopBackgroundRuntimeReadinessToast.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopBackgroundRuntimeReadinessToast.ts',
   );
   const desktopBackgroundRuntimeReadinessRecoverySource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopBackgroundRuntimeReadinessRecovery.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopBackgroundRuntimeReadinessRecovery.ts',
   );
   const desktopStartupEvidenceSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts',
   );
   const connectDesktopRuntimeBody = desktopBootstrapAppSource.match(
     /const connectDesktopRuntime = useEffectEvent\(async \(\) => \{([\s\S]*?)\n  }\);/,
@@ -876,13 +876,13 @@ runTest('sdkwork-claw-desktop bootstraps shell runtime before mounting the React
 
 runTest('desktop hosted readiness probe validates live OpenClaw authority instead of route presence alone', () => {
   const desktopHostedBridgeSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts',
   );
   const desktopBootstrapAppSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
   );
   const internalRouteSource = read(
-    'packages/sdkwork-claw-server/src-host/src/http/routes/internal_node_sessions.rs',
+    'packages/sdkwork-clawstudio-server/src-host/src/http/routes/internal_node_sessions.rs',
   );
 
   assert.match(desktopHostedBridgeSource, /manage\.getOpenClawRuntime\(\)/);
@@ -933,10 +933,10 @@ runTest('desktop hosted readiness probe validates live OpenClaw authority instea
 
 runTest('OpenClaw config workbench uses gateway authority when the runtime is online while keeping file fallback for offline desktop flows', () => {
   const instanceServiceCoreSource = read(
-    'packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts',
+    'packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts',
   );
   const instanceServiceSource = read(
-    'packages/sdkwork-claw-instances/src/services/instanceService.ts',
+    'packages/sdkwork-clawstudio-instances/src/services/instanceService.ts',
   );
 
   assert.match(
@@ -978,16 +978,16 @@ runTest('OpenClaw config workbench uses gateway authority when the runtime is on
 
 runTest('desktop hosted runtime evidence uses built-in OpenClaw wording for readiness options and shape fields', () => {
   const desktopHostedBridgeSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts',
   );
   const tauriBridgeSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts',
   );
   const smokeDesktopStartupEvidenceSource = read(
     'scripts/release/smoke-desktop-startup-evidence.mjs',
   );
   const desktopBootstrapAppSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
   );
 
   assert.match(desktopHostedBridgeSource, /requiresBuiltInOpenClawEvidence\?: boolean;/);
@@ -1031,13 +1031,13 @@ runTest('desktop hosted runtime evidence uses built-in OpenClaw wording for read
 
 runTest('internal built-in OpenClaw helpers use built-in naming instead of managed naming', () => {
   const builtInSelectionSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/builtInOpenClawInstanceSelection.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/builtInOpenClawInstanceSelection.ts',
   );
   const gatewayClientSource = read(
-    'packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts',
   );
   const configServiceSource = read(
-    'packages/sdkwork-claw-core/src/services/openClawConfigService.ts',
+    'packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts',
   );
 
   assert.match(builtInSelectionSource, /function isBuiltInOpenClawInstance\(/);
@@ -1069,12 +1069,12 @@ runTest('internal built-in OpenClaw helpers use built-in naming instead of manag
 });
 
 runTest('OpenClaw console auth source contract uses configFile terminology across shared and host surfaces', () => {
-  const sharedTypesSource = read('packages/sdkwork-claw-types/src/index.ts');
+  const sharedTypesSource = read('packages/sdkwork-clawstudio-types/src/index.ts');
   const desktopStudioSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
   );
   const hostedStudioSource = read(
-    'packages/sdkwork-claw-host-studio/src-host/src/lib.rs',
+    'packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs',
   );
 
   assert.match(
@@ -1089,17 +1089,17 @@ runTest('OpenClaw console auth source contract uses configFile terminology acros
 
 runTest('desktop runtime authority internals use config_file_path terminology instead of managed_config_path', () => {
   const kernelRuntimeTypesSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/kernel_runtime/types.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/kernel_runtime/types.rs',
   );
   const authorityServiceSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs',
   );
   const authorityServiceProductionSource = stripRustTestModule(authorityServiceSource);
   const openClawRuntimeSnapshotSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_runtime_snapshot.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime_snapshot.rs',
   );
   const layoutSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/layout.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/layout.rs',
   );
 
   assert.match(kernelRuntimeTypesSource, /pub config_file_path: PathBuf,/);
@@ -1125,16 +1125,16 @@ runTest('desktop runtime authority internals use config_file_path terminology in
 
 runTest('desktop kernel path models use config_dir and config_file terminology instead of managed_config fields', () => {
   const pathsSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/paths.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/paths.rs',
   );
   const bootstrapSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/app/bootstrap.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/app/bootstrap.rs',
   );
   const internalCliSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/internal_cli.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/internal_cli.rs',
   );
   const kernelHostSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/kernel_host/mod.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/kernel_host/mod.rs',
   );
 
   assert.match(pathsSource, /pub config_dir: PathBuf,/);
@@ -1157,7 +1157,7 @@ runTest('desktop kernel path models use config_dir and config_file terminology i
 
 runTest('desktop mirror import verification exposes OpenClaw config file terminology instead of managed-config checks', () => {
   const mirrorImportSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_mirror_import.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_mirror_import.rs',
   );
 
   assert.match(mirrorImportSource, /"openclaw-config-file"/);
@@ -1226,10 +1226,10 @@ runTest('desktop mirror import verification exposes OpenClaw config file termino
 
 runTest('desktop OpenClaw runtime helpers use built-in naming outside legacy compat boundaries', () => {
   const openClawRuntimeSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
   );
   const mirrorManifestSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_mirror_manifest.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_mirror_manifest.rs',
   );
 
   assert.match(openClawRuntimeSource, /struct BuiltInOpenClawState/);
@@ -1245,13 +1245,13 @@ runTest('desktop OpenClaw runtime helpers use built-in naming outside legacy com
 
 runTest('desktop openclaw helpers use config file terminology in supervisor and studio services', () => {
   const supervisorSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/supervisor.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/supervisor.rs',
   );
   const studioSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
   );
   const openclawWorkbenchSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio/openclaw_workbench.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio/openclaw_workbench.rs',
   );
 
   assert.match(supervisorSource, /fn configured_openclaw_gateway_port\(paths: &AppPaths\)/);
@@ -1309,7 +1309,7 @@ runTest('desktop openclaw helpers use config file terminology in supervisor and 
 
 runTest('desktop OpenClaw config path resolution has no legacy repair side effects', () => {
   const authorityServiceSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs',
   );
   const authorityServiceProductionSource = stripRustTestModule(authorityServiceSource);
 
@@ -1324,10 +1324,10 @@ runTest('desktop OpenClaw config path resolution has no legacy repair side effec
 
 runTest('desktop OpenClaw test fixtures use noncanonical drift wording instead of legacy compatibility layouts', () => {
   const desktopOpenClawTestSources = [
-    read('packages/sdkwork-claw-desktop/src-tauri/src/framework/paths.rs'),
-    read('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs'),
-    read('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs'),
-    read('packages/sdkwork-claw-desktop/src-tauri/src/framework/services/supervisor.rs'),
+    read('packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/paths.rs'),
+    read('packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs'),
+    read('packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs'),
+    read('packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/supervisor.rs'),
   ].join('\n');
 
   assert.doesNotMatch(desktopOpenClawTestSources, /legacy_managed_config_file_path/);
@@ -1340,7 +1340,7 @@ runTest('desktop OpenClaw test fixtures use noncanonical drift wording instead o
 
 runTest('desktop OpenClaw startup readiness uses current HTTP probes instead of legacy invoke fallbacks', () => {
   const supervisorSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/supervisor.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/supervisor.rs',
   );
 
   assert.match(supervisorSource, /fn probe_gateway_http_ready\(/);
@@ -1358,19 +1358,19 @@ runTest('desktop OpenClaw startup readiness uses current HTTP probes instead of 
 
 runTest('desktop rust test helpers use config file terminology for openclaw config paths', () => {
   const internalCliSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/internal_cli.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/internal_cli.rs',
   );
   const bootstrapSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/app/bootstrap.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/app/bootstrap.rs',
   );
   const localAiProxySource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs',
   );
   const openclawMirrorImportSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_mirror_import.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_mirror_import.rs',
   );
   const openclawMirrorExportSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_mirror_export.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_mirror_export.rs',
   );
 
   assert.match(internalCliSource, /fn openclaw_config_file_path\(/);
@@ -1398,16 +1398,16 @@ runTest('desktop rust test helpers use config file terminology for openclaw conf
 
 runTest('desktop studio diagnostics use OpenClaw instance and config-file wording instead of legacy managed wording', () => {
   const studioSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
   );
   const openclawRuntimeSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
   );
   const openclawWorkbenchSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio/openclaw_workbench.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio/openclaw_workbench.rs',
   );
   const runtimeSnapshotSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_runtime_snapshot.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime_snapshot.rs',
   );
 
   assert.match(studioSource, /built-in OpenClaw instance/);
@@ -1464,22 +1464,22 @@ runTest('desktop studio diagnostics use OpenClaw instance and config-file wordin
 
 runTest('public workbench diagnostics use OpenClaw wording across browser, host, and startup surfaces', () => {
   const webStudioSource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts',
   );
   const hostedStudioSource = read(
-    'packages/sdkwork-claw-host-studio/src-host/src/lib.rs',
+    'packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs',
   );
   const openclawWorkbenchSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio/openclaw_workbench.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio/openclaw_workbench.rs',
   );
   const startupEvidenceSource = read(
     'scripts/release/smoke-desktop-startup-evidence.mjs',
   );
   const supervisorSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/supervisor.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/supervisor.rs',
   );
   const internalCliSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/internal_cli.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/internal_cli.rs',
   );
 
   assert.match(webStudioSource, /OpenClaw workspace memory for the browser-backed workbench\./);
@@ -1600,13 +1600,13 @@ runTest('public workbench diagnostics use OpenClaw wording across browser, host,
 
 runTest('built-in OpenClaw test fixtures use built-in naming instead of managed-primary labels', () => {
   const source = [
-    'packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts',
-    'packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts',
-    'packages/sdkwork-claw-desktop/src/desktop/builtInOpenClawInstanceSelection.test.ts',
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts',
-    'packages/sdkwork-claw-desktop/src-tauri/src/commands/studio_commands.rs',
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs',
-    'packages/sdkwork-claw-host-studio/src-host/src/lib.rs',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/builtInOpenClawInstanceSelection.test.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/studio_commands.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
+    'packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs',
   ].map((relPath) => read(relPath)).join('\n');
 
   assert.match(source, /Built-In OpenClaw Primary/);
@@ -1619,13 +1619,13 @@ runTest('built-in OpenClaw test fixtures use built-in naming instead of managed-
 
 runTest('hosted conversation snapshots do not override built-in OpenClaw runtime authority when the built-in runtime is unavailable', () => {
   const serverStudioSource = read(
-    'packages/sdkwork-claw-host-studio/src-host/src/lib.rs',
+    'packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs',
   );
   const studioConversationGatewaySource = read(
-    'packages/sdkwork-claw-chat/src/store/studioConversationGateway.ts',
+    'packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.ts',
   );
   const authoritativeRouteSource = read(
-    'packages/sdkwork-claw-chat/src/services/store/authoritativeInstanceChatRoute.ts',
+    'packages/sdkwork-clawstudio-chat/src/services/store/authoritativeInstanceChatRoute.ts',
   );
 
   assert.match(
@@ -1656,25 +1656,25 @@ runTest('hosted conversation snapshots do not override built-in OpenClaw runtime
 
 runTest('server readiness and public workbench routes stay bound to live runtime authority', () => {
   const healthRouteSource = read(
-    'packages/sdkwork-claw-server/src-host/src/http/routes/health.rs',
+    'packages/sdkwork-clawstudio-server/src-host/src/http/routes/health.rs',
   );
   const apiPublicSource = read(
-    'packages/sdkwork-claw-server/src-host/src/http/routes/api_public.rs',
+    'packages/sdkwork-clawstudio-server/src-host/src/http/routes/api_public.rs',
   );
   const manageOpenClawRouteSource = read(
-    'packages/sdkwork-claw-server/src-host/src/http/routes/manage_openclaw.rs',
+    'packages/sdkwork-clawstudio-server/src-host/src/http/routes/manage_openclaw.rs',
   );
   const openapiSource = read(
-    'packages/sdkwork-claw-server/src-host/src/http/routes/openapi.rs',
+    'packages/sdkwork-clawstudio-server/src-host/src/http/routes/openapi.rs',
   );
   const controlPlaneSource = read(
-    'packages/sdkwork-claw-host-core/src-host/src/openclaw_control_plane.rs',
+    'packages/sdkwork-clawstudio-host-core/src-host/src/openclaw_control_plane.rs',
   );
   const hostStudioSource = read(
-    'packages/sdkwork-claw-host-studio/src-host/src/lib.rs',
+    'packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs',
   );
   const serverMainSource = read(
-    'packages/sdkwork-claw-server/src-host/src/main.rs',
+    'packages/sdkwork-clawstudio-server/src-host/src/main.rs',
   );
 
   assert.match(
@@ -1777,7 +1777,7 @@ runTest('server readiness and public workbench routes stay bound to live runtime
 
 runTest('server public studio API keeps provider calls out of async route contexts', () => {
   const apiPublicSource = read(
-    'packages/sdkwork-claw-server/src-host/src/http/routes/api_public.rs',
+    'packages/sdkwork-clawstudio-server/src-host/src/http/routes/api_public.rs',
   );
   const directProviderCallLines: string[] = [];
   let insideBlockingProviderCall = false;
@@ -1806,22 +1806,22 @@ runTest('server public studio API keeps provider calls out of async route contex
 
 runTest('sdkwork hosts persist app language through a host callback while the shared runtime bridge exposes the desktop command', () => {
   const shellProvidersSource = read(
-    'packages/sdkwork-claw-shell/src/application/providers/AppProviders.tsx',
+    'packages/sdkwork-clawstudio-shell/src/application/providers/AppProviders.tsx',
   );
   const shellLanguageManagerSource = read(
-    'packages/sdkwork-claw-shell/src/application/providers/LanguageManager.tsx',
+    'packages/sdkwork-clawstudio-shell/src/application/providers/LanguageManager.tsx',
   );
   const desktopBootstrapAppSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
   );
   const desktopBridgeSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts',
   );
   const webRuntimeSource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/webRuntime.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/webRuntime.ts',
   );
   const runtimeContractSource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts',
   );
 
   assert.match(runtimeContractSource, /setAppLanguage\(language: RuntimeLanguagePreference\)/);
@@ -1848,32 +1848,32 @@ runTest('sdkwork hosts persist app language through a host callback while the sh
   assert.match(webRuntimeSource, /async setAppLanguage\(_language: RuntimeLanguagePreference\): Promise<void> \{\}/);
 });
 
-runTest('sdkwork-claw-desktop removes deprecated installer commands, metadata, and bundled registry resources from the desktop bridge', () => {
-  const bridgeSource = read('packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts');
-  const catalogSource = read('packages/sdkwork-claw-desktop/src/desktop/catalog.ts');
-  const commandsMod = read('packages/sdkwork-claw-desktop/src-tauri/src/commands/mod.rs');
-  const bootstrap = read('packages/sdkwork-claw-desktop/src-tauri/src/app/bootstrap.rs');
-  const layoutSource = read('packages/sdkwork-claw-desktop/src-tauri/src/framework/layout.rs');
-  const tauriConfig = read('packages/sdkwork-claw-desktop/src-tauri/tauri.conf.json');
-  const tauriMacosConfig = read('packages/sdkwork-claw-desktop/src-tauri/tauri.macos.conf.json');
+runTest('sdkwork-clawstudio-desktop removes deprecated installer commands, metadata, and bundled registry resources from the desktop bridge', () => {
+  const bridgeSource = read('packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts');
+  const catalogSource = read('packages/sdkwork-clawstudio-desktop/src/desktop/catalog.ts');
+  const commandsMod = read('packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/mod.rs');
+  const bootstrap = read('packages/sdkwork-clawstudio-desktop/src-tauri/src/app/bootstrap.rs');
+  const layoutSource = read('packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/layout.rs');
+  const tauriConfig = read('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.conf.json');
+  const tauriMacosConfig = read('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.macos.conf.json');
   const tauriBundleOverlay = readGeneratedTauriBundleOverlay();
   const componentRegistry = read(
-    'packages/sdkwork-claw-desktop/src-tauri/foundation/components/component-registry.json',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/foundation/components/component-registry.json',
   );
   const serviceDefaults = read(
-    'packages/sdkwork-claw-desktop/src-tauri/foundation/components/service-defaults.json',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/foundation/components/service-defaults.json',
   );
   const componentLibrarySource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/componentLibrary.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/componentLibrary.ts',
   );
   const componentContractsSource = read(
-    'packages/sdkwork-claw-infrastructure/src/platform/contracts/components.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/components.ts',
   );
 
-  assert.ok(!exists('packages/sdkwork-claw-desktop/src-tauri/src/commands/run_install.rs'));
-  assert.ok(!exists('packages/sdkwork-claw-desktop/src-tauri/src/commands/run_uninstall.rs'));
-  assert.ok(!exists('packages/sdkwork-claw-desktop/src-tauri/src/commands/install_catalog.rs'));
-  assert.ok(!exists('packages/sdkwork-claw-desktop/src-tauri/src/commands/install_progress.rs'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/run_install.rs'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/run_uninstall.rs'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/install_catalog.rs'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/install_progress.rs'));
   assert.doesNotMatch(catalogSource, /listInstallCatalog:\s*'list_install_catalog'/);
   assert.doesNotMatch(catalogSource, /inspectInstall:\s*'inspect_install'/);
   assert.doesNotMatch(catalogSource, /runInstallDependencies:\s*'run_install_dependencies'/);
@@ -1908,10 +1908,10 @@ runTest('sdkwork-claw-desktop removes deprecated installer commands, metadata, a
   assert.doesNotMatch(componentContractsSource, /\|\s*'[^']*installer[^']*'/i);
 });
 
-runTest('sdkwork-claw-desktop keeps browser mocks out of desktop business bridges', () => {
-  const bridgeSource = read('packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts');
+runTest('sdkwork-clawstudio-desktop keeps browser mocks out of desktop business bridges', () => {
+  const bridgeSource = read('packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts');
   const componentsBridgeSource = read(
-    'packages/sdkwork-claw-desktop/src/desktop/componentsBridge.ts',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/componentsBridge.ts',
   );
 
   assert.doesNotMatch(bridgeSource, /WebKernelPlatform/);
@@ -1935,12 +1935,12 @@ runTest('sdkwork-claw-desktop keeps browser mocks out of desktop business bridge
   );
 });
 
-runTest('sdkwork-claw-desktop keeps generic component defaults separate from bundled kernel versions', () => {
+runTest('sdkwork-clawstudio-desktop keeps generic component defaults separate from bundled kernel versions', () => {
   const componentDefaultsSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/components.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/components.rs',
   );
   const componentResourcesSource = read(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/components.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/components.rs',
   );
 
   assert.doesNotMatch(
@@ -1959,10 +1959,10 @@ runTest('sdkwork-claw-desktop keeps generic component defaults separate from bun
   );
 });
 
-await runAsyncTest('sdkwork-claw-desktop recognizes Tauri v2 runtimes even when withGlobalTauri is disabled', async () => {
+await runAsyncTest('sdkwork-clawstudio-desktop recognizes Tauri v2 runtimes even when withGlobalTauri is disabled', async () => {
   const previousWindow = (globalThis as { window?: unknown }).window;
   const previousIsTauri = (globalThis as { isTauri?: unknown }).isTauri;
-  const runtimeModule = await import('../packages/sdkwork-claw-desktop/src/desktop/runtime.ts');
+  const runtimeModule = await import('../packages/sdkwork-clawstudio-desktop/src/desktop/runtime.ts');
 
   try {
     (globalThis as { window?: unknown }).window = {
@@ -2007,10 +2007,10 @@ await runAsyncTest('sdkwork-claw-desktop recognizes Tauri v2 runtimes even when 
   }
 });
 
-await runAsyncTest('sdkwork-claw-desktop waits for a late Tauri runtime before invoking the desktop bridge', async () => {
+await runAsyncTest('sdkwork-clawstudio-desktop waits for a late Tauri runtime before invoking the desktop bridge', async () => {
   const previousWindow = (globalThis as { window?: unknown }).window;
   const previousIsTauri = (globalThis as { isTauri?: unknown }).isTauri;
-  const runtimeModule = await import('../packages/sdkwork-claw-desktop/src/desktop/runtime.ts');
+  const runtimeModule = await import('../packages/sdkwork-clawstudio-desktop/src/desktop/runtime.ts');
   let installHandle: ReturnType<typeof setTimeout> | null = null;
 
   try {
@@ -2106,10 +2106,10 @@ await runAsyncTest('sdkwork-claw-desktop waits for a late Tauri runtime before i
   }
 });
 
-await runAsyncTest('sdkwork-claw-desktop strict desktop bridge rejects when Tauri runtime is unavailable', async () => {
+await runAsyncTest('sdkwork-clawstudio-desktop strict desktop bridge rejects when Tauri runtime is unavailable', async () => {
   const previousWindow = (globalThis as { window?: unknown }).window;
   const previousIsTauri = (globalThis as { isTauri?: unknown }).isTauri;
-  const runtimeModule = await import('../packages/sdkwork-claw-desktop/src/desktop/runtime.ts');
+  const runtimeModule = await import('../packages/sdkwork-clawstudio-desktop/src/desktop/runtime.ts');
 
   try {
     (globalThis as { window?: unknown }).window = {};
@@ -2181,9 +2181,9 @@ await runAsyncTest('sdkwork-claw-desktop strict desktop bridge rejects when Taur
   }
 });
 
-await runAsyncTest('sdkwork-claw-infrastructure shares the configured platform bridge across duplicate module instances', async () => {
+await runAsyncTest('sdkwork-clawstudio-infrastructure shares the configured platform bridge across duplicate module instances', async () => {
   const registryUrl = pathToFileURL(
-    path.join(root, 'packages/sdkwork-claw-infrastructure/src/platform/registry.ts'),
+    path.join(root, 'packages/sdkwork-clawstudio-infrastructure/src/platform/registry.ts'),
   ).href;
   const registryCopyA = await import(`${registryUrl}?bridge-copy=a`);
   const registryCopyB = await import(`${registryUrl}?bridge-copy=b`);

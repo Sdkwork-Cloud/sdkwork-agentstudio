@@ -215,7 +215,7 @@ test('desktop packaged launch smoke prefers the root desktop executable over nes
   );
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-installed-binary-'));
   const installRoot = path.join(tempRoot, 'install-root');
-  const expectedBinaryPath = path.join(installRoot, 'sdkwork-claw-desktop.exe');
+  const expectedBinaryPath = path.join(installRoot, 'sdkwork-clawstudio-desktop.exe');
   const nestedHelperPath = path.join(
     installRoot,
     'generated',

@@ -21,7 +21,7 @@ const workspaceRoot = workspaceRootHelper.resolveWorkspaceRootDir(
 const canonicalWorkspaceRoot = workspaceRootHelper.resolveCanonicalWorkspaceRootDir(
   path.resolve(import.meta.dirname, '..'),
 );
-const packageDir = path.resolve(import.meta.dirname, '..', 'packages', 'sdkwork-claw-web');
+const packageDir = path.resolve(import.meta.dirname, '..', 'packages', 'sdkwork-clawstudio-web');
 
 assert.equal(
   workspaceRootHelper.resolveWorkspaceRootDir(packageDir),
@@ -69,53 +69,53 @@ assert.equal(
 );
 
 assert.equal(
-  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/claw-infrastructure'),
+  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/clawstudio-infrastructure'),
   path.resolve(
     workspaceRoot,
-    'packages/sdkwork-claw-infrastructure/src/index.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/index.ts',
   ),
-  'workspace package resolution must map @sdkwork/claw-* packages to their source entry',
+  'workspace package resolution must map @sdkwork/clawstudio-* packages to their source entry',
 );
 
 assert.equal(
-  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/claw-core'),
+  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/clawstudio-core'),
   path.resolve(
     workspaceRoot,
-    'packages/sdkwork-claw-core/src/node.ts',
+    'packages/sdkwork-clawstudio-core/src/node.ts',
   ),
   'workspace package resolution must respect package root exports for Node-safe entries',
 );
 
 assert.equal(
   loader.resolveWorkspacePackageSourceAliasPath(
-    '@sdkwork/claw-core',
+    '@sdkwork/clawstudio-core',
     pathToFileURL(
       path.resolve(
         workspaceRoot,
-        'packages/sdkwork-claw-instances/src/components/InstanceDetailConfigToolsSection.test.tsx',
+        'packages/sdkwork-clawstudio-instances/src/components/InstanceDetailConfigToolsSection.test.tsx',
       ),
     ).href,
   ),
   path.resolve(
     workspaceRoot,
-    'packages/sdkwork-claw-core/src/index.ts',
+    'packages/sdkwork-clawstudio-core/src/index.ts',
   ),
   'workspace package resolution must prefer browser root exports for tsx component entrypoints',
 );
 
 assert.equal(
   loader.resolveWorkspacePackageSourceAliasPath(
-    '@sdkwork/claw-core',
+    '@sdkwork/clawstudio-core',
     pathToFileURL(
       path.resolve(
         workspaceRoot,
-        'packages/sdkwork-claw-commons/src/hooks/useKeyboardShortcuts.ts',
+        'packages/sdkwork-clawstudio-commons/src/hooks/useKeyboardShortcuts.ts',
       ),
     ).href,
   ),
   path.resolve(
     workspaceRoot,
-    'packages/sdkwork-claw-core/src/index.ts',
+    'packages/sdkwork-clawstudio-core/src/index.ts',
   ),
   'workspace package resolution must prefer browser root exports for browser hook sources',
 );

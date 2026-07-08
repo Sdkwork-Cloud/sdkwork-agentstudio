@@ -98,7 +98,7 @@ The packaged server archive contains:
 Extract the archive and start the server with:
 
 ```powershell
-.\bin\claw-server.exe
+.\bin\clawstudio-server.exe
 ```
 
 ### Linux And macOS
@@ -106,15 +106,15 @@ Extract the archive and start the server with:
 Extract the archive and start the server with:
 
 ```bash
-./bin/claw-server
+./bin/clawstudio-server
 ```
 
 When the packaged binary is launched from the extracted bundle, it defaults:
 
 - `CLAW_SERVER_WEB_DIST` to the embedded `web/dist`
-- `CLAW_SERVER_DATA_DIR` to `.claw-server` inside the extracted bundle
+- `CLAW_SERVER_DATA_DIR` to `.clawstudio-server` inside the extracted bundle
 
-Optional convenience wrappers `start-claw-server.cmd` and `start-claw-server.sh` invoke the same binary and preserve those bundled defaults.
+Optional convenience wrappers `start-clawstudio-server.cmd` and `start-clawstudio-server.sh` invoke the same binary and preserve those bundled defaults.
 
 After startup, open `http://<host>:<port>` in a browser.
 
@@ -169,7 +169,7 @@ The most important runtime variables are:
 - `CLAW_SERVER_INTERNAL_USERNAME`
 - `CLAW_SERVER_INTERNAL_PASSWORD`
 
-See [Environment](/reference/environment) and [Claw Server Runtime](/reference/claw-server-runtime) for the current supported values.
+See [Environment](/reference/environment) and [Claw Server Runtime](/reference/clawstudio-server-runtime) for the current supported values.
 
 ## Common Day-2 Operations
 
@@ -178,35 +178,35 @@ See [Environment](/reference/environment) and [Claw Server Runtime](/reference/c
 Windows:
 
 ```powershell
-taskkill /IM claw-server.exe /F
-.\bin\claw-server.exe
+taskkill /IM clawstudio-server.exe /F
+.\bin\clawstudio-server.exe
 ```
 
 Linux Or macOS:
 
 ```bash
-pkill -f claw-server || true
-./bin/claw-server
+pkill -f clawstudio-server || true
+./bin/clawstudio-server
 ```
 
-These commands are direct process-level examples for the packaged native binary. Optional wrapper scripts remain available for operator convenience, but the `bin/` binary is the canonical packaged entry point. If you install the native server as a system service, prefer `claw-server service start|stop|restart|status` so CLI control, browser management, and projected service manifests stay aligned.
+These commands are direct process-level examples for the packaged native binary. Optional wrapper scripts remain available for operator convenience, but the `bin/` binary is the canonical packaged entry point. If you install the native server as a system service, prefer `clawstudio-server service start|stop|restart|status` so CLI control, browser management, and projected service manifests stay aligned.
 
 ### Install The Native Server As A Managed Service
 
-Current packaged server bundles ship the native service-capable binary under `bin/` as the canonical runtime entry. `start-claw-server.sh` and `start-claw-server.cmd` remain optional convenience wrappers around that same binary.
+Current packaged server bundles ship the native service-capable binary under `bin/` as the canonical runtime entry. `start-clawstudio-server.sh` and `start-clawstudio-server.cmd` remain optional convenience wrappers around that same binary.
 
 Windows:
 
 ```powershell
-.\bin\claw-server.exe service install
-.\bin\claw-server.exe service status
+.\bin\clawstudio-server.exe service install
+.\bin\clawstudio-server.exe service status
 ```
 
 Linux Or macOS:
 
 ```bash
-./bin/claw-server service install
-./bin/claw-server service status
+./bin/clawstudio-server service install
+./bin/clawstudio-server service status
 ```
 
 Use `service print-manifest --platform <linux|macos|windows>` when you need to inspect the projected unit before installing it. Service lifecycle commands default to the current platform, but they still require whatever privileges the host service manager expects.
@@ -237,7 +237,7 @@ Use a browser or curl against:
 ## Docker Deployment
 
 The container bundle packages the server runtime under `app/` and ships Docker deployment files under `deploy/`.
-Inside the image, Docker starts the canonical bundled binary at `app/bin/claw-server` directly rather than routing through the optional shell wrapper.
+Inside the image, Docker starts the canonical bundled binary at `app/bin/clawstudio-server` directly rather than routing through the optional shell wrapper.
 
 Run these commands from the extracted bundle root. The compose files resolve env overlays from `deploy/docker/profiles/*` and use the extracted bundle root as the Docker build context.
 
@@ -304,8 +304,8 @@ The packaged server archives currently ship the native service-capable server bi
 
 That means:
 
-- non-service deployments should start `./bin/claw-server` or `.\bin\claw-server.exe`
-- `start-claw-server.sh` and `start-claw-server.cmd` remain optional convenience aliases for local operator startup
-- managed installs should run through `./bin/claw-server service *` or `.\bin\claw-server.exe service *`
+- non-service deployments should start `./bin/clawstudio-server` or `.\bin\clawstudio-server.exe`
+- `start-clawstudio-server.sh` and `start-clawstudio-server.cmd` remain optional convenience aliases for local operator startup
+- managed installs should run through `./bin/clawstudio-server service *` or `.\bin\clawstudio-server.exe service *`
 - `systemd`, `launchd`, and Windows Service lifecycles are still executed through the host platform's own service manager, so installation and control require the corresponding operator privileges
 

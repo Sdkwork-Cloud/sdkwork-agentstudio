@@ -9,11 +9,11 @@
 ## Attempt Outcome
 
 - Root cause:
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still mixed generic runtime orchestration with the whole OpenAI-compatible serving stack even after the earlier config, projection, probe, upstream, streaming, request-translation, response-translation, observability, Gemini native, Anthropic native, and health/status splits.
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still mixed generic runtime orchestration with the whole OpenAI-compatible serving stack even after the earlier config, projection, probe, upstream, streaming, request-translation, response-translation, observability, Gemini native, Anthropic native, and health/status splits.
   - That OpenAI-compatible stack is one coherent owner because it owns the public `/v1/models`, `/v1/chat/completions`, `/v1/responses`, and `/v1/embeddings` surface, passthrough request serving, provider-specific Anthropic/Gemini/Ollama adapters, model-id resolution, and token-usage extraction while consuming already-extracted shared helpers from the request-translation, response-translation, streaming, observability, and upstream boundaries.
   - `scripts/check-desktop-platform-foundation.mjs` had already been tightened to require route delegation and old-helper removal, but it was still asserting many OpenAI-compatible dependency usages inside `local_ai_proxy.rs`, so the real module split stayed red even after the handler stack moved.
 - Implemented the narrow repair:
-  - kept `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs` as the dedicated owner for:
+  - kept `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs` as the dedicated owner for:
     - `/v1/models`
     - `/v1/chat/completions`
     - `/v1/responses`
@@ -42,30 +42,30 @@
 
 ## OpenClaw Fact Sources
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
   - the built-in OpenClaw instance still publishes `runtimeKind: 'openclaw'` at lines `466` and `512`, `deploymentMode: 'local-managed'` at lines `467` and `513`, and `transportKind: 'openclawGatewayWs'` at lines `468` and `514`, so the OpenAI-compatible local proxy surface remains part of the managed built-in OpenClaw runtime chain rather than an unrelated browser-only endpoint
   - the browser-host truth source still marks the built-in managed runtime as config-writable at line `1277`, preserving the writable managed-runtime envelope around local proxy configuration and provider routing
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
   - built-in projection tests still freeze the same `openclaw` / `local-managed` / `openclawGatewayWs` tuple at lines `339-341`, `385-387`, and `434-436`, so the managed runtime identity remains under test while this request-serving boundary moves
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
   - the managed OpenClaw editing surface still gates on `detail?.instance.runtimeKind === 'openclaw'` at line `1123` and `detail?.lifecycle.configWritable === true` at line `1125`, so the OpenAI-compatible proxy surface still belongs to a writable managed runtime envelope
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
   - managed capability logic still keys off `runtimeKind === 'openclaw'` at line `10` and `deploymentMode === 'local-managed'` at line `19`, so the same managed control-plane contract still owns the local proxy request surface
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
   - provider workspace presentation still short-circuits non-OpenClaw runtimes at line `13`, so OpenAI-compatible route behavior continues to sit under the OpenClaw-specific workspace projection
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
   - agent installation still checks `detail.instance.runtimeKind !== 'openclaw' || !detail.lifecycle.configWritable` at line `48`, proving downstream managed feature flows still depend on the same writable OpenClaw runtime envelope
   - the instance filter at line `143` still narrows installation flows to `runtimeKind === 'openclaw'`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   - the Rust host now declares `mod openai_compatible;` at line `61`, routes `/v1/models`, `/v1/chat/completions`, `/v1/responses`, and `/v1/embeddings` through `openai_compatible::...` at lines `696-707`, and uses `openai_compatible::extract_token_usage(...)` in buffered upstream response handling at line `608`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
   - the plugin module still only performs host plugin registration and single-instance window activation in lines `1-8`, so OpenAI-compatible request handling must stay in the runtime service layer rather than drifting into plugin bootstrap
 
 ## Verification Focus
 
 - RED: `node scripts/check-desktop-platform-foundation.mjs`
 - GREEN: `node scripts/check-desktop-platform-foundation.mjs`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-openai-compatible local_ai_proxy_`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-openai-compatible local_ai_proxy_`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 
@@ -81,11 +81,11 @@
 - The split is intended to be behavior-preserving; the main risk is future drift if OpenAI-compatible request-serving or helper ownership is copied back into `local_ai_proxy.rs`.
 - Shared runtime owners for request translation, response translation, streaming, observability, and upstream request building must remain shared; later refactors should not fork OpenAI-compatible-only copies of those concerns outside the dedicated module boundary.
 - Rollback is limited to:
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs`
   - `scripts/check-desktop-platform-foundation.mjs`
   - the corresponding review, architecture, and release writebacks
 

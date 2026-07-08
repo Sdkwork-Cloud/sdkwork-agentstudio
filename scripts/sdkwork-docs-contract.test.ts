@@ -40,16 +40,16 @@ async function runTest(name: string, fn: () => void | Promise<void>) {
   }
 }
 
-await runTest('sdkwork-claw-docs keeps the V5 docs package surface locally', () => {
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-claw-docs/package.json');
-  const indexSource = read('packages/sdkwork-claw-docs/src/index.ts');
+await runTest('sdkwork-clawstudio-docs keeps the V5 docs package surface locally', () => {
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-docs/package.json');
+  const indexSource = read('packages/sdkwork-clawstudio-docs/src/index.ts');
 
-  assert.ok(exists('packages/sdkwork-claw-docs/src/Docs.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-docs/src/content/index.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-docs/src/Docs.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-docs/src/content/index.ts'));
 
   assert.match(indexSource, /export \* from '\.\/Docs';/);
   assert.match(indexSource, /export \* from '\.\/content';/);
-  assert.ok(!pkg.dependencies?.['@sdkwork/claw-studio-docs']);
+  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-docs']);
   assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-docs/);
 });
 

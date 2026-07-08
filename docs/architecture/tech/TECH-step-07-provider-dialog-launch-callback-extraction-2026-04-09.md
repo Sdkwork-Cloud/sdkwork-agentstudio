@@ -26,18 +26,18 @@
 
 ## Implemented Extraction
 
-- Extended `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts`, which now owns section-facing provider dialog launch callbacks for:
+- Extended `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`, which now owns section-facing provider dialog launch callbacks for:
   - create-provider dialog open orchestration
   - create-provider-model dialog open orchestration
   - edit-provider-model dialog open orchestration
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - passes `setIsProviderDialogOpen(...)` and `setProviderDialogDraft(...)` into `buildLlmProviderSectionProps(...)`
   - passes `setIsProviderModelDialogOpen(...)` and `setProviderModelDialogDraft(...)` into `buildLlmProviderSectionProps(...)`
   - stops defining inline `openCreateProviderDialog(...)`
   - stops defining inline `openCreateProviderModelDialog(...)`
   - stops defining inline `openEditProviderModelDialog(...)`
 - Added focused helper coverage in:
-  - `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
 - Updated:
   - `scripts/sdkwork-instances-contract.test.ts`
 
@@ -59,52 +59,52 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed workbench persistence, Provider Center managed-provider projection, marketplace/install ownership, Local Proxy projection, and desktop runtime/plugin registration. This loop only moves provider dialog launch callback construction.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1898`
-- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts`: `249`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedLlmProvidersSection.tsx`: `26`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderPresentation.ts`: `38`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.ts`: `284`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts`: `146`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.ts`: `204`
-- `packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.ts`: `29`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.ts`: `39`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `373`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts`: `239`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1898`
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`: `249`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedLlmProvidersSection.tsx`: `26`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderPresentation.ts`: `38`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.ts`: `284`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.ts`: `146`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentSkillMutationSupport.ts`: `204`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.ts`: `29`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigMutationSupport.ts`: `39`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `373`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts`: `239`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 
 Relative to the immediately prior `1924` page baseline from the provider dialog draft-selection note, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1898`. The page shrank while `instanceDetailSectionModels.ts` absorbed the section-facing provider dialog launch orchestration.
 
 ## Verification
 
 - RED established in this loop:
-  - `pnpm exec tsx packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
   - failed first because `buildLlmProviderSectionProps(...)` did not yet compose provider dialog launch callbacks
   - `pnpm check:sdkwork-instances`
   - failed first because `InstanceDetail.tsx` still owned inline provider dialog launch callbacks and the contract boundaries still pointed at the page-owned cluster
 - GREEN in and after this loop:
-  - `pnpm exec tsx packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm --filter @sdkwork/clawstudio-web lint`
   - `pnpm build`
   - `node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync('docs/release/releases.json','utf8')); const latest=data.releases[data.releases.length-1]; if(latest.tag!=='release-2026-04-09-107') throw new Error(latest.tag); console.log(latest.tag)"`
 - Repo-wide lint status:

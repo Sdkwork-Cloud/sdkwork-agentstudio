@@ -8,22 +8,22 @@
 
 ## 2. 适用范围
 
-- `packages/sdkwork-claw-web`
-- `packages/sdkwork-claw-desktop`
-- `packages/sdkwork-claw-shell`
-- `packages/sdkwork-claw-core`
-- `packages/sdkwork-claw-infrastructure`
-- `packages/sdkwork-claw-types`
-- `packages/sdkwork-claw-ui`
-- `packages/sdkwork-claw-i18n`
-- `packages/sdkwork-claw-chat`
-- `packages/sdkwork-claw-instances`
-- `packages/sdkwork-claw-settings`
-- `packages/sdkwork-claw-market`
-- `packages/sdkwork-claw-channels`
+- `packages/sdkwork-clawstudio-web`
+- `packages/sdkwork-clawstudio-desktop`
+- `packages/sdkwork-clawstudio-shell`
+- `packages/sdkwork-clawstudio-core`
+- `packages/sdkwork-clawstudio-infrastructure`
+- `packages/sdkwork-clawstudio-types`
+- `packages/sdkwork-clawstudio-ui`
+- `packages/sdkwork-clawstudio-i18n`
+- `packages/sdkwork-clawstudio-chat`
+- `packages/sdkwork-clawstudio-instances`
+- `packages/sdkwork-clawstudio-settings`
+- `packages/sdkwork-clawstudio-market`
+- `packages/sdkwork-clawstudio-channels`
 - `packages/removed-install-feature`
-- `packages/sdkwork-claw-server`
-- `packages/sdkwork-claw-distribution`
+- `packages/sdkwork-clawstudio-server`
+- `packages/sdkwork-clawstudio-distribution`
 - `scripts/`
 - `config/`
 - `docs/release/`
@@ -53,17 +53,17 @@
 
 以下源码和测试是 step 执行时的强制对齐基线，不能只参考文档口述：
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 凡涉及全局 channels 配置、instances、ClawHub、插件机制、chat、Instance Detail 的 step，都必须先读这些文件，再宣称“已与 OpenClaw 对齐”。
 

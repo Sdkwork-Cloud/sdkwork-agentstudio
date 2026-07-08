@@ -76,9 +76,9 @@
 ## 针对单个包执行
 
 ```bash
-pnpm --filter @sdkwork/claw-web build
-pnpm --filter @sdkwork/claw-desktop tauri:info
-pnpm --filter @sdkwork/claw-market lint
+pnpm --filter @sdkwork/clawstudio-web build
+pnpm --filter @sdkwork/clawstudio-desktop tauri:info
+pnpm --filter @sdkwork/clawstudio-market lint
 ```
 ## 发布证据完整性补充
 

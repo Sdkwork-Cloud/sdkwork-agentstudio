@@ -42,30 +42,30 @@
 
 ### Desktop embedded-host authority repair
 
-- Added a desktop control-plane rebuild path in `packages/sdkwork-claw-desktop/src-tauri/src/framework/embedded_host_server.rs`.
+- Added a desktop control-plane rebuild path in `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/embedded_host_server.rs`.
 - Rebuilt the shared workbench API from the live desktop `ManageOpenClawProviderHandle` via `build_default_studio_public_api_provider(...)`.
 - Rebound `server_state.openclaw_control_plane`, `server_state.manage_openclaw_provider`, and `server_state.studio_public_api` in the correct order so the desktop embedded host exposes live managed-workbench authority.
 - Hardened detail projection so `workbench: null` is ignored instead of deserialized.
 
 ### Desktop verification fixture and expectation repair
 
-- Added `configured_running_supervisor(...)` in `packages/sdkwork-claw-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs` and switched the affected bootstrap tests to a running configured supervisor.
-- Replaced the stale mirror-import CLI fixture in `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_mirror_import.rs` with one that implements the current readiness contract.
-- Updated the stale offline expectations in `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs` so tests now match current intended semantics.
+- Added `configured_running_supervisor(...)` in `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs` and switched the affected bootstrap tests to a running configured supervisor.
+- Replaced the stale mirror-import CLI fixture in `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_mirror_import.rs` with one that implements the current readiness contract.
+- Updated the stale offline expectations in `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs` so tests now match current intended semantics.
 
 ## Verification
 
 Fresh commands run in this loop:
 
 ```bash
-cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml built_in_instance_reads_http_auth_from_managed_openclaw_config -- --nocapture
-cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml local_external_openclaw_detail_reads_profile_specific_install_record_shape -- --nocapture
-cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_exposes_canonical_public_studio_routes -- --nocapture
-cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_exposes_canonical_public_studio_workbench_mutation_routes -- --nocapture
-cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_detail_route_reflects_shared_workbench_mutations -- --nocapture
-cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml openclaw_mirror_import_can_restart_gateway_when_requested -- --nocapture
-cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml openclaw_mirror_import_can_leave_gateway_stopped_after_restore -- --nocapture
-cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml
+cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml built_in_instance_reads_http_auth_from_managed_openclaw_config -- --nocapture
+cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml local_external_openclaw_detail_reads_profile_specific_install_record_shape -- --nocapture
+cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_exposes_canonical_public_studio_routes -- --nocapture
+cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_exposes_canonical_public_studio_workbench_mutation_routes -- --nocapture
+cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_detail_route_reflects_shared_workbench_mutations -- --nocapture
+cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml openclaw_mirror_import_can_restart_gateway_when_requested -- --nocapture
+cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml openclaw_mirror_import_can_leave_gateway_stopped_after_restore -- --nocapture
+cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml
 $env:CI='1'
 $env:SDKWORK_SHARED_SDK_MODE='git'
 pnpm lint

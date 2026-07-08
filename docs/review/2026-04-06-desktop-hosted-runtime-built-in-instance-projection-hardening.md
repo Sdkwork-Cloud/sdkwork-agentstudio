@@ -32,13 +32,13 @@ built-in instance as a generic endpoint record.
 
 Concrete downstream examples:
 
-- `packages/sdkwork-claw-chat/src/services/instanceChatRouteService.ts`
+- `packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService.ts`
   blocks built-in chat routing unless the managed OpenClaw instance is
   `local-managed` and `online`
-- `packages/sdkwork-claw-chat/src/store/studioConversationGateway.ts`
+- `packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.ts`
   only suppresses stale snapshot authority when the instance is projected as a
   managed OpenClaw instance
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchHydration.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchHydration.ts`
   uses `runtimeKind === "openclaw"` to decide whether OpenClaw workbench
   sections should hydrate lazily
 
@@ -59,7 +59,7 @@ truth.
 
 File:
 
-- `packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
 
 Added evidence fields:
 
@@ -79,7 +79,7 @@ publication and URL alignment.
 
 File:
 
-- `packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
 
 `assertDesktopHostedRuntimeReady(...)` now rejects when the built-in instance:
 
@@ -95,7 +95,7 @@ and instance workbench flows.
 
 File:
 
-- `packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
 
 New regressions:
 
@@ -112,7 +112,7 @@ projection.
 
 The following commands were executed after the fix:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`

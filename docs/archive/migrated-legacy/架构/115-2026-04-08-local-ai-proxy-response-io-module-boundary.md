@@ -4,9 +4,9 @@
 
 The desktop local AI proxy must keep the shared buffered-response and error-shaping layer in a dedicated module:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, shared router assembly, auth/header normalization, snapshot access, request-body parsing, and generic timing/text helpers
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs`
   owns:
   - `ProxyRouteOutcome`
   - `build_json_outcome(...)`

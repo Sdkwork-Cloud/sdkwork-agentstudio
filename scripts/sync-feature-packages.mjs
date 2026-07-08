@@ -6,23 +6,23 @@ const packagesDir = path.join(root, 'packages');
 
 const allPackageDirs = fs
   .readdirSync(packagesDir, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-claw-'))
+  .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-clawstudio-'))
   .map((entry) => entry.name);
 
 const shared = new Set([
-  'sdkwork-claw-web',
-  'sdkwork-claw-desktop',
-  'sdkwork-claw-host-core',
-  'sdkwork-claw-host-studio',
-  'sdkwork-claw-shell',
-  'sdkwork-claw-commons',
-  'sdkwork-claw-core',
-  'sdkwork-claw-infrastructure',
-  'sdkwork-claw-types',
-  'sdkwork-claw-i18n',
-  'sdkwork-claw-ui',
-  'sdkwork-claw-distribution',
-  'sdkwork-claw-server',
+  'sdkwork-clawstudio-web',
+  'sdkwork-clawstudio-desktop',
+  'sdkwork-clawstudio-host-core',
+  'sdkwork-clawstudio-host-studio',
+  'sdkwork-clawstudio-shell',
+  'sdkwork-clawstudio-commons',
+  'sdkwork-clawstudio-core',
+  'sdkwork-clawstudio-infrastructure',
+  'sdkwork-clawstudio-types',
+  'sdkwork-clawstudio-i18n',
+  'sdkwork-clawstudio-ui',
+  'sdkwork-clawstudio-distribution',
+  'sdkwork-clawstudio-server',
 ]);
 
 const featureDirs = allPackageDirs.filter((dir) => !shared.has(dir));

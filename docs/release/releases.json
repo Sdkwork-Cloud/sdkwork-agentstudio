@@ -231,7 +231,7 @@
       "title": "Claw Studio release-2026-04-08-02",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 market-package contract iteration that aligns sdkwork-claw-market with the Node-safe @sdkwork/claw-core root import pattern and updates the package contract gate so dynamic root imports no longer fail local verification.",
+      "summary": "Step 03 market-package contract iteration that aligns sdkwork-clawstudio-market with the Node-safe @sdkwork/clawstudio-core root import pattern and updates the package contract gate so dynamic root imports no longer fail local verification.",
       "notesFile": "release-2026-04-08-02.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -280,7 +280,7 @@
       "title": "Claw Studio release-2026-04-08-04",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 market-service Node-safe iteration that converts mySkillService to lazy root-default resolution for @sdkwork/claw-instances, aligns the market contract gate with that runtime-safe pattern, and removes the package-local TS2352 test casts that had been hiding the next workspace blockers.",
+      "summary": "Step 03 market-service Node-safe iteration that converts mySkillService to lazy root-default resolution for @sdkwork/clawstudio-instances, aligns the market contract gate with that runtime-safe pattern, and removes the package-local TS2352 test casts that had been hiding the next workspace blockers.",
       "notesFile": "release-2026-04-08-04.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -306,7 +306,7 @@
       "title": "Claw Studio release-2026-04-08-05",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 install/settings contract iteration that replaces the remaining TS2352 test casts with real service input types and restores the missing @sdkwork/claw-core Node root export required by providerConfigCenterService under strip-types execution.",
+      "summary": "Step 03 install/settings contract iteration that replaces the remaining TS2352 test casts with real service input types and restores the missing @sdkwork/clawstudio-core Node root export required by providerConfigCenterService under strip-types execution.",
       "notesFile": "release-2026-04-08-05.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -420,7 +420,7 @@
       "title": "Claw Studio release-2026-04-08-09",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 instance-workbench contract iteration that aligns the largest sdkwork-claw-instances test file with the current managed-config, channel-definition, and workbench-task contracts, removes the broad gateway as-any typing holes, and advances the workspace lint frontier to the next instances capability tests.",
+      "summary": "Step 03 instance-workbench contract iteration that aligns the largest sdkwork-clawstudio-instances test file with the current managed-config, channel-definition, and workbench-task contracts, removes the broad gateway as-any typing holes, and advances the workspace lint frontier to the next instances capability tests.",
       "notesFile": "release-2026-04-08-09.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -621,7 +621,7 @@
       "title": "Claw Studio release-2026-04-08-15",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 post-TypeScript parity iteration that realigns browser-root wrappers, package-root exports, and live runtime barrels across core/auth/settings/agent/chat/dashboard/devices, keeps build green, and advances the remaining lint frontier to the sdkwork-claw-instances IDE dependency contract.",
+      "summary": "Step 03 post-TypeScript parity iteration that realigns browser-root wrappers, package-root exports, and live runtime barrels across core/auth/settings/agent/chat/dashboard/devices, keeps build green, and advances the remaining lint frontier to the sdkwork-clawstudio-instances IDE dependency contract.",
       "notesFile": "release-2026-04-08-15.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -658,7 +658,7 @@
       "title": "Claw Studio release-2026-04-08-16",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 package-contract closure iteration that restores Monaco runtime ownership for sdkwork-claw-instances, realigns explicit shell-facing root exports across settings and instances, publishes the missing tasks root surfaces, and returns fresh workspace lint and build evidence to green.",
+      "summary": "Step 03 package-contract closure iteration that restores Monaco runtime ownership for sdkwork-clawstudio-instances, realigns explicit shell-facing root exports across settings and instances, publishes the missing tasks root surfaces, and returns fresh workspace lint and build evidence to green.",
       "notesFile": "release-2026-04-08-16.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -4130,7 +4130,7 @@
       "title": "Claw Studio release-2026-05-05-175",
       "date": "2026-05-05",
       "status": "failed",
-      "summary": "Release candidate that carried forward release-2026-05-05-174 and fixed private shared SDK GitHub clone authentication, but failed before publication because pnpm-lock.yaml was not synchronized with the @sdkwork/claw-ui qrcode dependency for frozen CI installs.",
+      "summary": "Release candidate that carried forward release-2026-05-05-174 and fixed private shared SDK GitHub clone authentication, but failed before publication because pnpm-lock.yaml was not synchronized with the @sdkwork/clawstudio-ui qrcode dependency for frozen CI installs.",
       "notesFile": "release-2026-05-05-175.md",
       "carryForward": [
         "release-2026-05-05-174"

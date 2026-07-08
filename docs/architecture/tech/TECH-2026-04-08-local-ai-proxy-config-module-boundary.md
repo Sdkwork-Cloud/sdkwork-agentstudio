@@ -7,9 +7,9 @@
 
 The desktop local AI proxy must keep config-file loading and public-host resolution in a dedicated module:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, request serving, protocol translation, observability, and the runtime-facing orchestration methods
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/config.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/config.rs`
   owns the config schema, config-file read/write behavior, public host normalization, and loopback-safe public-host selection
 
 `scripts/check-desktop-platform-foundation.mjs` must assert the module file, the `mod config;` declaration, and explicit `config::ensure_local_ai_proxy_config(...)` delegation.

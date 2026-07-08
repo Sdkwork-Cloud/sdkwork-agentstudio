@@ -35,15 +35,15 @@
 
 ## Implemented Extraction
 
-- Added `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts` to own:
+- Added `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.ts` to own:
   - `OpenClawAgentMutationRequest`
   - `CreateOpenClawAgentMutationRunnerArgs`
   - `createOpenClawAgentMutationRunner(...)`
 - Added focused helper coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.test.ts`
 - Updated the service barrel in:
-  - `packages/sdkwork-claw-instances/src/services/index.ts`
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+  - `packages/sdkwork-clawstudio-instances/src/services/index.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - creates `runAgentMutation` through `createOpenClawAgentMutationRunner(...)`
   - injects create / update / delete callbacks, reload authority, toast bridges, and `t`
   - keeps `handleSaveAgentDialog(...)` focused on request building and validation
@@ -73,47 +73,47 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser workbench persistence, Control UI section alignment, agent install/runtime boundaries, managed-provider/readonly decisions, Local Proxy ownership, and desktop plugin/runtime ownership. The current loop only moves page-side agent CRUD mutation orchestration.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1938`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts`: `65`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.ts`: `39`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `373`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts`: `239`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1938`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.ts`: `65`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigMutationSupport.ts`: `39`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `373`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts`: `239`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 
 Relative to the immediately prior `1930` page baseline from the managed-config runner note, the raw page line count now re-measures at `1938`. This loop is still a verified boundary improvement, but not a raw shrink, because the current worktree keeps explicit injected runner wiring and agent-input validation in the page while moving the execution/cleanup switch into the shared helper.
 
 ## Verification
 
 - RED established in this loop:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.test.ts`
   - failed first because `openClawAgentMutationSupport.ts` did not exist yet
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because the shared agent mutation helper did not exist yet
 - GREEN in this loop:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm --filter @sdkwork/clawstudio-web lint`
   - `pnpm build`
 - YELLOW on the latest session-wide repo verification:
   - `pnpm lint`

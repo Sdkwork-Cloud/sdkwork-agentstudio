@@ -28,7 +28,7 @@
 
 ## Implemented Extraction
 
-- Added to `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts`:
+- Added to `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.ts`:
   - `OpenClawManagedConfigResetState`
   - `createOpenClawManagedConfigResetState(...)`
 - The new reset helper composes the existing null-aware draft factories instead of re-encoding the reset baselines inline:
@@ -39,8 +39,8 @@
   - `createOpenClawAuthCooldownsDraft(null)`
   - `createOpenClawDreamingFormState(null)`
 - Added focused helper coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - creates one `managedConfigResetState`
   - routes managed-config reset setter inputs through that helper bundle
   - resets the managed webFetch draft/error/saving state alongside the other managed-config surfaces during instance switches
@@ -65,43 +65,43 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed workbench persistence, Control UI section order, managed-provider projection, ecosystem/runtime ownership, Local Proxy routing, and desktop plugin/runtime registration. This loop only centralizes page-consumed managed-config reset baselines.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1496`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts`: `642`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.ts`: `36`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebSearchPanel.tsx`: `277`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebFetchPanel.tsx`: `255`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1496`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.ts`: `642`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigMutationSupport.ts`: `36`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedWebSearchPanel.tsx`: `277`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedWebFetchPanel.tsx`: `255`
 
 Relative to the immediately prior `1490 / 562` baseline from the null-aware sync reuse loop, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1496` and `openClawManagedConfigDrafts.ts` at `642`. This loop records a boundary improvement and a fresh current-worktree re-baseline rather than claiming a raw page shrink. The helper absorbed the reset-bundle boundary and now also resets managed webFetch state during instance switches.
 
 ## Verification
 
 - Focused RED was explicit before the helper landed:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
   - failed first because `createOpenClawManagedConfigResetState(...)` did not yet exist
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` still kept the inline managed-config reset baselines and did not route them through a shared helper
 - GREEN in and after this loop:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceMemoryWorkbenchPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceMemoryWorkbenchPresentation.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm --filter @sdkwork/clawstudio-web lint`
   - `pnpm build`
   - `node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync('docs/release/releases.json','utf8')); const latest=data.releases[data.releases.length-1]; if(latest.tag!=='release-2026-04-09-120') throw new Error(latest.tag); console.log(latest.tag)"`
 - Repo-wide lint scope remains intentionally limited:

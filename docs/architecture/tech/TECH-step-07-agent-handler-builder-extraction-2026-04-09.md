@@ -31,22 +31,22 @@
 
 ## Implemented Fix
 
-- Extended `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.ts`.
+- Extended `packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.ts`.
 - Added `buildOpenClawAgentDialogStateHandlers(...)` so the presentation helper now owns:
   - create dialog-state application through injected page setters
   - edit dialog-state application through injected page setters
-- Extended `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts`.
+- Extended `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.ts`.
 - Added `buildOpenClawAgentMutationHandlers(...)` so the mutation helper now owns:
   - save-agent request construction and validation routing
   - delete-agent request routing
   - delegating the final request into the injected page-owned mutation runner
-- Extended `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.ts`.
+- Extended `packages/sdkwork-clawstudio-instances/src/services/openClawAgentSkillMutationSupport.ts`.
 - Added `buildOpenClawAgentSkillMutationHandlers(...)` so the skill mutation helper now owns:
   - install-skill request routing
   - toggle-skill request routing
   - remove-skill request routing
   - delegating the final request into the injected page-owned skill mutation runner
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds `agentDialogStateHandlers`
   - builds `agentMutationHandlers`
   - builds `agentSkillMutationHandlers`
@@ -56,9 +56,9 @@
   - `runAgentSkillMutation` still owns the real `agentSkillManagementService.installSkill(...)`, `.setSkillEnabled(...)`, and `.removeSkill(...)` callbacks plus `toast.*` and `loadWorkbench(...)`
   - all page state containers and setters remain page-owned
 - Expanded direct helper coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawAgentSkillMutationSupport.test.ts`
 - Updated `scripts/run-sdkwork-instances-check.mjs` so those three agent helper tests now run inside `pnpm.cmd check:sdkwork-instances`.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract now requires:
   - the page to use `buildOpenClawAgentDialogStateHandlers(...)`
@@ -90,28 +90,28 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed OpenClaw workbench persistence, managed channel/config truth, default-agent skill install flows, managed-provider readonly routing, local proxy provider projection, and desktop plugin/runtime registration. This loop only centralizes page-side agent dialog and mutation handler composition around those already-authoritative runtime surfaces.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1160`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.ts`: `358`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts`: `187`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.ts`: `249`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1160`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.ts`: `358`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.ts`: `187`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentSkillMutationSupport.ts`: `249`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
 
 Relative to the immediately prior `1220` page baseline from `release-2026-04-09-141`, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1160`. This loop records another verified page-side reduction while moving the remaining agent handler composition into existing shared support layers.
 
@@ -123,22 +123,22 @@ Relative to the immediately prior `1220` page baseline from `release-2026-04-09-
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.test.ts`
   - failed first because `openClawAgentPresentation.ts` did not yet export `buildOpenClawAgentDialogStateHandlers`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.test.ts`
   - failed first because `buildOpenClawAgentMutationHandlers` was not yet exported
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentSkillMutationSupport.test.ts`
   - failed first because `buildOpenClawAgentSkillMutationHandlers` was not yet exported
 - FOLLOW-UP regression repaired in the same loop:
-  - `pnpm.cmd --filter @sdkwork/claw-web lint`
+  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
   - failed after the first page rewire because the skill handler builder injection used the wrong page setter names
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentSkillMutationSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/claw-web lint`
+  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

@@ -26,7 +26,7 @@ function runTest(name, fn) {
 }
 
 runTest('desktop shell hides native window chrome in favor of a custom title bar', () => {
-  const tauriConfig = readJson('packages/sdkwork-claw-desktop/src-tauri/tauri.conf.json');
+  const tauriConfig = readJson('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.conf.json');
   const mainWindow = tauriConfig.app?.windows?.[0];
 
   assert.equal(mainWindow?.decorations, false);
@@ -35,11 +35,11 @@ runTest('desktop shell hides native window chrome in favor of a custom title bar
 });
 
 runTest('desktop shell keeps title-bar window controls in the shared desktop bridge component', () => {
-  const bridgeSource = readText('packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts');
-  const controlsSource = readText('packages/sdkwork-claw-core/src/components/DesktopWindowControls.tsx');
-  const headerSource = readText('packages/sdkwork-claw-shell/src/components/AppHeader.tsx');
+  const bridgeSource = readText('packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts');
+  const controlsSource = readText('packages/sdkwork-clawstudio-core/src/components/DesktopWindowControls.tsx');
+  const headerSource = readText('packages/sdkwork-clawstudio-shell/src/components/AppHeader.tsx');
   const startupSource = readText(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopStartupScreen.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopStartupScreen.tsx',
   );
 
   assert.match(bridgeSource, /minimizeWindow/);
@@ -66,7 +66,7 @@ runTest('desktop shell keeps title-bar window controls in the shared desktop bri
 
 runTest('desktop startup keeps the initial window at the configured default size', () => {
   const bootstrapSource = readText(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
   );
 
   assert.doesNotMatch(bootstrapSource, /setFullscreen\(true\)/);
@@ -74,7 +74,7 @@ runTest('desktop startup keeps the initial window at the configured default size
 
 runTest('desktop shell grants custom title-bar window permissions through a real capability file', () => {
   const capabilityRelativePath =
-    'packages/sdkwork-claw-desktop/src-tauri/capabilities/default.json';
+    'packages/sdkwork-clawstudio-desktop/src-tauri/capabilities/default.json';
   const capabilityPath = path.join(rootDir, capabilityRelativePath);
 
   assert.equal(
@@ -108,10 +108,10 @@ runTest('desktop shell grants custom title-bar window permissions through a real
 });
 
 runTest('desktop capability stays aligned with the window APIs used by the desktop host', () => {
-  const capability = readJson('packages/sdkwork-claw-desktop/src-tauri/capabilities/default.json');
-  const bridgeSource = readText('packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts');
+  const capability = readJson('packages/sdkwork-clawstudio-desktop/src-tauri/capabilities/default.json');
+  const bridgeSource = readText('packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts');
   const bootstrapSource = readText(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
   );
 
   assert.match(bridgeSource, /currentWindow\.hide\(\)/);
@@ -154,8 +154,8 @@ runTest('desktop capability stays aligned with the window APIs used by the deskt
 });
 
 runTest('desktop shell keeps header interactions outside the drag region hitbox', () => {
-  const headerSource = readText('packages/sdkwork-claw-shell/src/components/AppHeader.tsx');
-  const switcherSource = readText('packages/sdkwork-claw-shell/src/components/InstanceSwitcher.tsx');
+  const headerSource = readText('packages/sdkwork-clawstudio-shell/src/components/AppHeader.tsx');
+  const switcherSource = readText('packages/sdkwork-clawstudio-shell/src/components/InstanceSwitcher.tsx');
 
   assert.match(headerSource, /data-tauri-drag-region="false"/);
   assert.match(switcherSource, /data-tauri-drag-region="false"/);
@@ -164,8 +164,8 @@ runTest('desktop shell keeps header interactions outside the drag region hitbox'
 });
 
 runTest('desktop runtime detection supports Tauri v2 window APIs without relying on withGlobalTauri', () => {
-  const runtimeSource = readText('packages/sdkwork-claw-desktop/src/desktop/runtime.ts');
-  const tauriConfig = readJson('packages/sdkwork-claw-desktop/src-tauri/tauri.conf.json');
+  const runtimeSource = readText('packages/sdkwork-clawstudio-desktop/src/desktop/runtime.ts');
+  const tauriConfig = readJson('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.conf.json');
 
   assert.match(runtimeSource, /isTauri/);
   assert.equal(tauriConfig.app?.withGlobalTauri, undefined);
@@ -175,7 +175,7 @@ runTest('desktop runtime detection supports Tauri v2 window APIs without relying
 
 runTest('desktop startup host avoids StrictMode replays for one-shot window bootstrap side effects', () => {
   const bootstrapSource = readText(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/createDesktopApp.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/createDesktopApp.tsx',
   );
 
   assert.match(bootstrapSource, /createRoot/);
@@ -185,7 +185,7 @@ runTest('desktop startup host avoids StrictMode replays for one-shot window boot
 
 runTest('desktop tray route bridge stays host-local and drives navigation through browser history', () => {
   const bridgeSource = readText(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopTrayRouteBridge.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopTrayRouteBridge.tsx',
   );
 
   assert.doesNotMatch(bridgeSource, /react-router-dom/);
@@ -201,20 +201,20 @@ runTest('desktop tray route bridge stays host-local and drives navigation throug
 });
 
 runTest('desktop bridge exposes host language sync for tray localization', () => {
-  const catalogSource = readText('packages/sdkwork-claw-desktop/src/desktop/catalog.ts');
-  const bridgeSource = readText('packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts');
-  const indexSource = readText('packages/sdkwork-claw-desktop/src/index.ts');
+  const catalogSource = readText('packages/sdkwork-clawstudio-desktop/src/desktop/catalog.ts');
+  const bridgeSource = readText('packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts');
+  const indexSource = readText('packages/sdkwork-clawstudio-desktop/src/index.ts');
   const appProvidersSource = readText(
-    'packages/sdkwork-claw-shell/src/application/providers/AppProviders.tsx',
+    'packages/sdkwork-clawstudio-shell/src/application/providers/AppProviders.tsx',
   );
   const languageManagerSource = readText(
-    'packages/sdkwork-claw-shell/src/application/providers/LanguageManager.tsx',
+    'packages/sdkwork-clawstudio-shell/src/application/providers/LanguageManager.tsx',
   );
   const bootstrapSource = readText(
-    'packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
+    'packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx',
   );
-  const settingsSource = readText('packages/sdkwork-claw-settings/src/GeneralSettings.tsx');
-  const appStoreSource = readText('packages/sdkwork-claw-core/src/stores/useAppStore.ts');
+  const settingsSource = readText('packages/sdkwork-clawstudio-settings/src/GeneralSettings.tsx');
+  const appStoreSource = readText('packages/sdkwork-clawstudio-core/src/stores/useAppStore.ts');
 
   assert.match(catalogSource, /setAppLanguage: 'set_app_language'/);
   assert.match(bridgeSource, /export async function setAppLanguage/);

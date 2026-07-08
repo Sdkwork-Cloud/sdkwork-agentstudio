@@ -8,8 +8,8 @@ The rollout surface is the Phase 1 control-plane entry for node-targeted desired
 
 Current TypeScript contracts live in:
 
-- `packages/sdkwork-claw-infrastructure/src/platform/contracts/manage.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/contracts/internal.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/manage.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/internal.ts`
 
 ## Management Routes
 
@@ -202,8 +202,8 @@ Contract note:
 
 Desktop combined mode does not go through the server HTTP shell. Instead it uses the same logical contract through Tauri commands implemented in:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/commands/studio_commands.rs`
-- `packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/studio_commands.rs`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts`
 
 Phase 1 desktop command names:
 
@@ -243,37 +243,37 @@ Important runtime notes:
 
 Browser read models now use:
 
-- `packages/sdkwork-claw-core/src/services/hostPlatformService.ts`
-- `packages/sdkwork-claw-core/src/services/rolloutService.ts`
-- `packages/sdkwork-claw-core/src/stores/useRolloutStore.ts`
+- `packages/sdkwork-clawstudio-core/src/services/hostPlatformService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/rolloutService.ts`
+- `packages/sdkwork-clawstudio-core/src/stores/useRolloutStore.ts`
 
 Server-served browser bootstrap now also uses:
 
-- `packages/sdkwork-claw-infrastructure/src/platform/serverBrowserBridge.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webManage.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webInternal.ts`
-- `packages/sdkwork-claw-shell/src/application/bootstrap/bootstrapShellRuntime.ts`
-- `packages/sdkwork-claw-web/src/main.tsx`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webManage.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webInternal.ts`
+- `packages/sdkwork-clawstudio-shell/src/application/bootstrap/bootstrapShellRuntime.ts`
+- `packages/sdkwork-clawstudio-web/src/main.tsx`
 
 Behavior split:
 
 - desktop combined mode still uses Tauri commands
 - plain web preview still uses the default mock bridge
-- server-served browser mode reads injected `sdkwork-claw-host-*` metadata and switches to same-origin live `/claw/manage/v1/*` and `/claw/internal/v1/*` HTTP clients
+- server-served browser mode reads injected `sdkwork-clawstudio-host-*` metadata and switches to same-origin live `/claw/manage/v1/*` and `/claw/internal/v1/*` HTTP clients
 
 UI surfaces:
 
-- `packages/sdkwork-claw-settings/src/KernelCenter.tsx`
-- `packages/sdkwork-claw-instances/src/pages/Nodes.tsx`
+- `packages/sdkwork-clawstudio-settings/src/KernelCenter.tsx`
+- `packages/sdkwork-clawstudio-instances/src/pages/Nodes.tsx`
 
 ## Verification Commands
 
 Focused verification for the rollout surface:
 
 ```bash
-node --experimental-strip-types packages/sdkwork-claw-core/src/services/rolloutService.test.ts
-node --experimental-strip-types packages/sdkwork-claw-core/src/stores/useRolloutStore.test.ts
-node --experimental-strip-types packages/sdkwork-claw-desktop/src/desktop/tauriBridge.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-core/src/services/rolloutService.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-core/src/stores/useRolloutStore.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.test.ts
 ```
 
 ## Current Boundaries

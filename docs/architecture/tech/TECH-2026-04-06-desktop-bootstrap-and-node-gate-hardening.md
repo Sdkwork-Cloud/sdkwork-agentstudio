@@ -8,7 +8,7 @@
 This iteration closed two desktop reliability gaps that were blocking trustworthy startup validation:
 
 1. `DesktopBootstrapApp` still kept most launch sequencing inside the React component, and the test only recently moved from string-level assertions to real behavior checks.
-2. `pnpm.cmd check:desktop` was not actually stable because its TypeScript test execution path could not resolve workspace packages such as `@sdkwork/claw-infrastructure` when Node ran `.ts` files directly.
+2. `pnpm.cmd check:desktop` was not actually stable because its TypeScript test execution path could not resolve workspace packages such as `@sdkwork/clawstudio-infrastructure` when Node ran `.ts` files directly.
 
 The goal of this pass was to make desktop bootstrap behavior testable as a real state machine and to make the desktop validation gate runnable end to end.
 
@@ -29,8 +29,8 @@ That made it easy to miss lifecycle bugs. One concrete defect was present: if `b
 Before this iteration:
 
 - `check:desktop` launched desktop `.ts` regression suites with raw `node --experimental-strip-types`
-- the direct Node execution path had no workspace alias resolution for local `@sdkwork/claw-*` packages
-- `desktopHostedBridge.test.ts` therefore failed to import `@sdkwork/claw-infrastructure`
+- the direct Node execution path had no workspace alias resolution for local `@sdkwork/clawstudio-*` packages
+- `desktopHostedBridge.test.ts` therefore failed to import `@sdkwork/clawstudio-infrastructure`
 
 This meant the mandatory desktop gate was not reliably executable even though individual test files were valid.
 
@@ -40,7 +40,7 @@ During verification, desktop build failed with:
 
 - `ReferenceError: __dirname is not defined`
 
-The desktop `vite.config.ts` was using `__dirname` without the `fileURLToPath(import.meta.url)` bridge that already exists in `packages/sdkwork-claw-web/vite.config.ts`.
+The desktop `vite.config.ts` was using `__dirname` without the `fileURLToPath(import.meta.url)` bridge that already exists in `packages/sdkwork-clawstudio-web/vite.config.ts`.
 
 ## Changes Landed
 
@@ -48,9 +48,9 @@ The desktop `vite.config.ts` was using `__dirname` without the `fileURLToPath(im
 
 Files:
 
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopBootstrapRuntime.ts`
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopBootstrapRuntime.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
 
 What changed:
 
@@ -74,7 +74,7 @@ Behavior now locked by tests:
 
 File:
 
-- `packages/sdkwork-claw-desktop/vite.config.ts`
+- `packages/sdkwork-clawstudio-desktop/vite.config.ts`
 
 What changed:
 
@@ -95,7 +95,7 @@ Files:
 What changed:
 
 - extended the TypeScript loader so it can resolve local workspace packages from `packages/*/src`
-- added regression coverage for `@sdkwork/claw-infrastructure` workspace alias resolution
+- added regression coverage for `@sdkwork/clawstudio-infrastructure` workspace alias resolution
 - introduced `run-sdkwork-desktop-check.mjs` so desktop TypeScript suites run through the same loader-backed execution path as other workspace checks
 - updated `check:desktop` to use the new runner while keeping the explicit test file paths visible in the script contract
 
@@ -103,11 +103,11 @@ What changed:
 
 The following commands completed successfully after the changes:
 
-- `node --experimental-transform-types packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
+- `node --experimental-transform-types packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
 - `node scripts/desktop-hosted-runtime-regression-contract.test.mjs`
-- `pnpm.cmd --filter @sdkwork/claw-desktop build`
+- `pnpm.cmd --filter @sdkwork/clawstudio-desktop build`
 - `node scripts/ts-extension-loader.test.mjs`
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts packages/sdkwork-claw-desktop/src/desktop/desktopHostRuntimeResolver.test.ts packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
 - `pnpm.cmd check:desktop`
 
 Notable verification outcomes:

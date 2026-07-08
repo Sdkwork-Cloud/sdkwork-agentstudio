@@ -3,8 +3,8 @@
 Date: 2026-04-06
 
 Scope:
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
 
 ## Summary
 
@@ -52,7 +52,7 @@ New behavior:
 ## Regression Coverage
 
 Added red regressions in:
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
 
 What they now prove:
 - backend-authored OpenClaw files are returned without touching the live

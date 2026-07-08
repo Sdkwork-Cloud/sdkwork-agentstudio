@@ -6,18 +6,18 @@ Runtime barrels that are imported by live feature pages must export runtime surf
 
 Current concrete applications of this rule:
 
-- `packages/sdkwork-claw-instances/src/services/index.ts` must not re-export `.test` or `*Core` modules.
-- `packages/sdkwork-claw-auth/src/index.ts` must publish `AuthPage` and `AuthOAuthCallbackPage`.
-- `packages/sdkwork-claw-center/src/index.ts` must publish `ClawCenter`, `ClawDetail`, and `ClawUpload`.
-- `packages/sdkwork-claw-points/src/index.ts` must publish `PointsHeaderEntry`.
-- `packages/sdkwork-claw-chat/src/index.ts` must publish `OpenClawGatewayConnections` and `useChatStore`.
+- `packages/sdkwork-clawstudio-instances/src/services/index.ts` must not re-export `.test` or `*Core` modules.
+- `packages/sdkwork-clawstudio-auth/src/index.ts` must publish `AuthPage` and `AuthOAuthCallbackPage`.
+- `packages/sdkwork-clawstudio-center/src/index.ts` must publish `ClawCenter`, `ClawDetail`, and `ClawUpload`.
+- `packages/sdkwork-clawstudio-points/src/index.ts` must publish `PointsHeaderEntry`.
+- `packages/sdkwork-clawstudio-chat/src/index.ts` must publish `OpenClawGatewayConnections` and `useChatStore`.
 
 ## Why
 
-- `sdkwork-claw-instances` pages and components import `../services`, so `src/services/index.ts` is a live runtime barrel, not a test-only convenience file.
+- `sdkwork-clawstudio-instances` pages and components import `../services`, so `src/services/index.ts` is a live runtime barrel, not a test-only convenience file.
 - Before this writeback, that barrel re-exported `.test` modules and `*Core` modules alongside runtime wrappers. The `*Core` exports produced duplicate symbols, and the `.test` re-exports created an unsafe runtime surface.
 - The shell already follows the repository rule of consuming feature packages from package roots. When root indexes omitted the required pages, components, and runtime helpers, the shell failed to compile even though the consuming pattern itself was correct.
-- `sdkwork-claw-tasks` is currently a thin wrapper around the core `taskService` singleton. Reintroducing a hidden injected factory just to satisfy stale tests would create a fake package contract that the runtime does not actually expose.
+- `sdkwork-clawstudio-tasks` is currently a thin wrapper around the core `taskService` singleton. Reintroducing a hidden injected factory just to satisfy stale tests would create a fake package contract that the runtime does not actually expose.
 
 ## Standard
 
@@ -29,6 +29,6 @@ Current concrete applications of this rule:
 
 ## Impact
 
-- `sdkwork-claw-instances` runtime imports no longer depend on test or `*Core` re-export drift.
+- `sdkwork-clawstudio-instances` runtime imports no longer depend on test or `*Core` re-export drift.
 - The shell can continue consuming auth, center, points, and chat features through package roots without violating repository import-boundary rules.
-- `sdkwork-claw-tasks` now remains aligned with its current wrapper design: package consumers get the core `taskService` singleton surface, and package tests verify that explicit contract.
+- `sdkwork-clawstudio-tasks` now remains aligned with its current wrapper design: package consumers get the core `taskService` singleton surface, and package tests verify that explicit contract.

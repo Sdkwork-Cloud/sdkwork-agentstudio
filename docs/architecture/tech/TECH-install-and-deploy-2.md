@@ -78,21 +78,21 @@ pnpm server:dev
 ### Windows
 
 ```powershell
-.\bin\claw-server.exe
+.\bin\clawstudio-server.exe
 ```
 
 ### Linux 与 macOS
 
 ```bash
-./bin/claw-server
+./bin/clawstudio-server
 ```
 
 当从解压后的 bundle 中直接启动原生二进制时，会默认：
 
 - 将 `CLAW_SERVER_WEB_DIST` 指向包内的 `web/dist`
-- 将 `CLAW_SERVER_DATA_DIR` 指向解压目录下的 `.claw-server`
+- 将 `CLAW_SERVER_DATA_DIR` 指向解压目录下的 `.clawstudio-server`
 
-`start-claw-server.cmd` 与 `start-claw-server.sh` 仍然是可选的便捷包装脚本，它们调用的是同一个原生二进制，并保持相同的 bundle 默认值。
+`start-clawstudio-server.cmd` 与 `start-clawstudio-server.sh` 仍然是可选的便捷包装脚本，它们调用的是同一个原生二进制，并保持相同的 bundle 默认值。
 
 ## 安装后验证
 
@@ -133,7 +133,7 @@ curl -u operator:manage-secret \
 
 ## Docker 部署
 
-容器镜像会直接启动规范的 `app/bin/claw-server` 原生二进制，而不是通过可选的 shell wrapper 间接启动。
+容器镜像会直接启动规范的 `app/bin/clawstudio-server` 原生二进制，而不是通过可选的 shell wrapper 间接启动。
 
 以下命令需要在解压后的 bundle 根目录执行。Compose 文件会从 `deploy/docker/profiles/*` 解析环境覆盖项，并把 bundle 根目录作为 Docker build context。
 
@@ -184,35 +184,35 @@ pnpm release:plan
 Windows：
 
 ```powershell
-taskkill /IM claw-server.exe /F
-.\bin\claw-server.exe
+taskkill /IM clawstudio-server.exe /F
+.\bin\clawstudio-server.exe
 ```
 
 Linux 或 macOS：
 
 ```bash
-pkill -f claw-server || true
-./bin/claw-server
+pkill -f clawstudio-server || true
+./bin/clawstudio-server
 ```
 
-这些是针对打包后原生二进制的直接进程操作示例。包装脚本仍可用于本地运维便捷启动，但 `bin/` 下的二进制才是打包交付的规范入口。如果你把原生 Server 安装为系统服务，请优先使用 `claw-server service start|stop|restart|status`，这样 CLI、浏览器管理和服务清单投影会保持一致。
+这些是针对打包后原生二进制的直接进程操作示例。包装脚本仍可用于本地运维便捷启动，但 `bin/` 下的二进制才是打包交付的规范入口。如果你把原生 Server 安装为系统服务，请优先使用 `clawstudio-server service start|stop|restart|status`，这样 CLI、浏览器管理和服务清单投影会保持一致。
 
 ### 安装为受管系统服务
 
-当前打包后的 Server bundle 会在 `bin/` 目录下提供原生 service-capable 二进制，作为规范运行入口；`start-claw-server.sh` 与 `start-claw-server.cmd` 只是围绕同一原生二进制的可选便捷包装层。
+当前打包后的 Server bundle 会在 `bin/` 目录下提供原生 service-capable 二进制，作为规范运行入口；`start-clawstudio-server.sh` 与 `start-clawstudio-server.cmd` 只是围绕同一原生二进制的可选便捷包装层。
 
 Windows：
 
 ```powershell
-.\bin\claw-server.exe service install
-.\bin\claw-server.exe service status
+.\bin\clawstudio-server.exe service install
+.\bin\clawstudio-server.exe service status
 ```
 
 Linux 或 macOS：
 
 ```bash
-./bin/claw-server service install
-./bin/claw-server service status
+./bin/clawstudio-server service install
+./bin/clawstudio-server service status
 ```
 
 如果需要先审阅即将投影出来的服务单元，可以执行 `service print-manifest --platform <linux|macos|windows>`。`service install/start/stop/restart/status` 默认会使用当前平台，但仍然要求操作者具备对应系统服务管理器所需的权限。
@@ -242,7 +242,7 @@ kubectl get svc
 
 ## 当前服务管理器边界
 
-当前原生 Server 运行时已经内建 `systemd`、`launchd` 和 `Windows Service` 风格的服务生命周期支持。非 service 安装应优先使用 `./bin/claw-server` 或 `.\bin\claw-server.exe` 作为打包后的规范入口，`start-claw-server.sh` 与 `start-claw-server.cmd` 仅作为本地运维便捷包装脚本存在。`./bin/claw-server service *`、`.\bin\claw-server.exe service *` 与逻辑命令面 `claw-server service *` 共享同一套受管服务入口。真正的安装、启动与停止仍然通过宿主操作系统自己的服务管理器完成，因此需要对应的平台权限。
+当前原生 Server 运行时已经内建 `systemd`、`launchd` 和 `Windows Service` 风格的服务生命周期支持。非 service 安装应优先使用 `./bin/clawstudio-server` 或 `.\bin\clawstudio-server.exe` 作为打包后的规范入口，`start-clawstudio-server.sh` 与 `start-clawstudio-server.cmd` 仅作为本地运维便捷包装脚本存在。`./bin/clawstudio-server service *`、`.\bin\clawstudio-server.exe service *` 与逻辑命令面 `clawstudio-server service *` 共享同一套受管服务入口。真正的安装、启动与停止仍然通过宿主操作系统自己的服务管理器完成，因此需要对应的平台权限。
 ## Release Readiness Gate
 
 在发布前，`pnpm release:finalize` 之后必须执行：

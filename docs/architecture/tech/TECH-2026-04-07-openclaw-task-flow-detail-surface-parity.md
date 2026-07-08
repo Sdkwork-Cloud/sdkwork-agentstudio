@@ -77,21 +77,21 @@ This keeps the list board stable while still preserving the upstream detail payl
 
 Three focused red steps were added first:
 
-1. `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.test.ts`
+1. `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
    - expected a new `getTaskFlowDetail(instanceId, lookup)` wrapper
    - expected the official `tasks.flow.show` bridge to send `{ lookup }`
    - expected normalization of `state / wait / blocked / tasks / taskSummary`
-2. `packages/sdkwork-claw-core/src/services/taskRuntimeService.test.ts`
+2. `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
    - expected OpenClaw detail delegation
    - expected non-OpenClaw instances to skip detail loading cleanly
-3. `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+3. `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
    - expected pure helpers for structured payload summaries
    - expected blocked summary formatting
    - expected aggregate task-summary formatting
 
 Fresh red evidence:
 
-- `node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
   failed because the new helper exports did not exist yet
 - `node scripts/run-sdkwork-core-check.mjs`
   failed because `taskRuntimeService.getTaskFlowDetail` did not exist yet
@@ -113,8 +113,8 @@ After the implementation:
 
 Updated:
 
-- `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.ts`
-- `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.test.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
 
 Changes:
 
@@ -142,8 +142,8 @@ The wrapper uses the official method bridge and sends:
 
 Updated:
 
-- `packages/sdkwork-claw-core/src/services/taskRuntimeService.ts`
-- `packages/sdkwork-claw-core/src/services/taskRuntimeService.test.ts`
+- `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
 
 Changes:
 
@@ -155,8 +155,8 @@ Changes:
 
 Updated:
 
-- `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.ts`
-- `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
 
 New pure helpers:
 
@@ -171,7 +171,7 @@ the React component.
 
 Updated:
 
-- `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
 - `scripts/sdkwork-tasks-contract.test.ts`
 
 Behavior changes:
@@ -193,13 +193,13 @@ detail surface instead of only listing flows.
 
 ## Files Updated In This Loop
 
-- `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.ts`
-- `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.test.ts`
-- `packages/sdkwork-claw-core/src/services/taskRuntimeService.ts`
-- `packages/sdkwork-claw-core/src/services/taskRuntimeService.test.ts`
-- `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.ts`
-- `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
-- `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
+- `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
 - `scripts/sdkwork-tasks-contract.test.ts`
 
 ## Verification
@@ -207,7 +207,7 @@ detail surface instead of only listing flows.
 Fresh commands run in this loop:
 
 ```bash
-node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts
 node scripts/run-sdkwork-core-check.mjs
 node scripts/run-sdkwork-foundation-check.mjs
 pnpm.cmd check:sdkwork-tasks
@@ -216,7 +216,7 @@ pnpm.cmd build
 
 Results:
 
-- `node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
   passed
 - `node scripts/run-sdkwork-core-check.mjs`
   passed

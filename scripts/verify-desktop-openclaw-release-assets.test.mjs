@@ -518,7 +518,7 @@ test('desktop OpenClaw release asset verifier rejects unsupported source runtime
     const unsupportedRuntimeRoot = path.join(
       fixture.workspaceRootDir,
       'packages',
-      'sdkwork-claw-desktop',
+      'sdkwork-clawstudio-desktop',
       'src-tauri',
       'resources',
       'openclaw-runtime',

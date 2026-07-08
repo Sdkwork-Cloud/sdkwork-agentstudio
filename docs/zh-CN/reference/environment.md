@@ -16,7 +16,7 @@
 | `VITE_PLATFORM` | 桌面运行时 | 当前平台标识 |
 | `VITE_TIMEOUT` | 可选 | 共享 HTTP 超时 |
 | `VITE_ENABLE_STARTUP_UPDATE_CHECK` | 可选 | 是否在桌面启动时检查更新 |
-| `CLAW_SERVER_CONFIG` | 可选 | `claw-server` 使用的 JSON 配置文件路径 |
+| `CLAW_SERVER_CONFIG` | 可选 | `clawstudio-server` 使用的 JSON 配置文件路径 |
 | `CLAW_SERVER_HOST` | Server 运行时 | Rust Server 监听地址，默认 `127.0.0.1` |
 | `CLAW_SERVER_PORT` | Server 运行时 | Rust Server 请求监听端口 |
 | `CLAW_SERVER_DATA_DIR` | Server 运行时 | rollout 与 node-session 数据目录 |
@@ -41,9 +41,9 @@
 - 桌面端变量应与分发和更新流程保持一致。
 - 浏览器和桌面 Vite env 文件不得注入 root access token；高权限凭据必须保留在可信宿主或宿主代理链路中。
 - AI 能力现在依赖有效的 OpenClaw 兼容实例与 Provider Center 配置，而不是浏览器侧的 Gemini key。
-- `claw-server` 当前的配置优先级是 `CLI 覆盖 -> 配置文件 -> 环境变量 -> 默认值`。
-- `claw-server service print-manifest` 会复用同一套解析优先级；如果没有显式配置文件路径，则会默认落到 `<CLAW_SERVER_DATA_DIR>/claw-server.config.json`。
-- `claw-server service install`、`start`、`stop`、`restart` 与 `status` 也会复用同一套配置入口，并要求操作者具备平台服务管理器所需的权限。
+- `clawstudio-server` 当前的配置优先级是 `CLI 覆盖 -> 配置文件 -> 环境变量 -> 默认值`。
+- `clawstudio-server service print-manifest` 会复用同一套解析优先级；如果没有显式配置文件路径，则会默认落到 `<CLAW_SERVER_DATA_DIR>/clawstudio-server.config.json`。
+- `clawstudio-server service install`、`start`、`stop`、`restart` 与 `status` 也会复用同一套配置入口，并要求操作者具备平台服务管理器所需的权限。
 - `CLAW_SERVER_MANAGE_USERNAME` 与 `CLAW_SERVER_MANAGE_PASSWORD` 同时保护浏览器壳、`/claw/manage/v1/rollouts*` 与 `/claw/manage/v1/service*`，因此浏览器端可以在同源受控前提下管理本机服务生命周期。
 - `CLAW_SERVER_CONFIG` 是打包后 server 部署最推荐的稳定配置入口，可以减少对环境变量的依赖。
 - 如果没有明确配置网关、认证和网络暴露策略，不要把 `CLAW_SERVER_HOST` 从 `127.0.0.1` 扩大到公网监听。

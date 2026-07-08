@@ -42,7 +42,7 @@ function buildInstallerContract(platform) {
       installMode: 'first-launch-archive-extract',
       bundledResourceRoot: 'resources/openclaw/',
       runtimeArchive: 'resources/openclaw/runtime.zip',
-      sourceConfigPath: 'packages/sdkwork-claw-desktop/src-tauri/tauri.windows.conf.json',
+      sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json',
       requiredExternalRuntimes: ['nodejs'],
     };
   }
@@ -55,7 +55,7 @@ function buildInstallerContract(platform) {
       installMode: 'first-launch-archive-extract',
       bundledResourceRoot: 'resources/openclaw/',
       runtimeArchive: 'resources/openclaw/runtime.zip',
-      sourceConfigPath: 'packages/sdkwork-claw-desktop/src-tauri/tauri.linux.conf.json',
+      sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.linux.conf.json',
       requiredExternalRuntimes: ['nodejs'],
       packageFormats: ['deb', 'rpm'],
     };
@@ -69,7 +69,7 @@ function buildInstallerContract(platform) {
       installMode: 'preexpanded-managed-layout',
       bundledResourceRoot: 'resources/openclaw/',
       runtimeArchive: 'resources/openclaw/runtime.zip',
-      sourceConfigPath: 'packages/sdkwork-claw-desktop/src-tauri/tauri.macos.conf.json',
+      sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.macos.conf.json',
       stagedInstallRootSource: 'generated/release/macos-install-root/',
       stagedInstallRootTarget: 'MacOS/',
       requiredExternalRuntimes: ['nodejs'],
@@ -994,7 +994,7 @@ test('desktop installer smoke rejects manifests whose persisted OpenClaw install
     installMode: 'first-launch-archive-extract',
     bundledResourceRoot: 'resources/openclaw/',
     runtimeArchive: 'resources/openclaw/runtime.zip',
-    sourceConfigPath: 'packages/sdkwork-claw-desktop/src-tauri/tauri.windows.conf.json',
+    sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json',
     requiredExternalRuntimes: ['nodejs'],
   };
 

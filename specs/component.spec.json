@@ -160,7 +160,7 @@
   },
   "verification": {
     "commands": [
-      "pnpm --filter @sdkwork/claw-workspace build"
+      "pnpm --filter @sdkwork/clawstudio-workspace build"
     ]
   },
   "metadata": {

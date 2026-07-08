@@ -51,11 +51,11 @@ The remaining issues are no longer about basic route availability. They are now 
 ### 1. High: the UI still exposes delete actions for the built-in instance even though every host rejects that operation
 
 Evidence:
-- `packages/sdkwork-claw-instances/src/pages/Instances.tsx:665`
-- `packages/sdkwork-claw-instances/src/pages/Instances.tsx:688`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx:4278`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs:1719`
-- `packages/sdkwork-claw-host-studio/src-host/src/lib.rs:1062`
+- `packages/sdkwork-clawstudio-instances/src/pages/Instances.tsx:665`
+- `packages/sdkwork-clawstudio-instances/src/pages/Instances.tsx:688`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx:4278`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:1719`
+- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:1062`
 
 What happens:
 - The instances list always renders the uninstall action in both the online and offline dropdown branches.
@@ -80,9 +80,9 @@ Recommendation:
 ### 2. High: one broken detail response can make the entire instances list fail to load
 
 Evidence:
-- `packages/sdkwork-claw-instances/src/pages/Instances.tsx:179`
-- `packages/sdkwork-claw-instances/src/pages/Instances.tsx:180`
-- `packages/sdkwork-claw-instances/src/pages/Instances.tsx:186`
+- `packages/sdkwork-clawstudio-instances/src/pages/Instances.tsx:179`
+- `packages/sdkwork-clawstudio-instances/src/pages/Instances.tsx:180`
+- `packages/sdkwork-clawstudio-instances/src/pages/Instances.tsx:186`
 
 What happens:
 - The list page first loads the instance list.
@@ -108,13 +108,13 @@ Recommendation:
 ### 3. High: server-backed detail still diverges from the shared architecture contract and overstates readiness
 
 Evidence:
-- `packages/sdkwork-claw-host-studio/src-host/src/lib.rs:913`
-- `packages/sdkwork-claw-host-studio/src-host/src/lib.rs:921`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs:2375`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs:3067`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx:906`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx:925`
-- `packages/sdkwork-claw-instances/src/services/instanceManagementPresentation.ts:169`
+- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:913`
+- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:921`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:2375`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:3067`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx:906`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx:925`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceManagementPresentation.ts:169`
 
 What happens:
 - Server detail hardcodes the only connectivity endpoint to `"status": "ready"` even when the `baseUrl` is missing or null.
@@ -138,11 +138,11 @@ Recommendation:
 ### 4. Medium: degraded workbench fallback fabricates the wrong deployment topology when detail projection is unavailable
 
 Evidence:
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts:2234`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts:2303`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts:2313`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts:2322`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts:2993`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:2234`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:2303`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:2313`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:2322`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:2993`
 
 What happens:
 - When workbench code falls back to a registry-built detail snapshot, it synthesizes:
@@ -169,7 +169,7 @@ Recommendation:
 ## Test Gaps
 
 The current regression coverage is asymmetric:
-- desktop has detailed remote-runtime assertions in `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs:7889` and `:7965`
+- desktop has detailed remote-runtime assertions in `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:7889` and `:7965`
 - server tests around remote detail currently validate lifecycle flags and workbench nullability, but they do not assert console-access parity or truthful connectivity readiness
 - the React instances pages do not have focused tests covering built-in action gating or partial-detail failure behavior
 

@@ -27,14 +27,14 @@
 
 ## Implemented Extraction
 
-- Extended `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts` to own:
+- Extended `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts` to own:
   - `createOpenClawProviderCatalogMutationRunner(...)`
   - shared provider mutation execution sequencing through injected page-owned callbacks
   - translated success/failure reporting through injected page-owned reporters
   - post-mutation reload and selected-provider restoration sequencing
 - Added focused coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds a single injected `runProviderCatalogMutation` runner from the shared helper
   - keeps each provider handler calling the runner with the already shared request object
   - removes inline `completeProviderCatalogMutation(...)`
@@ -64,43 +64,43 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for managed-provider classification, hosted/runtime projection, official ecosystem behavior, Local Proxy ownership, and desktop plugin/runtime boundaries. The current loop only moves page-side provider mutation execution orchestration.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1770`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `353`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts`: `223`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.tsx`: `215`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `87`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `247`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1770`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `353`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts`: `223`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`: `215`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `87`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `247`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
 
 Relative to the prior current-worktree baseline from `release-2026-04-09-95`, the page hotspot now moves from `1823` to `1770`.
 
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
   - failed first because `createOpenClawProviderCatalogMutationRunner(...)` did not exist yet
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` still kept inline `completeProviderCatalogMutation(...)`
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm --filter @sdkwork/clawstudio-web lint`
   - `pnpm build`
 - YELLOW:
   - `pnpm lint`

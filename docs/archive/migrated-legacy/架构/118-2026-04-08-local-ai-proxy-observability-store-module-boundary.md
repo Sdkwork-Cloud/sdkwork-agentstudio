@@ -4,11 +4,11 @@
 
 The desktop local AI proxy must keep the shared observability-store state and lock layer in a dedicated module:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, shared router assembly, extracted module wiring, and the remaining parent-only helpers:
   - `is_loopback_host(...)`
   - `append_proxy_log(...)`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/observability_store.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/observability_store.rs`
   owns:
   - `LocalAiProxyObservabilityStore`
   - `LocalAiProxyRouteMetricsState`

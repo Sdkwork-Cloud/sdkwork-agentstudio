@@ -9,10 +9,10 @@
 ## Attempt Outcome
 
 - The loop repaired one remaining local proxy response-translation hotspot:
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned shared provider response parsing, stop-reason mapping, OpenAI chat-completion shaping, OpenAI responses-api shaping, and embeddings translation even though those helpers served multiple translated response paths
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned shared provider response parsing, stop-reason mapping, OpenAI chat-completion shaping, OpenAI responses-api shaping, and embeddings translation even though those helpers served multiple translated response paths
   - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that response-translation boundary
 - Implemented the narrow repairs:
-  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs`
+  - added `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs`
   - delegated `response_translation::build_openai_chat_completion_from_anthropic(...)`, `response_translation::build_openai_chat_completion_from_gemini(...)`, `response_translation::build_openai_chat_completion_from_ollama(...)`, `response_translation::build_openai_response_from_anthropic(...)`, `response_translation::build_openai_response_from_gemini(...)`, `response_translation::build_openai_response_from_ollama(...)`, `response_translation::build_openai_embeddings_from_gemini(...)`, and `response_translation::build_openai_embeddings_from_ollama(...)` from `local_ai_proxy.rs`
   - moved the shared provider response parsers, stop-reason mappers, and buffered response builders into the same module
   - updated `streaming.rs` to import the shared provider response helpers from the new response-translation boundary
@@ -20,15 +20,15 @@
   - tightened the desktop foundation gate so the response-translation module file, declaration, and explicit delegations are now required
 - Fresh verification:
   - `node scripts/check-desktop-platform-foundation.mjs`
-  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-response-translation local_ai_proxy_`
+  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-response-translation local_ai_proxy_`
   - `pnpm.cmd check:desktop-openclaw-runtime`
   - `pnpm.cmd check:desktop`
 
 ## Change Scope
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs`
 - `scripts/check-desktop-platform-foundation.mjs`
 - `docs/review/step-03-local-ai-proxy-response-translation-hotspot-split-2026-04-08.md`
 - `docs/架构/109-2026-04-08-local-ai-proxy-response-translation-module-boundary.md`
@@ -39,7 +39,7 @@
 ## Verification Focus
 
 - `node scripts/check-desktop-platform-foundation.mjs`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-response-translation local_ai_proxy_`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-response-translation local_ai_proxy_`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 

@@ -116,7 +116,7 @@
 
 - 结构治理不再只靠人工约定，已落地为：
   - `scripts/check-arch-boundaries.mjs`
-  - `scripts/check-sdkwork-claw-hosts.mjs`
+  - `scripts/check-sdkwork-clawstudio-hosts.mjs`
   - `scripts/sync-feature-packages.mjs`
   - `scripts/sync-feature-packages.test.mjs`
 - `check:sdkwork-structure` 已接入 `sync-feature-packages` 回归测试，确保 feature wiring 同步器长期可用。

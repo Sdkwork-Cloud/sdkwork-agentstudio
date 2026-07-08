@@ -12,7 +12,7 @@ const rootDir = path.resolve(__dirname, '..');
 export const DEFAULT_DESKTOP_DIST_DIR = path.join(
   rootDir,
   'packages',
-  'sdkwork-claw-desktop',
+  'sdkwork-clawstudio-desktop',
   'dist',
 );
 

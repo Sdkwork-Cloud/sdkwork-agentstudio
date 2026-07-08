@@ -50,7 +50,7 @@ test('docker deployment templates keep compose commands and overlay profiles ali
   );
   assert.match(dockerCompose, /profiles\/default\.env/);
   assert.match(dockerCompose, /18797:18797/);
-  assert.match(dockerCompose, /\/var\/lib\/claw-server/);
+  assert.match(dockerCompose, /\/var\/lib\/clawstudio-server/);
   assert.match(
     dockerCompose,
     /CLAW_SERVER_MANAGE_USERNAME:\s+\$\{CLAW_SERVER_MANAGE_USERNAME:\?/,
@@ -65,7 +65,7 @@ test('docker deployment templates keep compose commands and overlay profiles ali
   assert.match(amdCompose, /profiles\/amd-rocm\.env/);
   assert.match(defaultEnv, /CLAW_ACCELERATOR_PROFILE=cpu/);
   assert.match(defaultEnv, /CLAW_DEPLOYMENT_FAMILY=container/);
-  assert.match(defaultEnv, /CLAW_SERVER_DATA_DIR=\/var\/lib\/claw-server/);
+  assert.match(defaultEnv, /CLAW_SERVER_DATA_DIR=\/var\/lib\/clawstudio-server/);
   assert.match(defaultEnv, /CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false/);
   assert.match(nvidiaEnv, /CLAW_ACCELERATOR_PROFILE=nvidia-cuda/);
   assert.match(nvidiaEnv, /CLAW_DEPLOYMENT_FAMILY=container/);
@@ -118,7 +118,7 @@ test('kubernetes deployment templates keep accelerator overlays and chart wiring
   assert.match(values, /repository:\s+claw-studio-server/);
   assert.match(values, /auth:\s*[\s\S]*existingSecret:/);
   assert.match(values, /persistence:\s*[\s\S]*enabled:\s+true/);
-  assert.match(values, /persistence:\s*[\s\S]*mountPath:\s+\/var\/lib\/claw-server/);
+  assert.match(values, /persistence:\s*[\s\S]*mountPath:\s+\/var\/lib\/clawstudio-server/);
   assert.doesNotMatch(
     values,
     /tag:\s+latest/,
@@ -182,7 +182,7 @@ test('kubernetes deployment templates keep accelerator overlays and chart wiring
 test('docker image, kubernetes chart, and server readiness routes share the same truthful readiness contract', () => {
   const dockerfile = read('deploy/docker/Dockerfile');
   const deployment = read('deploy/kubernetes/templates/deployment.yaml');
-  const healthRoute = read('packages/sdkwork-claw-server/src-host/src/http/routes/health.rs');
+  const healthRoute = read('packages/sdkwork-clawstudio-server/src-host/src/http/routes/health.rs');
 
   assert.match(
     dockerfile,
@@ -191,17 +191,17 @@ test('docker image, kubernetes chart, and server readiness routes share the same
   );
   assert.match(
     dockerfile,
-    /chmod \+x \/opt\/claw\/app\/bin\/claw-server/,
-    'docker image must chmod the packaged claw-server binary rather than a stale legacy binary path',
+    /chmod \+x \/opt\/claw\/app\/bin\/clawstudio-server/,
+    'docker image must chmod the packaged clawstudio-server binary rather than a stale legacy binary path',
   );
   assert.match(
     dockerfile,
-    /CMD\s+\["\/opt\/claw\/app\/bin\/claw-server"\]/,
-    'docker image must launch the canonical packaged claw-server binary directly',
+    /CMD\s+\["\/opt\/claw\/app\/bin\/clawstudio-server"\]/,
+    'docker image must launch the canonical packaged clawstudio-server binary directly',
   );
   assert.doesNotMatch(
     dockerfile,
-    /CMD\s+\["\/bin\/sh",\s*"\/opt\/claw\/app\/start-claw-server\.sh"\]/,
+    /CMD\s+\["\/bin\/sh",\s*"\/opt\/claw\/app\/start-clawstudio-server\.sh"\]/,
     'docker image must not route container startup through the optional wrapper script',
   );
   assert.match(

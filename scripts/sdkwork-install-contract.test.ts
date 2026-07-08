@@ -97,16 +97,16 @@ function runTest(name: string, fn: () => void) {
 
 runTest('removed install feature package stays deleted and shell remains free of install-route wiring', () => {
   const shellPackage = readJson<{ dependencies?: Record<string, string> }>(
-    'packages/sdkwork-claw-shell/package.json',
+    'packages/sdkwork-clawstudio-shell/package.json',
   );
-  const appRoutesSource = read('packages/sdkwork-claw-shell/src/application/router/AppRoutes.tsx');
+  const appRoutesSource = read('packages/sdkwork-clawstudio-shell/src/application/router/AppRoutes.tsx');
   const routePathsSource = read(
-    'packages/sdkwork-claw-shell/src/application/router/routePaths.ts',
+    'packages/sdkwork-clawstudio-shell/src/application/router/routePaths.ts',
   );
   const routePrefetchSource = read(
-    'packages/sdkwork-claw-shell/src/application/router/routePrefetch.ts',
+    'packages/sdkwork-clawstudio-shell/src/application/router/routePrefetch.ts',
   );
-  const sidebarSource = read('packages/sdkwork-claw-shell/src/components/Sidebar.tsx');
+  const sidebarSource = read('packages/sdkwork-clawstudio-shell/src/components/Sidebar.tsx');
   const routeSurface = read('scripts/fixtures/claw-studio-v5-route-surface.json');
 
   assert.ok(!exists(`${removedInstallWorkspacePath}/package.json`));
@@ -139,11 +139,11 @@ runTest('removed setup product leaves no source, script, docs, or config residue
 });
 
 runTest('Claw Studio routes OpenClaw setup through docs or instance onboarding instead of the removed install page', () => {
-  const clawDetailSource = read('packages/sdkwork-claw-center/src/pages/ClawDetail.tsx');
-  const clawUploadSource = read('packages/sdkwork-claw-center/src/pages/ClawUpload.tsx');
-  const instancesSource = read('packages/sdkwork-claw-instances/src/pages/Instances.tsx');
+  const clawDetailSource = read('packages/sdkwork-clawstudio-center/src/pages/ClawDetail.tsx');
+  const clawUploadSource = read('packages/sdkwork-clawstudio-center/src/pages/ClawUpload.tsx');
+  const instancesSource = read('packages/sdkwork-clawstudio-instances/src/pages/Instances.tsx');
   const warmPolicySource = read(
-    'packages/sdkwork-claw-chat/src/runtime/openClawGatewayConnectionsPolicy.ts',
+    'packages/sdkwork-clawstudio-chat/src/runtime/openClawGatewayConnectionsPolicy.ts',
   );
 
   assert.doesNotMatch(clawDetailSource, /navigate\('\/install\?product=openclaw'\)/);

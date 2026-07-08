@@ -1,5 +1,5 @@
 services:
-  claw-server:
+  clawstudio-server:
     env_file:
       - profiles/default.env
       - profiles/nvidia-cuda.env

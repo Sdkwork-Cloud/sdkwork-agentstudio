@@ -127,7 +127,7 @@ After the minimal UI and locale update:
 
 Updated:
 
-- `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
 
 Changes:
 
@@ -141,10 +141,10 @@ Changes:
 
 Updated:
 
-- `packages/sdkwork-claw-i18n/src/locales/en/tasks.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/tasks.json`
-- `packages/sdkwork-claw-i18n/src/locales/en.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
 
 Changes:
 
@@ -177,9 +177,9 @@ Fresh commands run in this loop:
 
 ```bash
 pnpm.cmd check:sdkwork-tasks
-pnpm.cmd --filter @sdkwork/claw-i18n sync:locales
+pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales
 pnpm.cmd check:sdkwork-tasks
-node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts
 pnpm.cmd build
 pnpm.cmd lint
 ```

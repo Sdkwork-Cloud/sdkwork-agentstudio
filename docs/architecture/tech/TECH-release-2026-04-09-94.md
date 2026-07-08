@@ -12,13 +12,13 @@
 ## Attempt Outcome
 
 - Fresh RED in this loop was explicit:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
   - failed first because `openClawProviderCatalogMutationSupport.ts` did not exist yet
 - Implemented the Step 07 extraction:
-  - added `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts`
-  - rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now builds provider-catalog mutation requests through the dedicated helper and keeps the real runner in-page
-  - added `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
-  - updated `packages/sdkwork-claw-instances/src/services/index.ts`
+  - added `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts`
+  - rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now builds provider-catalog mutation requests through the dedicated helper and keeps the real runner in-page
+  - added `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
+  - updated `packages/sdkwork-clawstudio-instances/src/services/index.ts`
   - updated `scripts/sdkwork-instances-contract.test.ts` to enforce the new provider-catalog request boundary and preserve page-side write authority
 - Current hotspot profile after the fresh current-worktree re-baseline:
   - `InstanceDetail.tsx`: `1972`
@@ -32,10 +32,10 @@
 
 ## Change Scope
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
-- `packages/sdkwork-claw-instances/src/services/index.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/index.ts`
 - `scripts/sdkwork-instances-contract.test.ts`
 - `docs/review/step-07-provider-catalog-mutation-request-extraction-2026-04-09.md`
 - `docs/鏋舵瀯/134-2026-04-08-instance-detail-section-decomposition-progress.md`
@@ -45,12 +45,12 @@
 ## Verification Focus
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm --filter @sdkwork/clawstudio-web lint`
   - `pnpm build`
 - YELLOW:
   - `pnpm lint`

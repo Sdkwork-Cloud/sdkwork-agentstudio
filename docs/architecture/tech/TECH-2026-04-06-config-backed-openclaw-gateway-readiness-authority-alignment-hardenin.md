@@ -50,7 +50,7 @@ Implemented contract:
 Code change:
 
 - updated `hasReadyOpenClawGateway(...)` in
-  `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
+  `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
   to accept the second runtime-observed readiness path
 
 This keeps existing online behavior intact while letting config-backed
@@ -61,8 +61,8 @@ instance detail.
 
 Added and expanded coverage in:
 
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.test.ts`
-- `packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
 
 The new regressions freeze:
 
@@ -77,7 +77,7 @@ The new regressions freeze:
 
 Executed in this iteration:
 
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.test.ts','packages/sdkwork-claw-instances/src/services/instanceService.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.test.ts','packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts']))"`
 
 ## Outcome
 

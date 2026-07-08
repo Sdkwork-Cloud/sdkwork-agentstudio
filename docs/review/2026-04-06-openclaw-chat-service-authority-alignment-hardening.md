@@ -4,17 +4,17 @@
 
 The chat runtime already had authoritative-route hardening in these paths:
 
-- `packages/sdkwork-claw-chat/src/store/chatStore.ts`
-- `packages/sdkwork-claw-chat/src/store/studioConversationGateway.ts`
-- `packages/sdkwork-claw-chat/src/services/openclaw/openClawGatewayClientRegistry.ts`
+- `packages/sdkwork-clawstudio-chat/src/store/chatStore.ts`
+- `packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.ts`
+- `packages/sdkwork-clawstudio-chat/src/services/openclaw/openClawGatewayClientRegistry.ts`
 
 Those paths use
-`packages/sdkwork-claw-chat/src/services/store/authoritativeInstanceChatRoute.ts`
+`packages/sdkwork-clawstudio-chat/src/services/store/authoritativeInstanceChatRoute.ts`
 to resolve runtime truth from `studio.getInstanceDetail(...)` before falling
 back to the lighter snapshot.
 
-But `packages/sdkwork-claw-chat/src/services/chatService.ts`, which is used by
-`packages/sdkwork-claw-chat/src/pages/Chat.tsx` for the direct send/stream
+But `packages/sdkwork-clawstudio-chat/src/services/chatService.ts`, which is used by
+`packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx` for the direct send/stream
 entry, still resolved the active route by calling only:
 
 - `studio.getInstance(activeInstanceId)`
@@ -44,7 +44,7 @@ even though runtime truth should have blocked the route as not ready yet.
 
 ### 1. Align `chatService` with authoritative runtime truth
 
-`packages/sdkwork-claw-chat/src/services/chatService.ts` now resolves the active
+`packages/sdkwork-clawstudio-chat/src/services/chatService.ts` now resolves the active
 instance route through:
 
 - `resolveAuthoritativeInstanceChatRoute(activeInstanceId)`
@@ -59,7 +59,7 @@ store, conversation gateway, and OpenClaw gateway client registry.
 
 Added:
 
-- `packages/sdkwork-claw-chat/src/services/chatService.test.ts`
+- `packages/sdkwork-clawstudio-chat/src/services/chatService.test.ts`
 
 The regression proves that when:
 
@@ -82,7 +82,7 @@ so the new `chatService` authority regression is part of the normal
 
 Executed in this iteration:
 
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-claw-chat/src/services/chatService.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-chat/src/services/chatService.test.ts']))"`
 - `pnpm.cmd check:sdkwork-chat`
 
 ## Outcome

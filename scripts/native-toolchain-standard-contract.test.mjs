@@ -83,8 +83,8 @@ for (const relativePath of [
   'tauri-dev-fast.cmd',
   '.github/workflows/ci.yml',
   '.github/workflows/release-reusable.yml',
-  'packages/sdkwork-claw-desktop/package.json',
-  'packages/sdkwork-claw-server/package.json',
+  'packages/sdkwork-clawstudio-desktop/package.json',
+  'packages/sdkwork-clawstudio-server/package.json',
   ...listFiles('scripts').filter((relativePath) => (
     /\.(?:mjs|test\.mjs)$/u.test(relativePath)
     && relativePath !== currentTestPath
@@ -93,7 +93,7 @@ for (const relativePath of [
   assertFileDoesNotContainLegacyToolchainNaming(relativePath);
 }
 
-const desktopPackage = readJson('packages/sdkwork-claw-desktop/package.json');
+const desktopPackage = readJson('packages/sdkwork-clawstudio-desktop/package.json');
 for (const scriptName of ['tauri:dev', 'tauri:dev:test', 'tauri:build', 'tauri:build:test', 'tauri:build:prod']) {
   assert.match(
     desktopPackage.scripts?.[scriptName] ?? '',
@@ -103,22 +103,22 @@ for (const scriptName of ['tauri:dev', 'tauri:dev:test', 'tauri:build', 'tauri:b
 }
 
 assert.equal(
-  readJson('packages/sdkwork-claw-server/package.json').scripts?.dev,
+  readJson('packages/sdkwork-clawstudio-server/package.json').scripts?.dev,
   'sdkwork-run-node ../../scripts/run-cargo.mjs run --manifest-path src-host/Cargo.toml',
   'server dev must go through the shared Cargo launcher',
 );
 assert.match(
   rootPackage.scripts?.['check:server'] ?? '',
-  /sdkwork-run-node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-claw-server\/src-host\/Cargo\.toml/,
+  /sdkwork-run-node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-clawstudio-server\/src-host\/Cargo\.toml/,
   'server checks must go through the shared Cargo launcher',
 );
 assert.match(
-  read('scripts/run-claw-server-build.mjs'),
+  read('scripts/run-clawstudio-server-build.mjs'),
   /const runCargoScriptPath = path\.join\(rootDir, 'scripts', 'run-cargo\.mjs'\)/,
   'server release builds must reuse the shared Cargo launcher instead of maintaining a second native Cargo execution path',
 );
 assert.doesNotMatch(
-  read('scripts/run-claw-server-build.mjs'),
+  read('scripts/run-clawstudio-server-build.mjs'),
   /command:\s*'cargo'/,
   'server release build native plans must not spawn Cargo directly',
 );
@@ -127,7 +127,7 @@ for (const workflowPath of ['.github/workflows/ci.yml', '.github/workflows/relea
   const workflow = read(workflowPath);
   assert.match(
     workflow,
-    /node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-claw-desktop\/src-tauri\/Cargo\.toml/,
+    /node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-clawstudio-desktop\/src-tauri\/Cargo\.toml/,
     `${workflowPath} must route desktop Rust verification through the shared Cargo launcher`,
   );
   assert.doesNotMatch(

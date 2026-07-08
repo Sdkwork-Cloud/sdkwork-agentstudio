@@ -169,7 +169,7 @@ assert.equal(typeof overlay.bundle.resources, 'object');
 const resources = overlay.bundle.resources;
 
 assert.ok(
-  syncModuleSource.indexOf("const desktopSrcTauriPathSegments = ['packages', 'sdkwork-claw-desktop', 'src-tauri'];") <
+  syncModuleSource.indexOf("const desktopSrcTauriPathSegments = ['packages', 'sdkwork-clawstudio-desktop', 'src-tauri'];") <
     syncModuleSource.indexOf('const bundledRoot = resolveBundledBuildRoot(rootDir, process.platform);'),
   'desktopSrcTauriPathSegments must be initialized before bundledRoot for non-Windows module loading',
 );
@@ -589,7 +589,7 @@ assert.doesNotMatch(
           reason: 'invalid',
         }),
         prepareOpenClawRuntimeImpl: async () => ({
-          resourceDir: 'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\resources\\openclaw',
+          resourceDir: 'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\resources\\openclaw',
           manifest: {
             cliRelativePath: 'runtime/package/node_modules/openclaw/openclaw.mjs',
           },
@@ -625,7 +625,7 @@ assert.doesNotMatch(
           preparedNodeVersion: '22.20.0',
         }),
         prepareOpenClawRuntimeImpl: async () => ({
-          resourceDir: 'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\resources\\openclaw',
+          resourceDir: 'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\resources\\openclaw',
           manifest: {
             cliRelativePath: 'runtime/package/node_modules/openclaw/openclaw.mjs',
           },

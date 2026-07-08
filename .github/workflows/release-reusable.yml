@@ -157,7 +157,7 @@ jobs:
           pnpm lint
           pnpm check:desktop
           pnpm check:server
-          node scripts/run-cargo.mjs test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml
+          node scripts/run-cargo.mjs test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml
           pnpm build
           pnpm server:build
           pnpm docs:build
@@ -415,7 +415,7 @@ jobs:
         run: pnpm build
 
       - name: Build server binary
-        run: node scripts/run-claw-server-build.mjs --target ${{ matrix.target }}
+        run: node scripts/run-clawstudio-server-build.mjs --target ${{ matrix.target }}
 
       - name: Package server release assets
         run: node scripts/release/package-release-assets.mjs server --profile ${{ inputs.release_profile }} --release-tag ${{ needs.prepare.outputs.release_tag }} --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --target ${{ matrix.target }} --output-dir artifacts/release
@@ -497,7 +497,7 @@ jobs:
         run: pnpm build
 
       - name: Build server binary
-        run: node scripts/run-claw-server-build.mjs --target ${{ matrix.target }}
+        run: node scripts/run-clawstudio-server-build.mjs --target ${{ matrix.target }}
 
       - name: Package container release assets
         run: node scripts/release/package-release-assets.mjs container --profile ${{ inputs.release_profile }} --release-tag ${{ needs.prepare.outputs.release_tag }} --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --target ${{ matrix.target }} --accelerator ${{ matrix.accelerator }} --output-dir artifacts/release

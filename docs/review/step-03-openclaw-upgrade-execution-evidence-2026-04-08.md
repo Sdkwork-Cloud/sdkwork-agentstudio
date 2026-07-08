@@ -25,7 +25,7 @@
 - Actual workspace result:
   - `node scripts/openclaw-upgrade-execution-evidence.mjs` now passes on the real workspace
   - the owner reports that desktop release sync still routes through `scripts/sync-bundled-components.mjs --no-fetch --release`
-  - the owner reports that both `packages/sdkwork-claw-desktop/src-tauri/target` and `packages/sdkwork-claw-desktop/.tauri-target` are clean
+  - the owner reports that both `packages/sdkwork-clawstudio-desktop/src-tauri/target` and `packages/sdkwork-clawstudio-desktop/.tauri-target` are clean
   - the owner reports that release verification still routes through `scripts/verify-desktop-openclaw-release-assets.mjs` and that the current Windows packaged install-ready layout remains `simulated-prewarm`
   - `CP03-3` now has explicit desktop coverage for readiness, rollback, execution, and smoke; the remaining Step 03 frontier moves to `CP03-4` evidence-surface convergence
 

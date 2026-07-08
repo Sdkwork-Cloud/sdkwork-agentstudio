@@ -3,20 +3,20 @@
 
 ## Highlights
 
-- Step 03 continued with a market-package contract hardening pass that keeps ClawHub browsing on the shared `@sdkwork/claw-core` root contract without forcing a brittle static value import.
-- `sdkwork-claw-market` now treats dynamic `import('@sdkwork/claw-core')` as the Node-safe default for runtime service resolution while keeping the package-root-only architecture intact.
+- Step 03 continued with a market-package contract hardening pass that keeps ClawHub browsing on the shared `@sdkwork/clawstudio-core` root contract without forcing a brittle static value import.
+- `sdkwork-clawstudio-market` now treats dynamic `import('@sdkwork/clawstudio-core')` as the Node-safe default for runtime service resolution while keeping the package-root-only architecture intact.
 - The market package contract gate now matches the real production pattern: root package imports are allowed in either static or dynamic form, while deep subpath imports remain prohibited.
 
 ## Attempt Outcome
 
-- `packages/sdkwork-claw-market/src/services/marketService.ts` remains aligned to the Node-safe root import pattern and no longer depends on a static `clawHubService` value import.
-- `packages/sdkwork-claw-market/src/index.ts` keeps its public surface explicit by exporting only `instanceService`, `marketService`, and `mySkillService`.
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts` remains aligned to the Node-safe root import pattern and no longer depends on a static `clawHubService` value import.
+- `packages/sdkwork-clawstudio-market/src/index.ts` keeps its public surface explicit by exporting only `instanceService`, `marketService`, and `mySkillService`.
 - `scripts/sdkwork-market-contract.test.ts` was updated so the package check validates the contract we actually want to ship instead of an older source-shape assumption.
 
 ## Change Scope
 
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-market/src/index.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-market/src/index.ts`
 - `scripts/sdkwork-market-contract.test.ts`
 - `docs/review/step-03-执行卡-2026-04-07.md`
 - `docs/review/step-03-market-node-safe-root-contract-alignment-2026-04-08.md`
@@ -26,11 +26,11 @@
 ## Verification Focus
 
 - `node --experimental-strip-types scripts/sdkwork-market-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-market/src/services/marketService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-market/src/services/marketService.test.ts`
 - `pnpm.cmd check:sdkwork-market`
 
 ## Risks And Rollback
 
 - This iteration closes the market-package contract drift only. It does not claim that all Step 03 runtime and release-smoke gaps are closed.
-- If a later workspace-level check reveals another contract consumer that still assumes static value imports from `@sdkwork/claw-core`, that caller should be hardened the same way rather than rolling `marketService` back to the previous brittle pattern.
+- If a later workspace-level check reveals another contract consumer that still assumes static value imports from `@sdkwork/clawstudio-core`, that caller should be hardened the same way rather than rolling `marketService` back to the previous brittle pattern.
 

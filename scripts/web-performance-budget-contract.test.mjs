@@ -23,7 +23,7 @@ function runTest(name, fn) {
 }
 
 const workspacePackageJson = readJson('package.json');
-const webPackageJson = readJson('packages/sdkwork-claw-web/package.json');
+const webPackageJson = readJson('packages/sdkwork-clawstudio-web/package.json');
 
 runTest('web host build commands enforce the frozen web performance budget after Vite build', () => {
   assert.match(

@@ -9,25 +9,25 @@
 ## Attempt Outcome
 
 - The loop repaired one remaining local proxy shared-helper hotspot:
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned shared OpenAI-compatible request construction and Gemini/Ollama upstream URL builders even though those helpers now served both request translation and the extracted probe module
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned shared OpenAI-compatible request construction and Gemini/Ollama upstream URL builders even though those helpers now served both request translation and the extracted probe module
   - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that shared upstream-builder boundary
 - Implemented the narrow repairs:
-  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs`
+  - added `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs`
   - delegated `upstream::build_openai_compatible_upstream_request(...)`, `upstream::build_gemini_upstream_request_url(...)`, and `upstream::build_ollama_upstream_request_url(...)` from `local_ai_proxy.rs`
   - changed `probe.rs` to consume the same upstream module
   - tightened the desktop foundation gate so the upstream module file, declaration, and explicit delegations are now required
 - Fresh verification:
   - RED: `node scripts/check-desktop-platform-foundation.mjs`
   - GREEN: `node scripts/check-desktop-platform-foundation.mjs`
-  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-upstream local_ai_proxy_`
+  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-upstream local_ai_proxy_`
   - `pnpm.cmd check:desktop-openclaw-runtime`
   - `pnpm.cmd check:desktop`
 
 ## Change Scope
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs`
 - `scripts/check-desktop-platform-foundation.mjs`
 - `docs/review/step-03-local-ai-proxy-upstream-hotspot-split-2026-04-08.md`
 - `docs/架构/106-2026-04-08-local-ai-proxy-upstream-module-boundary.md`
@@ -38,7 +38,7 @@
 ## Verification Focus
 
 - `node scripts/check-desktop-platform-foundation.mjs`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-upstream local_ai_proxy_`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-upstream local_ai_proxy_`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 

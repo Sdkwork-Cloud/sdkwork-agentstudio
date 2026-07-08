@@ -62,4 +62,4 @@ Root SDKWork standards remain authoritative. Local component specs can narrow or
 
 ## Verification
 
-- `pnpm --filter @sdkwork/claw-workspace build`
+- `pnpm --filter @sdkwork/clawstudio-workspace build`

@@ -9,23 +9,23 @@
 ## Attempt Outcome
 
 - The loop repaired one remaining local proxy control-plane hotspot:
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned route-probe orchestration, capability classification, protocol-specific probe HTTP construction, and probe response success parsing even though those concerns are distinct from request-serving, observability, and projection logic
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned route-probe orchestration, capability classification, protocol-specific probe HTTP construction, and probe response success parsing even though those concerns are distinct from request-serving, observability, and projection logic
   - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that boundary
 - Implemented the narrow repairs:
-  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
+  - added `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
   - delegated `probe::probe_route(...)` from `local_ai_proxy.rs`
   - tightened the desktop foundation gate so the probe module file, declaration, and delegation are now required
 - Fresh verification:
   - RED: `node scripts/check-desktop-platform-foundation.mjs`
   - GREEN: `node scripts/check-desktop-platform-foundation.mjs`
-  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-probe local_ai_proxy_test_route_by_id_`
+  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-probe local_ai_proxy_test_route_by_id_`
   - `pnpm.cmd check:desktop`
   - `pnpm.cmd check:desktop-openclaw-runtime`
 
 ## Change Scope
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
 - `scripts/check-desktop-platform-foundation.mjs`
 - `docs/review/step-03-local-ai-proxy-probe-hotspot-split-2026-04-08.md`
 - `docs/架构/105-2026-04-08-local-ai-proxy-probe-module-boundary.md`
@@ -36,7 +36,7 @@
 ## Verification Focus
 
 - `node scripts/check-desktop-platform-foundation.mjs`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-probe local_ai_proxy_test_route_by_id_`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-probe local_ai_proxy_test_route_by_id_`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 

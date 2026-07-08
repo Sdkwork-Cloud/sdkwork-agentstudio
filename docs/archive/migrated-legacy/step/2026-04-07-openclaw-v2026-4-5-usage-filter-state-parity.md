@@ -10,7 +10,7 @@
 
 Close the next real OpenClaw parity gap inside the shared `usage` workspace after the route/page landing:
 
-1. upstream-style query and selection behavior had already been implemented in `sdkwork-claw-dashboard`
+1. upstream-style query and selection behavior had already been implemented in `sdkwork-clawstudio-dashboard`
 2. the remaining red state was now in parity contracts and zh usage localization quality
 3. this loop needed to keep the unified architecture intact across web, desktop, server, docker, and k8s oriented validation paths
 
@@ -28,7 +28,7 @@ Rechecked against bundled upstream OpenClaw usage sources:
 
 Confirmed that the local direction stayed correct:
 
-- query parsing and suggestions belong in `packages/sdkwork-claw-dashboard/src/services`
+- query parsing and suggestions belong in `packages/sdkwork-clawstudio-dashboard/src/services`
 - shift-range multi-select belongs in shared state logic, not shell-specific UI code
 - log-role/tool/query filtering belongs in shared page/service composition
 - host packages stay thin and only consume the shared dashboard feature surface
@@ -59,7 +59,7 @@ all failed for an outdated contract, not for a real architecture regression.
 
 The new `usage` strings inside:
 
-- `packages/sdkwork-claw-i18n/src/locales/zh/index.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
 
 were a mix of mojibake and post-assignment patches. The runtime contract could limp through, but the localized surface was not shippable.
 
@@ -69,9 +69,9 @@ were a mix of mojibake and post-assignment patches. The runtime contract could l
 
 Observed fresh red states before code changes:
 
-- `node --experimental-strip-types packages/sdkwork-claw-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
   - failed on the exact outdated import regex
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
   - failed after adding a focused zh usage readability assertion
   - actual `zh.sidebar.usage` value was mojibake rather than a readable Chinese string
 
@@ -86,8 +86,8 @@ Root causes identified before fixing:
 
 After the fixes below, both targeted red tests turned green:
 
-- `node --experimental-strip-types packages/sdkwork-claw-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
 
 ## Changes Landed
 
@@ -95,7 +95,7 @@ After the fixes below, both targeted red tests turned green:
 
 Updated:
 
-- `packages/sdkwork-claw-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
+- `packages/sdkwork-clawstudio-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
 
 What changed:
 
@@ -116,7 +116,7 @@ Why this is the right fix:
 
 Updated:
 
-- `packages/sdkwork-claw-i18n/src/locales/zh/index.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
 
 What changed:
 
@@ -134,17 +134,17 @@ Why this is the right fix:
 
 ## Files Changed In This Loop
 
-- `packages/sdkwork-claw-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
-- `packages/sdkwork-claw-i18n/src/index.test.ts`
-- `packages/sdkwork-claw-i18n/src/locales/zh/index.ts`
+- `packages/sdkwork-clawstudio-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
+- `packages/sdkwork-clawstudio-i18n/src/index.test.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
 
 ## Verification
 
 Fresh commands run after landing:
 
-- `node --experimental-strip-types packages/sdkwork-claw-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
-- `pnpm.cmd --filter @sdkwork/claw-i18n sync:locales`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
+- `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales`
 - `pnpm.cmd check:i18n`
 - `pnpm.cmd check:sdkwork-dashboard`
 - `pnpm.cmd lint`
@@ -174,6 +174,6 @@ Result:
 
 The next high-value loop should target the broader zh locale corruption pattern as a workspace-level quality issue:
 
-1. classify the encoding damage pattern across `packages/sdkwork-claw-i18n/src/locales/zh/*.json`
+1. classify the encoding damage pattern across `packages/sdkwork-clawstudio-i18n/src/locales/zh/*.json`
 2. determine whether a deterministic source normalization pass can repair the split resources instead of relying on runtime overlays
 3. add focused tests for a small cross-domain sample so future locale regressions fail fast

@@ -21,7 +21,7 @@ const tempWorkspaceRoot = mkdtempSync(
 writeFileSync(
   path.join(tempWorkspaceRoot, 'package.json'),
   JSON.stringify({
-    name: '@sdkwork/claw-workspace-test',
+    name: '@sdkwork/clawstudio-workspace-test',
     private: true,
     devDependencies: {
       typescript: '~6.0.2',

@@ -5,19 +5,19 @@
 
 - Continued the real `Step 07` service hotspot decomposition by moving registry-backed detail projection into a dedicated helper module.
 - Repaired the swallowed gateway-channel regression found during verification by restoring the missing `isNonEmptyString` import used by `buildOpenClawChannels(...)`.
-- Reduced the recorded `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` hotspot from the prior `2192`-line baseline to a fresh `1675` lines while keeping OpenClaw authority unchanged.
+- Reduced the recorded `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` hotspot from the prior `2192`-line baseline to a fresh `1675` lines while keeping OpenClaw authority unchanged.
 
 ## Attempt Outcome
 
 - Added dedicated helper ownership in:
-  - `packages/sdkwork-claw-instances/src/services/instanceRegistryWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceRegistryWorkbenchSupport.ts`
 - Added focused helper coverage in:
-  - `packages/sdkwork-claw-instances/src/services/instanceRegistryWorkbenchSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceRegistryWorkbenchSupport.test.ts`
 - Rewired the workbench core so registry-backed detail projection no longer lives inline in:
-  - `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`
 - Kept page-owned write-path dispatch, provider-management truth, and gateway/studio/backend truth-source routing in their existing authority files.
 - Updated the service barrel so the new helper boundary stays consumable from the package root in:
-  - `packages/sdkwork-claw-instances/src/services/index.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/index.ts`
 - Extended the contract suite so the new helper boundary stays enforced in:
   - `scripts/sdkwork-instances-contract.test.ts`
 - Restored the missing `isNonEmptyString` import in the service core so live gateway channels do not silently collapse to catalog defaults during verification.
@@ -27,10 +27,10 @@
 
 ## Change Scope
 
-- `packages/sdkwork-claw-instances/src/services/instanceRegistryWorkbenchSupport.ts`
-- `packages/sdkwork-claw-instances/src/services/instanceRegistryWorkbenchSupport.test.ts`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`
-- `packages/sdkwork-claw-instances/src/services/index.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceRegistryWorkbenchSupport.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceRegistryWorkbenchSupport.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/index.ts`
 - `scripts/sdkwork-instances-contract.test.ts`
 - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
 - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
@@ -39,8 +39,8 @@
 
 ## Verification Focus
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceRegistryWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceRegistryWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 

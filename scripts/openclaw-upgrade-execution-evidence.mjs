@@ -33,7 +33,7 @@ const rootDir = path.resolve(__dirname, '..');
 const DEFAULT_SRC_TAURI_DIR = path.join(
   rootDir,
   'packages',
-  'sdkwork-claw-desktop',
+  'sdkwork-clawstudio-desktop',
   'src-tauri',
 );
 const DEFAULT_TARGET_CLEAN_DIR_NAME = 'check-desktop-openclaw-runtime';
@@ -130,7 +130,7 @@ export async function buildOpenClawUpgradeExecutionEvidence({
   srcTauriDir = path.join(
     workspaceRootDir,
     'packages',
-    'sdkwork-claw-desktop',
+    'sdkwork-clawstudio-desktop',
     'src-tauri',
   ),
   createDesktopReleaseBuildPlanFn = createDesktopReleaseBuildPlan,

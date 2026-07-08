@@ -1,0 +1,22 @@
+{
+  "name": "@sdkwork/clawstudio-commons",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@sdkwork/clawstudio-core": "workspace:*",
+    "@sdkwork/clawstudio-ui": "workspace:*",
+    "lucide-react": "^1.7.0",
+    "motion": "^12.38.0",
+    "react": "^19.2.4",
+    "react-i18next": "^17.0.2",
+    "sonner": "^2.0.7"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  }
+}

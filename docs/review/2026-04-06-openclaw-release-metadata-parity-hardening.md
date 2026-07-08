@@ -21,7 +21,7 @@ remained:
 
 - `config/openclaw-release.json` included `runtimeSupplementalPackages`
 - `scripts/openclaw-release.mjs` exposed that field
-- `packages/sdkwork-claw-types/src/openclawRelease.ts` did not expose it to the
+- `packages/sdkwork-clawstudio-types/src/openclawRelease.ts` did not expose it to the
   TypeScript/shared-runtime side
 
 That meant the version source-of-truth was centralized, but the bundled runtime
@@ -30,7 +30,7 @@ supplement metadata was still only partially projected across the codebase.
 At the same time, the release contract did not yet explicitly assert that the
 checked-in desktop bundled runtime manifest under:
 
-- `packages/sdkwork-claw-desktop/src-tauri/resources/openclaw/manifest.json`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json`
 
 stayed aligned with the same shared release metadata.
 
@@ -40,7 +40,7 @@ stayed aligned with the same shared release metadata.
 
 File:
 
-- `packages/sdkwork-claw-types/src/openclawRelease.ts`
+- `packages/sdkwork-clawstudio-types/src/openclawRelease.ts`
 
 Behavior change:
 
@@ -62,8 +62,8 @@ Behavior change:
 
 - the contract now asserts:
   - `runtimeSupplementalPackages` stays pinned in `config/openclaw-release.json`
-  - `packages/sdkwork-claw-types/src/openclawRelease.ts` projects the field
-  - `packages/sdkwork-claw-desktop/src-tauri/resources/openclaw/manifest.json`
+  - `packages/sdkwork-clawstudio-types/src/openclawRelease.ts` projects the field
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json`
     matches the shared `stableVersion`
   - the same manifest matches the shared bundled Node.js version
 

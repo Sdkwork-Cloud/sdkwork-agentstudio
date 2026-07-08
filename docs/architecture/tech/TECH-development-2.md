@@ -34,29 +34,29 @@ pnpm docs:build
 ## 包级执行
 
 ```bash
-pnpm --filter @sdkwork/claw-web build
-pnpm --filter @sdkwork/claw-desktop tauri:info
-pnpm --filter @sdkwork/claw-market lint
+pnpm --filter @sdkwork/clawstudio-web build
+pnpm --filter @sdkwork/clawstudio-desktop tauri:info
+pnpm --filter @sdkwork/clawstudio-market lint
 ```
 
 ## 关键规则
 
 ### 入口包必须保持轻量
 
-`@sdkwork/claw-web` 是应用入口，不应继续吸收 store、hooks 或业务服务。`@sdkwork/claw-desktop` 也遵循同样原则。
+`@sdkwork/clawstudio-web` 是应用入口，不应继续吸收 store、hooks 或业务服务。`@sdkwork/clawstudio-desktop` 也遵循同样原则。
 
 ### 跨包导入必须使用包根
 
 正确方式：
 
 ```ts
-import { Market } from '@sdkwork/claw-market';
+import { Market } from '@sdkwork/clawstudio-market';
 ```
 
 错误方式：
 
 ```ts
-import { Market } from '@sdkwork/claw-market/src/pages/market/Market';
+import { Market } from '@sdkwork/clawstudio-market/src/pages/market/Market';
 ```
 
 ### 业务逻辑留在业务包中

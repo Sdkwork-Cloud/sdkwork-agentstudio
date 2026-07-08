@@ -36,7 +36,7 @@ test('active external-runtime sources avoid stale bundled-runtime diagnostics', 
     'bundled component staging logs should describe prepared OpenClaw package layouts rather than bundled-runtime packages',
   );
 
-  const internalCliSource = readWorkspaceFile('packages/sdkwork-claw-desktop/src-tauri/src/internal_cli.rs');
+  const internalCliSource = readWorkspaceFile('packages/sdkwork-clawstudio-desktop/src-tauri/src/internal_cli.rs');
   assert.doesNotMatch(
     internalCliSource,
     /bundled runtime manifest value|bundled openclaw runtime|bundled resource directory/i,
@@ -44,7 +44,7 @@ test('active external-runtime sources avoid stale bundled-runtime diagnostics', 
   );
 
   const openClawRuntimeSource = readWorkspaceFile(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
   );
   assert.doesNotMatch(
     openClawRuntimeSource,
@@ -53,7 +53,7 @@ test('active external-runtime sources avoid stale bundled-runtime diagnostics', 
   );
 
   const desktopStudioSource = readWorkspaceFile(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/services/studio.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
   );
   assert.doesNotMatch(
     desktopStudioSource,
@@ -61,7 +61,7 @@ test('active external-runtime sources avoid stale bundled-runtime diagnostics', 
     'desktop studio projections should not describe packaged OpenClaw kernel surfaces as bundled runtimes after the external-runtime hard cut',
   );
 
-  const hostStudioSource = readWorkspaceFile('packages/sdkwork-claw-host-studio/src-host/src/lib.rs');
+  const hostStudioSource = readWorkspaceFile('packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs');
   assert.doesNotMatch(
     hostStudioSource,
     /Bundled local OpenClaw runtime managed by Claw Studio\./,
@@ -69,7 +69,7 @@ test('active external-runtime sources avoid stale bundled-runtime diagnostics', 
   );
 
   const webStudioSource = readWorkspaceFile(
-    'packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts',
   );
   assert.doesNotMatch(
     webStudioSource,
@@ -78,7 +78,7 @@ test('active external-runtime sources avoid stale bundled-runtime diagnostics', 
   );
 
   const kernelCenterServiceSource = readWorkspaceFile(
-    'packages/sdkwork-claw-settings/src/services/kernelCenterService.ts',
+    'packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts',
   );
   assert.doesNotMatch(
     kernelCenterServiceSource,
@@ -87,7 +87,7 @@ test('active external-runtime sources avoid stale bundled-runtime diagnostics', 
   );
 
   const settingsEnglishLocaleSource = readWorkspaceFile(
-    'packages/sdkwork-claw-i18n/src/locales/en/settings.json',
+    'packages/sdkwork-clawstudio-i18n/src/locales/en/settings.json',
   );
   assert.match(
     settingsEnglishLocaleSource,

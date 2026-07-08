@@ -26,15 +26,15 @@ infrastructure -> (i18n + types)
 
 Key package roles:
 
-- `@sdkwork/claw-web`: runnable web app and Vite host
-- `@sdkwork/claw-desktop`: Tauri desktop entry and native bridge
-- `@sdkwork/claw-shell`: routes, layouts, providers, sidebar, command palette
-- `@sdkwork/claw-core`: shared stores and cross-feature orchestration
-- `@sdkwork/claw-types`: pure types and shared models
-- `@sdkwork/claw-infrastructure`: environment, HTTP, i18n, and platform adapters
-- `@sdkwork/claw-*`: vertical feature packages such as `chat`, `market`, `settings`, `account`, and `extensions`
+- `@sdkwork/clawstudio-web`: runnable web app and Vite host
+- `@sdkwork/clawstudio-desktop`: Tauri desktop entry and native bridge
+- `@sdkwork/clawstudio-shell`: routes, layouts, providers, sidebar, command palette
+- `@sdkwork/clawstudio-core`: shared stores and cross-feature orchestration
+- `@sdkwork/clawstudio-types`: pure types and shared models
+- `@sdkwork/clawstudio-infrastructure`: environment, HTTP, i18n, and platform adapters
+- `@sdkwork/clawstudio-*`: vertical feature packages such as `chat`, `market`, `settings`, `account`, and `extensions`
 
-The repository rejects cross-package subpath imports. Use package roots such as `@sdkwork/claw-market`, not `@sdkwork/claw-market/src/...`.
+The repository rejects cross-package subpath imports. Use package roots such as `@sdkwork/clawstudio-market`, not `@sdkwork/clawstudio-market/src/...`.
 
 ## Quick Start
 
@@ -43,7 +43,7 @@ pnpm install
 pnpm dev
 ```
 
-The default web development server runs through Vite for `@sdkwork/claw-web` on `http://localhost:3001`.
+The default web development server runs through Vite for `@sdkwork/clawstudio-web` on `http://localhost:3001`.
 
 For desktop development and packaging:
 
@@ -79,8 +79,8 @@ pnpm docs:build    # build the VitePress docs site
 Package-scoped execution stays available through pnpm filters, for example:
 
 ```bash
-pnpm --filter @sdkwork/claw-web build
-pnpm --filter @sdkwork/claw-desktop tauri:info
+pnpm --filter @sdkwork/clawstudio-web build
+pnpm --filter @sdkwork/clawstudio-desktop tauri:info
 ```
 
 ## Release Artifacts
@@ -104,7 +104,7 @@ Start from [`.env.example`](./.env.example). The most important variables are:
 - `SDKWORK_ACCESS_TOKEN`: optional private bootstrap access token for protected API calls before login
 - `VITE_APP_ID`, `VITE_RELEASE_CHANNEL`, `VITE_DISTRIBUTION_ID`, `VITE_PLATFORM`, `VITE_TIMEOUT`: desktop runtime and update configuration
 
-Desktop-specific examples are also available in [`packages/sdkwork-claw-desktop/.env.example`](./packages/sdkwork-claw-desktop/.env.example).
+Desktop-specific examples are also available in [`packages/sdkwork-clawstudio-desktop/.env.example`](./packages/sdkwork-clawstudio-desktop/.env.example).
 
 ## License
 
@@ -225,7 +225,7 @@ Response target: within `2 business days`
 - [Commands Reference](./docs/reference/commands.md)
 - [Contribution Guide](./docs/contributing/index.md)
 
-The repository also ships an in-app documentation feature package at `@sdkwork/claw-docs`. The VitePress site in `docs/` is the public project documentation for GitHub and open-source contributors.
+The repository also ships an in-app documentation feature package at `@sdkwork/clawstudio-docs`. The VitePress site in `docs/` is the public project documentation for GitHub and open-source contributors.
 
 ## Contributing
 
@@ -285,7 +285,7 @@ Extension points are limited to declared public exports, runtime entrypoints, SD
 
 ### Verification
 
-- `pnpm --filter @sdkwork/claw-workspace build`
+- `pnpm --filter @sdkwork/clawstudio-workspace build`
 
 ### Owner And Status
 

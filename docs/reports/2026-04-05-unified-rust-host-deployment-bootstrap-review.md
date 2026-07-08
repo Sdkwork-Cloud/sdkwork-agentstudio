@@ -29,7 +29,7 @@ What is happening:
   - `context: ..`
   - `dockerfile: deploy/Dockerfile`
 - the source repository does not contain `deploy/Dockerfile`
-- the source repository does not contain `deploy/docker/app/start-claw-server.sh`
+- the source repository does not contain `deploy/docker/app/start-clawstudio-server.sh`
 - release packaging later materializes a bundle where those paths become valid
 
 Why it matters:
@@ -85,7 +85,7 @@ Required direction:
 Evidence:
 - `deploy/kubernetes/templates/deployment.yaml`
 - `deploy/kubernetes/templates/configmap.yaml`
-- `packages/sdkwork-claw-server/src-host/src/http/routes/health.rs`
+- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/health.rs`
 
 What is happening:
 
@@ -128,13 +128,13 @@ Required direction:
 ### 5. High: desktop embedded host bootstrap still scrapes the browser session token from HTML
 
 Evidence:
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs`
-- `packages/sdkwork-claw-server/src-host/src/http/static_assets.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs`
+- `packages/sdkwork-clawstudio-server/src-host/src/http/static_assets.rs`
 
 What is happening:
 
 - desktop bootstrap fetches root HTML
-- it extracts `sdkwork-claw-browser-session-token` from a `<meta>` tag
+- it extracts `sdkwork-clawstudio-browser-session-token` from a `<meta>` tag
 - server static asset injection writes dynamic metadata straight into HTML
 
 Why it matters:
@@ -152,8 +152,8 @@ Required direction:
 ### 6. Medium: desktop root HTML authorization and browser-session trust model are not clearly separated
 
 Evidence:
-- `packages/sdkwork-claw-server/src-host/src/http/auth.rs`
-- `packages/sdkwork-claw-server/src-host/src/http/static_assets.rs`
+- `packages/sdkwork-clawstudio-server/src-host/src/http/auth.rs`
+- `packages/sdkwork-clawstudio-server/src-host/src/http/static_assets.rs`
 
 What is happening:
 

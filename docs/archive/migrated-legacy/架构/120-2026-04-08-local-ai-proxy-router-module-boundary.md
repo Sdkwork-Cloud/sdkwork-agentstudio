@@ -4,7 +4,7 @@
 
 The desktop local AI proxy must keep the HTTP route surface under a dedicated router owner:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns:
   - runtime lifecycle and state transitions
   - observability repository caching
@@ -12,7 +12,7 @@ The desktop local AI proxy must keep the HTTP route surface under a dedicated ro
   - the remaining parent-only helpers:
     - `is_loopback_host(...)`
     - `append_proxy_log(...)`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/router.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/router.rs`
   owns:
   - `build_router(...)`
   - all path-to-handler assembly for:
@@ -29,8 +29,8 @@ The desktop local AI proxy must keep the HTTP route surface under a dedicated ro
 
 Shared proxy result typing must continue to come from `types.rs`, not the parent runtime namespace:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_translation.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/upstream.rs`
 
 Both modules must import `types::ProxyHttpResult` directly.
 

@@ -37,7 +37,7 @@ pnpm install
 pnpm dev
 ```
 
-这会启动 `@sdkwork/claw-web` 的 Vite 开发服务器，默认地址为 `http://localhost:3001`。
+这会启动 `@sdkwork/clawstudio-web` 的 Vite 开发服务器，默认地址为 `http://localhost:3001`。
 
 ### 桌面端运行时
 
@@ -101,7 +101,7 @@ pnpm release:finalize
 
 浏览器和桌面 Host 不得通过 Vite env 注入 root access token；高权限凭据应保留在可信宿主或宿主代理认证链路中。
 
-桌面端补充示例见 `packages/sdkwork-claw-desktop/.env.example`，服务端默认变量见 `packages/sdkwork-claw-server/.env.example`。
+桌面端补充示例见 `packages/sdkwork-clawstudio-desktop/.env.example`，服务端默认变量见 `packages/sdkwork-clawstudio-server/.env.example`。
 
 ## 推荐下一步
 

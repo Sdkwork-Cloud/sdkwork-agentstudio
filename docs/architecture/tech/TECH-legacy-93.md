@@ -24,7 +24,7 @@
 ## 3. 总验收命令建议
 
 - 波次 A：`pnpm.cmd check:arch` `pnpm.cmd check:sdkwork-hosts` `pnpm.cmd check:desktop-openclaw-runtime` `pnpm.cmd check:sdkwork-host-runtime`
-- 波次 B：`pnpm.cmd check:sdkwork-settings` `pnpm.cmd check:sdkwork-chat` `pnpm.cmd check:sdkwork-instances` `pnpm.cmd check:sdkwork-market` `pnpm.cmd check:sdkwork-channels` `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts` `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts` `node --experimental-strip-types packages/sdkwork-claw-channels/src/services/channelService.test.ts` `node --experimental-strip-types packages/sdkwork-claw-market/src/services/marketService.test.ts` `node --experimental-strip-types packages/sdkwork-claw-agent/src/services/agentInstallService.test.ts`
+- 波次 B：`pnpm.cmd check:sdkwork-settings` `pnpm.cmd check:sdkwork-chat` `pnpm.cmd check:sdkwork-instances` `pnpm.cmd check:sdkwork-market` `pnpm.cmd check:sdkwork-channels` `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts` `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts` `node --experimental-strip-types packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts` `node --experimental-strip-types packages/sdkwork-clawstudio-market/src/services/marketService.test.ts` `node --experimental-strip-types packages/sdkwork-clawstudio-agent/src/services/agentInstallService.test.ts`
 - 波次 C：`pnpm.cmd lint` `pnpm.cmd check:parity` `pnpm.cmd check:automation` `pnpm.cmd check:release-flow`
 - 波次 D：`pnpm.cmd check:multi-mode` `pnpm.cmd release:plan`
 

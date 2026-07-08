@@ -21,7 +21,7 @@
   - `plugins/mod.rs`
 - Fresh local evidence:
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm --filter @sdkwork/clawstudio-web lint`
   - `pnpm build`
 - Official benchmark references:
   - Cursor Background Agents: `https://docs.cursor.com/background-agents`

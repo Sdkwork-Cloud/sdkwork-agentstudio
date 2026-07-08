@@ -30,7 +30,7 @@
 
 ## Implemented Fix
 
-- Added `packages/sdkwork-claw-instances/src/services/openClawManagedConfigPresentation.ts`.
+- Added `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigPresentation.ts`.
 - Added `buildOpenClawManagedConfigDraftChangeHandlers(...)` so the shared helper now owns:
   - webSearch shared draft patching
   - selected webSearch provider draft patching with the selected-provider guard
@@ -41,12 +41,12 @@
   - auth cooldowns draft patching
   - dreaming draft patching
   - per-surface page-owned error clearing before each patch
-- Added focused direct coverage in `packages/sdkwork-claw-instances/src/services/openClawManagedConfigPresentation.test.ts`.
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Added focused direct coverage in `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigPresentation.test.ts`.
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds `managedConfigDraftChangeHandlers`
   - passes draft-change props from that builder into the tools and memory section prop builders
   - removes the last inline managed-config draft-change closures from the page
-- Exported the new helper from `packages/sdkwork-claw-instances/src/services/index.ts`.
+- Exported the new helper from `packages/sdkwork-clawstudio-instances/src/services/index.ts`.
 - Updated `scripts/run-sdkwork-instances-check.mjs` so the new helper test runs inside `pnpm.cmd check:sdkwork-instances`.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract now requires:
   - the page to use `buildOpenClawManagedConfigDraftChangeHandlers(...)`
@@ -74,25 +74,25 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed workbench persistence, managed-config writability, provider-center projection, Local Proxy routing/projection, ecosystem/runtime ownership, and desktop plugin/runtime registration. This loop only centralizes page-side managed-config draft-change handler composition around those already-authoritative runtime surfaces.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1006` lines / `41289` bytes
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigPresentation.ts`: `119` lines / `4641` bytes
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigPresentation.test.ts`: `251` lines / `9130` bytes
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1006` lines / `41289` bytes
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigPresentation.ts`: `119` lines / `4641` bytes
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigPresentation.test.ts`: `251` lines / `9130` bytes
 
 Relative to the immediately prior `1055` page baseline from `release-2026-04-09-144`, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1006`. This loop removes the remaining inline managed-config draft-change orchestration cluster from the page and converts that hotspot into stable shared-builder wiring with another verified page reduction.
 
@@ -104,10 +104,10 @@ Relative to the immediately prior `1055` page baseline from `release-2026-04-09-
 ## Verification
 
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigPresentation.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/claw-web lint`
+  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

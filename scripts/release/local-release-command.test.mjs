@@ -462,8 +462,8 @@ test('local release helper always refreshes server prerequisites for local serve
 
   const buildCalls = [];
   const existingBinaries = new Set([
-    'D:/synthetic/claw-server.exe',
-    'D:/synthetic/claw-server',
+    'D:/synthetic/clawstudio-server.exe',
+    'D:/synthetic/clawstudio-server',
   ]);
   const serverResult = helper.ensureLocalServerBuildPrerequisite({
     context: {
@@ -475,7 +475,7 @@ test('local release helper always refreshes server prerequisites for local serve
       return existingBinaries.has(targetPath);
     },
     resolveBinaryPath() {
-      return 'D:/synthetic/claw-server.exe';
+      return 'D:/synthetic/clawstudio-server.exe';
     },
     runServerBuildFn(options) {
       buildCalls.push(options);
@@ -492,7 +492,7 @@ test('local release helper always refreshes server prerequisites for local serve
       return existingBinaries.has(targetPath);
     },
     resolveBinaryPath() {
-      return 'D:/synthetic/claw-server';
+      return 'D:/synthetic/clawstudio-server';
     },
     runServerBuildFn(options) {
       buildCalls.push(options);
@@ -504,11 +504,11 @@ test('local release helper always refreshes server prerequisites for local serve
     { targetTriple: 'x86_64-unknown-linux-gnu' },
   ]);
   assert.deepEqual(serverResult, {
-    binaryPath: 'D:/synthetic/claw-server.exe',
+    binaryPath: 'D:/synthetic/clawstudio-server.exe',
     built: true,
   });
   assert.deepEqual(containerResult, {
-    binaryPath: 'D:/synthetic/claw-server',
+    binaryPath: 'D:/synthetic/clawstudio-server',
     built: true,
   });
 });
@@ -533,11 +533,11 @@ test('local release helper rejects server prerequisite builds that do not materi
         return false;
       },
       resolveBinaryPath() {
-        return 'D:/synthetic/claw-server';
+        return 'D:/synthetic/clawstudio-server';
       },
       runServerBuildFn() {},
     }),
-    /Server build completed without producing the canonical binary at D:\/synthetic\/claw-server/i,
+    /Server build completed without producing the canonical binary at D:\/synthetic\/clawstudio-server/i,
   );
 
   assert.equal(existenceChecks, 1);
@@ -1188,7 +1188,7 @@ test('local release helper runs web prerequisite builds through canonical local 
         command: process.execPath,
         args: [path.join(rootDir, 'scripts', 'run-vite-host.mjs'), 'build', '--mode', 'production'],
         options: {
-          cwd: path.join(rootDir, 'packages', 'sdkwork-claw-web'),
+          cwd: path.join(rootDir, 'packages', 'sdkwork-clawstudio-web'),
           shell: false,
           stdio: 'inherit',
           windowsHide: true,

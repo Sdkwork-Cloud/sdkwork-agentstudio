@@ -5,13 +5,13 @@ const root = process.cwd();
 const distAssetsDir = path.join(
   root,
   'packages',
-  'sdkwork-claw-web',
+  'sdkwork-clawstudio-web',
   'dist',
   'assets',
 );
 
 if (!fs.existsSync(distAssetsDir)) {
-  console.error('Missing build output: packages/sdkwork-claw-web/dist/assets');
+  console.error('Missing build output: packages/sdkwork-clawstudio-web/dist/assets');
   process.exit(1);
 }
 
@@ -20,7 +20,7 @@ const cssFile = fs
   .find((name) => /^index-.*\.css$/.test(name));
 
 if (!cssFile) {
-  console.error('Missing built CSS asset in packages/sdkwork-claw-web/dist/assets');
+  console.error('Missing built CSS asset in packages/sdkwork-clawstudio-web/dist/assets');
   process.exit(1);
 }
 

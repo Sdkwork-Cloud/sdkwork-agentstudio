@@ -66,12 +66,12 @@ That keeps the source truth visible without over-expanding the task board.
 
 Failing tests were added first in four places:
 
-1. `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.test.ts`
+1. `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
    - expected `listTaskFlows()` and `getTaskFlowDetail()` to preserve normalized
      `requesterOrigin`
-2. `packages/sdkwork-claw-core/src/services/taskRuntimeService.test.ts`
+2. `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
    - expected the shared overview/detail seam to continue surfacing `requesterOrigin`
-3. `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+3. `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
    - expected a new `formatTaskFlowRequesterOrigin()` helper
 4. `scripts/sdkwork-tasks-contract.test.ts`
    - expected the shared manager and locale resources to reference
@@ -79,7 +79,7 @@ Failing tests were added first in four places:
 
 Fresh red evidence:
 
-- `node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
   failed because `formatTaskFlowRequesterOrigin` did not exist
 - `node scripts/run-sdkwork-foundation-check.mjs`
   failed because normalized Task Flow records still dropped `requesterOrigin`
@@ -104,8 +104,8 @@ After the implementation:
 
 Updated:
 
-- `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.ts`
-- `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.test.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
 
 Changes:
 
@@ -122,9 +122,9 @@ That closes the infrastructure semantic-loss gap while keeping the original `raw
 
 Updated:
 
-- `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.ts`
-- `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
-- `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
 
 Changes:
 
@@ -138,10 +138,10 @@ The summary stays compact and readable instead of expanding raw JSON in the list
 
 Updated:
 
-- `packages/sdkwork-claw-i18n/src/locales/en/tasks.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/tasks.json`
-- `packages/sdkwork-claw-i18n/src/locales/en.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
 - `scripts/sdkwork-tasks-contract.test.ts`
 
 Notes:
@@ -160,28 +160,28 @@ Notes:
 Fresh commands run in this loop:
 
 ```bash
-node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts
 node scripts/run-sdkwork-foundation-check.mjs
 node scripts/run-sdkwork-core-check.mjs
-pnpm.cmd --filter @sdkwork/claw-i18n sync:locales
+pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales
 pnpm.cmd check:sdkwork-tasks
-node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts
 pnpm.cmd build
 ```
 
 Results:
 
-- `node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
   passed
 - `node scripts/run-sdkwork-foundation-check.mjs`
   passed
 - `node scripts/run-sdkwork-core-check.mjs`
   passed
-- `pnpm.cmd --filter @sdkwork/claw-i18n sync:locales`
+- `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales`
   passed
 - `pnpm.cmd check:sdkwork-tasks`
   passed
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
   passed
 - `pnpm.cmd build`
   still failed for the same external environment reason:

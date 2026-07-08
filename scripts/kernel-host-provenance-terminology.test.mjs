@@ -11,13 +11,13 @@ function readWorkspaceFile(relativePath) {
 
 test('shared kernel host provenance contracts use runtimeVersion instead of OpenClaw-specific version naming', () => {
   const infrastructureKernelContractSource = readWorkspaceFile(
-    'packages/sdkwork-claw-infrastructure/src/platform/contracts/kernel.ts',
+    'packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/kernel.ts',
   );
   assert.match(infrastructureKernelContractSource, /\bruntimeVersion\?: string \| null;/);
   assert.doesNotMatch(infrastructureKernelContractSource, /\bopenclawVersion\?: string \| null;/);
 
   const kernelPlatformServiceSource = readWorkspaceFile(
-    'packages/sdkwork-claw-core/src/services/kernelPlatformService.ts',
+    'packages/sdkwork-clawstudio-core/src/services/kernelPlatformService.ts',
   );
   assert.match(kernelPlatformServiceSource, /\bruntimeVersion\?: string \| null;/);
   assert.match(kernelPlatformServiceSource, /runtimeVersion: status\.provenance\.runtimeVersion \?\? null/);
@@ -25,14 +25,14 @@ test('shared kernel host provenance contracts use runtimeVersion instead of Open
   assert.doesNotMatch(kernelPlatformServiceSource, /status\.provenance\.openclawVersion/);
 
   const kernelCenterServiceSource = readWorkspaceFile(
-    'packages/sdkwork-claw-settings/src/services/kernelCenterService.ts',
+    'packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts',
   );
   assert.match(kernelCenterServiceSource, /\bruntimeVersion: string \| null;/);
   assert.match(kernelCenterServiceSource, /runtimeVersion: openClawRuntime\?\.openclawVersion \?\? snapshot\?\.runtimeVersion \?\? null/);
   assert.doesNotMatch(kernelCenterServiceSource, /\bopenclawVersion: string \| null;/);
 
   const kernelCenterPageSource = readWorkspaceFile(
-    'packages/sdkwork-claw-settings/src/KernelCenter.tsx',
+    'packages/sdkwork-clawstudio-settings/src/KernelCenter.tsx',
   );
   assert.match(kernelCenterPageSource, /\bruntimeVersion: null,/);
   assert.match(kernelCenterPageSource, /settings\.kernelCenter\.fields\.runtimeVersion/);
@@ -41,13 +41,13 @@ test('shared kernel host provenance contracts use runtimeVersion instead of Open
   assert.doesNotMatch(kernelCenterPageSource, /provenance\.openclawVersion \|\| null/);
 
   const nodeInventoryServiceCoreSource = readWorkspaceFile(
-    'packages/sdkwork-claw-instances/src/services/nodeInventoryServiceCore.ts',
+    'packages/sdkwork-clawstudio-instances/src/services/nodeInventoryServiceCore.ts',
   );
   assert.match(nodeInventoryServiceCoreSource, /version: snapshot\.runtimeVersion \?\? null/);
   assert.doesNotMatch(nodeInventoryServiceCoreSource, /snapshot\.openclawVersion \?\? null/);
 
   const rustKernelHostTypesSource = readWorkspaceFile(
-    'packages/sdkwork-claw-desktop/src-tauri/src/framework/kernel_host/types.rs',
+    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/kernel_host/types.rs',
   );
   assert.match(rustKernelHostTypesSource, /\bpub runtime_version: Option<String>,/);
   assert.doesNotMatch(rustKernelHostTypesSource, /\bpub openclaw_version: Option<String>,/);

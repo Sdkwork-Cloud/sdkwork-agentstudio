@@ -7,7 +7,7 @@ if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 set "SDKWORK_WINDOWS_MIRROR_BASE_DIR=%ROOT%\.cache\short-mirrors"
 if not exist "%SDKWORK_WINDOWS_MIRROR_BASE_DIR%" mkdir "%SDKWORK_WINDOWS_MIRROR_BASE_DIR%"
 
-pushd "%ROOT%\packages\sdkwork-claw-desktop" || exit /b 1
+pushd "%ROOT%\packages\sdkwork-clawstudio-desktop" || exit /b 1
 
 call ..\..\sdkwork-run-node.cmd ..\..\scripts\ensure-native-rust-toolchain.mjs
 if errorlevel 1 goto :end
@@ -17,7 +17,7 @@ if errorlevel 1 goto :end
 
 echo Skipping sync-bundled-components for quick Tauri dev startup.
 
-call ..\..\sdkwork-run-node.cmd ..\..\scripts\ensure-tauri-dev-binary-unlocked.mjs src-tauri sdkwork-claw-desktop
+call ..\..\sdkwork-run-node.cmd ..\..\scripts\ensure-tauri-dev-binary-unlocked.mjs src-tauri sdkwork-clawstudio-desktop
 if errorlevel 1 goto :end
 
 call ..\..\sdkwork-run-node.cmd ..\..\scripts\ensure-tauri-dev-port-free.mjs 127.0.0.1 1426

@@ -26,7 +26,7 @@ parity gaps where possible, and record every decision, result, and blocker under
 - Workspace root: `apps/claw-studio`
 - Local bundled OpenClaw release metadata:
   - `config/openclaw-release.json` -> `2026.4.2`
-  - `packages/sdkwork-claw-desktop/src-tauri/resources/openclaw/manifest.json` -> `2026.4.2`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json` -> `2026.4.2`
 - Current repo state is already dirty with many user and prior-iteration changes; this audit must
   work with the existing tree and avoid unrelated rollbacks.
 

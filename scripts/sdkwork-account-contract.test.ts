@@ -26,7 +26,7 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-claw-account parity checks use the shared Node TypeScript runner for workspace-loaded account services', () => {
+runTest('sdkwork-clawstudio-account parity checks use the shared Node TypeScript runner for workspace-loaded account services', () => {
   const workspacePackageJson = read('package.json');
   const accountCheckRunner = read('scripts/run-sdkwork-account-check.mjs');
   const nodeTypeScriptRunner = read('scripts/run-node-typescript-check.mjs');
@@ -41,22 +41,22 @@ runTest('sdkwork-claw-account parity checks use the shared Node TypeScript runne
   assert.match(nodeTypeScriptRunner, /ts-extension-loader\.mjs/);
 });
 
-runTest('sdkwork-claw-account is implemented locally instead of re-exporting claw-studio-account', () => {
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-claw-account/package.json');
-  const indexSource = read('packages/sdkwork-claw-account/src/index.ts');
-  const accountServiceSource = read('packages/sdkwork-claw-account/src/services/accountService.ts');
-  const coreAccountServiceSource = read('packages/sdkwork-claw-core/src/services/accountService.ts');
+runTest('sdkwork-clawstudio-account is implemented locally instead of re-exporting claw-studio-account', () => {
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-account/package.json');
+  const indexSource = read('packages/sdkwork-clawstudio-account/src/index.ts');
+  const accountServiceSource = read('packages/sdkwork-clawstudio-account/src/services/accountService.ts');
+  const coreAccountServiceSource = read('packages/sdkwork-clawstudio-core/src/services/accountService.ts');
 
-  assert.ok(exists('packages/sdkwork-claw-account/src/Account.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-account/src/services/accountService.ts'));
-  assert.ok(exists('packages/sdkwork-claw-core/src/services/accountService.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-account/src/Account.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-account/src/services/accountService.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-core/src/services/accountService.ts'));
 
-  assert.ok(!pkg.dependencies?.['@sdkwork/claw-studio-account']);
-  assert.ok(pkg.dependencies?.['@sdkwork/claw-core']);
+  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-account']);
+  assert.ok(pkg.dependencies?.['@sdkwork/clawstudio-core']);
   assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-account/);
   assert.match(indexSource, /Account/);
 
-  const accountSource = read('packages/sdkwork-claw-account/src/Account.tsx');
+  const accountSource = read('packages/sdkwork-clawstudio-account/src/Account.tsx');
   assert.match(accountSource, /useTranslation/);
   assert.match(accountSource, /t\('account\.title'\)/);
   assert.match(accountSource, /wallet/i);

@@ -45,48 +45,48 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-studio-shared-ui', () => {
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-claw-ui/package.json');
-  const indexSource = read('packages/sdkwork-claw-ui/src/index.ts');
-  const componentsIndexSource = read('packages/sdkwork-claw-ui/src/components/index.ts');
-  const taskRowListSource = read('packages/sdkwork-claw-ui/src/components/TaskRowList.tsx');
-  const taskCatalogSource = read('packages/sdkwork-claw-ui/src/components/TaskCatalog.tsx');
-  const taskCatalogMetaSource = read('packages/sdkwork-claw-ui/src/components/taskCatalogMeta.ts');
+runTest('sdkwork-clawstudio-ui is implemented locally instead of re-exporting claw-studio-shared-ui', () => {
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-ui/package.json');
+  const indexSource = read('packages/sdkwork-clawstudio-ui/src/index.ts');
+  const componentsIndexSource = read('packages/sdkwork-clawstudio-ui/src/components/index.ts');
+  const taskRowListSource = read('packages/sdkwork-clawstudio-ui/src/components/TaskRowList.tsx');
+  const taskCatalogSource = read('packages/sdkwork-clawstudio-ui/src/components/TaskCatalog.tsx');
+  const taskCatalogMetaSource = read('packages/sdkwork-clawstudio-ui/src/components/taskCatalogMeta.ts');
   const taskExecutionHistoryDrawerSource = read(
-    'packages/sdkwork-claw-ui/src/components/TaskExecutionHistoryDrawer.tsx',
+    'packages/sdkwork-clawstudio-ui/src/components/TaskExecutionHistoryDrawer.tsx',
   );
-  const channelCatalogSource = read('packages/sdkwork-claw-ui/src/components/ChannelCatalog.tsx');
-  const channelWorkspaceSource = read('packages/sdkwork-claw-ui/src/components/ChannelWorkspace.tsx');
-  const channelBindingGuidesSource = read('packages/sdkwork-claw-ui/src/components/channelBindingGuides.ts');
-  const channelRegionTabsSource = read('packages/sdkwork-claw-ui/src/components/ChannelRegionTabs.tsx');
-  const channelCatalogMetaSource = read('packages/sdkwork-claw-ui/src/components/channelCatalogMeta.ts');
+  const channelCatalogSource = read('packages/sdkwork-clawstudio-ui/src/components/ChannelCatalog.tsx');
+  const channelWorkspaceSource = read('packages/sdkwork-clawstudio-ui/src/components/ChannelWorkspace.tsx');
+  const channelBindingGuidesSource = read('packages/sdkwork-clawstudio-ui/src/components/channelBindingGuides.ts');
+  const channelRegionTabsSource = read('packages/sdkwork-clawstudio-ui/src/components/ChannelRegionTabs.tsx');
+  const channelCatalogMetaSource = read('packages/sdkwork-clawstudio-ui/src/components/channelCatalogMeta.ts');
   const channelCatalogRegionContentSource = read(
-    'packages/sdkwork-claw-ui/src/components/channelCatalogRegionContent.ts',
+    'packages/sdkwork-clawstudio-ui/src/components/channelCatalogRegionContent.ts',
   );
-  const overlaySurfaceSource = read('packages/sdkwork-claw-ui/src/components/OverlaySurface.tsx');
+  const overlaySurfaceSource = read('packages/sdkwork-clawstudio-ui/src/components/OverlaySurface.tsx');
 
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/Modal.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/Button.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/Input.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/Textarea.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/Label.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/Select.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/Dialog.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/Checkbox.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/Switch.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/Slider.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/RepositoryCard.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/TaskRowList.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/TaskCatalog.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/TaskExecutionHistoryDrawer.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/ChannelWorkspace.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/channelBindingGuides.ts'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/ChannelRegionTabs.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/channelCatalogRegionContent.ts'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/components/taskCatalogMeta.ts'));
-  assert.ok(exists('packages/sdkwork-claw-ui/src/lib/utils.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/Modal.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/Button.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/Input.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/Textarea.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/Label.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/Select.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/Dialog.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/Checkbox.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/Switch.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/Slider.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/RepositoryCard.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/TaskRowList.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/TaskCatalog.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/TaskExecutionHistoryDrawer.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/ChannelWorkspace.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/channelBindingGuides.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/ChannelRegionTabs.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/channelCatalogRegionContent.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/components/taskCatalogMeta.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-ui/src/lib/utils.ts'));
 
-  assert.ok(!pkg.dependencies?.['@sdkwork/claw-studio-shared-ui']);
+  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-shared-ui']);
   assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-shared-ui/);
   assert.match(indexSource, /export \* from '\.\/components'/);
   assert.match(indexSource, /OverlaySurface/);
@@ -196,8 +196,8 @@ runTest('sdkwork-claw-ui is implemented locally instead of re-exporting claw-stu
 });
 
 runTest('shared dialog and overlay primitives expose stable surface slots for light theme depth', () => {
-  const dialogSource = read('packages/sdkwork-claw-ui/src/components/Dialog.tsx');
-  const overlaySurfaceSource = read('packages/sdkwork-claw-ui/src/components/OverlaySurface.tsx');
+  const dialogSource = read('packages/sdkwork-clawstudio-ui/src/components/Dialog.tsx');
+  const overlaySurfaceSource = read('packages/sdkwork-clawstudio-ui/src/components/OverlaySurface.tsx');
 
   assert.match(dialogSource, /data-slot="dialog-overlay"/);
   assert.match(dialogSource, /data-slot="dialog-content"/);
@@ -208,14 +208,14 @@ runTest('shared dialog and overlay primitives expose stable surface slots for li
 runTest('feature packages use shared shadcn-style form primitives instead of native controls', () => {
   const packagesRoot = path.join(root, 'packages');
   const architectureAllowList = new Set([
-    // @sdkwork/claw-core is not allowed to depend on @sdkwork/claw-ui by repo architecture rules.
-    'packages/sdkwork-claw-core/src/components/CommandPalette.tsx',
+    // @sdkwork/clawstudio-core is not allowed to depend on @sdkwork/clawstudio-ui by repo architecture rules.
+    'packages/sdkwork-clawstudio-core/src/components/CommandPalette.tsx',
   ]);
   const sourceFiles = walkFiles(
     packagesRoot,
     (filePath) =>
       filePath.endsWith('.tsx') &&
-      !filePath.includes(`${path.sep}sdkwork-claw-ui${path.sep}src${path.sep}components${path.sep}`),
+      !filePath.includes(`${path.sep}sdkwork-clawstudio-ui${path.sep}src${path.sep}components${path.sep}`),
   );
 
   const nativeControlPattern = /<(input|select|textarea)\b[\s\S]*?>/g;
@@ -249,16 +249,16 @@ runTest('feature packages use shared shadcn-style form primitives instead of nat
   assert.deepEqual(
     violations,
     [],
-    `Native form controls remain outside @sdkwork/claw-ui:\n${violations.join('\n')}`,
+    `Native form controls remain outside @sdkwork/clawstudio-ui:\n${violations.join('\n')}`,
   );
 });
 
 runTest('shared form primitives keep interactive layers and focus states compatible with overlay drawers', () => {
-  const overlaySurfaceSource = read('packages/sdkwork-claw-ui/src/components/OverlaySurface.tsx');
-  const selectSource = read('packages/sdkwork-claw-ui/src/components/Select.tsx');
-  const inputSource = read('packages/sdkwork-claw-ui/src/components/Input.tsx');
-  const textareaSource = read('packages/sdkwork-claw-ui/src/components/Textarea.tsx');
-  const switchSource = read('packages/sdkwork-claw-ui/src/components/Switch.tsx');
+  const overlaySurfaceSource = read('packages/sdkwork-clawstudio-ui/src/components/OverlaySurface.tsx');
+  const selectSource = read('packages/sdkwork-clawstudio-ui/src/components/Select.tsx');
+  const inputSource = read('packages/sdkwork-clawstudio-ui/src/components/Input.tsx');
+  const textareaSource = read('packages/sdkwork-clawstudio-ui/src/components/Textarea.tsx');
+  const switchSource = read('packages/sdkwork-clawstudio-ui/src/components/Switch.tsx');
 
   assert.match(overlaySurfaceSource, /z-\[120\]/);
   assert.match(
@@ -277,7 +277,7 @@ runTest('shared form primitives keep interactive layers and focus states compati
 });
 
 runTest('overlay surfaces close from any external click while preserving drawer and modal interactions inside the surface', () => {
-  const overlaySurfaceSource = read('packages/sdkwork-claw-ui/src/components/OverlaySurface.tsx');
+  const overlaySurfaceSource = read('packages/sdkwork-clawstudio-ui/src/components/OverlaySurface.tsx');
 
   assert.match(
     overlaySurfaceSource,

@@ -13,10 +13,10 @@ test('desktop cargo target helper keeps the default non-Windows target inside sr
 
   assert.equal(
     helper.resolveDefaultDesktopCargoTargetDir({
-      desktopPackageDir: 'D:/workspace/claw-studio/packages/sdkwork-claw-desktop',
+      desktopPackageDir: 'D:/workspace/claw-studio/packages/sdkwork-clawstudio-desktop',
       platform: 'linux',
     }).replaceAll('\\', '/'),
-    'D:/workspace/claw-studio/packages/sdkwork-claw-desktop/src-tauri/target',
+    'D:/workspace/claw-studio/packages/sdkwork-clawstudio-desktop/src-tauri/target',
   );
 });
 
@@ -27,7 +27,7 @@ test('desktop cargo target helper assigns Windows desktop builds to a short exte
   assert.equal(typeof helper.resolveDefaultDesktopCargoTargetDir, 'function');
 
   const targetDir = helper.resolveDefaultDesktopCargoTargetDir({
-    desktopPackageDir: 'D:/workspace/very/deep/path/claw-studio/packages/sdkwork-claw-desktop',
+    desktopPackageDir: 'D:/workspace/very/deep/path/claw-studio/packages/sdkwork-clawstudio-desktop',
     platform: 'win32',
   }).replaceAll('\\', '/');
 
@@ -46,13 +46,13 @@ test('desktop cargo target helper resolves explicit relative overrides from the 
 
   assert.equal(
     helper.resolveDesktopCargoTargetDir({
-      desktopPackageDir: 'D:/workspace/claw-studio/packages/sdkwork-claw-desktop',
+      desktopPackageDir: 'D:/workspace/claw-studio/packages/sdkwork-clawstudio-desktop',
       platform: 'win32',
-      cwd: 'D:/workspace/claw-studio/packages/sdkwork-claw-desktop',
+      cwd: 'D:/workspace/claw-studio/packages/sdkwork-clawstudio-desktop',
       env: {
         CARGO_TARGET_DIR: '.tauri-short-target',
       },
     }).replaceAll('\\', '/'),
-    'D:/workspace/claw-studio/packages/sdkwork-claw-desktop/.tauri-short-target',
+    'D:/workspace/claw-studio/packages/sdkwork-clawstudio-desktop/.tauri-short-target',
   );
 });

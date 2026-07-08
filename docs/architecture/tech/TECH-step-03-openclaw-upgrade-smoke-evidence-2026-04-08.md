@@ -29,18 +29,18 @@
 
 ## OpenClaw Fact Sources
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
   - the built-in managed OpenClaw instance still publishes `runtimeKind: 'openclaw'` at lines `466` and `512`, `deploymentMode: 'local-managed'` at lines `467` and `513`, and `transportKind: 'openclawGatewayWs'` at lines `468` and `514`
   - the browser-host truth source still marks the built-in runtime as `configWritable: true` at line `1277`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
   - built-in projection tests still freeze the `openclaw` / `local-managed` / `openclawGatewayWs` tuple at lines `339-341`, `385-387`, and `434-436`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
   - the managed OpenClaw editing surface still gates on `detail?.instance.runtimeKind === 'openclaw'` at line `1123` and `detail?.lifecycle.configWritable === true` at line `1125`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
   - managed capability logic still keys off `runtimeKind === 'openclaw'` at line `10` and `deploymentMode === 'local-managed'` at line `19`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
   - provider workspace presentation still rejects non-OpenClaw runtimes at line `13`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
   - the instance filter at line `143` still narrows installation flows to `runtimeKind === 'openclaw'`
 - `package.json`
   - `check:desktop-openclaw-runtime` now includes `node scripts/openclaw-upgrade-smoke-evidence.test.mjs` at line `59`
@@ -64,7 +64,7 @@
 - `scripts/release/smoke-desktop-startup-evidence.mjs`
   - startup smoke remains the low-level startup-evidence owner through `smokeDesktopStartupEvidence(...)` at line `226`
   - it still writes the startup smoke report via `writeDesktopStartupSmokeReport(...)` at line `181`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
   - the plugin module still only performs host plugin registration and single-instance window activation at lines `3-7`, so desktop upgrade smoke evidence still belongs in explicit runtime/release scripts rather than plugin bootstrap
 
 ## Verification Focus

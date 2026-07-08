@@ -7,7 +7,7 @@
 
 ## 单一版本源
 
-OpenClaw 版本信息只允许维护在 `config/kernel-releases/openclaw.json` 中。测试、显示代码、构建脚本和发布脚本都必须从该文件或 `@sdkwork/claw-types` 暴露的共享常量读取版本信息，不要新增第二份配置文件，也不要在业务代码或测试 fixture 中写死当前 OpenClaw 基线版本。
+OpenClaw 版本信息只允许维护在 `config/kernel-releases/openclaw.json` 中。测试、显示代码、构建脚本和发布脚本都必须从该文件或 `@sdkwork/clawstudio-types` 暴露的共享常量读取版本信息，不要新增第二份配置文件，也不要在业务代码或测试 fixture 中写死当前 OpenClaw 基线版本。
 
 已移除的旧入口 `config/openclaw-release.json` 不再兼容。
 
@@ -90,7 +90,7 @@ OpenClaw 版本、外部 Node.js 版本和 npm 包名不支持环境变量覆盖
 
 ### 升级后桌面端启动失败
 
-确保运行 `pnpm tauri:dev` 前已经重新准备运行时资源。检查 `packages/sdkwork-claw-desktop/src-tauri/resources/openclaw/manifest.json` 中的 `openclawVersion` 是否与 `config/kernel-releases/openclaw.json` 一致。
+确保运行 `pnpm tauri:dev` 前已经重新准备运行时资源。检查 `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json` 中的 `openclawVersion` 是否与 `config/kernel-releases/openclaw.json` 一致。
 
 ### 如何回退版本
 

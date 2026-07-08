@@ -58,7 +58,7 @@ projection.
 
 File:
 
-- `packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
 
 Behavior change:
 
@@ -73,7 +73,7 @@ This brings the hard-fail readiness path back into alignment with
 
 File:
 
-- `packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
 
 New regressions:
 
@@ -93,7 +93,7 @@ The probe is now required to reject those states.
 
 The following commands were executed after the fix:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`

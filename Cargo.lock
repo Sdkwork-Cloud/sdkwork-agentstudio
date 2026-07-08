@@ -4536,7 +4536,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
-name = "sdkwork-claw-desktop"
+name = "sdkwork-clawstudio-desktop"
 version = "0.1.0"
 dependencies = [
  "async-stream",
@@ -4549,9 +4549,9 @@ dependencies = [
  "postgres",
  "reqwest",
  "rusqlite",
- "sdkwork-claw-host-core",
- "sdkwork-claw-host-studio",
- "sdkwork-claw-server",
+ "sdkwork-clawstudio-host-core",
+ "sdkwork-clawstudio-host-studio",
+ "sdkwork-clawstudio-server",
  "sdkwork-local-api-proxy-native",
  "serde",
  "serde_json",
@@ -4578,7 +4578,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sdkwork-claw-host-core"
+name = "sdkwork-clawstudio-host-core"
 version = "0.1.0"
 dependencies = [
  "sdkwork-utils-rust",
@@ -4589,11 +4589,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "sdkwork-claw-host-studio"
+name = "sdkwork-clawstudio-host-studio"
 version = "0.1.0"
 dependencies = [
  "reqwest",
- "sdkwork-claw-host-core",
+ "sdkwork-clawstudio-host-core",
  "serde",
  "serde_json",
  "tempfile",
@@ -4603,7 +4603,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sdkwork-claw-server"
+name = "sdkwork-clawstudio-server"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -4611,8 +4611,8 @@ dependencies = [
  "base64 0.22.1",
  "clap",
  "reqwest",
- "sdkwork-claw-host-core",
- "sdkwork-claw-host-studio",
+ "sdkwork-clawstudio-host-core",
+ "sdkwork-clawstudio-host-studio",
  "sdkwork-utils-rust",
  "sdkwork-web-axum",
  "sdkwork-web-bootstrap",

@@ -29,7 +29,7 @@ They should not own core stores, feature services, or page logic.
 
 ### Shell
 
-`@sdkwork/claw-shell` owns composition concerns:
+`@sdkwork/clawstudio-shell` owns composition concerns:
 
 - router
 - layouts
@@ -42,7 +42,7 @@ The shell assembles feature exports. It should not turn into a monolith with fea
 
 ### Core
 
-`@sdkwork/claw-core` holds cross-feature state and orchestration, such as global stores and shared hooks. It is not a dumping ground for feature-local services.
+`@sdkwork/clawstudio-core` holds cross-feature state and orchestration, such as global stores and shared hooks. It is not a dumping ground for feature-local services.
 
 ### Types And Infrastructure
 
@@ -55,20 +55,20 @@ The shell assembles feature exports. It should not turn into a monolith with fea
 
 Feature packages own their own `components`, `pages`, and `services` directories. Examples include:
 
-- `@sdkwork/claw-chat`
-- `@sdkwork/claw-market`
-- `@sdkwork/claw-settings`
-- `@sdkwork/claw-account`
-- `@sdkwork/claw-extensions`
+- `@sdkwork/clawstudio-chat`
+- `@sdkwork/clawstudio-market`
+- `@sdkwork/clawstudio-settings`
+- `@sdkwork/clawstudio-account`
+- `@sdkwork/clawstudio-extensions`
 
-Feature packages may depend on `@sdkwork/claw-i18n` for locale-aware formatting and language metadata, but they should not initialize a second i18n runtime.
+Feature packages may depend on `@sdkwork/clawstudio-i18n` for locale-aware formatting and language metadata, but they should not initialize a second i18n runtime.
 
 ## Root-Only Imports
 
 Cross-package imports must target the package root:
 
 ```ts
-import { Settings } from '@sdkwork/claw-settings';
+import { Settings } from '@sdkwork/clawstudio-settings';
 ```
 
 This repository rejects imports that reach into another package's internal files.

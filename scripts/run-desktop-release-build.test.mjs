@@ -158,7 +158,7 @@ test('desktop release build all-phase plan forwards bundle customization flags i
       [
         pnpmCliPath,
         '--filter',
-        '@sdkwork/claw-desktop',
+        '@sdkwork/clawstudio-desktop',
         'run',
         'tauri:build',
         '--',

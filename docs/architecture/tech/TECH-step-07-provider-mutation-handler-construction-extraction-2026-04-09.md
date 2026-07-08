@@ -28,9 +28,9 @@
 
 ## Implemented Extraction
 
-- Extended `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts`, which now also owns:
+- Extended `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts`, which now also owns:
   - provider page-handler construction through `buildOpenClawProviderMutationHandlers(...)`
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - creates `providerMutationHandlers = buildOpenClawProviderMutationHandlers({...})`
   - routes provider config save through `providerMutationHandlers.onSaveProviderConfig`
   - routes provider dialog submit through `providerMutationHandlers.onSubmitProviderDialog`
@@ -39,7 +39,7 @@
   - routes provider-model delete through `providerMutationHandlers.onDeleteProviderModel`
   - stops defining those five provider handlers inline
 - Added focused helper coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
 - Updated:
   - `scripts/sdkwork-instances-contract.test.ts`
 
@@ -59,53 +59,53 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed workbench persistence, Provider Center managed-provider projection, marketplace/install ownership, Local Proxy projection, and desktop runtime/plugin registration. This loop only moves provider handler construction.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1731`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `486`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderPresentation.ts`: `69`
-- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts`: `336`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`: `111`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedLlmProvidersSection.tsx`: `26`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.ts`: `284`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentMutationSupport.ts`: `146`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentSkillMutationSupport.ts`: `204`
-- `packages/sdkwork-claw-instances/src/services/instanceLifecycleActionSupport.ts`: `29`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigMutationSupport.ts`: `39`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts`: `239`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1731`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `486`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderPresentation.ts`: `69`
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`: `336`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`: `111`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedLlmProvidersSection.tsx`: `26`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.ts`: `284`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.ts`: `146`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentSkillMutationSupport.ts`: `204`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.ts`: `29`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigMutationSupport.ts`: `39`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts`: `239`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 
 Relative to the immediately prior `1636` page baseline from the provider mutation build-result dispatch note, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1731`. This loop records a verified boundary improvement rather than a raw page shrink, because the helper now owns the remaining provider handler construction while the worktree has also advanced elsewhere.
 
 ## Verification
 
 - Focused RED was already established before this writeback:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
   - failed first because `buildOpenClawProviderMutationHandlers(...)` did not yet exist
   - `pnpm check:sdkwork-instances`
   - failed first because `InstanceDetail.tsx` still defined provider handlers inline and the contract still expected the new helper boundary
 - GREEN in and after this loop:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm --filter @sdkwork/clawstudio-web lint`
   - `pnpm build`
   - `node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync('docs/release/releases.json','utf8')); const latest=data.releases[data.releases.length-1]; if(latest.tag!=='release-2026-04-09-112') throw new Error(latest.tag); console.log(latest.tag)"`
 - Repo-wide lint status remains intentionally scoped:

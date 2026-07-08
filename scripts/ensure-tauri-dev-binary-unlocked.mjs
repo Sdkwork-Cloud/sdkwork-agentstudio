@@ -47,7 +47,7 @@ function runWindowsProcessQuery(command, description) {
 
 export function resolveTauriDevBinaryPath(
   srcTauriDir = 'src-tauri',
-  binaryName = 'sdkwork-claw-desktop',
+  binaryName = 'sdkwork-clawstudio-desktop',
   platform = process.platform,
 ) {
   return path.resolve(
@@ -316,7 +316,7 @@ export function waitForExecutableUnlockSync(
 
 export function ensureTauriDevBinaryUnlocked(
   srcTauriDir = 'src-tauri',
-  binaryName = 'sdkwork-claw-desktop',
+  binaryName = 'sdkwork-clawstudio-desktop',
   platform = process.platform,
   {
     inspectProcessesForBinary = listWindowsProcessesForBinary,
@@ -440,7 +440,7 @@ export function ensureTauriDevBinaryUnlocked(
 
 function runCli() {
   const srcTauriDir = process.argv[2] ?? 'src-tauri';
-  const binaryName = process.argv[3] ?? 'sdkwork-claw-desktop';
+  const binaryName = process.argv[3] ?? 'sdkwork-clawstudio-desktop';
   const result = ensureTauriDevBinaryUnlocked(srcTauriDir, binaryName);
 
   if (result.skipped === 'unsupported-platform') {

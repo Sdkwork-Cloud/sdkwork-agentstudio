@@ -3,17 +3,17 @@
 ## 目标
 - 严格遵循 `architect/architect-standard-react+tauri.md`
 - 采用 `pnpm workspace` 分包管理
-- 使用 `@sdkwork/claw-studio-xxx` 命名规范
+- 使用 `@sdkwork/clawstudio-studio-xxx` 命名规范
 - 保持现有功能、路由、交互与界面样式一致
 
 ## 最终分包结构
 
 ```text
 packages/
-├─ claw-studio-web             (@sdkwork/claw-studio-web)
-├─ claw-studio-domain          (@sdkwork/claw-studio-domain)
-├─ claw-studio-infrastructure  (@sdkwork/claw-studio-infrastructure)
-└─ claw-studio-business        (@sdkwork/claw-studio-business)
+├─ claw-studio-web             (@sdkwork/clawstudio-studio-web)
+├─ claw-studio-domain          (@sdkwork/clawstudio-studio-domain)
+├─ claw-studio-infrastructure  (@sdkwork/clawstudio-studio-infrastructure)
+└─ claw-studio-business        (@sdkwork/clawstudio-studio-business)
 ```
 
 ## 分层职责

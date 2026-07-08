@@ -8,40 +8,40 @@ The repository is a `pnpm` workspace with packages under `packages/*`.
 
 | Package | Responsibility |
 | --- | --- |
-| `@sdkwork/claw-web` | Web entry application and development server |
-| `@sdkwork/claw-desktop` | Tauri desktop entry, native bridge, and packaging scripts |
-| `@sdkwork/claw-shell` | Routes, layout, providers, sidebar, command palette, shell composition |
-| `@sdkwork/claw-distribution` | Desktop distribution manifests and provider-level distribution metadata |
+| `@sdkwork/clawstudio-web` | Web entry application and development server |
+| `@sdkwork/clawstudio-desktop` | Tauri desktop entry, native bridge, and packaging scripts |
+| `@sdkwork/clawstudio-shell` | Routes, layout, providers, sidebar, command palette, shell composition |
+| `@sdkwork/clawstudio-distribution` | Desktop distribution manifests and provider-level distribution metadata |
 
 ## Shared Core Packages
 
 | Package | Responsibility |
 | --- | --- |
-| `@sdkwork/claw-core` | Shared stores, hooks, and cross-feature orchestration |
-| `@sdkwork/claw-types` | Types, DTOs, and shared product models |
-| `@sdkwork/claw-infrastructure` | Environment, HTTP, i18n, update client, and platform helpers |
-| `@sdkwork/claw-ui` | Shared visual primitives used by feature packages |
+| `@sdkwork/clawstudio-core` | Shared stores, hooks, and cross-feature orchestration |
+| `@sdkwork/clawstudio-types` | Types, DTOs, and shared product models |
+| `@sdkwork/clawstudio-infrastructure` | Environment, HTTP, i18n, update client, and platform helpers |
+| `@sdkwork/clawstudio-ui` | Shared visual primitives used by feature packages |
 
 ## Feature Packages
 
 The current workspace includes feature-oriented packages such as:
 
-- `@sdkwork/claw-account`
-- `@sdkwork/claw-apps`
-- `@sdkwork/claw-channels`
-- `@sdkwork/claw-chat`
-- `@sdkwork/claw-center`
-- `@sdkwork/claw-community`
-- `@sdkwork/claw-devices`
-- `@sdkwork/claw-docs`
-- `@sdkwork/claw-extensions`
-- `@sdkwork/claw-github`
-- `@sdkwork/claw-huggingface`
+- `@sdkwork/clawstudio-account`
+- `@sdkwork/clawstudio-apps`
+- `@sdkwork/clawstudio-channels`
+- `@sdkwork/clawstudio-chat`
+- `@sdkwork/clawstudio-center`
+- `@sdkwork/clawstudio-community`
+- `@sdkwork/clawstudio-devices`
+- `@sdkwork/clawstudio-docs`
+- `@sdkwork/clawstudio-extensions`
+- `@sdkwork/clawstudio-github`
+- `@sdkwork/clawstudio-huggingface`
 - `removed-install-feature`
-- `@sdkwork/claw-instances`
-- `@sdkwork/claw-market`
-- `@sdkwork/claw-settings`
-- `@sdkwork/claw-tasks`
+- `@sdkwork/clawstudio-instances`
+- `@sdkwork/clawstudio-market`
+- `@sdkwork/clawstudio-settings`
+- `@sdkwork/clawstudio-tasks`
 
 Each feature package must keep at least:
 

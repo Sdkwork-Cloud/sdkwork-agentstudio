@@ -65,8 +65,8 @@ The server binary is identical across CPU and GPU-oriented bundles. GPU variants
 deployment overlays and environment presets so operators can keep one release flow while
 switching runtime topology.
 
-The packaged Docker image starts `/opt/claw/app/bin/claw-server` directly. The optional
-`app/start-claw-server.sh` wrapper remains in the bundle for operator convenience outside the
+The packaged Docker image starts `/opt/claw/app/bin/clawstudio-server` directly. The optional
+`app/start-clawstudio-server.sh` wrapper remains in the bundle for operator convenience outside the
 container entrypoint path, but container startup does not route through it.
 
 The base deployment template intentionally requires `CLAW_SERVER_MANAGE_USERNAME` and
@@ -75,5 +75,5 @@ If you do not provide dedicated internal credentials, the Rust server falls back
 manage credential pair for `/claw/internal/v1/*`.
 
 The bundled env overlays keep `CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false` and mount
-`/var/lib/claw-server` for persistent state, so container restarts do not silently drop the
+`/var/lib/clawstudio-server` for persistent state, so container restarts do not silently drop the
 SQLite host-state database.

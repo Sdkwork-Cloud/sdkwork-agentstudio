@@ -9,7 +9,7 @@
 ## Attempt Outcome
 
 - Root cause:
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still mixed generic runtime lifecycle and router assembly with one remaining shared request-entry hotspot:
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still mixed generic runtime lifecycle and router assembly with one remaining shared request-entry hotspot:
     - `current_snapshot(...)`
     - `require_route_for_protocol(...)`
     - `require_client_auth(...)`
@@ -18,7 +18,7 @@
   - That helper cluster was already consumed across `openai_compatible.rs`, `anthropic_native.rs`, `gemini_native.rs`, and `health.rs`, proving it was a coherent cross-protocol owner rather than parent-runtime glue.
   - After the earlier response-io split, `scripts/check-desktop-platform-foundation.mjs` still did not freeze this request-context boundary, so the parent runtime file remained a hidden second owner.
 - Implemented the narrow repair:
-  - added `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs` as the dedicated owner for:
+  - added `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs` as the dedicated owner for:
     - snapshot reads
     - client-protocol route lookup
     - client auth validation
@@ -43,42 +43,42 @@
 
 ## OpenClaw Fact Sources
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
   - the built-in OpenClaw instance still publishes `runtimeKind: 'openclaw'` at lines `466` and `512`, `deploymentMode: 'local-managed'` at lines `467` and `513`, and `transportKind: 'openclawGatewayWs'` at lines `468` and `514`, so the request-entry/auth boundary still belongs to the managed built-in OpenClaw runtime chain rather than an unrelated browser-only helper surface
   - the browser-host truth source still marks the built-in managed runtime as config-writable at line `1277`, preserving the writable managed-runtime envelope around local proxy routing and auth configuration
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
   - built-in projection tests still freeze the same `openclaw` / `local-managed` / `openclawGatewayWs` tuple at lines `339-341`, `385-387`, and `434-436`, so the managed runtime identity remains under test while this shared request-context boundary moves
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
   - the managed OpenClaw editing surface still gates on `detail?.instance.runtimeKind === 'openclaw'` at line `1123` and `detail?.lifecycle.configWritable === true` at line `1125`, so the request-context layer still belongs to a writable managed runtime envelope
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
   - managed capability logic still keys off `runtimeKind === 'openclaw'` at line `10` and `deploymentMode === 'local-managed'` at line `19`, so the same managed control-plane contract still owns the local proxy surface that now consumes the new request-context owner
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
   - provider workspace presentation still short-circuits non-OpenClaw runtimes at line `13`, so the request-context boundary remains inside the OpenClaw-specific runtime chain
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
   - agent installation still checks `detail.instance.runtimeKind !== 'openclaw' || !detail.lifecycle.configWritable` at line `48`, proving downstream managed feature flows still depend on the same writable OpenClaw runtime envelope
   - the instance filter at line `143` still narrows installation flows to `runtimeKind === 'openclaw'`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   - the Rust host now declares `mod request_context;` at line `59`, keeping the shared request-entry owner under the runtime service layer instead of re-accumulating it in the parent file
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs`
   - the new module now owns `current_snapshot(...)` at line `11`, `require_route_for_protocol(...)` at line `26`, `require_client_auth(...)` at line `40`, `header_text(...)` at line `67`, and `parse_json_body(...)` at line `76`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs`
   - the OpenAI-compatible request-serving owner now consumes the extracted request-context boundary through `request_context::current_snapshot(...)` at lines `26` and `117`, `request_context::require_client_auth(...)` at lines `27` and `118`, `request_context::require_route_for_protocol(...)` at lines `28` and `119`, and `request_context::parse_json_body(...)` at lines `137`, `210`, `291`, `368`, `423`, `506`, `614`, `707`, and `796`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
   - the Anthropic native owner now consumes `request_context::current_snapshot(...)` at line `22`, `request_context::require_client_auth(...)` at line `23`, `request_context::require_route_for_protocol(...)` at line `24`, `request_context::parse_json_body(...)` at line `25`, and `request_context::header_text(...)` at lines `44` and `47`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
   - the Gemini native owner now consumes `request_context::current_snapshot(...)` at lines `29` and `73`, `request_context::require_client_auth(...)` at lines `30` and `74`, and `request_context::require_route_for_protocol(...)` at lines `31` and `75`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
   - the health/status owner now consumes `request_context::current_snapshot(...)` at line `109`
 - `scripts/check-desktop-platform-foundation.mjs`
   - the Step 03 desktop structure gate now requires the request-context module file at line `122`, the `mod request_context;` declaration at line `263`, consumer ownership evidence at lines `403-463`, and removal of the obsolete in-file helper definitions from `local_ai_proxy.rs` at lines `468-488`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
   - the plugin module still only performs host plugin registration and single-instance window activation in lines `1-8`, so request-entry and auth-guard responsibilities must remain in the runtime service layer rather than drifting into plugin bootstrap
 
 ## Verification Focus
 
 - RED: `node scripts/check-desktop-platform-foundation.mjs`
 - GREEN: `node scripts/check-desktop-platform-foundation.mjs`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-request-context local_ai_proxy_`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-request-context local_ai_proxy_`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 
@@ -94,12 +94,12 @@
 - The split is intended to be behavior-preserving; the main risk is future drift if shared snapshot/auth/header/body helpers are copied back into `local_ai_proxy.rs` or duplicated independently across protocol-specific modules.
 - `proxy_error(...)`, `duration_to_ms(...)`, `trim_optional_text(...)`, `current_time_ms(...)`, `lock_observability(...)`, `is_loopback_host(...)`, and `append_proxy_log(...)` intentionally remain in the parent runtime file for now; later refactors should move them only if they can be closed as a separate coherent owner without re-entangling the new boundary.
 - Rollback is limited to:
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
   - `scripts/check-desktop-platform-foundation.mjs`
   - the corresponding review, architecture, and release writebacks
 

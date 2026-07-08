@@ -20,9 +20,9 @@
   - `pnpm.cmd check:server`
 - Probed Step 05 entry gates:
   - `pnpm.cmd check:sdkwork-settings`
-  - `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/providerConfigCenterService.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-channels/src/services/channelService.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
   - `node scripts/desktop-local-ai-proxy-contract.test.mjs`
 - Every command above passed on the current worktree.
 - Because the current runtime, API, platform-bridge, and Provider/Projection entry contracts were already aligned, this loop made no production code changes and instead wrote back the new review and release evidence that advances the frontier.
@@ -45,9 +45,9 @@
 - `pnpm.cmd check:sdkwork-instances`
 - `pnpm.cmd check:server`
 - `pnpm.cmd check:sdkwork-settings`
-- `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/providerConfigCenterService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-channels/src/services/channelService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
 - `node scripts/desktop-local-ai-proxy-contract.test.mjs`
 
 ## Risks And Rollback

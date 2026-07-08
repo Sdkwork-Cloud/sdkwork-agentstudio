@@ -7,16 +7,16 @@
 
 - Continued the real `Step 07` service hotspot decomposition by moving OpenClaw runtime channel shaping into the existing shared channel helper.
 - Preserved the authority split so the service core still decides when to probe the gateway, while the helper now owns only the pure shaping of the returned channel payload.
-- Reduced the recorded `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` hotspot from the prior `1209`-line baseline to a fresh `1030` lines while keeping OpenClaw authority unchanged.
+- Reduced the recorded `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` hotspot from the prior `1209`-line baseline to a fresh `1030` lines while keeping OpenClaw authority unchanged.
 
 ## Attempt Outcome
 
 - Expanded the existing helper boundary in:
-  - `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts`
 - Expanded focused helper coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
 - Rewired the workbench core so runtime channel-shaping helpers no longer live inline in:
-  - `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`
 - Kept gateway probing, error swallowing, and truth-source routing in the service core.
 - Extended the contract suite so the removed channel runtime helpers stay outside the core hotspot in:
   - `scripts/sdkwork-instances-contract.test.ts`
@@ -26,9 +26,9 @@
 
 ## Change Scope
 
-- `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`
 - `scripts/sdkwork-instances-contract.test.ts`
 - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
 - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
@@ -37,8 +37,8 @@
 
 ## Verification Focus
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 ## Risks And Rollback

@@ -8,7 +8,7 @@ Current Claw Studio workspace still spans three different OpenClaw baselines:
 
 - shared bundled release metadata: `2026.4.9`
 - local upstream checkout under `.cache/bundled-components/upstreams/openclaw`: `2026.4.9`
-- stale legacy source runtime residue under `packages/sdkwork-claw-desktop/src-tauri/resources/openclaw-runtime`: `2026.3.28`
+- stale legacy source runtime residue under `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw-runtime`: `2026.3.28`
 
 Upstream latest is `v2026.4.11`.
 
@@ -80,11 +80,11 @@ The current runtime-authority and kernel-adapter work remains the correct archit
 As of 2026-04-12, the workspace cannot perform a real offline bundled upgrade to `2026.4.11` because:
 
 - `config/openclaw-release.json` is still pinned to `2026.4.9`
-- `packages/sdkwork-claw-desktop/src-tauri/resources/openclaw/manifest.json` is still `2026.4.9`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json` is still `2026.4.9`
 - `.cache/bundled-components/upstreams/openclaw/package.json` is still `2026.4.9`
 - local upstream checkout does not expose git tag `v2026.4.11`
 - no local `openclaw-2026.4.11.tgz` is available
-- stale `packages/sdkwork-claw-desktop/src-tauri/resources/openclaw-runtime` residue still exists locally and reports `2026.3.28`
+- stale `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw-runtime` residue still exists locally and reports `2026.3.28`
 
 ## Decision
 

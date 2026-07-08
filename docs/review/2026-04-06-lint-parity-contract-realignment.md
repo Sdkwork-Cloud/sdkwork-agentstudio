@@ -44,7 +44,7 @@ workspace-resolution failures that had already been fixed elsewhere.
 Desktop startup sequencing is no longer expressed inline only inside
 `DesktopBootstrapApp.tsx`. The sequencing and deferred route warmup now live in:
 
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopBootstrapRuntime.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopBootstrapRuntime.ts`
 
 Similarly, managed OpenClaw config gateway probing is no longer expressed as
 per-method inline `hasReadyOpenClawGateway(...)` checks. The truth now lives in

@@ -71,7 +71,7 @@ test('release smoke contract resolves report paths and persists normalized smoke
       artifactRelativePaths: [
         'server/linux/x64/claw-studio-server-release-local-linux-x64.tar.gz',
       ],
-      launcherRelativePath: 'bin/claw-server',
+      launcherRelativePath: 'bin/clawstudio-server',
       runtimeBaseUrl: 'http://127.0.0.1:19797',
       checks: [
         {
@@ -150,7 +150,7 @@ test('release smoke contract rejects unsafe artifact and launcher paths before w
         artifactRelativePaths: [
           '../server/linux/x64/claw-studio-server-release-local-linux-x64.tar.gz',
         ],
-        launcherRelativePath: 'bin/claw-server',
+        launcherRelativePath: 'bin/clawstudio-server',
       }),
       /unsafe release smoke artifact path/,
     );
@@ -166,7 +166,7 @@ test('release smoke contract rejects unsafe artifact and launcher paths before w
         artifactRelativePaths: [
           'server/linux/x64/claw-studio-server-release-local-linux-x64.tar.gz',
         ],
-        launcherRelativePath: '../bin/claw-server',
+        launcherRelativePath: '../bin/clawstudio-server',
       }),
       /unsafe release smoke launcher path/,
     );

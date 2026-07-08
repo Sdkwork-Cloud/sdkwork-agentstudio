@@ -22,14 +22,14 @@
 | Module | Local status | Evidence | Notes |
 | --- | --- | --- | --- |
 | Release/runtime baseline | blocked-by-runtime-upgrade | `config/openclaw-release.json`, bundled desktop `manifest.json` still `2026.4.2`, `docs/step/2026-04-07-openclaw-v2026-4-5-runtime-upgrade-readiness.md` | The authoritative blocker state is now recorded in the runtime-upgrade-readiness step log; do not falsify parity by editing version strings without actually upgrading the bundled runtime assets. |
-| Control UI language surface | partially-aligned | `packages/sdkwork-claw-i18n/src/config.ts`, `packages/sdkwork-claw-settings/src/GeneralSettings.tsx`, `docs/step/2026-04-07-openclaw-v2026-4-5-language-surface-truthfulness.md`, `docs/step/2026-04-07-openclaw-v2026-4-5-language-label-autonym-cleanup.md` | Runtime language capability has been widened locally, the settings UI now uses native/autonym labels plus explicit fallback notes, but only `en` and `zh` remain dedicated local translation bundles. |
-| Skills / ClawHub / install flows | aligned | `sdkwork-claw-market`, `clawHubService`, `agentSkillManagementService`, `AgentWorkbenchPanel` | Source already includes list/detail/reviews/install/uninstall and instance workbench jump points. |
+| Control UI language surface | partially-aligned | `packages/sdkwork-clawstudio-i18n/src/config.ts`, `packages/sdkwork-clawstudio-settings/src/GeneralSettings.tsx`, `docs/step/2026-04-07-openclaw-v2026-4-5-language-surface-truthfulness.md`, `docs/step/2026-04-07-openclaw-v2026-4-5-language-label-autonym-cleanup.md` | Runtime language capability has been widened locally, the settings UI now uses native/autonym labels plus explicit fallback notes, but only `en` and `zh` remain dedicated local translation bundles. |
+| Skills / ClawHub / install flows | aligned | `sdkwork-clawstudio-market`, `clawHubService`, `agentSkillManagementService`, `AgentWorkbenchPanel` | Source already includes list/detail/reviews/install/uninstall and instance workbench jump points. |
 | Memory / Dreaming / Dream Diary | aligned | `instanceWorkbenchServiceCore`, `InstanceDetail`, `instanceMemoryWorkbenchPresentation.*` | Latest iteration already closed Dream Diary reader and managed dreaming panel gaps. |
 | Provider request overrides | aligned | `openClawProviderRequestDraft.*`, `InstanceDetail`, `instanceService.*` | Local source exposes JSON5 editing for `headers`, `auth`, `proxy`, and `tls`. |
 | Channels / `contextVisibility` | aligned | `openClawConfigService.*` | Local source already exposes `contextVisibility` in channel config fields and persistence. |
-| Chat / gateway session behavior | aligned | `packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.*`, `packages/sdkwork-claw-chat/src/pages/Chat.tsx`, `packages/sdkwork-claw-chat/src/components/ChatSessionContextDrawer.tsx`, `packages/sdkwork-claw-chat/src/services/chatThinkingLevelOptions.*`, `packages/sdkwork-claw-chat/src/services/openClawMessagePresentation.*` | Session thinking, fast, verbose, and reasoning overrides are now exposed and patched through the gateway; provider-aware `Default (<resolved>)` labels are implemented; assistant `commentary` payloads are buffered until `final_answer`. |
-| Tasks / Task Flow runtime surface | aligned | `packages/sdkwork-claw-core/src/services/taskRuntimeService.*`, `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`, `packages/sdkwork-claw-commons/src/components/cronTasksManagerData.ts`, `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.*` | The `/tasks` surface now exposes detached runtime tasks plus Task Flow records through `tasks.list` and `tasks.flow.list`, while non-OpenClaw or older runtimes degrade truthfully. |
-| Desktop/server/docker/k8s shared host architecture | partially-aligned | `docs/core/release-and-deployment.md`, `packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.*`, `scripts/release/*.mjs`, host runtime contracts | Source-level architecture is unified and release evidence is now much stronger, but final packaged runtime proof still depends on live smoke outside sandbox. |
+| Chat / gateway session behavior | aligned | `packages/sdkwork-clawstudio-chat/src/store/openClawGatewaySessionStore.*`, `packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx`, `packages/sdkwork-clawstudio-chat/src/components/ChatSessionContextDrawer.tsx`, `packages/sdkwork-clawstudio-chat/src/services/chatThinkingLevelOptions.*`, `packages/sdkwork-clawstudio-chat/src/services/openClawMessagePresentation.*` | Session thinking, fast, verbose, and reasoning overrides are now exposed and patched through the gateway; provider-aware `Default (<resolved>)` labels are implemented; assistant `commentary` payloads are buffered until `final_answer`. |
+| Tasks / Task Flow runtime surface | aligned | `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.*`, `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`, `packages/sdkwork-clawstudio-commons/src/components/cronTasksManagerData.ts`, `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.*` | The `/tasks` surface now exposes detached runtime tasks plus Task Flow records through `tasks.list` and `tasks.flow.list`, while non-OpenClaw or older runtimes degrade truthfully. |
+| Desktop/server/docker/k8s shared host architecture | partially-aligned | `docs/core/release-and-deployment.md`, `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.*`, `scripts/release/*.mjs`, host runtime contracts | Source-level architecture is unified and release evidence is now much stronger, but final packaged runtime proof still depends on live smoke outside sandbox. |
 | Cross-OS release flow | partially-aligned | root `package.json`, release docs, release scripts/tests, desktop packaged startup smoke contracts | Windows/Linux/macOS packaging and Linux deployment families are encoded and contract-tested, but real packaged execution remains environment-bound. |
 
 ## Step 3: Local implementation landed in this cycle
@@ -52,14 +52,14 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-i18n/src/config.ts`
-- `packages/sdkwork-claw-i18n/src/index.ts`
-- `packages/sdkwork-claw-i18n/src/localize.ts`
-- `packages/sdkwork-claw-i18n/src/index.test.ts`
-- `packages/sdkwork-claw-i18n/src/locales/README.md`
-- `packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/config.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/app/bootstrap.rs`
+- `packages/sdkwork-clawstudio-i18n/src/config.ts`
+- `packages/sdkwork-clawstudio-i18n/src/index.ts`
+- `packages/sdkwork-clawstudio-i18n/src/localize.ts`
+- `packages/sdkwork-clawstudio-i18n/src/index.test.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/README.md`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/config.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/app/bootstrap.rs`
 
 Expected outcome:
 
@@ -86,9 +86,9 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-i18n/src/locales/mergeLocale.ts`
-- `packages/sdkwork-claw-i18n/src/locales/zh/index.ts`
-- `packages/sdkwork-claw-i18n/src/locales/README.md`
+- `packages/sdkwork-clawstudio-i18n/src/locales/mergeLocale.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/README.md`
 
 ### 3.3 Chat session thinking-level parity landing
 
@@ -110,14 +110,14 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.ts`
-- `packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.test.ts`
-- `packages/sdkwork-claw-chat/src/store/chatStore.ts`
-- `packages/sdkwork-claw-chat/src/pages/Chat.tsx`
-- `packages/sdkwork-claw-chat/src/pages/chatPageComposition.test.ts`
-- `packages/sdkwork-claw-chat/src/components/ChatSessionContextDrawer.tsx`
-- `packages/sdkwork-claw-i18n/src/locales/en/chat.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/chat.json`
+- `packages/sdkwork-clawstudio-chat/src/store/openClawGatewaySessionStore.ts`
+- `packages/sdkwork-clawstudio-chat/src/store/openClawGatewaySessionStore.test.ts`
+- `packages/sdkwork-clawstudio-chat/src/store/chatStore.ts`
+- `packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx`
+- `packages/sdkwork-clawstudio-chat/src/pages/chatPageComposition.test.ts`
+- `packages/sdkwork-clawstudio-chat/src/components/ChatSessionContextDrawer.tsx`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/chat.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/chat.json`
 
 Expected outcome:
 
@@ -146,14 +146,14 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-chat/src/services/chatThinkingLevelOptions.ts`
-- `packages/sdkwork-claw-chat/src/services/chatThinkingLevelOptions.test.ts`
-- `packages/sdkwork-claw-chat/src/services/index.ts`
-- `packages/sdkwork-claw-chat/src/pages/Chat.tsx`
-- `packages/sdkwork-claw-chat/src/components/ChatSessionContextDrawer.tsx`
+- `packages/sdkwork-clawstudio-chat/src/services/chatThinkingLevelOptions.ts`
+- `packages/sdkwork-clawstudio-chat/src/services/chatThinkingLevelOptions.test.ts`
+- `packages/sdkwork-clawstudio-chat/src/services/index.ts`
+- `packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx`
+- `packages/sdkwork-clawstudio-chat/src/components/ChatSessionContextDrawer.tsx`
 - `scripts/run-sdkwork-chat-check.mjs`
-- `packages/sdkwork-claw-i18n/src/locales/en/chat.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/chat.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/chat.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/chat.json`
 
 Expected outcome:
 
@@ -178,19 +178,19 @@ Expected outcome:
 
 ## Verification
 
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/chatThinkingLevelOptions.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/chatThinkingLevelOptions.test.ts`
   - passed
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/pages/chatPageComposition.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/pages/chatPageComposition.test.ts`
   - passed
 - `node scripts/run-sdkwork-chat-check.mjs`
   - passed
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
   - passed
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml config_normalizes_language_preference`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml config_normalizes_language_preference`
   - passed
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml config_preserves_supported_non_english_language_preferences`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml config_preserves_supported_non_english_language_preferences`
   - passed
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml tray_language_uses_explicit_preference_before_system_locale`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml tray_language_uses_explicit_preference_before_system_locale`
   - passed
 - `pnpm.cmd check:i18n`
   - passed
@@ -241,7 +241,7 @@ Local fix strategy:
 
 - Keep the scheduled-task CRUD surface inside the shared `CronTasksManager` instead of creating a
   second host-specific task page.
-- Add a shared `taskRuntimeService` in `sdkwork-claw-core` that only probes detached runtime tasks
+- Add a shared `taskRuntimeService` in `sdkwork-clawstudio-core` that only probes detached runtime tasks
   and Task Flow records for OpenClaw instances.
 - Route the task page data loader through one snapshot call so scheduled tasks, detached runtime
   tasks, Task Flow data, delivery channels, and agent catalog stay synchronized.
@@ -250,15 +250,15 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-core/src/services/taskRuntimeService.ts`
-- `packages/sdkwork-claw-core/src/services/taskRuntimeService.test.ts`
-- `packages/sdkwork-claw-core/src/services/index.ts`
-- `packages/sdkwork-claw-commons/src/components/cronTasksManagerData.ts`
-- `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
-- `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.ts`
-- `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.test.ts`
-- `packages/sdkwork-claw-i18n/src/locales/en/tasks.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/tasks.json`
+- `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
+- `packages/sdkwork-clawstudio-core/src/services/index.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/cronTasksManagerData.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/tasks.json`
 - `scripts/run-sdkwork-core-check.mjs`
 
 Expected outcome:
@@ -292,8 +292,8 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts`
 - `scripts/release/desktop-startup-smoke-contract.mjs`
 - `scripts/release/smoke-desktop-packaged-launch.mjs`
 - `scripts/release/smoke-desktop-packaged-launch.test.mjs`
@@ -333,9 +333,9 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-chat/src/services/openClawMessagePresentation.ts`
-- `packages/sdkwork-claw-chat/src/services/openClawMessagePresentation.test.ts`
-- `packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.test.ts`
+- `packages/sdkwork-clawstudio-chat/src/services/openClawMessagePresentation.ts`
+- `packages/sdkwork-clawstudio-chat/src/services/openClawMessagePresentation.test.ts`
+- `packages/sdkwork-clawstudio-chat/src/store/openClawGatewaySessionStore.test.ts`
 
 Expected outcome:
 
@@ -347,10 +347,10 @@ Expected outcome:
 
 Command corrections:
 
-- A direct raw invocation of `packages/sdkwork-claw-core/src/services/taskRuntimeService.test.ts`
+- A direct raw invocation of `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
   failed because package-resolution aliases are meant to run through the repo check entrypoint.
 - A direct `node --test` invocation of
-  `packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts` failed with
+  `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts` failed with
   a local `spawn EPERM`; the repo already runs this file correctly through the strip-types path.
 - After switching back to the repository's canonical verification commands, the same code passed.
 
@@ -358,7 +358,7 @@ Fresh verification:
 
 - `node scripts/run-sdkwork-core-check.mjs`
   - passed
-- `node --experimental-strip-types packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts`
   - passed
 - `node scripts/release/smoke-desktop-startup-evidence.test.mjs`
   - passed
@@ -376,7 +376,7 @@ Fresh verification:
   - passed
 - `pnpm.cmd build`
   - passed
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/openClawMessagePresentation.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/openClawMessagePresentation.test.ts`
   - passed
 - `node scripts/run-sdkwork-chat-check.mjs`
   - passed
@@ -414,7 +414,7 @@ Reason:
 
 Local fix strategy:
 
-- finish the shared `UsageWorkspace` inside `sdkwork-claw-dashboard`
+- finish the shared `UsageWorkspace` inside `sdkwork-clawstudio-dashboard`
 - keep usage data loading inside `usageWorkspaceService`
 - wire `/usage` through shared shell surfaces only:
   - route
@@ -427,20 +427,20 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-dashboard/src/pages/UsageWorkspace.tsx`
-- `packages/sdkwork-claw-dashboard/src/services/usageWorkspaceService.ts`
-- `packages/sdkwork-claw-dashboard/package.json`
-- `packages/sdkwork-claw-shell/src/application/router/AppRoutes.tsx`
-- `packages/sdkwork-claw-shell/src/application/router/routePaths.ts`
-- `packages/sdkwork-claw-shell/src/application/router/routePrefetch.ts`
-- `packages/sdkwork-claw-shell/src/components/Sidebar.tsx`
-- `packages/sdkwork-claw-shell/src/components/commandPaletteCommands.ts`
-- `packages/sdkwork-claw-settings/src/GeneralSettings.tsx`
-- `packages/sdkwork-claw-i18n/src/locales/en/dashboard.json`
-- `packages/sdkwork-claw-i18n/src/locales/en/sidebar.json`
-- `packages/sdkwork-claw-i18n/src/locales/en/commandPalette.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/index.ts`
-- `scripts/check-sdkwork-claw-route-surface.mjs`
+- `packages/sdkwork-clawstudio-dashboard/src/pages/UsageWorkspace.tsx`
+- `packages/sdkwork-clawstudio-dashboard/src/services/usageWorkspaceService.ts`
+- `packages/sdkwork-clawstudio-dashboard/package.json`
+- `packages/sdkwork-clawstudio-shell/src/application/router/AppRoutes.tsx`
+- `packages/sdkwork-clawstudio-shell/src/application/router/routePaths.ts`
+- `packages/sdkwork-clawstudio-shell/src/application/router/routePrefetch.ts`
+- `packages/sdkwork-clawstudio-shell/src/components/Sidebar.tsx`
+- `packages/sdkwork-clawstudio-shell/src/components/commandPaletteCommands.ts`
+- `packages/sdkwork-clawstudio-settings/src/GeneralSettings.tsx`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/dashboard.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/sidebar.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/commandPalette.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
+- `scripts/check-sdkwork-clawstudio-route-surface.mjs`
 - `scripts/sdkwork-dashboard-contract.test.ts`
 - `scripts/sdkwork-shell-contract.test.ts`
 - `scripts/run-sdkwork-dashboard-check.mjs`
@@ -449,9 +449,9 @@ Files targeted:
 
 Verification:
 
-- `pnpm.cmd --filter @sdkwork/claw-i18n sync:locales`
+- `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales`
   - passed
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
   - passed
 - `node scripts/run-sdkwork-dashboard-check.mjs`
   - passed
@@ -501,19 +501,19 @@ Local fix strategy:
   entries.
 - Switch language labels to native/autonym labels and surface fallback notes directly in
   `GeneralSettings`.
-- Preserve the matching Chinese fallback copy through `packages/sdkwork-claw-i18n/src/locales/zh/index.ts`
+- Preserve the matching Chinese fallback copy through `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
   because direct editing of `zh/settings.json` remained encoding-risky in this environment.
 - Record the full evidence in
   `docs/step/2026-04-07-openclaw-v2026-4-5-language-surface-truthfulness.md`.
 
 Files targeted:
 
-- `packages/sdkwork-claw-i18n/src/config.ts`
-- `packages/sdkwork-claw-settings/src/GeneralSettings.tsx`
-- `packages/sdkwork-claw-i18n/src/index.test.ts`
-- `packages/sdkwork-claw-i18n/src/locales/en/settings.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/index.ts`
-- `packages/sdkwork-claw-i18n/src/locales/README.md`
+- `packages/sdkwork-clawstudio-i18n/src/config.ts`
+- `packages/sdkwork-clawstudio-settings/src/GeneralSettings.tsx`
+- `packages/sdkwork-clawstudio-i18n/src/index.test.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/settings.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/README.md`
 - `scripts/sdkwork-settings-contract.test.ts`
 
 Expected outcome:
@@ -526,9 +526,9 @@ Expected outcome:
 
 Fresh verification:
 
-- `pnpm.cmd --filter @sdkwork/claw-i18n sync:locales`
+- `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales`
   - passed
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
   - passed
 - `node scripts/run-sdkwork-settings-check.mjs`
   - passed
@@ -566,19 +566,19 @@ Reason:
 
 Local fix strategy:
 
-- Use TDD to lock the remaining native-label expectations in `packages/sdkwork-claw-i18n/src/index.test.ts`.
-- Apply the smallest possible metadata-only fix in `packages/sdkwork-claw-i18n/src/config.ts`.
+- Use TDD to lock the remaining native-label expectations in `packages/sdkwork-clawstudio-i18n/src/index.test.ts`.
+- Apply the smallest possible metadata-only fix in `packages/sdkwork-clawstudio-i18n/src/config.ts`.
 - Record the evidence in
   `docs/step/2026-04-07-openclaw-v2026-4-5-language-label-autonym-cleanup.md`.
 
 Files targeted:
 
-- `packages/sdkwork-claw-i18n/src/index.test.ts`
-- `packages/sdkwork-claw-i18n/src/config.ts`
+- `packages/sdkwork-clawstudio-i18n/src/index.test.ts`
+- `packages/sdkwork-clawstudio-i18n/src/config.ts`
 
 Fresh verification:
 
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
   - passed
 - `pnpm.cmd check:i18n`
   - passed
@@ -677,20 +677,20 @@ Local fix strategy:
   service so route records round-trip request overrides instead of dropping them.
 - Extend managed local proxy projection so projected provider config keeps normalized request
   overrides when a saved route carries them.
-- Keep the change inside shared `sdkwork-claw-core` and `sdkwork-claw-settings` layers so
+- Keep the change inside shared `sdkwork-clawstudio-core` and `sdkwork-clawstudio-settings` layers so
   web/desktop/server/docker/k8s architecture stays unified and no host-specific workaround is
   introduced.
 
 Files targeted:
 
-- `packages/sdkwork-claw-core/src/services/openClawProviderRuntimeConfigService.ts`
-- `packages/sdkwork-claw-core/src/services/index.ts`
-- `packages/sdkwork-claw-core/src/services/providerRoutingCatalogService.ts`
-- `packages/sdkwork-claw-core/src/services/openClawLocalProxyProjectionService.ts`
-- `packages/sdkwork-claw-core/src/services/providerRoutingCatalogService.test.ts`
-- `packages/sdkwork-claw-core/src/services/openClawLocalProxyProjectionService.test.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigCenterService.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigCenterService.test.ts`
+- `packages/sdkwork-clawstudio-core/src/services/openClawProviderRuntimeConfigService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/index.ts`
+- `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/openClawLocalProxyProjectionService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.test.ts`
+- `packages/sdkwork-clawstudio-core/src/services/openClawLocalProxyProjectionService.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
 
 Expected outcome:
 
@@ -703,7 +703,7 @@ Expected outcome:
 
 Fresh verification:
 
-- `node --experimental-strip-types packages/sdkwork-claw-core/src/services/openClawLocalProxyProjectionService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-core/src/services/openClawLocalProxyProjectionService.test.ts`
   - passed
 - `node scripts/run-sdkwork-core-check.mjs`
   - passed
@@ -805,13 +805,13 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-core/src/services/localAiProxyRouteService.ts`
-- `packages/sdkwork-claw-core/src/services/providerRoutingCatalogService.ts`
-- `packages/sdkwork-claw-core/src/services/providerRoutingCatalogService.test.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigCenterService.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigCenterService.test.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigEditorPolicy.test.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigImportService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/localAiProxyRouteService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigEditorPolicy.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigImportService.ts`
 
 Expected outcome:
 
@@ -929,12 +929,12 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-core/src/services/providerRoutingCatalogService.ts`
-- `packages/sdkwork-claw-core/src/services/providerRoutingCatalogService.test.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigCenterService.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigCenterService.test.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigEditorPolicy.test.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigImportService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigEditorPolicy.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigImportService.ts`
 - `scripts/run-sdkwork-core-check.mjs`
 - `scripts/sdkwork-core-contract.test.ts`
 
@@ -1042,13 +1042,13 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-core/src/services/providerRoutingCatalogService.ts`
-- `packages/sdkwork-claw-core/src/services/providerRoutingCatalogService.test.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigCenterService.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigCenterService.test.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigEditorPolicy.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigEditorPolicy.test.ts`
-- `packages/sdkwork-claw-settings/src/services/providerConfigImportService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.ts`
+- `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigEditorPolicy.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigEditorPolicy.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/providerConfigImportService.ts`
 
 Expected outcome:
 
@@ -1133,13 +1133,13 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-chat/src/services/chatThinkingLevelOptions.ts`
-- `packages/sdkwork-claw-chat/src/services/chatThinkingLevelOptions.test.ts`
-- `packages/sdkwork-claw-chat/src/pages/Chat.tsx`
-- `packages/sdkwork-claw-chat/src/pages/chatPageComposition.test.ts`
-- `packages/sdkwork-claw-chat/src/components/ChatSessionContextDrawer.tsx`
-- `packages/sdkwork-claw-i18n/src/locales/en/chat.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/chat.json`
+- `packages/sdkwork-clawstudio-chat/src/services/chatThinkingLevelOptions.ts`
+- `packages/sdkwork-clawstudio-chat/src/services/chatThinkingLevelOptions.test.ts`
+- `packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx`
+- `packages/sdkwork-clawstudio-chat/src/pages/chatPageComposition.test.ts`
+- `packages/sdkwork-clawstudio-chat/src/components/ChatSessionContextDrawer.tsx`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/chat.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/chat.json`
 
 Expected outcome:
 
@@ -1152,9 +1152,9 @@ Expected outcome:
 
 Fresh verification:
 
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/chatThinkingLevelOptions.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/chatThinkingLevelOptions.test.ts`
   - passed
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/pages/chatPageComposition.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/pages/chatPageComposition.test.ts`
   - passed
 - `node scripts/run-sdkwork-chat-check.mjs`
   - passed
@@ -1218,15 +1218,15 @@ Local fix strategy:
 
 Files targeted:
 
-- `packages/sdkwork-claw-chat/src/services/openclaw/gatewayProtocol.ts`
-- `packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.ts`
-- `packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.test.ts`
-- `packages/sdkwork-claw-chat/src/store/chatStore.ts`
-- `packages/sdkwork-claw-chat/src/pages/Chat.tsx`
-- `packages/sdkwork-claw-chat/src/pages/chatPageComposition.test.ts`
-- `packages/sdkwork-claw-chat/src/components/ChatSessionContextDrawer.tsx`
-- `packages/sdkwork-claw-i18n/src/locales/en/chat.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/chat.json`
+- `packages/sdkwork-clawstudio-chat/src/services/openclaw/gatewayProtocol.ts`
+- `packages/sdkwork-clawstudio-chat/src/store/openClawGatewaySessionStore.ts`
+- `packages/sdkwork-clawstudio-chat/src/store/openClawGatewaySessionStore.test.ts`
+- `packages/sdkwork-clawstudio-chat/src/store/chatStore.ts`
+- `packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx`
+- `packages/sdkwork-clawstudio-chat/src/pages/chatPageComposition.test.ts`
+- `packages/sdkwork-clawstudio-chat/src/components/ChatSessionContextDrawer.tsx`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/chat.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/chat.json`
 
 Expected outcome:
 
@@ -1244,7 +1244,7 @@ Expected outcome:
 
 Fresh verification:
 
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/pages/chatPageComposition.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/pages/chatPageComposition.test.ts`
   - passed
 - `node scripts/run-sdkwork-chat-check.mjs`
   - passed

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { resolveCanonicalWorkspaceRootDir } from './workspace-root.mjs';
 
 const WORKSPACE_PACKAGE_PATTERN = /^@sdkwork\/(claw-[^/]+)$/;
-const WORKTREE_WORKSPACE_PACKAGE_PATTERN = /(?:^|[\\/])\.worktrees[\\/][^\\/]+[\\/]packages[\\/](sdkwork-claw-[^\\/]+)([\\/].*)$/;
+const WORKTREE_WORKSPACE_PACKAGE_PATTERN = /(?:^|[\\/])\.worktrees[\\/][^\\/]+[\\/]packages[\\/](sdkwork-clawstudio-[^\\/]+)([\\/].*)$/;
 const WORKTREE_ROOT_PATTERN = /(?:^|[\\/])\.worktrees(?:[\\/]|$)/;
 const RESOLVABLE_SOURCE_EXTENSIONS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'];
 const EXTRA_WORKSPACE_PACKAGE_CONFIGS: Array<{
@@ -209,7 +209,7 @@ export function resolveWorkspacePackageAliases(packagesRootDir: string) {
   const localAliases = !fs.existsSync(packagesRootDir)
     ? []
     : fs.readdirSync(packagesRootDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && /^sdkwork-claw-[^/]+$/.test(entry.name))
+    .filter((entry) => entry.isDirectory() && /^sdkwork-clawstudio-[^/]+$/.test(entry.name))
     .map((entry) => ({
       find: entry.name.replace(/^sdkwork-/, '@sdkwork/'),
       replacement: path.resolve(packagesRootDir, entry.name, 'src/index.ts'),

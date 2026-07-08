@@ -2,7 +2,7 @@
 
 ## Scope
 
-This iteration focused on restoring a reliable local production build for `@sdkwork/claw-web` under the current constrained environment:
+This iteration focused on restoring a reliable local production build for `@sdkwork/clawstudio-web` under the current constrained environment:
 
 - Windows host
 - `approval_policy=never`
@@ -133,7 +133,7 @@ now win before the root alias and resolve to the correct source entries.
 
 File:
 
-- `packages/sdkwork-claw-web/viteWorkspaceResolver.test.ts`
+- `packages/sdkwork-clawstudio-web/viteWorkspaceResolver.test.ts`
 
 Coverage:
 
@@ -195,7 +195,7 @@ Impact:
 
 File:
 
-- `packages/sdkwork-claw-desktop/viteBuildOptimization.test.ts`
+- `packages/sdkwork-clawstudio-desktop/viteBuildOptimization.test.ts`
 
 Coverage:
 
@@ -208,13 +208,13 @@ The following commands passed after the fixes landed:
 - `node scripts/repair-pnpm-store-files.test.mjs`
 - `node scripts/repair-pnpm-fallback-links.test.mjs`
 - `node scripts/run-vite-host.test.mjs`
-- `node --experimental-transform-types packages/sdkwork-claw-web/viteWorkspaceResolver.test.ts`
-- `node --experimental-transform-types packages/sdkwork-claw-desktop/viteBuildOptimization.test.ts`
+- `node --experimental-transform-types packages/sdkwork-clawstudio-web/viteWorkspaceResolver.test.ts`
+- `node --experimental-transform-types packages/sdkwork-clawstudio-desktop/viteBuildOptimization.test.ts`
 - `node scripts/sdkwork-core-contract.test.ts`
 - `node scripts/sdkwork-foundation-contract.test.ts`
-- `pnpm.cmd --filter @sdkwork/claw-web build`
+- `pnpm.cmd --filter @sdkwork/clawstudio-web build`
 
-The final `@sdkwork/claw-web` production build completed successfully on April 6, 2026.
+The final `@sdkwork/clawstudio-web` production build completed successfully on April 6, 2026.
 
 ## Current State After This Iteration
 
@@ -231,7 +231,7 @@ to:
 - reproducible repair tests
 - reproducible workspace alias tests
 - reproducible build optimization tests
-- successful `@sdkwork/claw-web` production build
+- successful `@sdkwork/clawstudio-web` production build
 
 This is a meaningful foundation milestone because later application-level debugging can now happen on top of a working local build path instead of a permanently damaged toolchain state.
 

@@ -61,14 +61,14 @@ This restores truthful task-retention visibility without over-expanding the over
 
 Failing tests were added first in two places:
 
-1. `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+1. `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
    - expected a `formatTaskFlowLinkedTaskCleanupAfter()` helper
 2. `scripts/sdkwork-tasks-contract.test.ts`
    - expected the shared manager to reference the new cleanup-after field label and helper
 
 Fresh red evidence:
 
-- `node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
   failed because `formatTaskFlowLinkedTaskCleanupAfter` did not exist
 - `pnpm.cmd check:sdkwork-tasks`
   failed for the same missing export and therefore confirmed the shared linked-task surface still
@@ -90,8 +90,8 @@ After the implementation:
 
 Updated:
 
-- `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.ts`
-- `packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.ts`
+- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
 
 Changes:
 
@@ -104,7 +104,7 @@ That keeps retention timing readable without repeating trimming logic in the com
 
 Updated:
 
-- `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
 
 Changes:
 
@@ -118,10 +118,10 @@ shared UI.
 
 Updated:
 
-- `packages/sdkwork-claw-i18n/src/locales/en/tasks.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/tasks.json`
-- `packages/sdkwork-claw-i18n/src/locales/en.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
 - `scripts/sdkwork-tasks-contract.test.ts`
 
 Changes:
@@ -140,23 +140,23 @@ Note:
 Fresh commands run in this loop:
 
 ```bash
-node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts
-pnpm.cmd --filter @sdkwork/claw-i18n sync:locales
+node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts
+pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales
 pnpm.cmd check:sdkwork-tasks
-node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts
 pnpm.cmd build
 pnpm.cmd lint
 ```
 
 Results:
 
-- `node --experimental-strip-types packages/sdkwork-claw-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
   passed
-- `pnpm.cmd --filter @sdkwork/claw-i18n sync:locales`
+- `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales`
   passed
 - `pnpm.cmd check:sdkwork-tasks`
   passed
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
   passed
 - `pnpm.cmd build`
   passed

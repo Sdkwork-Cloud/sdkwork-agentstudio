@@ -11,41 +11,41 @@
 
 | 包名 | 职责 |
 | --- | --- |
-| `@sdkwork/claw-web` | Web 入口应用与开发服务器 |
-| `@sdkwork/claw-desktop` | Tauri 桌面端入口、原生桥接与打包脚本 |
-| `@sdkwork/claw-server` | 原生 Rust Server 包与对外服务端打包入口 |
-| `@sdkwork/claw-shell` | 路由、布局、provider、sidebar、command palette 与壳层组合 |
+| `@sdkwork/clawstudio-web` | Web 入口应用与开发服务器 |
+| `@sdkwork/clawstudio-desktop` | Tauri 桌面端入口、原生桥接与打包脚本 |
+| `@sdkwork/clawstudio-server` | 原生 Rust Server 包与对外服务端打包入口 |
+| `@sdkwork/clawstudio-shell` | 路由、布局、provider、sidebar、command palette 与壳层组合 |
 
 ## 共享基础包
 
 | 包名 | 职责 |
 | --- | --- |
-| `@sdkwork/claw-core` | 共享 store、hooks 与跨功能编排 |
-| `@sdkwork/claw-types` | 类型、DTO 与共享产品模型 |
-| `@sdkwork/claw-infrastructure` | 环境、HTTP、平台适配、运行时桥接与更新辅助 |
-| `@sdkwork/claw-i18n` | 国际化引导、语言资源与格式化能力 |
-| `@sdkwork/claw-ui` | 多业务复用的视觉基础组件 |
+| `@sdkwork/clawstudio-core` | 共享 store、hooks 与跨功能编排 |
+| `@sdkwork/clawstudio-types` | 类型、DTO 与共享产品模型 |
+| `@sdkwork/clawstudio-infrastructure` | 环境、HTTP、平台适配、运行时桥接与更新辅助 |
+| `@sdkwork/clawstudio-i18n` | 国际化引导、语言资源与格式化能力 |
+| `@sdkwork/clawstudio-ui` | 多业务复用的视觉基础组件 |
 
 ## Feature Packages
 
 当前工作区中的业务包包括但不限于：
 
-- `@sdkwork/claw-account`
-- `@sdkwork/claw-apps`
-- `@sdkwork/claw-channels`
-- `@sdkwork/claw-chat`
-- `@sdkwork/claw-center`
-- `@sdkwork/claw-community`
-- `@sdkwork/claw-devices`
-- `@sdkwork/claw-docs`
-- `@sdkwork/claw-extensions`
-- `@sdkwork/claw-github`
-- `@sdkwork/claw-huggingface`
+- `@sdkwork/clawstudio-account`
+- `@sdkwork/clawstudio-apps`
+- `@sdkwork/clawstudio-channels`
+- `@sdkwork/clawstudio-chat`
+- `@sdkwork/clawstudio-center`
+- `@sdkwork/clawstudio-community`
+- `@sdkwork/clawstudio-devices`
+- `@sdkwork/clawstudio-docs`
+- `@sdkwork/clawstudio-extensions`
+- `@sdkwork/clawstudio-github`
+- `@sdkwork/clawstudio-huggingface`
 - `removed-install-feature`
-- `@sdkwork/claw-instances`
-- `@sdkwork/claw-market`
-- `@sdkwork/claw-settings`
-- `@sdkwork/claw-tasks`
+- `@sdkwork/clawstudio-instances`
+- `@sdkwork/clawstudio-market`
+- `@sdkwork/clawstudio-settings`
+- `@sdkwork/clawstudio-tasks`
 
 每个 feature package 至少应保持：
 

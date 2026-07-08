@@ -6,10 +6,10 @@ When a package contract is enforced by raw source inspection, the package root m
 
 Current concrete applications of this rule:
 
-- `packages/sdkwork-claw-settings/src/index.ts` explicitly publishes `KernelCenter.ts` and `ProviderConfigCenter.ts` through the exact contract-frozen paths.
-- `packages/sdkwork-claw-instances/src/index.ts` explicitly publishes `./pages/Nodes.tsx` for the shell route contract.
-- `packages/sdkwork-claw-tasks/src/index.ts` explicitly publishes `./components/GlobalTaskManager`, `./services/taskService`, and `./store/useTaskStore`.
-- `packages/sdkwork-claw-instances/package.json` declares `@monaco-editor/react` and `monaco-editor` because the instances workbench lazily loads Monaco at runtime.
+- `packages/sdkwork-clawstudio-settings/src/index.ts` explicitly publishes `KernelCenter.ts` and `ProviderConfigCenter.ts` through the exact contract-frozen paths.
+- `packages/sdkwork-clawstudio-instances/src/index.ts` explicitly publishes `./pages/Nodes.tsx` for the shell route contract.
+- `packages/sdkwork-clawstudio-tasks/src/index.ts` explicitly publishes `./components/GlobalTaskManager`, `./services/taskService`, and `./store/useTaskStore`.
+- `packages/sdkwork-clawstudio-instances/package.json` declares `@monaco-editor/react` and `monaco-editor` because the instances workbench lazily loads Monaco at runtime.
 
 ## Why
 
@@ -27,5 +27,5 @@ Current concrete applications of this rule:
 ## Impact
 
 - `settings`, `instances`, and `tasks` now expose package-root surfaces that match their script-enforced shell and parity contracts.
-- `sdkwork-claw-instances` again owns the Monaco editor dependency required by its IDE-style workbench.
+- `sdkwork-clawstudio-instances` again owns the Monaco editor dependency required by its IDE-style workbench.
 - The workspace parity chain can advance beyond package-root string-contract drift and focus on the remaining Step 03 runtime and release evidence work.

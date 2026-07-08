@@ -34,7 +34,7 @@ pnpm install
 pnpm dev
 ```
 
-This starts the Vite development server for `@sdkwork/claw-web` on `http://localhost:3001`.
+This starts the Vite development server for `@sdkwork/clawstudio-web` on `http://localhost:3001`.
 
 ### Desktop Runtime
 
@@ -93,7 +93,7 @@ Important variables:
 
 Desktop and browser hosts must not inject root access tokens through Vite env files. Keep privileged credentials inside trusted hosts or host-mediated auth flows.
 
-Desktop-specific examples also exist in `packages/sdkwork-claw-desktop/.env.example`, and server runtime defaults live in `packages/sdkwork-claw-server/.env.example`.
+Desktop-specific examples also exist in `packages/sdkwork-clawstudio-desktop/.env.example`, and server runtime defaults live in `packages/sdkwork-clawstudio-server/.env.example`.
 
 ## Recommended Next Steps
 

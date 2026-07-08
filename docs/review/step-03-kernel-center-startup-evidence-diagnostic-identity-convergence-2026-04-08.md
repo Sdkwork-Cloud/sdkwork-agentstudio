@@ -25,24 +25,24 @@
 
 ## OpenClaw Fact Sources
 
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
   - remains the low-level producer of the persisted desktop startup-evidence document, including `runId` and `error.cause`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/kernel.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/kernel.rs`
   - owns parsing and summarizing the persisted startup-evidence document for the desktop kernel surface
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/kernel.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/kernel.rs`
   - now freezes `runId` and `errorCause` in the Rust-side desktop startup-evidence summary contract
-- `packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts`
   - now freezes the shared TypeScript-side desktop startup-evidence summary contract with the same fields
-- `packages/sdkwork-claw-settings/src/services/kernelCenterService.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts`
   - now maps the published fields into `dashboard.startupEvidence`
-- `packages/sdkwork-claw-settings/src/KernelCenter.tsx`
+- `packages/sdkwork-clawstudio-settings/src/KernelCenter.tsx`
   - now presents the published startup-evidence run id and error cause in the shell
 
 ## Verification Focus
 
-- `node --experimental-strip-types packages/sdkwork-claw-settings/src/kernelCenter.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/kernelCenterService.test.ts`
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-runid-green desktop_kernel_info_exposes_persisted_startup_evidence_summary`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/kernelCenter.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-runid-green desktop_kernel_info_exposes_persisted_startup_evidence_summary`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 

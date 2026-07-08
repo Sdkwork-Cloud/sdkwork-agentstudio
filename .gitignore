@@ -20,8 +20,8 @@ packages/*/src-tauri/target/
 packages/*/.tauri-target/
 packages/*/src-tauri/generated/*
 !packages/*/src-tauri/generated/.gitkeep
-packages/sdkwork-claw-desktop/src-tauri/resources/openclaw/*
-!packages/sdkwork-claw-desktop/src-tauri/resources/openclaw/.gitkeep
+packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/*
+!packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/.gitkeep
 
 *.log
 pnpm-debug.log*

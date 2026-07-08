@@ -25,9 +25,9 @@ This was not a protocol problem. It was a presentation truthfulness problem.
 
 Files reviewed before the fix:
 
-- `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
-- `packages/sdkwork-claw-i18n/src/locales/en/tasks.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/tasks.json`
+- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/tasks.json`
 - `scripts/sdkwork-tasks-contract.test.ts`
 
 Hard-coded overlay copy found during the scan included:
@@ -64,7 +64,7 @@ pnpm.cmd check:sdkwork-tasks
 It failed specifically on:
 
 - missing `tasks.page.runtime.detail.description` usage in
-  `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
+  `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
 
 That failure confirmed the remaining gap was real and not hypothetical.
 
@@ -74,8 +74,8 @@ After wiring the new locale keys and syncing compatibility aggregates:
 
 ```bash
 pnpm.cmd check:sdkwork-tasks
-pnpm.cmd --filter @sdkwork/claw-i18n sync:locales
-node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts
+pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales
+node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts
 ```
 
 All passed.
@@ -86,7 +86,7 @@ All passed.
 
 Updated:
 
-- `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
 
 The overlay now routes the following through translation keys instead of hard-coded English:
 
@@ -101,8 +101,8 @@ The overlay now routes the following through translation keys instead of hard-co
 
 Updated:
 
-- `packages/sdkwork-claw-i18n/src/locales/en/tasks.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/tasks.json`
 
 New keys live under:
 
@@ -132,13 +132,13 @@ Added entries:
 Refreshed via:
 
 ```bash
-pnpm.cmd --filter @sdkwork/claw-i18n sync:locales
+pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales
 ```
 
 This updated:
 
-- `packages/sdkwork-claw-i18n/src/locales/en.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
 
 ### 4. The task contract now guards the upgraded localized surface
 
@@ -159,8 +159,8 @@ Fresh commands run in this loop:
 
 ```bash
 pnpm.cmd check:sdkwork-tasks
-pnpm.cmd --filter @sdkwork/claw-i18n sync:locales
-node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts
+pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales
+node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts
 pnpm.cmd build
 ```
 
@@ -168,9 +168,9 @@ Results:
 
 - `pnpm.cmd check:sdkwork-tasks`
   passed
-- `pnpm.cmd --filter @sdkwork/claw-i18n sync:locales`
+- `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales`
   passed
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
   passed
 - `pnpm.cmd build`
   still failed for the same external environment reason:
@@ -179,15 +179,15 @@ Results:
 Additional review check:
 
 - a focused source scan for the previous hard-coded English overlay phrases returned no matches in
-  `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
+  `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
 
 ## Files Updated In This Loop
 
-- `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
-- `packages/sdkwork-claw-i18n/src/locales/en/tasks.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/tasks.json`
-- `packages/sdkwork-claw-i18n/src/locales/en.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh.json`
+- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/tasks.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
 - `scripts/sdkwork-tasks-contract.test.ts`
 
 ## Outcome

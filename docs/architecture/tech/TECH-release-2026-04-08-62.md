@@ -5,21 +5,21 @@
 
 - Continued the real `Step 07` frontier by moving workbench label formatting and the remaining provider dialog parsing utilities out of `InstanceDetail.tsx`.
 - Kept the page as the owner of UI side effects only: toast feedback, saving flags, dialog state, and workbench reloads still stay in `InstanceDetail.tsx`.
-- Reduced the full `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` hotspot from `2702` to `2635` lines on fresh measurement.
+- Reduced the full `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` hotspot from `2702` to `2635` lines on fresh measurement.
 
 ## Attempt Outcome
 
 - Added a shared formatting helper:
-  - `packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.ts`
 - Extended the provider draft helper layer so it now also owns:
   - provider model create/update input validation
   - provider model text parsing
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`
 - Added focused helper tests:
-  - `packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
 - Rewired page orchestration to use helper-built formatting and provider-model parsing instead of inline logic:
-  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
 - Tightened contract coverage in:
   - `scripts/sdkwork-instances-contract.test.ts`
 - Updated the ongoing Step 07 progress evidence:
@@ -28,12 +28,12 @@
 
 ## Change Scope
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/index.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.ts`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/index.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.test.ts`
 - `scripts/sdkwork-instances-contract.test.ts`
 - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
 - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
@@ -42,15 +42,15 @@
 
 ## Verification Focus
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
 
 ## Risks And Rollback
 

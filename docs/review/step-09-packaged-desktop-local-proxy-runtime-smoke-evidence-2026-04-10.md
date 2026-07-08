@@ -54,10 +54,10 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
 - `scripts/release/desktop-startup-smoke-contract.mjs`
 - `scripts/release/smoke-desktop-startup-evidence.mjs`
 - `scripts/release/finalize-release-assets.mjs`
@@ -68,7 +68,7 @@ The governing rule in this loop is unchanged: packaged smoke may only read and p
 ## Fresh Verification
 
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts`
   - `node scripts/release/smoke-desktop-startup-evidence.test.mjs`
   - `node scripts/release/finalize-release-assets.test.mjs`
   - `node scripts/openclaw-upgrade-smoke-evidence.test.mjs`

@@ -21,7 +21,7 @@ The file explorer in `InstanceFilesWorkspace` was using instance-mode filtering 
 
 This was a real product gap, not just a hypothetical edge case. The existing regression corpus already models file-bearing workbench snapshots whose `agents` array is empty, for example built-in/backend-authored file detail coverage in:
 
-- `packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
 
 That means the UI was stricter than the data contract: it required agent context even when the workbench already had valid file entries.
 
@@ -31,7 +31,7 @@ That means the UI was stricter than the data contract: it required agent context
 
 File:
 
-- `packages/sdkwork-claw-instances/src/services/instanceFileWorkbench.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceFileWorkbench.ts`
 
 Change:
 
@@ -43,7 +43,7 @@ Change:
 
 File:
 
-- `packages/sdkwork-claw-instances/src/components/InstanceFilesWorkspace.tsx`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceFilesWorkspace.tsx`
 
 Change:
 
@@ -61,7 +61,7 @@ Result:
 
 File:
 
-- `packages/sdkwork-claw-instances/src/services/instanceFileWorkbench.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceFileWorkbench.test.ts`
 
 New test:
 
@@ -77,9 +77,9 @@ This test proves the exact missing contract:
 
 The following command was run after the fix:
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceFileWorkbench.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceFileWorkbench.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 It passed and now covers:
@@ -95,7 +95,7 @@ It passed and now covers:
 
 An extra frontend build check was also attempted:
 
-- `pnpm.cmd --filter @sdkwork/claw-web build`
+- `pnpm.cmd --filter @sdkwork/clawstudio-web build`
 
 That build is currently blocked by an environment/workspace dependency access error:
 

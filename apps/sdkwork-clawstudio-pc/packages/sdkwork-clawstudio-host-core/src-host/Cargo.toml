@@ -1,0 +1,20 @@
+[package]
+name = "sdkwork-clawstudio-host-core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "sdkwork_clawstudio_host_core"
+path = "src/lib.rs"
+
+[dependencies]
+# SQLx replaces rusqlite — resolves libsqlite3-sys version conflict with
+# sdkwork-web-framework and aligns with sdkwork-database SPI.
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }
+# Tokio runtime for async SQLx queries from sync storage trait methods.
+tokio = { version = "1", features = ["rt-multi-thread"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# SDKWork cross-language utilities (serde_uint64 for API_SPEC §13 int64-as-string)
+sdkwork-utils-rust.workspace = true

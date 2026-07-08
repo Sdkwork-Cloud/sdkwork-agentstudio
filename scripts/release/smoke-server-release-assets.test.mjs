@@ -87,7 +87,7 @@ function writeSyntheticServerRuntime({
   writeFileSync(path.join(webDistDir, 'assets', 'index.js'), 'console.log("synthetic");\n', 'utf8');
   writeFileSync(
     envExamplePath,
-    'CLAW_SERVER_HOST=127.0.0.1\nCLAW_SERVER_PORT=18797\nCLAW_SERVER_WEB_DIST=../sdkwork-claw-web/dist\n',
+    'CLAW_SERVER_HOST=127.0.0.1\nCLAW_SERVER_PORT=18797\nCLAW_SERVER_WEB_DIST=../sdkwork-clawstudio-web/dist\n',
     'utf8',
   );
 }
@@ -100,7 +100,7 @@ test('server bundle smoke validates packaged server bundles and writes runtime-b
   assert.equal(typeof smoke.parseArgs, 'function');
   assert.equal(typeof smoke.smokeServerReleaseAssets, 'function');
 
-  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-smoke-'));
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'clawstudio-server-smoke-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const serverDir = path.join(releaseAssetsDir, 'server', 'linux', 'x64');
   const archiveRelativePath = 'server/linux/x64/claw-studio-server-release-2026-04-06-01-linux-x64.tar.gz';
@@ -142,10 +142,10 @@ test('server bundle smoke validates packaged server bundles and writes runtime-b
       target: 'x86_64-unknown-linux-gnu',
       extractServerArchiveFn: async ({ archivePath: inputArchivePath, extractDir }) => {
         assert.equal(inputArchivePath.replaceAll('\\', '/'), archivePath.replaceAll('\\', '/'));
-        assert.match(extractDir.replaceAll('\\', '/'), /claw-server-smoke-/);
+        assert.match(extractDir.replaceAll('\\', '/'), /clawstudio-server-smoke-/);
         mkdirSync(path.join(extractedBundleRoot, 'bin'), { recursive: true });
-        writeFileSync(path.join(extractedBundleRoot, 'start-claw-server.sh'), '#!/usr/bin/env sh\n', 'utf8');
-        writeFileSync(path.join(extractedBundleRoot, 'bin', 'claw-server'), 'binary\n', 'utf8');
+        writeFileSync(path.join(extractedBundleRoot, 'start-clawstudio-server.sh'), '#!/usr/bin/env sh\n', 'utf8');
+        writeFileSync(path.join(extractedBundleRoot, 'bin', 'clawstudio-server'), 'binary\n', 'utf8');
         return extractedBundleRoot;
       },
       launchServerBundleFn: async ({ bundleRoot, platform, port }) => {
@@ -154,7 +154,7 @@ test('server bundle smoke validates packaged server bundles and writes runtime-b
         assert.equal(typeof port, 'number');
         return {
           baseUrl: `http://127.0.0.1:${port}`,
-          launcherRelativePath: 'bin/claw-server',
+          launcherRelativePath: 'bin/clawstudio-server',
           async stop() {
             stopped = true;
           },
@@ -202,7 +202,7 @@ test('server bundle smoke validates packaged server bundles and writes runtime-b
     assert.equal(result.report.report.status, 'passed');
     assert.equal(result.report.report.smokeKind, 'bundle-runtime');
     assert.equal(result.report.report.runtimeBaseUrl, 'http://127.0.0.1:19797');
-    assert.equal(result.report.report.launcherRelativePath, 'bin/claw-server');
+    assert.equal(result.report.report.launcherRelativePath, 'bin/clawstudio-server');
     assert.deepEqual(result.report.report.artifactRelativePaths, [archiveRelativePath]);
     assert.deepEqual(
       result.report.report.checks.map((check) => check.id),
@@ -224,7 +224,7 @@ test('server bundle smoke can extract Windows zip bundles produced by the releas
   const packager = await import(pathToFileURL(packagerPath).href);
   const smoke = await import(pathToFileURL(smokePath).href);
 
-  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-windows-smoke-'));
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'clawstudio-server-windows-smoke-'));
   const outputDir = path.join(tempRoot, 'release-assets');
   const serverTargetDir = path.join(tempRoot, 'server-target');
   const webDistDir = path.join(tempRoot, 'web-dist');
@@ -235,7 +235,7 @@ test('server bundle smoke can extract Windows zip bundles produced by the releas
     writeSyntheticServerRuntime({
       serverTargetDir,
       targetTriple: 'x86_64-pc-windows-msvc',
-      binaryName: 'claw-server.exe',
+      binaryName: 'clawstudio-server.exe',
       webDistDir,
       envExamplePath,
     });
@@ -271,8 +271,8 @@ test('server bundle smoke can extract Windows zip bundles produced by the releas
     });
 
     assert.equal(existsSync(archivePath), true, `missing expected server archive ${archivePath}`);
-    assert.equal(existsSync(path.join(bundleRoot, 'bin', 'claw-server.exe')), true);
-    assert.equal(existsSync(path.join(bundleRoot, 'start-claw-server.cmd')), true);
+    assert.equal(existsSync(path.join(bundleRoot, 'bin', 'clawstudio-server.exe')), true);
+    assert.equal(existsSync(path.join(bundleRoot, 'start-clawstudio-server.cmd')), true);
     assert.equal(existsSync(path.join(bundleRoot, 'web', 'dist', 'index.html')), true);
 
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -291,7 +291,7 @@ test('server bundle smoke rejects unsafe tar entries before extraction', async (
   const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-server-release-assets.mjs');
   const smoke = await import(pathToFileURL(smokePath).href);
 
-  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-unsafe-tar-smoke-'));
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'clawstudio-server-unsafe-tar-smoke-'));
   const archivePath = path.join(tempRoot, 'claw-studio-server-unsafe-linux-x64.tar.gz');
   const extractDir = path.join(tempRoot, 'extract');
 
@@ -320,14 +320,14 @@ test('server bundle smoke rejects symlink tar entries before extraction', async 
   const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-server-release-assets.mjs');
   const smoke = await import(pathToFileURL(smokePath).href);
 
-  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-symlink-tar-smoke-'));
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'clawstudio-server-symlink-tar-smoke-'));
   const archivePath = path.join(tempRoot, 'claw-studio-server-symlink-linux-x64.tar.gz');
   const extractDir = path.join(tempRoot, 'extract');
 
   try {
     writeTarGzArchive(archivePath, [
       createTarRecord({
-        name: 'claw-studio-server/bin/claw-server-link',
+        name: 'claw-studio-server/bin/clawstudio-server-link',
         content: '/usr/bin/env',
         type: '2',
       }),
@@ -349,7 +349,7 @@ test('server bundle smoke rejects duplicate normalized zip entries before extrac
   const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-server-release-assets.mjs');
   const smoke = await import(pathToFileURL(smokePath).href);
 
-  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-duplicate-zip-smoke-'));
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'clawstudio-server-duplicate-zip-smoke-'));
   const archivePath = path.join(tempRoot, 'claw-studio-server-duplicate-windows-x64.zip');
   const extractDir = path.join(tempRoot, 'extract');
 
@@ -359,11 +359,11 @@ test('server bundle smoke rejects duplicate normalized zip entries before extrac
       archivePath,
       createStoredZipArchive([
         {
-          name: 'claw-studio-server/bin/claw-server.exe',
+          name: 'claw-studio-server/bin/clawstudio-server.exe',
           content: 'first\n',
         },
         {
-          name: 'claw-studio-server\\bin\\claw-server.exe',
+          name: 'claw-studio-server\\bin\\clawstudio-server.exe',
           content: 'second\n',
         },
       ]),
@@ -385,7 +385,7 @@ test('server bundle smoke rejects symlink zip entries before extraction', async 
   const smokePath = path.join(rootDir, 'scripts', 'release', 'smoke-server-release-assets.mjs');
   const smoke = await import(pathToFileURL(smokePath).href);
 
-  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-symlink-zip-smoke-'));
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'clawstudio-server-symlink-zip-smoke-'));
   const archivePath = path.join(tempRoot, 'claw-studio-server-symlink-windows-x64.zip');
   const extractDir = path.join(tempRoot, 'extract');
 
@@ -395,8 +395,8 @@ test('server bundle smoke rejects symlink zip entries before extraction', async 
       archivePath,
       createStoredZipArchive([
         {
-          name: 'claw-studio-server/bin/claw-server-link',
-          content: 'bin/claw-server.exe',
+          name: 'claw-studio-server/bin/clawstudio-server-link',
+          content: 'bin/clawstudio-server.exe',
           externalAttributes: 0o120777 << 16,
         },
       ]),
@@ -494,7 +494,7 @@ test('server bundle smoke retries transient busy cleanup before failing', async 
   assert.equal(typeof smoke.removeDirectoryWithRetries, 'function');
 
   let attempts = 0;
-  await smoke.removeDirectoryWithRetries('C:/synthetic/claw-server-smoke', {
+  await smoke.removeDirectoryWithRetries('C:/synthetic/clawstudio-server-smoke', {
     retries: 3,
     delayMs: 1,
     delayFn: async () => {},
@@ -517,7 +517,7 @@ test('server bundle smoke launches the bundled server binary directly on Windows
 
   const spawnCalls = [];
   const stopCalls = [];
-  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-launch-'));
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'clawstudio-server-launch-'));
   const bundleRoot = path.join(tempRoot, 'server-bundle');
   const child = {
     pid: 7373,
@@ -540,15 +540,15 @@ test('server bundle smoke launches the bundled server binary directly on Windows
         stopCalls.push({ receivedChild, options });
       },
       existsSyncFn(targetPath) {
-        return targetPath === path.join(bundleRoot, 'bin', 'claw-server.exe');
+        return targetPath === path.join(bundleRoot, 'bin', 'clawstudio-server.exe');
       },
     });
 
     assert.equal(runtime.baseUrl, 'http://127.0.0.1:19897');
-    assert.equal(runtime.launcherRelativePath, 'bin/claw-server.exe');
+    assert.equal(runtime.launcherRelativePath, 'bin/clawstudio-server.exe');
     assert.deepEqual(spawnCalls, [
       {
-        command: path.join(bundleRoot, 'bin', 'claw-server.exe'),
+        command: path.join(bundleRoot, 'bin', 'clawstudio-server.exe'),
         args: [],
         options: {
           cwd: bundleRoot,
@@ -583,7 +583,7 @@ test('server bundle smoke launches the bundled server binary directly on Linux',
 
   const spawnCalls = [];
   const stopCalls = [];
-  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-launch-linux-'));
+  const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'clawstudio-server-launch-linux-'));
   const bundleRoot = path.join(tempRoot, 'server-bundle');
   const child = {
     pid: 8484,
@@ -606,15 +606,15 @@ test('server bundle smoke launches the bundled server binary directly on Linux',
         stopCalls.push({ receivedChild, options });
       },
       existsSyncFn(targetPath) {
-        return targetPath === path.join(bundleRoot, 'bin', 'claw-server');
+        return targetPath === path.join(bundleRoot, 'bin', 'clawstudio-server');
       },
     });
 
     assert.equal(runtime.baseUrl, 'http://127.0.0.1:20897');
-    assert.equal(runtime.launcherRelativePath, 'bin/claw-server');
+    assert.equal(runtime.launcherRelativePath, 'bin/clawstudio-server');
     assert.deepEqual(spawnCalls, [
       {
-        command: path.join(bundleRoot, 'bin', 'claw-server'),
+        command: path.join(bundleRoot, 'bin', 'clawstudio-server'),
         args: [],
         options: {
           cwd: bundleRoot,

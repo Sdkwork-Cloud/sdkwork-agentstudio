@@ -36,13 +36,13 @@
 
 | 车道 | 主写入范围 |
 | --- | --- |
-| Runtime | `packages/sdkwork-claw-desktop/src-tauri` `scripts/prepare-openclaw-runtime.mjs` |
-| API/Bridge | `packages/sdkwork-claw-server` `packages/sdkwork-claw-infrastructure/src/platform` |
-| Settings/Provider | `packages/sdkwork-claw-settings` `core/services/*proxy*` |
-| Chat | `packages/sdkwork-claw-chat` |
-| Instances | `packages/sdkwork-claw-instances` |
-| Ecosystem | `packages/sdkwork-claw-market` `packages/sdkwork-claw-channels` |
-| Release | `scripts/release` `packages/sdkwork-claw-distribution` `docs/release` |
+| Runtime | `packages/sdkwork-clawstudio-desktop/src-tauri` `scripts/prepare-openclaw-runtime.mjs` |
+| API/Bridge | `packages/sdkwork-clawstudio-server` `packages/sdkwork-clawstudio-infrastructure/src/platform` |
+| Settings/Provider | `packages/sdkwork-clawstudio-settings` `core/services/*proxy*` |
+| Chat | `packages/sdkwork-clawstudio-chat` |
+| Instances | `packages/sdkwork-clawstudio-instances` |
+| Ecosystem | `packages/sdkwork-clawstudio-market` `packages/sdkwork-clawstudio-channels` |
+| Release | `scripts/release` `packages/sdkwork-clawstudio-distribution` `docs/release` |
 | Commerce | `account` `dashboard` `mall` `model-purchase` `points` |
 
 ## 5. 硬约束

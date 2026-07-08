@@ -29,7 +29,7 @@ Focus domains:
 
 Primary evidence source:
 
-- `packages/sdkwork-claw-i18n/src/index.test.ts`
+- `packages/sdkwork-clawstudio-i18n/src/index.test.ts`
 
 ## TDD / Regression Guard
 
@@ -61,14 +61,14 @@ Interpretation:
 
 ## Files Reinforced
 
-- `packages/sdkwork-claw-i18n/src/index.test.ts`
+- `packages/sdkwork-clawstudio-i18n/src/index.test.ts`
 
 ## Verification
 
 Fresh command run in this loop:
 
 ```bash
-node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts
 ```
 
 Result:

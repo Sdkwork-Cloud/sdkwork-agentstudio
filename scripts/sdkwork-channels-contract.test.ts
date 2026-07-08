@@ -26,14 +26,14 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-claw-channels is implemented locally with V5 instance-aware channel wiring', () => {
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-claw-channels/package.json');
-  const indexSource = read('packages/sdkwork-claw-channels/src/index.ts');
-  const servicesIndexSource = read('packages/sdkwork-claw-channels/src/services/index.ts');
-  const serviceSource = read('packages/sdkwork-claw-channels/src/services/channelService.ts');
-  const pageSource = read('packages/sdkwork-claw-channels/src/pages/channels/Channels.tsx');
-  const resolverSource = read('packages/sdkwork-claw-channels/src/pages/channels/channelInstanceResolver.ts');
-  const zhSidebar = readJson<{ channels: string }>('packages/sdkwork-claw-i18n/src/locales/zh/sidebar.json');
+runTest('sdkwork-clawstudio-channels is implemented locally with V5 instance-aware channel wiring', () => {
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-channels/package.json');
+  const indexSource = read('packages/sdkwork-clawstudio-channels/src/index.ts');
+  const servicesIndexSource = read('packages/sdkwork-clawstudio-channels/src/services/index.ts');
+  const serviceSource = read('packages/sdkwork-clawstudio-channels/src/services/channelService.ts');
+  const pageSource = read('packages/sdkwork-clawstudio-channels/src/pages/channels/Channels.tsx');
+  const resolverSource = read('packages/sdkwork-clawstudio-channels/src/pages/channels/channelInstanceResolver.ts');
+  const zhSidebar = readJson<{ channels: string }>('packages/sdkwork-clawstudio-i18n/src/locales/zh/sidebar.json');
   const zhChannels = readJson<{
     page: {
       feedback: {
@@ -48,7 +48,7 @@ runTest('sdkwork-claw-channels is implemented locally with V5 instance-aware cha
         tabs: Record<'domestic' | 'global' | 'media' | 'all', string>;
       };
     };
-  }>('packages/sdkwork-claw-i18n/src/locales/zh/channels.json');
+  }>('packages/sdkwork-clawstudio-i18n/src/locales/zh/channels.json');
   const enChannels = readJson<{
     page: {
       feedback: {
@@ -62,16 +62,16 @@ runTest('sdkwork-claw-channels is implemented locally with V5 instance-aware cha
         tabs: Record<'domestic' | 'global' | 'media' | 'all', string>;
       };
     };
-  }>('packages/sdkwork-claw-i18n/src/locales/en/channels.json');
+  }>('packages/sdkwork-clawstudio-i18n/src/locales/en/channels.json');
 
-  assert.ok(exists('packages/sdkwork-claw-channels/src/Channels.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-channels/src/services/channelService.ts'));
-  assert.ok(exists('packages/sdkwork-claw-channels/src/pages/channels/channelInstanceResolver.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-channels/src/Channels.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-channels/src/services/channelService.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-channels/src/pages/channels/channelInstanceResolver.ts'));
 
-  assert.ok(!pkg.dependencies?.['@sdkwork/claw-studio-channels']);
-  assert.ok(!pkg.dependencies?.['@sdkwork/claw-instances']);
-  assert.equal(pkg.dependencies?.['@sdkwork/claw-core'], 'workspace:*');
-  assert.equal(pkg.dependencies?.['@sdkwork/claw-types'], 'workspace:*');
+  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-channels']);
+  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-instances']);
+  assert.equal(pkg.dependencies?.['@sdkwork/clawstudio-core'], 'workspace:*');
+  assert.equal(pkg.dependencies?.['@sdkwork/clawstudio-types'], 'workspace:*');
   assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-channels/);
   assert.doesNotMatch(indexSource, /\.test['"]/);
   assert.doesNotMatch(servicesIndexSource, /\.test['"]/);

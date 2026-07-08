@@ -24,19 +24,19 @@ function parsePort(url) {
   return new URL(url).port;
 }
 
-const desktopPackage = readJson('packages/sdkwork-claw-desktop/package.json');
-const tauriConfig = readJson('packages/sdkwork-claw-desktop/src-tauri/tauri.conf.json');
-const tauriWindowsConfig = readJson('packages/sdkwork-claw-desktop/src-tauri/tauri.windows.conf.json');
-const tauriLinuxConfig = readJson('packages/sdkwork-claw-desktop/src-tauri/tauri.linux.conf.json');
-const tauriMacosConfig = readJson('packages/sdkwork-claw-desktop/src-tauri/tauri.macos.conf.json');
-const windowsInstallerHooksPath = 'packages/sdkwork-claw-desktop/src-tauri/installer-hooks.nsh';
+const desktopPackage = readJson('packages/sdkwork-clawstudio-desktop/package.json');
+const tauriConfig = readJson('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.conf.json');
+const tauriWindowsConfig = readJson('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json');
+const tauriLinuxConfig = readJson('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.linux.conf.json');
+const tauriMacosConfig = readJson('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.macos.conf.json');
+const windowsInstallerHooksPath = 'packages/sdkwork-clawstudio-desktop/src-tauri/installer-hooks.nsh';
 const nodeScriptRunner = 'sdkwork-run-node';
 const bundledSyncDevCommand = `${nodeScriptRunner} ../../scripts/sync-bundled-components.mjs --dev --no-fetch`;
 const bundledSyncBuildCommand = `${nodeScriptRunner} ../../scripts/sync-bundled-components.mjs --no-fetch --release`;
 const staleTargetGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-tauri-target-clean.mjs src-tauri`;
 const rustToolchainGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-native-rust-toolchain.mjs`;
 const devBinaryUnlockGuardCommand =
-  `${nodeScriptRunner} ../../scripts/ensure-tauri-dev-binary-unlocked.mjs src-tauri sdkwork-claw-desktop`;
+  `${nodeScriptRunner} ../../scripts/ensure-tauri-dev-binary-unlocked.mjs src-tauri sdkwork-clawstudio-desktop`;
 const devPortGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-tauri-dev-port-free.mjs 127.0.0.1 1426`;
 const bundledOpenClawPrepareCommand = `${nodeScriptRunner} ../../scripts/prepare-openclaw-runtime.mjs`;
 const desktopBuildVerifyCommand = `${nodeScriptRunner} ../../scripts/verify-desktop-build-assets.mjs`;
@@ -285,11 +285,11 @@ if (typeof tauriLinuxConfig.bundle?.linux?.deb?.postInstallScript !== 'undefined
 if (typeof tauriLinuxConfig.bundle?.linux?.rpm?.postInstallScript !== 'undefined') {
   fail('Desktop Linux rpm packaging must not wire a legacy OpenClaw postinstall script.');
 }
-if (existsSync(path.join(rootDir, 'packages/sdkwork-claw-desktop/src-tauri/linux-postinstall-openclaw.sh'))) {
+if (existsSync(path.join(rootDir, 'packages/sdkwork-clawstudio-desktop/src-tauri/linux-postinstall-openclaw.sh'))) {
   fail('Legacy Linux OpenClaw postinstall hook must be removed after the external-runtime hard cut.');
 }
 
-const tauriBuildScriptSource = readText('packages/sdkwork-claw-desktop/src-tauri/build.rs');
+const tauriBuildScriptSource = readText('packages/sdkwork-clawstudio-desktop/src-tauri/build.rs');
 if (!tauriBuildScriptSource.includes('../dist')) {
   fail('Desktop build.rs must keep the frontendDist path available for clean-clone cargo test runs.');
 }

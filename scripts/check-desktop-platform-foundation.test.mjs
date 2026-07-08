@@ -10,17 +10,17 @@ const foundationCheckSource = readFileSync(
 
 assert.match(
   foundationCheckSource,
-  /packages\/sdkwork-claw-desktop\/src-tauri\/tauri\.linux\.conf\.json/,
+  /packages\/sdkwork-clawstudio-desktop\/src-tauri\/tauri\.linux\.conf\.json/,
   'desktop platform foundation check must require the Linux Tauri bundle override config',
 );
 assert.match(
   foundationCheckSource,
-  /packages\/sdkwork-claw-desktop\/src-tauri\/tauri\.macos\.conf\.json/,
+  /packages\/sdkwork-clawstudio-desktop\/src-tauri\/tauri\.macos\.conf\.json/,
   'desktop platform foundation check must require the macOS Tauri bundle override config',
 );
 assert.match(
   foundationCheckSource,
-  /packages\/sdkwork-claw-desktop\/src-tauri\/linux-postinstall-openclaw\.sh/,
+  /packages\/sdkwork-clawstudio-desktop\/src-tauri\/linux-postinstall-openclaw\.sh/,
   'desktop platform foundation check must require the Linux OpenClaw postinstall hook script',
 );
 assert.match(

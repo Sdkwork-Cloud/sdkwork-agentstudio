@@ -26,25 +26,25 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-claw-agent stays local and exposes a dedicated market surface', () => {
+runTest('sdkwork-clawstudio-agent stays local and exposes a dedicated market surface', () => {
   const pkg = readJson<{ dependencies?: Record<string, string> }>(
-    'packages/sdkwork-claw-agent/package.json',
+    'packages/sdkwork-clawstudio-agent/package.json',
   );
-  const indexSource = read('packages/sdkwork-claw-agent/src/index.ts');
-  const entrySource = read('packages/sdkwork-claw-agent/src/AgentMarket.tsx');
-  const pageSource = read('packages/sdkwork-claw-agent/src/pages/AgentMarket.tsx');
-  const servicesIndexSource = read('packages/sdkwork-claw-agent/src/services/index.ts');
+  const indexSource = read('packages/sdkwork-clawstudio-agent/src/index.ts');
+  const entrySource = read('packages/sdkwork-clawstudio-agent/src/AgentMarket.tsx');
+  const pageSource = read('packages/sdkwork-clawstudio-agent/src/pages/AgentMarket.tsx');
+  const servicesIndexSource = read('packages/sdkwork-clawstudio-agent/src/services/index.ts');
 
-  assert.ok(exists('packages/sdkwork-claw-agent/src/AgentMarket.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-agent/src/pages/AgentMarket.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-agent/src/services/agentCatalog.ts'));
-  assert.ok(exists('packages/sdkwork-claw-agent/src/services/agentCatalog.test.ts'));
-  assert.ok(exists('packages/sdkwork-claw-agent/src/services/agentInstallService.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-agent/src/AgentMarket.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-agent/src/pages/AgentMarket.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-agent/src/services/agentCatalog.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-agent/src/services/agentCatalog.test.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts'));
 
-  assert.ok(!pkg.dependencies?.['@sdkwork/claw-studio-agent']);
-  assert.equal(pkg.dependencies?.['@sdkwork/claw-core'], 'workspace:*');
-  assert.equal(pkg.dependencies?.['@sdkwork/claw-infrastructure'], 'workspace:*');
-  assert.equal(pkg.dependencies?.['@sdkwork/claw-types'], 'workspace:*');
+  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-agent']);
+  assert.equal(pkg.dependencies?.['@sdkwork/clawstudio-core'], 'workspace:*');
+  assert.equal(pkg.dependencies?.['@sdkwork/clawstudio-infrastructure'], 'workspace:*');
+  assert.equal(pkg.dependencies?.['@sdkwork/clawstudio-types'], 'workspace:*');
   assert.match(indexSource, /\.\/AgentMarket/);
   assert.match(indexSource, /\.\/services/);
   assert.match(entrySource, /lazy\(\(\) =>/);
@@ -79,11 +79,11 @@ runTest('sdkwork-claw-agent stays local and exposes a dedicated market surface',
   assert.match(pageSource, /agentMarket\.error\.retry/);
 });
 
-runTest('sdkwork-claw-agent delegates shared catalog and install logic to @sdkwork/claw-core while keeping a local market surface', () => {
-  const catalogSource = read('packages/sdkwork-claw-agent/src/services/agentCatalog.ts');
-  const installServiceSource = read('packages/sdkwork-claw-agent/src/services/agentInstallService.ts');
-  const sharedCatalogSource = read('packages/sdkwork-claw-core/src/services/agentCatalog.ts');
-  const sharedInstallServiceSource = read('packages/sdkwork-claw-core/src/services/agentInstallService.ts');
+runTest('sdkwork-clawstudio-agent delegates shared catalog and install logic to @sdkwork/clawstudio-core while keeping a local market surface', () => {
+  const catalogSource = read('packages/sdkwork-clawstudio-agent/src/services/agentCatalog.ts');
+  const installServiceSource = read('packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts');
+  const sharedCatalogSource = read('packages/sdkwork-clawstudio-core/src/services/agentCatalog.ts');
+  const sharedInstallServiceSource = read('packages/sdkwork-clawstudio-core/src/services/agentInstallService.ts');
 
   assert.match(catalogSource, /from '@sdkwork\/claw-core';/);
   assert.match(catalogSource, /AGENT_MARKET_TEMPLATES/);
@@ -126,12 +126,12 @@ runTest('sdkwork-claw-agent delegates shared catalog and install logic to @sdkwo
   assert.doesNotMatch(sharedInstallServiceSource, /axios\./);
 });
 
-runTest('sdkwork-claw-agent parity checks use the shared Node TypeScript runner for OpenClaw install flows', () => {
+runTest('sdkwork-clawstudio-agent parity checks use the shared Node TypeScript runner for OpenClaw install flows', () => {
   const workspacePackageJson = read('package.json');
   const agentCheckRunner = read('scripts/run-sdkwork-agent-check.mjs');
   const nodeTypeScriptRunner = read('scripts/run-node-typescript-check.mjs');
   const installServiceTestSource = read(
-    'packages/sdkwork-claw-agent/src/services/agentInstallService.test.ts',
+    'packages/sdkwork-clawstudio-agent/src/services/agentInstallService.test.ts',
   );
 
   assert.match(installServiceTestSource, /@sdkwork\/claw-core/);

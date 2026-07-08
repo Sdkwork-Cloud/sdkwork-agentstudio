@@ -10,7 +10,7 @@
 - `/health`、`/v1/*`、`/v1beta/*` 的 root-native 本地 AI 兼容接口
 - `/claw/gateway/openclaw/*` 下的受治理 OpenClaw 网关代理接口
 
-静态资源、`/` 与 `/sdkwork-claw-bootstrap.json` 仍然由同一个宿主提供，但它们不属于 OpenAPI 管理范围。
+静态资源、`/` 与 `/sdkwork-clawstudio-bootstrap.json` 仍然由同一个宿主提供，但它们不属于 OpenAPI 管理范围。
 
 ## 统一宿主路由分层
 
@@ -317,4 +317,4 @@ OpenAPI discovery 示例：
 - 所有文档都使用 `openapi: 3.1.0`
 - 生成的 schema 文件属于运行时产物，不会提交到仓库
 
-运行时 schema 快照和启动 catalog 输出，参见 [Claw Server Runtime](/zh-CN/reference/claw-server-runtime)。
+运行时 schema 快照和启动 catalog 输出，参见 [Claw Server Runtime](/zh-CN/reference/clawstudio-server-runtime)。

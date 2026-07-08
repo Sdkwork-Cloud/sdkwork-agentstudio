@@ -4,9 +4,9 @@
 
 The desktop local AI proxy must keep shared streaming detection and translation logic in a dedicated module:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, request-serving orchestration, non-stream request translation, route-test persistence, observability, and the runtime-facing service methods
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/streaming.rs`
   owns stream request detection, OpenAI stream-endpoint resolution, passthrough streaming response construction, translated SSE/JSONL response builders, and Anthropic/Gemini/Ollama stream-frame translation
 
 `scripts/check-desktop-platform-foundation.mjs` must assert the module file, the `mod streaming;` declaration, and explicit `streaming::...` delegation from the main local proxy runtime.

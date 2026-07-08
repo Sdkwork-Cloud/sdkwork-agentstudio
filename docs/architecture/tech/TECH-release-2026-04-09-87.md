@@ -34,7 +34,7 @@
 ## Change Scope
 
 - `config/openclaw-release.json`
-- `packages/sdkwork-claw-desktop/src-tauri/foundation/components/component-registry.json`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/foundation/components/component-registry.json`
 - `scripts/openclaw-release-contract.test.mjs`
 - `scripts/verify-desktop-openclaw-release-assets.test.mjs`
 - `scripts/prepare-openclaw-runtime.mjs`

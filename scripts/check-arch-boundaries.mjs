@@ -6,23 +6,23 @@ const packagesDir = path.join(root, 'packages');
 
 const allPackages = fs
   .readdirSync(packagesDir, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-claw-'))
+  .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-clawstudio-'))
   .map((entry) => entry.name);
 
 const packageNameByDir = new Map(
   allPackages.map((dirName) => [dirName, `@sdkwork/${dirName.replace(/^sdkwork-/, '')}`]),
 );
 
-const WEB = '@sdkwork/claw-web';
-const DESKTOP = '@sdkwork/claw-desktop';
-const SHELL = '@sdkwork/claw-shell';
-const COMMONS = '@sdkwork/claw-commons';
-const CORE = '@sdkwork/claw-core';
-const INFRA = '@sdkwork/claw-infrastructure';
-const TYPES = '@sdkwork/claw-types';
-const UI = '@sdkwork/claw-ui';
-const I18N = '@sdkwork/claw-i18n';
-const DISTRIBUTION = '@sdkwork/claw-distribution';
+const WEB = '@sdkwork/clawstudio-web';
+const DESKTOP = '@sdkwork/clawstudio-desktop';
+const SHELL = '@sdkwork/clawstudio-shell';
+const COMMONS = '@sdkwork/clawstudio-commons';
+const CORE = '@sdkwork/clawstudio-core';
+const INFRA = '@sdkwork/clawstudio-infrastructure';
+const TYPES = '@sdkwork/clawstudio-types';
+const UI = '@sdkwork/clawstudio-ui';
+const I18N = '@sdkwork/clawstudio-i18n';
+const DISTRIBUTION = '@sdkwork/clawstudio-distribution';
 
 const sharedPackages = new Set([
   WEB,
@@ -70,14 +70,14 @@ const forbiddenCoreServiceExports = [
   'taskService',
 ];
 const allowedFeatureDependencies = new Map([
-  ['@sdkwork/claw-chat', new Set(['@sdkwork/claw-settings'])],
-  ['@sdkwork/claw-settings', new Set(['@sdkwork/claw-account'])],
+  ['@sdkwork/clawstudio-chat', new Set(['@sdkwork/clawstudio-settings'])],
+  ['@sdkwork/clawstudio-settings', new Set(['@sdkwork/clawstudio-account'])],
 ]);
 const allowedPackageExportKeys = new Map([
   [CORE, new Set(['./sdk'])],
 ]);
 const allowedPackageSubpathImports = new Set([
-  '@sdkwork/claw-core/sdk',
+  '@sdkwork/clawstudio-core/sdk',
 ]);
 const sourceLayoutExpectations = [
   {
@@ -252,7 +252,7 @@ for (const [pkgName, requiredDirs] of structureExpectations) {
 }
 
 {
-  const webSrcDir = path.join(packagesDir, 'sdkwork-claw-web', 'src');
+  const webSrcDir = path.join(packagesDir, 'sdkwork-clawstudio-web', 'src');
   for (const forbiddenDir of webForbiddenSourceDirs) {
     const dir = path.join(webSrcDir, forbiddenDir);
     if (!fs.existsSync(dir)) continue;
@@ -297,7 +297,7 @@ for (const [dirName, pkgName] of packageNameByDir.entries()) {
 
     const imports = getImports(file);
     for (const importPath of imports) {
-      if (!importPath.startsWith('@sdkwork/claw-')) {
+      if (!importPath.startsWith('@sdkwork/clawstudio-')) {
         continue;
       }
 
@@ -342,7 +342,7 @@ for (const [dirName, pkgName] of packageNameByDir.entries()) {
 }
 
 {
-  const coreIndexPath = path.join(packagesDir, 'sdkwork-claw-core', 'src', 'index.ts');
+  const coreIndexPath = path.join(packagesDir, 'sdkwork-clawstudio-core', 'src', 'index.ts');
   const coreIndexSource = fs.readFileSync(coreIndexPath, 'utf8');
 
   for (const serviceName of forbiddenCoreServiceExports) {
@@ -408,7 +408,7 @@ if (
   if (businessBarrelViolations.length > 0) {
     console.error('Core package barrel exposes feature-local services:\n');
     for (const serviceName of businessBarrelViolations) {
-      console.error(`- @sdkwork/claw-core should not export services/${serviceName}`);
+      console.error(`- @sdkwork/clawstudio-core should not export services/${serviceName}`);
     }
     console.error('');
   }

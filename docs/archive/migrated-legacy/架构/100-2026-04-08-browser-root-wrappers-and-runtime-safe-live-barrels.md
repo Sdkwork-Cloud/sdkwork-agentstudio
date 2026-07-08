@@ -2,15 +2,15 @@
 
 ## Decision
 
-Browser-only shared app-SDK wrappers must stay on the browser root of `@sdkwork/claw-core`, and live runtime barrels must export runtime-safe surfaces only. Package roots that are part of the parity contract must explicitly publish the required services or runtime helpers instead of relying on broad forwarding alone.
+Browser-only shared app-SDK wrappers must stay on the browser root of `@sdkwork/clawstudio-core`, and live runtime barrels must export runtime-safe surfaces only. Package roots that are part of the parity contract must explicitly publish the required services or runtime helpers instead of relying on broad forwarding alone.
 
 Current concrete applications of this rule:
 
-- `packages/sdkwork-claw-core/src/services/communityService.ts` and `packages/sdkwork-claw-core/src/services/dashboardCommerceService.ts` stay browser-root wrappers and must not be republished through `packages/sdkwork-claw-core/src/services/node/index.ts`.
-- `packages/sdkwork-claw-auth/src/index.ts` explicitly publishes `setAuthRuntimeConfig`, `getAuthRuntimeConfig`, `clearAuthRuntimeConfig`, and `AuthRuntimeConfig`.
-- `packages/sdkwork-claw-settings/src/index.ts` explicitly publishes `HostRuntimeSettings.ts` through the contract-frozen path.
-- `packages/sdkwork-claw-agent/src/services/index.ts`, `packages/sdkwork-claw-chat/src/services/index.ts`, and `packages/sdkwork-claw-dashboard/src/services/index.ts` are live runtime barrels and therefore do not re-export `.test` modules.
-- `packages/sdkwork-claw-chat/src/index.ts` and `packages/sdkwork-claw-dashboard/src/index.ts` explicitly publish the service surfaces that their package contracts freeze at the root.
+- `packages/sdkwork-clawstudio-core/src/services/communityService.ts` and `packages/sdkwork-clawstudio-core/src/services/dashboardCommerceService.ts` stay browser-root wrappers and must not be republished through `packages/sdkwork-clawstudio-core/src/services/node/index.ts`.
+- `packages/sdkwork-clawstudio-auth/src/index.ts` explicitly publishes `setAuthRuntimeConfig`, `getAuthRuntimeConfig`, `clearAuthRuntimeConfig`, and `AuthRuntimeConfig`.
+- `packages/sdkwork-clawstudio-settings/src/index.ts` explicitly publishes `HostRuntimeSettings.ts` through the contract-frozen path.
+- `packages/sdkwork-clawstudio-agent/src/services/index.ts`, `packages/sdkwork-clawstudio-chat/src/services/index.ts`, and `packages/sdkwork-clawstudio-dashboard/src/services/index.ts` are live runtime barrels and therefore do not re-export `.test` modules.
+- `packages/sdkwork-clawstudio-chat/src/index.ts` and `packages/sdkwork-clawstudio-dashboard/src/index.ts` explicitly publish the service surfaces that their package contracts freeze at the root.
 
 ## Why
 
@@ -28,6 +28,6 @@ Current concrete applications of this rule:
 
 ## Impact
 
-- `@sdkwork/claw-core` keeps a truthful split between browser-root wrappers and the Node-safe default root.
+- `@sdkwork/clawstudio-core` keeps a truthful split between browser-root wrappers and the Node-safe default root.
 - `auth`, `settings`, `agent`, `chat`, and `dashboard` package roots now align better with their script-enforced public contracts.
-- The workspace lint frontier now advances beyond those package-surface regressions and is free to expose the next remaining `sdkwork-claw-instances` IDE-workbench dependency gap.
+- The workspace lint frontier now advances beyond those package-surface regressions and is free to expose the next remaining `sdkwork-clawstudio-instances` IDE-workbench dependency gap.

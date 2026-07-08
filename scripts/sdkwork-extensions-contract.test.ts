@@ -26,24 +26,24 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-claw-extensions keeps the local package surface and page entrypoints', () => {
+runTest('sdkwork-clawstudio-extensions keeps the local package surface and page entrypoints', () => {
   const pkg = readJson<{ dependencies?: Record<string, string> }>(
-    'packages/sdkwork-claw-extensions/package.json',
+    'packages/sdkwork-clawstudio-extensions/package.json',
   );
-  const indexSource = read('packages/sdkwork-claw-extensions/src/index.ts');
+  const indexSource = read('packages/sdkwork-clawstudio-extensions/src/index.ts');
 
-  assert.ok(exists('packages/sdkwork-claw-extensions/src/Extensions.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-extensions/src/pages/extensions/Extensions.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-extensions/src/services/extensionService.ts'));
-  assert.ok(!exists('packages/sdkwork-claw-extensions/src/services/mySkillService.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-extensions/src/Extensions.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-extensions/src/pages/extensions/Extensions.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-extensions/src/services/extensionService.ts'));
+  assert.ok(!exists('packages/sdkwork-clawstudio-extensions/src/services/mySkillService.ts'));
 
-  assert.ok(!pkg.dependencies?.['@sdkwork/claw-studio-extensions']);
+  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-extensions']);
   assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-extensions/);
   assert.doesNotMatch(indexSource, /mySkillService/);
 });
 
-runTest('sdkwork-claw-extensions page aligns to local bundled plugin management instead of instance targeting', () => {
-  const pageSource = read('packages/sdkwork-claw-extensions/src/pages/extensions/Extensions.tsx');
+runTest('sdkwork-clawstudio-extensions page aligns to local bundled plugin management instead of instance targeting', () => {
+  const pageSource = read('packages/sdkwork-clawstudio-extensions/src/pages/extensions/Extensions.tsx');
 
   assert.match(pageSource, /useEffectEvent/);
   assert.match(pageSource, /extensions\.page\.summary\.title/);
@@ -57,8 +57,8 @@ runTest('sdkwork-claw-extensions page aligns to local bundled plugin management 
   assert.doesNotMatch(pageSource, /Modal/);
 });
 
-runTest('sdkwork-claw-extensions service reads real runtime/plugin metadata instead of mock cards', () => {
-  const serviceSource = read('packages/sdkwork-claw-extensions/src/services/extensionService.ts');
+runTest('sdkwork-clawstudio-extensions service reads real runtime/plugin metadata instead of mock cards', () => {
+  const serviceSource = read('packages/sdkwork-clawstudio-extensions/src/services/extensionService.ts');
 
   assert.match(serviceSource, /kernelPlatformService/);
   assert.match(serviceSource, /platform/);

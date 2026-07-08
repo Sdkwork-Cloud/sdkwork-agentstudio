@@ -116,7 +116,7 @@ try {
   await writeFile(path.join(viteStoreDir, 'dist', 'node', 'cli.js'), '#!/usr/bin/env node\n');
 
   const viteExecutablePlan = resolveViteExecutablePlan({
-    cwd: path.join(workspaceRootDir, 'packages', 'sdkwork-claw-web'),
+    cwd: path.join(workspaceRootDir, 'packages', 'sdkwork-clawstudio-web'),
     workspaceRootDir,
     platform: 'win32',
     nodeExecutable: 'node.exe',
@@ -129,7 +129,7 @@ try {
   const pnpmBackedBuildPlan = createViteHostPlan({
     argv: ['build'],
     env: {},
-    cwd: path.join(workspaceRootDir, 'packages', 'sdkwork-claw-web'),
+    cwd: path.join(workspaceRootDir, 'packages', 'sdkwork-clawstudio-web'),
     workspaceRootDir,
     platform: 'win32',
   });

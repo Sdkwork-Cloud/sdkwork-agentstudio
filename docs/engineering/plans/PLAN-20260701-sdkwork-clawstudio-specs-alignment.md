@@ -2,7 +2,7 @@
 
 - 计划 ID：PLAN-20260701-sdkwork-clawstudio-specs-alignment
 - 仓库：`claw-studio`（将重命名为 `sdkwork-clawstudio`）
-- 应用根：`apps/sdkwork-claw-studio-pc/`
+- 应用根：`apps/sdkwork-clawstudio-pc/`
 - 权威标准：`../sdkwork-specs/`（SOUL.md、NAMING_SPEC.md、WEB_FRAMEWORK_SPEC.md、DATABASE_FRAMEWORK_SPEC.md、API_SPEC.md、DRIVE_SPEC.md、DISCOVERY_SPEC.md、RUST_CODE_SPEC.md、WEB_BACKEND_SPEC.md、SDKWORK_DEPLOY_SPEC.md、GITHUB_WORKFLOW_SPEC.md、TEST_SPEC.md、SECURITY_SPEC.md、COMPONENT_SPEC.md、MIGRATION_SPEC.md）
 - 执行原则：SOUL.md（specs before memory、dictionary before context、evidence before completion、stop on ambiguity、human review owns irreversible direction）
 
@@ -25,7 +25,7 @@
 ### 检查点 2：是否接入 sdkwork-web-framework — 未接入 ❌（最高优先级）
 
 证据：
-- `sdkwork-claw-server/src-host/Cargo.toml` 依赖：`axum 0.8`、`tower`、`reqwest`、`serde`，**无任何 `sdkwork-web-*` crate**。
+- `sdkwork-clawstudio-server/src-host/Cargo.toml` 依赖：`axum 0.8`、`tower`、`reqwest`、`serde`，**无任何 `sdkwork-web-*` crate**。
 - `http/router.rs` 用裸 `axum::Router` + `middleware::from_fn_with_state` 自实现 CORS；无 `WebRequestContext`、无 18 阶拦截器链、无路由清单框架元数据、无 `sdkwork-web-bootstrap` 装配。
 - `http/error_response.rs` 自定义 `InternalErrorEnvelope`（字符串 `code`、`x-claw-correlation-id` 头），非 `application/problem+json` `ProblemDetail`。
 - `http/auth.rs` 自实现 `authorize_public_studio_request`，非框架 `WebRequestPrincipal`/`RequirePrincipal`。
@@ -34,7 +34,7 @@
 ### 检查点 3：是否接入 sdkwork-database — 未接入 ❌
 
 证据：
-- `sdkwork-claw-host-core/src-host/Cargo.toml` 依赖 `rusqlite 0.39 (bundled)`，**无 `sdkwork-database-*` crate**。
+- `sdkwork-clawstudio-host-core/src-host/Cargo.toml` 依赖 `rusqlite 0.39 (bundled)`，**无 `sdkwork-database-*` crate**。
 - `storage/sqlite_store.rs` 手写 `CREATE TABLE host_catalog_documents` DDL，手写 `INSERT ... ON CONFLICT`，无 `database/contract/`、无 `migrations/`、无 `seeds/`、无 lifecycle SPI、无 drift。
 - 违反：`DATABASE_FRAMEWORK_SPEC.md` §1/§4（L1 未达），`DATABASE_SPEC.md` §33（连接池须经 sdkwork-database）。
 - 注意：`sdkwork-database` crate 提供 `sdkwork-database-spi`、`sdkwork-database-lifecycle`、`sdkwork-database-sqlx`、`sdkwork-database-cli` 等，支持 SQLite/PostgreSQL。
@@ -42,7 +42,7 @@
 ### 检查点 4：是否接入 sdkwork-utils — 未接入 ❌
 
 证据：
-- Rust 侧：`sdkwork-claw-server`、`sdkwork-claw-host-core` 均未依赖 `sdkwork-utils-rust`（crate 名 `sdkwork-utils-rust`）。
+- Rust 侧：`sdkwork-clawstudio-server`、`sdkwork-clawstudio-host-core` 均未依赖 `sdkwork-utils-rust`（crate 名 `sdkwork-utils-rust`）。
 - 手写可替换逻辑：`chatUploadService.ts` 的 `defaultCreateId`（`asset-${Date.now()}-...`）、`sanitizePathSegment`/`sanitizeFileName`、`numberFromString`；Rust 侧自实现错误分类、ID 生成。
 - TS 侧：`sdkwork-utils-typescript`（`@sdkwork/utils`）未在 workspace 依赖中出现。
 - 违反：`NAMING_SPEC.md` §0.2（`utils` → `@sdkwork/utils`），`CODE_STYLE_SPEC.md`（减少重复）。
@@ -56,7 +56,7 @@
 ### 检查点 6：文件上传是否经 sdkwork-drive 集成 — 前端已接入 ✅，服务端未对齐 ❌
 
 证据：
-- 前端 ✅：`sdkwork-claw-core/src/sdk/useAppSdkClient.ts` 已组装 `createDriveAppClient`，与 IAM/Messaging 共享 `tokenManager`；`services/chatUploadService.ts` 通过 `client.uploader.uploadAttachment` 走 Drive Uploader，产出 `driveUri`/`driveSpaceId`/`driveNodeId`。符合 `DRIVE_SPEC.md` §2/§13。
+- 前端 ✅：`sdkwork-clawstudio-core/src/sdk/useAppSdkClient.ts` 已组装 `createDriveAppClient`，与 IAM/Messaging 共享 `tokenManager`；`services/chatUploadService.ts` 通过 `client.uploader.uploadAttachment` 走 Drive Uploader，产出 `driveUri`/`driveSpaceId`/`driveNodeId`。符合 `DRIVE_SPEC.md` §2/§13。
 - 服务端 ❌：`api_public.rs` 的 `put_public_studio_instance_file_content` → `provider.update_instance_file_content` → `host-core/storage/file_store.rs` 写本地文件系统，**未走 `sdkwork-drive-uploader-service` 或 Drive RPC**。违反 `DRIVE_SPEC.md` §2（业务域不得自建对象存储生命周期）。
 
 ### 横切：结构 / 部署 / 打包 / API / 代码 / 测试 / 安全
@@ -64,9 +64,9 @@
 | 维度 | 现状 | 期望 | 结论 |
 | --- | --- | --- | --- |
 | 仓库命名 | `claw-studio` | `sdkwork-<application-code>` = `sdkwork-clawstudio` | ❌ |
-| 应用根 | `apps/sdkwork-claw-studio-pc/` | `apps/sdkwork-clawstudio-pc/` | ❌ |
-| 包命名 | `sdkwork-claw-*`（`@sdkwork/claw-*`） | `sdkwork-clawstudio-pc-*`（`@sdkwork/clawstudio-pc-*`）按 NAMING_SPEC §2 | ❌（需迁移评估） |
-| `app.key` | `claw-studio` | `clawstudio`（含 PlusApp 注册、desktopAppId、containerImage 联动） | ❌（需人工评审） |
+| 应用根 | `apps/sdkwork-clawstudio-pc/` | `apps/sdkwork-clawstudio-pc/` | ❌ |
+| 包命名 | `sdkwork-clawstudio-*`（`@sdkwork/clawstudio-*`） | `sdkwork-clawstudio-pc-*`（`@sdkwork/clawstudio-pc-*`）按 NAMING_SPEC §2 | ❌（需迁移评估） |
+| `app.key` | `claw-studio` | `clawstudio`（含 platform_app 注册、desktopAppId、containerImage 联动） | ❌（需人工评审） |
 | 部署清单 | 有 `deploy/docker`、`deploy/kubernetes`，**无 `deployments/deploy.yaml`** | `deployments/deploy.yaml`（SDKWORK_DEPLOY_SPEC） | ❌ |
 | 打包/发布 | 有 `scripts/release/*` 与 `sdkwork.workflow.json`? | `sdkwork.workflow.json` + `sdkwork-github-workflow`（GITHUB_WORKFLOW_SPEC） | ⚠️ 需核验 |
 | API 信封 | 成功裸 `Json<Value>`；错误字符串 `code` | `SdkWorkApiResponse{code:0,data,traceId}` + `ProblemDetail`（数字 code） | ❌ |
@@ -100,25 +100,25 @@ Move-Item -Path "E:\sdkwork-space\claw-studio" -Destination "E:\sdkwork-space\sd
 
 ### Phase 1 — 命名与身份迁移【Human Review Gate】
 
-目标：统一 `application-code = clawstudio`，对齐 NAMING_SPEC §0.1/§2。因涉及 PlusApp 注册、desktopAppId、containerImage、跨仓引用，需人工评审与兼容窗口（MIGRATION_SPEC §4）。
+目标：统一 `application-code = clawstudio`，对齐 NAMING_SPEC §0.1/§2。因涉及 platform_app 注册、desktopAppId、containerImage、跨仓引用，需人工评审与兼容窗口（MIGRATION_SPEC §4）。
 
 1.1 顶层身份：
 - `sdkwork.app.config.json`：`app.key` `claw-studio`→`clawstudio`；`displayName`/`name`/`officialWebsiteUrl`/`iconUrl`/`containerImage`/`storeUrl`/`environments.*.accessUrl`/`artifacts.installConfig.packages[].url` 全量替换 `claw-studio`→`clawstudio`；`publish.config.workspaceRoot` `apps/claw-studio`→`apps/sdkwork-clawstudio-pc`；`devApp.sourceRoot` 同步。
-- `package.json`：`name` `@sdkwork/claw-workspace`→`@sdkwork/clawstudio-workspace`。
-- `specs/component.spec.json`：`component.name`→`clawstudio`、`component.root`→`sdkwork-clawstudio`、`verification.commands` 中 `@sdkwork/claw-workspace`→`@sdkwork/clawstudio-workspace`。
+- `package.json`：`name` `@sdkwork/clawstudio-workspace`→`@sdkwork/clawstudio-workspace`。
+- `specs/component.spec.json`：`component.name`→`clawstudio`、`component.root`→`sdkwork-clawstudio`、`verification.commands` 中 `@sdkwork/clawstudio-workspace`→`@sdkwork/clawstudio-workspace`。
 
 1.2 应用根与包 taxonomy（NAMING_SPEC §2）：
-- 应用根目录：`apps/sdkwork-claw-studio-pc/` → `apps/sdkwork-clawstudio-pc/`。
-- 包目录与 `package.json#name`：`sdkwork-claw-<cap>` → `sdkwork-clawstudio-pc-<cap>`，`@sdkwork/claw-<cap>` → `@sdkwork/clawstudio-pc-<cap>`（27 个包）。
-- Rust crate：`sdkwork-claw-host-core`→`sdkwork-clawstudio-host-core`、`sdkwork-claw-host-studio`→`sdkwork-clawstudio-host-studio`、`sdkwork-claw-server`→`sdkwork-clawstudio-server`、`sdkwork-claw-desktop`→`sdkwork-clawstudio-desktop`；同步 `Cargo.toml` workspace.members、`[[bin]] name`、`sdkwork_claw_host_core` lib name。
+- 应用根目录：`apps/sdkwork-clawstudio-pc/` → `apps/sdkwork-clawstudio-pc/`。
+- 包目录与 `package.json#name`：`sdkwork-clawstudio-<cap>` → `sdkwork-clawstudio-pc-<cap>`，`@sdkwork/clawstudio-<cap>` → `@sdkwork/clawstudio-pc-<cap>`（27 个包）。
+- Rust crate：`sdkwork-clawstudio-host-core`→`sdkwork-clawstudio-host-core`、`sdkwork-clawstudio-host-studio`→`sdkwork-clawstudio-host-studio`、`sdkwork-clawstudio-server`→`sdkwork-clawstudio-server`、`sdkwork-clawstudio-desktop`→`sdkwork-clawstudio-desktop`；同步 `Cargo.toml` workspace.members、`[[bin]] name`、`sdkwork_clawstudio_host_core` lib name。
 - desktopAppId：`com.sdkwork.claw.studio.desktop`→`com.sdkwork.clawstudio.desktop`（Tauri `tauri.conf.json` 同步）。
 
 1.3 脚本与契约同步：
-- `pnpm-workspace.yaml`、`package.json#scripts`（`--filter @sdkwork/claw-*`）、`scripts/check-sdkwork-claw-*.mjs`、`scripts/run-claw-server-build.mjs`、`sdkwork-run-node`/`sdkwork-run-pnpm`、`tauri-dev-fast.cmd` 中所有 `claw`/`claw-studio` 字面量替换。
+- `pnpm-workspace.yaml`、`package.json#scripts`（`--filter @sdkwork/clawstudio-*`）、`scripts/check-sdkwork-clawstudio-*.mjs`、`scripts/run-clawstudio-server-build.mjs`、`sdkwork-run-node`/`sdkwork-run-pnpm`、`tauri-dev-fast.cmd` 中所有 `claw`/`claw-studio` 字面量替换。
 - `pnpm-lock.yaml` 重建：`pnpm install --lockfile-only`。
 - 跨仓引用同步：`sdkwork-clawrouter/data/app/sdkwork-apps.json`、`sdkwork-birdcoder/scripts/claw-release-parity-*`、`sdkwork-specs/workspace/consumers/*` 等。
 
-1.4 兼容窗口：保留旧 `@sdkwork/claw-*` 包名别名一个发布周期（MIGRATION_SPEC），或一次性切换并同步所有消费方（需评估消费方清单）。
+1.4 兼容窗口：保留旧 `@sdkwork/clawstudio-*` 包名别名一个发布周期（MIGRATION_SPEC），或一次性切换并同步所有消费方（需评估消费方清单）。
 
 校验：`pnpm install`、`pnpm check:arch`、`pnpm check:parity`、`pnpm lint`、`cargo check --workspace`。
 
@@ -256,7 +256,7 @@ node ../sdkwork-specs/tools/check-api-response-envelope.mjs --workspace .
 
 | 风险 | 触发阶段 | 处置 |
 | --- | --- | --- |
-| 公共命名迁移破坏 PlusApp 注册 / desktopAppId / containerImage / 跨仓消费方 | Phase 1 | Human Review Gate；MIGRATION_SPEC 兼容窗口；先出消费方清单 |
+| 公共命名迁移破坏 platform_app 注册 / desktopAppId / containerImage / 跨仓消费方 | Phase 1 | Human Review Gate；MIGRATION_SPEC 兼容窗口；先出消费方清单 |
 | 数据库 schema 变更（rusqlite→framework） | Phase 3 | Human Review Gate；迁移脚本 + 回滚；dev 先行 |
 | Drive 服务端存储行为变更 | Phase 6 | Human Review Gate；判定空间类型；保留引用兼容 |
 | 框架依赖引入路径（path vs git） | Phase 2/3/4 | DEPENDENCY_MANAGEMENT_SPEC；发布前切 pinned git |

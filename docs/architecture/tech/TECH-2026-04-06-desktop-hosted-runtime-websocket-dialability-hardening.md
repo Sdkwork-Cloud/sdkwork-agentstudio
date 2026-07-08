@@ -24,7 +24,7 @@ That left one concrete failure mode open:
 ## Root Cause
 
 The bug was in
-`packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.ts`.
+`packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`.
 
 Readiness previously derived websocket success from:
 
@@ -57,7 +57,7 @@ Deliberate architecture choice:
 - websocket dialability probing is **opt-in by explicit injection**
 - `desktopHostedBridge.ts` does **not** silently fall back to
   `globalThis.WebSocket`
-- `packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts` is the place that
+- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts` is the place that
   injects the real browser `WebSocket` for live desktop startup
 
 That keeps Node-based contract tests deterministic while still making live
@@ -67,28 +67,28 @@ desktop startup depend on actual websocket reachability.
 
 Added and updated coverage:
 
-- `packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
   now proves:
   - readiness succeeds when the injected WebSocket probe opens
   - readiness rejects when the injected WebSocket probe errors
 - `scripts/sdkwork-host-runtime-contract.test.ts` now locks:
   - the new readiness evidence fields
   - the explicit websocket-dialability readiness failure message
-- `packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts` is contract-locked
+- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts` is contract-locked
   to inject the browser `WebSocket` only at the real desktop runtime boundary
 
 ## Files Changed
 
-- `packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.ts`
-- `packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts`
-- `packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts`
 - `scripts/sdkwork-host-runtime-contract.test.ts`
 
 ## Verification
 
 Executed and passed:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`
@@ -101,7 +101,7 @@ post-startup authority path.
 Still open:
 
 - browser-only fallback review in
-  `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts` if any UI
+  `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts` if any UI
   flow can still override canonical host-published managed runtime metadata
 - launched-session validation for chat, notification, cron, proxy router, and
   instance detail on top of the stricter websocket-dialability gate

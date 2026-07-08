@@ -19,8 +19,8 @@ not resolve sibling workspace packages that live outside this workspace's local
 
 Observed blocked tests:
 
-- `packages/sdkwork-claw-settings/src/services/localAiProxyLogsService.test.ts`
-- `packages/sdkwork-claw-core/src/services/kernelPlatformService.test.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/localAiProxyLogsService.test.ts`
+- `packages/sdkwork-clawstudio-core/src/services/kernelPlatformService.test.ts`
 
 The immediate runtime error was:
 
@@ -86,7 +86,7 @@ by Claw Studio:
 The fix stayed minimal:
 
 1. shared SDK source aliases still resolve first
-2. sibling workspace aliases are added without changing local `@sdkwork/claw-*`
+2. sibling workspace aliases are added without changing local `@sdkwork/clawstudio-*`
    resolution semantics
 3. local relative fallback behavior remains unchanged
 
@@ -95,8 +95,8 @@ The fix stayed minimal:
 Verified in this iteration:
 
 - `node scripts/ts-extension-loader.test.mjs`
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-claw-settings/src/services/localAiProxyLogsService.test.ts','packages/sdkwork-claw-core/src/services/kernelPlatformService.test.ts']))"`
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts packages/sdkwork-claw-desktop/src/desktop/desktopHostRuntimeResolver.test.ts packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-settings/src/services/localAiProxyLogsService.test.ts','packages/sdkwork-clawstudio-core/src/services/kernelPlatformService.test.ts']))"`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
 
 All passed on 2026-04-06.
 

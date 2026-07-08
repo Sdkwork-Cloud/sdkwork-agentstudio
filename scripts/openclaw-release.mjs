@@ -159,7 +159,7 @@ export const DEFAULT_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGE_EXCEPTIONS =
   OPENCLAW_RELEASE.runtimeSupplementalPackageExceptions;
 
 /**
- * Bundled aliases aligned with packages/sdkwork-claw-types/src/openclawRelease.ts naming.
+ * Bundled aliases aligned with packages/sdkwork-clawstudio-types/src/openclawRelease.ts naming.
  * OpenClaw payload constants keep the `BUNDLED_` prefix in script-facing aliases.
  * Node.js uses `DEFAULT_REQUIRED_OPENCLAW_NODE_VERSION` because it is external-only.
  */

@@ -25,17 +25,17 @@
 
 ## Implemented Fix
 
-- Added `packages/sdkwork-claw-instances/src/services/instanceDetailToastSupport.ts`.
+- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailToastSupport.ts`.
 - Added `createInstanceDetailToastReporters(...)` so the shared helper now owns only:
   - `reportSuccess(message)` forwarding into the injected toast surface
   - `reportError(message)` forwarding into the injected toast surface
   - `reportInfo(message)` forwarding into the injected toast surface
-- Added focused direct coverage in `packages/sdkwork-claw-instances/src/services/instanceDetailToastSupport.test.ts`.
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Added focused direct coverage in `packages/sdkwork-clawstudio-instances/src/services/instanceDetailToastSupport.test.ts`.
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds `toastReporters` once through `createInstanceDetailToastReporters({ toast })`
   - routes all relevant runner/handler `reportSuccess` / `reportError` / `reportInfo` bindings through that shared helper
   - stops keeping inline `toast.success/error/info` wrappers in the page shell
-- Exported the new helper from `packages/sdkwork-claw-instances/src/services/index.ts`.
+- Exported the new helper from `packages/sdkwork-clawstudio-instances/src/services/index.ts`.
 - Updated `scripts/run-sdkwork-instances-check.mjs` so the new helper test runs inside `pnpm.cmd check:sdkwork-instances`.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract now requires:
   - the page to use `createInstanceDetailToastReporters(...)`
@@ -62,25 +62,25 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for studio-backed workbench truth, runtime persistence, provider-center projection, Local Proxy routing, ecosystem/runtime ownership, and desktop plugin/runtime registration. This loop only centralizes the page-side toast reporter binding layer.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1064` lines / `41287` bytes
-- `packages/sdkwork-claw-instances/src/services/instanceDetailToastSupport.ts`: `17` lines / `579` bytes
-- `packages/sdkwork-claw-instances/src/services/instanceDetailToastSupport.test.ts`: `53` lines / `1474` bytes
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1064` lines / `41287` bytes
+- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailToastSupport.ts`: `17` lines / `579` bytes
+- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailToastSupport.test.ts`: `53` lines / `1474` bytes
 
 Relative to the immediately prior `1060` page baseline from `release-2026-04-10-150`, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1064`. This loop records a verified boundary improvement for the shared toast reporter family while also documenting that the broader page baseline increased slightly in the current dirty worktree and is now the operative truth for subsequent loops.
 
@@ -101,15 +101,15 @@ Relative to the immediately prior `1060` page baseline from `release-2026-04-10-
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailToastSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailToastSupport.test.ts`
   - failed first because `instanceDetailToastSupport.ts` did not yet exist
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` still kept inline toast reporter wrappers
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailToastSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailToastSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/claw-web lint`
+  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

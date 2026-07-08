@@ -4,9 +4,9 @@
 
 The desktop local AI proxy must keep the OpenAI-compatible request-serving surface in a dedicated module:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, shared router assembly, auth/header normalization, buffered upstream response handling, and the runtime-facing `LocalAiProxyService` methods
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs`
   owns:
   - `/v1/models`
   - `/v1/chat/completions`

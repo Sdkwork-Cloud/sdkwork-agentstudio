@@ -56,7 +56,7 @@ This loop rechecked the Step 11 release plan through `pnpm.cmd release:plan`.
 The repaired Windows server bundle now emits one runtime-backed smoke contract:
 
 - `status=passed`
-- `launcherRelativePath=bin/sdkwork-claw-server.exe`
+- `launcherRelativePath=bin/sdkwork-clawstudio-server.exe`
 - `runtimeBaseUrl=http://127.0.0.1:<dynamic-port>`
 - checks:
   - `health-ready`

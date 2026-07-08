@@ -5,17 +5,17 @@
 
 ## 总览
 
-Claw Studio 通过 `@sdkwork/claw-desktop` 提供 Tauri 桌面端运行时。它复用共享 Shell 和业务包，同时补充原生运行时接入、更新检查和桌面端打包能力。
+Claw Studio 通过 `@sdkwork/clawstudio-desktop` 提供 Tauri 桌面端运行时。它复用共享 Shell 和业务包，同时补充原生运行时接入、更新检查和桌面端打包能力。
 
 ## 重要路径
 
-- `packages/sdkwork-claw-desktop/src/main.tsx`
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/createDesktopApp.tsx`
-- `packages/sdkwork-claw-desktop/src/desktop/catalog.ts`
-- `packages/sdkwork-claw-desktop/src/desktop/runtime.ts`
-- `packages/sdkwork-claw-desktop/src/desktop/providers/DesktopProviders.tsx`
-- `packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/`
+- `packages/sdkwork-clawstudio-desktop/src/main.tsx`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/createDesktopApp.tsx`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/catalog.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/runtime.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/providers/DesktopProviders.tsx`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/`
 
 ## 启动桌面开发环境
 
@@ -58,7 +58,7 @@ pnpm check:desktop
 ## 桌面端架构说明
 
 - 桌面入口包应保持轻量
-- Shell 组合逻辑应继续放在 `@sdkwork/claw-shell`
+- Shell 组合逻辑应继续放在 `@sdkwork/clawstudio-shell`
 - 更新、配置和运行时接入应通过共享 infrastructure 与 core 层完成
 - 原生执行与打包逻辑集中在 `src-tauri`
 - 当前桌面端 combined mode 使用桌面桥接访问逻辑控制平面，而不是直接复用独立 Server 的同源 HTTP 壳

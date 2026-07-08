@@ -48,28 +48,28 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..', '..');
-const webDistDir = path.join(rootDir, 'packages', 'sdkwork-claw-web', 'dist');
+const webDistDir = path.join(rootDir, 'packages', 'sdkwork-clawstudio-web', 'dist');
 const docsDistDir = path.join(rootDir, 'docs', '.vitepress', 'dist');
-const serverPackageDir = path.join(rootDir, 'packages', 'sdkwork-claw-server');
+const serverPackageDir = path.join(rootDir, 'packages', 'sdkwork-clawstudio-server');
 const serverTargetDir = path.join(serverPackageDir, 'src-host', 'target');
 const serverEnvExamplePath = path.join(serverPackageDir, '.env.example');
 const desktopTargetDir = path.join(
   rootDir,
   'packages',
-  'sdkwork-claw-desktop',
+  'sdkwork-clawstudio-desktop',
   'src-tauri',
   'target',
 );
 const desktopTauriConfigPath = path.join(
   rootDir,
   'packages',
-  'sdkwork-claw-desktop',
+  'sdkwork-clawstudio-desktop',
   'src-tauri',
   'tauri.conf.json',
 );
 const dockerDeploymentDir = path.join(rootDir, 'deploy', 'docker');
 const kubernetesDeploymentDir = path.join(rootDir, 'deploy', 'kubernetes');
-const DEFAULT_SERVER_BINARY_NAME = 'claw-server';
+const DEFAULT_SERVER_BINARY_NAME = 'clawstudio-server';
 const DEFAULT_DEPLOYMENT_ACCELERATOR = 'cpu';
 const DEFAULT_KUBERNETES_IMAGE_REPOSITORY = 'claw-studio-server';
 const SUPPORTED_DEPLOYMENT_ACCELERATORS = new Set([
@@ -310,8 +310,8 @@ function createDirectoryArchive({
 
 function writeServerLauncherScripts(bundleRoot, platformId) {
   const serverBinaryName = resolveServerBinaryFileName(platformId);
-  const unixLauncherPath = path.join(bundleRoot, 'start-claw-server.sh');
-  const windowsLauncherPath = path.join(bundleRoot, 'start-claw-server.cmd');
+  const unixLauncherPath = path.join(bundleRoot, 'start-clawstudio-server.sh');
+  const windowsLauncherPath = path.join(bundleRoot, 'start-clawstudio-server.cmd');
 
   writeFileSync(
     unixLauncherPath,
@@ -320,7 +320,7 @@ function writeServerLauncherScripts(bundleRoot, platformId) {
       'set -eu',
       'SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"',
       'export CLAW_SERVER_WEB_DIST="${CLAW_SERVER_WEB_DIST:-$SCRIPT_DIR/web/dist}"',
-      'export CLAW_SERVER_DATA_DIR="${CLAW_SERVER_DATA_DIR:-$SCRIPT_DIR/.claw-server}"',
+      'export CLAW_SERVER_DATA_DIR="${CLAW_SERVER_DATA_DIR:-$SCRIPT_DIR/.clawstudio-server}"',
       'exec "$SCRIPT_DIR/bin/' + serverBinaryName + '" "$@"',
       '',
     ].join('\n'),
@@ -333,7 +333,7 @@ function writeServerLauncherScripts(bundleRoot, platformId) {
       'setlocal',
       'set "SCRIPT_DIR=%~dp0"',
       'if not defined CLAW_SERVER_WEB_DIST set "CLAW_SERVER_WEB_DIST=%SCRIPT_DIR%web\\dist"',
-      'if not defined CLAW_SERVER_DATA_DIR set "CLAW_SERVER_DATA_DIR=%SCRIPT_DIR%.claw-server"',
+      'if not defined CLAW_SERVER_DATA_DIR set "CLAW_SERVER_DATA_DIR=%SCRIPT_DIR%.clawstudio-server"',
       `"%SCRIPT_DIR%bin\\${serverBinaryName}" %*`,
       '',
     ].join('\r\n'),
@@ -352,8 +352,8 @@ function writeServerRuntimeReadme({
   archId,
 }) {
   const canonicalBinaryCommand = platformId === 'windows'
-    ? '.\\bin\\claw-server.exe'
-    : './bin/claw-server';
+    ? '.\\bin\\clawstudio-server.exe'
+    : './bin/clawstudio-server';
   writeFileSync(
     path.join(bundleRoot, 'README.md'),
     [
@@ -373,8 +373,8 @@ function writeServerRuntimeReadme({
       '',
       'When launched from a packaged bundle, the native binary automatically defaults',
       '`CLAW_SERVER_WEB_DIST` to the bundled `web/dist` folder and',
-      '`CLAW_SERVER_DATA_DIR` to `.claw-server` inside the extracted bundle.',
-      '`start-claw-server.sh` and `start-claw-server.cmd` remain optional convenience wrappers',
+      '`CLAW_SERVER_DATA_DIR` to `.clawstudio-server` inside the extracted bundle.',
+      '`start-clawstudio-server.sh` and `start-clawstudio-server.cmd` remain optional convenience wrappers',
       'around the same native binary.',
       '',
       '## Environment',
@@ -996,7 +996,7 @@ export function packageServerAssets({
 
   rmSync(platformOutputDir, { recursive: true, force: true });
   ensureDirectory(platformOutputDir);
-  const stagingRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-server-release-'));
+  const stagingRoot = mkdtempSync(path.join(os.tmpdir(), 'clawstudio-server-release-'));
   const bundleRoot = path.join(stagingRoot, archiveBaseName);
   const archivePath = path.join(
     platformOutputDir,

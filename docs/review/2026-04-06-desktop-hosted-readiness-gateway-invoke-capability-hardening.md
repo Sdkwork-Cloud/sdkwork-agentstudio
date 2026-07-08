@@ -17,7 +17,7 @@ That gap directly matched the user-visible failure class:
 
 ## Root Cause
 
-`packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.ts`
+`packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
 already collected:
 
 - host platform lifecycle
@@ -73,19 +73,19 @@ require the bridge to reference the gateway invoke capability.
 
 ## Files Changed
 
-- `packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.ts`
-- `packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `scripts/sdkwork-host-runtime-contract.test.ts`
 
 ## Verification
 
 Red evidence captured before implementation:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
 
 Green evidence after implementation:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`

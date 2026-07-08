@@ -125,7 +125,7 @@ export async function assessOpenClawUpgradeReadiness({
     path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-claw-desktop',
+      'sdkwork-clawstudio-desktop',
       'src-tauri',
       'resources',
       'openclaw',
@@ -136,7 +136,7 @@ export async function assessOpenClawUpgradeReadiness({
     path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-claw-desktop',
+      'sdkwork-clawstudio-desktop',
       'src-tauri',
       'generated',
       'release',
@@ -148,7 +148,7 @@ export async function assessOpenClawUpgradeReadiness({
     path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-claw-desktop',
+      'sdkwork-clawstudio-desktop',
       'src-tauri',
       'resources',
       'openclaw',

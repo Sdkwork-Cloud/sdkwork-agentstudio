@@ -674,7 +674,7 @@ function resolveInstalledDesktopBinaryPath({
   if (releasePlatform === 'windows') {
     const preferredRootExecutables = [
       `${productName}.exe`,
-      'sdkwork-claw-desktop.exe',
+      'sdkwork-clawstudio-desktop.exe',
       'claw-studio.exe',
     ];
     for (const executableName of preferredRootExecutables) {
@@ -715,7 +715,7 @@ function resolveInstalledDesktopBinaryPath({
   } else if (releasePlatform === 'linux') {
     const candidates = [
       path.join(installRoot, 'claw-studio'),
-      path.join(installRoot, 'sdkwork-claw-desktop'),
+      path.join(installRoot, 'sdkwork-clawstudio-desktop'),
       path.join(installRoot, productName),
     ];
     for (const candidate of candidates) {

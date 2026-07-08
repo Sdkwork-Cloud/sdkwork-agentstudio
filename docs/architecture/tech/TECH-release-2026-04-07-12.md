@@ -28,8 +28,8 @@
 
 ## Verification Focus
 
-- `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml desktop_kernel_info_exposes_extended_runtime_directories`
-- `node --experimental-strip-types packages/sdkwork-claw-settings/src/services/kernelCenterService.test.ts`
+- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml desktop_kernel_info_exposes_extended_runtime_directories`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
 - `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/removed-install-feature/src/services/openClawBootstrapService.test.ts']))"`
 - `pnpm.cmd check:sdkwork-install`
 

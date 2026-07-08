@@ -65,7 +65,7 @@ The native server currently publishes:
 - `/claw/internal/v1/*`
 - `/claw/manage/v1/*`
 
-Use [API Overview](/reference/api-reference) for the route-family map and [Claw Server Runtime](/reference/claw-server-runtime) for runtime behavior details.
+Use [API Overview](/reference/api-reference) for the route-family map and [Claw Server Runtime](/reference/clawstudio-server-runtime) for runtime behavior details.
 
 > Historical plans under `docs/plans` and `docs/superpowers` remain intentionally excluded from public search indexing. Public documentation here should describe implemented behavior or explicitly marked future boundaries only.
 

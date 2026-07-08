@@ -18,8 +18,8 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-claw-shell exposes a theme-aware global scrollbar system', () => {
-  const stylesSource = read('packages/sdkwork-claw-shell/src/styles/index.css');
+runTest('sdkwork-clawstudio-shell exposes a theme-aware global scrollbar system', () => {
+  const stylesSource = read('packages/sdkwork-clawstudio-shell/src/styles/index.css');
 
   assert.match(stylesSource, /@source\s+"\.\.\/\.\.\/\.\.\/";/);
   assert.doesNotMatch(stylesSource, /@source\s+"\.\.\/\.\.\/\.\.\/\.\.\/";/);
@@ -31,8 +31,8 @@ runTest('sdkwork-claw-shell exposes a theme-aware global scrollbar system', () =
   assert.match(stylesSource, /\.dark\s*\{/);
 });
 
-runTest('sdkwork-claw-shell styles visible scroll containers consistently while preserving opt-out utilities', () => {
-  const stylesSource = read('packages/sdkwork-claw-shell/src/styles/index.css');
+runTest('sdkwork-clawstudio-shell styles visible scroll containers consistently while preserving opt-out utilities', () => {
+  const stylesSource = read('packages/sdkwork-clawstudio-shell/src/styles/index.css');
 
   assert.match(stylesSource, /html,\s*body/);
   assert.match(stylesSource, /scrollbar-width:\s*thin/);

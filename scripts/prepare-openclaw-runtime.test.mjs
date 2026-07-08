@@ -75,7 +75,7 @@ const defaultRuntimeSupplementalPackages = [
 const customRuntimeSupplementalPackages = ['@buape/carbon@0.14.0'];
 const cachedNodeRuntimeSidecarManifestRelativePath = '.sdkwork-node-runtime.json';
 const runtimeSidecarManifestRelativePath = path.join('runtime', '.sdkwork-openclaw-runtime.json');
-const trackedResourcePlaceholder = 'packages/sdkwork-claw-desktop/src-tauri/resources/openclaw/.gitkeep';
+const trackedResourcePlaceholder = 'packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/.gitkeep';
 const fakeNodeExecutableContent = 'not-a-real-node-runtime';
 
 const staleOpenClawVersion = derivePreviousNumericVersion(expectedOpenClawVersion);
@@ -410,7 +410,7 @@ function createTarGzArchiveBuffer(records = []) {
 function listTrackedOpenClawResourceFiles() {
   const result = spawnSync(
     'git',
-    ['ls-files', '--', 'packages/sdkwork-claw-desktop/src-tauri/resources/openclaw'],
+    ['ls-files', '--', 'packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw'],
     {
       cwd: rootDir,
       encoding: 'utf8',
@@ -1011,7 +1011,7 @@ try {
   await syncWindowsPackagedOpenClawAliasRoot({
     workspaceRootDir: 'D:\\workspace\\claw-studio',
     packagedResourceDir:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\release\\openclaw-resource',
+      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\release\\openclaw-resource',
     platform: 'win32',
     mkdirImpl: async (targetPath) => {
       windowsAliasOperations.push(['mkdir', targetPath]);
@@ -1030,7 +1030,7 @@ try {
       ['mkdir', 'D:\\.sdkwork-bc\\claw-studio'],
       [
         'symlink',
-        'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\release\\openclaw-resource',
+        'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\release\\openclaw-resource',
         'D:\\.sdkwork-bc\\claw-studio\\openclaw',
         'junction',
       ],
@@ -1187,7 +1187,7 @@ try {
   const staleFallbackStatePath = path.join(
     staleFallbackWorkspaceRoot,
     'packages',
-    'sdkwork-claw-desktop',
+    'sdkwork-clawstudio-desktop',
     'src-tauri',
     'generated',
     'release',

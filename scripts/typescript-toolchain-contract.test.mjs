@@ -23,8 +23,8 @@ function runTest(name, fn) {
 const packageJson = readJson('package.json');
 const tsconfigBasePath = path.join(root, 'tsconfig.base.json');
 const hostTsconfigPaths = [
-  'packages/sdkwork-claw-web/tsconfig.json',
-  'packages/sdkwork-claw-desktop/tsconfig.json',
+  'packages/sdkwork-clawstudio-web/tsconfig.json',
+  'packages/sdkwork-clawstudio-desktop/tsconfig.json',
 ];
 
 runTest('workspace TypeScript baseline stays valid for the active toolchain when leaf configs use baseUrl', () => {

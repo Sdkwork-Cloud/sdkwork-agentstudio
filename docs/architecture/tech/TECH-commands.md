@@ -84,9 +84,9 @@
 Use pnpm filters to target one package:
 
 ```bash
-pnpm --filter @sdkwork/claw-web build
-pnpm --filter @sdkwork/claw-desktop tauri:info
-pnpm --filter @sdkwork/claw-market lint
+pnpm --filter @sdkwork/clawstudio-web build
+pnpm --filter @sdkwork/clawstudio-desktop tauri:info
+pnpm --filter @sdkwork/clawstudio-market lint
 ```
 
 ## GitHub Release Flow

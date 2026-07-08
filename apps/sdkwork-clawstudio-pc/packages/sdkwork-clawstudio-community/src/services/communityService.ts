@@ -1,0 +1,16 @@
+export {
+  communityService,
+  createCommunityService,
+  type CommunityCategory,
+  type CommunityComment,
+  type CommunityDeliveryMode,
+  type CommunityPost,
+  type CommunityPublisherType,
+  type CommunityServiceLine,
+  type CreateCommunityServiceOptions,
+  type CreatePostDTO,
+  type ICommunityService,
+  type ListParams,
+  type PaginatedResult,
+  type UpdatePostDTO,
+} from '@sdkwork/clawstudio-core';

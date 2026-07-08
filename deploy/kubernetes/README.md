@@ -37,6 +37,6 @@ Production-style installs must provide a Secret-backed control-plane credential 
 chart can generate that Secret from `auth.manageUsername` and `auth.managePassword`, or you can
 point `auth.existingSecret` at a pre-provisioned secret in the target namespace.
 
-The chart also mounts a PersistentVolumeClaim at `/var/lib/claw-server` by default so the
+The chart also mounts a PersistentVolumeClaim at `/var/lib/clawstudio-server` by default so the
 SQLite host-state database survives Pod restarts. Override `persistence.size`,
 `persistence.storageClass`, or `persistence.enabled` to match your cluster storage policy.

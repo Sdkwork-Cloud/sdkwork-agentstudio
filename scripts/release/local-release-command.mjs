@@ -6,7 +6,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { runServerBuild } from '../run-claw-server-build.mjs';
+import { runServerBuild } from '../run-clawstudio-server-build.mjs';
 import { inspectTauriTarget } from '../ensure-tauri-target-clean.mjs';
 import {
   DEFAULT_RELEASE_PROFILE_ID,
@@ -63,17 +63,17 @@ const rootDir = path.resolve(__dirname, '..', '..');
 const desktopSrcTauriDir = path.join(
   rootDir,
   'packages',
-  'sdkwork-claw-desktop',
+  'sdkwork-clawstudio-desktop',
   'src-tauri',
 );
 const serverBuildTargetDir = path.join(
   rootDir,
   'packages',
-  'sdkwork-claw-server',
+  'sdkwork-clawstudio-server',
   'src-host',
   'target',
 );
-const webPackageDir = path.join(rootDir, 'packages', 'sdkwork-claw-web');
+const webPackageDir = path.join(rootDir, 'packages', 'sdkwork-clawstudio-web');
 const webDistDir = path.join(webPackageDir, 'dist');
 const docsDistDir = path.join(rootDir, 'docs', '.vitepress', 'dist');
 
@@ -172,8 +172,8 @@ export function resolveGitRepositoryFromRemote({
 
 function resolveServerBinaryFileName(platform = '') {
   return normalizeDesktopPlatform(platform) === 'windows'
-    ? 'claw-server.exe'
-    : 'claw-server';
+    ? 'clawstudio-server.exe'
+    : 'clawstudio-server';
 }
 
 export function resolveLocalServerBinaryPath({

@@ -4,11 +4,11 @@
 
 The desktop local AI proxy must keep the shared local-proxy contract layer in a dedicated module:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, shared router assembly, extracted module wiring, and the remaining parent-only helpers:
   - `is_loopback_host(...)`
   - `append_proxy_log(...)`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/types.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/types.rs`
   owns:
   - `ProxyHttpResult<T>`
   - `LocalAiProxyLifecycle`

@@ -110,9 +110,9 @@
   - The settings layer must not recompute route health, invent route tests, or infer observability artifact paths.
 - Frozen truth chain:
   - desktop local proxy services produce `routeMetrics`, `routeTests`, `messageCaptureEnabled`, and `observabilityDbPath`
-  - `packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts` freezes those fields in `RuntimeDesktopLocalAiProxyInfo`
-  - `packages/sdkwork-claw-settings/src/services/kernelCenterService.ts` forwards them unchanged into `KernelCenterDashboard.localAiProxy`
-  - `packages/sdkwork-claw-settings/src/KernelCenter.tsx` formats readback only
+  - `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts` freezes those fields in `RuntimeDesktopLocalAiProxyInfo`
+  - `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts` forwards them unchanged into `KernelCenterDashboard.localAiProxy`
+  - `packages/sdkwork-clawstudio-settings/src/KernelCenter.tsx` formats readback only
 - UI obligations in this slice:
   - show message capture state
   - show observability database path
@@ -130,8 +130,8 @@
   - request/message log views may expose evidence, but they must not infer lifecycle or filesystem paths from log contents.
 - Frozen truth chain:
   - `RuntimeDesktopLocalAiProxyInfo` already publishes `lifecycle`, `observabilityDbPath`, `snapshotPath`, and `logPath`
-  - `packages/sdkwork-claw-settings/src/services/localAiProxyLogsService.ts` now exposes `getRuntimeSummary()` by reading `kernelPlatformService.getInfo()?.localAiProxy`
-  - `packages/sdkwork-claw-settings/src/ApiSettings.tsx` renders readback only
+  - `packages/sdkwork-clawstudio-settings/src/services/localAiProxyLogsService.ts` now exposes `getRuntimeSummary()` by reading `kernelPlatformService.getInfo()?.localAiProxy`
+  - `packages/sdkwork-clawstudio-settings/src/ApiSettings.tsx` renders readback only
 - UI obligations in this slice:
   - show proxy lifecycle
   - show log path

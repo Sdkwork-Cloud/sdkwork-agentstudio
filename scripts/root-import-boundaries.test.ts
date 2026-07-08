@@ -35,7 +35,7 @@ function getImports(file: string): string[] {
   let match: RegExpExecArray | null = null;
   while ((match = importPattern.exec(source))) {
     const importPath = match[1] || match[2];
-    if (importPath?.startsWith('@sdkwork/claw-')) {
+    if (importPath?.startsWith('@sdkwork/clawstudio-')) {
       imports.push(importPath);
     }
   }
@@ -67,7 +67,7 @@ async function runTest(name: string, callback: () => Promise<void> | void) {
 await runTest('cross-package imports use package roots only', () => {
   const packageDirs = fs
     .readdirSync(packagesDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-claw-'))
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-clawstudio-'))
     .map((entry) => entry.name);
 
   const violations: string[] = [];

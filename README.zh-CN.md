@@ -25,15 +25,15 @@ infrastructure -> (i18n + types)
 
 核心包职责：
 
-- `@sdkwork/claw-web`：可运行的 Web 应用与 Vite 宿主
-- `@sdkwork/claw-desktop`：Tauri 桌面入口与原生桥接
-- `@sdkwork/claw-shell`：路由、布局、Provider、侧边栏、命令面板
-- `@sdkwork/claw-core`：共享 store 与跨业务编排
-- `@sdkwork/claw-types`：纯类型与共享领域模型
-- `@sdkwork/claw-infrastructure`：环境配置、HTTP、i18n 与平台适配
-- `@sdkwork/claw-*`：垂直业务包，例如 `chat`、`market`、`settings`、`account`、`extensions`
+- `@sdkwork/clawstudio-web`：可运行的 Web 应用与 Vite 宿主
+- `@sdkwork/clawstudio-desktop`：Tauri 桌面入口与原生桥接
+- `@sdkwork/clawstudio-shell`：路由、布局、Provider、侧边栏、命令面板
+- `@sdkwork/clawstudio-core`：共享 store 与跨业务编排
+- `@sdkwork/clawstudio-types`：纯类型与共享领域模型
+- `@sdkwork/clawstudio-infrastructure`：环境配置、HTTP、i18n 与平台适配
+- `@sdkwork/clawstudio-*`：垂直业务包，例如 `chat`、`market`、`settings`、`account`、`extensions`
 
-仓库禁止跨包子路径导入。请使用 `@sdkwork/claw-market` 这类包根导入，不要使用 `@sdkwork/claw-market/src/...`。
+仓库禁止跨包子路径导入。请使用 `@sdkwork/clawstudio-market` 这类包根导入，不要使用 `@sdkwork/clawstudio-market/src/...`。
 
 ## 快速开始
 
@@ -42,7 +42,7 @@ pnpm install
 pnpm dev
 ```
 
-默认 Web 开发服务器通过 Vite 启动 `@sdkwork/claw-web`，地址为 `http://localhost:3001`。
+默认 Web 开发服务器通过 Vite 启动 `@sdkwork/clawstudio-web`，地址为 `http://localhost:3001`。
 
 桌面开发与打包命令：
 
@@ -67,8 +67,8 @@ pnpm docs:build    # 构建 VitePress 文档站
 也可以通过 `pnpm --filter` 执行包级脚本，例如：
 
 ```bash
-pnpm --filter @sdkwork/claw-web build
-pnpm --filter @sdkwork/claw-desktop tauri:info
+pnpm --filter @sdkwork/clawstudio-web build
+pnpm --filter @sdkwork/clawstudio-desktop tauri:info
 ```
 
 ## 环境变量
@@ -80,7 +80,7 @@ pnpm --filter @sdkwork/claw-desktop tauri:info
 - `SDKWORK_ACCESS_TOKEN`：可选的私有 bootstrap 访问令牌（通过 vite define 注入，禁止 `VITE_*` 凭证 env）
 - `VITE_APP_ID`、`VITE_RELEASE_CHANNEL`、`VITE_DISTRIBUTION_ID`、`VITE_PLATFORM`、`VITE_TIMEOUT`：桌面运行时与更新相关配置
 
-桌面端示例可参考 [`packages/sdkwork-claw-desktop/.env.example`](./packages/sdkwork-claw-desktop/.env.example)。
+桌面端示例可参考 [`packages/sdkwork-clawstudio-desktop/.env.example`](./packages/sdkwork-clawstudio-desktop/.env.example)。
 
 ## 开源协议与商业授权
 
@@ -231,7 +231,7 @@ Claw Studio 采用双授权模式：
 - [命令参考](./docs/reference/commands.md)
 - [贡献指南](./docs/contributing/index.md)
 
-仓库内也保留了 `@sdkwork/claw-docs` 这个应用内文档功能包。`docs/` 下的 VitePress 站点则是面向 GitHub 与开源协作者的公共项目文档。
+仓库内也保留了 `@sdkwork/clawstudio-docs` 这个应用内文档功能包。`docs/` 下的 VitePress 站点则是面向 GitHub 与开源协作者的公共项目文档。
 
 ## 贡献
 

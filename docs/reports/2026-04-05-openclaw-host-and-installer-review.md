@@ -26,7 +26,7 @@ The bundled OpenClaw release metadata is now pinned to `2026.4.2` in `config/ope
 ### High
 
 2. Linux packaged binary fallback lookup could emit multiple `command -v` results.
-   - The postinstall helper printed both `claw-studio` and `sdkwork-claw-desktop` lookups without returning after the first match.
+   - The postinstall helper printed both `claw-studio` and `sdkwork-clawstudio-desktop` lookups without returning after the first match.
    - Impact: the script could build an invalid multi-line executable path and fail to invoke the intended packaged binary.
    - Status: fixed. The helper now captures and returns the first valid command path deterministically. The embedded prepare/register CLI now also accepts an explicit `--install-root` override, and the Linux postinstall hook forwards the resolved install root into that CLI so runtime preparation and managed install paths stay anchored to the packaged resource root even when the launcher binary is not resource-adjacent.
 
@@ -106,14 +106,14 @@ The bundled OpenClaw release metadata is now pinned to `2026.4.2` in `config/ope
      - that reopened the risk of helper-level contract drift across prepare, bundle, and bridge path resolution
    - Status: fixed. Both resolvers now normalize `windows -> win32` before selecting the Windows short-path mirror logic.
 
-14. The desktop release `all` phase silently dropped explicit package-build customization flags when delegating into `@sdkwork/claw-desktop`.
+14. The desktop release `all` phase silently dropped explicit package-build customization flags when delegating into `@sdkwork/clawstudio-desktop`.
    - Root cause:
-     - `run-desktop-release-build.mjs --phase all` previously delegated to `pnpm --filter @sdkwork/claw-desktop run tauri:build` without forwarding the resolved `--profile`, `--vite-mode`, `--bundles`, or caller-provided overrides
+     - `run-desktop-release-build.mjs --phase all` previously delegated to `pnpm --filter @sdkwork/clawstudio-desktop run tauri:build` without forwarding the resolved `--profile`, `--vite-mode`, `--bundles`, or caller-provided overrides
      - direct phase-specific execution paths already respected those values, so the drift existed only in the convenience `all` orchestration path
    - Impact:
      - local or scripted desktop release runs that relied on `--phase all` could silently build with package defaults instead of the requested release profile, Vite mode, bundle set, or target combination
      - that reopened the risk of packaging the wrong installer mix even when OpenClaw release preparation and alias repair were already correct
-   - Status: fixed. The `all` phase now forwards the resolved package-build arguments through `--` into `@sdkwork/claw-desktop` and the release-flow contract tests now lock that behavior.
+   - Status: fixed. The `all` phase now forwards the resolved package-build arguments through `--` into `@sdkwork/clawstudio-desktop` and the release-flow contract tests now lock that behavior.
 
 15. Points recharge integration drifted behind the generated shared SDK surface.
    - Root cause:
@@ -154,7 +154,7 @@ The bundled OpenClaw release metadata is now pinned to `2026.4.2` in `config/ope
 19. Shared browser host metadata injection trusted any preexisting `index.html` meta tags instead of refreshing them from the live host runtime.
    - Root cause:
      - `inject_server_host_metadata(...)` returned the original HTML as soon as the core host meta tag names were present
-     - this skipped value refresh for `host-mode`, `distribution-family`, `deployment-family`, `accelerator-profile`, base paths, and `sdkwork-claw-browser-session-token`
+     - this skipped value refresh for `host-mode`, `distribution-family`, `deployment-family`, `accelerator-profile`, base paths, and `sdkwork-clawstudio-browser-session-token`
    - Impact:
      - server, desktop combined, Docker, and Kubernetes browser shells could drift away from the real live host identity if the built frontend bundle already contained placeholder or stale meta values
      - stale browser session token metadata could break hosted control-plane requests after host restarts or deployment-mode changes
@@ -196,17 +196,17 @@ The bundled OpenClaw release metadata is now pinned to `2026.4.2` in `config/ope
 
 23. Shell lazy-loading still collapsed optional chat and workspace-switcher surfaces back into the entry bundle.
    - Root cause:
-     - `packages/sdkwork-claw-shell/src/application/layouts/MainLayout.tsx` still statically imported `OpenClawGatewayConnections` and `ChatCronActivityNotifications`, even though the main chat route is lazy-loaded
-     - `packages/sdkwork-claw-shell/src/index.ts` still re-exported `InstanceSwitcher`, which defeated the local lazy boundary inside `AppHeader.tsx`
+     - `packages/sdkwork-clawstudio-shell/src/application/layouts/MainLayout.tsx` still statically imported `OpenClawGatewayConnections` and `ChatCronActivityNotifications`, even though the main chat route is lazy-loaded
+     - `packages/sdkwork-clawstudio-shell/src/index.ts` still re-exported `InstanceSwitcher`, which defeated the local lazy boundary inside `AppHeader.tsx`
    - Impact:
-     - production builds emitted `INEFFECTIVE_DYNAMIC_IMPORT` warnings for `@sdkwork/claw-chat` and `InstanceSwitcher`
+     - production builds emitted `INEFFECTIVE_DYNAMIC_IMPORT` warnings for `@sdkwork/clawstudio-chat` and `InstanceSwitcher`
      - browser, desktop, server-hosted, Docker, and Kubernetes shells could preload optional chat warmers and the workspace switcher earlier than intended, weakening startup responsiveness and chunk separation
    - Status: fixed. The shell now lazy-loads a dedicated `ChatRuntimeWarmers` bridge component from `MainLayout`, and the shell root no longer re-exports `InstanceSwitcher`. The shell contract test now locks both lazy boundaries.
 
 24. The default web studio bridge was still being pulled into the main infrastructure runtime even after the shell lazy-boundary cleanup.
    - Root cause:
-     - `packages/sdkwork-claw-infrastructure/src/platform/registry.ts` still eagerly instantiated `WebStudioPlatform`
-     - production barrel exports from `packages/sdkwork-claw-infrastructure/src/index.ts` and `packages/sdkwork-claw-infrastructure/src/platform/index.ts` still re-exported `WebStudioPlatform`, which collapsed the intended lazy boundary
+     - `packages/sdkwork-clawstudio-infrastructure/src/platform/registry.ts` still eagerly instantiated `WebStudioPlatform`
+     - production barrel exports from `packages/sdkwork-clawstudio-infrastructure/src/index.ts` and `packages/sdkwork-clawstudio-infrastructure/src/platform/index.ts` still re-exported `WebStudioPlatform`, which collapsed the intended lazy boundary
    - Impact:
      - web-only and hosted runtime consumers kept paying the cost of the studio bridge upfront
      - `claw-infrastructure` stayed oversized and the lazy split around the studio platform was not real even though the code path was conceptually optional
@@ -214,12 +214,12 @@ The bundled OpenClaw release metadata is now pinned to `2026.4.2` in `config/ope
 
 25. The web workspace remap plugin still stayed on the resolution hot path for normal non-worktree builds.
    - Root cause:
-     - direct `@sdkwork/claw-*` package imports were still flowing through custom resolver logic instead of deterministic aliases
+     - direct `@sdkwork/clawstudio-*` package imports were still flowing through custom resolver logic instead of deterministic aliases
      - the worktree remap plugin could stay enabled even when the workspace was not running from a `.worktrees/...` checkout
    - Impact:
      - normal web builds paid avoidable resolution overhead
      - plugin timing noise obscured the remaining real build hotspots
-   - Status: fixed. Web and desktop Vite hosts now share one workspace resolver implementation. Direct `@sdkwork/claw-*` package imports resolve through generated aliases, the worktree remap plugin is enabled only for actual worktree paths or an explicit `SDKWORK_ENABLE_WORKTREE_RESOLVER=true` override, and the remaining build warning is now generic `rolldown:vite-resolve` plus Tailwind generation timing instead of the custom workspace remap plugin.
+   - Status: fixed. Web and desktop Vite hosts now share one workspace resolver implementation. Direct `@sdkwork/clawstudio-*` package imports resolve through generated aliases, the worktree remap plugin is enabled only for actual worktree paths or an explicit `SDKWORK_ENABLE_WORKTREE_RESOLVER=true` override, and the remaining build warning is now generic `rolldown:vite-resolve` plus Tailwind generation timing instead of the custom workspace remap plugin.
 
 26. Desktop release assets, smoke reports, and the final aggregated release manifest still did not surface one machine-readable OpenClaw installer contract and smoke-evidence chain for packaged desktop targets.
    - Root cause:
@@ -237,7 +237,7 @@ The bundled OpenClaw release metadata is now pinned to `2026.4.2` in `config/ope
      - that meant the verifier could prove `runtime.zip` shape and sidecar contents without proving that the packaged archive could be expanded into a runtime install tree matching `manifest.json`, `.sdkwork-openclaw-runtime.json`, bundled Node, and CLI entrypoints at the paths the desktop runtime service checks on first launch
    - Impact:
      - the packaged release verifier could still miss regressions where an archive looked structurally valid but no longer produced an install-root layout compatible with the runtime sidecar fast path
-     - smoke reports and final release manifests could not distinguish between “archive looks valid�?and “archive has been proven install-ready for startup reuse�?
+     - smoke reports and final release manifests could not distinguish between “archive looks valid�?and “archive has been proven install-ready for startup reuse�?
    - Status: fixed. The desktop OpenClaw release verifier now simulates archive-prewarm materialization for Windows and Linux in a disposable temp install-root, validates the resulting manifest/sidecar/entrypoint layout against the same startup readiness assumptions as the desktop runtime service, returns a normalized `installReadyLayout` summary per platform, and desktop smoke plus final release manifests now persist that summary alongside the installer contract evidence. Desktop smoke now rejects verifier results that do not prove an install-ready layout or whose `installReadyLayout.mode` drifts from the current target platform contract, and release finalization now rejects desktop smoke reports that omit, corrupt, or mode-drift that proof.
 
 28. The GitHub desktop release workflow and public release contract still did not promote desktop installer smoke to a mandatory release step even after finalization started requiring smoke evidence.
@@ -310,31 +310,31 @@ The following targeted checks passed after the latest changes:
 - `node scripts/run-windows-tauri-bundle.test.mjs`
 - `node scripts/release/smoke-desktop-installers.test.mjs`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/updates/updateClient.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/updates/updateClient.test.ts`
 - `node scripts/prepare-openclaw-runtime.mjs`
 - `node -e "import('./scripts/run-windows-tauri-bundle.mjs').then(async (m) => { const result = await m.ensureWindowsBundleOpenClawAliasRoot({ workspaceRootDir: process.cwd(), platform: 'win32' }); console.log(result ?? 'null'); })"`
 - `node -e "import('./scripts/prepare-openclaw-runtime.mjs').then((m) => { console.log(m.resolveBundledResourceMirrorRoot(process.cwd(), 'openclaw', 'win32')); })"`
 - `node -e "import('./scripts/prepare-openclaw-runtime.mjs').then((m) => { console.log('base-win32=' + m.resolveBundledResourceMirrorBaseDir(process.cwd(), process.env, 'win32')); console.log('base-windows=' + m.resolveBundledResourceMirrorBaseDir(process.cwd(), process.env, 'windows')); console.log('root-win32=' + m.resolveBundledResourceMirrorRoot(process.cwd(), 'openclaw', 'win32')); console.log('root-windows=' + m.resolveBundledResourceMirrorRoot(process.cwd(), 'openclaw', 'windows')); })"`
 - `node scripts/verify-desktop-openclaw-release-assets.mjs`
-- `node --experimental-strip-types packages/sdkwork-claw-desktop/src/desktop/tauriBridge.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-desktop/src/desktop/desktopHostedBridge.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/serverBrowserBridge.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/registry.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-desktop/viteBuildOptimization.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-web/viteWorkspaceResolver.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/registry.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/viteBuildOptimization.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-web/viteWorkspaceResolver.test.ts`
 - `node scripts/package-release-assets.test.mjs`
 - `node scripts/release/finalize-release-assets.test.mjs`
-- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-cargo-target'; $env:CARGO_INCREMENTAL='0'; $env:CARGO_BUILD_JOBS='1'; $env:RUSTFLAGS='-C debuginfo=0'; cargo test --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml inject_server_host_metadata_ -- --nocapture`
-- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-cargo-target'; $env:CARGO_INCREMENTAL='0'; $env:CARGO_BUILD_JOBS='1'; $env:RUSTFLAGS='-C debuginfo=0'; cargo test --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml openapi_v1_document_describes_host_platform_state_store_driver -- --nocapture`
-- `pnpm.cmd --filter @sdkwork/claw-web lint`
+- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-cargo-target'; $env:CARGO_INCREMENTAL='0'; $env:CARGO_BUILD_JOBS='1'; $env:RUSTFLAGS='-C debuginfo=0'; cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml inject_server_host_metadata_ -- --nocapture`
+- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-cargo-target'; $env:CARGO_INCREMENTAL='0'; $env:CARGO_BUILD_JOBS='1'; $env:RUSTFLAGS='-C debuginfo=0'; cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml openapi_v1_document_describes_host_platform_state_store_driver -- --nocapture`
+- `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
 - `pnpm.cmd check:sdkwork-core`
 - `node scripts/run-sdkwork-auth-check.mjs`
 - `node scripts/run-sdkwork-agent-check.mjs`
 - `node scripts/run-sdkwork-chat-check.mjs`
-- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml rejects_ -- --nocapture`
-- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml installs_bundled_runtime_from_runtime_archive_bridge -- --nocapture`
-- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml reinstalls_archived_install_when_runtime_sidecar_is_missing -- --nocapture`
+- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml rejects_ -- --nocapture`
+- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml installs_bundled_runtime_from_runtime_archive_bridge -- --nocapture`
+- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml reinstalls_archived_install_when_runtime_sidecar_is_missing -- --nocapture`
 
 Additional verification notes for the shared SDK preparation hardening:
 
@@ -342,10 +342,10 @@ Additional verification notes for the shared SDK preparation hardening:
 - A direct end-to-end run of `node scripts/prepare-shared-sdk-packages.mjs` could not be completed inside this Codex sandbox because the script now correctly repairs `node_modules` links inside sibling shared SDK workspaces outside the writable root, and the sandbox rejected that write with:
   - `EPERM: operation not permitted, mkdir '...retired generic app SDK TypeScript package\\node_modules\\@sdkwork'`
 - This `EPERM` is a sandbox boundary in the current review environment, not the old `ERR_PNPM_ENOSPC` behavior. The previous full-workspace install escalation path has been removed from the preparation script.
-- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml host_platform_status_ -- --nocapture`
-- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_serves_root_html_with_desktop_combined_host_metadata -- --nocapture`
-- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml framework_context_exposes_live_desktop_host_status -- --nocapture`
-- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml desktop_combined_ -- --nocapture`
+- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml host_platform_status_ -- --nocapture`
+- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_serves_root_html_with_desktop_combined_host_metadata -- --nocapture`
+- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml framework_context_exposes_live_desktop_host_status -- --nocapture`
+- `$env:CARGO_TARGET_DIR='C:\Users\admin\.codex\memories\claw-studio-rust-target'; cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml desktop_combined_ -- --nocapture`
 - `node scripts/run-sdkwork-core-check.mjs`
 - `node scripts/run-sdkwork-auth-check.mjs`
 - `pnpm.cmd build`
@@ -365,7 +365,7 @@ Latest full-build evidence from the fresh workspace run:
 
 ## Remaining Risks
 
-1. Default workspace Rust target directories under `packages/sdkwork-claw-desktop/src-tauri/target*` still have disk-pressure risk.
+1. Default workspace Rust target directories under `packages/sdkwork-clawstudio-desktop/src-tauri/target*` still have disk-pressure risk.
    - Targeted Rust verification for the changed host/runtime surfaces passed by redirecting `CARGO_TARGET_DIR` to `C:\Users\admin\.codex\memories\claw-studio-rust-target`.
    - Full default-path `cargo test` and `cargo check` sweeps were not rerun because the large local target directories could not be destructively cleaned under the current tool policy.
 
@@ -388,9 +388,9 @@ Latest full-build evidence from the fresh workspace run:
 ## Recommended Next Actions
 
 1. When disk budget allows, clean or relocate the default Tauri Rust target directories and rerun a full desktop Rust verification sweep:
-   - `cargo check --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml`
-   - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml`
-   - `cargo test --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml`
+   - `cargo check --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
+   - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
+   - `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml`
 
 2. Run packaged installer smoke in disposable real environments:
    - Windows NSIS install/uninstall

@@ -23,7 +23,7 @@ function writeSyntheticServerRuntime({
   writeFileSync(path.join(webDistDir, 'assets', 'index.js'), 'console.log("synthetic");\n', 'utf8');
   writeFileSync(
     envExamplePath,
-    'CLAW_SERVER_HOST=0.0.0.0\nCLAW_SERVER_PORT=18797\nCLAW_SERVER_WEB_DIST=../sdkwork-claw-web/dist\n',
+    'CLAW_SERVER_HOST=0.0.0.0\nCLAW_SERVER_PORT=18797\nCLAW_SERVER_WEB_DIST=../sdkwork-clawstudio-web/dist\n',
     'utf8',
   );
 }
@@ -390,7 +390,7 @@ test('release asset packager collects Windows desktop installers from the target
           installMode: 'first-launch-archive-extract',
           bundledResourceRoot: 'resources/openclaw/',
           runtimeArchive: 'resources/openclaw/runtime.zip',
-          sourceConfigPath: 'packages/sdkwork-claw-desktop/src-tauri/tauri.windows.conf.json',
+          sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json',
           requiredExternalRuntimes: ['nodejs'],
         },
       },
@@ -513,7 +513,7 @@ test('release asset packager records Linux OpenClaw install contract metadata be
           installMode: 'first-launch-archive-extract',
           bundledResourceRoot: 'resources/openclaw/',
           runtimeArchive: 'resources/openclaw/runtime.zip',
-          sourceConfigPath: 'packages/sdkwork-claw-desktop/src-tauri/tauri.linux.conf.json',
+          sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.linux.conf.json',
           requiredExternalRuntimes: ['nodejs'],
           packageFormats: ['deb', 'rpm'],
         },
@@ -580,7 +580,7 @@ test('release asset packager records macOS OpenClaw staged-layout contract metad
           installMode: 'preexpanded-managed-layout',
           bundledResourceRoot: 'resources/openclaw/',
           runtimeArchive: 'resources/openclaw/runtime.zip',
-          sourceConfigPath: 'packages/sdkwork-claw-desktop/src-tauri/tauri.macos.conf.json',
+          sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.macos.conf.json',
           stagedInstallRootSource: 'generated/release/macos-install-root/',
           stagedInstallRootTarget: 'MacOS/',
           requiredExternalRuntimes: ['nodejs'],
@@ -697,7 +697,7 @@ test('server asset packager rejects shared release binaries when an explicit tar
     writeSyntheticServerRuntime({
       serverTargetDir,
       targetTriple: '',
-      binaryName: 'claw-server',
+      binaryName: 'clawstudio-server',
       webDistDir,
       envExamplePath,
     });
@@ -720,11 +720,11 @@ test('server asset packager rejects shared release binaries when an explicit tar
         );
         assert.match(
           error.message,
-          /x86_64-unknown-linux-gnu[\\/]+release[\\/]+claw-server/,
+          /x86_64-unknown-linux-gnu[\\/]+release[\\/]+clawstudio-server/,
         );
         assert.doesNotMatch(
           error.message,
-          /server-target[\\/]+release[\\/]+claw-server/,
+          /server-target[\\/]+release[\\/]+clawstudio-server/,
         );
         assert.match(
           error.message,
@@ -893,7 +893,7 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
     writeSyntheticServerRuntime({
       serverTargetDir,
       targetTriple: 'x86_64-unknown-linux-gnu',
-      binaryName: 'claw-server',
+      binaryName: 'clawstudio-server',
       webDistDir,
       envExamplePath,
     });
@@ -928,13 +928,13 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
 
     assert.equal(existsSync(archivePath), true, `missing expected server archive ${archivePath}`);
     assert.equal(existsSync(`${archivePath}.sha256.txt`), true, 'missing expected server checksum');
-    assert.equal(archiveEntries.has(`${bundleRoot}/bin/claw-server`), true);
+    assert.equal(archiveEntries.has(`${bundleRoot}/bin/clawstudio-server`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/web/dist/index.html`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/.env.example`), true);
-    assert.equal(archiveEntries.has(`${bundleRoot}/start-claw-server.sh`), true);
+    assert.equal(archiveEntries.has(`${bundleRoot}/start-clawstudio-server.sh`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/README.md`), true);
     assert.match(
-      archiveEntries.get(`${bundleRoot}/start-claw-server.sh`).content.toString('utf8'),
+      archiveEntries.get(`${bundleRoot}/start-clawstudio-server.sh`).content.toString('utf8'),
       /CLAW_SERVER_WEB_DIST="\$\{CLAW_SERVER_WEB_DIST:-\$SCRIPT_DIR\/web\/dist\}"/,
     );
     assert.match(
@@ -943,7 +943,7 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
     );
     assert.match(
       archiveEntries.get(`${bundleRoot}/README.md`).content.toString('utf8'),
-      /\.\/bin\/claw-server/,
+      /\.\/bin\/clawstudio-server/,
     );
     assert.match(
       archiveEntries.get(`${bundleRoot}/README.md`).content.toString('utf8'),
@@ -951,7 +951,7 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
     );
     assert.match(
       archiveEntries.get(`${bundleRoot}/README.md`).content.toString('utf8'),
-      /start-claw-server\.sh` and `start-claw-server\.cmd` remain optional convenience wrappers[\s\S]*same native binary/,
+      /start-clawstudio-server\.sh` and `start-clawstudio-server\.cmd` remain optional convenience wrappers[\s\S]*same native binary/,
     );
 
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -984,7 +984,7 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
     writeSyntheticServerRuntime({
       serverTargetDir,
       targetTriple: 'x86_64-unknown-linux-gnu',
-      binaryName: 'claw-server',
+      binaryName: 'clawstudio-server',
       webDistDir,
       envExamplePath,
     });
@@ -1023,8 +1023,8 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
 
     assert.equal(existsSync(archivePath), true, `missing expected container archive ${archivePath}`);
     assert.equal(existsSync(`${archivePath}.sha256.txt`), true, 'missing expected container checksum');
-    assert.equal(archiveEntries.has(`${bundleRoot}/app/bin/claw-server`), true);
-    assert.equal(archiveEntries.has(`${bundleRoot}/app/start-claw-server.sh`), true);
+    assert.equal(archiveEntries.has(`${bundleRoot}/app/bin/clawstudio-server`), true);
+    assert.equal(archiveEntries.has(`${bundleRoot}/app/start-clawstudio-server.sh`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/deploy/docker/Dockerfile`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/deploy/docker/docker-compose.nvidia-cuda.yml`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/deploy/docker/profiles/default.env`), true);
@@ -1063,7 +1063,7 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
     const resolvedAmdEnv = resolveArchiveRelativePath(composeDir, amdEnvPath);
 
     assert.equal(
-      archiveEntries.has(`${resolvedBuildContext}/app/start-claw-server.sh`),
+      archiveEntries.has(`${resolvedBuildContext}/app/start-clawstudio-server.sh`),
       true,
       'compose build context must resolve to the bundle root so the app runtime is visible',
     );
@@ -1104,12 +1104,12 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
     );
     assert.match(
       dockerfileSource,
-      /CMD\s+\["\/opt\/claw\/app\/bin\/claw-server"\]/,
-      'packaged dockerfile must launch the canonical bundled claw-server binary directly',
+      /CMD\s+\["\/opt\/claw\/app\/bin\/clawstudio-server"\]/,
+      'packaged dockerfile must launch the canonical bundled clawstudio-server binary directly',
     );
     assert.doesNotMatch(
       dockerfileSource,
-      /CMD\s+\["\/bin\/sh",\s*"\/opt\/claw\/app\/start-claw-server\.sh"\]/,
+      /CMD\s+\["\/bin\/sh",\s*"\/opt\/claw\/app\/start-clawstudio-server\.sh"\]/,
       'packaged dockerfile must not launch the optional wrapper script as the container entrypoint',
     );
     assert.match(

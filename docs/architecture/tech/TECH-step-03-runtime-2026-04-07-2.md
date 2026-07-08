@@ -11,8 +11,8 @@
 
 ## 2. 代码证据
 
-- `packages/sdkwork-claw-infrastructure/src/platform/serverBrowserBridge.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/registry.test.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/registry.test.ts`
 
 ## 3. 验证证据
 

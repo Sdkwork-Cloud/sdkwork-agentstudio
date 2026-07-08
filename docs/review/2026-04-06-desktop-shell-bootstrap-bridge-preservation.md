@@ -3,13 +3,13 @@
 ## Problem
 
 The previous desktop startup hardening fixed one concrete call site in
-`packages/sdkwork-claw-shell/src/application/bootstrap/bootstrapShellRuntime.ts`:
+`packages/sdkwork-clawstudio-shell/src/application/bootstrap/bootstrapShellRuntime.ts`:
 when the active platform is `desktop`, the shared shell bootstrap no longer
 installs the hosted-browser bridge.
 
 That removed the immediate startup overwrite, but the lower infrastructure entry
 points in
-`packages/sdkwork-claw-infrastructure/src/platform/serverBrowserBridge.ts`
+`packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.ts`
 still accepted direct calls while the desktop bridge was already active.
 
 That meant the architecture was still vulnerable to the same class of bug:
@@ -41,7 +41,7 @@ instead of making the shared installer safe by construction.
 
 ### 1. Preserve desktop authority inside the shared installer
 
-`packages/sdkwork-claw-infrastructure/src/platform/serverBrowserBridge.ts`
+`packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.ts`
 now checks the active platform bridge before installing hosted-browser
 surfaces.
 
@@ -57,7 +57,7 @@ relying only on higher-level call-site discipline.
 
 ### 2. Add explicit regression coverage
 
-`packages/sdkwork-claw-infrastructure/src/platform/serverBrowserBridge.test.ts`
+`packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.test.ts`
 now locks two critical behaviors:
 
 - direct hosted-browser bridge configuration must not replace the active
@@ -81,8 +81,8 @@ and updates:
 
 so `check:sdkwork-foundation` now executes:
 
-- `packages/sdkwork-claw-infrastructure/src/platform/registry.test.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/serverBrowserBridge.test.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/registry.test.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.test.ts`
 - `scripts/sdkwork-foundation-contract.test.ts`
 
 That makes future bridge-authority regressions much harder to reintroduce
@@ -92,7 +92,7 @@ silently.
 
 Executed in this iteration:
 
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-claw-infrastructure/src/platform/serverBrowserBridge.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.test.ts']))"`
 - `node scripts/run-sdkwork-foundation-check.mjs`
 - `pnpm.cmd check:sdkwork-foundation`
 - `pnpm.cmd check:sdkwork-shell`

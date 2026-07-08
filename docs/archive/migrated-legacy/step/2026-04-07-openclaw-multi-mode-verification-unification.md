@@ -108,7 +108,7 @@ Fresh commands run in this loop:
 ```bash
 node scripts/release-flow-contract.test.mjs
 node --experimental-strip-types scripts/sdkwork-docs-contract.test.ts
-node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts
 node scripts/openclaw-upgrade-readiness.mjs 2026.4.2
 pnpm.cmd check:desktop-openclaw-runtime
 pnpm.cmd check:multi-mode

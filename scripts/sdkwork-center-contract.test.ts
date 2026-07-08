@@ -26,30 +26,30 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-claw-center is implemented locally instead of re-exporting claw-studio-claw-center', () => {
+runTest('sdkwork-clawstudio-center is implemented locally instead of re-exporting claw-studio-claw-center', () => {
   const workspacePackage = readJson<{ scripts?: Record<string, string> }>('package.json');
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-claw-center/package.json');
-  const indexSource = read('packages/sdkwork-claw-center/src/index.ts');
-  const uploadPageSource = read('packages/sdkwork-claw-center/src/pages/ClawUpload.tsx');
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-center/package.json');
+  const indexSource = read('packages/sdkwork-clawstudio-center/src/index.ts');
+  const uploadPageSource = read('packages/sdkwork-clawstudio-center/src/pages/ClawUpload.tsx');
   const centerCheckRunnerSource = read('scripts/run-sdkwork-center-check.mjs');
-  const registryPresentationSource = read('packages/sdkwork-claw-center/src/services/clawRegistryPresentation.ts');
-  const clawServiceSource = read('packages/sdkwork-claw-center/src/services/clawService.ts');
+  const registryPresentationSource = read('packages/sdkwork-clawstudio-center/src/services/clawRegistryPresentation.ts');
+  const clawServiceSource = read('packages/sdkwork-clawstudio-center/src/services/clawService.ts');
 
-  assert.ok(exists('packages/sdkwork-claw-center/src/pages/ClawCenter.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-center/src/pages/ClawDetail.tsx'));
-  assert.ok(exists('packages/sdkwork-claw-center/src/services/clawService.ts'));
-  assert.ok(exists('packages/sdkwork-claw-center/src/types/index.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-center/src/pages/ClawCenter.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-center/src/pages/ClawDetail.tsx'));
+  assert.ok(exists('packages/sdkwork-clawstudio-center/src/services/clawService.ts'));
+  assert.ok(exists('packages/sdkwork-clawstudio-center/src/types/index.ts'));
   assert.ok(exists('scripts/run-sdkwork-center-check.mjs'));
 
-  assert.ok(!pkg.dependencies?.['@sdkwork/claw-studio-claw-center']);
-  assert.ok(pkg.dependencies?.['@sdkwork/claw-infrastructure']);
+  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-claw-center']);
+  assert.ok(pkg.dependencies?.['@sdkwork/clawstudio-infrastructure']);
   assert.match(
     workspacePackage.scripts?.['check:sdkwork-center'] ?? '',
     /sdkwork-run-node scripts\/run-sdkwork-center-check\.mjs && sdkwork-run-node --experimental-strip-types scripts\/sdkwork-center-contract\.test\.ts/,
   );
   assert.match(
     centerCheckRunnerSource,
-    /packages\/sdkwork-claw-center\/src\/services\/clawRegistryPresentation\.test\.ts/,
+    /packages\/sdkwork-clawstudio-center\/src\/services\/clawRegistryPresentation\.test\.ts/,
   );
   assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-claw-center/);
   assert.doesNotMatch(registryPresentationSource, /runtimeKind === 'openclaw'/);
@@ -65,9 +65,9 @@ runTest('sdkwork-claw-center is implemented locally instead of re-exporting claw
 });
 
 runTest('claw registry center keeps a search-first workbench and adaptive maximum page width', () => {
-  const centerPageSource = read('packages/sdkwork-claw-center/src/pages/ClawCenter.tsx');
-  const detailPageSource = read('packages/sdkwork-claw-center/src/pages/ClawDetail.tsx');
-  const uploadPageSource = read('packages/sdkwork-claw-center/src/pages/ClawUpload.tsx');
+  const centerPageSource = read('packages/sdkwork-clawstudio-center/src/pages/ClawCenter.tsx');
+  const detailPageSource = read('packages/sdkwork-clawstudio-center/src/pages/ClawDetail.tsx');
+  const uploadPageSource = read('packages/sdkwork-clawstudio-center/src/pages/ClawUpload.tsx');
 
   assert.match(centerPageSource, /max-w-none/);
   assert.match(detailPageSource, /max-w-\[min\(1760px,_calc\(100vw-2rem\)\)\]/);
@@ -100,8 +100,8 @@ runTest('claw registry center keeps a search-first workbench and adaptive maximu
 });
 
 runTest('claw center locales stay valid json and include search workbench copy in both languages', () => {
-  const enLocale = readJson<{ clawCenter: Record<string, any> }>('packages/sdkwork-claw-i18n/src/locales/en.json');
-  const zhLocale = readJson<{ clawCenter: Record<string, any> }>('packages/sdkwork-claw-i18n/src/locales/zh.json');
+  const enLocale = readJson<{ clawCenter: Record<string, any> }>('packages/sdkwork-clawstudio-i18n/src/locales/en.json');
+  const zhLocale = readJson<{ clawCenter: Record<string, any> }>('packages/sdkwork-clawstudio-i18n/src/locales/zh.json');
 
   assert.equal(enLocale.clawCenter.actions.copyContent, 'Copy Content');
   assert.equal(enLocale.clawCenter.actions.quickRegister, 'Networking');
@@ -120,9 +120,9 @@ runTest('claw center locales stay valid json and include search workbench copy i
 });
 
 runTest('openclaw networking surface keeps explicit OpenClaw gateway copy and clean capability formatting', () => {
-  const uploadPageSource = read('packages/sdkwork-claw-center/src/pages/ClawUpload.tsx');
-  const enLocale = readJson<any>('packages/sdkwork-claw-i18n/src/locales/en.json');
-  const zhLocale = readJson<any>('packages/sdkwork-claw-i18n/src/locales/zh.json');
+  const uploadPageSource = read('packages/sdkwork-clawstudio-center/src/pages/ClawUpload.tsx');
+  const enLocale = readJson<any>('packages/sdkwork-clawstudio-i18n/src/locales/en.json');
+  const zhLocale = readJson<any>('packages/sdkwork-clawstudio-i18n/src/locales/zh.json');
 
   assert.doesNotMatch(uploadPageSource, /join\(' ç’º?'\)/);
   assert.equal(enLocale.sidebar.clawUpload, 'Networking');

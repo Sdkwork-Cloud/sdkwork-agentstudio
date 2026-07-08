@@ -62,7 +62,7 @@ function buildInstallerContract(platform) {
       installMode: 'first-launch-archive-extract',
       bundledResourceRoot: 'resources/openclaw/',
       runtimeArchive: 'resources/openclaw/runtime.zip',
-      sourceConfigPath: 'packages/sdkwork-claw-desktop/src-tauri/tauri.windows.conf.json',
+      sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json',
       requiredExternalRuntimes: ['nodejs'],
     };
   }
@@ -246,7 +246,7 @@ function buildServerSmokeReport({
   artifactRelativePaths = [
     'server/linux/x64/claw-studio-server-release-2026-04-03-08-linux-x64.tar.gz',
   ],
-  launcherRelativePath = platform === 'windows' ? 'bin/claw-server.exe' : 'bin/claw-server',
+  launcherRelativePath = platform === 'windows' ? 'bin/clawstudio-server.exe' : 'bin/clawstudio-server',
 } = {}) {
   return {
     family: 'server',
@@ -359,7 +359,7 @@ function buildContainerDeploymentChecks() {
     {
       id: 'persistent-storage',
       status: 'passed',
-      detail: 'packaged docker compose persists /var/lib/claw-server',
+      detail: 'packaged docker compose persists /var/lib/clawstudio-server',
     },
     {
       id: 'docker-compose-up',
@@ -424,7 +424,7 @@ function buildKubernetesDeploymentChecks() {
     {
       id: 'persistent-storage',
       status: 'passed',
-      detail: 'rendered manifests mount /var/lib/claw-server through a PersistentVolumeClaim',
+      detail: 'rendered manifests mount /var/lib/clawstudio-server through a PersistentVolumeClaim',
     },
   ];
 }
@@ -2366,7 +2366,7 @@ test('release asset finalizer lifts server bundle smoke metadata onto server art
         target: 'x86_64-unknown-linux-gnu',
         smokeKind: 'bundle-runtime',
         status: 'passed',
-        launcherRelativePath: 'bin/claw-server',
+        launcherRelativePath: 'bin/clawstudio-server',
         runtimeBaseUrl: 'http://127.0.0.1:19797',
         artifactRelativePaths: [
           'server/linux/x64/claw-studio-server-release-2026-04-03-08-linux-x64.tar.gz',
@@ -2873,7 +2873,7 @@ test('release asset finalizer rejects server smoke reports with unsafe launcher 
       `${JSON.stringify(buildServerSmokeReport({
         manifestPath,
         artifactRelativePaths: [serverArchiveRelativePath],
-        launcherRelativePath: '../bin/claw-server',
+        launcherRelativePath: '../bin/clawstudio-server',
       }), null, 2)}\n`,
       'utf8',
     );
@@ -3030,7 +3030,7 @@ test('release asset finalizer lifts deployment smoke metadata onto container and
           {
             id: 'persistent-storage',
             status: 'passed',
-            detail: 'packaged docker compose persists /var/lib/claw-server',
+            detail: 'packaged docker compose persists /var/lib/clawstudio-server',
           },
           {
             id: 'docker-compose-up',
@@ -3109,7 +3109,7 @@ test('release asset finalizer lifts deployment smoke metadata onto container and
           {
             id: 'persistent-storage',
             status: 'passed',
-            detail: 'rendered manifests mount /var/lib/claw-server through a PersistentVolumeClaim',
+            detail: 'rendered manifests mount /var/lib/clawstudio-server through a PersistentVolumeClaim',
           },
         ],
       },

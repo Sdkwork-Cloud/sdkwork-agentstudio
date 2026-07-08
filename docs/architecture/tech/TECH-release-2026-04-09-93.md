@@ -12,15 +12,15 @@
 ## Attempt Outcome
 
 - Fresh RED in this loop was explicit:
-  - `pnpm exec tsx packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.test.tsx`
   - failed first because `InstanceDetailSectionContent.tsx` did not exist yet
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because the page still kept the section router inline and the component file did not exist
 - Implemented the Step 07 extraction:
-  - added `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.tsx`
+  - added `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`
   - moved shared section-availability rendering into `renderInstanceDetailSectionAvailability(...)`
-  - rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now delegates section switching to the dedicated router component
-  - added `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.test.tsx`
+  - rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now delegates section switching to the dedicated router component
+  - added `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.test.tsx`
   - updated `scripts/sdkwork-instances-contract.test.ts` to enforce the new router boundary and to re-anchor evidence to the real section-content / channels boundaries
 - Current hotspot profile after the fresh current-worktree re-baseline:
   - `InstanceDetail.tsx`: `2009`
@@ -33,10 +33,10 @@
 
 ## Change Scope
 
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.tsx`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.test.tsx`
-- `packages/sdkwork-claw-instances/src/components/index.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.test.tsx`
+- `packages/sdkwork-clawstudio-instances/src/components/index.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
 - `scripts/sdkwork-instances-contract.test.ts`
 - `docs/review/step-07-section-content-router-extraction-2026-04-09.md`
 - `docs/鏋舵瀯/134-2026-04-08-instance-detail-section-decomposition-progress.md`
@@ -46,13 +46,13 @@
 ## Verification Focus
 
 - RED:
-  - `pnpm exec tsx packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - GREEN:
-  - `pnpm exec tsx packages/sdkwork-claw-instances/src/components/InstanceDetailSectionContent.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm --filter @sdkwork/clawstudio-web lint`
   - `pnpm build`
 - YELLOW:
   - repo-wide `pnpm lint`

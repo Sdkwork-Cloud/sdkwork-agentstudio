@@ -31,8 +31,8 @@ Fresh evidence gathered in this loop:
 
 Fresh evidence gathered in this loop:
 
-1. `packages/sdkwork-claw-core/src/services/openClawConfigService.ts` still defined the built-in channels as `Sdkwork Chat` and `Wehcat`.
-2. A new failing assertion in `packages/sdkwork-claw-core/src/services/openClawConfigService.test.ts` reproduced the gap before the implementation change.
+1. `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts` still defined the built-in channels as `Sdkwork Chat` and `Wehcat`.
+2. A new failing assertion in `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.test.ts` reproduced the gap before the implementation change.
 
 ## Changes Landed
 
@@ -50,8 +50,8 @@ Fresh evidence gathered in this loop:
 
 ### Media-account naming alignment
 
-- Updated the built-in channel definitions in `packages/sdkwork-claw-core/src/services/openClawConfigService.ts` so the media-account defaults now surface as the requested `sdkworkchat` and `wehcat` labels.
-- Tightened `packages/sdkwork-claw-core/src/services/openClawConfigService.test.ts` to keep those names under regression coverage.
+- Updated the built-in channel definitions in `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts` so the media-account defaults now surface as the requested `sdkworkchat` and `wehcat` labels.
+- Tightened `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.test.ts` to keep those names under regression coverage.
 
 ### Release docs alignment
 
@@ -68,8 +68,8 @@ node scripts/release-flow-contract.test.mjs
 node --experimental-strip-types scripts/sdkwork-core-contract.test.ts
 node --experimental-strip-types scripts/sdkwork-ui-contract.test.ts
 node --experimental-strip-types scripts/sdkwork-channels-contract.test.ts
-node --experimental-strip-types packages/sdkwork-claw-ui/src/components/channelCatalogMeta.test.ts
-node --experimental-strip-types packages/sdkwork-claw-core/src/services/openClawConfigService.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-ui/src/components/channelCatalogMeta.test.ts
+node --experimental-strip-types packages/sdkwork-clawstudio-core/src/services/openClawConfigService.test.ts
 node scripts/check-shared-sdk-release-parity.mjs
 node scripts/release/render-release-notes.mjs --release-tag release-2026-04-07-03
 pnpm lint

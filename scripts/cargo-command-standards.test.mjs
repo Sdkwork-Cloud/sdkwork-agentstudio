@@ -31,14 +31,14 @@ assert.deepEqual(
   normalizeCargoInvocationArgs([
     'test',
     '--manifest-path',
-    'packages/sdkwork-claw-server/src-host/Cargo.toml',
+    'packages/sdkwork-clawstudio-server/src-host/Cargo.toml',
     '--target-dir=target/check-server',
   ], { cwd: workspaceRoot }),
   [
     'test',
     '--locked',
     '--manifest-path',
-    path.resolve(workspaceRoot, 'packages/sdkwork-claw-server/src-host/Cargo.toml'),
+    path.resolve(workspaceRoot, 'packages/sdkwork-clawstudio-server/src-host/Cargo.toml'),
     `--target-dir=${path.resolve(workspaceRoot, 'target/check-server')}`,
   ],
   'Cargo invocation normalization must lock dependency resolution and absolutize path arguments',

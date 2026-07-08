@@ -38,7 +38,7 @@ The only direct dependencies behind the latest registry release were:
 
 ## Updated Files
 
-- `packages/sdkwork-claw-community/package.json`
+- `packages/sdkwork-clawstudio-community/package.json`
   - `@tiptap/extension-highlight` -> `^3.22.2`
   - `@tiptap/extension-image` -> `^3.22.2`
   - `@tiptap/extension-link` -> `^3.22.2`
@@ -48,19 +48,19 @@ The only direct dependencies behind the latest registry release were:
   - `@tiptap/react` -> `^3.22.2`
   - `@tiptap/starter-kit` -> `^3.22.2`
 
-- `packages/sdkwork-claw-core/package.json`
+- `packages/sdkwork-clawstudio-core/package.json`
   - `fuse.js` -> `^7.3.0`
 
-- `packages/sdkwork-claw-github/package.json`
+- `packages/sdkwork-clawstudio-github/package.json`
   - `fuse.js` -> `^7.3.0`
 
-- `packages/sdkwork-claw-huggingface/package.json`
+- `packages/sdkwork-clawstudio-huggingface/package.json`
   - `fuse.js` -> `^7.3.0`
 
-- `packages/sdkwork-claw-market/package.json`
+- `packages/sdkwork-clawstudio-market/package.json`
   - `fuse.js` -> `^7.3.0`
 
-- `packages/sdkwork-claw-shell/package.json`
+- `packages/sdkwork-clawstudio-shell/package.json`
   - `fuse.js` -> `^7.3.0`
 
 ## Compatibility Assessment

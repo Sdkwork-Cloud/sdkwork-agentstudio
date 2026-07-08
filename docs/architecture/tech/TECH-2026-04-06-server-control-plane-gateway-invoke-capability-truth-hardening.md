@@ -20,7 +20,7 @@ That made the next shared-runtime question unavoidable:
 
 ## Root Cause
 
-`packages/sdkwork-claw-server/src-host/src/bootstrap.rs`
+`packages/sdkwork-clawstudio-server/src-host/src/bootstrap.rs`
 `ControlPlaneManageOpenClawProvider::gateway_invoke_is_available(...)` was
 hard-coded to `false`.
 
@@ -67,20 +67,20 @@ ready gateway endpoint.
 
 ## Files Changed
 
-- `packages/sdkwork-claw-server/src-host/src/bootstrap.rs`
-- `packages/sdkwork-claw-server/src-host/src/main.rs`
+- `packages/sdkwork-clawstudio-server/src-host/src/bootstrap.rs`
+- `packages/sdkwork-clawstudio-server/src-host/src/main.rs`
 
 ## Verification
 
 Red evidence captured before implementation:
 
-- `cargo test control_plane_manage_openclaw_provider_reports_gateway_invoke_available_when_gateway_is_ready --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml`
-- `cargo test internal_host_platform_route_reports_gateway_invoke_available_when_control_plane_gateway_is_ready --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml`
+- `cargo test control_plane_manage_openclaw_provider_reports_gateway_invoke_available_when_gateway_is_ready --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml`
+- `cargo test internal_host_platform_route_reports_gateway_invoke_available_when_control_plane_gateway_is_ready --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml`
 
 Green evidence after implementation:
 
-- `cargo test control_plane_manage_openclaw_provider_reports_gateway_invoke_available_when_gateway_is_ready --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml`
-- `cargo test internal_host_platform_route_reports_gateway_invoke_available_when_control_plane_gateway_is_ready --manifest-path packages/sdkwork-claw-server/src-host/Cargo.toml`
+- `cargo test control_plane_manage_openclaw_provider_reports_gateway_invoke_available_when_gateway_is_ready --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml`
+- `cargo test internal_host_platform_route_reports_gateway_invoke_available_when_control_plane_gateway_is_ready --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml`
 - `pnpm.cmd check:server`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd lint`

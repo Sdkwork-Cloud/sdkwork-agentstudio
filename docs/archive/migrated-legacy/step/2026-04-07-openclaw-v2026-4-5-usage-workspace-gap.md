@@ -12,9 +12,9 @@ Close the next real OpenClaw parity gap in local `claw-studio`: the shared `usag
 
 This loop kept the host architecture unified:
 
-- business logic in `packages/sdkwork-claw-dashboard`
-- shell wiring in `packages/sdkwork-claw-shell`
-- locale wiring in `packages/sdkwork-claw-i18n`
+- business logic in `packages/sdkwork-clawstudio-dashboard`
+- shell wiring in `packages/sdkwork-clawstudio-shell`
+- locale wiring in `packages/sdkwork-clawstudio-i18n`
 - no web-only or desktop-only usage implementation forks
 
 ## Upstream Evidence
@@ -28,7 +28,7 @@ Verified against bundled upstream source snapshots:
 
 Confirmed locally that transport support already existed in:
 
-- `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts`
 
 Available gateway methods already covered:
 
@@ -49,14 +49,14 @@ Before this loop, local source had a real parity hole:
 6. no dashboard contract coverage for the new surface
 7. no route-surface approval for `/usage`
 
-The partially written `packages/sdkwork-claw-dashboard/src/pages/UsageWorkspace.tsx` also left the workspace uncompilable.
+The partially written `packages/sdkwork-clawstudio-dashboard/src/pages/UsageWorkspace.tsx` also left the workspace uncompilable.
 
 ## TDD Record
 
 Red state was already captured before implementation:
 
-- `packages/sdkwork-claw-dashboard/src/services/usageWorkspaceService.test.ts`
-- `packages/sdkwork-claw-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
+- `packages/sdkwork-clawstudio-dashboard/src/services/usageWorkspaceService.test.ts`
+- `packages/sdkwork-clawstudio-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
 
 Observed red reasons:
 
@@ -94,11 +94,11 @@ Fix:
 
 Problem:
 
-- `sdkwork-claw-dashboard` imported `@sdkwork/claw-i18n` but did not declare it.
+- `sdkwork-clawstudio-dashboard` imported `@sdkwork/clawstudio-i18n` but did not declare it.
 
 Fix:
 
-- added `@sdkwork/claw-i18n` to `packages/sdkwork-claw-dashboard/package.json`
+- added `@sdkwork/clawstudio-i18n` to `packages/sdkwork-clawstudio-dashboard/package.json`
 
 ### 3. Shell surface drift
 
@@ -146,7 +146,7 @@ Fix:
 
 Problem:
 
-- `sync:locales` and `packages/sdkwork-claw-i18n/src/index.test.ts` were first run in parallel
+- `sync:locales` and `packages/sdkwork-clawstudio-i18n/src/index.test.ts` were first run in parallel
 - the test raced against stale aggregate locale files
 
 Fix:
@@ -158,37 +158,37 @@ Fix:
 
 ### Dashboard
 
-- `packages/sdkwork-claw-dashboard/package.json`
-- `packages/sdkwork-claw-dashboard/src/Usage.tsx`
-- `packages/sdkwork-claw-dashboard/src/index.ts`
-- `packages/sdkwork-claw-dashboard/src/pages/UsageWorkspace.tsx`
-- `packages/sdkwork-claw-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
-- `packages/sdkwork-claw-dashboard/src/services/index.ts`
-- `packages/sdkwork-claw-dashboard/src/services/usageWorkspaceService.ts`
-- `packages/sdkwork-claw-dashboard/src/services/usageWorkspaceService.test.ts`
-- `packages/sdkwork-claw-dashboard/src/types/index.ts`
-- `packages/sdkwork-claw-dashboard/src/types/usage.ts`
+- `packages/sdkwork-clawstudio-dashboard/package.json`
+- `packages/sdkwork-clawstudio-dashboard/src/Usage.tsx`
+- `packages/sdkwork-clawstudio-dashboard/src/index.ts`
+- `packages/sdkwork-clawstudio-dashboard/src/pages/UsageWorkspace.tsx`
+- `packages/sdkwork-clawstudio-dashboard/src/pages/usageWorkspacePageComposition.test.ts`
+- `packages/sdkwork-clawstudio-dashboard/src/services/index.ts`
+- `packages/sdkwork-clawstudio-dashboard/src/services/usageWorkspaceService.ts`
+- `packages/sdkwork-clawstudio-dashboard/src/services/usageWorkspaceService.test.ts`
+- `packages/sdkwork-clawstudio-dashboard/src/types/index.ts`
+- `packages/sdkwork-clawstudio-dashboard/src/types/usage.ts`
 
 ### Shell / Settings
 
-- `packages/sdkwork-claw-shell/src/application/router/AppRoutes.tsx`
-- `packages/sdkwork-claw-shell/src/application/router/routePaths.ts`
-- `packages/sdkwork-claw-shell/src/application/router/routePrefetch.ts`
-- `packages/sdkwork-claw-shell/src/components/Sidebar.tsx`
-- `packages/sdkwork-claw-shell/src/components/commandPaletteCommands.ts`
-- `packages/sdkwork-claw-settings/src/GeneralSettings.tsx`
+- `packages/sdkwork-clawstudio-shell/src/application/router/AppRoutes.tsx`
+- `packages/sdkwork-clawstudio-shell/src/application/router/routePaths.ts`
+- `packages/sdkwork-clawstudio-shell/src/application/router/routePrefetch.ts`
+- `packages/sdkwork-clawstudio-shell/src/components/Sidebar.tsx`
+- `packages/sdkwork-clawstudio-shell/src/components/commandPaletteCommands.ts`
+- `packages/sdkwork-clawstudio-settings/src/GeneralSettings.tsx`
 
 ### I18n
 
-- `packages/sdkwork-claw-i18n/src/locales/en/commandPalette.json`
-- `packages/sdkwork-claw-i18n/src/locales/en/dashboard.json`
-- `packages/sdkwork-claw-i18n/src/locales/en/sidebar.json`
-- `packages/sdkwork-claw-i18n/src/locales/en.json`
-- `packages/sdkwork-claw-i18n/src/locales/zh/index.ts`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/commandPalette.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/dashboard.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en/sidebar.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
+- `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
 
 ### Contracts / Checks
 
-- `scripts/check-sdkwork-claw-route-surface.mjs`
+- `scripts/check-sdkwork-clawstudio-route-surface.mjs`
 - `scripts/run-sdkwork-dashboard-check.mjs`
 - `scripts/sdkwork-dashboard-contract.test.ts`
 - `scripts/sdkwork-shell-contract.test.ts`
@@ -198,8 +198,8 @@ Fix:
 
 Fresh commands run in this loop:
 
-- `pnpm.cmd --filter @sdkwork/claw-i18n sync:locales`
-- `node --experimental-strip-types packages/sdkwork-claw-i18n/src/index.test.ts`
+- `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
 - `node scripts/run-sdkwork-dashboard-check.mjs`
 - `pnpm.cmd check:sdkwork-dashboard`
 - `pnpm.cmd check:sdkwork-shell`
@@ -249,7 +249,7 @@ Best next iteration for this area:
 1. move the current first landing from summary-first to analysis-first by adding upstream-style session/day/hour filtering
 2. add chart-mode and daily-breakdown mode toggles from upstream usage semantics
 3. add session log filters and visible-column configuration
-4. keep every addition inside `sdkwork-claw-dashboard` and shared shell surfaces only
+4. keep every addition inside `sdkwork-clawstudio-dashboard` and shared shell surfaces only
 
 ## Multi-Mode Impact
 

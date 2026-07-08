@@ -23,9 +23,9 @@ function runTest(name, fn) {
 }
 
 const packageJson = readJson('package.json');
-const routerSource = read('packages/sdkwork-claw-server/src-host/src/http/router.rs');
-const httpModSource = read('packages/sdkwork-claw-server/src-host/src/http/mod.rs');
-const mainSource = read('packages/sdkwork-claw-server/src-host/src/main.rs');
+const routerSource = read('packages/sdkwork-clawstudio-server/src-host/src/http/router.rs');
+const httpModSource = read('packages/sdkwork-clawstudio-server/src-host/src/http/mod.rs');
+const mainSource = read('packages/sdkwork-clawstudio-server/src-host/src/main.rs');
 
 runTest('server http module exposes a dedicated cors policy helper instead of the old broad claw route mirroring', () => {
   assert.match(httpModSource, /pub mod cors_policy;/);

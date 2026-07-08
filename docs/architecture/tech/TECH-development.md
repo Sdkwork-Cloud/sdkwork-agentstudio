@@ -35,29 +35,29 @@ Repository verification is intentionally layered:
 Use pnpm filters when you need to work on one package directly:
 
 ```bash
-pnpm --filter @sdkwork/claw-web build
-pnpm --filter @sdkwork/claw-desktop tauri:info
-pnpm --filter @sdkwork/claw-market lint
+pnpm --filter @sdkwork/clawstudio-web build
+pnpm --filter @sdkwork/clawstudio-desktop tauri:info
+pnpm --filter @sdkwork/clawstudio-market lint
 ```
 
 ## Rules That Matter
 
 ### Keep Entry Packages Thin
 
-`@sdkwork/claw-web` is an application entry. It should not absorb new stores, hooks, or business services. The same principle applies to `@sdkwork/claw-desktop`.
+`@sdkwork/clawstudio-web` is an application entry. It should not absorb new stores, hooks, or business services. The same principle applies to `@sdkwork/clawstudio-desktop`.
 
 ### Import Package Roots Only
 
 Cross-package imports must target package roots:
 
 ```ts
-import { Market } from '@sdkwork/claw-market';
+import { Market } from '@sdkwork/clawstudio-market';
 ```
 
 Do not import feature internals across packages:
 
 ```ts
-import { Market } from '@sdkwork/claw-market/src/pages/market/Market';
+import { Market } from '@sdkwork/clawstudio-market/src/pages/market/Market';
 ```
 
 ### Keep Feature Logic Inside Feature Packages

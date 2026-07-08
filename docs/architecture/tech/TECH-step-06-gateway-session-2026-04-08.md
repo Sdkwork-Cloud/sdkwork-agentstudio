@@ -30,26 +30,26 @@
 
 ## OpenClaw Fact Sources
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
   - remains the shared instance detail and conversation persistence fact source that the Gateway session layer must selectively bypass for managed Gateway sessions.
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
   - remains the shared browser workbench contract that freezes endpoint publication and managed-instance metadata.
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
   - remains the workbench consumer of the same runtime/readiness status surfaced to the chat route and session layers.
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
   - remains the readiness gate for local-managed OpenClaw detail surfaces, which the chat session authority must honor when deciding whether local snapshots are valid.
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   - remains the Local Proxy runtime owner underneath the managed Gateway model path and stayed unchanged through this closure loop.
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
   - remains the stable desktop plugin boundary and stayed unchanged through this loop.
 
 ## Verification Focus
 
 - `pnpm.cmd check:sdkwork-chat`
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/studioConversationGateway.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/connectGatewayInstances.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/chatSessionBootstrap.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/store/openClawGatewaySessionStore.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/store/connectGatewayInstances.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/chatSessionBootstrap.test.ts`
 
 ## Architecture Writeback
 

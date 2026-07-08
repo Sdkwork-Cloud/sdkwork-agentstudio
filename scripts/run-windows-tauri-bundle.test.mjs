@@ -196,7 +196,7 @@ assert.equal(
 );
 assert.equal(
   windowsBundleCommand.cwd,
-  path.join(rootDir, 'packages', 'sdkwork-claw-desktop'),
+  path.join(rootDir, 'packages', 'sdkwork-clawstudio-desktop'),
   'run-windows-tauri-bundle must execute the tauri CLI from the desktop package directory',
 );
 const configuredWindowsBundleCommand = bundleModule.buildWindowsTauriBundleCommand({
@@ -261,7 +261,7 @@ await bundleModule.ensureWindowsBundleOpenClawAliasRoot({
   platform: 'win32',
   resolvePackagedOpenClawResourceDirImpl(workspaceRootDir, platform) {
     ensuredAliasCalls.push(['resolve', workspaceRootDir, platform]);
-    return 'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\release\\openclaw-resource';
+    return 'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\release\\openclaw-resource';
   },
   syncWindowsPackagedOpenClawAliasRootImpl(options) {
     ensuredAliasCalls.push([
@@ -280,7 +280,7 @@ assert.deepEqual(
     [
       'sync',
       syntheticWorkspaceRoot,
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\release\\openclaw-resource',
+      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\release\\openclaw-resource',
       'win32',
     ],
   ],
@@ -293,34 +293,34 @@ assert.equal(replacements.length, 6);
 assert.deepEqual(replacements.slice(0, 3), [
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\bundled\\',
+      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\bundled\\',
     to: 'D:\\.sdkwork-bc\\claw-studio\\bundled\\',
   },
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\br\\b\\',
+      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\b\\',
     to: 'D:\\.sdkwork-bc\\claw-studio\\bundled\\',
   },
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\resources\\openclaw\\',
+      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\resources\\openclaw\\',
     to: 'D:\\.sdkwork-bc\\claw-studio\\openclaw\\',
   },
 ]);
 assert.deepEqual(replacements.slice(3), [
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\dist\\',
+      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\dist\\',
     to: 'D:\\.sdkwork-bc\\claw-studio\\web-dist\\',
   },
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\br\\w\\',
+      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\w\\',
     to: 'D:\\.sdkwork-bc\\claw-studio\\web-dist\\',
   },
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\br\\o\\',
+      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\o\\',
     to: 'D:\\.sdkwork-bc\\claw-studio\\openclaw\\',
   },
 ]);
@@ -336,7 +336,7 @@ const mirrorResolvedReplacements = bundleModule.createWindowsNsisSourceReplaceme
         return 'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors\\bundled-20260404-abcdef';
       }
       if (sourcePath.endsWith('generated\\br\\o')) {
-        return 'D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\release\\openclaw-resource';
+        return 'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\release\\openclaw-resource';
       }
       return null;
     },
@@ -518,12 +518,12 @@ assert.deepEqual(
 );
 
 const sampleInstaller = [
-  'File /a "/oname=generated\\\\bundled\\\\bundle-manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\bundled\\foundation\\components\\bundle-manifest.json"',
-  'File /a "/oname=generated\\\\bundled\\\\bundle-manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\br\\b\\foundation\\components\\bundle-manifest.json"',
-  'File /a "/oname=resources\\\\openclaw\\\\manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\resources\\openclaw\\manifest.json"',
-  'File /a "/oname=dist\\\\index.html" "D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\dist\\index.html"',
-  'File /a "/oname=dist\\\\index.html" "D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\br\\w\\index.html"',
-  'File /a "/oname=resources\\\\openclaw\\\\manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-claw-desktop\\src-tauri\\generated\\br\\o\\manifest.json"',
+  'File /a "/oname=generated\\\\bundled\\\\bundle-manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\bundled\\foundation\\components\\bundle-manifest.json"',
+  'File /a "/oname=generated\\\\bundled\\\\bundle-manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\b\\foundation\\components\\bundle-manifest.json"',
+  'File /a "/oname=resources\\\\openclaw\\\\manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\resources\\openclaw\\manifest.json"',
+  'File /a "/oname=dist\\\\index.html" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\dist\\index.html"',
+  'File /a "/oname=dist\\\\index.html" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\w\\index.html"',
+  'File /a "/oname=resources\\\\openclaw\\\\manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\o\\manifest.json"',
 ].join('\n');
 
 const rewrittenInstaller = bundleModule.rewriteNsisSourcePaths(sampleInstaller, replacements);
@@ -540,7 +540,7 @@ assert.doesNotMatch(rewrittenInstaller, /generated\\bundled\\\\/);
 assert.doesNotMatch(rewrittenInstaller, /generated\\br\\w\\\\/);
 assert.doesNotMatch(rewrittenInstaller, /generated\\br\\[bo]\\\\/);
 assert.doesNotMatch(rewrittenInstaller, /resources\\openclaw\\\\/);
-assert.doesNotMatch(rewrittenInstaller, /packages\\sdkwork-claw-desktop\\dist\\\\/);
+assert.doesNotMatch(rewrittenInstaller, /packages\\sdkwork-clawstudio-desktop\\dist\\\\/);
 assert.match(
   preparedInstaller,
   /!define OUTFILE "D:\\release\\Claw Studio_0\.1\.0_x64-setup\.exe"/,

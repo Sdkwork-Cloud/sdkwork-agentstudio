@@ -21,7 +21,7 @@ function buildDesktopTargetScopeId(desktopPackageDir) {
 }
 
 export function resolveDesktopPackageDir(workspaceRootDir = rootDir) {
-  return path.join(path.resolve(workspaceRootDir), 'packages', 'sdkwork-claw-desktop');
+  return path.join(path.resolve(workspaceRootDir), 'packages', 'sdkwork-clawstudio-desktop');
 }
 
 export function resolveDesktopSrcTauriDir({

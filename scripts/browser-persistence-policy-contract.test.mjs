@@ -29,7 +29,7 @@ runTest('foundation runner executes the browser persistence policy unit coverage
 
   assert.match(
     foundationRunner,
-    /packages\/sdkwork-claw-infrastructure\/src\/platform\/browserPersistencePolicy\.test\.ts/,
+    /packages\/sdkwork-clawstudio-infrastructure\/src\/platform\/browserPersistencePolicy\.test\.ts/,
   );
 });
 

@@ -5,7 +5,7 @@ import {
   persistAppSdkSessionTokens,
   readAppSdkSessionTokens,
   resetAppSdkClient,
-} from '../packages/sdkwork-claw-core/src/sdk/useAppSdkClient.ts';
+} from '../packages/sdkwork-clawstudio-core/src/sdk/useAppSdkClient.ts';
 
 function createMemoryStorage(): Storage {
   const store = new Map<string, string>();

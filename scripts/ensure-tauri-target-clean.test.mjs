@@ -65,7 +65,7 @@ const staleNodeVersion = derivePreviousNumericVersion(DEFAULT_NODE_VERSION);
   const removedPaths = [];
   const logLines = [];
   let attempts = 0;
-  removeDirectoryWithRetriesSync('D:\\workspace\\sdkwork-claw-desktop\\src-tauri\\target', {
+  removeDirectoryWithRetriesSync('D:\\workspace\\sdkwork-clawstudio-desktop\\src-tauri\\target', {
     removeImpl: (targetPath, options) => {
       removedPaths.push({ targetPath, options });
       attempts += 1;
@@ -95,8 +95,8 @@ const staleNodeVersion = derivePreviousNumericVersion(DEFAULT_NODE_VERSION);
   assert.deepEqual(
     removedPaths.map((entry) => entry.targetPath),
     [
-      'D:\\workspace\\sdkwork-claw-desktop\\src-tauri\\target',
-      'D:\\workspace\\sdkwork-claw-desktop\\src-tauri\\target',
+      'D:\\workspace\\sdkwork-clawstudio-desktop\\src-tauri\\target',
+      'D:\\workspace\\sdkwork-clawstudio-desktop\\src-tauri\\target',
     ],
     'ensure-tauri-target-clean must retry the same target directory path until cleanup succeeds',
   );
@@ -241,7 +241,7 @@ withTempDir((tempDir) => {
 });
 
 withTempDir((tempDir) => {
-  const desktopPackageDir = path.join(tempDir, 'sdkwork-claw-desktop');
+  const desktopPackageDir = path.join(tempDir, 'sdkwork-clawstudio-desktop');
   const srcTauriDir = path.join(desktopPackageDir, 'src-tauri');
   const packageTargetDir = path.join(desktopPackageDir, '.tauri-target');
   writeJson(path.join(srcTauriDir, 'resources', 'openclaw', 'manifest.json'), {

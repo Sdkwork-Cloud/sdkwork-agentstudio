@@ -68,9 +68,9 @@ This closes a real operational gap without expanding the board into a full task 
 
 Failing expectations were added first in three places:
 
-1. `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.test.ts`
+1. `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
    - expected `listRuntimeTasks()` normalization to preserve `deliveryStatus`
-2. `packages/sdkwork-claw-core/src/services/taskRuntimeService.test.ts`
+2. `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
    - expected the shared core seam to keep `deliveryStatus` intact
 3. `scripts/sdkwork-tasks-contract.test.ts`
    - expected the shared runtime task board to reference `item.deliveryStatus`
@@ -106,8 +106,8 @@ After the implementation:
 
 Updated:
 
-- `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.ts`
-- `packages/sdkwork-claw-infrastructure/src/services/openClawGatewayClient.test.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
 
 Changes:
 
@@ -120,7 +120,7 @@ That closes the infrastructure semantic-loss gap for runtime task board cards.
 
 Updated:
 
-- `packages/sdkwork-claw-core/src/services/taskRuntimeService.test.ts`
+- `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
 
 Changes:
 
@@ -131,7 +131,7 @@ Changes:
 
 Updated:
 
-- `packages/sdkwork-claw-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
 - `scripts/sdkwork-tasks-contract.test.ts`
 
 Changes:

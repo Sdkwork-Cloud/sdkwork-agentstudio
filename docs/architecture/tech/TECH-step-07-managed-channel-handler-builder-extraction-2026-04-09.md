@@ -28,17 +28,17 @@
 
 ## Implemented Fix
 
-- Extended `packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.ts`.
+- Extended `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.ts`.
 - Added `buildOpenClawManagedChannelStateHandlers(...)` so the presentation helper now owns:
   - selected-channel change routing through injected page setters
   - managed-channel draft patch routing through injected page setters
   - shared error-clear behavior for those two page-owned state transitions
-- Extended `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts`.
+- Extended `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts`.
 - Added `buildOpenClawManagedChannelMutationHandlers(...)` so the mutation helper now owns:
   - toggle request lookup and routing
   - save request construction, validation-error routing, and final mutation delegation
   - delete request routing plus post-success empty-draft restoration through injected page setters
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds `managedChannelStateHandlers`
   - builds `managedChannelMutationHandlers`
   - passes those handlers directly into the channels section props instead of keeping five inline managed-channel handlers
@@ -47,8 +47,8 @@
   - all managed-channel state containers and setters remain page-owned
   - truth-source routing, readonly gating, dialogs, and navigation remain page-owned
 - Expanded direct helper coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
 - Updated `scripts/run-sdkwork-instances-check.mjs` so the managed-channel helper tests now run inside `pnpm.cmd check:sdkwork-instances`.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract now requires:
   - the page to use `buildOpenClawManagedChannelStateHandlers(...)`
@@ -75,25 +75,25 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed OpenClaw workbench persistence, writable managed-channel routing, default-agent skill install targeting, provider-center readonly projection, local proxy provider projection, and desktop plugin/runtime registration. This loop only centralizes page-side managed-channel handler composition around those already-authoritative runtime surfaces.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1171`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.ts`: `155`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts`: `383`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1171`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.ts`: `155`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts`: `383`
 - `scripts/run-sdkwork-instances-check.mjs`: `20`
 - `scripts/sdkwork-instances-contract.test.ts`: `3473`
 
@@ -107,19 +107,19 @@ Relative to the immediately prior `1160` page baseline from `release-2026-04-09-
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.test.ts`
   - failed first because `openClawManagedChannelPresentation.ts` did not yet export `buildOpenClawManagedChannelStateHandlers`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
   - failed first because `openClawManagedChannelMutationSupport.ts` did not yet export `buildOpenClawManagedChannelMutationHandlers`
 - FOLLOW-UP regression repaired in the same loop:
-  - `pnpm.cmd --filter @sdkwork/claw-web lint`
+  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
   - failed after the first handler extraction because `emptyValues` was read before the `deleteConfig` union branch was narrowed
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/claw-web lint`
+  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

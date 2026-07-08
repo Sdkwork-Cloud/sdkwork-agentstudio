@@ -25,7 +25,7 @@ ingress:
 server:
   host: 0.0.0.0
   port: 18797
-  dataDir: /var/lib/claw-server
+  dataDir: /var/lib/clawstudio-server
 
 userCenter:
   mode: builtin-local
@@ -43,7 +43,7 @@ auth:
 
 persistence:
   enabled: true
-  mountPath: /var/lib/claw-server
+  mountPath: /var/lib/clawstudio-server
   size: 10Gi
   accessModes:
     - ReadWriteOnce

@@ -14,17 +14,17 @@ For the current Step 03 `CP03-4` convergence scope, that explicitly includes:
 
 The owner chain remains:
 
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
   produces the raw persisted evidence document
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/kernel.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/kernel.rs`
   parses and normalizes the shell-relevant evidence fields
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/kernel.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/kernel.rs`
   owns the Rust-side published startup-evidence summary contract
-- `packages/sdkwork-claw-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts`
   owns the shared TypeScript-side published startup-evidence summary contract
-- `packages/sdkwork-claw-settings/src/services/kernelCenterService.ts`
+- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts`
   maps the published fields into the shell dashboard model
-- `packages/sdkwork-claw-settings/src/KernelCenter.tsx`
+- `packages/sdkwork-clawstudio-settings/src/KernelCenter.tsx`
   renders the published summary in the shell
 
 Settings must not recover these fields by reading `diagnostics/desktop-startup-evidence.json` directly or by inferring them from the current live instance list.

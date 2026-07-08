@@ -1,5 +1,5 @@
 services:
-  claw-server:
+  clawstudio-server:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
@@ -20,7 +20,7 @@ services:
     ports:
       - "18797:18797"
     volumes:
-      - claw-server-data:/var/lib/claw-server
+      - clawstudio-server-data:/var/lib/clawstudio-server
 
 volumes:
-  claw-server-data:
+  clawstudio-server-data:

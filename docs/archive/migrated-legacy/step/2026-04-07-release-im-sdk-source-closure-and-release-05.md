@@ -33,8 +33,8 @@
 
 ### Media-account surface evidence
 
-1. `packages/sdkwork-claw-ui/src/components/ChannelRegionTabs.tsx` already defines the region order as `['domestic', 'global', 'media', 'all']`, so `媒体账号` is already before `全部`.
-2. `packages/sdkwork-claw-core/src/services/openClawConfigService.ts` already exposes:
+1. `packages/sdkwork-clawstudio-ui/src/components/ChannelRegionTabs.tsx` already defines the region order as `['domestic', 'global', 'media', 'all']`, so `媒体账号` is already before `全部`.
+2. `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts` already exposes:
    - `SDKWORK公众号`
    - `微信公众号`
 3. `scripts/sdkwork-ui-contract.test.ts` already locks:

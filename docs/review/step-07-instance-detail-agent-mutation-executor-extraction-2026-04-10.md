@@ -22,17 +22,17 @@
 
 ## Implemented Fix
 
-- Added `packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationSupport.ts`.
+- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationSupport.ts`.
 - Added `createInstanceDetailAgentMutationExecutors(...)` so the shared helper now owns only:
   - agent create executor binding
   - agent update executor binding
   - agent delete executor binding
-- Added focused direct coverage in `packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationSupport.test.ts`.
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Added focused direct coverage in `packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationSupport.test.ts`.
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds `agentMutationExecutors` once through `createInstanceDetailAgentMutationExecutors({ instanceService })`
   - spreads that executor bundle into `createOpenClawAgentMutationRunner(...)`
   - stops keeping three inline `instanceService.*OpenClawAgent(...)` executor wrappers in the page shell
-- Exported the new helper from `packages/sdkwork-claw-instances/src/services/index.ts`.
+- Exported the new helper from `packages/sdkwork-clawstudio-instances/src/services/index.ts`.
 - Updated `scripts/run-sdkwork-instances-check.mjs` so the new helper test runs inside `pnpm.cmd check:sdkwork-instances`.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract now requires:
   - the page to use `createInstanceDetailAgentMutationExecutors(...)`
@@ -57,25 +57,25 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for studio-backed workbench truth, runtime persistence, provider-center projection, Local Proxy routing, ecosystem/runtime ownership, and desktop plugin/runtime registration. This loop only centralizes the page-side agent executor binding layer.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1062` lines / `40391` bytes
-- `packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationSupport.ts`: `24` lines / `1051` bytes
-- `packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationSupport.test.ts`: `55` lines / `1855` bytes
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1062` lines / `40391` bytes
+- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationSupport.ts`: `24` lines / `1051` bytes
+- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationSupport.test.ts`: `55` lines / `1855` bytes
 
 Relative to the immediately prior `1006` page baseline from `release-2026-04-10-154`, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1062`. This loop records a verified boundary improvement for the shared agent executor family while also documenting that the broader page baseline has shifted again in the current dirty worktree and is now the operative truth for subsequent loops.
 
@@ -99,15 +99,15 @@ Relative to the immediately prior `1006` page baseline from `release-2026-04-10-
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationSupport.test.ts`
   - failed first because `instanceDetailAgentMutationSupport.ts` did not yet exist
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` still kept inline agent executor wrappers
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceDetailAgentMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentMutationSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/claw-web lint`
+  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

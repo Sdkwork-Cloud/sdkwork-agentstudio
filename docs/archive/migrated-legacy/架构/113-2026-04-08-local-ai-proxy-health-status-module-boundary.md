@@ -4,9 +4,9 @@
 
 The desktop local AI proxy must keep health/status projection in a dedicated module:
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, shared router assembly, auth/header normalization, upstream dispatch entrypoints, and the runtime-facing service methods
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
   owns `/health` request handling, runtime health snapshot building, route metrics projection, route test projection, default-route health projection, route-health derivation, and observability-store reconciliation
 
 `scripts/check-desktop-platform-foundation.mjs` must assert the module file, the `mod health;` declaration, health-handler delegation through `get(health::health_handler)`, the delegated status-projection calls, and the removal of the old in-file helper definitions from the main runtime file.

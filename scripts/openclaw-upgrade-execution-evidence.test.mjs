@@ -41,7 +41,7 @@ test('upgrade execution evidence summarizes release sync, target clean, prepare,
     platform: 'windows',
     arch: 'x64',
     targetTriple: 'x86_64-pc-windows-msvc',
-    srcTauriDir: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri',
+    srcTauriDir: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri',
     createDesktopReleaseBuildPlanFn: ({ phase, targetTriple, releaseMode }) => ({
       command: process.execPath,
       args: phase === 'sync'
@@ -70,15 +70,15 @@ test('upgrade execution evidence summarizes release sync, target clean, prepare,
     ensureTauriTargetCleanFn: (srcTauriDir, { env } = {}) => {
       assert.equal(
         srcTauriDir,
-        'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri',
+        'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri',
       );
       assert.equal(
         env.CARGO_TARGET_DIR.replaceAll('\\', '/'),
         expectedTargetCleanEnv.CARGO_TARGET_DIR.replaceAll('\\', '/'),
       );
       return {
-        targetDir: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target',
-        targetDirs: ['D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target'],
+        targetDir: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target',
+        targetDirs: ['D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target'],
         removedTarget: false,
         removedTargetDirs: [],
         staleEntries: [],
@@ -92,8 +92,8 @@ test('upgrade execution evidence summarizes release sync, target clean, prepare,
         expectedTargetCleanEnv.CARGO_TARGET_DIR.replaceAll('\\', '/'),
       );
       return {
-      targetDir: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target',
-      targetDirs: ['D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target'],
+      targetDir: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target',
+      targetDirs: ['D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target'],
       staleEntries: [],
       bundledOpenClawIssues: [],
       stale: false,
@@ -107,7 +107,7 @@ test('upgrade execution evidence summarizes release sync, target clean, prepare,
           openclawVersion: DEFAULT_OPENCLAW_VERSION,
         },
         packagedResourceDir:
-          'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/generated/release/openclaw-resource',
+          'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/generated/release/openclaw-resource',
         installReadyLayout: {
           mode: 'archive-extract-ready',
         },
@@ -147,7 +147,7 @@ test('upgrade execution evidence turns target clean drift into execution blocker
     platform: 'windows',
     arch: 'x64',
     targetTriple: 'x86_64-pc-windows-msvc',
-    srcTauriDir: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri',
+    srcTauriDir: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri',
     createDesktopReleaseBuildPlanFn: ({ phase, targetTriple }) => ({
       command: process.execPath,
       args: phase === 'sync'
@@ -174,13 +174,13 @@ test('upgrade execution evidence turns target clean drift into execution blocker
         expectedTargetCleanEnv.CARGO_TARGET_DIR.replaceAll('\\', '/'),
       );
       return {
-      targetDir: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target',
-      targetDirs: ['D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target'],
+      targetDir: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target',
+      targetDirs: ['D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target'],
       removedTarget: true,
-      removedTargetDirs: ['D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target'],
+      removedTargetDirs: ['D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target'],
       staleEntries: [
         {
-          entryPath: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target/permission-files',
+          entryPath: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target/permission-files',
           reason: 'referenced permission file does not exist',
         },
       ],
@@ -194,11 +194,11 @@ test('upgrade execution evidence turns target clean drift into execution blocker
         expectedTargetCleanEnv.CARGO_TARGET_DIR.replaceAll('\\', '/'),
       );
       return {
-      targetDir: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target',
-      targetDirs: ['D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target'],
+      targetDir: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target',
+      targetDirs: ['D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target'],
       staleEntries: [
         {
-          entryPath: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target/permission-files',
+          entryPath: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target/permission-files',
           reason: 'referenced permission file does not exist',
         },
       ],
@@ -211,7 +211,7 @@ test('upgrade execution evidence turns target clean drift into execution blocker
         openclawVersion: DEFAULT_OPENCLAW_VERSION,
       },
       packagedResourceDir:
-        'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/generated/release/openclaw-resource',
+        'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/generated/release/openclaw-resource',
       installReadyLayout: {
         mode: 'archive-extract-ready',
       },
@@ -245,7 +245,7 @@ test('upgrade execution evidence re-inspects after stale OpenClaw resource clean
     platform: 'windows',
     arch: 'x64',
     targetTriple: 'x86_64-pc-windows-msvc',
-    srcTauriDir: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri',
+    srcTauriDir: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri',
     createDesktopReleaseBuildPlanFn: ({ phase }) => ({
       command: process.execPath,
       args: phase === 'sync'
@@ -261,18 +261,18 @@ test('upgrade execution evidence re-inspects after stale OpenClaw resource clean
       shouldStage: false,
     }),
     ensureTauriTargetCleanFn: () => ({
-      targetDir: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target',
-      targetDirs: ['D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target'],
+      targetDir: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target',
+      targetDirs: ['D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target'],
       removedTarget: false,
       removedTargetDirs: [],
       removedResourceDirs: [
-        'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target/debug/resources/openclaw',
+        'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target/debug/resources/openclaw',
       ],
       staleEntries: [],
       bundledOpenClawIssues: [
         {
           resourceDir:
-            'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target/debug/resources/openclaw',
+            'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target/debug/resources/openclaw',
           reason: 'packaged OpenClaw target manifest does not match the expected packaged OpenClaw manifest for the current release target',
         },
       ],
@@ -281,8 +281,8 @@ test('upgrade execution evidence re-inspects after stale OpenClaw resource clean
     inspectTauriTargetFn: () => {
       inspectCalls += 1;
       return {
-        targetDir: 'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target',
-        targetDirs: ['D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/target'],
+        targetDir: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target',
+        targetDirs: ['D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/target'],
         staleEntries: [],
         bundledOpenClawIssues: [],
         stale: false,
@@ -293,7 +293,7 @@ test('upgrade execution evidence re-inspects after stale OpenClaw resource clean
         openclawVersion: DEFAULT_OPENCLAW_VERSION,
       },
       packagedResourceDir:
-        'D:/synthetic/workspace/packages/sdkwork-claw-desktop/src-tauri/generated/release/openclaw-resource',
+        'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/generated/release/openclaw-resource',
       installReadyLayout: {
         mode: 'archive-extract-ready',
       },

@@ -23,16 +23,16 @@ function runTest(name, fn) {
 }
 
 const packageJson = readJson('package.json');
-const webViteConfig = read('packages/sdkwork-claw-web/vite.config.ts');
-const desktopViteConfig = read('packages/sdkwork-claw-desktop/vite.config.ts');
-const webViteEnv = read('packages/sdkwork-claw-web/src/vite-env.d.ts');
-const desktopViteEnv = read('packages/sdkwork-claw-desktop/src/vite-env.d.ts');
+const webViteConfig = read('packages/sdkwork-clawstudio-web/vite.config.ts');
+const desktopViteConfig = read('packages/sdkwork-clawstudio-desktop/vite.config.ts');
+const webViteEnv = read('packages/sdkwork-clawstudio-web/src/vite-env.d.ts');
+const desktopViteEnv = read('packages/sdkwork-clawstudio-desktop/src/vite-env.d.ts');
 const rootEnvExample = read('.env.example');
 const rootEnvDevelopment = read('.env.development');
 const rootEnvTest = read('.env.test');
 const rootEnvProduction = read('.env.production');
-const webEnvExample = read('packages/sdkwork-claw-web/.env.example');
-const desktopEnvExample = read('packages/sdkwork-claw-desktop/.env.example');
+const webEnvExample = read('packages/sdkwork-clawstudio-web/.env.example');
+const desktopEnvExample = read('packages/sdkwork-clawstudio-desktop/.env.example');
 
 runTest('host vite configs no longer expose browser-side root token injection', () => {
   assert.doesNotMatch(webViteConfig, /VITE_ACCESS_TOKEN/);

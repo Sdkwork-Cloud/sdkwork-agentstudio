@@ -28,7 +28,7 @@
 
 文件：
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/supervisor.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/supervisor.rs`
 
 改动：
 
@@ -45,7 +45,7 @@
 
 文件：
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_runtime.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime.rs`
 
 改动：
 
@@ -67,7 +67,7 @@
 
 文件：
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/openclaw_runtime.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime.rs`
 
 改动：
 

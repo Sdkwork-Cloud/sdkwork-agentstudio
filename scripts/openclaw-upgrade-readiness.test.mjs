@@ -70,7 +70,7 @@ await runTest('assessOpenClawUpgradeReadiness reports ready when local upgrade i
 
   try {
     createReleaseConfig(tempRoot, previousOpenClawVersion);
-    createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'manifest.json'), {
+    createJson(path.join(tempRoot, 'packages', 'sdkwork-clawstudio-desktop', 'src-tauri', 'resources', 'openclaw', 'manifest.json'), {
       schemaVersion: 1,
       runtimeId: 'openclaw',
       openclawVersion: previousOpenClawVersion,
@@ -78,7 +78,7 @@ await runTest('assessOpenClawUpgradeReadiness reports ready when local upgrade i
       platform: 'windows',
       arch: 'x64',
     });
-    createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'runtime', 'package', 'node_modules', 'openclaw', 'package.json'), {
+    createJson(path.join(tempRoot, 'packages', 'sdkwork-clawstudio-desktop', 'src-tauri', 'resources', 'openclaw', 'runtime', 'package', 'node_modules', 'openclaw', 'package.json'), {
       name: 'openclaw',
       version: previousOpenClawVersion,
     });
@@ -123,7 +123,7 @@ await runTest('assessOpenClawUpgradeReadiness accepts a local release tarball wi
 
   try {
     createReleaseConfig(tempRoot, previousOpenClawVersion);
-    createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'manifest.json'), {
+    createJson(path.join(tempRoot, 'packages', 'sdkwork-clawstudio-desktop', 'src-tauri', 'resources', 'openclaw', 'manifest.json'), {
       schemaVersion: 1,
       runtimeId: 'openclaw',
       openclawVersion: previousOpenClawVersion,
@@ -131,7 +131,7 @@ await runTest('assessOpenClawUpgradeReadiness accepts a local release tarball wi
       platform: 'windows',
       arch: 'x64',
     });
-    createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'runtime', 'package', 'node_modules', 'openclaw', 'package.json'), {
+    createJson(path.join(tempRoot, 'packages', 'sdkwork-clawstudio-desktop', 'src-tauri', 'resources', 'openclaw', 'runtime', 'package', 'node_modules', 'openclaw', 'package.json'), {
       name: 'openclaw',
       version: previousOpenClawVersion,
     });
@@ -184,7 +184,7 @@ await runTest('assessOpenClawUpgradeReadiness reports missing local upgrade inpu
 
   try {
     createReleaseConfig(tempRoot, previousOpenClawVersion);
-    createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'manifest.json'), {
+    createJson(path.join(tempRoot, 'packages', 'sdkwork-clawstudio-desktop', 'src-tauri', 'resources', 'openclaw', 'manifest.json'), {
       schemaVersion: 1,
       runtimeId: 'openclaw',
       openclawVersion: previousOpenClawVersion,
@@ -192,7 +192,7 @@ await runTest('assessOpenClawUpgradeReadiness reports missing local upgrade inpu
       platform: 'windows',
       arch: 'x64',
     });
-    createJson(path.join(tempRoot, 'packages', 'sdkwork-claw-desktop', 'src-tauri', 'resources', 'openclaw', 'runtime', 'package', 'node_modules', 'openclaw', 'package.json'), {
+    createJson(path.join(tempRoot, 'packages', 'sdkwork-clawstudio-desktop', 'src-tauri', 'resources', 'openclaw', 'runtime', 'package', 'node_modules', 'openclaw', 'package.json'), {
       name: 'openclaw',
       version: previousOpenClawVersion,
     });
@@ -239,7 +239,7 @@ await runTest(
         path.join(
           tempRoot,
           'packages',
-          'sdkwork-claw-desktop',
+          'sdkwork-clawstudio-desktop',
           'src-tauri',
           'resources',
           'openclaw',
@@ -258,7 +258,7 @@ await runTest(
         path.join(
           tempRoot,
           'packages',
-          'sdkwork-claw-desktop',
+          'sdkwork-clawstudio-desktop',
           'src-tauri',
           'resources',
           'openclaw',
@@ -292,7 +292,7 @@ await runTest(
         path.join(
           tempRoot,
           'packages',
-          'sdkwork-claw-desktop',
+          'sdkwork-clawstudio-desktop',
           'src-tauri',
           'resources',
           'openclaw-runtime',
@@ -311,7 +311,7 @@ await runTest(
         path.join(
           tempRoot,
           'packages',
-          'sdkwork-claw-desktop',
+          'sdkwork-clawstudio-desktop',
           'src-tauri',
           'resources',
           'openclaw-runtime',
@@ -337,7 +337,7 @@ await runTest(
       assert.equal(result.unsupportedSourceRuntimeVersion, retiredOpenClawVersion);
       assert.equal(result.unsupportedBundledNodeRuntimeDirPresent, false);
       assert.deepEqual(result.blockers, [
-        `Unsupported OpenClaw runtime layout is present at packages/sdkwork-claw-desktop/src-tauri/resources/openclaw-runtime (detected version ${retiredOpenClawVersion}). Remove retired layout artifacts before upgrading the packaged OpenClaw runtime.`,
+        `Unsupported OpenClaw runtime layout is present at packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw-runtime (detected version ${retiredOpenClawVersion}). Remove retired layout artifacts before upgrading the packaged OpenClaw runtime.`,
       ]);
     } finally {
       rmSync(tempRoot, { recursive: true, force: true });
@@ -356,7 +356,7 @@ await runTest(
         path.join(
           tempRoot,
           'packages',
-          'sdkwork-claw-desktop',
+          'sdkwork-clawstudio-desktop',
           'src-tauri',
           'resources',
           'openclaw',
@@ -375,7 +375,7 @@ await runTest(
         path.join(
           tempRoot,
           'packages',
-          'sdkwork-claw-desktop',
+          'sdkwork-clawstudio-desktop',
           'src-tauri',
           'generated',
           'release',
@@ -395,7 +395,7 @@ await runTest(
         path.join(
           tempRoot,
           'packages',
-          'sdkwork-claw-desktop',
+          'sdkwork-clawstudio-desktop',
           'src-tauri',
           'resources',
           'openclaw',
@@ -452,7 +452,7 @@ await runTest(
         path.join(
           tempRoot,
           'packages',
-          'sdkwork-claw-desktop',
+          'sdkwork-clawstudio-desktop',
           'src-tauri',
           'resources',
           'openclaw',
@@ -471,7 +471,7 @@ await runTest(
         path.join(
           tempRoot,
           'packages',
-          'sdkwork-claw-desktop',
+          'sdkwork-clawstudio-desktop',
           'src-tauri',
           'generated',
           'release',
@@ -491,7 +491,7 @@ await runTest(
         path.join(
           tempRoot,
           'packages',
-          'sdkwork-claw-desktop',
+          'sdkwork-clawstudio-desktop',
           'src-tauri',
           'resources',
           'openclaw',

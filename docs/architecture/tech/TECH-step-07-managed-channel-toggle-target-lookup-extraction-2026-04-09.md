@@ -21,14 +21,14 @@
 
 ## Implemented Extraction
 
-- Added to `packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.ts`:
+- Added to `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.ts`:
   - `findOpenClawManagedChannelById(...)`
 - The new helper centralizes the page-consumed managed-channel lookup for:
   - matching a managed channel by id
   - null-safe fallback for missing ids and empty collections
 - Added focused helper coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.test.ts`
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.test.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - routes `onToggleManagedChannel` target lookup through `findOpenClawManagedChannelById(...)`
   - keeps the actual toggle mutation execution in `handleToggleManagedChannel(...)`
 - Updated:
@@ -53,55 +53,55 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed workbench persistence, Control UI section order, managed-channel persistence, managed-provider projection, ecosystem/runtime ownership, Local Proxy routing, and desktop plugin/runtime registration. This loop only centralizes page-consumed managed-channel toggle target lookup.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1474`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.ts`: `103`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.ts`: `223`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`: `127`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderPresentation.ts`: `93`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.ts`: `289`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts`: `642`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `461`
-- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts`: `323`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1474`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.ts`: `103`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts`: `223`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`: `127`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderPresentation.ts`: `93`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.ts`: `289`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.ts`: `642`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `461`
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`: `323`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
 
 Because the dirty worktree already carries adjacent Step 07 edits, this loop records a verified boundary improvement and a fresh current-worktree re-baseline rather than attributing every hotspot delta only to this extraction.
 
 ## Verification
 
 - Focused RED was explicit before the helper landed:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.test.ts`
   - failed first because `findOpenClawManagedChannelById(...)` did not yet exist
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` still kept the inline managed-channel lookup inside `onToggleManagedChannel`
 - GREEN in and after this loop:
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedChannelPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchHydration.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceMemoryWorkbenchPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchHydration.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceMemoryWorkbenchPresentation.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/claw-web lint`
+  - `pnpm --filter @sdkwork/clawstudio-web lint`
   - `pnpm build`
   - `node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync('docs/release/releases.json','utf8')); const latest=data.releases[data.releases.length-1]; if(latest.tag!=='release-2026-04-09-128') throw new Error(latest.tag); console.log(latest.tag)"`
 - Repo-wide lint scope remains intentionally limited:

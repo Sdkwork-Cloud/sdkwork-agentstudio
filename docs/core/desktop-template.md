@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`@sdkwork/claw-desktop` now exposes a template-grade desktop bridge so future Tauri applications can copy a stable API surface instead of growing one-off `invoke()` calls.
+`@sdkwork/clawstudio-desktop` now exposes a template-grade desktop bridge so future Tauri applications can copy a stable API surface instead of growing one-off `invoke()` calls.
 
 ## Standard Surface
 

@@ -74,11 +74,11 @@ Step 09 does need one frozen baseline that future gates can promote. In this loo
 - Frontend baseline:
   - `pnpm.cmd build`
 - Runtime baseline:
-  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml local_ai_proxy_chat_completions_streaming_passthrough_preserves_first_chunk_latency -- --nocapture`
-  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml local_ai_proxy_status_records_route_metrics_after_successful_request -- --nocapture`
-  - `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml local_ai_proxy_test_route_by_id_records_latest_successful_probe -- --nocapture`
+  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml local_ai_proxy_chat_completions_streaming_passthrough_preserves_first_chunk_latency -- --nocapture`
+  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml local_ai_proxy_status_records_route_metrics_after_successful_request -- --nocapture`
+  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml local_ai_proxy_test_route_by_id_records_latest_successful_probe -- --nocapture`
 - Packaged-smoke / release-evidence baseline:
-  - `node --experimental-strip-types packages/sdkwork-claw-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts`
   - `node scripts/release/smoke-desktop-startup-evidence.test.mjs`
   - `node scripts/release/finalize-release-assets.test.mjs`
   - `node scripts/openclaw-upgrade-smoke-evidence.test.mjs`

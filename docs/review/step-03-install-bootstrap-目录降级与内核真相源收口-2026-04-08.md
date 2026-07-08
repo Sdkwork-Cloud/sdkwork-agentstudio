@@ -14,25 +14,25 @@
 
 ## 3. OpenClaw 对齐事实源
 
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   - `OPENCLAW_LOCAL_PROXY_PROVIDER_ID` 固定为 `sdkwork-local-proxy`。
   - `project_managed_openclaw_provider()` 与 `write_managed_provider_runtime_config()` 继续把托管 Provider 投影写回 `openclaw.json` 与默认模型参数，这是 bootstrap 应优先保护的主链真相源。
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
   - `buildOpenClawProviderWorkspaceState()` 在 provider-center-managed 的 OpenClaw 实例上保持只读治理语义，说明 install/bootstrap 侧必须稳定投影 Provider，而不是依赖临时页面状态兜底。
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
   - `WebStudioPlatform` 仍通过 `listInstances()`、`getInstanceDetail()` 与本地会话/工作台持久化承接 Studio 侧事实面，说明 bootstrap 应优先确保同步实例与配置链可读回。
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
   - 桌面插件注册仍保持纯宿主边界，说明这轮目录降级不应被塞回插件启动链，而应留在 install/bootstrap 聚合层处理。
 
 ## 4. 验证证据
 
 | 命令 | 结果 | 说明 |
 | --- | --- | --- |
-| `node --experimental-strip-types scripts/sdkwork-core-contract.test.ts` | 通过 | `@sdkwork/claw-core` 继续保持 Node-safe root 入口，不需要为 install bootstrap 放宽核心包边界。 |
+| `node --experimental-strip-types scripts/sdkwork-core-contract.test.ts` | 通过 | `@sdkwork/clawstudio-core` 继续保持 Node-safe root 入口，不需要为 install bootstrap 放宽核心包边界。 |
 | `node --experimental-strip-types packages/removed-install-feature/src/services/openClawBootstrapService.test.ts` | 通过 | 验证 bootstrap 能优先采用 Kernel `openClawRuntime.homeDir`，并且在目录服务不可用时继续完成主链。 |
 | `pnpm.cmd check:sdkwork-install` | 通过 | guided install package root 与 install-local 聚合契约保持一致。 |
 | `pnpm.cmd check:desktop-openclaw-runtime` | 通过 | readiness、runtime 准备与桌面发布资产校验链保持通过，证明本轮变更没有破坏 Step 03 既有 OpenClaw 交付基线。 |
-| `cargo test --manifest-path packages/sdkwork-claw-desktop/src-tauri/Cargo.toml --target-dir target/step03-proof desktop_kernel_info_exposes_extended_runtime_directories` | 通过 | 桌面 Kernel 仍能稳定输出 `openClawRuntime` 目录与快照事实，Install Bootstrap 对该真相源的消费链具备 Rust 侧证据。 |
+| `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-proof desktop_kernel_info_exposes_extended_runtime_directories` | 通过 | 桌面 Kernel 仍能稳定输出 `openClawRuntime` 目录与快照事实，Install Bootstrap 对该真相源的消费链具备 Rust 侧证据。 |
 
 ## 5. 架构回写
 

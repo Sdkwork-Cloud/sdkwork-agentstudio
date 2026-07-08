@@ -20,53 +20,53 @@
 ## Implemented Decomposition
 
 - Extracted shared row-shell primitives:
-  - `packages/sdkwork-claw-instances/src/components/InstanceWorkbenchPrimitives.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceWorkbenchPrimitives.tsx`
 - Extracted dedicated Instance Detail render components:
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailOverviewSection.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailFilesSection.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailChannelsSection.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailSkillsSection.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailMemorySection.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailToolsSection.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailLlmProvidersSection.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailLlmProviderDialogs.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedLlmProvidersSection.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebSearchPanel.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebFetchPanel.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedWebSearchNativeCodexPanel.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedXSearchPanel.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedAuthCooldownsPanel.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailAgentsSection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailOverviewSection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailFilesSection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailChannelsSection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSkillsSection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailMemorySection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailToolsSection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailLlmProvidersSection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailLlmProviderDialogs.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedLlmProvidersSection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedWebSearchPanel.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedWebFetchPanel.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedWebSearchNativeCodexPanel.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedXSearchPanel.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedAuthCooldownsPanel.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailAgentsSection.tsx`
 - Extracted pure helper layers:
-  - `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderConfigPatch.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.ts`
-  - `packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderConfigPatch.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawConfigPathFallback.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawFilePathSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.ts`
 - Added focused helper coverage:
-  - `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderConfigPatch.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigWorkbenchSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderConfigPatch.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawConfigPathFallback.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawFilePathSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.test.ts`
 - Updated orchestration and component/service barrels:
-  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-  - `packages/sdkwork-claw-instances/src/components/index.ts`
-  - `packages/sdkwork-claw-instances/src/services/index.ts`
+  - `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/index.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/index.ts`
 - Extended the contract suite so the render-composition boundary stays enforced:
   - `scripts/sdkwork-instances-contract.test.ts`
 
@@ -157,27 +157,27 @@
 - Fallback config-path resolution is removed from both core files and owned by `openClawConfigPathFallback.ts`
 - OpenClaw file path normalization and request-path derivation are removed from `instanceWorkbenchServiceCore.ts` and owned by `openClawFilePathSupport.ts`
 - Fresh current hotspots still blocking formal closure:
-  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2792`
+  - `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2792`
   - `handleSubmitProviderModelDialog` inside `InstanceDetail.tsx`
   - `handleSubmitProviderDialog` inside `InstanceDetail.tsx`
-  - `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `3693`
-  - `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `3693`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 
 ## OpenClaw Alignment Guardrails
 
 This loop kept the Step 07 truth-source boundary unchanged and continued to treat the following files as the authority set for closure claims:
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 Facts re-read in this loop:
 
@@ -196,17 +196,17 @@ Facts re-read in this loop:
 ## Verification
 
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderConfigPatch.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderConfigPatch.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigPathFallback.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawFilePathSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
 
 All commands passed on fresh execution in this loop.
 
@@ -230,13 +230,13 @@ All commands passed on fresh execution in this loop.
 ## Latest Loop Addendum
 
 - Extracted shared task normalization ownership into:
-  - `packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.ts`
 - Added focused task normalization coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.test.ts`
 - Extracted shared runtime memory summarization ownership into:
-  - `packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.ts`
 - Added focused runtime memory coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.test.ts`
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the agents-market contract reflects the current:
   - `InstanceDetail.tsx -> InstanceDetailAgentsSection.tsx -> AgentWorkbenchPanel.tsx`
 - The same contract suite now also guards both new helper boundaries so task normalization and runtime memory summarization do not drift back into `instanceWorkbenchServiceCore.ts`.
@@ -247,26 +247,26 @@ All commands passed on fresh execution in this loop.
 
 ### Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2553`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `2924`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
-- `packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.ts`: `289`
-- `packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2553`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `2924`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.ts`: `289`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
 
 ### Fresh Verification
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderConfigPatch.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderConfigPatch.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigPathFallback.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawFilePathSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
@@ -275,44 +275,44 @@ All commands passed on fresh execution after the latest helper extraction and co
 ### Channel And Agent Helper Extraction
 
 - Extracted shared channel workbench shaping ownership into:
-  - `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts`
 - Extracted shared agent workbench shaping ownership into:
-  - `packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.ts`
 - Added focused coverage for both new helpers in:
-  - `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.test.ts`
-- Rewired `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` so channel mapping/clone/merge and agent mapping/clone/normalize/merge/build-managed logic no longer live inline in the core hotspot.
-- Updated `packages/sdkwork-claw-instances/src/services/index.ts` so the new helper boundaries are exported through the service barrel.
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.test.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` so channel mapping/clone/merge and agent mapping/clone/normalize/merge/build-managed logic no longer live inline in the core hotspot.
+- Updated `packages/sdkwork-clawstudio-instances/src/services/index.ts` so the new helper boundaries are exported through the service barrel.
 - Fixed a real agent deduplication defect inside `openClawAgentWorkbenchSupport.ts` by normalizing managed snapshot ids before runtime overlay, which prevents malformed managed ids from appending duplicate runtime agents.
 - Realigned `scripts/sdkwork-instances-contract.test.ts` so the managed-agent `configSource: 'managedConfig'` evidence is asserted from `openClawAgentWorkbenchSupport.ts`, while the core contract still proves `managedConfigSnapshot?.agentSnapshots` routing remains in `instanceWorkbenchServiceCore.ts`.
 
 ### Fresh Measurements After Channel And Agent Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2553`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `2635`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
-- `packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.ts`: `289`
-- `packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
-- `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2553`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `2635`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.ts`: `289`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
 - Relative to the previously verified `2924`-line service-core baseline, `instanceWorkbenchServiceCore.ts` is now reduced by another `289` lines without changing gateway, studio, or backend authority routing.
 
 ### Fresh Verification After Channel And Agent Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderConfigPatch.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderConfigPatch.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigPathFallback.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawFilePathSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
@@ -321,22 +321,22 @@ All commands passed on fresh execution in the same loop that introduced the chan
 ### Updated Frontier
 
 - `CP07-3` remains open.
-- The page hotspot remains `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
-- The largest remaining service hotspot is now `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` at `2635` lines.
+- The page hotspot remains `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
+- The largest remaining service hotspot is now `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` at `2635` lines.
 - The next decomposition frontier should move to the remaining managed-config clone and provider/workbench snapshot shaping helpers inside `instanceWorkbenchServiceCore.ts`, while keeping page-owned write-path dispatch in `InstanceDetail.tsx`.
 
 ### Managed Config Workbench Helper Extraction
 
 - Extracted shared managed OpenClaw workbench config shaping ownership into:
-  - `packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`
 - Added focused coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.test.ts`
-- Rewired `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` so the following pure logic no longer lives inline in the service-core hotspot:
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigWorkbenchSupport.test.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` so the following pure logic no longer lives inline in the service-core hotspot:
   - empty managed config snapshot construction
   - managed config section-count derivation
   - managed config insights derivation
   - managed webSearch / xSearch / native codex / webFetch / auth cooldowns / dreaming deep-clone logic
-- Updated `packages/sdkwork-claw-instances/src/services/index.ts` so the new managed-config helper boundary is exported through the service barrel.
+- Updated `packages/sdkwork-clawstudio-instances/src/services/index.ts` so the new managed-config helper boundary is exported through the service barrel.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract suite now guards this helper boundary and prevents the removed managed-config shaping functions from drifting back into `instanceWorkbenchServiceCore.ts`.
 - This loop kept OpenClaw authority unchanged:
   - `InstanceDetail.tsx` still owns page-level side effects and write-path dispatch.
@@ -345,33 +345,33 @@ All commands passed on fresh execution in the same loop that introduced the chan
 
 ### Fresh Measurements After Managed Config Helper Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2553`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `2462`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
-- `packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.ts`: `289`
-- `packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
-- `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`: `207`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2553`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `2462`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.ts`: `289`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`: `207`
 - Relative to the previously verified `2635`-line service-core baseline, `instanceWorkbenchServiceCore.ts` is now reduced by another `173` lines without changing gateway, studio, or backend authority routing.
 
 ### Fresh Verification After Managed Config Helper Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderConfigPatch.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderConfigPatch.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigPathFallback.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawFilePathSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
@@ -380,15 +380,15 @@ All commands passed on fresh execution in the same loop that introduced the mana
 ### Updated Frontier II
 
 - `CP07-3` remains open.
-- The page hotspot remains `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
-- The largest remaining service hotspot is now `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` at `2462` lines.
+- The page hotspot remains `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
+- The largest remaining service hotspot is now `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` at `2462` lines.
 - The next decomposition frontier should move to the remaining provider/workbench snapshot shaping helpers inside `instanceWorkbenchServiceCore.ts`, especially the managed-provider mapping and live-provider composition cluster, while keeping page-owned write-path dispatch in `InstanceDetail.tsx`.
 
 ### Updated Frontier
 
 - `CP07-3` remains open.
 - The largest unresolved hotspot in the active Step 07 slice is now:
-  - `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` at `2924` lines
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` at `2924` lines
 - The next pure-core extraction candidates are now the channel and agent normalization/merge clusters near:
   - `mergeOpenClawChannelCollections`
   - `normalizeWorkbenchAgent`
@@ -398,15 +398,15 @@ All commands passed on fresh execution in the same loop that introduced the mana
 ### Provider Workbench Helper Extraction
 
 - Extracted shared OpenClaw provider workbench shaping ownership into:
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkbenchSupport.ts`
 - Added focused coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderWorkbenchSupport.test.ts`
-- Rewired `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` so the following pure provider shaping logic no longer lives inline in the service-core hotspot:
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkbenchSupport.test.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` so the following pure provider shaping logic no longer lives inline in the service-core hotspot:
   - managed-provider snapshot mapping
   - live provider catalog mapping
   - provider id matching across snapshot/runtime sources
   - final OpenClaw provider composition for the workbench snapshot
-- Updated `packages/sdkwork-claw-instances/src/services/index.ts` so the new provider helper boundary is exported through the service barrel.
+- Updated `packages/sdkwork-clawstudio-instances/src/services/index.ts` so the new provider helper boundary is exported through the service barrel.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract suite now guards this helper boundary and prevents the removed provider shaping helpers from drifting back into `instanceWorkbenchServiceCore.ts`.
 - This loop kept OpenClaw authority unchanged:
   - `InstanceDetail.tsx` still owns page-level side effects and write-path dispatch.
@@ -415,35 +415,35 @@ All commands passed on fresh execution in the same loop that introduced the mana
 
 ### Fresh Measurements After Provider Helper Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2553`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `2379`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
-- `packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.ts`: `289`
-- `packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
-- `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`: `207`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkbenchSupport.ts`: `111`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2553`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `2379`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.ts`: `289`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`: `207`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkbenchSupport.ts`: `111`
 - Relative to the prior `2462`-line service-core baseline, `instanceWorkbenchServiceCore.ts` is now reduced to `2379` without changing gateway selection, studio bridge routing, backend truth-source precedence, or page-owned write-path authority.
 
 ### Fresh Verification After Provider Helper Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderConfigPatch.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigPathFallback.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawFilePathSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchFormatting.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderConfigPatch.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigPathFallback.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawFilePathSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchFormatting.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
@@ -452,27 +452,27 @@ All commands passed on fresh execution in the same loop that introduced the prov
 ### Updated Frontier III
 
 - `CP07-3` remains open.
-- The page hotspot remains `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
-- The largest remaining service hotspot is now `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` at `2379` lines.
+- The page hotspot remains `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
+- The largest remaining service hotspot is now `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` at `2379` lines.
 - The next decomposition frontier should move to the remaining skills/tool catalog shaping helpers inside `instanceWorkbenchServiceCore.ts`, while keeping page-owned write-path dispatch and service-core truth-source routing unchanged.
 
 ### Skill And Tool Workbench Helper Extraction
 
 - Extracted shared OpenClaw skill workbench shaping ownership into:
-  - `packages/sdkwork-claw-instances/src/services/openClawSkillWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawSkillWorkbenchSupport.ts`
 - Extracted shared OpenClaw tool workbench shaping ownership into:
-  - `packages/sdkwork-claw-instances/src/services/openClawToolWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawToolWorkbenchSupport.ts`
 - Added focused coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawSkillWorkbenchSupport.test.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawToolWorkbenchSupport.test.ts`
-- Rewired `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` so the following pure shaping logic no longer lives inline in the service-core hotspot:
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawSkillWorkbenchSupport.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawToolWorkbenchSupport.test.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` so the following pure shaping logic no longer lives inline in the service-core hotspot:
   - skill category inference
   - skill status-entry shaping
   - tool category inference
   - tool access inference
   - scoped tool catalog shaping
   - merged multi-agent tool catalog composition
-- Updated `packages/sdkwork-claw-instances/src/services/index.ts` so both new helper boundaries are exported through the service barrel.
+- Updated `packages/sdkwork-clawstudio-instances/src/services/index.ts` so both new helper boundaries are exported through the service barrel.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract suite now guards both helper boundaries and prevents the removed skill/tool shaping helpers from drifting back into `instanceWorkbenchServiceCore.ts`.
 - This loop kept OpenClaw authority unchanged:
   - `InstanceDetail.tsx` still owns page-level side effects and write-path dispatch.
@@ -481,26 +481,26 @@ All commands passed on fresh execution in the same loop that introduced the prov
 
 ### Fresh Measurements After Skill And Tool Helper Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2553`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `2361`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
-- `packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.ts`: `289`
-- `packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
-- `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`: `207`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkbenchSupport.ts`: `111`
-- `packages/sdkwork-claw-instances/src/services/openClawSkillWorkbenchSupport.ts`: `55`
-- `packages/sdkwork-claw-instances/src/services/openClawToolWorkbenchSupport.ts`: `186`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2553`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `2361`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.ts`: `289`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`: `207`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkbenchSupport.ts`: `111`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawSkillWorkbenchSupport.ts`: `55`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawToolWorkbenchSupport.ts`: `186`
 - Relative to the prior `2379`-line service-core baseline, `instanceWorkbenchServiceCore.ts` is now reduced to `2361` without changing gateway selection, studio bridge routing, backend truth-source precedence, or page-owned write-path authority.
 
 ### Fresh Verification After Skill And Tool Helper Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawSkillWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawToolWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawSkillWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawToolWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
@@ -509,22 +509,22 @@ All commands passed on fresh execution in the same loop that introduced the skil
 ### Updated Frontier IV
 
 - `CP07-3` remains open.
-- The page hotspot remains `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
-- The largest remaining service hotspot is now `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` at `2361` lines.
+- The page hotspot remains `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
+- The largest remaining service hotspot is now `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` at `2361` lines.
 - The next decomposition frontier should move to the remaining file/memory shaping or registry projection helpers inside `instanceWorkbenchServiceCore.ts`, while keeping page-owned write-path dispatch and service-core truth-source routing unchanged.
 
 ### File Workbench Helper Extraction
 
 - Extracted shared OpenClaw file workbench shaping ownership into:
-  - `packages/sdkwork-claw-instances/src/services/openClawFileWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawFileWorkbenchSupport.ts`
 - Added focused coverage in:
-  - `packages/sdkwork-claw-instances/src/services/openClawFileWorkbenchSupport.test.ts`
-- Rewired `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` so the following pure file/memory shaping logic no longer lives inline in the service-core hotspot:
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawFileWorkbenchSupport.test.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` so the following pure file/memory shaping logic no longer lives inline in the service-core hotspot:
   - file category inference
   - file entry to workbench-file mapping
   - merged file collection overlay behavior
   - backend memory summary synthesis from file snapshots and qmd config
-- Updated `packages/sdkwork-claw-instances/src/services/index.ts` so the new file helper boundary is exported through the service barrel.
+- Updated `packages/sdkwork-clawstudio-instances/src/services/index.ts` so the new file helper boundary is exported through the service barrel.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract suite now guards the new file helper boundary and also proves that file path derivation still routes through `openClawFilePathSupport.ts`, now via `openClawFileWorkbenchSupport.ts`.
 - This loop kept OpenClaw authority unchanged:
   - `InstanceDetail.tsx` still owns page-level side effects and write-path dispatch.
@@ -533,25 +533,25 @@ All commands passed on fresh execution in the same loop that introduced the skil
 
 ### Fresh Measurements After File Helper Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2553`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `2192`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
-- `packages/sdkwork-claw-instances/src/services/openClawTaskNormalization.ts`: `289`
-- `packages/sdkwork-claw-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
-- `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`: `207`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkbenchSupport.ts`: `111`
-- `packages/sdkwork-claw-instances/src/services/openClawSkillWorkbenchSupport.ts`: `55`
-- `packages/sdkwork-claw-instances/src/services/openClawToolWorkbenchSupport.ts`: `186`
-- `packages/sdkwork-claw-instances/src/services/openClawFileWorkbenchSupport.ts`: `188`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2553`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `2192`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawTaskNormalization.ts`: `289`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawRuntimeMemorySupport.ts`: `206`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`: `207`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkbenchSupport.ts`: `111`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawSkillWorkbenchSupport.ts`: `55`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawToolWorkbenchSupport.ts`: `186`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawFileWorkbenchSupport.ts`: `188`
 - Relative to the prior `2361`-line service-core baseline, `instanceWorkbenchServiceCore.ts` is now reduced to `2192` without changing gateway selection, studio bridge routing, backend truth-source precedence, or page-owned write-path authority.
 
 ### Fresh Verification After File Helper Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawFileWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawFileWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
@@ -560,17 +560,17 @@ All commands passed on fresh execution in the same loop that introduced the file
 ### Updated Frontier V
 
 - `CP07-3` remains open.
-- The page hotspot remains `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
-- The largest remaining service hotspot is now `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` at `2192` lines.
+- The page hotspot remains `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
+- The largest remaining service hotspot is now `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` at `2192` lines.
 - The next decomposition frontier should move to the remaining registry projection or section-availability shaping helpers inside `instanceWorkbenchServiceCore.ts`, while keeping page-owned write-path dispatch and service-core truth-source routing unchanged.
 
 ### Registry Projection Helper Extraction
 
 - Extracted shared registry-backed detail projection ownership into:
-  - `packages/sdkwork-claw-instances/src/services/instanceRegistryWorkbenchSupport.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceRegistryWorkbenchSupport.ts`
 - Added focused coverage in:
-  - `packages/sdkwork-claw-instances/src/services/instanceRegistryWorkbenchSupport.test.ts`
-- Rewired `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` so the following pure registry-backed detail projection logic no longer lives inline in the service-core hotspot:
+  - `packages/sdkwork-clawstudio-instances/src/services/instanceRegistryWorkbenchSupport.test.ts`
+- Rewired `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` so the following pure registry-backed detail projection logic no longer lives inline in the service-core hotspot:
   - `buildRegistryBackedDetail`
   - `resolveRegistryRuntimeKind`
   - `resolveRegistryDeploymentMode`
@@ -582,7 +582,7 @@ All commands passed on fresh execution in the same loop that introduced the file
   - `defaultCapabilitiesForRuntime`
   - `buildRegistryConnectivityEndpoints`
   - `isLoopbackHost`
-- Updated `packages/sdkwork-claw-instances/src/services/index.ts` so the new helper boundary is exported through the service barrel.
+- Updated `packages/sdkwork-clawstudio-instances/src/services/index.ts` so the new helper boundary is exported through the service barrel.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract suite now guards the registry-backed detail helper boundary and prevents those projection helpers from drifting back into `instanceWorkbenchServiceCore.ts`.
 - Fresh verification exposed one regression introduced during the extraction loop:
   - `buildOpenClawChannels(...)` still referenced `isNonEmptyString`
@@ -590,17 +590,17 @@ All commands passed on fresh execution in the same loop that introduced the file
   - because gateway channel shaping is wrapped in `safelyBuildOpenClawSection(...)`, that missing import collapsed the live channel section to `[]` and made Slack fall back to the catalog default `not_configured`
   - restored the import before accepting the extraction so the runtime-backed channel snapshot stays truthful
 - OpenClaw authority checkpoints were re-read and remain unchanged for this loop:
-  - `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-  - `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-  - `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-  - `packages/sdkwork-claw-channels/src/services/channelService.ts`
-  - `packages/sdkwork-claw-market/src/services/marketService.ts`
-  - `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+  - `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+  - `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+  - `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+  - `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+  - `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 - This loop kept OpenClaw authority unchanged:
   - `InstanceDetail.tsx` still owns page-level side effects and write-path dispatch.
   - `instanceWorkbenchServiceCore.ts` still owns gateway/studio/backend truth-source routing and fallback selection.
@@ -608,23 +608,23 @@ All commands passed on fresh execution in the same loop that introduced the file
 
 ### Fresh Measurements After Registry Projection Helper Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2553`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1675`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
-- `packages/sdkwork-claw-instances/src/services/instanceRegistryWorkbenchSupport.ts`: `365`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`: `207`
-- `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
-- `packages/sdkwork-claw-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkbenchSupport.ts`: `111`
-- `packages/sdkwork-claw-instances/src/services/openClawSkillWorkbenchSupport.ts`: `55`
-- `packages/sdkwork-claw-instances/src/services/openClawToolWorkbenchSupport.ts`: `186`
-- `packages/sdkwork-claw-instances/src/services/openClawFileWorkbenchSupport.ts`: `188`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2553`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1675`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceRegistryWorkbenchSupport.ts`: `365`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigWorkbenchSupport.ts`: `207`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts`: `101`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentWorkbenchSupport.ts`: `216`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkbenchSupport.ts`: `111`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawSkillWorkbenchSupport.ts`: `55`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawToolWorkbenchSupport.ts`: `186`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawFileWorkbenchSupport.ts`: `188`
 - Relative to the prior `2192`-line service-core baseline, `instanceWorkbenchServiceCore.ts` is now reduced to `1675` without changing gateway selection, studio bridge routing, backend truth-source precedence, page-owned write-path authority, or OpenClaw provider-management boundaries.
 
 ### Fresh Verification After Registry Projection Helper Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceRegistryWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceRegistryWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
@@ -633,8 +633,8 @@ All commands passed on fresh execution in the same loop that completed the regis
 ### Updated Frontier VI
 
 - `CP07-3` remains open.
-- The page hotspot remains `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
-- The largest remaining service hotspot is now `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` at `1675` lines.
+- The page hotspot remains `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
+- The largest remaining service hotspot is now `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` at `1675` lines.
 - The next decomposition frontier should move to the remaining snapshot-assembly or section-availability helpers inside `instanceWorkbenchServiceCore.ts`, while keeping page-owned write-path dispatch, provider-management truth, and service-core truth-source routing unchanged.
 
 ### Snapshot Assembly Helper Extraction
@@ -652,8 +652,8 @@ All commands passed on fresh execution in the same loop that completed the regis
   - live gateway section snapshot assembly
   - managed-config overlay finalization
   - detail-only fallback workbench snapshot construction
-- `packages/sdkwork-claw-instances/src/services/index.ts` now exports the snapshot helper through the service barrel so the new boundary remains consumable from the package root.
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchSnapshotSupport.test.ts` now provides focused helper coverage for:
+- `packages/sdkwork-clawstudio-instances/src/services/index.ts` now exports the snapshot helper through the service barrel so the new boundary remains consumable from the package root.
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchSnapshotSupport.test.ts` now provides focused helper coverage for:
   - detail-only snapshot counting and managed-config alignment
   - final managed-config overlay behavior across channels, providers, agents, and section availability
 - `scripts/sdkwork-instances-contract.test.ts` now enforces the new helper boundary and also records one important routing fact explicitly:
@@ -664,17 +664,17 @@ All commands passed on fresh execution in the same loop that completed the regis
   - the contract suite still expected `dataAccess`, managed-agent overlay evidence, and direct channel-helper imports to stay in `instanceWorkbenchServiceCore.ts`
   - those assertions were updated to follow the new snapshot-helper boundary before accepting the extraction
 - OpenClaw authority checkpoints were re-read again for this loop and remain unchanged:
-  - `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-  - `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-  - `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-  - `packages/sdkwork-claw-channels/src/services/channelService.ts`
-  - `packages/sdkwork-claw-market/src/services/marketService.ts`
-  - `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+  - `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+  - `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+  - `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+  - `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+  - `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 - This loop kept OpenClaw authority unchanged:
   - `InstanceDetail.tsx` still owns page-level side effects and write-path dispatch
   - `instanceWorkbenchServiceCore.ts` still owns gateway/studio/backend truth-source routing and lazy runtime section loading
@@ -682,16 +682,16 @@ All commands passed on fresh execution in the same loop that completed the regis
 
 ### Fresh Measurements After Snapshot Assembly Helper Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2553`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1209`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchSnapshotSupport.ts`: `498`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2553`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1209`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchSnapshotSupport.ts`: `498`
 - Relative to the prior `1675`-line service-core baseline, `instanceWorkbenchServiceCore.ts` is now reduced to `1209` without changing gateway selection, studio bridge routing, backend truth-source precedence, page-owned write-path authority, provider-management classification, or OpenClaw channel truth.
 
 ### Fresh Verification After Snapshot Assembly Helper Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchSnapshotSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchSnapshotSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
@@ -700,8 +700,8 @@ All commands passed on fresh execution in the same loop that completed the snaps
 ### Updated Frontier VII
 
 - `CP07-3` remains open.
-- The page hotspot remains `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
-- The largest remaining service hotspot is now `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` at `1209` lines.
+- The page hotspot remains `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
+- The largest remaining service hotspot is now `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` at `1209` lines.
 - The next decomposition frontier should move to the remaining gateway-backed channel/status shaping and runtime section-loader helpers inside `instanceWorkbenchServiceCore.ts`, while keeping page-owned write-path dispatch, provider-management truth, and service-core truth-source routing unchanged.
 
 ### Channel Runtime Helper Extraction
@@ -721,7 +721,7 @@ All commands passed on fresh execution in the same loop that completed the snaps
 - This loop intentionally kept the authority split unchanged:
   - `instanceWorkbenchServiceCore.ts` still owns whether the gateway is probed, when the channel status call runs, and how failures are swallowed through `safelyBuildOpenClawSection(...)`
   - `openClawChannelWorkbenchSupport.ts` now owns only the pure shaping of the returned channel payload
-- `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.test.ts` now verifies:
+- `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.test.ts` now verifies:
   - the helper exports `buildOpenClawChannels(...)`
   - runtime channel order stays aligned with `channelOrder`
   - account detail and naming survive the helper extraction
@@ -732,30 +732,30 @@ All commands passed on fresh execution in the same loop that completed the snaps
   - contract test failed first because the old channel-shaping functions still lived inline in `instanceWorkbenchServiceCore.ts`
   - only after those failures were observed did the helper extraction land
 - OpenClaw authority checkpoints remained unchanged in this loop:
-  - `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-  - `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-  - `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-  - `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-  - `packages/sdkwork-claw-channels/src/services/channelService.ts`
-  - `packages/sdkwork-claw-market/src/services/marketService.ts`
-  - `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-  - `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-  - `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+  - `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+  - `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+  - `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+  - `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+  - `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+  - `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 ### Fresh Measurements After Channel Runtime Helper Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2553`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1030`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
-- `packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.ts`: `290`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2553`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1030`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts`: `290`
 - Relative to the prior `1209`-line service-core baseline, `instanceWorkbenchServiceCore.ts` is now reduced to `1030` without changing gateway selection, studio bridge routing, backend truth-source precedence, page-owned write-path authority, provider-management classification, or OpenClaw channel truth.
 
 ### Fresh Verification After Channel Runtime Helper Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 All commands passed on fresh execution in the same loop that completed the channel runtime helper boundary.
@@ -763,17 +763,17 @@ All commands passed on fresh execution in the same loop that completed the chann
 ### Updated Frontier VIII
 
 - `CP07-3` remains open.
-- The page hotspot remains `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
-- The largest remaining service hotspot is now `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts` at `1030` lines.
+- The page hotspot remains `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` at `2553` lines.
+- The largest remaining service hotspot is now `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts` at `1030` lines.
 - The next decomposition frontier should pivot back to the page-level provider submit orchestration inside `InstanceDetail.tsx`, because the service-core hotspot has now been materially reduced below the still-open page hotspot.
 
 ### Provider Submit Runner Extraction
 
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts` now tags page-facing provider submit plans with explicit action kinds:
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts` now tags page-facing provider submit plans with explicit action kinds:
   - `providerCreate`
   - `providerModelCreate`
   - `providerModelUpdate`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now routes both provider submit handlers through a shared page-owned `runProviderCatalogMutation(...)` runner instead of duplicating save, error, and post-success orchestration in each handler.
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` now routes both provider submit handlers through a shared page-owned `runProviderCatalogMutation(...)` runner instead of duplicating save, error, and post-success orchestration in each handler.
 - This loop intentionally kept write-path authority in the page:
   - `instanceService.createInstanceLlmProvider(...)`
   - `instanceService.createInstanceLlmProviderModel(...)`
@@ -781,7 +781,7 @@ All commands passed on fresh execution in the same loop that completed the chann
   - `toast.*`
   - `loadWorkbench(...)`
   - provider dialog dismiss/reset state
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts` now enforces the new action-kind metadata for the page shell.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts` now enforces the new action-kind metadata for the page shell.
 - `scripts/sdkwork-instances-contract.test.ts` now enforces that:
   - `InstanceDetail.tsx` owns a shared `runProviderCatalogMutation(...)` runner
   - both submit handlers route through that runner
@@ -793,33 +793,33 @@ All commands passed on fresh execution in the same loop that completed the chann
 
 ### OpenClaw Authority Checkpoints Re-read In This Loop
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts` still proves browser-backed workbench detail preserves provider edits after save.
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts` still derives managed OpenClaw authority from `workbenchManaged` or writable managed config routes.
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts` still keeps `canManageProviderCatalog: false` for OpenClaw details.
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts` still preserves Control UI section order.
-- `packages/sdkwork-claw-channels/src/services/channelService.ts` still owns managed channel writes through config service or studio bridge.
-- `packages/sdkwork-claw-market/src/services/marketService.ts` still owns skill/package discovery and install entry points.
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts` still resolves agent install/workspace plans from OpenClaw config-backed paths.
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owns the local proxy `chat/completions`, `responses`, Anthropic, Gemini, and Ollama protocol surface.
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs` still only registers desktop plugin bootstrap.
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts` still proves browser-backed workbench detail preserves provider edits after save.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts` still derives managed OpenClaw authority from `workbenchManaged` or writable managed config routes.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts` still keeps `canManageProviderCatalog: false` for OpenClaw details.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts` still preserves Control UI section order.
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts` still owns managed channel writes through config service or studio bridge.
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts` still owns skill/package discovery and install entry points.
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts` still resolves agent install/workspace plans from OpenClaw config-backed paths.
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owns the local proxy `chat/completions`, `responses`, Anthropic, Gemini, and Ollama protocol surface.
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs` still only registers desktop plugin bootstrap.
 
 ### Fresh Measurements After Provider Submit Runner Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2803`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`: `345`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2803`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`: `345`
 - The current worktree no longer matches the older `2553 / 1030 / 1274` hotspot snapshot recorded in the prior addendum, so further `CP07-3` loops should use the fresh `2803 / 1132 / 1431` profile as the active baseline.
 - This loop removed duplicated provider submit orchestration, but it does not yet close the page hotspot by raw line count.
 
 ### Fresh Verification After Provider Submit Runner Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 All commands passed on fresh execution in the same loop that introduced the provider submit action-kind metadata and shared page runner boundary.
@@ -827,7 +827,7 @@ All commands passed on fresh execution in the same loop that introduced the prov
 ### Updated Frontier IX
 
 - `CP07-3` remains open.
-- The page hotspot is still the dominant frontier at `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` with a fresh current-worktree measurement of `2803` lines.
+- The page hotspot is still the dominant frontier at `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` with a fresh current-worktree measurement of `2803` lines.
 - The next decomposition frontier should stay in the page-level provider workspace cluster, prioritizing the remaining provider config save/delete flows around:
   - `handleSaveProviderConfig`
   - `handleDeleteProviderModel`
@@ -836,10 +836,10 @@ All commands passed on fresh execution in the same loop that introduced the prov
 
 ### Provider Delete Runner Expansion
 
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts` now also owns page-facing delete mutation metadata for:
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts` now also owns page-facing delete mutation metadata for:
   - `providerModelDelete`
   - `providerDelete`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now routes the following flows through the same page-owned `runProviderCatalogMutation(...)` runner:
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` now routes the following flows through the same page-owned `runProviderCatalogMutation(...)` runner:
   - provider create
   - provider-model create
   - provider-model update
@@ -856,7 +856,7 @@ All commands passed on fresh execution in the same loop that introduced the prov
   - `instanceService.updateInstanceLlmProviderModel(...)`
   - `instanceService.deleteInstanceLlmProviderModel(...)`
   - `instanceService.deleteInstanceLlmProvider(...)`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts` now verifies the new delete mutation metadata.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts` now verifies the new delete mutation metadata.
 - `scripts/sdkwork-instances-contract.test.ts` now proves the delete handlers also route through `runProviderCatalogMutation(...)` and no longer duplicate local `toast.success(...)` or `loadWorkbench(...)` calls inline.
 - Fresh red/green verification in this loop was explicit:
   - `openClawProviderDrafts.test.ts` failed first because delete mutation builders were not yet exported
@@ -865,20 +865,20 @@ All commands passed on fresh execution in the same loop that introduced the prov
 
 ### Fresh Measurements After Provider Delete Runner Expansion
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2816`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`: `396`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2816`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`: `396`
 - Relative to the immediately prior `2803` page baseline in this same worktree, the page hotspot is still not shrinking by raw line count, but the provider catalog mutation lifecycle is now more coherent and contract-guarded.
 
 ### Fresh Verification After Provider Delete Runner Expansion
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 All commands passed on fresh execution in the same loop that expanded the shared provider catalog runner to the delete flows.
@@ -892,15 +892,15 @@ All commands passed on fresh execution in the same loop that expanded the shared
 
 ### Provider Config Save Runner Integration
 
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts` now owns:
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts` now owns:
   - `buildOpenClawProviderConfigSaveInput(...)`
   - `buildOpenClawProviderConfigMutationPlan(...)`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now routes `handleSaveProviderConfig` through the same page-owned `runProviderCatalogMutation(...)` runner as the other provider catalog mutations.
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` now routes `handleSaveProviderConfig` through the same page-owned `runProviderCatalogMutation(...)` runner as the other provider catalog mutations.
 - This loop preserved the existing page authority split:
   - `instanceService.updateInstanceLlmProviderConfig(...)` still executes in the page runner
   - request-override parse failures still surface through page-owned `toast.error(...)`
   - provider config save still reloads the workbench with spinner enabled
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts` now verifies the provider config save-input and mutation-plan boundary.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts` now verifies the provider config save-input and mutation-plan boundary.
 - `scripts/sdkwork-instances-contract.test.ts` now enforces that `handleSaveProviderConfig` no longer performs inline request-override parsing or direct config-write orchestration.
 - Fresh red/green verification in this loop was explicit:
   - the helper test failed first because provider config save builders were missing
@@ -909,55 +909,55 @@ All commands passed on fresh execution in the same loop that expanded the shared
 
 ### Fresh Measurements After Provider Config Save Runner Integration
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2827`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`: `461`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2827`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`: `461`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 - This loop improved provider mutation-path consistency, but page line count still did not move down yet.
 
 ### Fresh Verification After Provider Config Save Runner Integration
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 All commands passed on fresh execution in the same loop that moved provider config save into the shared page runner.
 
 ### Provider Draft Baseline Extraction
 
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts` now also owns pure provider draft derivation helpers:
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts` now also owns pure provider draft derivation helpers:
   - `createOpenClawProviderConfigDraft(...)`
   - `createOpenClawProviderRequestDraft(...)`
   - `hasPendingOpenClawProviderConfigChanges(...)`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now consumes those helpers for:
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` now consumes those helpers for:
   - selected provider draft fallback state
   - selected provider request baseline derivation
   - pending-change detection
   - provider draft reset behavior
 - This loop intentionally stayed in pure draft-state shaping only. No provider write authority, gateway routing, Provider Center managed classification, or Local Proxy / plugin runtime boundary changed.
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts` now verifies cloned baseline behavior, request baseline derivation, and pending-change detection.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts` now verifies cloned baseline behavior, request baseline derivation, and pending-change detection.
 - `scripts/sdkwork-instances-contract.test.ts` now proves the page uses the new helper boundary instead of keeping the provider baseline object literals inline.
 
 ### Fresh Measurements After Provider Draft Baseline Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2810`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`: `510`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2810`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`: `510`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 - Relative to the immediately prior `2827` page baseline, this loop reduced the page hotspot to `2810` while consolidating more provider draft logic into the shared helper layer.
 
 ### Fresh Verification After Provider Draft Baseline Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 All commands passed on fresh execution in the same loop that moved provider draft baseline and dirty-state derivation out of the page.
@@ -974,11 +974,11 @@ All commands passed on fresh execution in the same loop that moved provider draf
 
 ### Provider Draft Mutation Helper Extraction
 
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts` now also owns pure page-facing draft-map mutation helpers:
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts` now also owns pure page-facing draft-map mutation helpers:
   - `applyOpenClawProviderFieldDraftChange(...)`
   - `applyOpenClawProviderConfigDraftChange(...)`
   - `applyOpenClawProviderRequestDraftChange(...)`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now consumes those helpers for:
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` now consumes those helpers for:
   - `handleProviderFieldChange`
   - `handleProviderConfigChange`
   - `handleProviderRequestOverridesChange`
@@ -986,7 +986,7 @@ All commands passed on fresh execution in the same loop that moved provider draf
   - `InstanceDetail.tsx` still owns the readonly and selected-provider guards
   - `InstanceDetail.tsx` still owns the actual `setProviderDrafts(...)` and `setProviderRequestDrafts(...)` entry points
   - no `instanceService.*`, `toast.*`, `loadWorkbench(...)`, Provider Center managed classification, Local Proxy routing, or desktop plugin/runtime boundary moved
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts` now verifies that field/config/request draft updates clone the page-owned draft maps and preserve the existing optional-model clearing behavior.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts` now verifies that field/config/request draft updates clone the page-owned draft maps and preserve the existing optional-model clearing behavior.
 - `scripts/sdkwork-instances-contract.test.ts` now proves that the page no longer keeps inline `nextDraft`, inline config-object reconstruction, or inline request-draft object literals inside those three handlers.
 - Fresh red/green verification in this loop was explicit:
   - `openClawProviderDrafts.test.ts` failed first because the new helper exports were missing
@@ -995,29 +995,29 @@ All commands passed on fresh execution in the same loop that moved provider draf
 
 ### OpenClaw Authority Checkpoints Re-read In This Loop
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts` still proves browser-backed workbench detail persists provider edits.
-- `packages/sdkwork-claw-instances/src/services/instanceService.test.ts` still rejects config-backed and built-in managed OpenClaw provider catalog writes outside Provider Center.
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts` and `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts` still keep managed-provider authority and read-only classification outside the page.
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts` still preserves Control UI section order.
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`, `packages/sdkwork-claw-market/src/services/marketService.ts`, and `packages/sdkwork-claw-agent/src/services/agentInstallService.ts` remain the external feature owners for channel writes, market installs, and agent workspace materialization.
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` and `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs` remain the Local Proxy and desktop plugin/runtime boundary.
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts` still proves browser-backed workbench detail persists provider edits.
+- `packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts` still rejects config-backed and built-in managed OpenClaw provider catalog writes outside Provider Center.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts` and `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts` still keep managed-provider authority and read-only classification outside the page.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts` still preserves Control UI section order.
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`, `packages/sdkwork-clawstudio-market/src/services/marketService.ts`, and `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts` remain the external feature owners for channel writes, market installs, and agent workspace materialization.
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` and `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs` remain the Local Proxy and desktop plugin/runtime boundary.
 
 ### Fresh Measurements After Provider Draft Mutation Helper Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2811`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`: `561`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2811`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`: `561`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 - Relative to the immediately prior `2810` page baseline, the page hotspot is effectively flat at `2811`. The gain in this loop is boundary tightening and stronger contract coverage, not raw line-count reduction.
 
 ### Fresh Verification After Provider Draft Mutation Helper Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 All commands passed on fresh execution in the same loop that introduced the provider draft mutation helper boundary.
@@ -1032,18 +1032,18 @@ All commands passed on fresh execution in the same loop that introduced the prov
 
 ### Instance Detail Workbench Presentation Module Extraction
 
-- `packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.ts` now owns the pure page-facing workbench presentation layer for:
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.ts` now owns the pure page-facing workbench presentation layer for:
   - `workbenchSections`
   - `getRuntimeStatusTone(...)`
   - `getStatusBadge(...)`
   - `getDangerBadge(...)`
   - `buildTaskScheduleSummary(...)`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now imports that dedicated presentation module instead of keeping the section metadata, badge-tone mapping, and task schedule summary formatting inline.
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` now imports that dedicated presentation module instead of keeping the section metadata, badge-tone mapping, and task schedule summary formatting inline.
 - This loop intentionally kept the authority split unchanged:
   - `InstanceDetail.tsx` still owns workbench loading, truth-source routing, section selection, write-path invocation, and page-owned side effects
   - the new presentation module owns only pure metadata and formatting helpers
   - no `instanceService.*`, `toast.*`, `loadWorkbench(...)`, Provider Center managed classification, Local Proxy routing, or desktop plugin/runtime boundary moved
-- `packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.test.ts` now verifies:
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts` now verifies:
   - section order and i18n-key stability
   - runtime/status/danger badge tone mapping
   - interval/datetime/fallback task schedule summary formatting
@@ -1058,31 +1058,31 @@ All commands passed on fresh execution in the same loop that introduced the prov
 
 ### OpenClaw Authority Checkpoints Re-read In This Loop
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts` still proves browser-backed workbench detail persists provider edits and managed channel writes.
-- `packages/sdkwork-claw-instances/src/services/instanceService.test.ts` still keeps Provider Center authority and remote OpenClaw provider routing outside the presentation layer.
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts` and `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts` still keep managed-provider authority and read-only classification outside the page presentation module.
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts` still preserves Control UI section order.
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`, `packages/sdkwork-claw-market/src/services/marketService.ts`, and `packages/sdkwork-claw-agent/src/services/agentInstallService.ts` remain the external feature owners for channel writes, market installs, and agent workspace materialization.
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` and `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs` remain the Local Proxy and desktop plugin/runtime boundary.
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts` still proves browser-backed workbench detail persists provider edits and managed channel writes.
+- `packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts` still keeps Provider Center authority and remote OpenClaw provider routing outside the presentation layer.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts` and `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts` still keep managed-provider authority and read-only classification outside the page presentation module.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts` still preserves Control UI section order.
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`, `packages/sdkwork-clawstudio-market/src/services/marketService.ts`, and `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts` remain the external feature owners for channel writes, market installs, and agent workspace materialization.
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` and `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs` remain the Local Proxy and desktop plugin/runtime boundary.
 
 ### Fresh Measurements After Instance Detail Workbench Presentation Module Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2640`
-- `packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `183`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`: `561`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2640`
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `183`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`: `561`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 - Relative to the immediately prior `2811` page baseline, this loop reduces the page hotspot to `2640` while keeping the new presentation-only code isolated in a dedicated module.
 
 ### Fresh Verification After Instance Detail Workbench Presentation Module Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 All commands passed on fresh execution in the same loop that introduced the dedicated workbench presentation module.
@@ -1102,7 +1102,7 @@ All commands passed on fresh execution in the same loop that introduced the dedi
 
 ### Managed Config Draft Factory Extraction
 
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts` now also owns the pure managed-config form-state factory layer for:
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.ts` now also owns the pure managed-config form-state factory layer for:
   - `createOpenClawWebSearchSharedDraft(...)`
   - `createOpenClawWebSearchProviderDraft(...)`
   - `createOpenClawXSearchDraft(...)`
@@ -1110,7 +1110,7 @@ All commands passed on fresh execution in the same loop that introduced the dedi
   - `createOpenClawWebFetchSharedDraft(...)`
   - `createOpenClawWebFetchFallbackDraft(...)`
   - `createOpenClawAuthCooldownsDraft(...)`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now consumes those helpers and their shared draft-value types through import aliases instead of keeping:
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` now consumes those helpers and their shared draft-value types through import aliases instead of keeping:
   - local managed-config form-state interfaces
   - local managed-config snapshot-to-draft mapping functions
   - local optional whole-number formatting logic
@@ -1118,7 +1118,7 @@ All commands passed on fresh execution in the same loop that introduced the dedi
   - `InstanceDetail.tsx` still owns `useState(...)`, `useEffect(...)`, save handlers, truth-source routing, and all write-path side effects
   - `openClawManagedConfigDrafts.ts` owns only pure draft shaping and save-input construction
   - no `instanceService.*`, `toast.*`, `loadWorkbench(...)`, Provider Center managed classification, Local Proxy routing, or desktop plugin/runtime boundary moved
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts` now verifies:
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts` now verifies:
   - snapshot-to-draft mapping for webSearch, xSearch, native codex, webFetch, and auth cooldowns
   - empty fallback defaults for provider/fallback drafts
   - null passthrough for absent managed-config snapshots
@@ -1132,33 +1132,33 @@ All commands passed on fresh execution in the same loop that introduced the dedi
 
 ### OpenClaw Authority Checkpoints Re-read In This Loop
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts` still proves browser-backed workbench detail persists provider edits and managed channel writes.
-- `packages/sdkwork-claw-instances/src/services/instanceService.test.ts` still keeps Provider Center authority, managed config writes, and remote OpenClaw provider routing outside the new draft-factory layer.
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts` and `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts` still keep managed-provider authority and read-only classification outside the page.
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts` still preserves Control UI section order.
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`, `packages/sdkwork-claw-market/src/services/marketService.ts`, and `packages/sdkwork-claw-agent/src/services/agentInstallService.ts` remain the external feature owners for channel writes, market installs, and agent workspace materialization.
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` and `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs` remain the Local Proxy and desktop plugin/runtime boundary.
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts` still proves browser-backed workbench detail persists provider edits and managed channel writes.
+- `packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts` still keeps Provider Center authority, managed config writes, and remote OpenClaw provider routing outside the new draft-factory layer.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts` and `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts` still keep managed-provider authority and read-only classification outside the page.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts` still preserves Control UI section order.
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`, `packages/sdkwork-clawstudio-market/src/services/marketService.ts`, and `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts` remain the external feature owners for channel writes, market installs, and agent workspace materialization.
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` and `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs` remain the Local Proxy and desktop plugin/runtime boundary.
 
 ### Fresh Measurements After Managed Config Draft Factory Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2474`
-- `packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `183`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts`: `506`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`: `561`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2474`
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `183`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.ts`: `506`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`: `561`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 - Relative to the immediately prior `2640` page baseline, this loop reduces the page hotspot to `2474` while keeping the managed-config draft logic in one shared helper layer.
 
 ### Fresh Verification After Managed Config Draft Factory Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 All commands passed on fresh execution in the same loop that introduced the managed-config draft factory boundary.
@@ -1174,15 +1174,15 @@ All commands passed on fresh execution in the same loop that introduced the mana
 
 ### Capability And Management Tone Presentation Extraction
 
-- `packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.ts` now also owns the pure overview presentation helpers:
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.ts` now also owns the pure overview presentation helpers:
   - `getCapabilityTone(...)`
   - `getManagementEntryTone(...)`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` now imports those helpers from the presentation module instead of keeping the capability and management-entry tone mapping inline at the top of the page.
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` now imports those helpers from the presentation module instead of keeping the capability and management-entry tone mapping inline at the top of the page.
 - This loop intentionally kept all authority-bearing work in the page and services:
   - `InstanceDetail.tsx` still owns `instanceService.*`, `toast.*`, `loadWorkbench(...)`, selection/dialog state, and read-only or availability guards
   - the presentation module still owns only pure label/tone/summary shaping
   - no Provider Center authority, Local Proxy routing, or desktop plugin/runtime boundary moved
-- `packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.test.ts` now verifies the extracted tone boundary directly, including:
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts` now verifies the extracted tone boundary directly, including:
   - `ready`, `degraded`, `planned`, and fallback capability tone mapping
   - `success`, `warning`, and `neutral` management-entry tone mapping
 - `scripts/sdkwork-instances-contract.test.ts` now proves that:
@@ -1195,31 +1195,31 @@ All commands passed on fresh execution in the same loop that introduced the mana
 
 ### OpenClaw Authority Checkpoints Re-read In This Loop
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts` still proves browser-backed workbench detail persists OpenClaw tasks, files, provider edits, and managed channel writes through the real bridge.
-- `packages/sdkwork-claw-instances/src/services/instanceService.test.ts` still keeps Provider Center authority, managed config writes, and remote OpenClaw provider routing outside the presentation boundary.
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts` and `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts` still keep managed-provider authority and editability classification outside the page-top tone helpers.
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` and `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs` remain the Local Proxy and desktop plugin/runtime boundary.
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts` still proves browser-backed workbench detail persists OpenClaw tasks, files, provider edits, and managed channel writes through the real bridge.
+- `packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts` still keeps Provider Center authority, managed config writes, and remote OpenClaw provider routing outside the presentation boundary.
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts` and `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts` still keep managed-provider authority and editability classification outside the page-top tone helpers.
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` and `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs` remain the Local Proxy and desktop plugin/runtime boundary.
 
 ### Fresh Measurements After Tone Helper Extraction
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `2242`
-- `packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `195`
-- `packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.ts`: `455`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.ts`: `511`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1030`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2242`
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `195`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.ts`: `455`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`: `511`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1030`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
 - This loop records the fresh current-worktree hotspot profile after the tone-helper extraction. Because `CP07-3` was already carrying additional in-flight decomposition changes before this turn resumed, the closed-loop claim here is the new presentation boundary and verified rebasing, not attribution of the entire historical page delta to these two helpers alone.
 
 ### Fresh Verification After Tone Helper Extraction
 
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawManagedConfigDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 All commands passed on fresh execution in the same loop that moved the two tone helpers into the presentation module.

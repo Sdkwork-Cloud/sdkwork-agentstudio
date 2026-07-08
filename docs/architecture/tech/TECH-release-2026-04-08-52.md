@@ -12,12 +12,12 @@
 - Re-ran the full `Step 06` verification set:
   - `pnpm.cmd check:sdkwork-chat`
   - `node --experimental-strip-types scripts/sdkwork-chat-contract.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/chatService.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/instanceChatRouteService.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/studioConversationGateway.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/connectGatewayInstances.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/chatSessionBootstrap.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/chatService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/store/openClawGatewaySessionStore.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/store/connectGatewayInstances.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/chatSessionBootstrap.test.ts`
 - Re-audited the current implementation and OpenClaw fact sources:
   - `resolveAuthoritativeInstanceChatRoute()` and `instanceChatRouteService` authoritative route resolution
   - `chatService` compatible HTTP send chain and managed Gateway handoff
@@ -43,12 +43,12 @@
 
 - `pnpm.cmd check:sdkwork-chat`
 - `node --experimental-strip-types scripts/sdkwork-chat-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/chatService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/instanceChatRouteService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/openClawGatewaySessionStore.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/studioConversationGateway.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/store/connectGatewayInstances.test.ts`
-- `node --experimental-strip-types packages/sdkwork-claw-chat/src/services/chatSessionBootstrap.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/chatService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/store/openClawGatewaySessionStore.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/store/connectGatewayInstances.test.ts`
+- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/chatSessionBootstrap.test.ts`
 
 ## Risks And Rollback
 

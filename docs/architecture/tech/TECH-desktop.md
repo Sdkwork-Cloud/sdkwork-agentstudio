@@ -5,17 +5,17 @@
 
 ## Overview
 
-Claw Studio ships a Tauri desktop runtime through `@sdkwork/claw-desktop`. It reuses the shared shell and product feature packages while adding native runtime integration, update checks, and packaging commands.
+Claw Studio ships a Tauri desktop runtime through `@sdkwork/clawstudio-desktop`. It reuses the shared shell and product feature packages while adding native runtime integration, update checks, and packaging commands.
 
 ## Important Paths
 
-- `packages/sdkwork-claw-desktop/src/main.tsx`
-- `packages/sdkwork-claw-desktop/src/desktop/bootstrap/createDesktopApp.tsx`
-- `packages/sdkwork-claw-desktop/src/desktop/catalog.ts`
-- `packages/sdkwork-claw-desktop/src/desktop/runtime.ts`
-- `packages/sdkwork-claw-desktop/src/desktop/providers/DesktopProviders.tsx`
-- `packages/sdkwork-claw-desktop/src/desktop/tauriBridge.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/`
+- `packages/sdkwork-clawstudio-desktop/src/main.tsx`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/createDesktopApp.tsx`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/catalog.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/runtime.ts`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/providers/DesktopProviders.tsx`
+- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/`
 
 The template-grade bridge surface is documented in [Desktop Template API](./desktop-template.md).
 
@@ -72,7 +72,7 @@ Desktop runtime behavior relies on typed environment configuration from the infr
 
 Desktop shells keep privileged credentials in trusted hosts or host-mediated auth flows rather than injecting root tokens through Vite env.
 
-The root `.env.example` and `packages/sdkwork-claw-desktop/.env.example` document these values.
+The root `.env.example` and `packages/sdkwork-clawstudio-desktop/.env.example` document these values.
 
 ## Troubleshooting `pnpm tauri:dev`
 
@@ -98,7 +98,7 @@ If desktop startup reaches the UI but the built-in OpenClaw runtime is still unh
 ## Desktop Architecture Notes
 
 - the desktop entry package stays thin
-- shell composition remains in `@sdkwork/claw-shell`
+- shell composition remains in `@sdkwork/clawstudio-shell`
 - update and configuration logic flow through shared infrastructure and core layers
 - native execution and packaging live under `src-tauri`
 - the standard desktop bridge now exposes a template API with command catalog, event catalog, grouped domain facades, and a normalized bridge error model

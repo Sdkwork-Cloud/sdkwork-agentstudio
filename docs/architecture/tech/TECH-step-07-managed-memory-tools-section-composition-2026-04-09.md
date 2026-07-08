@@ -27,21 +27,21 @@
 ## Implemented Fix
 
 - Exported the managed section prop interfaces from:
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`
-  - `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`
-- Extended `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts` with:
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`
+- Extended `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts` with:
   - `BuildManagedMemorySectionPropsInput`
   - `BuildManagedToolsSectionPropsInput`
   - `buildManagedMemorySectionProps(...)`
   - `buildManagedToolsSectionProps(...)`
-- Rewired `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
   - creates one shared `renderWorkbenchSectionAvailability(...)`
   - routes the `llmProviders` availability notice through that shared renderer
   - builds `memorySectionProps` through `buildManagedMemorySectionProps(...)`
   - builds `toolsSectionProps` through `buildManagedToolsSectionProps(...)`
   - renders the managed section components from those builder outputs instead of keeping the prop literals inline
 - Added focused helper coverage in:
-  - `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the boundary gate now requires:
   - the page to reference `buildManagedMemorySectionProps(...)`
   - the page to reference `buildManagedToolsSectionProps(...)`
@@ -65,28 +65,28 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-claw-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-claw-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-claw-channels/src/services/channelService.ts`
-- `packages/sdkwork-claw-market/src/services/marketService.ts`
-- `packages/sdkwork-claw-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-claw-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-claw-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-claw-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed managed workbench persistence, Control UI section semantics, Provider Center routing, default-agent install behavior, Local Proxy ownership, and desktop plugin/runtime registration. This loop only centralizes page-side section prop assembly.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-claw-instances/src/pages/InstanceDetail.tsx`: `1414`
-- `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.ts`: `388`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
-- `packages/sdkwork-claw-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
-- `packages/sdkwork-claw-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
-- `packages/sdkwork-claw-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1414`
+- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`: `388`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
+- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
+- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
 
 Relative to the immediately prior `1416` page baseline from `release-2026-04-09-134`, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1414`. This loop records a small but verified page-side reduction while moving another pure-composition slice out of the shell.
 
@@ -103,10 +103,10 @@ Relative to the immediately prior `1416` page baseline from `release-2026-04-09-
 - GREEN:
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/claw-web lint`
+  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
   - `pnpm.cmd build`
 - YELLOW:
-  - `packages/sdkwork-claw-instances/src/components/instanceDetailSectionModels.test.tsx` now contains direct helper coverage, but executing it via `pnpm.cmd exec tsx ...` remains blocked in this sandbox by `spawn EPERM`; the new coverage was still typechecked by `pnpm.cmd --filter @sdkwork/claw-web lint`
+  - `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx` now contains direct helper coverage, but executing it via `pnpm.cmd exec tsx ...` remains blocked in this sandbox by `spawn EPERM`; the new coverage was still typechecked by `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
   - repo-wide `pnpm lint` was not rerun in this loop
 
 ## Closure Status
