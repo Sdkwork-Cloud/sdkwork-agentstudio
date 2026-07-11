@@ -26,7 +26,7 @@ That meant a stale install, wrong port projection, wrong embedded host asset roo
 
 ### 1. Hardened desktop hosted readiness validation
 
-`packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
+`packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.ts`
 
 - `probeDesktopHostedRuntimeReadiness()` now returns the normalized desktop runtime descriptor together with the readiness data.
 - The readiness assertion now rejects when the published manage host endpoint `baseUrl` drifts from the runtime descriptor `browserBaseUrl`.
@@ -50,20 +50,20 @@ Renderer-side runtime descriptor now carries additional embedded-host provenance
 
 Files:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.ts`
 
 ### 3. Extended Tauri/Rust embedded-host snapshot wiring
 
-`packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/embedded_host_server.rs`
+`packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/embedded_host_server.rs`
 
 - Embedded host snapshot now persists:
   - `runtime_data_dir`
   - `web_dist_dir`
 
-`packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/studio_commands.rs`
+`packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/commands/studio_commands.rs`
 
 - `get_desktop_host_runtime` now forwards:
   - endpoint id
@@ -77,7 +77,7 @@ This closes the renderer-to-host provenance gap.
 
 ### 4. Improved startup diagnostics
 
-`packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
+`packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
 
 The startup readiness log now records:
 
@@ -94,14 +94,14 @@ This makes it much easier to confirm whether a failing desktop build is using th
 
 ### TypeScript / renderer
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
   - verifies readiness result includes descriptor provenance
   - verifies readiness rejects when manage host endpoint `baseUrl` drifts from runtime descriptor `browserBaseUrl`
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
   - verifies startup log includes host endpoint id/ports and runtime/web asset paths
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.test.ts`
   - verifies runtime startup contract includes the new provenance fields
   - verifies desktop runtime info maps those fields from the canonical host runtime descriptor
 
@@ -114,13 +114,13 @@ This makes it much easier to confirm whether a failing desktop build is using th
 
 The following commands were run successfully in this iteration:
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.test.ts`
 - `pnpm.cmd check:desktop`
-- `cargo test embedded_host_server_state_defaults_to_sqlite_state_store_driver --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test host_platform_status_projects_embedded_host_state_store_metadata --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test desktop_combined_hosted_startup_requests_include_cors_headers_on_successful_responses --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml`
+- `cargo test embedded_host_server_state_defaults_to_sqlite_state_store_driver --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test host_platform_status_projects_embedded_host_state_store_metadata --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test desktop_combined_hosted_startup_requests_include_cors_headers_on_successful_responses --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml`
 
 ## Remaining Gaps
 
@@ -172,7 +172,7 @@ logs:
 
 The implementation keeps the runtime startup contract as the single source of
 truth by projecting `runtime.getRuntimeInfo().startup` through
-`packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts` into
+`packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.ts` into
 `HostRuntimeSettings.tsx`, instead of duplicating host-governance state inside a
 second settings-only model.
 
@@ -180,8 +180,8 @@ second settings-only model.
 
 The follow-up iteration added or strengthened:
 
-- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
-- `packages/sdkwork-clawstudio-settings/src/hostRuntimeSettings.test.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.test.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/hostRuntimeSettings.test.ts`
 - `scripts/sdkwork-settings-contract.test.ts`
 - localized root and section settings dictionaries for English and Chinese
 
@@ -200,9 +200,9 @@ current blockers:
 
 1. The previously reported `openClawConfigService.readConfigDocument` dependency
    concern is already wired in the runtime wrapper at
-   `packages/sdkwork-clawstudio-instances/src/services/instanceService.ts`, and the
+   `packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.ts`, and the
    config workbench read/write/gateway fallback behavior is covered by
-   `packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`.
+   `packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`.
 2. The local AI proxy token-accounting runtime gap was separately closed in
    `docs/review/2026-04-06-local-ai-proxy-token-accounting-hardening.md`; what
    remains there is broader launched-session evidence, not the source-level
@@ -210,7 +210,7 @@ current blockers:
 
 Fresh revalidation executed after this follow-up update:
 
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts']))"`
 
 ## Updated Remaining Gaps
 
@@ -238,7 +238,7 @@ canonical hosted route families are actually served by the Tauri host:
 - `embedded_host_bootstrap_exposes_canonical_server_route_families`
 
 The mandatory desktop gate now runs those focused `cargo test` commands against
-`packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml` inside an isolated
+`packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml` inside an isolated
 `target/check-desktop` directory so the regression suite does not depend on a
 shared Cargo lock with unrelated native builds.
 
@@ -253,8 +253,8 @@ appear green while silently skipping the intended test path.
 Verified successfully with:
 
 - `node scripts/desktop-hosted-runtime-regression-contract.test.mjs`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/check-desktop embedded_host_bootstrap_exposes_structured_browser_bootstrap_descriptor`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/check-desktop embedded_host_bootstrap_exposes_canonical_server_route_families`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/check-desktop embedded_host_bootstrap_exposes_structured_browser_bootstrap_descriptor`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/check-desktop embedded_host_bootstrap_exposes_canonical_server_route_families`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`
 

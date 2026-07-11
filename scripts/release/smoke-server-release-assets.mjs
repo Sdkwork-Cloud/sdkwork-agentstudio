@@ -398,8 +398,8 @@ export async function launchServerBundle({
 } = {}) {
   const normalizedPlatform = normalizeDesktopPlatform(platform);
   const launcherRelativePath = normalizedPlatform === 'windows'
-    ? 'bin/clawstudio-server.exe'
-    : 'bin/clawstudio-server';
+    ? 'bin/agentstudio-server.exe'
+    : 'bin/agentstudio-server';
   const launcherAbsolutePath = path.join(bundleRoot, launcherRelativePath);
   if (!existsSyncFn(launcherAbsolutePath)) {
     throw new Error(`Missing bundled server launcher: ${launcherAbsolutePath}`);
@@ -563,7 +563,7 @@ export async function smokeServerReleaseAssets({
 
   const archiveArtifact = resolveServerArchiveArtifact(manifest, manifestPath);
   const archivePath = resolveArtifactAbsolutePath(releaseAssetsDir, archiveArtifact);
-  const extractDir = mkdtempSync(path.join(os.tmpdir(), 'clawstudio-server-smoke-'));
+  const extractDir = mkdtempSync(path.join(os.tmpdir(), 'agentstudio-server-smoke-'));
 
   let runtime = null;
   try {

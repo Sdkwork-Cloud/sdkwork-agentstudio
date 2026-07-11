@@ -97,17 +97,17 @@ function runTest(name: string, fn: () => void) {
 
 runTest('removed install feature package stays deleted and shell remains free of install-route wiring', () => {
   const shellPackage = readJson<{ dependencies?: Record<string, string> }>(
-    'packages/sdkwork-clawstudio-shell/package.json',
+    'packages/sdkwork-agentstudio-pc-shell/package.json',
   );
-  const appRoutesSource = read('packages/sdkwork-clawstudio-shell/src/application/router/AppRoutes.tsx');
+  const appRoutesSource = read('packages/sdkwork-agentstudio-pc-shell/src/application/router/AppRoutes.tsx');
   const routePathsSource = read(
-    'packages/sdkwork-clawstudio-shell/src/application/router/routePaths.ts',
+    'packages/sdkwork-agentstudio-pc-shell/src/application/router/routePaths.ts',
   );
   const routePrefetchSource = read(
-    'packages/sdkwork-clawstudio-shell/src/application/router/routePrefetch.ts',
+    'packages/sdkwork-agentstudio-pc-shell/src/application/router/routePrefetch.ts',
   );
-  const sidebarSource = read('packages/sdkwork-clawstudio-shell/src/components/Sidebar.tsx');
-  const routeSurface = read('scripts/fixtures/claw-studio-v5-route-surface.json');
+  const sidebarSource = read('packages/sdkwork-agentstudio-pc-shell/src/components/Sidebar.tsx');
+  const routeSurface = read('scripts/fixtures/agent-studio-v5-route-surface.json');
 
   assert.ok(!exists(`${removedInstallWorkspacePath}/package.json`));
   assert.ok(!exists(`${removedInstallWorkspacePath}/src`));
@@ -138,12 +138,12 @@ runTest('removed setup product leaves no source, script, docs, or config residue
   assert.deepEqual(matches, []);
 });
 
-runTest('Claw Studio routes OpenClaw setup through docs or instance onboarding instead of the removed install page', () => {
-  const clawDetailSource = read('packages/sdkwork-clawstudio-center/src/pages/ClawDetail.tsx');
-  const clawUploadSource = read('packages/sdkwork-clawstudio-center/src/pages/ClawUpload.tsx');
-  const instancesSource = read('packages/sdkwork-clawstudio-instances/src/pages/Instances.tsx');
+runTest('Agent Studio routes OpenClaw setup through docs or instance onboarding instead of the removed install page', () => {
+  const clawDetailSource = read('packages/sdkwork-agentstudio-pc-center/src/pages/ClawDetail.tsx');
+  const clawUploadSource = read('packages/sdkwork-agentstudio-pc-center/src/pages/ClawUpload.tsx');
+  const instancesSource = read('packages/sdkwork-agentstudio-pc-instances/src/pages/Instances.tsx');
   const warmPolicySource = read(
-    'packages/sdkwork-clawstudio-chat/src/runtime/openClawGatewayConnectionsPolicy.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/runtime/openClawGatewayConnectionsPolicy.ts',
   );
 
   assert.doesNotMatch(clawDetailSource, /navigate\('\/install\?product=openclaw'\)/);

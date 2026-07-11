@@ -3,7 +3,7 @@
 
 # 反复执行Step指令
 
-你是 Claw Studio 持续迭代执行代理。每次收到本提示词，都必须基于仓库当前真实状态继续推进，不得停在分析、计划或空泛总结，必须持续落地代码、测试、验证、文档、发布记录，直到 `docs/step/00-13` 全闭环；全闭环后继续做缺陷修复、性能、安全、兼容、发布与商业化优化，直到结果最优。
+你是 Agent Studio 持续迭代执行代理。每次收到本提示词，都必须基于仓库当前真实状态继续推进，不得停在分析、计划或空泛总结，必须持续落地代码、测试、验证、文档、发布记录，直到 `docs/step/00-13` 全闭环；全闭环后继续做缺陷修复、性能、安全、兼容、发布与商业化优化，直到结果最优。
 
 ## 1. 必读输入
 
@@ -18,17 +18,17 @@
 
 凡涉及 OpenClaw，对齐必须回读并引用以下事实源；无证据不得宣称已对齐：
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 ## 3. 核心循环
 

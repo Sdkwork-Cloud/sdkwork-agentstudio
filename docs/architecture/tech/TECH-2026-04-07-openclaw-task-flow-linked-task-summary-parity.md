@@ -86,11 +86,11 @@ This keeps the OpenClaw semantics visible without over-expanding the detail over
 
 Failing tests were added first in four places:
 
-1. `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
+1. `packages/sdkwork-agentstudio-pc-commons/src/components/taskRuntimeFlowMeta.test.ts`
    - expected new linked-task summary/result helpers
-2. `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
+2. `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.test.ts`
    - expected `tasks.flow.show` normalization to preserve the missing linked-task fields
-3. `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
+3. `packages/sdkwork-agentstudio-pc-core/src/services/taskRuntimeService.test.ts`
    - expected the shared core seam to keep the richer linked-task payload intact
 4. `scripts/sdkwork-tasks-contract.test.ts`
    - expected the shared manager and locale resources to wire delivery/result labels and the new
@@ -98,7 +98,7 @@ Failing tests were added first in four places:
 
 Fresh red evidence:
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-commons/src/components/taskRuntimeFlowMeta.test.ts`
   failed because `formatTaskFlowLinkedTaskResult` did not exist yet
 - `pnpm.cmd check:sdkwork-tasks`
   failed for the same missing export and therefore confirmed the shared task surface was still
@@ -119,8 +119,8 @@ After the implementation:
 
 Updated:
 
-- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.test.ts`
 
 Changes:
 
@@ -136,9 +136,9 @@ payload intact.
 
 Updated:
 
-- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.ts`
-- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
-- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/taskRuntimeFlowMeta.ts`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/CronTasksManager.tsx`
 
 Changes:
 
@@ -159,10 +159,10 @@ state and outcome.
 
 Updated:
 
-- `packages/sdkwork-clawstudio-i18n/src/locales/en/tasks.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh/tasks.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en/tasks.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/tasks.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json`
 - `scripts/sdkwork-tasks-contract.test.ts`
 
 Changes:
@@ -182,29 +182,29 @@ Note:
 Fresh commands run in this loop:
 
 ```bash
-node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts
+node --experimental-strip-types packages/sdkwork-agentstudio-pc-commons/src/components/taskRuntimeFlowMeta.test.ts
 node scripts/run-sdkwork-foundation-check.mjs
 node scripts/run-sdkwork-core-check.mjs
-pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales
+pnpm.cmd --filter @sdkwork/agentstudio-pc-i18n sync:locales
 pnpm.cmd check:sdkwork-tasks
-node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts
+node --experimental-strip-types packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts
 pnpm.cmd build
 pnpm.cmd lint
 ```
 
 Results:
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-commons/src/components/taskRuntimeFlowMeta.test.ts`
   passed
 - `node scripts/run-sdkwork-foundation-check.mjs`
   passed
 - `node scripts/run-sdkwork-core-check.mjs`
   passed
-- `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales`
+- `pnpm.cmd --filter @sdkwork/agentstudio-pc-i18n sync:locales`
   passed
 - `pnpm.cmd check:sdkwork-tasks`
   passed
-- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts`
   passed
 - `pnpm.cmd build`
   passed

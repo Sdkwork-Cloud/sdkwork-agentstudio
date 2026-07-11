@@ -22,8 +22,8 @@
 
 ## Implemented Fix
 
-- Re-ran the Step 07 closure scan against `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` using:
-  - `rg -n "\w+: \([^)]*\) =>|\w+: \(\) =>" packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx -S`
+- Re-ran the Step 07 closure scan against `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` using:
+  - `rg -n "\w+: \([^)]*\) =>|\w+: \(\) =>" packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx -S`
   - result: no remaining matches
 - Recorded the final Step 07 closure state in:
   - `docs/review/step-07-instance-detail-final-closure-writeback-2026-04-10.md`
@@ -34,24 +34,24 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for studio-backed workbench truth, runtime persistence, provider-center projection, Local Proxy routing, ecosystem/runtime ownership, and desktop plugin/runtime registration. This loop does not modify code; it closes the evidence chain for the already-verified Step 07 state.
 
 ## Closure Evidence
 
 - Final wrapper scan:
-  - `rg -n "\w+: \([^)]*\) =>|\w+: \(\) =>" packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx -S`
+  - `rg -n "\w+: \([^)]*\) =>|\w+: \(\) =>" packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx -S`
   - returned no matches
 - Current operative hotspot profile:
   - `InstanceDetail.tsx`: `1031`
@@ -80,10 +80,10 @@ These sources remain the authority for studio-backed workbench truth, runtime pe
 ## Verification
 
 - GREEN:
-  - `rg -n "\w+: \([^)]*\) =>|\w+: \(\) =>" packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx -S`
+  - `rg -n "\w+: \([^)]*\) =>|\w+: \(\) =>" packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx -S`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
   - `node -e "JSON.parse(require('fs').readFileSync('docs/release/releases.json','utf8')); console.log('ok')"`
 - YELLOW:

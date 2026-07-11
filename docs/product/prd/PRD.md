@@ -1,8 +1,8 @@
-# Claw Studio PRD
+# Agent Studio PRD
 
 Status: active
 Owner: SDKWork maintainers
-Application: claw-studio
+Application: agent-studio
 Updated: 2026-06-24
 Specs: REQUIREMENTS_SPEC.md, DOCUMENTATION_SPEC.md
 

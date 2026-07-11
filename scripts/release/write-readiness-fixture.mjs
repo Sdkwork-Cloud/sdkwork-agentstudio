@@ -39,7 +39,7 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..', '..');
 const DEFAULT_RELEASE_ASSETS_DIR = path.join(rootDir, 'artifacts', 'release-readiness-fixture');
 const DEFAULT_RELEASE_TAG = 'release-fixture';
-const DEFAULT_REPOSITORY = 'Sdkwork-Cloud/claw-studio';
+const DEFAULT_REPOSITORY = 'Sdkwork-Cloud/agent-studio';
 const DEFAULT_GENERATED_AT = '2026-04-12T01:02:03.000Z';
 const RELEASE_READINESS_FIXTURE_DIR_NAME = 'release-readiness-fixture';
 
@@ -199,7 +199,7 @@ function createWebArchive({
     },
     {
       name: `${bundleRoot}/web/dist/assets/index.js`,
-      content: 'console.log("claw studio release fixture");\n',
+      content: 'console.log("Agent Studio release fixture");\n',
     },
     {
       name: `${bundleRoot}/docs/dist/index.html`,
@@ -258,8 +258,8 @@ function createDeploymentArchive({
     {
       name: launcherPath,
       content: family === 'container'
-        ? 'services:\n  clawstudio-server:\n    image: claw-studio-server:fixture\n'
-        : 'apiVersion: v2\nname: claw-studio\nversion: 0.1.0\n',
+        ? 'services:\n  agentstudio-server:\n    image: agent-studio-server:fixture\n'
+        : 'apiVersion: v2\nname: agent-studio\nversion: 0.1.0\n',
     },
     {
       name: 'release-metadata.json',
@@ -304,7 +304,7 @@ function buildContainerChecks() {
     ['deployment-identity', 'packaged deployment identity matches the release target'],
     ['runtime-profile', 'packaged runtime profile preserves production-safe defaults'],
     ['manage-credentials', 'packaged compose layout requires explicit manage credentials'],
-    ['persistent-storage', 'packaged compose layout persists /var/lib/clawstudio-server'],
+    ['persistent-storage', 'packaged compose layout persists /var/lib/agentstudio-server'],
     ['docker-compose-up', 'docker compose accepted the packaged layout'],
     ['docker-compose-healthy', 'docker reported packaged services healthy'],
     ['health-ready', '/claw/health/ready responded from the packaged deployment'],
@@ -325,7 +325,7 @@ function buildKubernetesChecks() {
     ['configmap-runtime-identity', 'rendered ConfigMap preserves runtime identity'],
     ['readiness-probe', 'rendered workload exposes readiness probe'],
     ['secret-ref', 'rendered workload wires manage credentials through Secret refs'],
-    ['persistent-storage', 'rendered workload requests /var/lib/clawstudio-server persistence'],
+    ['persistent-storage', 'rendered workload requests /var/lib/agentstudio-server persistence'],
   ].map(([id, detail]) => ({
     id,
     status: 'passed',
@@ -430,11 +430,11 @@ function buildDesktopArtifactContent({
   if (bundle === 'app') {
     return createTarGzArchive([
       {
-        name: 'Claw Studio.app/Contents/MacOS/claw-studio',
+        name: 'Agent Studio.app/Contents/MacOS/agent-studio',
         content: `desktop ${platform} ${arch} app\n`,
       },
       {
-        name: 'Claw Studio.app/Contents/Info.plist',
+        name: 'Agent Studio.app/Contents/Info.plist',
         content: '<plist><dict></dict></plist>\n',
       },
     ]);
@@ -625,7 +625,7 @@ function writeWebArtifact({
   profile,
   releaseTag,
 }) {
-  const bundleRoot = `claw-studio-web-assets-${releaseTag}`;
+  const bundleRoot = `agent-studio-web-assets-${releaseTag}`;
   const relativePath = `web/${bundleRoot}.tar.gz`;
   const absolutePath = path.join(releaseAssetsDir, relativePath);
   writeBinaryFile(
@@ -685,9 +685,9 @@ function writeServerArtifacts({
   return (profile.server?.matrix ?? []).map((entry) => {
     const archiveFormat = entry.archiveFormat ?? (entry.platform === 'windows' ? 'zip' : 'tar.gz');
     const extension = archiveFormat === 'zip' ? 'zip' : 'tar.gz';
-    const baseName = `claw-studio-server-${releaseTag}-${entry.platform}-${entry.arch}`;
+    const baseName = `agent-studio-server-${releaseTag}-${entry.platform}-${entry.arch}`;
     const relativePath = `server/${entry.platform}/${entry.arch}/${baseName}.${extension}`;
-    const launcherFileName = entry.platform === 'windows' ? 'clawstudio-server.exe' : 'clawstudio-server';
+    const launcherFileName = entry.platform === 'windows' ? 'agentstudio-server.exe' : 'agentstudio-server';
     const launcherRelativePath = `server/${entry.platform}/${entry.arch}/${baseName}/${launcherFileName}`;
     const absolutePath = path.join(releaseAssetsDir, relativePath);
     writeBinaryFile(
@@ -754,7 +754,7 @@ function writeDeploymentArtifacts({
   family,
 }) {
   return (profile[family]?.matrix ?? []).map((entry) => {
-    const baseName = `claw-studio-${family}-bundle-${releaseTag}-${entry.platform}-${entry.arch}-${entry.accelerator}`;
+    const baseName = `agent-studio-${family}-bundle-${releaseTag}-${entry.platform}-${entry.arch}-${entry.accelerator}`;
     const relativePath = `${family}/${entry.platform}/${entry.arch}/${entry.accelerator}/${baseName}.tar.gz`;
     const launcherRelativePath = family === 'container'
       ? `${family}/${entry.platform}/${entry.arch}/${entry.accelerator}/${baseName}/docker-compose.yml`
@@ -830,7 +830,7 @@ function writeReleaseNotes({
   writeFileSync(
     absolutePath,
     [
-      '# Claw Studio Release Fixture',
+      '# Agent Studio Release Fixture',
       '',
       `Synthetic finalized release fixture for ${releaseTag}.`,
       '',
@@ -955,7 +955,7 @@ export function writeReleaseReadinessFixture({
 
   const manifest = {
     profileId: profile.id,
-    productName: profile.productName ?? 'Claw Studio',
+    productName: profile.productName ?? 'Agent Studio',
     releaseTag: normalizedReleaseTag,
     repository: normalizedRepository,
     generatedAt: DEFAULT_GENERATED_AT,
@@ -1067,7 +1067,7 @@ function printHelp() {
     'Generate a complete synthetic finalized release assets directory and verify it with release:assert-ready.',
     '',
     'Options:',
-    '  --profile <id>              Release profile id (default: claw-studio)',
+    '  --profile <id>              Release profile id (default: agent-studio)',
     '  --release-tag <tag>         Synthetic release tag (default: release-fixture)',
     '  --repository <owner/repo>   Repository slug for attestation evidence',
     '  --release-assets-dir <dir>  Output directory (default: artifacts/release-readiness-fixture)',

@@ -1,10 +1,10 @@
-# Claw Studio
+# Agent Studio
 
 [English](./README.md)
 
-Claw Studio 是面向现代 Claw Studio 应用、共享浏览器 Shell 与 Tauri 桌面运行时的 `pnpm` 分包工作区。当前实现以 `upgrade/claw-studio-v5` 为基线，已经重组为可维护的业务分包结构，并通过根级导入与架构校验持续约束演进方向。
+Agent Studio 是面向现代 Agent Studio 应用、共享浏览器 Shell 与 Tauri 桌面运行时的 `pnpm` 分包工作区。当前实现以 `upgrade/agent-studio-v5` 为基线，已经重组为可维护的业务分包结构，并通过根级导入与架构校验持续约束演进方向。
 
-本仓库的主线是 Claw Studio 产品本身。仓库内也包含 `packages/cc-switch` 这一独立包族，但主要脚本、架构与文档仍以 Claw Studio 为中心。
+本仓库的主线是 Agent Studio 产品本身。仓库内也包含 `packages/cc-switch` 这一独立包族，但主要脚本、架构与文档仍以 Agent Studio 为中心。
 
 ## 项目亮点
 
@@ -25,15 +25,15 @@ infrastructure -> (i18n + types)
 
 核心包职责：
 
-- `@sdkwork/clawstudio-web`：可运行的 Web 应用与 Vite 宿主
-- `@sdkwork/clawstudio-desktop`：Tauri 桌面入口与原生桥接
-- `@sdkwork/clawstudio-shell`：路由、布局、Provider、侧边栏、命令面板
-- `@sdkwork/clawstudio-core`：共享 store 与跨业务编排
-- `@sdkwork/clawstudio-types`：纯类型与共享领域模型
-- `@sdkwork/clawstudio-infrastructure`：环境配置、HTTP、i18n 与平台适配
-- `@sdkwork/clawstudio-*`：垂直业务包，例如 `chat`、`market`、`settings`、`account`、`extensions`
+- `@sdkwork/agentstudio-pc-web`：可运行的 Web 应用与 Vite 宿主
+- `@sdkwork/agentstudio-pc-desktop`：Tauri 桌面入口与原生桥接
+- `@sdkwork/agentstudio-pc-shell`：路由、布局、Provider、侧边栏、命令面板
+- `@sdkwork/agentstudio-pc-core`：共享 store 与跨业务编排
+- `@sdkwork/agentstudio-pc-types`：纯类型与共享领域模型
+- `@sdkwork/agentstudio-pc-infrastructure`：环境配置、HTTP、i18n 与平台适配
+- `@sdkwork/agentstudio-pc-*`：垂直业务包，例如 `chat`、`market`、`settings`、`account`、`extensions`
 
-仓库禁止跨包子路径导入。请使用 `@sdkwork/clawstudio-market` 这类包根导入，不要使用 `@sdkwork/clawstudio-market/src/...`。
+仓库禁止跨包子路径导入。请使用 `@sdkwork/agentstudio-pc-market` 这类包根导入，不要使用 `@sdkwork/agentstudio-pc-market/src/...`。
 
 ## 快速开始
 
@@ -42,13 +42,13 @@ pnpm install
 pnpm dev
 ```
 
-默认 Web 开发服务器通过 Vite 启动 `@sdkwork/clawstudio-web`，地址为 `http://localhost:3001`。
+默认 Web 开发服务器通过 Vite 启动 `@sdkwork/agentstudio-pc-web`，地址为 `http://localhost:3001`。
 
 桌面开发与打包命令：
 
 ```bash
-pnpm tauri:dev
-pnpm tauri:build
+pnpm dev:desktop
+pnpm build:desktop
 ```
 
 ## 常用命令
@@ -67,8 +67,7 @@ pnpm docs:build    # 构建 VitePress 文档站
 也可以通过 `pnpm --filter` 执行包级脚本，例如：
 
 ```bash
-pnpm --filter @sdkwork/clawstudio-web build
-pnpm --filter @sdkwork/clawstudio-desktop tauri:info
+pnpm --filter @sdkwork/agentstudio-pc-web build
 ```
 
 ## 环境变量
@@ -80,11 +79,11 @@ pnpm --filter @sdkwork/clawstudio-desktop tauri:info
 - `SDKWORK_ACCESS_TOKEN`：可选的私有 bootstrap 访问令牌（通过 vite define 注入，禁止 `VITE_*` 凭证 env）
 - `VITE_APP_ID`、`VITE_RELEASE_CHANNEL`、`VITE_DISTRIBUTION_ID`、`VITE_PLATFORM`、`VITE_TIMEOUT`：桌面运行时与更新相关配置
 
-桌面端示例可参考 [`packages/sdkwork-clawstudio-desktop/.env.example`](./packages/sdkwork-clawstudio-desktop/.env.example)。
+桌面端示例可参考 [`packages/sdkwork-agentstudio-pc-desktop/.env.example`](./packages/sdkwork-agentstudio-pc-desktop/.env.example)。
 
 ## 开源协议与商业授权
 
-Claw Studio 采用双授权模式：
+Agent Studio 采用双授权模式：
 
 - 开源授权：[`AGPL-3.0-only`](./LICENSE)
 - 商业授权：[`LICENSE-COMMERCIAL.md`](./LICENSE-COMMERCIAL.md)
@@ -142,7 +141,7 @@ Claw Studio 采用双授权模式：
 
 建议邮件标题：
 
-- `Claw Studio 商业授权咨询`
+- `Agent Studio 商业授权咨询`
 
 建议首封邮件附带以下信息：
 
@@ -231,7 +230,7 @@ Claw Studio 采用双授权模式：
 - [命令参考](./docs/reference/commands.md)
 - [贡献指南](./docs/contributing/index.md)
 
-仓库内也保留了 `@sdkwork/clawstudio-docs` 这个应用内文档功能包。`docs/` 下的 VitePress 站点则是面向 GitHub 与开源协作者的公共项目文档。
+仓库内也保留了 `@sdkwork/agentstudio-pc-docs` 这个应用内文档功能包。`docs/` 下的 VitePress 站点则是面向 GitHub 与开源协作者的公共项目文档。
 
 ## 贡献
 

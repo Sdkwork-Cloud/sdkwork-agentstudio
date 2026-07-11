@@ -42,7 +42,7 @@ function buildInstallerContract(platform) {
       installMode: 'first-launch-archive-extract',
       bundledResourceRoot: 'resources/openclaw/',
       runtimeArchive: 'resources/openclaw/runtime.zip',
-      sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json',
+      sourceConfigPath: 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.windows.conf.json',
       requiredExternalRuntimes: ['nodejs'],
     };
   }
@@ -55,7 +55,7 @@ function buildInstallerContract(platform) {
       installMode: 'first-launch-archive-extract',
       bundledResourceRoot: 'resources/openclaw/',
       runtimeArchive: 'resources/openclaw/runtime.zip',
-      sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.linux.conf.json',
+      sourceConfigPath: 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.linux.conf.json',
       requiredExternalRuntimes: ['nodejs'],
       packageFormats: ['deb', 'rpm'],
     };
@@ -69,7 +69,7 @@ function buildInstallerContract(platform) {
       installMode: 'preexpanded-managed-layout',
       bundledResourceRoot: 'resources/openclaw/',
       runtimeArchive: 'resources/openclaw/runtime.zip',
-      sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.macos.conf.json',
+      sourceConfigPath: 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.macos.conf.json',
       stagedInstallRootSource: 'generated/release/macos-install-root/',
       stagedInstallRootTarget: 'MacOS/',
       requiredExternalRuntimes: ['nodejs'],
@@ -193,8 +193,8 @@ function writeDesktopManifest({
   );
 
   writeJsonFile(manifestPath, {
-    profileId: 'claw-studio',
-    productName: 'Claw Studio',
+    profileId: 'agent-studio',
+    productName: 'Agent Studio',
     releaseTag: 'release-2026-04-05-01',
     packageProfileId,
     includedKernelIds: includedKernelIds ?? packageProfileManifestFields.includedKernelIds,
@@ -257,16 +257,16 @@ test('desktop installer smoke exports local planning helpers for default dry-run
   assert.equal(smoke.resolveDesktopInstallerPlanningPlatform('linux'), 'ubuntu');
   assert.equal(smoke.resolveDesktopInstallerPlanningPlatform('windows'), 'windows');
   assert.equal(
-    smoke.detectDesktopInstallerFormat('C:/tmp/Claw Studio_0.1.0_x64-setup.exe'),
+    smoke.detectDesktopInstallerFormat('C:/tmp/Agent Studio_0.1.0_x64-setup.exe'),
     'exe',
   );
   assert.equal(
-    smoke.detectDesktopInstallerFormat('/tmp/claw-studio_0.1.0_amd64.deb'),
+    smoke.detectDesktopInstallerFormat('/tmp/agent-studio_0.1.0_amd64.deb'),
     'deb',
   );
 
   const plan = await smoke.createDesktopInstallPlan({
-    source: 'C:/tmp/Claw Studio_0.1.0_x64-setup.exe',
+    source: 'C:/tmp/Agent Studio_0.1.0_x64-setup.exe',
     platform: 'windows',
     format: 'exe',
     dryRun: true,
@@ -285,7 +285,7 @@ test('desktop installer smoke uses the default local planner when no installer f
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-default-planner-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const installerRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const installerRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, installerRelativePath);
@@ -295,7 +295,7 @@ test('desktop installer smoke uses the default local planner when no installer f
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: installerRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -336,7 +336,7 @@ test('desktop installer smoke skips OpenClaw runtime verification for hermes-onl
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-hermes-only-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const installerRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const installerRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, installerRelativePath);
@@ -350,7 +350,7 @@ test('desktop installer smoke skips OpenClaw runtime verification for hermes-onl
       kernelInstallContracts: undefined,
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: installerRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -398,7 +398,7 @@ test('desktop installer smoke rejects desktop manifests whose package-profile me
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-profile-drift-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const installerRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const installerRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, installerRelativePath);
@@ -417,7 +417,7 @@ test('desktop installer smoke rejects desktop manifests whose package-profile me
       kernelInstallContracts: undefined,
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: installerRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -457,7 +457,7 @@ test('desktop installer smoke creates dry-run install plans for Windows installe
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-windows-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const installerRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const installerRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, installerRelativePath);
@@ -467,7 +467,7 @@ test('desktop installer smoke creates dry-run install plans for Windows installe
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: installerRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -562,8 +562,8 @@ test('desktop installer smoke plans every Linux installable artifact through loc
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-linux-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const debRelativePath = 'desktop/linux/x64/deb/claw-studio_0.1.0_amd64.deb';
-  const rpmRelativePath = 'desktop/linux/x64/rpm/claw-studio-0.1.0-1.x86_64.rpm';
+  const debRelativePath = 'desktop/linux/x64/deb/agent-studio_0.1.0_amd64.deb';
+  const rpmRelativePath = 'desktop/linux/x64/rpm/agent-studio-0.1.0-1.x86_64.rpm';
 
   try {
     writeArtifactFile(releaseAssetsDir, debRelativePath);
@@ -574,7 +574,7 @@ test('desktop installer smoke plans every Linux installable artifact through loc
       arch: 'x64',
       artifacts: [
         {
-          name: 'claw-studio_0.1.0_amd64.deb',
+          name: 'agent-studio_0.1.0_amd64.deb',
           relativePath: debRelativePath,
           family: 'desktop',
           platform: 'linux',
@@ -584,7 +584,7 @@ test('desktop installer smoke plans every Linux installable artifact through loc
           size: 10,
         },
         {
-          name: 'claw-studio-0.1.0-1.x86_64.rpm',
+          name: 'agent-studio-0.1.0-1.x86_64.rpm',
           relativePath: rpmRelativePath,
           family: 'desktop',
           platform: 'linux',
@@ -657,7 +657,7 @@ test('desktop installer smoke rejects verification results that do not prove an 
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-install-ready-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const installerRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const installerRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, installerRelativePath);
@@ -667,7 +667,7 @@ test('desktop installer smoke rejects verification results that do not prove an 
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: installerRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -707,7 +707,7 @@ test('desktop installer smoke rejects install-ready layout evidence whose mode d
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-install-ready-mode-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const installerRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const installerRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, installerRelativePath);
@@ -717,7 +717,7 @@ test('desktop installer smoke rejects install-ready layout evidence whose mode d
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: installerRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -762,14 +762,14 @@ test('desktop installer smoke requires a macOS dmg plan target and a bundled app
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-macos-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const dmgRelativePath = 'desktop/macos/arm64/dmg/Claw Studio_0.1.0_aarch64.dmg';
-  const archiveRelativePath = 'desktop/macos/arm64/macos/Claw Studio_0.1.0_arm64.app.zip';
+  const dmgRelativePath = 'desktop/macos/arm64/dmg/Agent Studio_0.1.0_aarch64.dmg';
+  const archiveRelativePath = 'desktop/macos/arm64/macos/Agent Studio_0.1.0_arm64.app.zip';
 
   try {
     writeArtifactFile(releaseAssetsDir, dmgRelativePath);
     writeZipArtifactFile(releaseAssetsDir, archiveRelativePath, [
       {
-        name: 'Claw Studio.app/Contents/MacOS/claw-studio',
+        name: 'Agent Studio.app/Contents/MacOS/agent-studio',
         content: 'synthetic app binary\n',
       },
     ]);
@@ -779,7 +779,7 @@ test('desktop installer smoke requires a macOS dmg plan target and a bundled app
       arch: 'arm64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_aarch64.dmg',
+          name: 'Agent Studio_0.1.0_aarch64.dmg',
           relativePath: dmgRelativePath,
           family: 'desktop',
           platform: 'macos',
@@ -789,7 +789,7 @@ test('desktop installer smoke requires a macOS dmg plan target and a bundled app
           size: 20,
         },
         {
-          name: 'Claw Studio_0.1.0_arm64.app.zip',
+          name: 'Agent Studio_0.1.0_arm64.app.zip',
           relativePath: archiveRelativePath,
           family: 'desktop',
           platform: 'macos',
@@ -852,19 +852,19 @@ test('desktop installer smoke rejects unsafe macOS app archive companion entries
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-macos-unsafe-app-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const dmgRelativePath = 'desktop/macos/arm64/dmg/Claw Studio_0.1.0_aarch64.dmg';
-  const archiveRelativePath = 'desktop/macos/arm64/macos/Claw Studio_0.1.0_arm64.app.zip';
+  const dmgRelativePath = 'desktop/macos/arm64/dmg/Agent Studio_0.1.0_aarch64.dmg';
+  const archiveRelativePath = 'desktop/macos/arm64/macos/Agent Studio_0.1.0_arm64.app.zip';
 
   try {
     writeArtifactFile(releaseAssetsDir, dmgRelativePath);
     writeZipArtifactFile(releaseAssetsDir, archiveRelativePath, [
       {
-        name: 'Claw Studio.app/Contents/MacOS/claw-studio',
+        name: 'Agent Studio.app/Contents/MacOS/agent-studio',
         content: 'synthetic app binary\n',
       },
       {
-        name: 'Claw Studio.app/Contents/MacOS/claw-studio-link',
-        content: 'claw-studio',
+        name: 'Agent Studio.app/Contents/MacOS/agent-studio-link',
+        content: 'agent-studio',
         externalAttributes: 0o120777 << 16,
       },
     ]);
@@ -876,7 +876,7 @@ test('desktop installer smoke rejects unsafe macOS app archive companion entries
       kernelInstallContracts: undefined,
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_aarch64.dmg',
+          name: 'Agent Studio_0.1.0_aarch64.dmg',
           relativePath: dmgRelativePath,
           family: 'desktop',
           platform: 'macos',
@@ -886,7 +886,7 @@ test('desktop installer smoke rejects unsafe macOS app archive companion entries
           size: 20,
         },
         {
-          name: 'Claw Studio_0.1.0_arm64.app.zip',
+          name: 'Agent Studio_0.1.0_arm64.app.zip',
           relativePath: archiveRelativePath,
           family: 'desktop',
           platform: 'macos',
@@ -931,7 +931,7 @@ test('desktop installer smoke rejects a macOS release manifest that is missing t
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-macos-missing-app-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const dmgRelativePath = 'desktop/macos/x64/dmg/Claw Studio_0.1.0_x64.dmg';
+  const dmgRelativePath = 'desktop/macos/x64/dmg/Agent Studio_0.1.0_x64.dmg';
 
   try {
     writeArtifactFile(releaseAssetsDir, dmgRelativePath);
@@ -941,7 +941,7 @@ test('desktop installer smoke rejects a macOS release manifest that is missing t
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64.dmg',
+          name: 'Agent Studio_0.1.0_x64.dmg',
           relativePath: dmgRelativePath,
           family: 'desktop',
           platform: 'macos',
@@ -986,7 +986,7 @@ test('desktop installer smoke rejects manifests whose persisted OpenClaw install
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-contract-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const installerRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const installerRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
   const expectedInstallerContract = {
     version: 2,
     platform: 'windows',
@@ -994,7 +994,7 @@ test('desktop installer smoke rejects manifests whose persisted OpenClaw install
     installMode: 'first-launch-archive-extract',
     bundledResourceRoot: 'resources/openclaw/',
     runtimeArchive: 'resources/openclaw/runtime.zip',
-    sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json',
+    sourceConfigPath: 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.windows.conf.json',
     requiredExternalRuntimes: ['nodejs'],
   };
 
@@ -1007,7 +1007,7 @@ test('desktop installer smoke rejects manifests whose persisted OpenClaw install
       kernelInstallContracts: null,
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: installerRelativePath,
           family: 'desktop',
           platform: 'windows',

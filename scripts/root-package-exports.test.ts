@@ -19,7 +19,7 @@ await runTest('workspace packages expose root exports only', () => {
   const violations: string[] = [];
   const packageDirs = fs
     .readdirSync(packagesDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-clawstudio-'));
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-agentstudio-pc-'));
 
   for (const packageDir of packageDirs) {
     const packageJsonPath = path.join(packagesDir, packageDir.name, 'package.json');
@@ -32,7 +32,7 @@ await runTest('workspace packages expose root exports only', () => {
       exports?: string | Record<string, string>;
     };
 
-    if (!packageJson.name?.startsWith('@sdkwork/clawstudio-')) {
+    if (!packageJson.name?.startsWith('@sdkwork/agentstudio-pc-')) {
       continue;
     }
 

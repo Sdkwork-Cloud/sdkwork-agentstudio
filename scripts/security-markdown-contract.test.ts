@@ -14,7 +14,7 @@ function runTest(name: string, fn: () => void | Promise<void>) {
 }
 
 const communityPostDetailSource = await readFile(
-  new URL('../packages/sdkwork-clawstudio-community/src/pages/community/CommunityPostDetail.tsx', import.meta.url),
+  new URL('../packages/sdkwork-agentstudio-pc-community/src/pages/community/CommunityPostDetail.tsx', import.meta.url),
   'utf8',
 );
 

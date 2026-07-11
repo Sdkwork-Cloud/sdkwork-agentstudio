@@ -7,17 +7,17 @@
 
 Desktop startup evidence must be exposed through one shared desktop kernel/runtime publication chain:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
   remains the low-level producer of the persisted startup-evidence document
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/kernel.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/kernel.rs`
   owns parsing and summarizing that persisted document for the desktop kernel surface
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/kernel.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/kernel.rs`
   owns the Rust-side `RuntimeDesktopKernelInfo.desktopStartupEvidence` contract
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/contracts/runtime.ts`
   owns the shared TypeScript-side desktop startup-evidence contract
-- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.ts`
   owns the shell-facing dashboard mapping from the published runtime contract into `dashboard.startupEvidence`
-- `packages/sdkwork-clawstudio-settings/src/KernelCenter.tsx`
+- `packages/sdkwork-agentstudio-pc-settings/src/KernelCenter.tsx`
   owns presentation of the published summary in the shell
 
 Settings must not read `diagnostics/desktop-startup-evidence.json` directly.

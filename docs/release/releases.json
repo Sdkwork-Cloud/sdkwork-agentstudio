@@ -2,7 +2,7 @@
   "releases": [
     {
       "tag": "release-2026-04-07-01",
-      "title": "Claw Studio release-2026-04-07-01",
+      "title": "Agent Studio release-2026-04-07-01",
       "date": "2026-04-07",
       "status": "failed",
       "summary": "Initial April 7 release attempt after the OpenClaw alignment branch.",
@@ -10,7 +10,7 @@
     },
     {
       "tag": "release-2026-04-07-02",
-      "title": "Claw Studio release-2026-04-07-02",
+      "title": "Agent Studio release-2026-04-07-02",
       "date": "2026-04-07",
       "status": "failed",
       "summary": "Second April 7 release attempt blocked by shared SDK release-source drift.",
@@ -18,7 +18,7 @@
     },
     {
       "tag": "release-2026-04-07-03",
-      "title": "Claw Studio release-2026-04-07-03",
+      "title": "Agent Studio release-2026-04-07-03",
       "date": "2026-04-07",
       "status": "failed",
       "summary": "Release candidate that carried forward unpublished April 7 changes but failed before GitHub publication.",
@@ -30,7 +30,7 @@
     },
     {
       "tag": "release-2026-04-07-04",
-      "title": "Claw Studio release-2026-04-07-04",
+      "title": "Agent Studio release-2026-04-07-04",
       "date": "2026-04-07",
       "status": "failed",
       "summary": "Release candidate that carried forward all unpublished April 7 changes but still failed before GitHub publication because the GitHub-backed release workspace did not materialize the IM SDK packages required by @sdkwork/core-pc-react.",
@@ -43,7 +43,7 @@
     },
     {
       "tag": "release-2026-04-07-05",
-      "title": "Claw Studio release-2026-04-07-05",
+      "title": "Agent Studio release-2026-04-07-05",
       "date": "2026-04-07",
       "status": "failed",
       "summary": "Release candidate that carried forward all unpublished April 7 changes and materialized the IM SDK package roots, but still failed before publication because the IM TypeScript package scripts depended on a monorepo-specific node_modules layout.",
@@ -57,7 +57,7 @@
     },
     {
       "tag": "release-2026-04-07-06",
-      "title": "Claw Studio release-2026-04-07-06",
+      "title": "Agent Studio release-2026-04-07-06",
       "date": "2026-04-07",
       "status": "failed",
       "summary": "Release candidate that carried forward every unpublished April 7 change and closed the IM SDK clean-room build gaps, but still failed before publication because the remaining release smoke flow was not yet portable across Windows and Linux clean-room hosts.",
@@ -72,7 +72,7 @@
     },
     {
       "tag": "release-2026-04-07-07",
-      "title": "Claw Studio release-2026-04-07-07",
+      "title": "Agent Studio release-2026-04-07-07",
       "date": "2026-04-07",
       "status": "failed",
       "summary": "Release candidate that carried forward every unpublished April 7 change and closed the cross-platform release smoke gaps, but still failed before publication because the OpenClaw clean-clone verification layer was not yet safe on Linux-hosted release jobs.",
@@ -88,7 +88,7 @@
     },
     {
       "tag": "release-2026-04-07-08",
-      "title": "Claw Studio release-2026-04-07-08",
+      "title": "Agent Studio release-2026-04-07-08",
       "date": "2026-04-07",
       "status": "failed",
       "summary": "Release candidate that carried forward every unpublished April 7 change and hardened OpenClaw clean-clone verification, but still failed before publication because the desktop embedded-host release verification drifted from the live managed OpenClaw control plane.",
@@ -105,7 +105,7 @@
     },
     {
       "tag": "release-2026-04-07-09",
-      "title": "Claw Studio release-2026-04-07-09",
+      "title": "Agent Studio release-2026-04-07-09",
       "date": "2026-04-07",
       "status": "pending",
       "summary": "Release candidate that carries forward every unpublished April 7 change, repairs the desktop embedded-host shared workbench authority wiring, aligns the remaining desktop runtime fixtures with current OpenClaw readiness contracts, and is ready for GitHub publication.",
@@ -123,10 +123,10 @@
     },
     {
       "tag": "release-2026-04-07-10",
-      "title": "Claw Studio release-2026-04-07-10",
+      "title": "Agent Studio release-2026-04-07-10",
       "date": "2026-04-07",
       "status": "pending",
-      "summary": "Step 01 baseline audit iteration that freezes the current Claw Studio and OpenClaw architecture evidence, hotspot inventory, and next-step priorities before runtime and API refactors.",
+      "summary": "Step 01 baseline audit iteration that freezes the current Agent Studio and OpenClaw architecture evidence, hotspot inventory, and next-step priorities before runtime and API refactors.",
       "notesFile": "release-2026-04-07-10.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -142,7 +142,7 @@
     },
     {
       "tag": "release-2026-04-07-11",
-      "title": "Claw Studio release-2026-04-07-11",
+      "title": "Agent Studio release-2026-04-07-11",
       "date": "2026-04-07",
       "status": "pending",
       "summary": "Step 02 host-shell-foundation hardening iteration that turns thin-host boundaries and feature wiring into script-enforced gates, and makes sync:features safe for the current workspace topology.",
@@ -162,7 +162,7 @@
     },
     {
       "tag": "release-2026-04-07-12",
-      "title": "Claw Studio release-2026-04-07-12",
+      "title": "Agent Studio release-2026-04-07-12",
       "date": "2026-04-07",
       "status": "pending",
       "summary": "Step 03 runtime truth-source unification iteration that promotes the dedicated OpenClaw kernel snapshot into install/bootstrap flows and freezes the shared desktop-server-docker-k8s architecture, API, proxy, and release standards.",
@@ -183,7 +183,7 @@
     },
     {
       "tag": "release-2026-04-07-13",
-      "title": "Claw Studio release-2026-04-07-13",
+      "title": "Agent Studio release-2026-04-07-13",
       "date": "2026-04-07",
       "status": "pending",
       "summary": "Step 03 hosted-browser runtime-truth iteration that aligns runtime platform semantics across desktopCombined/server/container/kubernetes modes and preserves deployment-family metadata for unified host contracts.",
@@ -205,7 +205,7 @@
     },
     {
       "tag": "release-2026-04-08-01",
-      "title": "Claw Studio release-2026-04-08-01",
+      "title": "Agent Studio release-2026-04-08-01",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 install/bootstrap hardening iteration that keeps guided OpenClaw bootstrap anchored to the kernel runtime truth source and downgrades optional ClawHub catalog loading so it can no longer block the managed-provider projection chain.",
@@ -228,10 +228,10 @@
     },
     {
       "tag": "release-2026-04-08-02",
-      "title": "Claw Studio release-2026-04-08-02",
+      "title": "Agent Studio release-2026-04-08-02",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 market-package contract iteration that aligns sdkwork-clawstudio-market with the Node-safe @sdkwork/clawstudio-core root import pattern and updates the package contract gate so dynamic root imports no longer fail local verification.",
+      "summary": "Step 03 market-package contract iteration that aligns sdkwork-agentstudio-pc-market with the Node-safe @sdkwork/agentstudio-pc-core root import pattern and updates the package contract gate so dynamic root imports no longer fail local verification.",
       "notesFile": "release-2026-04-08-02.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -252,7 +252,7 @@
     },
     {
       "tag": "release-2026-04-08-03",
-      "title": "Claw Studio release-2026-04-08-03",
+      "title": "Agent Studio release-2026-04-08-03",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 install-package root export iteration that restores namespace exports for guided wizard services, aligns removed-install-feature service-root consumption with component expectations, and writes the guard back into the install contract script.",
@@ -277,10 +277,10 @@
     },
     {
       "tag": "release-2026-04-08-04",
-      "title": "Claw Studio release-2026-04-08-04",
+      "title": "Agent Studio release-2026-04-08-04",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 market-service Node-safe iteration that converts mySkillService to lazy root-default resolution for @sdkwork/clawstudio-instances, aligns the market contract gate with that runtime-safe pattern, and removes the package-local TS2352 test casts that had been hiding the next workspace blockers.",
+      "summary": "Step 03 market-service Node-safe iteration that converts mySkillService to lazy root-default resolution for @sdkwork/agentstudio-pc-instances, aligns the market contract gate with that runtime-safe pattern, and removes the package-local TS2352 test casts that had been hiding the next workspace blockers.",
       "notesFile": "release-2026-04-08-04.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -303,10 +303,10 @@
     },
     {
       "tag": "release-2026-04-08-05",
-      "title": "Claw Studio release-2026-04-08-05",
+      "title": "Agent Studio release-2026-04-08-05",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 install/settings contract iteration that replaces the remaining TS2352 test casts with real service input types and restores the missing @sdkwork/clawstudio-core Node root export required by providerConfigCenterService under strip-types execution.",
+      "summary": "Step 03 install/settings contract iteration that replaces the remaining TS2352 test casts with real service input types and restores the missing @sdkwork/agentstudio-pc-core Node root export required by providerConfigCenterService under strip-types execution.",
       "notesFile": "release-2026-04-08-05.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -330,7 +330,7 @@
     },
     {
       "tag": "release-2026-04-08-06",
-      "title": "Claw Studio release-2026-04-08-06",
+      "title": "Agent Studio release-2026-04-08-06",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 test-contract alignment iteration that normalizes provider-center record fixtures, updates agent-install platform/studio stubs to the latest infrastructure contracts, and advances the workspace lint frontier to appStoreService.test.ts.",
@@ -358,7 +358,7 @@
     },
     {
       "tag": "release-2026-04-08-07",
-      "title": "Claw Studio release-2026-04-08-07",
+      "title": "Agent Studio release-2026-04-08-07",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 app-store contract iteration that removes the appStoreService test-type drift, updates stale assessment fixtures to the current installer issue contract, and converts the default app-store catalog dependency to lazy root resolution so Node-safe execution no longer fails before explicit test overrides can apply.",
@@ -387,7 +387,7 @@
     },
     {
       "tag": "release-2026-04-08-08",
-      "title": "Claw Studio release-2026-04-08-08",
+      "title": "Agent Studio release-2026-04-08-08",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 OpenClaw gateway-history fixture iteration that refreshes the chat gateway config test onto the current StudioInstanceDetailRecord and OpenClawConfigSnapshot contracts, removing that file from the workspace lint blocker stack and advancing the frontier to instanceWorkbenchService.test.ts.",
@@ -417,10 +417,10 @@
     },
     {
       "tag": "release-2026-04-08-09",
-      "title": "Claw Studio release-2026-04-08-09",
+      "title": "Agent Studio release-2026-04-08-09",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 instance-workbench contract iteration that aligns the largest sdkwork-clawstudio-instances test file with the current managed-config, channel-definition, and workbench-task contracts, removes the broad gateway as-any typing holes, and advances the workspace lint frontier to the next instances capability tests.",
+      "summary": "Step 03 instance-workbench contract iteration that aligns the largest sdkwork-agentstudio-pc-instances test file with the current managed-config, channel-definition, and workbench-task contracts, removes the broad gateway as-any typing holes, and advances the workspace lint frontier to the next instances capability tests.",
       "notesFile": "release-2026-04-08-09.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -448,7 +448,7 @@
     },
     {
       "tag": "release-2026-04-08-10",
-      "title": "Claw Studio release-2026-04-08-10",
+      "title": "Agent Studio release-2026-04-08-10",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 instances fixture-typing iteration that converts the OpenClaw capability and provider-workspace presentation tests to nested partial detail overrides, removing that helper drift from the blocker stack and advancing the workspace lint frontier to broader package tests.",
@@ -480,7 +480,7 @@
     },
     {
       "tag": "release-2026-04-08-11",
-      "title": "Claw Studio release-2026-04-08-11",
+      "title": "Agent Studio release-2026-04-08-11",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 channel-bridge and chat-contract iteration that promotes browser channel writes into the root studio bridge contract, forwards them through the lazy web adapter, and clears the next chat/type blocker cluster.",
@@ -513,7 +513,7 @@
     },
     {
       "tag": "release-2026-04-08-12",
-      "title": "Claw Studio release-2026-04-08-12",
+      "title": "Agent Studio release-2026-04-08-12",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 Node-root alignment iteration that lazy-loads app SDK defaults for community and dashboard commerce services, publishes both through the core Node root, and refreshes install progress fixtures to the current progress-event contract.",
@@ -547,7 +547,7 @@
     },
     {
       "tag": "release-2026-04-08-13",
-      "title": "Claw Studio release-2026-04-08-13",
+      "title": "Agent Studio release-2026-04-08-13",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 install-package contract iteration that upgrades install bootstrap and recommendation tests onto the current OpenClaw bootstrap, provider-routing, config-snapshot, and assessment contracts without changing runtime behavior.",
@@ -582,7 +582,7 @@
     },
     {
       "tag": "release-2026-04-08-14",
-      "title": "Claw Studio release-2026-04-08-14",
+      "title": "Agent Studio release-2026-04-08-14",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 workspace contract-convergence iteration that clears the remaining TypeScript lint frontier by finishing OpenClaw bootstrap fixture drift, runtime-only barrel alignment, settings/local-AI-proxy test contracts, package-root shell exports, and mall/tasks wrapper contract drift.",
@@ -618,10 +618,10 @@
     },
     {
       "tag": "release-2026-04-08-15",
-      "title": "Claw Studio release-2026-04-08-15",
+      "title": "Agent Studio release-2026-04-08-15",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 post-TypeScript parity iteration that realigns browser-root wrappers, package-root exports, and live runtime barrels across core/auth/settings/agent/chat/dashboard/devices, keeps build green, and advances the remaining lint frontier to the sdkwork-clawstudio-instances IDE dependency contract.",
+      "summary": "Step 03 post-TypeScript parity iteration that realigns browser-root wrappers, package-root exports, and live runtime barrels across core/auth/settings/agent/chat/dashboard/devices, keeps build green, and advances the remaining lint frontier to the sdkwork-agentstudio-pc-instances IDE dependency contract.",
       "notesFile": "release-2026-04-08-15.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -655,10 +655,10 @@
     },
     {
       "tag": "release-2026-04-08-16",
-      "title": "Claw Studio release-2026-04-08-16",
+      "title": "Agent Studio release-2026-04-08-16",
       "date": "2026-04-08",
       "status": "pending",
-      "summary": "Step 03 package-contract closure iteration that restores Monaco runtime ownership for sdkwork-clawstudio-instances, realigns explicit shell-facing root exports across settings and instances, publishes the missing tasks root surfaces, and returns fresh workspace lint and build evidence to green.",
+      "summary": "Step 03 package-contract closure iteration that restores Monaco runtime ownership for sdkwork-agentstudio-pc-instances, realigns explicit shell-facing root exports across settings and instances, publishes the missing tasks root surfaces, and returns fresh workspace lint and build evidence to green.",
       "notesFile": "release-2026-04-08-16.md",
       "carryForward": [
         "release-2026-04-07-01",
@@ -693,7 +693,7 @@
     },
     {
       "tag": "release-2026-04-08-17",
-      "title": "Claw Studio release-2026-04-08-17",
+      "title": "Agent Studio release-2026-04-08-17",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-3 desktop rollback-evidence iteration that adds an explicit OpenClaw upgrade-and-rollback evidence report, wires it into the desktop runtime gate, hardens sandbox-only release-flow git checks, and proves the current 2026.4.2 desktop rollback baseline against the prepared runtime and packaged release assets.",
@@ -732,7 +732,7 @@
     },
     {
       "tag": "release-2026-04-08-18",
-      "title": "Claw Studio release-2026-04-08-18",
+      "title": "Agent Studio release-2026-04-08-18",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy projection-module iteration that extracts managed OpenClaw provider projection into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, fixes a stale OpenClaw release-contract fixture list, and returns fresh desktop/runtime/lint/build evidence to green.",
@@ -772,7 +772,7 @@
     },
     {
       "tag": "release-2026-04-08-19",
-      "title": "Claw Studio release-2026-04-08-19",
+      "title": "Agent Studio release-2026-04-08-19",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy config-module iteration that extracts proxy config loading and public-host normalization into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, and keeps fresh desktop structural and runtime tests green.",
@@ -813,7 +813,7 @@
     },
     {
       "tag": "release-2026-04-08-20",
-      "title": "Claw Studio release-2026-04-08-20",
+      "title": "Agent Studio release-2026-04-08-20",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy probe-module iteration that extracts route probing and protocol-specific upstream probe logic into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, and keeps fresh desktop structural and runtime tests green.",
@@ -855,7 +855,7 @@
     },
     {
       "tag": "release-2026-04-08-21",
-      "title": "Claw Studio release-2026-04-08-21",
+      "title": "Agent Studio release-2026-04-08-21",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy upstream-module iteration that extracts the shared upstream request/url builder layer into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, and keeps fresh desktop structural and runtime tests green.",
@@ -898,7 +898,7 @@
     },
     {
       "tag": "release-2026-04-08-22",
-      "title": "Claw Studio release-2026-04-08-22",
+      "title": "Agent Studio release-2026-04-08-22",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy streaming-module iteration that extracts shared stream detection and SSE/JSONL translation into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file helper stack, and keeps fresh desktop structural and runtime tests green.",
@@ -942,7 +942,7 @@
     },
     {
       "tag": "release-2026-04-08-23",
-      "title": "Claw Studio release-2026-04-08-23",
+      "title": "Agent Studio release-2026-04-08-23",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy request-translation-module iteration that extracts shared request-body translation into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file helper stack, and keeps fresh desktop structural and runtime tests green.",
@@ -987,7 +987,7 @@
     },
     {
       "tag": "release-2026-04-08-24",
-      "title": "Claw Studio release-2026-04-08-24",
+      "title": "Agent Studio release-2026-04-08-24",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy response-translation-module iteration that extracts shared response-body translation into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file helper stack, and keeps fresh desktop structural and runtime tests green.",
@@ -1033,7 +1033,7 @@
     },
     {
       "tag": "release-2026-04-08-25",
-      "title": "Claw Studio release-2026-04-08-25",
+      "title": "Agent Studio release-2026-04-08-25",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy observability-module iteration that extracts shared route metrics, request audit, request log, and preview extraction into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file helper stack, and keeps fresh desktop structural and runtime tests green.",
@@ -1080,7 +1080,7 @@
     },
     {
       "tag": "release-2026-04-08-26",
-      "title": "Claw Studio release-2026-04-08-26",
+      "title": "Agent Studio release-2026-04-08-26",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy gemini-native-module iteration that extracts Gemini native model-list and model-action request handling into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file handler stack, and keeps fresh desktop structural and runtime tests green.",
@@ -1128,7 +1128,7 @@
     },
     {
       "tag": "release-2026-04-08-27",
-      "title": "Claw Studio release-2026-04-08-27",
+      "title": "Agent Studio release-2026-04-08-27",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy anthropic-native-module iteration that extracts Anthropic native /v1/messages request handling into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, and keeps fresh desktop structural and runtime tests green.",
@@ -1177,7 +1177,7 @@
     },
     {
       "tag": "release-2026-04-08-28",
-      "title": "Claw Studio release-2026-04-08-28",
+      "title": "Agent Studio release-2026-04-08-28",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy health-status-module iteration that extracts /health serving and runtime status projection into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file helper stack, and keeps fresh desktop structural and runtime tests green.",
@@ -1227,7 +1227,7 @@
     },
     {
       "tag": "release-2026-04-08-29",
-      "title": "Claw Studio release-2026-04-08-29",
+      "title": "Agent Studio release-2026-04-08-29",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy openai-compatible-module iteration that extracts OpenAI-compatible /v1/models, /v1/chat/completions, /v1/responses, and /v1/embeddings request serving into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file handler stack, and keeps fresh desktop structural and runtime tests green.",
@@ -1278,7 +1278,7 @@
     },
     {
       "tag": "release-2026-04-08-30",
-      "title": "Claw Studio release-2026-04-08-30",
+      "title": "Agent Studio release-2026-04-08-30",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy response-io-module iteration that extracts shared buffered response, JSON outcome, and upstream error-shaping helpers into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file helper stack, and keeps fresh desktop structural and runtime tests green.",
@@ -1330,7 +1330,7 @@
     },
     {
       "tag": "release-2026-04-08-31",
-      "title": "Claw Studio release-2026-04-08-31",
+      "title": "Agent Studio release-2026-04-08-31",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy request-context-module iteration that extracts shared snapshot access, route lookup, auth guard, header parsing, and JSON request-body parsing into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file helper stack, and keeps fresh desktop structural and runtime tests green.",
@@ -1383,7 +1383,7 @@
     },
     {
       "tag": "release-2026-04-08-32",
-      "title": "Claw Studio release-2026-04-08-32",
+      "title": "Agent Studio release-2026-04-08-32",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy shared-support-module iteration that extracts shared proxy error, time, and text-normalization helpers into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file helper stack, and keeps fresh desktop structural and runtime tests green.",
@@ -1437,7 +1437,7 @@
     },
     {
       "tag": "release-2026-04-08-33",
-      "title": "Claw Studio release-2026-04-08-33",
+      "title": "Agent Studio release-2026-04-08-33",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy observability-store-module iteration that extracts shared route metrics store state and poisoned-lock handling into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file store/helper stack, and keeps fresh desktop structural and runtime tests green.",
@@ -1492,7 +1492,7 @@
     },
     {
       "tag": "release-2026-04-08-34",
-      "title": "Claw Studio release-2026-04-08-34",
+      "title": "Agent Studio release-2026-04-08-34",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy shared-types-module iteration that extracts the shared proxy result alias plus public lifecycle/health/status contracts and internal token-usage/app-state contracts into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, removes the obsolete in-file contract stack, and keeps fresh desktop structural and runtime tests green.",
@@ -1548,7 +1548,7 @@
     },
     {
       "tag": "release-2026-04-08-35",
-      "title": "Claw Studio release-2026-04-08-35",
+      "title": "Agent Studio release-2026-04-08-35",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-2 local-ai-proxy router-module iteration that extracts route assembly into a dedicated Rust submodule, hardens the desktop foundation gate around that boundary, closes lingering shared-proxy-result leakage in request translation and upstream consumers, and keeps fresh desktop structural and runtime tests green.",
@@ -1605,7 +1605,7 @@
     },
     {
       "tag": "release-2026-04-08-36",
-      "title": "Claw Studio release-2026-04-08-36",
+      "title": "Agent Studio release-2026-04-08-36",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-3 desktop OpenClaw upgrade-smoke iteration that adds a dedicated smoke-evidence owner, wires it into the desktop runtime gate, and keeps targeted and gate-level verification green.",
@@ -1663,7 +1663,7 @@
     },
     {
       "tag": "release-2026-04-08-37",
-      "title": "Claw Studio release-2026-04-08-37",
+      "title": "Agent Studio release-2026-04-08-37",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-3 desktop OpenClaw upgrade-execution iteration that adds a dedicated execution-evidence owner for sync, target cleanup, preparation, and packaged-release verification, wires it into the desktop runtime gate, and keeps targeted, owner-level, and gate-level verification green.",
@@ -1722,7 +1722,7 @@
     },
     {
       "tag": "release-2026-04-08-38",
-      "title": "Claw Studio release-2026-04-08-38",
+      "title": "Agent Studio release-2026-04-08-38",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 desktop startup-evidence shell-convergence iteration that publishes persisted desktop startup evidence through the shared kernel/runtime contract, surfaces it in Kernel Center, and keeps targeted plus gate-level verification green.",
@@ -1782,7 +1782,7 @@
     },
     {
       "tag": "release-2026-04-08-39",
-      "title": "Claw Studio release-2026-04-08-39",
+      "title": "Agent Studio release-2026-04-08-39",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 desktop startup-evidence diagnostic-identity iteration that preserves persisted runId and errorCause through the shared kernel/runtime contract, surfaces them in Kernel Center, and keeps targeted plus gate-level verification green.",
@@ -1843,7 +1843,7 @@
     },
     {
       "tag": "release-2026-04-08-40",
-      "title": "Claw Studio release-2026-04-08-40",
+      "title": "Agent Studio release-2026-04-08-40",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 desktop startup-evidence built-in-instance iteration that preserves persisted built-in instance identity, transport, and startup URLs through the shared kernel/runtime contract, surfaces them in Kernel Center, and keeps targeted plus gate-level verification green.",
@@ -1905,7 +1905,7 @@
     },
     {
       "tag": "release-2026-04-08-41",
-      "title": "Claw Studio release-2026-04-08-41",
+      "title": "Agent Studio release-2026-04-08-41",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 desktop startup-evidence built-in-runtime-contract iteration that preserves persisted built-in instance runtime kind and deployment mode through the shared kernel/runtime contract, surfaces them in Kernel Center, and keeps targeted plus gate-level verification green.",
@@ -1968,7 +1968,7 @@
     },
     {
       "tag": "release-2026-04-08-42",
-      "title": "Claw Studio release-2026-04-08-42",
+      "title": "Agent Studio release-2026-04-08-42",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 desktop startup-evidence built-in-identity-version iteration that preserves persisted built-in instance name and version through the shared kernel/runtime contract, surfaces them in Kernel Center, and keeps targeted plus gate-level verification green.",
@@ -2032,7 +2032,7 @@
     },
     {
       "tag": "release-2026-04-08-43",
-      "title": "Claw Studio release-2026-04-08-43",
+      "title": "Agent Studio release-2026-04-08-43",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 desktop startup-evidence built-in-default-flags iteration that preserves persisted built-in instance isBuiltIn and isDefault through the shared kernel/runtime contract, surfaces them in Kernel Center, and keeps targeted plus gate-level verification green.",
@@ -2097,7 +2097,7 @@
     },
     {
       "tag": "release-2026-04-08-44",
-      "title": "Claw Studio release-2026-04-08-44",
+      "title": "Agent Studio release-2026-04-08-44",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 desktop startup-evidence descriptor-mode-lifecycle iteration that preserves persisted startup descriptor mode and lifecycle through the shared kernel/runtime contract, surfaces them in Kernel Center, and keeps targeted plus gate-level verification green.",
@@ -2163,7 +2163,7 @@
     },
     {
       "tag": "release-2026-04-08-45",
-      "title": "Claw Studio release-2026-04-08-45",
+      "title": "Agent Studio release-2026-04-08-45",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 desktop startup-evidence descriptor-state-store iteration that preserves persisted startup descriptor state-store driver and profile ID through the shared kernel/runtime contract, surfaces them in Kernel Center, and keeps targeted plus gate-level verification green.",
@@ -2230,7 +2230,7 @@
     },
     {
       "tag": "release-2026-04-08-46",
-      "title": "Claw Studio release-2026-04-08-46",
+      "title": "Agent Studio release-2026-04-08-46",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 desktop startup-evidence descriptor-endpoint iteration that preserves persisted startup descriptor endpoint ID and active port through the shared kernel/runtime contract, surfaces them in Kernel Center, and keeps targeted plus gate-level verification green.",
@@ -2298,7 +2298,7 @@
     },
     {
       "tag": "release-2026-04-08-47",
-      "title": "Claw Studio release-2026-04-08-47",
+      "title": "Agent Studio release-2026-04-08-47",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 desktop startup-evidence descriptor-port-allocation iteration that preserves persisted startup descriptor requested port and dynamic-port truth through the shared kernel/runtime contract, surfaces them in Kernel Center, and keeps targeted plus gate-level verification green.",
@@ -2367,7 +2367,7 @@
     },
     {
       "tag": "release-2026-04-08-48",
-      "title": "Claw Studio release-2026-04-08-48",
+      "title": "Agent Studio release-2026-04-08-48",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 desktop startup-evidence descriptor-loopback-only iteration that preserves the persisted startup descriptor loopback-only fact through the shared kernel/runtime contract, surfaces it in Kernel Center, and keeps targeted plus gate-level verification green.",
@@ -2437,7 +2437,7 @@
     },
     {
       "tag": "release-2026-04-08-49",
-      "title": "Claw Studio release-2026-04-08-49",
+      "title": "Agent Studio release-2026-04-08-49",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03 CP03-4 compatibility-locale and OpenClaw channel-label normalization iteration that syncs Kernel Center startup-evidence compatibility bundles with split locale resources, removes Chinese source literals from openClawConfigService channel definitions, and restores the i18n/core workspace lint gates.",
@@ -2508,7 +2508,7 @@
     },
     {
       "tag": "release-2026-04-08-50",
-      "title": "Claw Studio release-2026-04-08-50",
+      "title": "Agent Studio release-2026-04-08-50",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 03/04 serial-trunk gate audit iteration that confirms the desktop runtime, release-evidence, API, platform-bridge, and server contract chains are green on fresh verification, writes back the closure evidence, and advances the next frontier into Step 05 Provider/Projection governance.",
@@ -2580,7 +2580,7 @@
     },
     {
       "tag": "release-2026-04-08-51",
-      "title": "Claw Studio release-2026-04-08-51",
+      "title": "Agent Studio release-2026-04-08-51",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 05 provider/projection closure iteration that reruns the full verification matrix, confirms Provider Center, Kernel Center, ApiSettings, and the Local Proxy projection chain share one truth source, writes back the architecture ledger, and advances the next frontier to Step 06 chat-route closure.",
@@ -2653,7 +2653,7 @@
     },
     {
       "tag": "release-2026-04-08-52",
-      "title": "Claw Studio release-2026-04-08-52",
+      "title": "Agent Studio release-2026-04-08-52",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 06 chat-route closure iteration that reruns the full chat verification matrix, confirms authoritative instance-detail routing plus Gateway session recovery semantics are green, writes back the architecture ledger, and advances the next frontier to Step 07 instance-workbench closure.",
@@ -2727,7 +2727,7 @@
     },
     {
       "tag": "release-2026-04-08-53",
-      "title": "Claw Studio release-2026-04-08-53",
+      "title": "Agent Studio release-2026-04-08-53",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-workbench frontier audit iteration that reruns the formal verification matrix, confirms the workbench behavior is green, records that CP07-3 remains blocked by oversized hotspot files, and advances the next frontier to InstanceDetail hotspot decomposition rather than premature closure.",
@@ -2802,7 +2802,7 @@
     },
     {
       "tag": "release-2026-04-08-54",
-      "title": "Claw Studio release-2026-04-08-54",
+      "title": "Agent Studio release-2026-04-08-54",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that extracts overview, files, channels, and skills into dedicated section components, keeps the verification matrix green, and reduces the main page hotspot while CP07-3 remains open.",
@@ -2813,7 +2813,7 @@
     },
     {
       "tag": "release-2026-04-08-55",
-      "title": "Claw Studio release-2026-04-08-55",
+      "title": "Agent Studio release-2026-04-08-55",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that extracts memory and tools into dedicated section components, keeps the verification matrix green, and further reduces the main page hotspot while CP07-3 remains open.",
@@ -2824,7 +2824,7 @@
     },
     {
       "tag": "release-2026-04-08-56",
-      "title": "Claw Studio release-2026-04-08-56",
+      "title": "Agent Studio release-2026-04-08-56",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that extracts the llmProviders render surface into a dedicated section component, keeps the verification matrix green, and shrinks the provider render hotspot while CP07-3 remains open.",
@@ -2835,7 +2835,7 @@
     },
     {
       "tag": "release-2026-04-08-57",
-      "title": "Claw Studio release-2026-04-08-57",
+      "title": "Agent Studio release-2026-04-08-57",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that extracts the llmProviders dialog surface into a dedicated component, fixes missing provider-model option labels, and further reduces the page hotspot while CP07-3 remains open.",
@@ -2846,7 +2846,7 @@
     },
     {
       "tag": "release-2026-04-08-58",
-      "title": "Claw Studio release-2026-04-08-58",
+      "title": "Agent Studio release-2026-04-08-58",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that extracts the managed webSearch, webFetch, native codex, xSearch, and auth cooldown panels into dedicated components, keeps the verification matrix green, and reduces the page hotspot to 3590 lines while CP07-3 remains open.",
@@ -2857,7 +2857,7 @@
     },
     {
       "tag": "release-2026-04-08-59",
-      "title": "Claw Studio release-2026-04-08-59",
+      "title": "Agent Studio release-2026-04-08-59",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that extracts the agents workbench into a dedicated section component, keeps the verification matrix green, and reduces the page hotspot to 3290 lines while CP07-3 remains open.",
@@ -2868,7 +2868,7 @@
     },
     {
       "tag": "release-2026-04-08-60",
-      "title": "Claw Studio release-2026-04-08-60",
+      "title": "Agent Studio release-2026-04-08-60",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that removes stale cron-task history and action leftovers from the page, keeps CronTasksManager as the single task owner, and reduces the page hotspot to 3142 lines while CP07-3 remains open.",
@@ -2879,7 +2879,7 @@
     },
     {
       "tag": "release-2026-04-08-61",
-      "title": "Claw Studio release-2026-04-08-61",
+      "title": "Agent Studio release-2026-04-08-61",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes managed-config and provider-dialog save-input parsing through dedicated service helpers, keeps page-owned side effects intact, and reduces the page hotspot to 2702 lines while CP07-3 remains open.",
@@ -2890,7 +2890,7 @@
     },
     {
       "tag": "release-2026-04-08-62",
-      "title": "Claw Studio release-2026-04-08-62",
+      "title": "Agent Studio release-2026-04-08-62",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes workbench label formatting and provider model text parsing through shared helpers, keeps page-owned side effects intact, and reduces the page hotspot to 2635 lines while CP07-3 remains open.",
@@ -2901,7 +2901,7 @@
     },
     {
       "tag": "release-2026-04-08-63",
-      "title": "Claw Studio release-2026-04-08-63",
+      "title": "Agent Studio release-2026-04-08-63",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that extracts the remaining llmProviders composition wrapper into a dedicated component, collapses the old provider and agent render wrappers, and reduces the page hotspot to 2618 lines while CP07-3 remains open.",
@@ -2912,7 +2912,7 @@
     },
     {
       "tag": "release-2026-04-08-64",
-      "title": "Claw Studio release-2026-04-08-64",
+      "title": "Agent Studio release-2026-04-08-64",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that extracts the managed memory/tools composition wrappers into dedicated components, keeps page-owned side effects intact, and reduces the page hotspot to 2596 lines while CP07-3 remains open.",
@@ -2923,7 +2923,7 @@
     },
     {
       "tag": "release-2026-04-08-65",
-      "title": "Claw Studio release-2026-04-08-65",
+      "title": "Agent Studio release-2026-04-08-65",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that removes the remaining page-owned memory/tools and managed-panel wrapper functions, keeps OpenClaw write-path ownership in the page, and reduces the page hotspot to 2575 lines while CP07-3 remains open.",
@@ -2934,7 +2934,7 @@
     },
     {
       "tag": "release-2026-04-08-66",
-      "title": "Claw Studio release-2026-04-08-66",
+      "title": "Agent Studio release-2026-04-08-66",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes provider submit mutation metadata through dedicated helpers, centralizes managed config save side effects through a shared page-owned runner, and reduces the page hotspot to 2571 lines while CP07-3 remains open.",
@@ -2945,7 +2945,7 @@
     },
     {
       "tag": "release-2026-04-08-67",
-      "title": "Claw Studio release-2026-04-08-67",
+      "title": "Agent Studio release-2026-04-08-67",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves provider dialog draft types and factory helpers into the provider draft service, shares provider success side effects through a page-owned runner, and reduces the current worktree page hotspot from 2811 to 2792 lines while CP07-3 remains open.",
@@ -2956,7 +2956,7 @@
     },
     {
       "tag": "release-2026-04-08-68",
-      "title": "Claw Studio release-2026-04-08-68",
+      "title": "Agent Studio release-2026-04-08-68",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves remote provider patch construction into a dedicated helper, shares fallback config-path resolution across both service cores, and reduces instanceServiceCore from 1663 to 1431 while instanceWorkbenchServiceCore drops from 3818 to 3797.",
@@ -2967,7 +2967,7 @@
     },
     {
       "tag": "release-2026-04-08-69",
-      "title": "Claw Studio release-2026-04-08-69",
+      "title": "Agent Studio release-2026-04-08-69",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves OpenClaw file path derivation into a dedicated helper and reduces instanceWorkbenchServiceCore from 3797 to 3693 while keeping page and service authority unchanged.",
@@ -2978,7 +2978,7 @@
     },
     {
       "tag": "release-2026-04-08-70",
-      "title": "Claw Studio release-2026-04-08-70",
+      "title": "Agent Studio release-2026-04-08-70",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves OpenClaw task normalization and runtime memory summarization into dedicated helpers, realigns the agents contract boundary to the current section composition, and reduces instanceWorkbenchServiceCore from the prior 3693-line baseline to 2924 while keeping page and service authority unchanged.",
@@ -2989,7 +2989,7 @@
     },
     {
       "tag": "release-2026-04-08-71",
-      "title": "Claw Studio release-2026-04-08-71",
+      "title": "Agent Studio release-2026-04-08-71",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves OpenClaw channel and agent workbench shaping into dedicated helpers, fixes managed-agent id normalization so runtime overlays do not duplicate agents, and reduces instanceWorkbenchServiceCore from the prior 2924-line baseline to 2635 while keeping page and service authority unchanged.",
@@ -3000,7 +3000,7 @@
     },
     {
       "tag": "release-2026-04-08-72",
-      "title": "Claw Studio release-2026-04-08-72",
+      "title": "Agent Studio release-2026-04-08-72",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves managed OpenClaw workbench config shaping into a dedicated helper, aligns the service barrel and contract suite to the new boundary, and reduces instanceWorkbenchServiceCore from the prior 2635-line baseline to 2462 while keeping page and service authority unchanged.",
@@ -3011,7 +3011,7 @@
     },
     {
       "tag": "release-2026-04-08-73",
-      "title": "Claw Studio release-2026-04-08-73",
+      "title": "Agent Studio release-2026-04-08-73",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves OpenClaw provider workbench shaping into a dedicated helper, aligns the service barrel and contract suite to the new boundary, and reduces instanceWorkbenchServiceCore from the prior 2462-line baseline to 2379 while keeping page and service authority unchanged.",
@@ -3022,7 +3022,7 @@
     },
     {
       "tag": "release-2026-04-08-74",
-      "title": "Claw Studio release-2026-04-08-74",
+      "title": "Agent Studio release-2026-04-08-74",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves OpenClaw skill and tool workbench shaping into dedicated helpers, aligns the service barrel and contract suite to the new boundaries, and reduces instanceWorkbenchServiceCore from the prior 2379-line baseline to 2361 while keeping page and service authority unchanged.",
@@ -3033,7 +3033,7 @@
     },
     {
       "tag": "release-2026-04-08-75",
-      "title": "Claw Studio release-2026-04-08-75",
+      "title": "Agent Studio release-2026-04-08-75",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves OpenClaw file workbench shaping into a dedicated helper, keeps file-path derivation routed through the shared path helper via the new boundary, and reduces instanceWorkbenchServiceCore from the prior 2361-line baseline to 2192 while keeping page and service authority unchanged.",
@@ -3044,7 +3044,7 @@
     },
     {
       "tag": "release-2026-04-08-76",
-      "title": "Claw Studio release-2026-04-08-76",
+      "title": "Agent Studio release-2026-04-08-76",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves registry-backed detail projection into a dedicated helper, repairs the swallowed gateway-channel regression found during verification, and reduces instanceWorkbenchServiceCore from the prior 2192-line baseline to 1675 while keeping page and service authority unchanged.",
@@ -3055,7 +3055,7 @@
     },
     {
       "tag": "release-2026-04-08-77",
-      "title": "Claw Studio release-2026-04-08-77",
+      "title": "Agent Studio release-2026-04-08-77",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves OpenClaw workbench snapshot assembly into a dedicated helper, realigns the contract suite to the new snapshot/channel routing boundary, and reduces instanceWorkbenchServiceCore from the prior 1675-line baseline to 1209 while keeping page and service authority unchanged.",
@@ -3066,7 +3066,7 @@
     },
     {
       "tag": "release-2026-04-08-78",
-      "title": "Claw Studio release-2026-04-08-78",
+      "title": "Agent Studio release-2026-04-08-78",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves OpenClaw runtime channel shaping into the shared channel helper, preserves service-core gateway authority, and reduces instanceWorkbenchServiceCore from the prior 1209-line baseline to 1030 while keeping page and service authority unchanged.",
@@ -3077,7 +3077,7 @@
     },
     {
       "tag": "release-2026-04-08-79",
-      "title": "Claw Studio release-2026-04-08-79",
+      "title": "Agent Studio release-2026-04-08-79",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that normalizes provider submit mutation kinds, consolidates provider submit orchestration through a shared page-owned runner, and re-baselines the current worktree hotspot profile at InstanceDetail 2803 / instanceWorkbenchServiceCore 1132 / instanceServiceCore 1431 while keeping OpenClaw write authority in the page.",
@@ -3088,7 +3088,7 @@
     },
     {
       "tag": "release-2026-04-08-80",
-      "title": "Claw Studio release-2026-04-08-80",
+      "title": "Agent Studio release-2026-04-08-80",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that expands the shared page-owned provider catalog runner to provider delete and provider-model delete flows, preserves all real write-path authority in InstanceDetail, and re-baselines the current worktree hotspot profile at InstanceDetail 2816 / instanceWorkbenchServiceCore 1132 / instanceServiceCore 1431.",
@@ -3099,7 +3099,7 @@
     },
     {
       "tag": "release-2026-04-08-81",
-      "title": "Claw Studio release-2026-04-08-81",
+      "title": "Agent Studio release-2026-04-08-81",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves provider config save-input parsing and mutation metadata into the shared provider drafts helper, routes provider config save through the shared page-owned runner, and re-baselines that loop at InstanceDetail 2827 / openClawProviderDrafts 461 / instanceWorkbenchServiceCore 1132 / instanceServiceCore 1431.",
@@ -3110,7 +3110,7 @@
     },
     {
       "tag": "release-2026-04-08-82",
-      "title": "Claw Studio release-2026-04-08-82",
+      "title": "Agent Studio release-2026-04-08-82",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves provider draft baseline, request baseline, and dirty-state derivation into the shared provider drafts helper and reduces the current page hotspot from 2827 to 2810 while instanceWorkbenchServiceCore remains at 1132.",
@@ -3121,7 +3121,7 @@
     },
     {
       "tag": "release-2026-04-08-83",
-      "title": "Claw Studio release-2026-04-08-83",
+      "title": "Agent Studio release-2026-04-08-83",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves provider draft field/config/request mutation logic into the shared provider drafts helper, keeps page-owned state authority intact, and re-baselines the current worktree hotspot profile at InstanceDetail 2811 / openClawProviderDrafts 561 / instanceWorkbenchServiceCore 1132 / instanceServiceCore 1431 while CP07-3 remains open.",
@@ -3132,7 +3132,7 @@
     },
     {
       "tag": "release-2026-04-08-84",
-      "title": "Claw Studio release-2026-04-08-84",
+      "title": "Agent Studio release-2026-04-08-84",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves section metadata, badge-tone mapping, and task schedule summary formatting into a dedicated presentation module and reduces the current page hotspot from 2811 to 2640 while instanceWorkbenchServiceCore remains at 1132.",
@@ -3143,7 +3143,7 @@
     },
     {
       "tag": "release-2026-04-08-85",
-      "title": "Claw Studio release-2026-04-08-85",
+      "title": "Agent Studio release-2026-04-08-85",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves managed-config form-state types and snapshot-to-draft factories into the shared managed-config helper and reduces the current page hotspot from 2640 to 2474 while instanceWorkbenchServiceCore remains at 1132.",
@@ -3154,7 +3154,7 @@
     },
     {
       "tag": "release-2026-04-08-86",
-      "title": "Claw Studio release-2026-04-08-86",
+      "title": "Agent Studio release-2026-04-08-86",
       "date": "2026-04-08",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves capability and management-entry tone mapping into the dedicated presentation helper, keeps page-owned write authority intact, and re-baselines the current worktree hotspot profile at InstanceDetail 2242 / instanceDetailWorkbenchPresentation 195 / instanceWorkbenchServiceCore 1030 / instanceServiceCore 1274 while CP07-3 remains open.",
@@ -3165,7 +3165,7 @@
     },
     {
       "tag": "release-2026-04-09-87",
-      "title": "Claw Studio release-2026-04-09-87",
+      "title": "Agent Studio release-2026-04-09-87",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Upgraded the bundled OpenClaw baseline from 2026.4.2 to 2026.4.8, re-read the upstream v2026.4.8 changelog, repaired runtime preparation for the new @discordjs/opus native prebuild download path, and re-aligned the desktop runtime, manifests, and verification gates on the new stable release.",
@@ -3176,7 +3176,7 @@
     },
     {
       "tag": "release-2026-04-09-88",
-      "title": "Claw Studio release-2026-04-09-88",
+      "title": "Agent Studio release-2026-04-09-88",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Repaired a Step 07 boundary regression by moving SectionHeading and SectionAvailabilityNotice back into the shared InstanceWorkbenchPrimitives module, keeping page-owned OpenClaw truth routing intact, and re-running the focused instance-detail verification gate on the current worktree.",
@@ -3187,7 +3187,7 @@
     },
     {
       "tag": "release-2026-04-09-89",
-      "title": "Claw Studio release-2026-04-09-89",
+      "title": "Agent Studio release-2026-04-09-89",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that extracts the lower workbench chrome into a dedicated component and presentation-descriptor layer, reduces InstanceDetail from 2423 to 2073 lines, and keeps repo-wide lint blocked only by the current dirty worktree's unrelated removed submodule URL contract mismatch.",
@@ -3198,7 +3198,7 @@
     },
     {
       "tag": "release-2026-04-09-90",
-      "title": "Claw Studio release-2026-04-09-90",
+      "title": "Agent Studio release-2026-04-09-90",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that extracts the top hero and action chrome into a dedicated header component, reduces InstanceDetail from 2073 to 1981 lines, and keeps the focused instance-detail verification, web TypeScript gate, and production build green while repo-wide lint remains yellow only because of the unrelated dirty-worktree removed submodule URL contract mismatch.",
@@ -3209,7 +3209,7 @@
     },
     {
       "tag": "release-2026-04-09-91",
-      "title": "Claw Studio release-2026-04-09-91",
+      "title": "Agent Studio release-2026-04-09-91",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that extracts the remaining agents and llm-provider section-model assembly into a dedicated helper module, adds dedicated helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 2161 / instanceDetailSectionModels 145 while CP07-3 remains open.",
@@ -3220,7 +3220,7 @@
     },
     {
       "tag": "release-2026-04-09-92",
-      "title": "Claw Studio release-2026-04-09-92",
+      "title": "Agent Studio release-2026-04-09-92",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining managed memory/tools section composition out of InstanceDetail, adds focused managed-section and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 2102 / InstanceDetailManagedMemorySection 93 / InstanceDetailManagedToolsSection 258 while CP07-3 remains open.",
@@ -3231,7 +3231,7 @@
     },
     {
       "tag": "release-2026-04-09-93",
-      "title": "Claw Studio release-2026-04-09-93",
+      "title": "Agent Studio release-2026-04-09-93",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining section router and availability composition into a dedicated section-content component, adds focused router and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 2009 / InstanceDetailSectionContent 222 while CP07-3 remains open.",
@@ -3242,7 +3242,7 @@
     },
     {
       "tag": "release-2026-04-09-94",
-      "title": "Claw Studio release-2026-04-09-94",
+      "title": "Agent Studio release-2026-04-09-94",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves provider-catalog mutation request construction into a dedicated helper, adds focused helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 1972 / openClawProviderCatalogMutationSupport 241 while CP07-3 remains open.",
@@ -3253,7 +3253,7 @@
     },
     {
       "tag": "release-2026-04-09-95",
-      "title": "Claw Studio release-2026-04-09-95",
+      "title": "Agent Studio release-2026-04-09-95",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves managed-channel draft patching, mutation request construction, and shared mutation sequencing into a dedicated helper, adds focused helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 1823 / openClawManagedChannelMutationSupport 223 while CP07-3 remains open.",
@@ -3264,7 +3264,7 @@
     },
     {
       "tag": "release-2026-04-09-96",
-      "title": "Claw Studio release-2026-04-09-96",
+      "title": "Agent Studio release-2026-04-09-96",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves provider-catalog mutation execution and completion sequencing into the shared provider helper, adds focused helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 1770 / openClawProviderCatalogMutationSupport 353 while CP07-3 remains open.",
@@ -3275,7 +3275,7 @@
     },
     {
       "tag": "release-2026-04-09-97",
-      "title": "Claw Studio release-2026-04-09-97",
+      "title": "Agent Studio release-2026-04-09-97",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves shared managed-config save sequencing into a dedicated helper, adds focused helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 1930 / openClawManagedConfigMutationSupport 39 while CP07-3 remains open.",
@@ -3286,7 +3286,7 @@
     },
     {
       "tag": "release-2026-04-09-98",
-      "title": "Claw Studio release-2026-04-09-98",
+      "title": "Agent Studio release-2026-04-09-98",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves agent create/update/delete mutation orchestration into a dedicated helper, adds focused helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 1938 / openClawAgentMutationSupport 65 while CP07-3 remains open.",
@@ -3297,7 +3297,7 @@
     },
     {
       "tag": "release-2026-04-09-99",
-      "title": "Claw Studio release-2026-04-09-99",
+      "title": "Agent Studio release-2026-04-09-99",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves agent skill install/enable/remove orchestration into a dedicated helper, adds focused helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 1931 / openClawAgentSkillMutationSupport 68 while CP07-3 remains open.",
@@ -3308,7 +3308,7 @@
     },
     {
       "tag": "release-2026-04-09-100",
-      "title": "Claw Studio release-2026-04-09-100",
+      "title": "Agent Studio release-2026-04-09-100",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining agent dialog save/delete request construction into a dedicated helper, adds focused helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 1926 / openClawAgentMutationSupport 146 while CP07-3 remains open.",
@@ -3319,7 +3319,7 @@
     },
     {
       "tag": "release-2026-04-09-101",
-      "title": "Claw Studio release-2026-04-09-101",
+      "title": "Agent Studio release-2026-04-09-101",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining agent skill install/toggle/remove request construction into a dedicated helper, adds focused helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 1906 / openClawAgentSkillMutationSupport 204 while CP07-3 remains open.",
@@ -3330,7 +3330,7 @@
     },
     {
       "tag": "release-2026-04-09-102",
-      "title": "Claw Studio release-2026-04-09-102",
+      "title": "Agent Studio release-2026-04-09-102",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves restart/stop/start lifecycle orchestration into a dedicated helper, adds focused helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 1911 / instanceLifecycleActionSupport 29 while CP07-3 remains open.",
@@ -3341,7 +3341,7 @@
     },
     {
       "tag": "release-2026-04-09-103",
-      "title": "Claw Studio release-2026-04-09-103",
+      "title": "Agent Studio release-2026-04-09-103",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining agent dialog create/edit draft selection into the shared agent presentation helper, adds focused helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 1741 / openClawAgentPresentation 263 while CP07-3 remains open.",
@@ -3352,7 +3352,7 @@
     },
     {
       "tag": "release-2026-04-09-104",
-      "title": "Claw Studio release-2026-04-09-104",
+      "title": "Agent Studio release-2026-04-09-104",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining agent dialog dismiss/reset callback shaping into the shared section-model helper, adds focused helper and contract coverage, and re-baselines the current dirty worktree hotspot at InstanceDetail 1742 / instanceDetailSectionModels 148 while CP07-3 remains open.",
@@ -3363,7 +3363,7 @@
     },
     {
       "tag": "release-2026-04-09-105",
-      "title": "Claw Studio release-2026-04-09-105",
+      "title": "Agent Studio release-2026-04-09-105",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining provider dialog dismiss/reset callback shaping into the shared section-model helper, simplifies the managed LLM provider composition wrapper, and re-baselines the current dirty worktree hotspot at InstanceDetail 1909 / instanceDetailSectionModels 207 / InstanceDetailManagedLlmProvidersSection 26 while CP07-3 remains open.",
@@ -3374,7 +3374,7 @@
     },
     {
       "tag": "release-2026-04-09-106",
-      "title": "Claw Studio release-2026-04-09-106",
+      "title": "Agent Studio release-2026-04-09-106",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining provider dialog create/edit draft selection into a dedicated provider presentation helper, reuses that helper for provider dialog reset baselines, and re-baselines the current dirty worktree hotspot at InstanceDetail 1924 / openClawProviderPresentation 38 while CP07-3 remains open.",
@@ -3385,7 +3385,7 @@
     },
     {
       "tag": "release-2026-04-09-107",
-      "title": "Claw Studio release-2026-04-09-107",
+      "title": "Agent Studio release-2026-04-09-107",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining provider dialog launch callbacks into the section-model helper, rewires the page to inject dialog setters instead of raw launch callbacks, and re-baselines the current dirty worktree hotspot at InstanceDetail 1898 / instanceDetailSectionModels 249 / openClawProviderPresentation 38 while CP07-3 remains open.",
@@ -3396,7 +3396,7 @@
     },
     {
       "tag": "release-2026-04-09-108",
-      "title": "Claw Studio release-2026-04-09-108",
+      "title": "Agent Studio release-2026-04-09-108",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining provider workspace selection-state derivation into the shared provider workspace helper, rewires the page to consume selected-provider draft/request/pending state from that helper, and re-baselines the current dirty worktree hotspot at InstanceDetail 1881 / openClawProviderWorkspacePresentation 111 while CP07-3 remains open.",
@@ -3407,7 +3407,7 @@
     },
     {
       "tag": "release-2026-04-09-109",
-      "title": "Claw Studio release-2026-04-09-109",
+      "title": "Agent Studio release-2026-04-09-109",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining provider workspace draft callback shaping into the shared section-model helper, rewires the page to inject provider draft stores instead of inline callbacks, and re-baselines the current dirty worktree hotspot at InstanceDetail 1648 / instanceDetailSectionModels 316 while CP07-3 remains open.",
@@ -3418,7 +3418,7 @@
     },
     {
       "tag": "release-2026-04-09-110",
-      "title": "Claw Studio release-2026-04-09-110",
+      "title": "Agent Studio release-2026-04-09-110",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining provider dialog presentation derivation into the shared provider presentation helper, rewires the page to consume parsed dialog models and request-parse state from that helper, and re-baselines the current dirty worktree hotspot at InstanceDetail 1647 / openClawProviderPresentation 59 while CP07-3 remains open.",
@@ -3429,7 +3429,7 @@
     },
     {
       "tag": "release-2026-04-09-111",
-      "title": "Claw Studio release-2026-04-09-111",
+      "title": "Agent Studio release-2026-04-09-111",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining provider mutation build-result dispatch into the shared provider catalog mutation support helper, rewires the page to inject the real runner and page-owned error reporter, and re-baselines the current dirty worktree hotspot at InstanceDetail 1636 / openClawProviderCatalogMutationSupport 367 while CP07-3 remains open.",
@@ -3440,7 +3440,7 @@
     },
     {
       "tag": "release-2026-04-09-112",
-      "title": "Claw Studio release-2026-04-09-112",
+      "title": "Agent Studio release-2026-04-09-112",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining provider page-handler construction into the shared provider catalog mutation support helper, rewires the page to inject the real runner and page-owned error reporter through helper-composed handlers, and re-baselines the current dirty worktree hotspot at InstanceDetail 1731 / openClawProviderCatalogMutationSupport 486 while CP07-3 remains open.",
@@ -3451,7 +3451,7 @@
     },
     {
       "tag": "release-2026-04-09-113",
-      "title": "Claw Studio release-2026-04-09-113",
+      "title": "Agent Studio release-2026-04-09-113",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining provider dialog reset-drafts bundle into the shared provider presentation helper, rewires the page and section-model helper to inject dialog setters instead of page-owned reset callbacks, and re-baselines the current dirty worktree hotspot at InstanceDetail 1725 / openClawProviderPresentation 84 / instanceDetailSectionModels 343 while CP07-3 remains open.",
@@ -3462,7 +3462,7 @@
     },
     {
       "tag": "release-2026-04-09-114",
-      "title": "Claw Studio release-2026-04-09-114",
+      "title": "Agent Studio release-2026-04-09-114",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that removes the remaining direct provider dialog create-state dependencies from the page shell, rewires the two provider dialog lazy initializers through the shared reset-drafts helper, and re-baselines the current dirty worktree hotspot at InstanceDetail 1720 / openClawProviderPresentation 84 / instanceDetailSectionModels 343 while CP07-3 remains open.",
@@ -3473,7 +3473,7 @@
     },
     {
       "tag": "release-2026-04-09-115",
-      "title": "Claw Studio release-2026-04-09-115",
+      "title": "Agent Studio release-2026-04-09-115",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining managed webFetch draft-state pairing into the shared managed-config drafts helper, rewires the page to consume a single combined webFetch draft-state constructor, and re-baselines the current dirty worktree hotspot at InstanceDetail 1566 / openClawManagedConfigDrafts 467 / openClawManagedConfigMutationSupport 36 while CP07-3 remains open.",
@@ -3484,7 +3484,7 @@
     },
     {
       "tag": "release-2026-04-09-116",
-      "title": "Claw Studio release-2026-04-09-116",
+      "title": "Agent Studio release-2026-04-09-116",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining managed webSearch draft-state sync shaping into the shared managed-config drafts helper, rewires the page to consume a combined webSearch draft-state constructor, and re-baselines the current dirty worktree hotspot at InstanceDetail 1554 / openClawManagedConfigDrafts 499 / openClawManagedConfigMutationSupport 36 while CP07-3 remains open.",
@@ -3495,7 +3495,7 @@
     },
     {
       "tag": "release-2026-04-09-117",
-      "title": "Claw Studio release-2026-04-09-117",
+      "title": "Agent Studio release-2026-04-09-117",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining managed webSearch provider selection and provider-draft patching into the shared managed-config drafts helper, rewires the page to consume selection and patch helpers instead of direct provider-draft factories, and re-baselines the current dirty worktree hotspot at InstanceDetail 1557 / openClawManagedConfigDrafts 541 / openClawManagedConfigMutationSupport 36 while CP07-3 remains open.",
@@ -3506,7 +3506,7 @@
     },
     {
       "tag": "release-2026-04-09-118",
-      "title": "Claw Studio release-2026-04-09-118",
+      "title": "Agent Studio release-2026-04-09-118",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining repeated managed-config draft field-patching lambdas into shared nullable and non-null draft helpers, rewires seven page handlers to consume those helpers, and re-baselines the current dirty worktree hotspot at InstanceDetail 1510 / openClawManagedConfigDrafts 562 / openClawManagedConfigMutationSupport 36 while CP07-3 remains open.",
@@ -3517,7 +3517,7 @@
     },
     {
       "tag": "release-2026-04-09-119",
-      "title": "Claw Studio release-2026-04-09-119",
+      "title": "Agent Studio release-2026-04-09-119",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that removes the remaining redundant managed-config sync null guards by reusing existing null-aware draft factories, rewires four page effects to consume those factories directly, and re-baselines the current dirty worktree hotspot at InstanceDetail 1490 / openClawManagedConfigDrafts 562 / openClawManagedConfigMutationSupport 36 while CP07-3 remains open.",
@@ -3528,7 +3528,7 @@
     },
     {
       "tag": "release-2026-04-09-120",
-      "title": "Claw Studio release-2026-04-09-120",
+      "title": "Agent Studio release-2026-04-09-120",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining managed-config instance-switch reset baselines into a shared reset-bundle helper, rewires the page to consume shared reset state across all managed-config surfaces including webFetch, and re-baselines the current dirty worktree hotspot at InstanceDetail 1496 / openClawManagedConfigDrafts 642 / openClawManagedConfigMutationSupport 36 while CP07-3 remains open.",
@@ -3539,7 +3539,7 @@
     },
     {
       "tag": "release-2026-04-09-121",
-      "title": "Claw Studio release-2026-04-09-121",
+      "title": "Agent Studio release-2026-04-09-121",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining agent instance-switch reset baselines into a shared agent reset-bundle helper, rewires the page to consume that helper for agent workbench and skill transient reset state including removingAgentSkillKeys, and re-baselines the current dirty worktree hotspot at InstanceDetail 1498 / openClawAgentPresentation 289 while CP07-3 remains open.",
@@ -3550,7 +3550,7 @@
     },
     {
       "tag": "release-2026-04-09-122",
-      "title": "Claw Studio release-2026-04-09-122",
+      "title": "Agent Studio release-2026-04-09-122",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining provider instance-switch reset baselines into a shared provider reset-bundle helper, rewires the page to consume that helper for provider dialog/model/request/delete transient state, and re-baselines the current dirty worktree hotspot at InstanceDetail 1637 / openClawProviderPresentation 108 while CP07-3 remains open.",
@@ -3561,7 +3561,7 @@
     },
     {
       "tag": "release-2026-04-09-123",
-      "title": "Claw Studio release-2026-04-09-123",
+      "title": "Agent Studio release-2026-04-09-123",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining provider workspace collection sync-state shaping into a shared provider workspace helper, rewires the page to consume that helper for selection fallback plus provider draft/request reset maps, and re-baselines the current dirty worktree hotspot at InstanceDetail 1632 / openClawProviderWorkspacePresentation 142 while CP07-3 remains open.",
@@ -3572,7 +3572,7 @@
     },
     {
       "tag": "release-2026-04-09-124",
-      "title": "Claw Studio release-2026-04-09-124",
+      "title": "Agent Studio release-2026-04-09-124",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining managed-channel workspace collection sync-state shaping into a shared managed-channel helper, rewires the page to consume that helper for selection validity plus managed-channel draft/error reset state, and re-baselines the current dirty worktree hotspot at InstanceDetail 1494 / openClawManagedChannelPresentation 24 while CP07-3 remains open.",
@@ -3583,7 +3583,7 @@
     },
     {
       "tag": "release-2026-04-09-125",
-      "title": "Claw Studio release-2026-04-09-125",
+      "title": "Agent Studio release-2026-04-09-125",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining workbench hydration reset baselines into a shared hydration helper, rewires the page to consume that helper for file and memory lazy-loading reset state during instance switches, and re-baselines the current dirty worktree hotspot at InstanceDetail 1496 / instanceWorkbenchHydration 101 while CP07-3 remains open.",
@@ -3594,7 +3594,7 @@
     },
     {
       "tag": "release-2026-04-09-126",
-      "title": "Claw Studio release-2026-04-09-126",
+      "title": "Agent Studio release-2026-04-09-126",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining managed-channel selection-state derivation into a shared managed-channel helper, rewires the page to consume that helper for selected channel lookup plus draft fallback, and re-baselines the current dirty worktree hotspot at InstanceDetail 1500 / openClawManagedChannelPresentation 48 while CP07-3 remains open.",
@@ -3605,7 +3605,7 @@
     },
     {
       "tag": "release-2026-04-09-127",
-      "title": "Claw Studio release-2026-04-09-127",
+      "title": "Agent Studio release-2026-04-09-127",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining managed-channel workspace projection into a shared managed-channel helper, rewires the page to consume that helper for runtime metadata fallback plus configured status shaping, and re-baselines the current dirty worktree hotspot at InstanceDetail 1473 / openClawManagedChannelPresentation 93 while CP07-3 remains open.",
@@ -3616,7 +3616,7 @@
     },
     {
       "tag": "release-2026-04-09-128",
-      "title": "Claw Studio release-2026-04-09-128",
+      "title": "Agent Studio release-2026-04-09-128",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining managed-channel toggle target lookup into a shared managed-channel helper, rewires the page to consume that helper before page-owned toggle execution, and re-baselines the current dirty worktree hotspot at InstanceDetail 1474 / openClawManagedChannelPresentation 103 while CP07-3 remains open.",
@@ -3627,7 +3627,7 @@
     },
     {
       "tag": "release-2026-04-09-129",
-      "title": "Claw Studio release-2026-04-09-129",
+      "title": "Agent Studio release-2026-04-09-129",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining readonly channel workspace projection into a dedicated shared channel helper, rewires the page to consume that helper for summary-mode channel items, and re-baselines the current dirty worktree hotspot at InstanceDetail 1460 / openClawChannelPresentation 12 while CP07-3 remains open.",
@@ -3638,7 +3638,7 @@
     },
     {
       "tag": "release-2026-04-09-130",
-      "title": "Claw Studio release-2026-04-09-130",
+      "title": "Agent Studio release-2026-04-09-130",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining agent model option projection into the shared agent presentation helper, rewires the page to consume that helper for dialog model choices, adds a broader architecture-alignment audit, and re-baselines the current dirty worktree hotspot at InstanceDetail 1444 / openClawAgentPresentation 324 while CP07-3 remains open.",
@@ -3649,7 +3649,7 @@
     },
     {
       "tag": "release-2026-04-09-131",
-      "title": "Claw Studio release-2026-04-09-131",
+      "title": "Agent Studio release-2026-04-09-131",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that lazy-loads the heavy files and config workbench sections through the shared section router, splits those panels into async chunks, and re-baselines the current dirty worktree hotspot at InstanceDetail 1444 / InstanceDetailSectionContent 232 while CP07-3 remains open.",
@@ -3660,7 +3660,7 @@
     },
     {
       "tag": "release-2026-04-09-132",
-      "title": "Claw Studio release-2026-04-09-132",
+      "title": "Agent Studio release-2026-04-09-132",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining page-facing derived presentation cluster through a shared instanceDetailDerivedState helper, closes contract drift from that extraction, repairs the follow-up console-access compile regression, and re-baselines the current dirty worktree hotspot at InstanceDetail 1527 / instanceDetailDerivedState 200 while CP07-3 remains open.",
@@ -3671,7 +3671,7 @@
     },
     {
       "tag": "release-2026-04-09-133",
-      "title": "Claw Studio release-2026-04-09-133",
+      "title": "Agent Studio release-2026-04-09-133",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the repeated managed-channel mutation dependency bundle into a shared runner helper, rewires the page handlers to consume that runner, repairs the follow-up delete-branch narrowing regression, and re-baselines the current dirty worktree hotspot at InstanceDetail 1504 / openClawManagedChannelMutationSupport 275 while CP07-3 remains open.",
@@ -3682,7 +3682,7 @@
     },
     {
       "tag": "release-2026-04-09-134",
-      "title": "Claw Studio release-2026-04-09-134",
+      "title": "Agent Studio release-2026-04-09-134",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that moves the remaining managed-config save handler construction into a shared helper, rewires the page to inject real save callbacks into one managed-config mutation handler bundle, and re-baselines the current dirty worktree hotspot at InstanceDetail 1416 / openClawManagedConfigMutationSupport 338 while CP07-3 remains open.",
@@ -3693,7 +3693,7 @@
     },
     {
       "tag": "release-2026-04-09-135",
-      "title": "Claw Studio release-2026-04-09-135",
+      "title": "Agent Studio release-2026-04-09-135",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining memory/tools section prop assembly through shared section-model builders, rewires the page to consume those builders while keeping mutation authority in the shell, and re-baselines the current dirty worktree hotspot at InstanceDetail 1414 / instanceDetailSectionModels 388 while CP07-3 remains open.",
@@ -3704,7 +3704,7 @@
     },
     {
       "tag": "release-2026-04-09-136",
-      "title": "Claw Studio release-2026-04-09-136",
+      "title": "Agent Studio release-2026-04-09-136",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining page-tail agent/llm-provider/task section content composition through shared section-model builders, repairs the follow-up contract and task-content typing drift, and re-baselines the current dirty worktree hotspot at InstanceDetail 1408 / instanceDetailSectionModels 435 while CP07-3 remains open.",
@@ -3715,7 +3715,7 @@
     },
     {
       "tag": "release-2026-04-09-137",
-      "title": "Claw Studio release-2026-04-09-137",
+      "title": "Agent Studio release-2026-04-09-137",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining managed memory/tools section content wrappers through shared section-model builders, adds focused helper and contract coverage for those builders, and re-baselines the current dirty worktree hotspot at InstanceDetail 1408 / instanceDetailSectionModels 457 while CP07-3 remains open.",
@@ -3726,7 +3726,7 @@
     },
     {
       "tag": "release-2026-04-09-138",
-      "title": "Claw Studio release-2026-04-09-138",
+      "title": "Agent Studio release-2026-04-09-138",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the instance-switch reset-state setter fan-out through a shared reset applier, adds direct helper coverage and contract enforcement for page-owned setter bridging, and re-baselines the current dirty worktree hotspot at InstanceDetail 1401 / instanceDetailResetState 113 while CP07-3 remains open.",
@@ -3737,7 +3737,7 @@
     },
     {
       "tag": "release-2026-04-09-139",
-      "title": "Claw Studio release-2026-04-09-139",
+      "title": "Agent Studio release-2026-04-09-139",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the managed-config sync setter bridges through a shared helper, adds direct helper coverage and tighter contract enforcement for page-owned setter injection, repairs the follow-up webFetch initializer contract/import drift, and re-baselines the current dirty worktree hotspot at InstanceDetail 1297 / instanceDetailManagedConfigSyncState 106 while CP07-3 remains open.",
@@ -3748,7 +3748,7 @@
     },
     {
       "tag": "release-2026-04-09-140",
-      "title": "Claw Studio release-2026-04-09-140",
+      "title": "Agent Studio release-2026-04-09-140",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining file and memory lazy-load async orchestration through shared hydration helpers, adds direct helper coverage and tighter contract enforcement for injected loaders, merge orchestration, and cancellation behavior, and re-baselines the current dirty worktree hotspot at InstanceDetail 1251 / instanceWorkbenchHydration 222 while CP07-3 remains open.",
@@ -3759,7 +3759,7 @@
     },
     {
       "tag": "release-2026-04-09-141",
-      "title": "Claw Studio release-2026-04-09-141",
+      "title": "Agent Studio release-2026-04-09-141",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining agent-workbench selection sync and async load orchestration through a dedicated shared helper, adds direct helper coverage and tighter contract enforcement for injected loaders, fallback error mapping, and cancellation behavior, and re-baselines the current dirty worktree hotspot at InstanceDetail 1220 / instanceDetailAgentWorkbenchState 95 while CP07-3 remains open.",
@@ -3770,7 +3770,7 @@
     },
     {
       "tag": "release-2026-04-09-142",
-      "title": "Claw Studio release-2026-04-09-142",
+      "title": "Agent Studio release-2026-04-09-142",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining agent dialog launch and agent or skill mutation handler composition through shared agent presentation and mutation builders, adds direct helper coverage and tighter contract enforcement for injected runners and page-owned service authority, and re-baselines the current dirty worktree hotspot at InstanceDetail 1160 / openClawAgentPresentation 358 / openClawAgentMutationSupport 187 / openClawAgentSkillMutationSupport 249 while CP07-3 remains open.",
@@ -3781,7 +3781,7 @@
     },
     {
       "tag": "release-2026-04-09-143",
-      "title": "Claw Studio release-2026-04-09-143",
+      "title": "Agent Studio release-2026-04-09-143",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining managed-channel selection, draft patching, and toggle or save or delete handler composition through shared managed-channel presentation and mutation builders, adds direct helper coverage plus check and contract enforcement for injected page-owned mutation authority, repairs the follow-up delete-branch emptyValues narrowing regression, and re-baselines the current dirty worktree hotspot at InstanceDetail 1171 / openClawManagedChannelPresentation 155 / openClawManagedChannelMutationSupport 383 while CP07-3 remains open.",
@@ -3792,7 +3792,7 @@
     },
     {
       "tag": "release-2026-04-09-144",
-      "title": "Claw Studio release-2026-04-09-144",
+      "title": "Agent Studio release-2026-04-09-144",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining lifecycle and OpenClaw console or official-link handler composition through shared lifecycle support builders, adds direct helper coverage plus check and contract enforcement for injected page-owned service and host authority, and re-baselines the current dirty worktree hotspot at InstanceDetail 1055 / instanceLifecycleActionSupport 118 while CP07-3 remains open.",
@@ -3803,7 +3803,7 @@
     },
     {
       "tag": "release-2026-04-09-145",
-      "title": "Claw Studio release-2026-04-09-145",
+      "title": "Agent Studio release-2026-04-09-145",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining managed-config draft-change handler composition through a shared managed-config presentation builder, adds direct helper coverage plus check and contract enforcement for injected page-owned setter bridging, and re-baselines the current dirty worktree hotspot at InstanceDetail 1006 / openClawManagedConfigPresentation 119 / openClawManagedConfigMutationSupport 318 while CP07-3 remains open.",
@@ -3814,7 +3814,7 @@
     },
     {
       "tag": "release-2026-04-09-146",
-      "title": "Claw Studio release-2026-04-09-146",
+      "title": "Agent Studio release-2026-04-09-146",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining instance-delete destructive-flow wrapper through a shared lifecycle support builder, adds direct helper coverage plus contract enforcement for injected page-owned confirm, navigation, and delete authority, removes the dead openTaskWorkspace wrapper, and re-baselines the current dirty worktree hotspot at InstanceDetail 991 / instanceLifecycleActionSupport 150 while CP07-3 remains open.",
@@ -3825,7 +3825,7 @@
     },
     {
       "tag": "release-2026-04-09-147",
-      "title": "Claw Studio release-2026-04-09-147",
+      "title": "Agent Studio release-2026-04-09-147",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining lightweight navigation and shared-status label wrappers through a dedicated helper, adds direct helper coverage plus contract enforcement for injected page-owned navigate and active-instance authority, and re-baselines the current dirty worktree hotspot at InstanceDetail 998 / instanceDetailNavigationSupport 37 while CP07-3 remains open.",
@@ -3836,7 +3836,7 @@
     },
     {
       "tag": "release-2026-04-09-148",
-      "title": "Claw Studio release-2026-04-09-148",
+      "title": "Agent Studio release-2026-04-09-148",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining page-local section-availability renderer wrapper through a dedicated helper, adds direct helper coverage plus contract enforcement for injected workbench, translation, and formatting context, and re-baselines the current dirty worktree hotspot at InstanceDetail 994 / instanceDetailSectionAvailabilitySupport 30 while CP07-3 remains open.",
@@ -3847,7 +3847,7 @@
     },
     {
       "tag": "release-2026-04-09-149",
-      "title": "Claw Studio release-2026-04-09-149",
+      "title": "Agent Studio release-2026-04-09-149",
       "date": "2026-04-09",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes current-instance silent reload callbacks through a dedicated helper, adds direct helper coverage plus contract enforcement for spinnerless reload binding in the page and section models, and re-baselines the current dirty worktree hotspot at InstanceDetail 1056 / instanceDetailReloadSupport 16 while CP07-3 remains open.",
@@ -3858,7 +3858,7 @@
     },
     {
       "tag": "release-2026-04-10-150",
-      "title": "Claw Studio release-2026-04-10-150",
+      "title": "Agent Studio release-2026-04-10-150",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes page-owned loadWorkbench runner adapters through a dedicated helper, adds direct helper coverage plus contract enforcement for pass-through and default-spinner reload bindings, and re-baselines the current dirty worktree hotspot at InstanceDetail 1060 / instanceDetailReloadSupport 30 while CP07-3 remains open.",
@@ -3869,7 +3869,7 @@
     },
     {
       "tag": "release-2026-04-10-151",
-      "title": "Claw Studio release-2026-04-10-151",
+      "title": "Agent Studio release-2026-04-10-151",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes page-owned toast reporter adapters through a dedicated helper, adds direct helper coverage plus contract enforcement for success/error/info reporter binding, and re-baselines the current dirty worktree hotspot at InstanceDetail 1064 / instanceDetailToastSupport 17 while CP07-3 remains open.",
@@ -3880,7 +3880,7 @@
     },
     {
       "tag": "release-2026-04-10-152",
-      "title": "Claw Studio release-2026-04-10-152",
+      "title": "Agent Studio release-2026-04-10-152",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes page-owned console error reporters through a dedicated helper, adds direct helper coverage plus contract enforcement for workbench, agent, files, and memories failure logging, and re-baselines the current dirty worktree hotspot at InstanceDetail 1011 / instanceDetailConsoleErrorSupport 20 while CP07-3 remains open.",
@@ -3891,7 +3891,7 @@
     },
     {
       "tag": "release-2026-04-10-153",
-      "title": "Claw Studio release-2026-04-10-153",
+      "title": "Agent Studio release-2026-04-10-153",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes page-owned provider catalog mutation executors through a dedicated helper, adds direct helper coverage plus contract enforcement for the six instanceService-backed provider executor bindings, and re-baselines the current dirty worktree hotspot at InstanceDetail 1004 / instanceDetailProviderCatalogMutationSupport 41 while CP07-3 remains open.",
@@ -3902,7 +3902,7 @@
     },
     {
       "tag": "release-2026-04-10-154",
-      "title": "Claw Studio release-2026-04-10-154",
+      "title": "Agent Studio release-2026-04-10-154",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes page-owned agent-skill mutation executors through a dedicated helper, adds direct helper coverage plus contract enforcement for the three agentSkillManagementService-backed executor bindings, and re-baselines the current dirty worktree hotspot at InstanceDetail 1006 / instanceDetailAgentSkillMutationSupport 19 while CP07-3 remains open.",
@@ -3913,7 +3913,7 @@
     },
     {
       "tag": "release-2026-04-10-155",
-      "title": "Claw Studio release-2026-04-10-155",
+      "title": "Agent Studio release-2026-04-10-155",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes page-owned OpenClaw agent mutation executors through a dedicated helper, adds direct helper coverage plus contract enforcement for the three instanceService-backed agent executor bindings, and re-baselines the current dirty worktree hotspot at InstanceDetail 1062 / instanceDetailAgentMutationSupport 24 while CP07-3 remains open.",
@@ -3924,7 +3924,7 @@
     },
     {
       "tag": "release-2026-04-10-156",
-      "title": "Claw Studio release-2026-04-10-156",
+      "title": "Agent Studio release-2026-04-10-156",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes page-owned managed-channel mutation executors through a dedicated helper, adds direct helper coverage plus contract enforcement for the two instanceService-backed managed-channel executor bindings, and re-baselines the current dirty worktree hotspot at InstanceDetail 1063 / instanceDetailManagedChannelMutationSupport 22 while CP07-3 remains open.",
@@ -3935,7 +3935,7 @@
     },
     {
       "tag": "release-2026-04-10-157",
-      "title": "Claw Studio release-2026-04-10-157",
+      "title": "Agent Studio release-2026-04-10-157",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes page-owned lifecycle mutation executors through a dedicated helper, adds direct helper coverage plus contract enforcement for the three instanceService-backed lifecycle executor bindings, and re-baselines the current dirty worktree hotspot at InstanceDetail 1065 / instanceDetailLifecycleMutationSupport 22 while CP07-3 remains open.",
@@ -3946,7 +3946,7 @@
     },
     {
       "tag": "release-2026-04-10-158",
-      "title": "Claw Studio release-2026-04-10-158",
+      "title": "Agent Studio release-2026-04-10-158",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes page-owned managed-config mutation executors through a dedicated helper, adds direct helper coverage plus contract enforcement for the six instanceService-backed managed-config executor bindings, and re-baselines the current dirty worktree hotspot at InstanceDetail 1068 / instanceDetailManagedConfigMutationSupport 53 while CP07-3 remains open.",
@@ -3957,7 +3957,7 @@
     },
     {
       "tag": "release-2026-04-10-159",
-      "title": "Claw Studio release-2026-04-10-159",
+      "title": "Agent Studio release-2026-04-10-159",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes page-owned delete handler bindings through a dedicated helper, adds direct helper coverage plus contract enforcement for the page-owned confirm/delete/navigate bindings, and re-baselines the current dirty worktree hotspot at InstanceDetail 1072 / instanceDetailDeleteSupport 23 while CP07-3 remains open.",
@@ -3968,7 +3968,7 @@
     },
     {
       "tag": "release-2026-04-10-160",
-      "title": "Claw Studio release-2026-04-10-160",
+      "title": "Agent Studio release-2026-04-10-160",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that removes the last trivial console-link wrapper by passing openExternalUrl directly into the shared console handler builder, tightens the contract to forbid the redundant arrow adapter, and re-baselines the current dirty worktree hotspot at InstanceDetail 1072 while CP07-3 remains open.",
@@ -3979,7 +3979,7 @@
     },
     {
       "tag": "release-2026-04-10-161",
-      "title": "Claw Studio release-2026-04-10-161",
+      "title": "Agent Studio release-2026-04-10-161",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the remaining provider delete-state setter and clear bindings through a dedicated helper, adds direct helper coverage plus contract enforcement for those bindings, and re-baselines the current dirty worktree hotspot at InstanceDetail 1019 while CP07-3 remains open.",
@@ -3990,7 +3990,7 @@
     },
     {
       "tag": "release-2026-04-10-162",
-      "title": "Claw Studio release-2026-04-10-162",
+      "title": "Agent Studio release-2026-04-10-162",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 instance-detail decomposition iteration that routes the final remaining agent-state cleanup bindings and workbench loader bindings through dedicated helpers, adds direct helper coverage plus contract enforcement for those bindings, and re-baselines the current dirty worktree hotspot at InstanceDetail 1031 while closing CP07-3.",
@@ -4001,7 +4001,7 @@
     },
     {
       "tag": "release-2026-04-10-163",
-      "title": "Claw Studio release-2026-04-10-163",
+      "title": "Agent Studio release-2026-04-10-163",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 07 final closure writeback that freezes the zero-match wrapper scan, records the final review and architecture evidence, marks CP07-4 green, and closes Step 07 at the current repository state.",
@@ -4012,7 +4012,7 @@
     },
     {
       "tag": "release-2026-04-10-164",
-      "title": "Claw Studio release-2026-04-10-164",
+      "title": "Agent Studio release-2026-04-10-164",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 08 ecosystem asset readback iteration that preserves installed skill instance-asset metadata through mySkillService, adds direct helper coverage plus contract enforcement for source/scope/status/compatibility readback, writes the first installed-skill review and architecture evidence, and keeps CP08-3 open while catalog compatibility remains static.",
@@ -4023,7 +4023,7 @@
     },
     {
       "tag": "release-2026-04-10-165",
-      "title": "Claw Studio release-2026-04-10-165",
+      "title": "Agent Studio release-2026-04-10-165",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 08 installed-skill runtime UI iteration that surfaces instance-asset status and compatibility through Market and SkillDetail, adds focused presentation coverage plus localized runtime copy, and keeps pack-level compatibility open until a truthful aggregation source exists.",
@@ -4034,7 +4034,7 @@
     },
     {
       "tag": "release-2026-04-10-166",
-      "title": "Claw Studio release-2026-04-10-166",
+      "title": "Agent Studio release-2026-04-10-166",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 08 closure iteration that preserves installed-skill runtime metadata through the instance workbench, surfaces that truth in Instance Detail, adds focused instance-side presentation coverage plus localized runtime copy, and closes the remaining three-surface installed-skill readback gap.",
@@ -4045,7 +4045,7 @@
     },
     {
       "tag": "release-2026-04-10-167",
-      "title": "Claw Studio release-2026-04-10-167",
+      "title": "Agent Studio release-2026-04-10-167",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 09 Kernel Center observability iteration that forwards local AI proxy route metrics, route tests, message capture state, and observability DB evidence into the support-facing kernel surface with focused settings-side coverage and localized readback.",
@@ -4056,7 +4056,7 @@
     },
     {
       "tag": "release-2026-04-10-168",
-      "title": "Claw Studio release-2026-04-10-168",
+      "title": "Agent Studio release-2026-04-10-168",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 09 ApiSettings runtime-evidence iteration that forwards local AI proxy lifecycle, log path, snapshot path, and observability DB evidence into the Local Proxy Logs workspace with focused settings-side coverage and localized readback while keeping packaged smoke automation explicitly open.",
@@ -4067,7 +4067,7 @@
     },
     {
       "tag": "release-2026-04-10-169",
-      "title": "Claw Studio release-2026-04-10-169",
+      "title": "Agent Studio release-2026-04-10-169",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 09 closure iteration that preserves local AI proxy runtime facts through packaged desktop startup smoke, aggregated release metadata, and OpenClaw upgrade-smoke summaries, then freezes the current heavy-panel bundle and local-proxy latency/route-metric baselines with fresh build and Rust runtime evidence.",
@@ -4078,7 +4078,7 @@
     },
     {
       "tag": "release-2026-04-10-170",
-      "title": "Claw Studio release-2026-04-10-170",
+      "title": "Agent Studio release-2026-04-10-170",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 10 closure iteration that freezes OpenClaw fact-source quality gates, aligns packaged deployment and release-blocking contracts with the real deploy/docker layout, removes the Windows tar dependency from desktop runtime preparation coverage, and closes the remaining desktop startup-evidence host-runtime contract drift.",
@@ -4089,7 +4089,7 @@
     },
     {
       "tag": "release-2026-04-10-171",
-      "title": "Claw Studio release-2026-04-10-171",
+      "title": "Agent Studio release-2026-04-10-171",
       "date": "2026-04-10",
       "status": "pending",
       "summary": "Step 11 packaging and deployment iteration that repairs the real Windows server bundle smoke, emits fresh server and kubernetes release evidence, and records the remaining desktop packaged-launch and linux container host blockers truthfully.",
@@ -4100,7 +4100,7 @@
     },
     {
       "tag": "release-2026-04-12-172",
-      "title": "Claw Studio release-2026-04-12-172",
+      "title": "Agent Studio release-2026-04-12-172",
       "date": "2026-04-12",
       "status": "published",
       "summary": "Published GitHub release that merges all previously unpublished release-note chains, lands the desktop release i18n instance-binding fix, and hardens generated bundle placeholder detection for Tauri resource resolution.",
@@ -4111,7 +4111,7 @@
     },
     {
       "tag": "release-2026-04-12-173",
-      "title": "Claw Studio release-2026-04-12-173",
+      "title": "Agent Studio release-2026-04-12-173",
       "date": "2026-04-12",
       "status": "published",
       "summary": "Published hotfix release that restores packaged desktop documentation intro translations, adds a focused docs locale regression test, and verifies the rebuilt Windows release executable renders localized docs copy without raw keys.",
@@ -4119,7 +4119,7 @@
     },
     {
       "tag": "release-2026-05-05-174",
-      "title": "Claw Studio release-2026-05-05-174",
+      "title": "Agent Studio release-2026-05-05-174",
       "date": "2026-05-05",
       "status": "failed",
       "summary": "Release candidate that carried the post-173 kernel authority, chat workspace, shared SDK Git-source, and Windows packaged-launch smoke hardening, but failed before GitHub publication because private shared SDK GitHub clones were unauthenticated in the release runner.",
@@ -4127,10 +4127,10 @@
     },
     {
       "tag": "release-2026-05-05-175",
-      "title": "Claw Studio release-2026-05-05-175",
+      "title": "Agent Studio release-2026-05-05-175",
       "date": "2026-05-05",
       "status": "failed",
-      "summary": "Release candidate that carried forward release-2026-05-05-174 and fixed private shared SDK GitHub clone authentication, but failed before publication because pnpm-lock.yaml was not synchronized with the @sdkwork/clawstudio-ui qrcode dependency for frozen CI installs.",
+      "summary": "Release candidate that carried forward release-2026-05-05-174 and fixed private shared SDK GitHub clone authentication, but failed before publication because pnpm-lock.yaml was not synchronized with the @sdkwork/agentstudio-pc-ui qrcode dependency for frozen CI installs.",
       "notesFile": "release-2026-05-05-175.md",
       "carryForward": [
         "release-2026-05-05-174"
@@ -4138,7 +4138,7 @@
     },
     {
       "tag": "release-2026-05-05-176",
-      "title": "Claw Studio release-2026-05-05-176",
+      "title": "Agent Studio release-2026-05-05-176",
       "date": "2026-05-05",
       "status": "failed",
       "summary": "Release candidate that carried forward release-2026-05-05-174 and release-2026-05-05-175 and fixed the frozen qrcode lockfile drift, but failed before publication because GitHub Ubuntu runners could not resolve the Windows-only sdkwork-run-node.cmd wrapper from pnpm lifecycle scripts.",
@@ -4150,7 +4150,7 @@
     },
     {
       "tag": "release-2026-05-05-177",
-      "title": "Claw Studio release-2026-05-05-177",
+      "title": "Agent Studio release-2026-05-05-177",
       "date": "2026-05-05",
       "status": "failed",
       "summary": "Release candidate that carried forward release-2026-05-05-174 through release-2026-05-05-176 and added cross-platform workspace command wrappers, but failed before publication because relocated IM SDK release sources could not locate sdkwork-sdk-generator in the clean-room Ubuntu runner.",
@@ -4163,7 +4163,7 @@
     },
     {
       "tag": "release-2026-05-05-178",
-      "title": "Claw Studio release-2026-05-05-178",
+      "title": "Agent Studio release-2026-05-05-178",
       "date": "2026-05-05",
       "status": "failed",
       "summary": "Release candidate that carried forward release-2026-05-05-174 through release-2026-05-05-177 and provided an explicit generator root for clean-room IM/RTC SDK release-source builds, but failed before publication because the pinned IM SDK TypeScript package did not declare compilerOptions.rootDir for TS 6 clean-room single-package builds.",
@@ -4177,7 +4177,7 @@
     },
     {
       "tag": "release-2026-05-05-179",
-      "title": "Claw Studio release-2026-05-05-179",
+      "title": "Agent Studio release-2026-05-05-179",
       "date": "2026-05-05",
       "status": "failed",
       "summary": "Release candidate that carried forward release-2026-05-05-174 through release-2026-05-05-178 and updated the IM SDK GitHub pin to a source-level TS 6 rootDir fix, but failed before publication because Linux clean-room release verification typechecked @sdkwork/local-api-proxy through its adjacent sdkwork-appbase source path without package-local React peer dependency links.",
@@ -4192,7 +4192,7 @@
     },
     {
       "tag": "release-2026-05-05-180",
-      "title": "Claw Studio release-2026-05-05-180",
+      "title": "Agent Studio release-2026-05-05-180",
       "date": "2026-05-05",
       "status": "failed",
       "summary": "Release candidate that carried forward release-2026-05-05-174 through release-2026-05-05-179 and hydrated package-local peer dependency links for clean-room PC React shared SDK source packages, but failed before publication because @sdkwork/core-pc-react still lacked package-local @sdkwork/im-sdk and @sdkwork/rtc-sdk dependency links during Linux clean-room shared SDK package preparation.",
@@ -4208,7 +4208,7 @@
     },
     {
       "tag": "release-2026-05-05-181",
-      "title": "Claw Studio release-2026-05-05-181",
+      "title": "Agent Studio release-2026-05-05-181",
       "date": "2026-05-05",
       "status": "failed",
       "summary": "Release candidate that carried forward release-2026-05-05-174 through release-2026-05-05-180 and hydrated @sdkwork/core-pc-react with its local app/common/IM/RTC SDK dependency links, but failed before publication because Linux release verification resolved React peers for @sdkwork/local-api-proxy without package-local @types/react declarations in that adjacent source checkout.",
@@ -4225,7 +4225,7 @@
     },
     {
       "tag": "release-2026-05-05-182",
-      "title": "Claw Studio release-2026-05-05-182",
+      "title": "Agent Studio release-2026-05-05-182",
       "date": "2026-05-05",
       "status": "failed",
       "summary": "Release candidate that carried forward release-2026-05-05-174 through release-2026-05-05-181 and hydrated React peer declaration packages for adjacent external shared SDK source checkouts, but failed before publication because Linux release verification simulated a Windows rustup PATH with a POSIX temp USERPROFILE that was normalized through path.win32.",
@@ -4243,7 +4243,7 @@
     },
     {
       "tag": "release-2026-05-05-183",
-      "title": "Claw Studio release-2026-05-05-183",
+      "title": "Agent Studio release-2026-05-05-183",
       "date": "2026-05-05",
       "status": "failed",
       "summary": "Release candidate that carried forward release-2026-05-05-174 through release-2026-05-05-182 and preserved POSIX-style rustup fixture paths for Linux-hosted Windows PATH simulation, but failed before publication because desktop release runner contract tests expected a GitHub-hosted Ubuntu Node installation to include an adjacent pnpm.cjs path.",
@@ -4262,7 +4262,7 @@
     },
     {
       "tag": "release-2026-05-05-184",
-      "title": "Claw Studio release-2026-05-05-184",
+      "title": "Agent Studio release-2026-05-05-184",
       "date": "2026-05-05",
       "status": "pending",
       "summary": "Release candidate that carries forward release-2026-05-05-174 through release-2026-05-05-183, preserves local relative SDK development dependencies, keeps release dependencies pinned to GitHub refs, authenticates private shared SDK GitHub clones without leaking token headers, pins Rust release builds to the locally verified 1.90.0 toolchain, exposes cross-platform sdkwork-run-node/sdkwork-run-pnpm wrappers, provides an explicit generator root for clean-room IM/RTC SDK release-source builds, updates the IM SDK GitHub pin to a source-level TS 6 rootDir fix, hydrates package-local peer dependency links and React peer declarations for clean-room PC React shared SDK source packages, hydrates @sdkwork/core-pc-react with its local app/common/IM/RTC SDK dependency links, preserves POSIX-style rustup fixture paths when Linux release verification simulates Windows PATH fallback behavior, and makes desktop release runner contract tests independent of the host Node/pnpm installation layout.",

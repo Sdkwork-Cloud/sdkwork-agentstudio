@@ -27,7 +27,7 @@ function stringSha256(value) {
   return createHash('sha256').update(value).digest('hex');
 }
 
-function writeReleaseNotesFixture(releaseAssetsDir, content = '# Claw Studio Release\n\nRelease notes.\n') {
+function writeReleaseNotesFixture(releaseAssetsDir, content = '# Agent Studio Release\n\nRelease notes.\n') {
   writeFileSync(path.join(releaseAssetsDir, 'release-notes.md'), content, 'utf8');
 }
 
@@ -62,7 +62,7 @@ function buildInstallerContract(platform) {
       installMode: 'first-launch-archive-extract',
       bundledResourceRoot: 'resources/openclaw/',
       runtimeArchive: 'resources/openclaw/runtime.zip',
-      sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json',
+      sourceConfigPath: 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.windows.conf.json',
       requiredExternalRuntimes: ['nodejs'],
     };
   }
@@ -127,9 +127,9 @@ function buildDesktopStartupSmokeReport({
   localAiProxyRuntime = {
     lifecycle: 'running',
     messageCaptureEnabled: true,
-    observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-    snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
-    logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+    observabilityDbPath: 'C:/Users/test/AppData/Roaming/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+    snapshotPath: 'C:/Users/test/AppData/Roaming/Agent Studio/state/local-ai-proxy.snapshot.json',
+    logPath: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/local-ai-proxy.log',
   },
   checks = [
     {
@@ -214,9 +214,9 @@ function writePassingDesktopStartupSmokeFixture({
       localAiProxy: {
         lifecycle: 'running',
         messageCaptureEnabled: true,
-        observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-        snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
-        logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+        observabilityDbPath: 'C:/Users/test/AppData/Roaming/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+        snapshotPath: 'C:/Users/test/AppData/Roaming/Agent Studio/state/local-ai-proxy.snapshot.json',
+        logPath: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/local-ai-proxy.log',
       },
       readinessEvidence: {
         ready: true,
@@ -244,9 +244,9 @@ function buildServerSmokeReport({
   arch = 'x64',
   target = 'x86_64-unknown-linux-gnu',
   artifactRelativePaths = [
-    'server/linux/x64/claw-studio-server-release-2026-04-03-08-linux-x64.tar.gz',
+    'server/linux/x64/agent-studio-server-release-2026-04-03-08-linux-x64.tar.gz',
   ],
-  launcherRelativePath = platform === 'windows' ? 'bin/clawstudio-server.exe' : 'bin/clawstudio-server',
+  launcherRelativePath = platform === 'windows' ? 'bin/agentstudio-server.exe' : 'bin/agentstudio-server',
 } = {}) {
   return {
     family: 'server',
@@ -283,7 +283,7 @@ function buildServerSmokeReport({
 function buildWebSmokeReport({
   manifestPath,
   artifactRelativePaths = [
-    'claw-studio-web-assets-release-2026-04-11-04.tar.gz',
+    'agent-studio-web-assets-release-2026-04-11-04.tar.gz',
   ],
   checks = [
     {
@@ -359,7 +359,7 @@ function buildContainerDeploymentChecks() {
     {
       id: 'persistent-storage',
       status: 'passed',
-      detail: 'packaged docker compose persists /var/lib/clawstudio-server',
+      detail: 'packaged docker compose persists /var/lib/agentstudio-server',
     },
     {
       id: 'docker-compose-up',
@@ -424,7 +424,7 @@ function buildKubernetesDeploymentChecks() {
     {
       id: 'persistent-storage',
       status: 'passed',
-      detail: 'rendered manifests mount /var/lib/clawstudio-server through a PersistentVolumeClaim',
+      detail: 'rendered manifests mount /var/lib/agentstudio-server through a PersistentVolumeClaim',
     },
   ];
 }
@@ -508,14 +508,14 @@ test('release asset finalizer writes a global checksum manifest and release mani
     mkdirSync(webDir, { recursive: true });
 
     const windowsAssetPath = path.join(windowsDir, 'Claw.Studio_0.1.0_x64-setup.exe');
-    const webAssetPath = path.join(webDir, 'claw-studio-web-assets-release-2026-03-31-03.tar.gz');
+    const webAssetPath = path.join(webDir, 'agent-studio-web-assets-release-2026-03-31-03.tar.gz');
     const staleLegacyWindowsAssetPath = path.join(
       legacyWindowsDir,
       'Claw.Studio_0.1.0_x64-setup.exe',
     );
     const staleTopLevelWebAssetPath = path.join(
       releaseAssetsDir,
-      'claw-studio-web-assets-release-2026-03-20-legacy.tar.gz',
+      'agent-studio-web-assets-release-2026-03-20-legacy.tar.gz',
     );
     const staleArm64WindowsAssetPath = path.join(
       staleArm64WindowsDir,
@@ -531,7 +531,7 @@ test('release asset finalizer writes a global checksum manifest and release mani
     );
     writeFileSync(
       `${webAssetPath}.sha256.txt`,
-      `${stringSha256('web-assets')}  claw-studio-web-assets-release-2026-03-31-03.tar.gz\n`,
+      `${stringSha256('web-assets')}  agent-studio-web-assets-release-2026-03-31-03.tar.gz\n`,
       'utf8',
     );
     writeFileSync(staleLegacyWindowsAssetPath, 'stale-desktop-installer', 'utf8');
@@ -540,7 +540,7 @@ test('release asset finalizer writes a global checksum manifest and release mani
     writeFileSync(
       path.join(windowsDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-03-31-03',
         packageProfileId: 'openclaw-only',
         includedKernelIds: ['openclaw'],
@@ -577,12 +577,12 @@ test('release asset finalizer writes a global checksum manifest and release mani
     writeFileSync(
       path.join(webDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-03-31-03',
         artifacts: [
           {
-            name: 'claw-studio-web-assets-release-2026-03-31-03.tar.gz',
-            relativePath: 'web/claw-studio-web-assets-release-2026-03-31-03.tar.gz',
+            name: 'agent-studio-web-assets-release-2026-03-31-03.tar.gz',
+            relativePath: 'web/agent-studio-web-assets-release-2026-03-31-03.tar.gz',
             platform: 'web',
             arch: 'any',
             kind: 'archive',
@@ -596,7 +596,7 @@ test('release asset finalizer writes a global checksum manifest and release mani
     writeFileSync(
       path.join(staleArm64WindowsDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         platform: 'windows',
         arch: 'arm64',
         artifacts: [
@@ -660,16 +660,16 @@ test('release asset finalizer writes a global checksum manifest and release mani
       `${JSON.stringify(buildWebSmokeReport({
         manifestPath: path.join(webDir, 'release-asset-manifest.json'),
         artifactRelativePaths: [
-          'web/claw-studio-web-assets-release-2026-03-31-03.tar.gz',
+          'web/agent-studio-web-assets-release-2026-03-31-03.tar.gz',
         ],
       }), null, 2)}\n`,
       'utf8',
     );
 
     finalizer.finalizeReleaseAssets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-2026-03-31-03',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       releaseAssetsDir,
       allowPartialRelease: true,
     });
@@ -688,9 +688,9 @@ test('release asset finalizer writes a global checksum manifest and release mani
     const checksums = readFileSync(checksumPath, 'utf8');
     const manifestChecksum = readFileSync(manifestChecksumPath, 'utf8');
 
-    assert.equal(manifest.profileId, 'claw-studio');
+    assert.equal(manifest.profileId, 'agent-studio');
     assert.equal(manifest.releaseTag, 'release-2026-03-31-03');
-    assert.equal(manifest.repository, 'Sdkwork-Cloud/claw-studio');
+    assert.equal(manifest.repository, 'Sdkwork-Cloud/agent-studio');
     assert.equal(manifest.attestationEvidenceFileName, 'release-attestations.json');
     assert.equal(manifest.attestationPredicateType, 'https://slsa.dev/provenance/v1');
     assert.deepEqual(manifest.releaseMetadata, [
@@ -716,7 +716,7 @@ test('release asset finalizer writes a global checksum manifest and release mani
     );
     assert.doesNotMatch(
       checksums,
-      /claw-studio-web-assets-release-2026-03-20-legacy\.tar\.gz/,
+      /agent-studio-web-assets-release-2026-03-20-legacy\.tar\.gz/,
     );
     assert.doesNotMatch(
       checksums,
@@ -739,7 +739,7 @@ test('release asset finalizer writes a global checksum manifest and release mani
           kind: 'installer',
         },
         {
-          relativePath: 'web/claw-studio-web-assets-release-2026-03-31-03.tar.gz',
+          relativePath: 'web/agent-studio-web-assets-release-2026-03-31-03.tar.gz',
           family: 'web',
           platform: 'web',
           arch: 'any',
@@ -751,7 +751,7 @@ test('release asset finalizer writes a global checksum manifest and release mani
       (artifact) => artifact.relativePath === 'desktop/windows/x64/Claw.Studio_0.1.0_x64-setup.exe',
     );
     const webArtifact = manifest.artifacts.find(
-      (artifact) => artifact.relativePath === 'web/claw-studio-web-assets-release-2026-03-31-03.tar.gz',
+      (artifact) => artifact.relativePath === 'web/agent-studio-web-assets-release-2026-03-31-03.tar.gz',
     );
 
     assert.deepEqual(
@@ -835,7 +835,7 @@ test('release asset finalizer writes a global checksum manifest and release mani
         smokeKind: 'web-archive-content',
         status: 'passed',
         artifactRelativePaths: [
-          'web/claw-studio-web-assets-release-2026-03-31-03.tar.gz',
+          'web/agent-studio-web-assets-release-2026-03-31-03.tar.gz',
         ],
         checks: buildWebSmokeReport({
           manifestPath: path.join(webDir, 'release-asset-manifest.json'),
@@ -846,7 +846,7 @@ test('release asset finalizer writes a global checksum manifest and release mani
     assert.equal('packageProfileId' in webArtifact, false);
     assert.equal('desktopInstallerSmoke' in webArtifact, false);
     assert.match(checksums, /desktop\/windows\/x64\/Claw\.Studio_0\.1\.0_x64-setup\.exe/);
-    assert.match(checksums, /web\/claw-studio-web-assets-release-2026-03-31-03\.tar\.gz/);
+    assert.match(checksums, /web\/agent-studio-web-assets-release-2026-03-31-03\.tar\.gz/);
     assert.match(checksums, /^[a-f0-9]{64}  release-notes\.md$/m);
     assert.equal(existsSync(`${windowsAssetPath}.sha256.txt`), false);
     assert.equal(existsSync(`${webAssetPath}.sha256.txt`), false);
@@ -874,8 +874,8 @@ test('release asset finalizer accepts hermes-only desktop artifacts without Open
     writeFileSync(
       path.join(windowsDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
-        productName: 'Claw Studio',
+        profileId: 'agent-studio',
+        productName: 'Agent Studio',
         releaseTag: 'release-2026-04-08-01',
         packageProfileId: 'hermes-only',
         includedKernelIds: ['hermes'],
@@ -943,9 +943,9 @@ test('release asset finalizer accepts hermes-only desktop artifacts without Open
     writeReleaseNotesFixture(releaseAssetsDir);
 
     finalizer.finalizeReleaseAssets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-2026-04-08-01',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       releaseAssetsDir,
       allowPartialRelease: true,
     });
@@ -1027,8 +1027,8 @@ test('release asset finalizer rejects hermes-only desktop artifacts when Hermes 
     writeFileSync(
       path.join(windowsDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
-        productName: 'Claw Studio',
+        profileId: 'agent-studio',
+        productName: 'Agent Studio',
         releaseTag: 'release-2026-04-08-01',
         packageProfileId: 'hermes-only',
         includedKernelIds: ['hermes'],
@@ -1091,9 +1091,9 @@ test('release asset finalizer rejects hermes-only desktop artifacts when Hermes 
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-08-01',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Hermes Agent external-runtime readiness/i,
@@ -1110,7 +1110,7 @@ test('release asset finalizer requires rendered release notes before writing fin
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-finalize-notes-required-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const webDir = path.join(releaseAssetsDir, 'web');
-  const webArchiveRelativePath = 'web/claw-studio-web-assets-release-2026-04-12-02.tar.gz';
+  const webArchiveRelativePath = 'web/agent-studio-web-assets-release-2026-04-12-02.tar.gz';
   const manifestPath = path.join(webDir, 'release-asset-manifest.json');
 
   try {
@@ -1119,7 +1119,7 @@ test('release asset finalizer requires rendered release notes before writing fin
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-12-02',
         platform: 'web',
         arch: 'any',
@@ -1149,9 +1149,9 @@ test('release asset finalizer requires rendered release notes before writing fin
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-12-02',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
         allowPartialRelease: true,
       }),
@@ -1180,7 +1180,7 @@ test('release asset finalizer rejects desktop release assets when installer smok
     writeFileSync(
       path.join(windowsDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-02',
         platform: 'windows',
         arch: 'x64',
@@ -1204,9 +1204,9 @@ test('release asset finalizer rejects desktop release assets when installer smok
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-02',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Missing desktop installer smoke report/,
@@ -1230,9 +1230,9 @@ test('release asset finalizer rejects desktop release assets when installer smok
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-02',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Desktop installer smoke report does not match the current installable artifact set/,
@@ -1260,7 +1260,7 @@ test('release asset finalizer rejects desktop release assets when startup smoke 
     writeFileSync(
       path.join(windowsDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-07',
         platform: 'windows',
         arch: 'x64',
@@ -1322,9 +1322,9 @@ test('release asset finalizer rejects desktop release assets when startup smoke 
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-07',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Missing desktop startup smoke report/,
@@ -1350,9 +1350,9 @@ test('release asset finalizer rejects desktop release assets when startup smoke 
         localAiProxy: {
           lifecycle: 'running',
           messageCaptureEnabled: true,
-          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-          snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
-          logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+          snapshotPath: 'C:/Users/test/AppData/Roaming/Agent Studio/state/local-ai-proxy.snapshot.json',
+          logPath: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/local-ai-proxy.log',
         },
         readinessEvidence: {
           ready: true,
@@ -1398,9 +1398,9 @@ test('release asset finalizer rejects desktop release assets when startup smoke 
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-07',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /local-ai-proxy-runtime/i,
@@ -1432,7 +1432,7 @@ test('release asset finalizer lifts desktop startup smoke metadata onto desktop 
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-08',
         platform: 'windows',
         arch: 'x64',
@@ -1508,9 +1508,9 @@ test('release asset finalizer lifts desktop startup smoke metadata onto desktop 
         localAiProxy: {
           lifecycle: 'running',
           messageCaptureEnabled: true,
-          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-          snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
-          logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+          snapshotPath: 'C:/Users/test/AppData/Roaming/Agent Studio/state/local-ai-proxy.snapshot.json',
+          logPath: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/local-ai-proxy.log',
         },
         readinessEvidence: {
           ready: true,
@@ -1529,9 +1529,9 @@ test('release asset finalizer lifts desktop startup smoke metadata onto desktop 
     writeReleaseNotesFixture(releaseAssetsDir);
 
     finalizer.finalizeReleaseAssets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-2026-04-06-08',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       releaseAssetsDir,
       allowPartialRelease: true,
     });
@@ -1570,9 +1570,9 @@ test('release asset finalizer lifts desktop startup smoke metadata onto desktop 
         localAiProxyRuntime: {
           lifecycle: 'running',
           messageCaptureEnabled: true,
-          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-          snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
-          logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+          snapshotPath: 'C:/Users/test/AppData/Roaming/Agent Studio/state/local-ai-proxy.snapshot.json',
+          logPath: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/local-ai-proxy.log',
         },
         artifactRelativePaths: [artifactRelativePath],
         checks: [
@@ -1637,7 +1637,7 @@ test('release asset finalizer rejects desktop startup smoke reports that referen
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-09',
         platform: 'windows',
         arch: 'x64',
@@ -1713,9 +1713,9 @@ test('release asset finalizer rejects desktop startup smoke reports that referen
         localAiProxy: {
           lifecycle: 'running',
           messageCaptureEnabled: true,
-          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-          snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
-          logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+          snapshotPath: 'C:/Users/test/AppData/Roaming/Agent Studio/state/local-ai-proxy.snapshot.json',
+          logPath: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/local-ai-proxy.log',
         },
         readinessEvidence: {
           ready: true,
@@ -1736,9 +1736,9 @@ test('release asset finalizer rejects desktop startup smoke reports that referen
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-09',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
         allowPartialRelease: true,
       }),
@@ -1771,7 +1771,7 @@ test('release asset finalizer rejects desktop startup smoke metadata when packag
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-08',
         platform: 'windows',
         arch: 'x64',
@@ -1847,9 +1847,9 @@ test('release asset finalizer rejects desktop startup smoke metadata when packag
         localAiProxy: {
           lifecycle: 'running',
           messageCaptureEnabled: true,
-          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-          snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
-          logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+          snapshotPath: 'C:/Users/test/AppData/Roaming/Agent Studio/state/local-ai-proxy.snapshot.json',
+          logPath: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/local-ai-proxy.log',
         },
         readinessEvidence: {
           ready: true,
@@ -1871,9 +1871,9 @@ test('release asset finalizer rejects desktop startup smoke metadata when packag
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-08',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /package profile|included kernels|default enabled kernels/i,
@@ -1902,7 +1902,7 @@ test('release asset finalizer rejects desktop manifests whose OpenClaw installer
     writeFileSync(
       path.join(windowsDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-03',
         platform: 'windows',
         arch: 'x64',
@@ -1938,9 +1938,9 @@ test('release asset finalizer rejects desktop manifests whose OpenClaw installer
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-03',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /OpenClaw installer contract/i,
@@ -1949,7 +1949,7 @@ test('release asset finalizer rejects desktop manifests whose OpenClaw installer
     writeFileSync(
       path.join(windowsDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-03',
         platform: 'windows',
         arch: 'x64',
@@ -1976,9 +1976,9 @@ test('release asset finalizer rejects desktop manifests whose OpenClaw installer
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-03',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /OpenClaw installer contract/i,
@@ -2006,7 +2006,7 @@ test('release asset finalizer rejects desktop smoke reports that are missing ins
     writeFileSync(
       path.join(windowsDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-04',
         platform: 'windows',
         arch: 'x64',
@@ -2056,9 +2056,9 @@ test('release asset finalizer rejects desktop smoke reports that are missing ins
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-04',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /install-ready|installReadyLayout/i,
@@ -2104,9 +2104,9 @@ test('release asset finalizer rejects desktop smoke reports that are missing ins
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-04',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /install-ready|installReadyLayout/i,
@@ -2134,7 +2134,7 @@ test('release asset finalizer rejects desktop smoke reports whose install-ready 
     writeFileSync(
       path.join(windowsDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-05',
         platform: 'windows',
         arch: 'x64',
@@ -2195,9 +2195,9 @@ test('release asset finalizer rejects desktop smoke reports whose install-ready 
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-05-05',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /install-ready|installReadyLayout|archive-extract-ready/i,
@@ -2223,26 +2223,26 @@ test('release asset finalizer infers multi-family metadata when fallback assets 
     mkdirSync(kubernetesDir, { recursive: true });
 
     writeFileSync(
-      path.join(serverDir, 'claw-studio-server-release-2026-04-03-05-linux-x64.tar.gz'),
+      path.join(serverDir, 'agent-studio-server-release-2026-04-03-05-linux-x64.tar.gz'),
       'server-asset',
       'utf8',
     );
     writeFileSync(
-      path.join(containerDir, 'claw-studio-container-bundle-release-2026-04-03-05-linux-arm64-cpu.tar.gz'),
+      path.join(containerDir, 'agent-studio-container-bundle-release-2026-04-03-05-linux-arm64-cpu.tar.gz'),
       'container-asset',
       'utf8',
     );
     writeFileSync(
-      path.join(kubernetesDir, 'claw-studio-kubernetes-bundle-release-2026-04-03-05-linux-x64-nvidia-cuda.tar.gz'),
+      path.join(kubernetesDir, 'agent-studio-kubernetes-bundle-release-2026-04-03-05-linux-x64-nvidia-cuda.tar.gz'),
       'kubernetes-asset',
       'utf8',
     );
     writeReleaseNotesFixture(releaseAssetsDir);
 
     finalizer.finalizeReleaseAssets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-2026-04-03-05',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       releaseAssetsDir,
       allowPartialRelease: true,
     });
@@ -2262,7 +2262,7 @@ test('release asset finalizer infers multi-family metadata when fallback assets 
       })),
       [
         {
-          relativePath: 'container/linux/arm64/cpu/claw-studio-container-bundle-release-2026-04-03-05-linux-arm64-cpu.tar.gz',
+          relativePath: 'container/linux/arm64/cpu/agent-studio-container-bundle-release-2026-04-03-05-linux-arm64-cpu.tar.gz',
           family: 'container',
           platform: 'linux',
           arch: 'arm64',
@@ -2270,7 +2270,7 @@ test('release asset finalizer infers multi-family metadata when fallback assets 
           kind: 'archive',
         },
         {
-          relativePath: 'kubernetes/linux/x64/nvidia-cuda/claw-studio-kubernetes-bundle-release-2026-04-03-05-linux-x64-nvidia-cuda.tar.gz',
+          relativePath: 'kubernetes/linux/x64/nvidia-cuda/agent-studio-kubernetes-bundle-release-2026-04-03-05-linux-x64-nvidia-cuda.tar.gz',
           family: 'kubernetes',
           platform: 'linux',
           arch: 'x64',
@@ -2278,7 +2278,7 @@ test('release asset finalizer infers multi-family metadata when fallback assets 
           kind: 'archive',
         },
         {
-          relativePath: 'server/linux/x64/claw-studio-server-release-2026-04-03-05-linux-x64.tar.gz',
+          relativePath: 'server/linux/x64/agent-studio-server-release-2026-04-03-05-linux-x64.tar.gz',
           family: 'server',
           platform: 'linux',
           arch: 'x64',
@@ -2299,7 +2299,7 @@ test('release asset finalizer lifts server bundle smoke metadata onto server art
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-finalize-server-smoke-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const serverDir = path.join(releaseAssetsDir, 'server', 'linux', 'x64');
-  const serverArchiveRelativePath = 'server/linux/x64/claw-studio-server-release-2026-04-03-08-linux-x64.tar.gz';
+  const serverArchiveRelativePath = 'server/linux/x64/agent-studio-server-release-2026-04-03-08-linux-x64.tar.gz';
   const manifestPath = path.join(serverDir, 'release-asset-manifest.json');
 
   try {
@@ -2312,13 +2312,13 @@ test('release asset finalizer lifts server bundle smoke metadata onto server art
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-03-08',
         platform: 'linux',
         arch: 'x64',
         artifacts: [
           {
-            name: 'claw-studio-server-release-2026-04-03-08-linux-x64.tar.gz',
+            name: 'agent-studio-server-release-2026-04-03-08-linux-x64.tar.gz',
             relativePath: serverArchiveRelativePath,
             family: 'server',
             platform: 'linux',
@@ -2339,9 +2339,9 @@ test('release asset finalizer lifts server bundle smoke metadata onto server art
     writeReleaseNotesFixture(releaseAssetsDir);
 
     finalizer.finalizeReleaseAssets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-2026-04-03-08',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       releaseAssetsDir,
       allowPartialRelease: true,
     });
@@ -2366,10 +2366,10 @@ test('release asset finalizer lifts server bundle smoke metadata onto server art
         target: 'x86_64-unknown-linux-gnu',
         smokeKind: 'bundle-runtime',
         status: 'passed',
-        launcherRelativePath: 'bin/clawstudio-server',
+        launcherRelativePath: 'bin/agentstudio-server',
         runtimeBaseUrl: 'http://127.0.0.1:19797',
         artifactRelativePaths: [
-          'server/linux/x64/claw-studio-server-release-2026-04-03-08-linux-x64.tar.gz',
+          'server/linux/x64/agent-studio-server-release-2026-04-03-08-linux-x64.tar.gz',
         ],
         checks: [
           {
@@ -2402,7 +2402,7 @@ test('release asset finalizer rejects incomplete release coverage unless partial
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-finalize-incomplete-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const webDir = path.join(releaseAssetsDir, 'web');
-  const webArchiveRelativePath = 'claw-studio-web-assets-release-2026-04-11-06.tar.gz';
+  const webArchiveRelativePath = 'agent-studio-web-assets-release-2026-04-11-06.tar.gz';
   const manifestPath = path.join(webDir, 'release-asset-manifest.json');
 
   try {
@@ -2415,7 +2415,7 @@ test('release asset finalizer rejects incomplete release coverage unless partial
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-11-06',
         platform: 'web',
         arch: 'any',
@@ -2445,9 +2445,9 @@ test('release asset finalizer rejects incomplete release coverage unless partial
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-11-06',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Incomplete release asset coverage.*desktop\/windows\/x64/s,
@@ -2455,9 +2455,9 @@ test('release asset finalizer rejects incomplete release coverage unless partial
     writeReleaseNotesFixture(releaseAssetsDir);
 
     finalizer.finalizeReleaseAssets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-2026-04-11-06',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       releaseAssetsDir,
       allowPartialRelease: true,
     });
@@ -2487,7 +2487,7 @@ test('release asset finalizer removes stale finalized manifests when strict cove
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-finalize-stale-final-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const webDir = path.join(releaseAssetsDir, 'web');
-  const webArchiveRelativePath = 'claw-studio-web-assets-release-2026-04-11-07.tar.gz';
+  const webArchiveRelativePath = 'agent-studio-web-assets-release-2026-04-11-07.tar.gz';
   const manifestPath = path.join(webDir, 'release-asset-manifest.json');
   const staleReleaseManifestPath = path.join(releaseAssetsDir, 'release-manifest.json');
   const staleReleaseManifestChecksumPath = path.join(releaseAssetsDir, 'release-manifest.json.sha256.txt');
@@ -2504,7 +2504,7 @@ test('release asset finalizer removes stale finalized manifests when strict cove
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-11-07',
         platform: 'web',
         arch: 'any',
@@ -2534,7 +2534,7 @@ test('release asset finalizer removes stale finalized manifests when strict cove
     writeFileSync(
       staleReleaseManifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-previous',
         releaseCoverage: {
           status: 'complete',
@@ -2561,9 +2561,9 @@ test('release asset finalizer removes stale finalized manifests when strict cove
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-11-07',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Incomplete release asset coverage.*desktop\/windows\/x64/s,
@@ -2585,7 +2585,7 @@ test('release asset finalizer lifts web archive smoke metadata onto web artifact
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-finalize-web-smoke-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const webDir = path.join(releaseAssetsDir, 'web');
-  const webArchiveRelativePath = 'claw-studio-web-assets-release-2026-04-11-04.tar.gz';
+  const webArchiveRelativePath = 'agent-studio-web-assets-release-2026-04-11-04.tar.gz';
   const manifestPath = path.join(webDir, 'release-asset-manifest.json');
 
   try {
@@ -2598,7 +2598,7 @@ test('release asset finalizer lifts web archive smoke metadata onto web artifact
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-11-04',
         platform: 'web',
         arch: 'any',
@@ -2625,9 +2625,9 @@ test('release asset finalizer lifts web archive smoke metadata onto web artifact
     writeReleaseNotesFixture(releaseAssetsDir);
 
     finalizer.finalizeReleaseAssets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-2026-04-11-04',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       releaseAssetsDir,
       allowPartialRelease: true,
     });
@@ -2668,7 +2668,7 @@ test('release asset finalizer rejects web artifacts when archive smoke evidence 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-finalize-web-smoke-missing-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const webDir = path.join(releaseAssetsDir, 'web');
-  const webArchiveRelativePath = 'claw-studio-web-assets-release-2026-04-11-05.tar.gz';
+  const webArchiveRelativePath = 'agent-studio-web-assets-release-2026-04-11-05.tar.gz';
   const manifestPath = path.join(webDir, 'release-asset-manifest.json');
 
   try {
@@ -2681,7 +2681,7 @@ test('release asset finalizer rejects web artifacts when archive smoke evidence 
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-11-05',
         platform: 'web',
         arch: 'any',
@@ -2703,9 +2703,9 @@ test('release asset finalizer rejects web artifacts when archive smoke evidence 
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-11-05',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Missing web archive smoke report/,
@@ -2715,16 +2715,16 @@ test('release asset finalizer rejects web artifacts when archive smoke evidence 
       path.join(webDir, 'release-smoke-report.json'),
       `${JSON.stringify(buildWebSmokeReport({
         manifestPath,
-        artifactRelativePaths: ['claw-studio-web-assets-another.tar.gz'],
+        artifactRelativePaths: ['agent-studio-web-assets-another.tar.gz'],
       }), null, 2)}\n`,
       'utf8',
     );
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-11-05',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Web archive smoke report does not match the current artifact set/,
@@ -2744,9 +2744,9 @@ test('release asset finalizer rejects web artifacts when archive smoke evidence 
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-11-05',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Web archive smoke report is missing a passing public-doc-boundary check/,
@@ -2763,7 +2763,7 @@ test('release asset finalizer rejects server artifacts when bundle smoke evidenc
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-finalize-server-smoke-missing-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const serverDir = path.join(releaseAssetsDir, 'server', 'linux', 'x64');
-  const serverArchiveRelativePath = 'server/linux/x64/claw-studio-server-release-2026-04-03-09-linux-x64.tar.gz';
+  const serverArchiveRelativePath = 'server/linux/x64/agent-studio-server-release-2026-04-03-09-linux-x64.tar.gz';
   const manifestPath = path.join(serverDir, 'release-asset-manifest.json');
 
   try {
@@ -2776,13 +2776,13 @@ test('release asset finalizer rejects server artifacts when bundle smoke evidenc
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-03-09',
         platform: 'linux',
         arch: 'x64',
         artifacts: [
           {
-            name: 'claw-studio-server-release-2026-04-03-09-linux-x64.tar.gz',
+            name: 'agent-studio-server-release-2026-04-03-09-linux-x64.tar.gz',
             relativePath: serverArchiveRelativePath,
             family: 'server',
             platform: 'linux',
@@ -2798,9 +2798,9 @@ test('release asset finalizer rejects server artifacts when bundle smoke evidenc
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-03-09',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Missing server bundle smoke report/,
@@ -2817,9 +2817,9 @@ test('release asset finalizer rejects server artifacts when bundle smoke evidenc
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-03-09',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Server bundle smoke report does not match the current artifact set/,
@@ -2836,7 +2836,7 @@ test('release asset finalizer rejects server smoke reports with unsafe launcher 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-finalize-server-launcher-path-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const serverDir = path.join(releaseAssetsDir, 'server', 'linux', 'x64');
-  const serverArchiveRelativePath = 'server/linux/x64/claw-studio-server-release-2026-04-13-01-linux-x64.tar.gz';
+  const serverArchiveRelativePath = 'server/linux/x64/agent-studio-server-release-2026-04-13-01-linux-x64.tar.gz';
   const manifestPath = path.join(serverDir, 'release-asset-manifest.json');
 
   try {
@@ -2849,7 +2849,7 @@ test('release asset finalizer rejects server smoke reports with unsafe launcher 
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-13-01',
         platform: 'linux',
         arch: 'x64',
@@ -2873,16 +2873,16 @@ test('release asset finalizer rejects server smoke reports with unsafe launcher 
       `${JSON.stringify(buildServerSmokeReport({
         manifestPath,
         artifactRelativePaths: [serverArchiveRelativePath],
-        launcherRelativePath: '../bin/clawstudio-server',
+        launcherRelativePath: '../bin/agentstudio-server',
       }), null, 2)}\n`,
       'utf8',
     );
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-13-01',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
         allowPartialRelease: true,
       }),
@@ -2901,8 +2901,8 @@ test('release asset finalizer lifts deployment smoke metadata onto container and
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const containerDir = path.join(releaseAssetsDir, 'container', 'linux', 'x64', 'cpu');
   const kubernetesDir = path.join(releaseAssetsDir, 'kubernetes', 'linux', 'x64', 'cpu');
-  const containerArchiveRelativePath = 'container/linux/x64/cpu/claw-studio-container-bundle-release-2026-04-06-05-linux-x64-cpu.tar.gz';
-  const kubernetesArchiveRelativePath = 'kubernetes/linux/x64/cpu/claw-studio-kubernetes-bundle-release-2026-04-06-05-linux-x64-cpu.tar.gz';
+  const containerArchiveRelativePath = 'container/linux/x64/cpu/agent-studio-container-bundle-release-2026-04-06-05-linux-x64-cpu.tar.gz';
+  const kubernetesArchiveRelativePath = 'kubernetes/linux/x64/cpu/agent-studio-kubernetes-bundle-release-2026-04-06-05-linux-x64-cpu.tar.gz';
   const containerManifestPath = path.join(containerDir, 'release-asset-manifest.json');
   const kubernetesManifestPath = path.join(kubernetesDir, 'release-asset-manifest.json');
 
@@ -2914,7 +2914,7 @@ test('release asset finalizer lifts deployment smoke metadata onto container and
     writeFileSync(
       containerManifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-05',
         platform: 'linux',
         arch: 'x64',
@@ -2937,7 +2937,7 @@ test('release asset finalizer lifts deployment smoke metadata onto container and
     writeFileSync(
       kubernetesManifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-05',
         platform: 'linux',
         arch: 'x64',
@@ -2978,9 +2978,9 @@ test('release asset finalizer lifts deployment smoke metadata onto container and
     writeReleaseNotesFixture(releaseAssetsDir);
 
     finalizer.finalizeReleaseAssets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-2026-04-06-05',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       releaseAssetsDir,
       allowPartialRelease: true,
     });
@@ -3030,7 +3030,7 @@ test('release asset finalizer lifts deployment smoke metadata onto container and
           {
             id: 'persistent-storage',
             status: 'passed',
-            detail: 'packaged docker compose persists /var/lib/clawstudio-server',
+            detail: 'packaged docker compose persists /var/lib/agentstudio-server',
           },
           {
             id: 'docker-compose-up',
@@ -3109,7 +3109,7 @@ test('release asset finalizer lifts deployment smoke metadata onto container and
           {
             id: 'persistent-storage',
             status: 'passed',
-            detail: 'rendered manifests mount /var/lib/clawstudio-server through a PersistentVolumeClaim',
+            detail: 'rendered manifests mount /var/lib/agentstudio-server through a PersistentVolumeClaim',
           },
         ],
       },
@@ -3127,8 +3127,8 @@ test('release asset finalizer accepts structured skipped deployment smoke eviden
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const containerDir = path.join(releaseAssetsDir, 'container', 'linux', 'x64', 'cpu');
   const kubernetesDir = path.join(releaseAssetsDir, 'kubernetes', 'linux', 'x64', 'cpu');
-  const containerArchiveRelativePath = 'container/linux/x64/cpu/claw-studio-container-bundle-release-2026-04-06-07-linux-x64-cpu.tar.gz';
-  const kubernetesArchiveRelativePath = 'kubernetes/linux/x64/cpu/claw-studio-kubernetes-bundle-release-2026-04-06-07-linux-x64-cpu.tar.gz';
+  const containerArchiveRelativePath = 'container/linux/x64/cpu/agent-studio-container-bundle-release-2026-04-06-07-linux-x64-cpu.tar.gz';
+  const kubernetesArchiveRelativePath = 'kubernetes/linux/x64/cpu/agent-studio-kubernetes-bundle-release-2026-04-06-07-linux-x64-cpu.tar.gz';
   const containerManifestPath = path.join(containerDir, 'release-asset-manifest.json');
   const kubernetesManifestPath = path.join(kubernetesDir, 'release-asset-manifest.json');
 
@@ -3140,7 +3140,7 @@ test('release asset finalizer accepts structured skipped deployment smoke eviden
     writeFileSync(
       containerManifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-07',
         platform: 'linux',
         arch: 'x64',
@@ -3163,7 +3163,7 @@ test('release asset finalizer accepts structured skipped deployment smoke eviden
     writeFileSync(
       kubernetesManifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-07',
         platform: 'linux',
         arch: 'x64',
@@ -3221,9 +3221,9 @@ test('release asset finalizer accepts structured skipped deployment smoke eviden
     writeReleaseNotesFixture(releaseAssetsDir);
 
     finalizer.finalizeReleaseAssets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-2026-04-06-07',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       releaseAssetsDir,
       allowPartialRelease: true,
     });
@@ -3295,8 +3295,8 @@ test('release asset finalizer rejects deployment artifacts when smoke evidence i
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const containerDir = path.join(releaseAssetsDir, 'container', 'linux', 'x64', 'cpu');
   const kubernetesDir = path.join(releaseAssetsDir, 'kubernetes', 'linux', 'x64', 'cpu');
-  const containerArchiveRelativePath = 'container/linux/x64/cpu/claw-studio-container-bundle-release-2026-04-06-06-linux-x64-cpu.tar.gz';
-  const kubernetesArchiveRelativePath = 'kubernetes/linux/x64/cpu/claw-studio-kubernetes-bundle-release-2026-04-06-06-linux-x64-cpu.tar.gz';
+  const containerArchiveRelativePath = 'container/linux/x64/cpu/agent-studio-container-bundle-release-2026-04-06-06-linux-x64-cpu.tar.gz';
+  const kubernetesArchiveRelativePath = 'kubernetes/linux/x64/cpu/agent-studio-kubernetes-bundle-release-2026-04-06-06-linux-x64-cpu.tar.gz';
   const containerManifestPath = path.join(containerDir, 'release-asset-manifest.json');
   const kubernetesManifestPath = path.join(kubernetesDir, 'release-asset-manifest.json');
 
@@ -3308,7 +3308,7 @@ test('release asset finalizer rejects deployment artifacts when smoke evidence i
     writeFileSync(
       containerManifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-06',
         platform: 'linux',
         arch: 'x64',
@@ -3331,7 +3331,7 @@ test('release asset finalizer rejects deployment artifacts when smoke evidence i
     writeFileSync(
       kubernetesManifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-06',
         platform: 'linux',
         arch: 'x64',
@@ -3354,9 +3354,9 @@ test('release asset finalizer rejects deployment artifacts when smoke evidence i
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-06',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Missing container deployment smoke report/,
@@ -3383,9 +3383,9 @@ test('release asset finalizer rejects deployment artifacts when smoke evidence i
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-06',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Kubernetes deployment smoke report does not match the current artifact set/,
@@ -3413,9 +3413,9 @@ test('release asset finalizer rejects deployment artifacts when smoke evidence i
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-06',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Container deployment smoke report is missing a passing deployment-identity check/,
@@ -3434,9 +3434,9 @@ test('release asset finalizer rejects deployment artifacts when smoke evidence i
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-06',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Container deployment smoke report is missing a passing runtime-profile check/,
@@ -3455,9 +3455,9 @@ test('release asset finalizer rejects deployment artifacts when smoke evidence i
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-06',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Container deployment smoke report is missing a passing manage-credentials check/,
@@ -3485,9 +3485,9 @@ test('release asset finalizer rejects deployment artifacts when smoke evidence i
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-06',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Kubernetes deployment smoke report is missing a passing deployment-identity check/,
@@ -3506,9 +3506,9 @@ test('release asset finalizer rejects deployment artifacts when smoke evidence i
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-06',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Kubernetes deployment smoke report is missing a passing configmap-runtime-identity check/,
@@ -3527,9 +3527,9 @@ test('release asset finalizer rejects deployment artifacts when smoke evidence i
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-06-06',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
       }),
       /Kubernetes deployment smoke report is missing a passing persistent-storage check/,
@@ -3546,7 +3546,7 @@ test('release asset finalizer rejects deployment smoke reports with unsafe launc
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-finalize-deployment-launcher-path-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const containerDir = path.join(releaseAssetsDir, 'container', 'linux', 'x64', 'cpu');
-  const containerArchiveRelativePath = 'container/linux/x64/cpu/claw-studio-container-bundle-release-2026-04-13-02-linux-x64-cpu.tar.gz';
+  const containerArchiveRelativePath = 'container/linux/x64/cpu/agent-studio-container-bundle-release-2026-04-13-02-linux-x64-cpu.tar.gz';
   const containerManifestPath = path.join(containerDir, 'release-asset-manifest.json');
 
   try {
@@ -3555,7 +3555,7 @@ test('release asset finalizer rejects deployment smoke reports with unsafe launc
     writeFileSync(
       containerManifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-13-02',
         platform: 'linux',
         arch: 'x64',
@@ -3588,9 +3588,9 @@ test('release asset finalizer rejects deployment smoke reports with unsafe launc
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-13-02',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
         allowPartialRelease: true,
       }),
@@ -3609,7 +3609,7 @@ test('release asset finalizer rejects partial manifests from another active rele
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const webDir = path.join(releaseAssetsDir, 'web');
   const releaseTag = 'release-2026-04-12-profile';
-  const webArchiveRelativePath = `web/claw-studio-web-assets-${releaseTag}.tar.gz`;
+  const webArchiveRelativePath = `web/agent-studio-web-assets-${releaseTag}.tar.gz`;
   const manifestPath = path.join(webDir, 'release-asset-manifest.json');
 
   try {
@@ -3648,9 +3648,9 @@ test('release asset finalizer rejects partial manifests from another active rele
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag,
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
         allowPartialRelease: true,
       }),
@@ -3669,7 +3669,7 @@ test('release asset finalizer rejects non-canonical artifact paths before writin
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const webDir = path.join(releaseAssetsDir, 'web');
   const releaseTag = 'release-2026-04-12-path';
-  const webArchiveRelativePath = `web/claw-studio-web-assets-${releaseTag}.tar.gz`;
+  const webArchiveRelativePath = `web/agent-studio-web-assets-${releaseTag}.tar.gz`;
   const nonCanonicalArtifactRelativePath = `./${webArchiveRelativePath}`;
   const manifestPath = path.join(webDir, 'release-asset-manifest.json');
 
@@ -3679,7 +3679,7 @@ test('release asset finalizer rejects non-canonical artifact paths before writin
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag,
         platform: 'web',
         arch: 'any',
@@ -3709,9 +3709,9 @@ test('release asset finalizer rejects non-canonical artifact paths before writin
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag,
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
         allowPartialRelease: true,
       }),
@@ -3731,8 +3731,8 @@ test('release asset finalizer rejects duplicate artifacts for the same release t
   const primaryWebDir = path.join(releaseAssetsDir, 'web');
   const secondaryWebDir = path.join(releaseAssetsDir, 'web', 'secondary');
   const releaseTag = 'release-2026-04-12-duplicate';
-  const firstWebArchiveRelativePath = `web/claw-studio-web-assets-${releaseTag}-a.tar.gz`;
-  const secondWebArchiveRelativePath = `web/secondary/claw-studio-web-assets-${releaseTag}-b.tar.gz`;
+  const firstWebArchiveRelativePath = `web/agent-studio-web-assets-${releaseTag}-a.tar.gz`;
+  const secondWebArchiveRelativePath = `web/secondary/agent-studio-web-assets-${releaseTag}-b.tar.gz`;
   const firstManifestPath = path.join(primaryWebDir, 'release-asset-manifest.json');
   const secondManifestPath = path.join(secondaryWebDir, 'release-asset-manifest.json');
 
@@ -3744,7 +3744,7 @@ test('release asset finalizer rejects duplicate artifacts for the same release t
     writeFileSync(
       firstManifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag,
         platform: 'web',
         arch: 'any',
@@ -3766,7 +3766,7 @@ test('release asset finalizer rejects duplicate artifacts for the same release t
     writeFileSync(
       secondManifestPath,
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag,
         platform: 'web',
         arch: 'any',
@@ -3804,9 +3804,9 @@ test('release asset finalizer rejects duplicate artifacts for the same release t
 
     assert.throws(
       () => finalizer.finalizeReleaseAssets({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag,
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseAssetsDir,
         allowPartialRelease: true,
       }),

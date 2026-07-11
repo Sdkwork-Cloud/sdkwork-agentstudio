@@ -57,7 +57,7 @@
 - 若涉及托管 Provider / workbench 呈现：附 `openClawManagementCapabilities.ts`、`openClawProviderWorkspacePresentation.ts` 对齐结果
 - 若涉及内置 Runtime / 升级 / 打包 / 插件注册：附 `local_ai_proxy.rs`、`plugins/mod.rs` 与 packaged smoke / upgrade smoke 证据
 
-## 4. Claw Studio 集成窗口必查项
+## 4. Agent Studio 集成窗口必查项
 
 - 是否破坏 Host/Shell/Foundation 边界
 - 是否破坏 Local Proxy 对托管模型的唯一入口

@@ -9,7 +9,7 @@
 | --- | --- |
 | 执行模式 | 波次内并行 |
 | 前置 | `05` `06` `07` `08` |
-| 主写入范围 | `packages/sdkwork-clawstudio-chat` `packages/sdkwork-clawstudio-instances` `packages/sdkwork-clawstudio-settings` `packages/sdkwork-clawstudio-desktop` `scripts/` |
+| 主写入范围 | `packages/sdkwork-agentstudio-pc-chat` `packages/sdkwork-agentstudio-pc-instances` `packages/sdkwork-agentstudio-pc-settings` `packages/sdkwork-agentstudio-pc-desktop` `scripts/` |
 | 执行输入 | `10` 架构文档；Kernel Center、Local Proxy Logs、懒加载与升级脚本现状 |
 | 本步非目标 | 不在本步内定义商业策略；不在本步内替代发布流程 |
 | 最小输出 | 关键链路性能基线、可观测指标、恢复策略、升级后业务级回归 |
@@ -70,7 +70,7 @@
 ### 6.4 架构能力闭环判定
 
 - 重面板性能、Runtime 观测、升级后业务级 smoke 三条线都建立稳定基线。
-- 涉及内置 OpenClaw Runtime、实例工作台、聊天主链的观测与 smoke，必须能回溯 `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`、`packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`、`packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`、`packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts` 的事实源。
+- 涉及内置 OpenClaw Runtime、实例工作台、聊天主链的观测与 smoke，必须能回溯 `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`、`packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`、`packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`、`packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts` 的事实源。
 - 若只有 UI 优化而没有 Proxy/Kernel 观测与业务级恢复验证，本 step 不算闭环。
 
 ### 6.5 快速完整执行建议

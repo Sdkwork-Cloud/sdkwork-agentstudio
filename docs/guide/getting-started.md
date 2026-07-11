@@ -2,7 +2,7 @@
 
 ## What You Are Setting Up
 
-This repository contains the package-based Claw Studio workspace. It includes:
+This repository contains the package-based Agent Studio workspace. It includes:
 
 - a web entry package
 - a Tauri desktop entry package
@@ -34,12 +34,12 @@ pnpm install
 pnpm dev
 ```
 
-This starts the Vite development server for `@sdkwork/clawstudio-web` on `http://localhost:3001`.
+This starts the Vite development server for `@sdkwork/agentstudio-pc-web` on `http://localhost:3001`.
 
 ### Desktop Runtime
 
 ```bash
-pnpm tauri:dev
+pnpm dev:desktop
 ```
 
 The desktop package serves the shell through Vite on `127.0.0.1:1426` and then launches the Tauri application.
@@ -47,7 +47,7 @@ The desktop package serves the shell through Vite on `127.0.0.1:1426` and then l
 ### Native Server
 
 ```bash
-pnpm server:dev
+pnpm dev:server
 ```
 
 The server package boots the Rust host and serves the browser application through the bundled `/claw/*` route families plus the built web assets.
@@ -58,12 +58,12 @@ The server package boots the Rust host and serves the browser application throug
 pnpm build
 pnpm check:multi-mode
 pnpm check:server
-pnpm server:build
-pnpm tauri:build
+pnpm build:server
+pnpm build:desktop
 pnpm docs:build
 ```
 
-Use `pnpm build` for the web shell, `pnpm check:multi-mode` when you need one decisive cross-mode gate for desktop/server/OpenClaw/release surfaces, `pnpm check:server` to validate the native server runtime in isolation, `pnpm server:build` for native server packaging, `pnpm tauri:build` for desktop packaging, and `pnpm docs:build` for the public documentation site.
+Use `pnpm build` for the web shell, `pnpm check:multi-mode` when you need one decisive cross-mode gate for desktop/server/OpenClaw/release surfaces, `pnpm check:server` to validate the native server runtime in isolation, `pnpm build:server` for native server packaging, `pnpm build:desktop` for desktop packaging, and `pnpm docs:build` for the public documentation site.
 
 ## Plan And Verify Releases
 
@@ -71,7 +71,7 @@ Use `pnpm build` for the web shell, `pnpm check:multi-mode` when you need one de
 pnpm check:automation
 pnpm release:plan
 pnpm release:finalize
-pnpm release:write-attestation-evidence -- --release-assets-dir artifacts/release --repository Sdkwork-Cloud/claw-studio --release-tag release-local
+pnpm release:write-attestation-evidence -- --release-assets-dir artifacts/release --repository Sdkwork-Cloud/agent-studio --release-tag release-local
 pnpm release:assert-ready
 ```
 
@@ -93,7 +93,7 @@ Important variables:
 
 Desktop and browser hosts must not inject root access tokens through Vite env files. Keep privileged credentials inside trusted hosts or host-mediated auth flows.
 
-Desktop-specific examples also exist in `packages/sdkwork-clawstudio-desktop/.env.example`, and server runtime defaults live in `packages/sdkwork-clawstudio-server/.env.example`.
+Desktop-specific examples also exist in `packages/sdkwork-agentstudio-pc-desktop/.env.example`, and server runtime defaults live in `packages/sdkwork-agentstudio-pc-server/.env.example`.
 
 ## Recommended Next Steps
 

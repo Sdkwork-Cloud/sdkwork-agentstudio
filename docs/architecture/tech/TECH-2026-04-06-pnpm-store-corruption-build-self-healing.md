@@ -1,15 +1,15 @@
 > Migrated from `docs/review/2026-04-06-pnpm-store-corruption-build-self-healing.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
-# 2026-04-06 PNPM Store Corruption And Cross-Workspace Build Self-Healing
+# 2026-04-06 PNPM's Store Corruption And Cross-Workspace Build Self-Healing
 
 ## Scope
 
-This iteration focused on restoring a reliable local production build for `@sdkwork/clawstudio-web` under the current constrained environment:
+This iteration focused on restoring a reliable local production build for `@sdkwork/agentstudio-pc-web` under the current constrained environment:
 
 - Windows host
 - `approval_policy=never`
-- write access limited to `apps/claw-studio`
+- write access limited to `apps/agent-studio`
 - broken local `.pnpm` content and fallback links
 - external workspace packages being consumed through live source aliases
 
@@ -136,7 +136,7 @@ now win before the root alias and resolve to the correct source entries.
 
 File:
 
-- `packages/sdkwork-clawstudio-web/viteWorkspaceResolver.test.ts`
+- `packages/sdkwork-agentstudio-pc-web/viteWorkspaceResolver.test.ts`
 
 Coverage:
 
@@ -198,7 +198,7 @@ Impact:
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/viteBuildOptimization.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/viteBuildOptimization.test.ts`
 
 Coverage:
 
@@ -211,13 +211,13 @@ The following commands passed after the fixes landed:
 - `node scripts/repair-pnpm-store-files.test.mjs`
 - `node scripts/repair-pnpm-fallback-links.test.mjs`
 - `node scripts/run-vite-host.test.mjs`
-- `node --experimental-transform-types packages/sdkwork-clawstudio-web/viteWorkspaceResolver.test.ts`
-- `node --experimental-transform-types packages/sdkwork-clawstudio-desktop/viteBuildOptimization.test.ts`
+- `node --experimental-transform-types packages/sdkwork-agentstudio-pc-web/viteWorkspaceResolver.test.ts`
+- `node --experimental-transform-types packages/sdkwork-agentstudio-pc-desktop/viteBuildOptimization.test.ts`
 - `node scripts/sdkwork-core-contract.test.ts`
 - `node scripts/sdkwork-foundation-contract.test.ts`
-- `pnpm.cmd --filter @sdkwork/clawstudio-web build`
+- `pnpm.cmd --filter @sdkwork/agentstudio-pc-web build`
 
-The final `@sdkwork/clawstudio-web` production build completed successfully on April 6, 2026.
+The final `@sdkwork/agentstudio-pc-web` production build completed successfully on April 6, 2026.
 
 ## Current State After This Iteration
 
@@ -234,7 +234,7 @@ to:
 - reproducible repair tests
 - reproducible workspace alias tests
 - reproducible build optimization tests
-- successful `@sdkwork/clawstudio-web` production build
+- successful `@sdkwork/agentstudio-pc-web` production build
 
 This is a meaningful foundation milestone because later application-level debugging can now happen on top of a working local build path instead of a permanently damaged toolchain state.
 

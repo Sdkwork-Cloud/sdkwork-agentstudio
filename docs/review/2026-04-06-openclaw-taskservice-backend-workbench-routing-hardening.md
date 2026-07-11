@@ -3,8 +3,8 @@
 Date: 2026-04-06
 
 Scope:
-- `packages/sdkwork-clawstudio-core/src/services/taskService.ts`
-- `packages/sdkwork-clawstudio-core/src/services/taskService.test.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/taskService.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/taskService.test.ts`
 - `scripts/run-sdkwork-core-check.mjs`
 
 ## Summary
@@ -52,7 +52,7 @@ Code changes:
 ## Regression Coverage
 
 Coverage added and hardened in:
-- `packages/sdkwork-clawstudio-core/src/services/taskService.test.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/taskService.test.ts`
 
 What the regression now freezes:
 - backend-authored OpenClaw tasks stay fully operable when the backend
@@ -75,7 +75,7 @@ Result:
 
 ## Remaining Follow-up
 
-This closed the task-routing split in `sdkwork-clawstudio-core`, but the broader
+This closed the task-routing split in `sdkwork-agentstudio-pc-core`, but the broader
 shared-runtime review still needs:
 - launched-session evidence for built-in OpenClaw `online` convergence
 - instance-detail console-open and runtime-truth validation

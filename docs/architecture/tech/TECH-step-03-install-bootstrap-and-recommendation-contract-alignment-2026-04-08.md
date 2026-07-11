@@ -54,6 +54,6 @@
 
 - Workspace lint is now headed by:
   - `packages/removed-install-feature/src/services/openClawBootstrapService.test.ts`
-  - `packages/sdkwork-clawstudio-instances/src/services/agentWorkbenchService.test.ts`
-  - `packages/sdkwork-clawstudio-instances/src/services/index.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/agentWorkbenchService.test.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/index.ts`
 

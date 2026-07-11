@@ -457,10 +457,10 @@ await (async () => {
           serviceStopAttempts += 1;
           callOrder.push(`service-${serviceStopAttempts}`);
           if (serviceStopAttempts === 1) {
-            throw new Error('Failed to stop Windows service ClawStudioOpenClawKernel: [SC] ControlService failed 1052: control not valid');
+            throw new Error('Failed to stop Windows service agentstudioOpenClawKernel: [SC] ControlService failed 1052: control not valid');
           }
           return {
-            serviceName: 'ClawStudioOpenClawKernel',
+            serviceName: 'agentstudioOpenClawKernel',
             state: 'STOPPED',
             stopped: true,
           };
@@ -587,7 +587,7 @@ await (async () => {
                 targetDir,
                 'debug',
                 'build',
-                'sdkwork-clawstudio-desktop-test',
+                'sdkwork-agentstudio-pc-desktop-test',
                 'build-script-build.exe',
               ),
             },

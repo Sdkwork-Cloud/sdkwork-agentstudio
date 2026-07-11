@@ -69,9 +69,9 @@ test('release smoke contract resolves report paths and persists normalized smoke
       status: 'passed',
       manifestPath: path.join(releaseAssetsDir, 'server', 'linux', 'x64', 'release-asset-manifest.json'),
       artifactRelativePaths: [
-        'server/linux/x64/claw-studio-server-release-local-linux-x64.tar.gz',
+        'server/linux/x64/agent-studio-server-release-local-linux-x64.tar.gz',
       ],
-      launcherRelativePath: 'bin/clawstudio-server',
+      launcherRelativePath: 'bin/agentstudio-server',
       runtimeBaseUrl: 'http://127.0.0.1:19797',
       checks: [
         {
@@ -108,7 +108,7 @@ test('release smoke contract resolves report paths and persists normalized smoke
       status: 'passed',
       manifestPath: path.join(releaseAssetsDir, 'web', 'release-asset-manifest.json'),
       artifactRelativePaths: [
-        'claw-studio-web-assets-release-local.tar.gz',
+        'agent-studio-web-assets-release-local.tar.gz',
       ],
       checks: [
         {
@@ -124,7 +124,7 @@ test('release smoke contract resolves report paths and persists normalized smoke
     assert.equal(webReport.arch, 'any');
     assert.equal(webReport.smokeKind, 'web-archive-content');
     assert.deepEqual(webReport.artifactRelativePaths, [
-      'claw-studio-web-assets-release-local.tar.gz',
+      'agent-studio-web-assets-release-local.tar.gz',
     ]);
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -148,9 +148,9 @@ test('release smoke contract rejects unsafe artifact and launcher paths before w
         smokeKind: 'bundle-runtime',
         status: 'passed',
         artifactRelativePaths: [
-          '../server/linux/x64/claw-studio-server-release-local-linux-x64.tar.gz',
+          '../server/linux/x64/agent-studio-server-release-local-linux-x64.tar.gz',
         ],
-        launcherRelativePath: 'bin/clawstudio-server',
+        launcherRelativePath: 'bin/agentstudio-server',
       }),
       /unsafe release smoke artifact path/,
     );
@@ -164,9 +164,9 @@ test('release smoke contract rejects unsafe artifact and launcher paths before w
         smokeKind: 'bundle-runtime',
         status: 'passed',
         artifactRelativePaths: [
-          'server/linux/x64/claw-studio-server-release-local-linux-x64.tar.gz',
+          'server/linux/x64/agent-studio-server-release-local-linux-x64.tar.gz',
         ],
-        launcherRelativePath: '../bin/clawstudio-server',
+        launcherRelativePath: '../bin/agentstudio-server',
       }),
       /unsafe release smoke launcher path/,
     );
@@ -181,7 +181,7 @@ test('release smoke contract rejects unsafe artifact and launcher paths before w
         smokeKind: 'live-deployment',
         status: 'passed',
         artifactRelativePaths: [
-          'container/linux/x64/cpu/claw-studio-container-bundle-release-local-linux-x64-cpu.tar.gz',
+          'container/linux/x64/cpu/agent-studio-container-bundle-release-local-linux-x64-cpu.tar.gz',
         ],
         launcherRelativePath: './deploy/docker/docker-compose.yml',
       }),

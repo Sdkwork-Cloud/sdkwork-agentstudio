@@ -37,4 +37,4 @@
 ## 6. 剩余缺口
 
 - workspace `lint` 仍有很多历史类型问题，本轮只收口 install wizard service namespace export 漂移。
-- 下一轮如果继续留在 Step 03 领域，优先看 `removed-install-feature` / `sdkwork-clawstudio-market` 附近剩余的类型噪声是否还能用同样“小范围高价值”方式继续压缩。
+- 下一轮如果继续留在 Step 03 领域，优先看 `removed-install-feature` / `sdkwork-agentstudio-pc-market` 附近剩余的类型噪声是否还能用同样“小范围高价值”方式继续压缩。

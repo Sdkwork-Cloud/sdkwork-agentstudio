@@ -19,24 +19,24 @@
   - extended the shared TypeScript runtime contract and `kernelCenterService` dashboard mapping
   - added `Kernel Center` presentation rows and locale copy for the new fields
 - Fresh verification:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/kernelCenter.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
-  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-descriptor-endpoint-red desktop_kernel_info_exposes_persisted_startup_evidence_summary`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/kernelCenter.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.test.ts`
+  - `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-descriptor-endpoint-red desktop_kernel_info_exposes_persisted_startup_evidence_summary`
   - `pnpm.cmd check:desktop-openclaw-runtime`
   - `pnpm.cmd check:desktop`
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/kernel.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/kernel.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/desktop_kernel.rs`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts`
-- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts`
-- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
-- `packages/sdkwork-clawstudio-settings/src/KernelCenter.tsx`
-- `packages/sdkwork-clawstudio-settings/src/kernelCenter.test.ts`
-- `packages/sdkwork-clawstudio-i18n/src/locales/en/settings.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh/settings.json`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/kernel.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/kernel.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/commands/desktop_kernel.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.test.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/KernelCenter.tsx`
+- `packages/sdkwork-agentstudio-pc-settings/src/kernelCenter.test.ts`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en/settings.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/settings.json`
 - `docs/review/step-03-kernel-center-startup-evidence-descriptor-endpoint-port-convergence-2026-04-08.md`
 - `docs/架构/131-2026-04-08-desktop-startup-evidence-descriptor-endpoint-owner.md`
 - `docs/review/step-03-执行卡-2026-04-07.md`
@@ -45,9 +45,9 @@
 
 ## Verification Focus
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/kernelCenter.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-descriptor-endpoint-red desktop_kernel_info_exposes_persisted_startup_evidence_summary`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/kernelCenter.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.test.ts`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-descriptor-endpoint-red desktop_kernel_info_exposes_persisted_startup_evidence_summary`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 

@@ -122,7 +122,7 @@ Fresh commands run in this loop:
 
 ```bash
 git push origin refs/tags/release-2026-04-07-01
-curl.exe -s https://api.github.com/repos/Sdkwork-Cloud/claw-studio/actions/workflows/release.yml/runs?per_page=5
+curl.exe -s https://api.github.com/repos/Sdkwork-Cloud/agent-studio/actions/workflows/release.yml/runs?page_size=5
 node scripts/release-flow-contract.test.mjs
 pnpm.cmd lint
 pnpm.cmd build

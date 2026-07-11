@@ -39,13 +39,13 @@
 
 | 车道 | 主写入范围 |
 | --- | --- |
-| Runtime | `packages/sdkwork-clawstudio-desktop/src-tauri` `scripts/prepare-openclaw-runtime.mjs` |
-| API/Bridge | `packages/sdkwork-clawstudio-server` `packages/sdkwork-clawstudio-infrastructure/src/platform` |
-| Settings/Provider | `packages/sdkwork-clawstudio-settings` `core/services/*proxy*` |
-| Chat | `packages/sdkwork-clawstudio-chat` |
-| Instances | `packages/sdkwork-clawstudio-instances` |
-| Ecosystem | `packages/sdkwork-clawstudio-market` `packages/sdkwork-clawstudio-channels` |
-| Release | `scripts/release` `packages/sdkwork-clawstudio-distribution` `docs/release` |
+| Runtime | `packages/sdkwork-agentstudio-pc-desktop/src-tauri` `scripts/prepare-openclaw-runtime.mjs` |
+| API/Bridge | `packages/sdkwork-agentstudio-pc-server` `packages/sdkwork-agentstudio-pc-infrastructure/src/platform` |
+| Settings/Provider | `packages/sdkwork-agentstudio-pc-settings` `core/services/*proxy*` |
+| Chat | `packages/sdkwork-agentstudio-pc-chat` |
+| Instances | `packages/sdkwork-agentstudio-pc-instances` |
+| Ecosystem | `packages/sdkwork-agentstudio-pc-market` `packages/sdkwork-agentstudio-pc-channels` |
+| Release | `scripts/release` `packages/sdkwork-agentstudio-pc-distribution` `docs/release` |
 | Commerce | `account` `dashboard` `mall` `model-purchase` `points` |
 
 ## 5. 硬约束

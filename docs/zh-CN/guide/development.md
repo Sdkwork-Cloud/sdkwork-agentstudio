@@ -24,36 +24,36 @@ pnpm docs:build
 - `pnpm lint`：Web 区 TypeScript 校验、架构边界校验与 parity 校验
 - `pnpm build`：Web 包生产构建
 - `pnpm check:arch`：目录结构、依赖分层和包根导入校验
-- `pnpm check:parity`：关键行为与 `upgrade/claw-studio-v5` 基线对齐校验
+- `pnpm check:parity`：关键行为与 `upgrade/agent-studio-v5` 基线对齐校验
 - `pnpm check:desktop`：桌面端平台与 Tauri 命令契约校验
 - `pnpm check:server`：原生 Server 结构与 Rust 测试校验
 
 ## 包级执行
 
 ```bash
-pnpm --filter @sdkwork/clawstudio-web build
-pnpm --filter @sdkwork/clawstudio-desktop tauri:info
-pnpm --filter @sdkwork/clawstudio-market lint
+pnpm --filter @sdkwork/agentstudio-pc-web build
+pnpm --filter @sdkwork/agentstudio-pc-desktop tauri:info
+pnpm --filter @sdkwork/agentstudio-pc-market lint
 ```
 
 ## 关键规则
 
 ### 入口包必须保持轻量
 
-`@sdkwork/clawstudio-web` 是应用入口，不应继续吸收 store、hooks 或业务服务。`@sdkwork/clawstudio-desktop` 也遵循同样原则。
+`@sdkwork/agentstudio-pc-web` 是应用入口，不应继续吸收 store、hooks 或业务服务。`@sdkwork/agentstudio-pc-desktop` 也遵循同样原则。
 
 ### 跨包导入必须使用包根
 
 正确方式：
 
 ```ts
-import { Market } from '@sdkwork/clawstudio-market';
+import { Market } from '@sdkwork/agentstudio-pc-market';
 ```
 
 错误方式：
 
 ```ts
-import { Market } from '@sdkwork/clawstudio-market/src/pages/market/Market';
+import { Market } from '@sdkwork/agentstudio-pc-market/src/pages/market/Market';
 ```
 
 ### 业务逻辑留在业务包中

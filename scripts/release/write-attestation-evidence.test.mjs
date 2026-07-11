@@ -23,22 +23,22 @@ function sha256(value) {
 function writeManifestFixture({
   releaseAssetsDir,
   releaseTag = 'release-2026-04-12-01',
-  repository = 'Sdkwork-Cloud/claw-studio',
-  artifactRelativePath = 'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz',
+  repository = 'Sdkwork-Cloud/agent-studio',
+  artifactRelativePath = 'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz',
   artifactContent = 'web-assets',
 } = {}) {
   const artifactPath = path.join(releaseAssetsDir, artifactRelativePath);
   mkdirSync(path.dirname(artifactPath), { recursive: true });
   writeFileSync(artifactPath, artifactContent, 'utf8');
   const releaseNotesRelativePath = 'release-notes.md';
-  const releaseNotesContent = '# Claw Studio Release\n\nRelease notes.\n';
+  const releaseNotesContent = '# Agent Studio Release\n\nRelease notes.\n';
   const releaseNotesPath = path.join(releaseAssetsDir, releaseNotesRelativePath);
   writeFileSync(releaseNotesPath, releaseNotesContent, 'utf8');
   writeFileSync(
     path.join(releaseAssetsDir, 'release-manifest.json'),
     `${JSON.stringify({
-      profileId: 'claw-studio',
-      productName: 'Claw Studio',
+      profileId: 'agent-studio',
+      productName: 'Agent Studio',
       releaseTag,
       repository,
       generatedAt: '2026-04-12T01:02:03.000Z',
@@ -109,9 +109,9 @@ test('attestation evidence writer verifies every finalized artifact and writes m
     const ghCalls = [];
 
     const result = evidence.writeAttestationEvidence({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseAssetsDir,
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       releaseTag: 'release-2026-04-12-01',
       now: () => '2026-04-12T02:03:04.000Z',
       execFileSyncImpl(command, args) {
@@ -120,7 +120,7 @@ test('attestation evidence writer verifies every finalized artifact and writes m
         assert.match(args.join(' '), /attestation verify/);
         assert.match(
           args.join(' '),
-          /--signer-workflow Sdkwork-Cloud\/claw-studio\/\.github\/workflows\/release-reusable\.yml/,
+          /--signer-workflow Sdkwork-Cloud\/agent-studio\/\.github\/workflows\/release-reusable\.yml/,
         );
         assert.match(args.join(' '), /--format json/);
         const verifiedPath = String(args[2] ?? '').replaceAll('\\', '/');
@@ -157,11 +157,11 @@ test('attestation evidence writer verifies every finalized artifact and writes m
 
     const written = JSON.parse(readFileSync(result.evidencePath, 'utf8'));
     assert.equal(written.schemaVersion, 1);
-    assert.equal(written.repository, 'Sdkwork-Cloud/claw-studio');
+    assert.equal(written.repository, 'Sdkwork-Cloud/agent-studio');
     assert.equal(written.releaseTag, 'release-2026-04-12-01');
     assert.equal(written.predicateType, 'https://slsa.dev/provenance/v1');
     assert.equal(written.signerWorkflow, '.github/workflows/release-reusable.yml');
-    assert.equal(written.signerWorkflowIdentity, 'Sdkwork-Cloud/claw-studio/.github/workflows/release-reusable.yml');
+    assert.equal(written.signerWorkflowIdentity, 'Sdkwork-Cloud/agent-studio/.github/workflows/release-reusable.yml');
     assert.equal(written.artifacts.length, 2);
     const writtenArtifact = written.artifacts.find((entry) => entry.relativePath === artifactRelativePath);
     const writtenReleaseNotes = written.artifacts.find((entry) => entry.relativePath === releaseNotesRelativePath);
@@ -183,12 +183,12 @@ test('attestation evidence writer verifies every finalized artifact and writes m
         kind: 'artifact',
         relativePath: artifactRelativePath,
         sha256: artifactSha256,
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseTag: 'release-2026-04-12-01',
         sourceRef: 'refs/tags/release-2026-04-12-01',
         predicateType: 'https://slsa.dev/provenance/v1',
         signerWorkflow: '.github/workflows/release-reusable.yml',
-        signerWorkflowIdentity: 'Sdkwork-Cloud/claw-studio/.github/workflows/release-reusable.yml',
+        signerWorkflowIdentity: 'Sdkwork-Cloud/agent-studio/.github/workflows/release-reusable.yml',
         verified: true,
         verifiedAt: '2026-04-12T02:03:04.000Z',
       },
@@ -201,7 +201,7 @@ test('attestation evidence writer verifies every finalized artifact and writes m
     assert.match(writtenArtifact.verificationCommand, /--predicate-type https:\/\/slsa\.dev\/provenance\/v1/);
     assert.match(
       writtenArtifact.verificationCommand,
-      /--signer-workflow Sdkwork-Cloud\/claw-studio\/\.github\/workflows\/release-reusable\.yml/,
+      /--signer-workflow Sdkwork-Cloud\/agent-studio\/\.github\/workflows\/release-reusable\.yml/,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -220,9 +220,9 @@ test('attestation evidence writer rejects verification output that does not bind
 
     assert.throws(
       () => evidence.writeAttestationEvidence({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseAssetsDir,
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseTag: 'release-2026-04-12-01',
         execFileSyncImpl() {
           return JSON.stringify([
@@ -231,7 +231,7 @@ test('attestation evidence writer rejects verification output that does not bind
               predicateType: 'https://slsa.dev/provenance/v1',
               subject: [
                 {
-                  name: 'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz',
+                  name: 'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz',
                   digest: {
                     sha256: '0'.repeat(64),
                   },
@@ -246,9 +246,9 @@ test('attestation evidence writer rejects verification output that does not bind
 
     assert.throws(
       () => evidence.writeAttestationEvidence({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseAssetsDir,
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseTag: 'release-2026-04-12-01',
         execFileSyncImpl() {
           return '{not-json';
@@ -275,9 +275,9 @@ test('attestation evidence writer rejects release metadata without a finalized f
 
     assert.throws(
       () => evidence.writeAttestationEvidence({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseAssetsDir,
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseTag: 'release-2026-04-12-01',
         execFileSyncImpl() {
           throw new Error('should not verify missing metadata');
@@ -293,9 +293,9 @@ test('attestation evidence writer rejects release metadata without a finalized f
 
     assert.throws(
       () => evidence.writeAttestationEvidence({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseAssetsDir,
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         releaseTag: 'release-2026-04-12-01',
         execFileSyncImpl() {
           throw new Error('should not verify malformed metadata');

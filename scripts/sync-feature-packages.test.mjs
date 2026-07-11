@@ -24,7 +24,7 @@ runTest(
   async () => {
     const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'sync-feature-packages-test-'));
     try {
-      const tempPackagesDir = path.join(tempRoot, 'packages', 'sdkwork-clawstudio-agent');
+      const tempPackagesDir = path.join(tempRoot, 'packages', 'sdkwork-agentstudio-pc-agent');
       const tempSrcDir = path.join(tempPackagesDir, 'src');
       const tempPagesDir = path.join(tempSrcDir, 'pages');
       const tempServicesDir = path.join(tempSrcDir, 'services');
@@ -39,7 +39,7 @@ runTest(
         path.join(tempPackagesDir, 'package.json'),
         `${JSON.stringify(
           {
-            name: '@sdkwork/clawstudio-agent',
+            name: '@sdkwork/agentstudio-pc-agent',
             private: true,
             version: '0.1.0',
             type: 'module',
@@ -94,11 +94,11 @@ runTest(
   async () => {
     const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'sync-feature-packages-host-test-'));
     try {
-      const tempAgentDir = path.join(tempRoot, 'packages', 'sdkwork-clawstudio-agent');
+      const tempAgentDir = path.join(tempRoot, 'packages', 'sdkwork-agentstudio-pc-agent');
       const tempAgentSrcDir = path.join(tempAgentDir, 'src');
       const tempAgentPagesDir = path.join(tempAgentSrcDir, 'pages');
       const tempAgentServicesDir = path.join(tempAgentSrcDir, 'services');
-      const tempHostStudioDir = path.join(tempRoot, 'packages', 'sdkwork-clawstudio-host-studio');
+      const tempHostStudioDir = path.join(tempRoot, 'packages', 'sdkwork-agentstudio-pc-host-studio');
       const tempHostStudioSrcHostDir = path.join(tempHostStudioDir, 'src-host');
       const tempScriptDir = path.join(tempRoot, 'scripts');
       const tempScriptPath = path.join(tempScriptDir, 'sync-feature-packages.mjs');
@@ -112,7 +112,7 @@ runTest(
         path.join(tempAgentDir, 'package.json'),
         `${JSON.stringify(
           {
-            name: '@sdkwork/clawstudio-agent',
+            name: '@sdkwork/agentstudio-pc-agent',
             private: true,
             version: '0.1.0',
             type: 'module',
@@ -136,7 +136,7 @@ runTest(
         path.join(tempHostStudioDir, 'package.json'),
         `${JSON.stringify(
           {
-            name: '@sdkwork/clawstudio-host-studio',
+            name: '@sdkwork/agentstudio-pc-host-studio',
             private: true,
             version: '0.1.0',
             type: 'module',
@@ -177,7 +177,7 @@ runTest(
   async () => {
     const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'sync-feature-packages-root-export-test-'));
     try {
-      const tempAppsDir = path.join(tempRoot, 'packages', 'sdkwork-clawstudio-apps');
+      const tempAppsDir = path.join(tempRoot, 'packages', 'sdkwork-agentstudio-pc-apps');
       const tempAppsSrcDir = path.join(tempAppsDir, 'src');
       const tempPagesDir = path.join(tempAppsSrcDir, 'pages', 'apps');
       const tempServicesDir = path.join(tempAppsSrcDir, 'services');
@@ -192,7 +192,7 @@ runTest(
         path.join(tempAppsDir, 'package.json'),
         `${JSON.stringify(
           {
-            name: '@sdkwork/clawstudio-apps',
+            name: '@sdkwork/agentstudio-pc-apps',
             private: true,
             version: '0.1.0',
             type: 'module',

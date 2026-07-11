@@ -29,10 +29,10 @@ function collectConfiguredComponentIds(serviceDefaults) {
 
 test('desktop component foundation catalog excludes kernel ids from generic component metadata', () => {
   const registry = readJson(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/foundation/components/component-registry.json',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/foundation/components/component-registry.json',
   );
   const serviceDefaults = readJson(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/foundation/components/service-defaults.json',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/foundation/components/service-defaults.json',
   );
 
   const registryIds = Array.isArray(registry.components)
@@ -56,14 +56,14 @@ test('desktop component Rust defaults and host mapping do not special-case kerne
   const componentsSource = readFileSync(
     path.join(
       rootDir,
-      'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/components.rs',
+      'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/components.rs',
     ),
     'utf8',
   );
   const componentHostSource = readFileSync(
     path.join(
       rootDir,
-      'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/component_host.rs',
+      'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/component_host.rs',
     ),
     'utf8',
   );

@@ -12,7 +12,7 @@
 
 ## Root Cause
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` still mixed page-owned mutation wiring with a large pure read-side projection cluster for:
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` still mixed page-owned mutation wiring with a large pure read-side projection cluster for:
   - provider readonly and Provider Center ownership state
   - managed-channel selection and workspace projection
   - managed web-search provider selection
@@ -23,10 +23,10 @@
 
 ## Implemented Fix
 
-- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailDerivedState.ts`.
-- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailDerivedState.test.ts`.
-- Exported the helper through `packages/sdkwork-clawstudio-instances/src/services/index.ts`.
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` to consume `buildInstanceDetailDerivedState(...)` for:
+- Added `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailDerivedState.ts`.
+- Added `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailDerivedState.test.ts`.
+- Exported the helper through `packages/sdkwork-agentstudio-pc-instances/src/services/index.ts`.
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` to consume `buildInstanceDetailDerivedState(...)` for:
   - `isOpenClawConfigWritable`
   - lifecycle capability booleans
   - provider readonly and Provider Center capability state
@@ -53,23 +53,23 @@
   - dialog visibility and saving state
   - truth-source routing and readonly/writable decisions
 - OpenClaw fact sources re-read for this loop:
-  - `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-  - `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-  - `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-  - `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-  - `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-  - `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+  - `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+  - `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+  - `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+  - `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+  - `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+  - `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+  - `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1527`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailDerivedState.ts`: `200`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `1527`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailDerivedState.ts`: `200`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1431`
 - Fresh build evidence:
   - `InstanceDetail-Cas29TB5.js`: `175.16 kB`
   - `InstanceConfigWorkbenchPanel-CnJPMEfq.js`: `61.84 kB`
@@ -79,21 +79,21 @@
 
 - RED before closure:
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
 - GREEN after implementation and fresh re-run:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailDerivedState.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawChannelPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchHydration.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceMemoryWorkbenchPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailDerivedState.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawChannelPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedChannelPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchHydration.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawAgentPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedConfigDrafts.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceMemoryWorkbenchPresentation.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 
 ## Closure Status

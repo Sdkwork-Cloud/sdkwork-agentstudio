@@ -1,7 +1,7 @@
 > Migrated from `docs/review/2026-04-06-system-review-remediation-design.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
-# 2026-04-06 Claw Studio System Review Remediation Design
+# 2026-04-06 Agent Studio System Review Remediation Design
 
 ## Design Goals
 

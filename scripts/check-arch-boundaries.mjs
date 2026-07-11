@@ -2,27 +2,27 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const packagesDir = path.join(root, 'packages');
+const packagesDir = path.join(root, 'apps', 'sdkwork-agentstudio-pc', 'packages');
 
 const allPackages = fs
   .readdirSync(packagesDir, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-clawstudio-'))
+  .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-agentstudio-pc-'))
   .map((entry) => entry.name);
 
 const packageNameByDir = new Map(
   allPackages.map((dirName) => [dirName, `@sdkwork/${dirName.replace(/^sdkwork-/, '')}`]),
 );
 
-const WEB = '@sdkwork/clawstudio-web';
-const DESKTOP = '@sdkwork/clawstudio-desktop';
-const SHELL = '@sdkwork/clawstudio-shell';
-const COMMONS = '@sdkwork/clawstudio-commons';
-const CORE = '@sdkwork/clawstudio-core';
-const INFRA = '@sdkwork/clawstudio-infrastructure';
-const TYPES = '@sdkwork/clawstudio-types';
-const UI = '@sdkwork/clawstudio-ui';
-const I18N = '@sdkwork/clawstudio-i18n';
-const DISTRIBUTION = '@sdkwork/clawstudio-distribution';
+const WEB = '@sdkwork/agentstudio-pc-web';
+const DESKTOP = '@sdkwork/agentstudio-pc-desktop';
+const SHELL = '@sdkwork/agentstudio-pc-shell';
+const COMMONS = '@sdkwork/agentstudio-pc-commons';
+const CORE = '@sdkwork/agentstudio-pc-core';
+const INFRA = '@sdkwork/agentstudio-pc-infrastructure';
+const TYPES = '@sdkwork/agentstudio-pc-types';
+const UI = '@sdkwork/agentstudio-pc-ui';
+const I18N = '@sdkwork/agentstudio-pc-i18n';
+const DISTRIBUTION = '@sdkwork/agentstudio-pc-distribution';
 
 const sharedPackages = new Set([
   WEB,
@@ -70,14 +70,14 @@ const forbiddenCoreServiceExports = [
   'taskService',
 ];
 const allowedFeatureDependencies = new Map([
-  ['@sdkwork/clawstudio-chat', new Set(['@sdkwork/clawstudio-settings'])],
-  ['@sdkwork/clawstudio-settings', new Set(['@sdkwork/clawstudio-account'])],
+  ['@sdkwork/agentstudio-pc-chat', new Set(['@sdkwork/agentstudio-pc-settings'])],
+  ['@sdkwork/agentstudio-pc-settings', new Set(['@sdkwork/agentstudio-pc-account'])],
 ]);
 const allowedPackageExportKeys = new Map([
   [CORE, new Set(['./sdk'])],
 ]);
 const allowedPackageSubpathImports = new Set([
-  '@sdkwork/clawstudio-core/sdk',
+  '@sdkwork/agentstudio-pc-core/sdk',
 ]);
 const sourceLayoutExpectations = [
   {
@@ -252,7 +252,7 @@ for (const [pkgName, requiredDirs] of structureExpectations) {
 }
 
 {
-  const webSrcDir = path.join(packagesDir, 'sdkwork-clawstudio-web', 'src');
+  const webSrcDir = path.join(packagesDir, 'sdkwork-agentstudio-pc-web', 'src');
   for (const forbiddenDir of webForbiddenSourceDirs) {
     const dir = path.join(webSrcDir, forbiddenDir);
     if (!fs.existsSync(dir)) continue;
@@ -291,13 +291,13 @@ for (const [dirName, pkgName] of packageNameByDir.entries()) {
   for (const file of listSourceFiles(srcDir)) {
     const source = fs.readFileSync(file, 'utf8');
 
-    if (/@sdkwork\/claw-studio-/.test(source) || /(?:\.\.\/)+claw-studio-/.test(source)) {
+    if (/@sdkwork\/agent-studio-/.test(source) || /(?:\.\.\/)+agent-studio-/.test(source)) {
       staleImportViolations.push(path.relative(root, file));
     }
 
     const imports = getImports(file);
     for (const importPath of imports) {
-      if (!importPath.startsWith('@sdkwork/clawstudio-')) {
+      if (!importPath.startsWith('@sdkwork/agentstudio-pc-')) {
         continue;
       }
 
@@ -342,7 +342,7 @@ for (const [dirName, pkgName] of packageNameByDir.entries()) {
 }
 
 {
-  const coreIndexPath = path.join(packagesDir, 'sdkwork-clawstudio-core', 'src', 'index.ts');
+  const coreIndexPath = path.join(packagesDir, 'sdkwork-agentstudio-pc-core', 'src', 'index.ts');
   const coreIndexSource = fs.readFileSync(coreIndexPath, 'utf8');
 
   for (const serviceName of forbiddenCoreServiceExports) {
@@ -391,7 +391,7 @@ if (
   }
 
   if (staleImportViolations.length > 0) {
-    console.error('Stale claw-studio bridge references found:\n');
+    console.error('Stale agent-studio bridge references found:\n');
     for (const file of staleImportViolations) {
       console.error(`- ${file}`);
     }
@@ -408,7 +408,7 @@ if (
   if (businessBarrelViolations.length > 0) {
     console.error('Core package barrel exposes feature-local services:\n');
     for (const serviceName of businessBarrelViolations) {
-      console.error(`- @sdkwork/clawstudio-core should not export services/${serviceName}`);
+      console.error(`- @sdkwork/agentstudio-pc-core should not export services/${serviceName}`);
     }
     console.error('');
   }

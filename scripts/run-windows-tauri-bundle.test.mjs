@@ -7,7 +7,7 @@ const rootDir = path.resolve(import.meta.dirname, '..');
 const bundleModulePath = path.join(rootDir, 'scripts', 'run-windows-tauri-bundle.mjs');
 const bundleModuleSource = readFileSync(bundleModulePath, 'utf8');
 const bundleModule = await import(pathToFileURL(bundleModulePath).href);
-const syntheticWorkspaceRoot = 'D:\\workspace\\claw-studio';
+const syntheticWorkspaceRoot = 'D:\\workspace\\agent-studio';
 
 assert.equal(
   typeof bundleModule.createWindowsNsisBridgeReplacements,
@@ -148,7 +148,7 @@ const windowsBundleCommand = bundleModule.buildWindowsTauriBundleCommand({
   platform: 'win32',
   env: {},
   execPath: process.execPath,
-  resolveTauriCliEntrypoint: () => 'D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
+  resolveTauriCliEntrypoint: () => 'D:\\workspace\\agent-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
 });
 assert.equal(
   windowsBundleCommand.command,
@@ -157,7 +157,7 @@ assert.equal(
 );
 assert.deepEqual(
   windowsBundleCommand.args.slice(0, 1),
-  ['D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js'],
+  ['D:\\workspace\\agent-studio\\node_modules\\@tauri-apps\\cli\\tauri.js'],
   'run-windows-tauri-bundle must prefix tauri invocations with the resolved @tauri-apps/cli entrypoint on Windows',
 );
 assert.equal(
@@ -196,7 +196,7 @@ assert.equal(
 );
 assert.equal(
   windowsBundleCommand.cwd,
-  path.join(rootDir, 'packages', 'sdkwork-clawstudio-desktop'),
+  path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-desktop'),
   'run-windows-tauri-bundle must execute the tauri CLI from the desktop package directory',
 );
 const configuredWindowsBundleCommand = bundleModule.buildWindowsTauriBundleCommand({
@@ -204,7 +204,7 @@ const configuredWindowsBundleCommand = bundleModule.buildWindowsTauriBundleComma
   platform: 'win32',
   env: {},
   execPath: process.execPath,
-  resolveTauriCliEntrypoint: () => 'D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
+  resolveTauriCliEntrypoint: () => 'D:\\workspace\\agent-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
 });
 assert.deepEqual(
   configuredWindowsBundleCommand.args.slice(-2),
@@ -219,7 +219,7 @@ const nativeWindowsEnvTargetBundleCommand = bundleModule.buildWindowsTauriBundle
     SDKWORK_DESKTOP_TARGET_ARCH: 'x64',
   },
   execPath: process.execPath,
-  resolveTauriCliEntrypoint: () => 'D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
+  resolveTauriCliEntrypoint: () => 'D:\\workspace\\agent-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
 });
 assert.equal(
   nativeWindowsEnvTargetBundleCommand.args.includes('--target'),
@@ -231,7 +231,7 @@ const arm64WindowsBundleCommand = bundleModule.buildWindowsTauriBundleCommand({
   platform: 'win32',
   env: {},
   execPath: process.execPath,
-  resolveTauriCliEntrypoint: () => 'D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
+  resolveTauriCliEntrypoint: () => 'D:\\workspace\\agent-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
 });
 assert.deepEqual(
   arm64WindowsBundleCommand.args.slice(-2),
@@ -261,7 +261,7 @@ await bundleModule.ensureWindowsBundleOpenClawAliasRoot({
   platform: 'win32',
   resolvePackagedOpenClawResourceDirImpl(workspaceRootDir, platform) {
     ensuredAliasCalls.push(['resolve', workspaceRootDir, platform]);
-    return 'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\release\\openclaw-resource';
+    return 'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\release\\openclaw-resource';
   },
   syncWindowsPackagedOpenClawAliasRootImpl(options) {
     ensuredAliasCalls.push([
@@ -280,7 +280,7 @@ assert.deepEqual(
     [
       'sync',
       syntheticWorkspaceRoot,
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\release\\openclaw-resource',
+      'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\release\\openclaw-resource',
       'win32',
     ],
   ],
@@ -293,35 +293,35 @@ assert.equal(replacements.length, 6);
 assert.deepEqual(replacements.slice(0, 3), [
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\bundled\\',
-    to: 'D:\\.sdkwork-bc\\claw-studio\\bundled\\',
+      'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\bundled\\',
+    to: 'D:\\.sdkwork-bc\\agent-studio\\bundled\\',
   },
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\b\\',
-    to: 'D:\\.sdkwork-bc\\claw-studio\\bundled\\',
+      'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\br\\b\\',
+    to: 'D:\\.sdkwork-bc\\agent-studio\\bundled\\',
   },
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\resources\\openclaw\\',
-    to: 'D:\\.sdkwork-bc\\claw-studio\\openclaw\\',
+      'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\resources\\openclaw\\',
+    to: 'D:\\.sdkwork-bc\\agent-studio\\openclaw\\',
   },
 ]);
 assert.deepEqual(replacements.slice(3), [
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\dist\\',
-    to: 'D:\\.sdkwork-bc\\claw-studio\\web-dist\\',
+      'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\dist\\',
+    to: 'D:\\.sdkwork-bc\\agent-studio\\web-dist\\',
   },
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\w\\',
-    to: 'D:\\.sdkwork-bc\\claw-studio\\web-dist\\',
+      'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\br\\w\\',
+    to: 'D:\\.sdkwork-bc\\agent-studio\\web-dist\\',
   },
   {
     from:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\o\\',
-    to: 'D:\\.sdkwork-bc\\claw-studio\\openclaw\\',
+      'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\br\\o\\',
+    to: 'D:\\.sdkwork-bc\\agent-studio\\openclaw\\',
   },
 ]);
 
@@ -330,13 +330,13 @@ const mirrorResolvedReplacements = bundleModule.createWindowsNsisSourceReplaceme
   {
     resolvePathTargetImpl(sourcePath) {
       if (sourcePath.endsWith('generated\\bundled')) {
-        return 'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors\\bundled-20260404-abcdef';
+        return 'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors\\bundled-20260404-abcdef';
       }
       if (sourcePath.endsWith('generated\\br\\b')) {
-        return 'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors\\bundled-20260404-abcdef';
+        return 'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors\\bundled-20260404-abcdef';
       }
       if (sourcePath.endsWith('generated\\br\\o')) {
-        return 'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\release\\openclaw-resource';
+        return 'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\release\\openclaw-resource';
       }
       return null;
     },
@@ -345,17 +345,17 @@ const mirrorResolvedReplacements = bundleModule.createWindowsNsisSourceReplaceme
 
 assert.equal(
   mirrorResolvedReplacements[0].to,
-  'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
+  'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
   'run-windows-tauri-bundle must prefer the resolved current bundled mirror target when rewriting generated/bundled NSIS source paths',
 );
 assert.equal(
   mirrorResolvedReplacements[1].to,
-  'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
+  'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
   'run-windows-tauri-bundle must rewrite bundled bridge NSIS paths to the same resolved current bundled mirror target',
 );
 assert.equal(
   mirrorResolvedReplacements[5].to,
-  'D:\\.sdkwork-bc\\claw-studio\\openclaw\\',
+  'D:\\.sdkwork-bc\\agent-studio\\openclaw\\',
   'run-windows-tauri-bundle must keep OpenClaw bridge rewrites on the stable short mirror root even when generated/br/o resolves to the canonical packaged release directory',
 );
 
@@ -363,19 +363,19 @@ const overrideBaseReplacements = bundleModule.createWindowsNsisSourceReplacement
   syntheticWorkspaceRoot,
   {
     env: {
-      SDKWORK_WINDOWS_MIRROR_BASE_DIR: 'D:\\workspace\\claw-studio\\.cache\\short-mirrors',
+      SDKWORK_WINDOWS_MIRROR_BASE_DIR: 'D:\\workspace\\agent-studio\\.cache\\short-mirrors',
     },
   },
 );
 
 assert.equal(
   overrideBaseReplacements[2].to,
-  'D:\\workspace\\claw-studio\\.cache\\short-mirrors\\openclaw\\',
+  'D:\\workspace\\agent-studio\\.cache\\short-mirrors\\openclaw\\',
   'run-windows-tauri-bundle must honor the configured Windows mirror base directory when rewriting direct resources/openclaw NSIS source paths',
 );
 assert.equal(
   overrideBaseReplacements[3].to,
-  'D:\\workspace\\claw-studio\\.cache\\short-mirrors\\web-dist\\',
+  'D:\\workspace\\agent-studio\\.cache\\short-mirrors\\web-dist\\',
   'run-windows-tauri-bundle must honor the configured Windows mirror base directory when rewriting direct dist NSIS source paths',
 );
 
@@ -383,12 +383,12 @@ const longResolvedMirrorPlans = bundleModule.resolveWindowsNsisSourceReplacement
   syntheticWorkspaceRoot,
   {
     env: {
-      SDKWORK_WINDOWS_MIRROR_BASE_DIR: 'D:\\workspace\\claw-studio\\.cache\\short-mirrors',
+      SDKWORK_WINDOWS_MIRROR_BASE_DIR: 'D:\\workspace\\agent-studio\\.cache\\short-mirrors',
     },
     resolvePathTargetImpl(sourcePath) {
       if (sourcePath.endsWith('generated\\bundled') || sourcePath.endsWith('generated\\br\\b')) {
         return [
-          'D:\\workspace\\claw-studio',
+          'D:\\workspace\\agent-studio',
           '.cache',
           'short-mirrors',
           'bundled-mirrors',
@@ -406,7 +406,7 @@ const longResolvedMirrorPlans = bundleModule.resolveWindowsNsisSourceReplacement
 assert.equal(
   longResolvedMirrorPlans[0].actualTargetRoot,
   [
-    'D:\\workspace\\claw-studio',
+    'D:\\workspace\\agent-studio',
     '.cache',
     'short-mirrors',
     'bundled-mirrors',
@@ -420,12 +420,12 @@ assert.equal(
 );
 assert.equal(
   longResolvedMirrorPlans[0].to,
-  'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
+  'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
   'run-windows-tauri-bundle must route long resolved bundled mirror targets through a shorter retry alias root before rerunning makensis',
 );
 assert.equal(
   longResolvedMirrorPlans[1].to,
-  'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
+  'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
   'run-windows-tauri-bundle must route the bundled bridge replacement through the same shorter retry alias root when the persisted bundled mirror root is still too long',
 );
 
@@ -433,11 +433,11 @@ const projectedLongFileMirrorPlans = bundleModule.resolveWindowsNsisSourceReplac
   syntheticWorkspaceRoot,
   {
     env: {
-      SDKWORK_WINDOWS_MIRROR_BASE_DIR: 'D:\\workspace\\claw-studio\\.cache\\short-mirrors',
+      SDKWORK_WINDOWS_MIRROR_BASE_DIR: 'D:\\workspace\\agent-studio\\.cache\\short-mirrors',
     },
     resolvePathTargetImpl(sourcePath) {
       if (sourcePath.endsWith('generated\\bundled') || sourcePath.endsWith('generated\\br\\b')) {
-        return 'D:\\workspace\\claw-studio\\.cache\\short-mirrors\\bundled-mirrors\\bundled-20260404-abcdef';
+        return 'D:\\workspace\\agent-studio\\.cache\\short-mirrors\\bundled-mirrors\\bundled-20260404-abcdef';
       }
       return null;
     },
@@ -455,12 +455,12 @@ const projectedLongFileMirrorPlans = bundleModule.resolveWindowsNsisSourceReplac
 );
 assert.equal(
   projectedLongFileMirrorPlans[0].to,
-  'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
+  'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
   'run-windows-tauri-bundle must switch to the shorter retry alias root when a resolved bundled mirror would still exceed the NSIS source-path limit after appending a deep nested file path',
 );
 assert.equal(
   projectedLongFileMirrorPlans[1].to,
-  'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
+  'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors\\bundled-20260404-abcdef\\',
   'run-windows-tauri-bundle must keep the bundled bridge replacement aligned with the shorter retry alias root when projected nested file paths still exceed the NSIS source-path limit',
 );
 
@@ -469,7 +469,7 @@ bundleModule.ensureWindowsNsisRetrySourceAliases({
   plans: longResolvedMirrorPlans,
   pathExistsImpl(targetPath) {
     return targetPath === [
-      'D:\\workspace\\claw-studio',
+      'D:\\workspace\\agent-studio',
       '.cache',
       'short-mirrors',
       'bundled-mirrors',
@@ -496,11 +496,11 @@ bundleModule.ensureWindowsNsisRetrySourceAliases({
 assert.deepEqual(
   aliasOperations,
   [
-    ['mkdir', 'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors'],
+    ['mkdir', 'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors'],
     [
       'symlink',
       [
-        'D:\\workspace\\claw-studio',
+        'D:\\workspace\\agent-studio',
         '.cache',
         'short-mirrors',
         'bundled-mirrors',
@@ -510,7 +510,7 @@ assert.deepEqual(
         'segment-0003-this-path-is-still-too-long',
         'bundled-20260404-abcdef',
       ].join('\\'),
-      'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors\\bundled-20260404-abcdef',
+      'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors\\bundled-20260404-abcdef',
       'junction',
     ],
   ],
@@ -518,35 +518,35 @@ assert.deepEqual(
 );
 
 const sampleInstaller = [
-  'File /a "/oname=generated\\\\bundled\\\\bundle-manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\bundled\\foundation\\components\\bundle-manifest.json"',
-  'File /a "/oname=generated\\\\bundled\\\\bundle-manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\b\\foundation\\components\\bundle-manifest.json"',
-  'File /a "/oname=resources\\\\openclaw\\\\manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\resources\\openclaw\\manifest.json"',
-  'File /a "/oname=dist\\\\index.html" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\dist\\index.html"',
-  'File /a "/oname=dist\\\\index.html" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\w\\index.html"',
-  'File /a "/oname=resources\\\\openclaw\\\\manifest.json" "D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\br\\o\\manifest.json"',
+  'File /a "/oname=generated\\\\bundled\\\\bundle-manifest.json" "D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\bundled\\foundation\\components\\bundle-manifest.json"',
+  'File /a "/oname=generated\\\\bundled\\\\bundle-manifest.json" "D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\br\\b\\foundation\\components\\bundle-manifest.json"',
+  'File /a "/oname=resources\\\\openclaw\\\\manifest.json" "D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\resources\\openclaw\\manifest.json"',
+  'File /a "/oname=dist\\\\index.html" "D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\dist\\index.html"',
+  'File /a "/oname=dist\\\\index.html" "D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\br\\w\\index.html"',
+  'File /a "/oname=resources\\\\openclaw\\\\manifest.json" "D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\br\\o\\manifest.json"',
 ].join('\n');
 
 const rewrittenInstaller = bundleModule.rewriteNsisSourcePaths(sampleInstaller, replacements);
 const preparedInstaller = bundleModule.prepareWindowsNsisRetryScript({
   installerContent: `!define OUTFILE "nsis-output.exe"\n${sampleInstaller}`,
   workspaceRootDir: syntheticWorkspaceRoot,
-  outputFilePath: 'D:\\release\\Claw Studio_0.1.0_x64-setup.exe',
+  outputFilePath: 'D:\\release\\Agent Studio_0.1.0_x64-setup.exe',
 });
 
-assert.match(rewrittenInstaller, /D:\\\.sdkwork-bc\\claw-studio\\bundled\\/);
-assert.match(rewrittenInstaller, /D:\\\.sdkwork-bc\\claw-studio\\web-dist\\/);
-assert.match(rewrittenInstaller, /D:\\\.sdkwork-bc\\claw-studio\\openclaw\\/);
+assert.match(rewrittenInstaller, /D:\\\.sdkwork-bc\\agent-studio\\bundled\\/);
+assert.match(rewrittenInstaller, /D:\\\.sdkwork-bc\\agent-studio\\web-dist\\/);
+assert.match(rewrittenInstaller, /D:\\\.sdkwork-bc\\agent-studio\\openclaw\\/);
 assert.doesNotMatch(rewrittenInstaller, /generated\\bundled\\\\/);
 assert.doesNotMatch(rewrittenInstaller, /generated\\br\\w\\\\/);
 assert.doesNotMatch(rewrittenInstaller, /generated\\br\\[bo]\\\\/);
 assert.doesNotMatch(rewrittenInstaller, /resources\\openclaw\\\\/);
-assert.doesNotMatch(rewrittenInstaller, /packages\\sdkwork-clawstudio-desktop\\dist\\\\/);
+assert.doesNotMatch(rewrittenInstaller, /packages\\sdkwork-agentstudio-pc-desktop\\dist\\\\/);
 assert.match(
   preparedInstaller,
-  /!define OUTFILE "D:\\release\\Claw Studio_0\.1\.0_x64-setup\.exe"/,
+  /!define OUTFILE "D:\\release\\Agent Studio_0\.1\.0_x64-setup\.exe"/,
 );
-assert.match(preparedInstaller, /D:\\\.sdkwork-bc\\claw-studio\\bundled\\/);
-assert.match(preparedInstaller, /D:\\\.sdkwork-bc\\claw-studio\\web-dist\\/);
+assert.match(preparedInstaller, /D:\\\.sdkwork-bc\\agent-studio\\bundled\\/);
+assert.match(preparedInstaller, /D:\\\.sdkwork-bc\\agent-studio\\web-dist\\/);
 assert.doesNotMatch(preparedInstaller, /!define OUTFILE "nsis-output\.exe"/);
 
 console.log('ok - windows tauri bundle fallback rewrites long NSIS sources to short absolute sources');

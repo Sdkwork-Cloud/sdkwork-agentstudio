@@ -122,12 +122,12 @@
 
 - The approved OpenClaw fact-source tests are now part of the formal parity graph rather than manual review only.
 - Promoted parity coverage now includes:
-  - `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-  - `packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts`
-  - `packages/sdkwork-clawstudio-market/src/services/marketService.test.ts`
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.test.ts`
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
+  - `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+  - `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.test.ts`
+  - `packages/sdkwork-agentstudio-pc-market/src/services/marketService.test.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.test.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
 - `check:automation` now runs `scripts/openclaw-quality-gate-contract.test.mjs` so the gate wiring itself is contract-tested.
 
 ### 10.3 Exposure-boundary freeze

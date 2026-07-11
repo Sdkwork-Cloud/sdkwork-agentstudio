@@ -44,7 +44,7 @@ Two regressions were written first and failed before the fix:
 
 File:
 
-- `packages/sdkwork-clawstudio-chat/src/store/chatStoreAuthority.test.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/store/chatStoreAuthority.test.ts`
 
 Reproduction:
 
@@ -63,7 +63,7 @@ Observed pre-fix failure:
 
 File:
 
-- `packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.test.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/store/studioConversationGateway.test.ts`
 
 Reproduction:
 
@@ -81,8 +81,8 @@ Expected behavior:
 
 Files:
 
-- `packages/sdkwork-clawstudio-chat/src/services/store/authoritativeInstanceChatRoute.ts`
-- `packages/sdkwork-clawstudio-chat/src/services/store/index.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/services/store/authoritativeInstanceChatRoute.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/services/store/index.ts`
 
 Change:
 
@@ -102,7 +102,7 @@ This keeps all chat-side route decisions on one authority surface instead of re-
 
 File:
 
-- `packages/sdkwork-clawstudio-chat/src/store/chatStore.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts`
 
 Change:
 
@@ -118,7 +118,7 @@ Result:
 
 File:
 
-- `packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/store/studioConversationGateway.ts`
 
 Change:
 
@@ -133,7 +133,7 @@ Result:
 
 File:
 
-- `packages/sdkwork-clawstudio-chat/src/services/openclaw/openClawGatewayClientRegistry.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/services/openclaw/openClawGatewayClientRegistry.ts`
 
 Change:
 
@@ -151,8 +151,8 @@ Result:
 
 Files:
 
-- `packages/sdkwork-clawstudio-chat/src/store/chatStoreAuthority.test.ts`
-- `packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.test.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/store/chatStoreAuthority.test.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/store/studioConversationGateway.test.ts`
 - `scripts/run-sdkwork-chat-check.mjs`
 
 New coverage now locks:

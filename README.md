@@ -1,11 +1,11 @@
-# SdkWork Claw Studio
+# SdkWork Agent Studio
 repository-kind: application
 
 [Chinese README](./README.zh-CN.md)
 
-SdkWork Claw Studio is a package-first workspace for the modern Claw Studio application, shared browser shell, and Tauri desktop runtime. The current implementation is aligned to `upgrade/claw-studio-v5`, reorganized into maintainable feature packages with strict architecture boundaries and root-only cross-package imports.
+SdkWork Agent Studio is a package-first workspace for the modern Agent Studio application, shared browser shell, and Tauri desktop runtime. The current implementation is aligned to `upgrade/agent-studio-v5`, reorganized into maintainable feature packages with strict architecture boundaries and root-only cross-package imports.
 
-This repository focuses on the SdkWork Claw Studio product. The primary workspace, scripts, and documentation here center on SdkWork Claw Studio.
+This repository focuses on the SdkWork Agent Studio product. The primary workspace, scripts, and documentation here center on SdkWork Agent Studio.
 
 ## Highlights
 
@@ -26,15 +26,15 @@ infrastructure -> (i18n + types)
 
 Key package roles:
 
-- `@sdkwork/clawstudio-web`: runnable web app and Vite host
-- `@sdkwork/clawstudio-desktop`: Tauri desktop entry and native bridge
-- `@sdkwork/clawstudio-shell`: routes, layouts, providers, sidebar, command palette
-- `@sdkwork/clawstudio-core`: shared stores and cross-feature orchestration
-- `@sdkwork/clawstudio-types`: pure types and shared models
-- `@sdkwork/clawstudio-infrastructure`: environment, HTTP, i18n, and platform adapters
-- `@sdkwork/clawstudio-*`: vertical feature packages such as `chat`, `market`, `settings`, `account`, and `extensions`
+- `@sdkwork/agentstudio-pc-web`: runnable web app and Vite host
+- `@sdkwork/agentstudio-pc-desktop`: Tauri desktop entry and native bridge
+- `@sdkwork/agentstudio-pc-shell`: routes, layouts, providers, sidebar, command palette
+- `@sdkwork/agentstudio-pc-core`: shared stores and cross-feature orchestration
+- `@sdkwork/agentstudio-pc-types`: pure types and shared models
+- `@sdkwork/agentstudio-pc-infrastructure`: environment, HTTP, i18n, and platform adapters
+- `@sdkwork/agentstudio-pc-*`: vertical feature packages such as `chat`, `market`, `settings`, `account`, and `extensions`
 
-The repository rejects cross-package subpath imports. Use package roots such as `@sdkwork/clawstudio-market`, not `@sdkwork/clawstudio-market/src/...`.
+The repository rejects cross-package subpath imports. Use package roots such as `@sdkwork/agentstudio-pc-market`, not `@sdkwork/agentstudio-pc-market/src/...`.
 
 ## Quick Start
 
@@ -43,20 +43,20 @@ pnpm install
 pnpm dev
 ```
 
-The default web development server runs through Vite for `@sdkwork/clawstudio-web` on `http://localhost:3001`.
+The default web development server runs through Vite for `@sdkwork/agentstudio-pc-web` on `http://localhost:3001`.
 
 For desktop development and packaging:
 
 ```bash
-pnpm tauri:dev
-pnpm tauri:build
+pnpm dev:desktop
+pnpm build:desktop
 ```
 
 For native server development and packaging:
 
 ```bash
-pnpm server:dev
-pnpm server:build
+pnpm dev:server
+pnpm build:server
 ```
 
 ## Common Commands
@@ -67,7 +67,7 @@ pnpm build         # build the web package
 pnpm check:multi-mode # validate desktop, server, OpenClaw runtime, and release packaging together
 pnpm check:server  # validate the native Rust server runtime
 pnpm check:automation # validate release and CI automation contracts
-pnpm server:build  # build the native Rust server
+pnpm build:server  # build the native Rust server
 pnpm lint          # TypeScript + architecture + parity checks
 pnpm check:arch    # validate package boundaries and root imports
 pnpm check:parity  # verify critical parity checks against the v5 baseline
@@ -76,16 +76,15 @@ pnpm docs:dev      # run the VitePress docs site
 pnpm docs:build    # build the VitePress docs site
 ```
 
-Package-scoped execution stays available through pnpm filters, for example:
+Package-scoped execution stays available through pnpm's filters, for example:
 
 ```bash
-pnpm --filter @sdkwork/clawstudio-web build
-pnpm --filter @sdkwork/clawstudio-desktop tauri:info
+pnpm --filter @sdkwork/agentstudio-pc-web build
 ```
 
 ## Release Artifacts
 
-Claw Studio release tags now publish multiple artifact families from the same workflow:
+Agent Studio release tags now publish multiple artifact families from the same workflow:
 
 - desktop bundles for Windows, Linux, and macOS
 - native server archives for Windows, Linux, and macOS
@@ -104,11 +103,11 @@ Start from [`.env.example`](./.env.example). The most important variables are:
 - `SDKWORK_ACCESS_TOKEN`: optional private bootstrap access token for protected API calls before login
 - `VITE_APP_ID`, `VITE_RELEASE_CHANNEL`, `VITE_DISTRIBUTION_ID`, `VITE_PLATFORM`, `VITE_TIMEOUT`: desktop runtime and update configuration
 
-Desktop-specific examples are also available in [`packages/sdkwork-clawstudio-desktop/.env.example`](./packages/sdkwork-clawstudio-desktop/.env.example).
+Desktop-specific examples are also available in [`packages/sdkwork-agentstudio-pc-desktop/.env.example`](./packages/sdkwork-agentstudio-pc-desktop/.env.example).
 
 ## License
 
-Claw Studio uses a dual-license model:
+Agent Studio uses a dual-license model:
 
 - Open source: [`AGPL-3.0-only`](./LICENSE)
 - Commercial: [`LICENSE-COMMERCIAL.md`](./LICENSE-COMMERCIAL.md)
@@ -165,7 +164,7 @@ Sales response target: within `2 business days`
 
 Suggested email subject:
 
-- `Claw Studio Commercial License Inquiry`
+- `Agent Studio Commercial License Inquiry`
 
 Suggested first email contents:
 
@@ -225,7 +224,7 @@ Response target: within `2 business days`
 - [Commands Reference](./docs/reference/commands.md)
 - [Contribution Guide](./docs/contributing/index.md)
 
-The repository also ships an in-app documentation feature package at `@sdkwork/clawstudio-docs`. The VitePress site in `docs/` is the public project documentation for GitHub and open-source contributors.
+The repository also ships an in-app documentation feature package at `@sdkwork/agentstudio-pc-docs`. The VitePress site in `docs/` is the public project documentation for GitHub and open-source contributors.
 
 ## Contributing
 
@@ -285,7 +284,7 @@ Extension points are limited to declared public exports, runtime entrypoints, SD
 
 ### Verification
 
-- `pnpm --filter @sdkwork/clawstudio-workspace build`
+- `pnpm --filter @sdkwork/agentstudio-workspace build`
 
 ### Owner And Status
 

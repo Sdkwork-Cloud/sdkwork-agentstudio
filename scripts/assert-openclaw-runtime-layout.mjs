@@ -10,14 +10,14 @@ const rootDir = path.resolve(import.meta.dirname, '..');
 
 export const UNSUPPORTED_OPENCLAW_SOURCE_RUNTIME_RELATIVE_DIR = path.join(
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
   'resources',
   'openclaw-runtime',
 );
 export const UNSUPPORTED_OPENCLAW_BUNDLED_NODE_RUNTIME_RELATIVE_DIR = path.join(
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
   'resources',
   'openclaw',

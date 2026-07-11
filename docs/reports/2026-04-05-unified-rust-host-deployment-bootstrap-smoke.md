@@ -43,13 +43,13 @@ Result:
 Run from the extracted container bundle root:
 
 ```bash
-docker build -f deploy/docker/Dockerfile -t claw-studio-smoke:2026-04-05 .
-docker run --rm -d --name claw-studio-smoke -p 18797:18797 -e CLAW_SERVER_MANAGE_USERNAME=claw-admin -e CLAW_SERVER_MANAGE_PASSWORD=replace-with-a-strong-secret claw-studio-smoke:2026-04-05
+docker build -f deploy/docker/Dockerfile -t agent-studio-smoke:2026-04-05 .
+docker run --rm -d --name agent-studio-smoke -p 18797:18797 -e CLAW_SERVER_MANAGE_USERNAME=claw-admin -e CLAW_SERVER_MANAGE_PASSWORD=replace-with-a-strong-secret agent-studio-smoke:2026-04-05
 curl -u claw-admin:replace-with-a-strong-secret http://127.0.0.1:18797/claw/health/live
 curl -u claw-admin:replace-with-a-strong-secret http://127.0.0.1:18797/claw/health/ready
 curl -u claw-admin:replace-with-a-strong-secret http://127.0.0.1:18797/claw/manage/v1/host-endpoints
-docker logs claw-studio-smoke --tail=200
-docker stop claw-studio-smoke
+docker logs agent-studio-smoke --tail=200
+docker stop agent-studio-smoke
 ```
 
 Expected evidence:
@@ -96,14 +96,14 @@ Current status:
 Run from the extracted kubernetes bundle root:
 
 ```bash
-helm upgrade --install claw-studio ./chart -f values.release.yaml --set auth.manageUsername=claw-admin --set auth.managePassword='replace-with-a-strong-secret'
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=claw-studio --timeout=180s
-kubectl get pods -l app.kubernetes.io/name=claw-studio
-kubectl port-forward svc/claw-studio 18797:18797
+helm upgrade --install agent-studio ./chart -f values.release.yaml --set auth.manageUsername=claw-admin --set auth.managePassword='replace-with-a-strong-secret'
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=agent-studio --timeout=180s
+kubectl get pods -l app.kubernetes.io/name=agent-studio
+kubectl port-forward svc/agent-studio 18797:18797
 curl -u claw-admin:replace-with-a-strong-secret http://127.0.0.1:18797/claw/health/ready
 curl -u claw-admin:replace-with-a-strong-secret http://127.0.0.1:18797/claw/manage/v1/host-endpoints
-helm upgrade --install claw-studio ./chart -f values.release.yaml --set replicaCount=2
-helm uninstall claw-studio
+helm upgrade --install agent-studio ./chart -f values.release.yaml --set replicaCount=2
+helm uninstall agent-studio
 ```
 
 Expected evidence:

@@ -29,13 +29,13 @@ The shared runtime architecture is materially more truthful now. The remaining g
 
 Commands executed on 2026-04-05 during the follow-up hardening pass:
 
-- `cargo test --manifest-path packages/sdkwork-clawstudio-host-studio/src-host/Cargo.toml built_in`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml health`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml public_studio_workbench`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-host-studio/src-host/Cargo.toml built_in`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml health`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml public_studio_workbench`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `node scripts/release-deployment-contract.test.mjs`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-core/src/services/openClawConfigService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-host-runtime`
 - `pnpm.cmd check:desktop`
@@ -55,10 +55,10 @@ Result:
 ### 1. Resolved: desktop combined mode no longer has a hosted/direct OpenClaw split-brain
 
 Evidence:
-- `packages/sdkwork-clawstudio-server/src-host/src/bootstrap.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/manage_openclaw.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/main.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/manage_openclaw.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/main.rs`
 
 Current state:
 
@@ -68,9 +68,9 @@ Current state:
 ### 2. Resolved: hosted readiness no longer overstates runtime health
 
 Evidence:
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/internal_node_sessions.rs`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/internal_node_sessions.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
 - `scripts/sdkwork-host-runtime-contract.test.ts`
 
 Current state:
@@ -81,8 +81,8 @@ Current state:
 ### 3. Resolved: hosted desktop manage gateway invoke is no longer a dead stub
 
 Evidence:
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/main.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/main.rs`
 
 Current state:
 
@@ -92,9 +92,9 @@ Current state:
 ### 4. Resolved: desktop startup fail-fast behavior is materially stronger
 
 Evidence:
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/context.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/supervisor.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/app/bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/context.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/supervisor.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/app/bootstrap.rs`
 
 Current state:
 
@@ -104,9 +104,9 @@ Current state:
 ### 5. Resolved: server/container hosted surfaces no longer fake built-in writable ownership
 
 Evidence:
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/api_public.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/health.rs`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/api_public.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/health.rs`
 
 Current state:
 
@@ -117,9 +117,9 @@ Current state:
 ### 6. Resolved: hosted/browser managed OpenClaw config mutation flows are now gateway-first when the runtime is online
 
 Evidence:
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`
-- `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`
 
 Current state:
 
@@ -135,7 +135,7 @@ Current state:
 ### 7. Resolved: hosted conversation and deployment readiness truth are now materially converged
 
 Evidence:
-- `packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/store/studioConversationGateway.ts`
 - `deploy/kubernetes/templates/deployment.yaml`
 - `deploy/kubernetes/values.yaml`
 - `scripts/release-deployment-contract.test.mjs`
@@ -151,10 +151,10 @@ Current state:
 ### 1. Medium: `desktop_host.enabled` is still a pseudo-option rather than a truthful supported mode
 
 Evidence:
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
 
 What is happening:
 

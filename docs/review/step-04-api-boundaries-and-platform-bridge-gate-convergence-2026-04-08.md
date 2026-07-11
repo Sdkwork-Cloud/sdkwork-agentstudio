@@ -15,9 +15,9 @@
   - all three passed, confirming that the host runtime contract, instance-facing platform bridge surface, and native server host surface remain aligned with the current API layering and platform-bridge design
 - Step 05 entry probe:
   - ran `pnpm.cmd check:sdkwork-settings`
-  - ran `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
-  - ran `packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts`
-  - ran `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+  - ran `packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.test.ts`
+  - ran `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.test.ts`
+  - ran `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
   - ran `node scripts/desktop-local-ai-proxy-contract.test.mjs`
   - all passed, so the next frontier is no longer a visible Step 03/04/05 contract regression
 - Actual workspace result:
@@ -26,27 +26,27 @@
 
 ## OpenClaw Fact Sources
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
   - remains the browser/runtime fact source for hosted and built-in OpenClaw platform behavior and workbench persistence semantics
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
   - remains the contract evidence for the browser-hosted platform bridge and managed workbench read/write behavior
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
   - remains the shell-facing workbench consumer that must stay on authoritative runtime and provider-management surfaces
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
   - remains part of the config-workbench truth chain for managed OpenClaw editing semantics
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
   - remains the channel-workspace service that must stay aligned with the approved platform bridge and config read/write surfaces
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
   - remains the ecosystem-side service proving that feature packages consume package-root APIs instead of handwritten transport bypasses
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
   - remains the agent-install fact source for OpenClaw config-path ownership and writable managed config semantics
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
   - remains the authoritative capability gate for managed OpenClaw provider/workbench behavior
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
   - remains the presentation-layer fact source for Provider Center managed-state behavior
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   - remains the single Local Proxy runtime and observability fact source that Step 03/05 must preserve
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
   - remains the stable plugin-registration boundary and stayed unchanged through this gate-convergence loop
 
 ## Verification Focus
@@ -59,9 +59,9 @@
 - `pnpm.cmd check:sdkwork-instances`
 - `pnpm.cmd check:server`
 - `pnpm.cmd check:sdkwork-settings`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-channels/src/services/channelService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
 - `node scripts/desktop-local-ai-proxy-contract.test.mjs`
 
 ## Architecture Writeback

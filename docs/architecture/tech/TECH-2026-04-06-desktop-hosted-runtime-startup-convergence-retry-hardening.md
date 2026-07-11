@@ -22,10 +22,10 @@ later.
 
 The startup path had two different convergence stories:
 
-1. `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.ts`
+1. `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.ts`
    already retried descriptor resolution until the canonical hosted runtime
    descriptor became available.
-2. `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts`
+2. `packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.ts`
    still called `probeStaticDesktopHostedRuntimeReadiness(...)` as a one-shot
    operation once the descriptor existed.
 
@@ -35,7 +35,7 @@ Relevant evidence from the existing architecture:
 
 - Rust startup emits `app://ready` only after bundled OpenClaw activation
   finishes successfully:
-  `packages/sdkwork-clawstudio-desktop/src-tauri/src/app/bootstrap.rs`
+  `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/app/bootstrap.rs`
 - the frontend had no equivalent convergence window around
   `probeDesktopHostedRuntimeReadiness()`
 - `DesktopBootstrapApp.tsx` therefore turned any transient startup probe
@@ -51,7 +51,7 @@ startup convergence.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.ts`
 
 Added:
 
@@ -66,7 +66,7 @@ preserving the last real error if the convergence window expires.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.ts`
 
 Behavior change:
 
@@ -85,7 +85,7 @@ occur before the retry window closes.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
 
 Behavior change:
 
@@ -108,7 +108,7 @@ final success or final failure and hid the convergence path in between.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
 
 New regressions:
 
@@ -137,7 +137,7 @@ drop the convergence window.
 
 The following commands were executed after the change:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`

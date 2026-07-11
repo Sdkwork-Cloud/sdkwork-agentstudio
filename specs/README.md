@@ -1,6 +1,6 @@
-# Claw Studio Component Specs
+# Agent Studio Component Specs
 
-This directory is the local standards index for `claw-studio`.
+This directory is the local standards index for `agent-studio`.
 
 Root SDKWork standards remain authoritative. Local component specs can narrow or document this component, but they must not contradict [the root standards](../../sdkwork-specs/README.md).
 
@@ -8,9 +8,9 @@ Root SDKWork standards remain authoritative. Local component specs can narrow or
 
 | Field | Value |
 | --- | --- |
-| Name | `claw-studio` |
+| Name | `agent-studio` |
 | Type | `app` |
-| Root | `claw-studio` |
+| Root | `agent-studio` |
 | Domain | `system` |
 | Capability | `component` |
 | Languages | `typescript` |
@@ -56,10 +56,46 @@ Root SDKWork standards remain authoritative. Local component specs can narrow or
 - `@sdkwork/messaging-app-sdk` from `../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi`.
 - `@sdkwork/local-api-proxy` from `../sdkwork-local-router/packages/pc-react/intelligence/sdkwork-local-api-proxy`.
 
+## Local Architecture Narrowing Rules
+
+These rules narrow global SDKWork standards for this application root. They must not contradict `../sdkwork-specs/`.
+
+### Package Layering
+
+This is a `pnpm` workspace rooted at `apps/sdkwork-agentstudio-pc/packages/*`. Dependency flow: `web/desktop → shell → feature → (core + infrastructure + types + ui)`.
+
+- `sdkwork-agentstudio-pc-web`: browser host (Vite, routing, providers, platform bootstrap).
+- `sdkwork-agentstudio-pc-desktop`: Tauri desktop host (native commands, platform adapters, runtime entry).
+- `sdkwork-agentstudio-pc-shell`: application shell (layout, router, providers).
+- `sdkwork-agentstudio-pc-types`: shared entities and types.
+- `sdkwork-agentstudio-pc-infrastructure`: HTTP/config/platform adapters.
+- `sdkwork-agentstudio-pc-core`: shared services, hooks, stores, SDK client wiring.
+- `sdkwork-agentstudio-pc-i18n`: locale bootstrap.
+- `sdkwork-agentstudio-pc-ui`: reusable UI components.
+- Feature packages (`sdkwork-agentstudio-pc-chat`, `sdkwork-agentstudio-pc-settings`, etc.): keep `src/components`, `src/pages`, and `src/services` as minimum boundaries.
+
+Cross-package APIs must be consumed from the package root only. Do not import from package-internal subpaths. Business `services`, `stores`, or `hooks` must not live inside `sdkwork-agentstudio-pc-web/src` or `sdkwork-agentstudio-pc-desktop/src`.
+
+### Coding Conventions
+
+TypeScript and React function components with hooks. 2-space indentation, semicolons, grouped imports. Components/pages use `PascalCase.tsx`; services/utilities use `camelCase.ts`; Zustand hooks use `useXStore.ts`. Internal workspace packages are scoped as `@sdkwork/agentstudio-pc-xxx` in kebab-case.
+
+### Testing
+
+Logic-heavy tests are colocated with source as `*.test.ts` or `*.test.tsx`. Run `pnpm lint` and `pnpm build` before PR. New behavior requires a focused test or clear manual verification note. Authority: `../sdkwork-specs/TEST_SPEC.md`.
+
+### Commit Guidelines
+
+Conventional Commits (`feat:`, `docs:`, etc.). Each commit scoped to one package or architectural concern. PRs include summary, affected packages, verification commands, and linked issues.
+
+### Security
+
+Never commit secrets. Start from `.env.example`. `GEMINI_API_KEY` is required for AI endpoints. `SDKWORK_ACCESS_TOKEN` is optional for protected API bootstrap. Document every new environment variable. Authority: `../sdkwork-specs/SECURITY_SPEC.md`, `../sdkwork-specs/ENVIRONMENT_SPEC.md`.
+
 ## Local Extension Specs
 
 - No local extension specs are declared yet.
 
 ## Verification
 
-- `pnpm --filter @sdkwork/clawstudio-workspace build`
+- `pnpm --filter @sdkwork/agentstudio-workspace build`

@@ -24,7 +24,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
-const desktopPackageDir = path.join(rootDir, 'packages', 'sdkwork-clawstudio-desktop');
+const desktopPackageDir = path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-desktop');
 const desktopSrcTauriDir = path.join(desktopPackageDir, 'src-tauri');
 const defaultBundleOverlayConfig = path.join(
   desktopPackageDir,
@@ -376,7 +376,7 @@ export function resolveWindowsNsisSourceReplacementPlans(
   const desktopSrcTauriWinDir = path.win32.join(
     workspaceRootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
   );
 

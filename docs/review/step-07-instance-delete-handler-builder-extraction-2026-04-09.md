@@ -25,7 +25,7 @@
 
 ## Implemented Fix
 
-- Extended `packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.ts`.
+- Extended `packages/sdkwork-agentstudio-pc-instances/src/services/instanceLifecycleActionSupport.ts`.
 - Added `buildInstanceDeleteHandler(...)` so the shared helper now owns:
   - delete eligibility guarding
   - translated uninstall confirmation prompt routing through the injected browser confirmer
@@ -33,8 +33,8 @@
   - translated success and fallback error routing through injected page reporters
   - active-instance clear routing when the deleted instance was the active one
   - post-delete navigation through the injected page-owned navigator
-- Added focused direct coverage in `packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.test.ts`.
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Added focused direct coverage in `packages/sdkwork-agentstudio-pc-instances/src/services/instanceLifecycleActionSupport.test.ts`.
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds `deleteHandler`
   - passes `onDelete={deleteHandler}` into `InstanceDetailHeader`
   - removes the inline `handleDelete` wrapper
@@ -63,25 +63,25 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed workbench persistence, lifecycle readiness, managed-config writability, provider-center projection, Local Proxy routing/projection, and desktop plugin/runtime registration. This loop only centralizes the remaining page-side instance-delete destructive-flow handler composition and removes a dead navigation wrapper.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `991` lines / `40887` bytes
-- `packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.ts`: `150` lines / `5218` bytes
-- `packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.test.ts`: `364` lines / `12302` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `991` lines / `40887` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceLifecycleActionSupport.ts`: `150` lines / `5218` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceLifecycleActionSupport.test.ts`: `364` lines / `12302` bytes
 
 Relative to the immediately prior `1006` page baseline from `release-2026-04-09-145`, the current dirty worktree now re-measures `InstanceDetail.tsx` at `991`. This loop removes the remaining inline instance-delete destructive-flow wrapper from the page, cleans out the dead task-workspace closure, and records another small but verified page reduction.
 
@@ -93,15 +93,15 @@ Relative to the immediately prior `1006` page baseline from `release-2026-04-09-
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceLifecycleActionSupport.test.ts`
   - failed first because `buildInstanceDeleteHandler(...)` did not yet exist
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` still kept the inline delete wrapper and did not build `deleteHandler`
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceLifecycleActionSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

@@ -2,11 +2,11 @@
 
 ## Goal
 
-在不破坏 `Local Proxy`、`/claw/*` 五分层 API、包根导出边界、以及 `Instance Detail` 真相源规则的前提下，把 Claw Studio 对齐到当前行业领先 agentic workbench 产品标准。
+在不破坏 `Local Proxy`、`/claw/*` 五分层 API、包根导出边界、以及 `Instance Detail` 真相源规则的前提下，把 Agent Studio 对齐到当前行业领先 agentic workbench 产品标准。
 
 ## Benchmark Matrix
 
-| 能力 | 官方标杆证据 | 当前 Claw Studio 状态 | 差距判定 | 设计动作 |
+| 能力 | 官方标杆证据 | 当前 Agent Studio 状态 | 差距判定 | 设计动作 |
 | --- | --- | --- | --- | --- |
 | 异步后台代理 | Cursor Background Agents；GitHub Copilot coding agent | 已有实例任务、Agent、Skill、Workbench，但没有统一后台执行车道与接管界面 | `P1` | 复用任务/实例真相源设计后台代理车道，不新增平行状态机 |
 | 自动代码审查 | Cursor Bugbot；GitHub agent/MCP review flow | 现有 `docs/review/` 与契约测试强，但没有产品内 diff review 面板 | `P1` | 建 review workbench，把 findings、证据、修复状态落到 review/task 链 |

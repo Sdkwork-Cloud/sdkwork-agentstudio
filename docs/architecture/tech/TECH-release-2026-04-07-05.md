@@ -13,13 +13,13 @@
 
 - This candidate did not publish a GitHub Release object.
 - The `Verify release inputs` job still failed on April 7, 2026 after the IM package roots were materialized.
-- Root cause: the TypeScript package scripts inside `Sdkwork-Cloud/sdkwork-im-sdk` still invoked `vite` and `tsc` through hard-coded `../../../node_modules/*` paths, which only worked in one monorepo layout and broke in the Claw Studio release workspace.
+- Root cause: the TypeScript package scripts inside `Sdkwork-Cloud/sdkwork-im-sdk` still invoked `vite` and `tsc` through hard-coded `../../../node_modules/*` paths, which only worked in one monorepo layout and broke in the Agent Studio release workspace.
 - The unpublished change log from this attempt is carried forward into `release-2026-04-07-06`.
 
 ## Verification Focus
 
 - Confirm `node scripts/check-shared-sdk-release-parity.mjs` passes for all pinned GitHub-backed shared SDK package roots.
-- Confirm `pnpm lint`, `pnpm check:desktop`, `pnpm check:server`, `pnpm build`, `pnpm server:build`, and `pnpm docs:build` succeed from the release-ready workspace.
+- Confirm `pnpm lint`, `pnpm check:desktop`, `pnpm check:server`, `pnpm build`, `pnpm build:server`, and `pnpm docs:build` succeed from the release-ready workspace.
 - Confirm `node scripts/release/render-release-notes.mjs --release-tag release-2026-04-07-05` renders the merged release body and includes the carried-forward tags `release-2026-04-07-01` through `release-2026-04-07-04`.
 - Confirm the next release candidate replaces the hard-coded IM package tool paths with portable package-local build metadata and scripts.
 

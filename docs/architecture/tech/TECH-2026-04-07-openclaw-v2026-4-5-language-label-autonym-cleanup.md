@@ -18,7 +18,7 @@
 ## Step 1: Finding from the follow-up review
 
 The previous language-surface loop correctly moved most labels to native names, but a small
-metadata inconsistency remained in `packages/sdkwork-clawstudio-i18n/src/config.ts`:
+metadata inconsistency remained in `packages/sdkwork-agentstudio-pc-i18n/src/config.ts`:
 
 - `pl` still rendered as `Polish`
 - `id` still rendered as `Indonesian`
@@ -34,23 +34,23 @@ Why this still mattered:
 
 Red phase:
 
-- Added failing assertions to `packages/sdkwork-clawstudio-i18n/src/index.test.ts`:
+- Added failing assertions to `packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts`:
   - `LANGUAGE_LABELS.pl === 'Polski'`
   - `LANGUAGE_LABELS.id === 'Bahasa Indonesia'`
 - Verified the expected failure with:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts`
 - Failure confirmed the real defect:
   - `'Polish' !== 'Polski'`
 
 Green phase:
 
-- Updated `packages/sdkwork-clawstudio-i18n/src/config.ts`:
+- Updated `packages/sdkwork-agentstudio-pc-i18n/src/config.ts`:
   - `pl` -> `Polski`
   - `id` -> `Bahasa Indonesia`
 
 ## Step 3: Verification evidence
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts`
   - passed
 - `pnpm.cmd check:i18n`
   - passed

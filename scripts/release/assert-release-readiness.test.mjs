@@ -22,7 +22,7 @@ import {
 
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
 const minimalReleaseProfile = Object.freeze({
-  id: 'claw-studio',
+  id: 'agent-studio',
   release: Object.freeze({
     manifestFileName: 'release-manifest.json',
     manifestChecksumFileName: 'release-manifest.json.sha256.txt',
@@ -70,23 +70,23 @@ const macosDesktopOnlyReleaseProfile = Object.freeze({
   }),
 });
 
-function resolveMinimalReleaseProfile(profileId = 'claw-studio') {
-  assert.equal(profileId, 'claw-studio');
+function resolveMinimalReleaseProfile(profileId = 'agent-studio') {
+  assert.equal(profileId, 'agent-studio');
   return minimalReleaseProfile;
 }
 
-function resolveDesktopOnlyReleaseProfile(profileId = 'claw-studio') {
-  assert.equal(profileId, 'claw-studio');
+function resolveDesktopOnlyReleaseProfile(profileId = 'agent-studio') {
+  assert.equal(profileId, 'agent-studio');
   return desktopOnlyReleaseProfile;
 }
 
-function resolveMacosDesktopOnlyReleaseProfile(profileId = 'claw-studio') {
-  assert.equal(profileId, 'claw-studio');
+function resolveMacosDesktopOnlyReleaseProfile(profileId = 'agent-studio') {
+  assert.equal(profileId, 'agent-studio');
   return macosDesktopOnlyReleaseProfile;
 }
 
 function resolveReleaseProfileWithChecksumFileName(checksumFileName) {
-  return (profileId = 'claw-studio') => ({
+  return (profileId = 'agent-studio') => ({
     ...minimalReleaseProfile,
     id: profileId,
     release: {
@@ -97,7 +97,7 @@ function resolveReleaseProfileWithChecksumFileName(checksumFileName) {
 }
 
 function resolveReleaseProfileWithManifestChecksumFileName(manifestChecksumFileName) {
-  return (profileId = 'claw-studio') => ({
+  return (profileId = 'agent-studio') => ({
     ...minimalReleaseProfile,
     id: profileId,
     release: {
@@ -108,7 +108,7 @@ function resolveReleaseProfileWithManifestChecksumFileName(manifestChecksumFileN
 }
 
 function resolveReleaseProfileWithAttestationEvidenceFileName(attestationEvidenceFileName) {
-  return (profileId = 'claw-studio') => ({
+  return (profileId = 'agent-studio') => ({
     ...minimalReleaseProfile,
     id: profileId,
     release: {
@@ -142,7 +142,7 @@ function writeManualReleaseMetadataFixture({
   const releaseNotesRelativePath = 'release-notes.md';
   const releaseNotesPath = path.join(releaseAssetsDir, releaseNotesRelativePath);
   if (!existsSync(releaseNotesPath)) {
-    writeFileSync(releaseNotesPath, '# Claw Studio Release\n\nRelease notes.\n', 'utf8');
+    writeFileSync(releaseNotesPath, '# Agent Studio Release\n\nRelease notes.\n', 'utf8');
   }
   const releaseNotesSha256 = fileSha256(releaseNotesPath);
   const checksumPath = path.join(releaseAssetsDir, checksumFileName);
@@ -170,7 +170,7 @@ function writeManualReleaseMetadataFixture({
 function writeManualAttestationEvidenceFixture({
   releaseAssetsDir,
   entries,
-  repository = 'Sdkwork-Cloud/claw-studio',
+  repository = 'Sdkwork-Cloud/agent-studio',
   releaseTag = 'release-2026-04-12-01',
   predicateType = 'https://slsa.dev/provenance/v1',
   signerWorkflow = '.github/workflows/release-reusable.yml',
@@ -243,10 +243,10 @@ function completeManualReleaseManifest({
 
 function writeAttestationEvidenceFixture({
   releaseAssetsDir,
-  artifactRelativePath = 'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz',
+  artifactRelativePath = 'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz',
   artifactSha256 = '',
   releaseMetadata = [],
-  repository = 'Sdkwork-Cloud/claw-studio',
+  repository = 'Sdkwork-Cloud/agent-studio',
   releaseTag = 'release-2026-04-12-01',
   sourceRef = `refs/tags/${releaseTag}`,
   predicateType = 'https://slsa.dev/provenance/v1',
@@ -315,7 +315,7 @@ function commonSmokeEvidenceMetadata({
   };
 }
 
-function buildReleaseNotesMetadata(releaseAssetsDir, content = '# Claw Studio Release\n\nRelease notes.\n') {
+function buildReleaseNotesMetadata(releaseAssetsDir, content = '# Agent Studio Release\n\nRelease notes.\n') {
   const relativePath = 'release-notes.md';
   const filePath = path.join(releaseAssetsDir, relativePath);
   writeFileSync(filePath, content, 'utf8');
@@ -379,7 +379,7 @@ function buildWebArchiveSmokeMetadata(artifactRelativePath) {
 }
 
 function createWebReleaseArchiveFixture({
-  bundleRoot = 'claw-studio-web-assets-release-2026-04-12-01',
+  bundleRoot = 'agent-studio-web-assets-release-2026-04-12-01',
   extraEntries = [],
 } = {}) {
   return createTarGzArchive([
@@ -389,7 +389,7 @@ function createWebReleaseArchiveFixture({
     },
     {
       name: `${bundleRoot}/web/dist/assets/index.js`,
-      content: 'console.log("claw studio");\n',
+      content: 'console.log("Agent Studio");\n',
     },
     {
       name: `${bundleRoot}/docs/dist/index.html`,
@@ -405,7 +405,7 @@ function createWebReleaseArchiveFixture({
         {
           title: 'Getting Started',
           url: '/guide/getting-started',
-          text: 'Start with Claw Studio',
+          text: 'Start with Agent Studio',
         },
       ])}\n`,
     },
@@ -503,9 +503,9 @@ function buildMacosDesktopStartupSmokeReport({
     localAiProxyRuntime: {
       lifecycle: 'running',
       messageCaptureEnabled: true,
-      observabilityDbPath: '/Users/test/Library/Application Support/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-      snapshotPath: '/Users/test/Library/Application Support/Claw Studio/state/local-ai-proxy.snapshot.json',
-      logPath: '/Users/test/Library/Logs/Claw Studio/local-ai-proxy.log',
+      observabilityDbPath: '/Users/test/Library/Application Support/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+      snapshotPath: '/Users/test/Library/Application Support/Agent Studio/state/local-ai-proxy.snapshot.json',
+      logPath: '/Users/test/Library/Logs/Agent Studio/local-ai-proxy.log',
     },
     artifactRelativePaths,
     checks: buildMacosDesktopStartupSmokeChecks(),
@@ -514,7 +514,7 @@ function buildMacosDesktopStartupSmokeReport({
 
 function writeReadyReleaseFixture({
   releaseAssetsDir,
-  profileId = 'claw-studio',
+  profileId = 'agent-studio',
   releaseCoverage = {
     status: 'complete',
     allowPartialRelease: false,
@@ -523,7 +523,7 @@ function writeReadyReleaseFixture({
     missingTargets: [],
   },
   checksumFileName = 'SHA256SUMS.txt',
-  artifactRelativePath = 'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz',
+  artifactRelativePath = 'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz',
   artifactContent = createWebReleaseArchiveFixture(),
 } = {}) {
   const artifactPath = path.join(releaseAssetsDir, artifactRelativePath);
@@ -576,9 +576,9 @@ function writeReadyReleaseFixture({
     path.join(releaseAssetsDir, 'release-manifest.json'),
     `${JSON.stringify({
       profileId,
-      productName: 'Claw Studio',
+      productName: 'Agent Studio',
       releaseTag: 'release-2026-04-12-01',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       generatedAt: '2026-04-12T01:02:03.000Z',
       checksumFileName,
       releaseCoverage,
@@ -717,7 +717,7 @@ test('release readiness assertion rejects smoke metadata that references missing
         releaseAssetsDir,
         resolveReleaseProfileFn: resolveMinimalReleaseProfile,
       }),
-      /Release manifest webArchiveSmoke metadata for web\/claw-studio-web-assets-release-2026-04-12-01\.tar\.gz references missing reportRelativePath: web\/release-smoke-report\.json/,
+      /Release manifest webArchiveSmoke metadata for web\/agent-studio-web-assets-release-2026-04-12-01\.tar\.gz references missing reportRelativePath: web\/release-smoke-report\.json/,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -788,7 +788,7 @@ test('release readiness assertion rejects smoke metadata evidence paths that are
         releaseAssetsDir,
         resolveReleaseProfileFn: resolveMinimalReleaseProfile,
       }),
-      /Release manifest webArchiveSmoke metadata for web\/claw-studio-web-assets-release-2026-04-12-01\.tar\.gz references a non-file manifestRelativePath: web\/release-asset-manifest\.json/,
+      /Release manifest webArchiveSmoke metadata for web\/agent-studio-web-assets-release-2026-04-12-01\.tar\.gz references a non-file manifestRelativePath: web\/release-asset-manifest\.json/,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -823,7 +823,7 @@ test('release readiness assertion rejects smoke metadata that drifts from refere
         releaseAssetsDir,
         resolveReleaseProfileFn: resolveMinimalReleaseProfile,
       }),
-      /Release manifest webArchiveSmoke metadata for web\/claw-studio-web-assets-release-2026-04-12-01\.tar\.gz does not match report status: expected passed, received failed/,
+      /Release manifest webArchiveSmoke metadata for web\/agent-studio-web-assets-release-2026-04-12-01\.tar\.gz does not match report status: expected passed, received failed/,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -852,7 +852,7 @@ test('release readiness assertion rejects smoke evidence files whose hashes drif
         releaseAssetsDir,
         resolveReleaseProfileFn: resolveMinimalReleaseProfile,
       }),
-      /Release manifest webArchiveSmoke metadata for web\/claw-studio-web-assets-release-2026-04-12-01\.tar\.gz reportSha256 mismatch/,
+      /Release manifest webArchiveSmoke metadata for web\/agent-studio-web-assets-release-2026-04-12-01\.tar\.gz reportSha256 mismatch/,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -879,7 +879,7 @@ test('release readiness assertion rejects smoke metadata that omits evidence has
         releaseAssetsDir,
         resolveReleaseProfileFn: resolveMinimalReleaseProfile,
       }),
-      /Release manifest webArchiveSmoke metadata for web\/claw-studio-web-assets-release-2026-04-12-01\.tar\.gz is missing reportSha256/,
+      /Release manifest webArchiveSmoke metadata for web\/agent-studio-web-assets-release-2026-04-12-01\.tar\.gz is missing reportSha256/,
     );
 
     writeReadyReleaseFixture({ releaseAssetsDir });
@@ -893,7 +893,7 @@ test('release readiness assertion rejects smoke metadata that omits evidence has
         releaseAssetsDir,
         resolveReleaseProfileFn: resolveMinimalReleaseProfile,
       }),
-      /Release manifest webArchiveSmoke metadata for web\/claw-studio-web-assets-release-2026-04-12-01\.tar\.gz is missing manifestSize/,
+      /Release manifest webArchiveSmoke metadata for web\/agent-studio-web-assets-release-2026-04-12-01\.tar\.gz is missing manifestSize/,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -1020,13 +1020,13 @@ test('release readiness assertion rejects attestation evidence that does not bin
         releaseAssetsDir,
         resolveReleaseProfileFn: resolveMinimalReleaseProfile,
       }),
-      /Release attestation evidence is missing artifact verification for web\/claw-studio-web-assets-release-2026-04-12-01\.tar\.gz/,
+      /Release attestation evidence is missing artifact verification for web\/agent-studio-web-assets-release-2026-04-12-01\.tar\.gz/,
     );
 
     writeReadyReleaseFixture({ releaseAssetsDir });
     const wrongDigestEvidence = JSON.parse(readFileSync(evidencePath, 'utf8'));
     wrongDigestEvidence.artifacts[0].sha256 = '0'.repeat(64);
-    wrongDigestEvidence.artifacts[0].repository = 'Sdkwork-Cloud/claw-studio';
+    wrongDigestEvidence.artifacts[0].repository = 'Sdkwork-Cloud/agent-studio';
     wrongDigestEvidence.artifacts[0].sourceRef = 'refs/tags/release-2026-04-12-01';
     wrongDigestEvidence.artifacts[0].predicateType = 'https://slsa.dev/provenance/v1';
     writeFileSync(evidencePath, `${JSON.stringify(wrongDigestEvidence, null, 2)}\n`, 'utf8');
@@ -1035,7 +1035,7 @@ test('release readiness assertion rejects attestation evidence that does not bin
         releaseAssetsDir,
         resolveReleaseProfileFn: resolveMinimalReleaseProfile,
       }),
-      /Release attestation evidence digest mismatch for web\/claw-studio-web-assets-release-2026-04-12-01\.tar\.gz/,
+      /Release attestation evidence digest mismatch for web\/agent-studio-web-assets-release-2026-04-12-01\.tar\.gz/,
     );
 
     writeReadyReleaseFixture({ releaseAssetsDir });
@@ -1104,7 +1104,7 @@ test('release readiness assertion rejects attestation evidence that does not bin
     writeReadyReleaseFixture({ releaseAssetsDir });
     const missingSignerFlagEvidence = JSON.parse(readFileSync(evidencePath, 'utf8'));
     missingSignerFlagEvidence.artifacts[0].verificationCommand = missingSignerFlagEvidence.artifacts[0].verificationCommand.replace(
-      ' --signer-workflow Sdkwork-Cloud/claw-studio/.github/workflows/release-reusable.yml',
+      ' --signer-workflow Sdkwork-Cloud/agent-studio/.github/workflows/release-reusable.yml',
       '',
     );
     writeFileSync(evidencePath, `${JSON.stringify(missingSignerFlagEvidence, null, 2)}\n`, 'utf8');
@@ -1161,7 +1161,7 @@ test('release readiness assertion rejects attestation evidence file names that r
     assert.throws(
       () => readiness.assertReleaseReadiness({
         releaseAssetsDir,
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         resolveReleaseProfileFn: resolveReleaseProfileWithAttestationEvidenceFileName('../release-attestations.json'),
       }),
       /Invalid release attestation evidence file name/,
@@ -1256,7 +1256,7 @@ test('release readiness assertion rejects checksum and artifact drift in finaliz
 
     writeFileSync(
       path.join(releaseAssetsDir, 'SHA256SUMS.txt'),
-      `${'0'.repeat(64)}  web/claw-studio-web-assets-release-2026-04-12-01.tar.gz\n`,
+      `${'0'.repeat(64)}  web/agent-studio-web-assets-release-2026-04-12-01.tar.gz\n`,
       'utf8',
     );
     assert.throws(
@@ -1283,7 +1283,7 @@ test('release readiness assertion rejects checksum and artifact drift in finaliz
 
     writeReadyReleaseFixture({ releaseAssetsDir });
     rmSync(
-      path.join(releaseAssetsDir, 'web', 'claw-studio-web-assets-release-2026-04-12-01.tar.gz'),
+      path.join(releaseAssetsDir, 'web', 'agent-studio-web-assets-release-2026-04-12-01.tar.gz'),
       { force: true },
     );
     assert.throws(
@@ -1322,10 +1322,10 @@ test('release readiness assertion verifies present targets from artifact metadat
     writeFileSync(
       path.join(releaseAssetsDir, 'release-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
-        productName: 'Claw Studio',
+        profileId: 'agent-studio',
+        productName: 'Agent Studio',
         releaseTag: 'release-2026-04-12-01',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         generatedAt: '2026-04-12T01:02:03.000Z',
         checksumFileName: 'SHA256SUMS.txt',
         releaseCoverage: {
@@ -1378,7 +1378,7 @@ test('release readiness assertion rejects artifacts outside the active release p
   const readiness = await import(pathToFileURL(readinessPath).href);
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-ready-extra-artifacts-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const webArtifactRelativePath = 'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz';
+  const webArtifactRelativePath = 'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz';
   const desktopArtifactRelativePath = 'desktop/windows/x64/Claw.Studio_0.1.0_x64-setup.exe';
   const webArtifactContent = 'web-assets';
   const desktopArtifactContent = 'desktop-installer';
@@ -1410,10 +1410,10 @@ test('release readiness assertion rejects artifacts outside the active release p
     writeFileSync(
       path.join(releaseAssetsDir, 'release-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
-        productName: 'Claw Studio',
+        profileId: 'agent-studio',
+        productName: 'Agent Studio',
         releaseTag: 'release-2026-04-12-01',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         generatedAt: '2026-04-12T01:02:03.000Z',
         checksumFileName: 'SHA256SUMS.txt',
         releaseCoverage: {
@@ -1465,8 +1465,8 @@ test('release readiness assertion rejects duplicate artifacts for the same relea
   const readiness = await import(pathToFileURL(readinessPath).href);
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-ready-duplicate-target-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const firstArtifactRelativePath = 'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz';
-  const secondArtifactRelativePath = 'web/claw-studio-web-assets-release-2026-04-12-02.tar.gz';
+  const firstArtifactRelativePath = 'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz';
+  const secondArtifactRelativePath = 'web/agent-studio-web-assets-release-2026-04-12-02.tar.gz';
   const firstArtifactContent = 'web-assets-one';
   const secondArtifactContent = 'web-assets-two';
   const firstArtifactSha256 = sha256(firstArtifactContent);
@@ -1496,10 +1496,10 @@ test('release readiness assertion rejects duplicate artifacts for the same relea
     writeFileSync(
       path.join(releaseAssetsDir, 'release-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
-        productName: 'Claw Studio',
+        profileId: 'agent-studio',
+        productName: 'Agent Studio',
         releaseTag: 'release-2026-04-12-01',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         generatedAt: '2026-04-12T01:02:03.000Z',
         checksumFileName: 'SHA256SUMS.txt',
         releaseCoverage: {
@@ -1577,16 +1577,16 @@ test('release readiness assertion rejects unsafe artifact paths on every host pl
     const artifactSha256 = sha256(artifactContent);
     writeFileSync(
       path.join(releaseAssetsDir, 'SHA256SUMS.txt'),
-      `${artifactSha256}  web/claw-studio-web-assets-release-2026-04-12-01.tar.gz\n`,
+      `${artifactSha256}  web/agent-studio-web-assets-release-2026-04-12-01.tar.gz\n`,
       'utf8',
     );
     writeFileSync(
       path.join(releaseAssetsDir, 'release-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
-        productName: 'Claw Studio',
+        profileId: 'agent-studio',
+        productName: 'Agent Studio',
         releaseTag: 'release-2026-04-12-01',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         generatedAt: '2026-04-12T01:02:03.000Z',
         checksumFileName: 'SHA256SUMS.txt',
         releaseCoverage: {
@@ -1648,7 +1648,7 @@ test('release readiness assertion requires canonical relative artifact paths in 
   try {
     mkdirSync(releaseAssetsDir, { recursive: true });
     const artifactContent = 'web-assets';
-    const artifactRelativePath = 'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz';
+    const artifactRelativePath = 'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz';
     const artifactSha256 = sha256(artifactContent);
     writeFileSync(
       path.join(releaseAssetsDir, 'SHA256SUMS.txt'),
@@ -1658,10 +1658,10 @@ test('release readiness assertion requires canonical relative artifact paths in 
     writeFileSync(
       path.join(releaseAssetsDir, 'release-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
-        productName: 'Claw Studio',
+        profileId: 'agent-studio',
+        productName: 'Agent Studio',
         releaseTag: 'release-2026-04-12-01',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         generatedAt: '2026-04-12T01:02:03.000Z',
         checksumFileName: 'SHA256SUMS.txt',
         releaseCoverage: {
@@ -1701,7 +1701,7 @@ test('release readiness assertion requires canonical relative artifact paths in 
     const artifact = manifest.artifacts[0];
     writeFileSync(
       path.join(releaseAssetsDir, 'SHA256SUMS.txt'),
-      `${artifact.sha256}  ./web/claw-studio-web-assets-release-2026-04-12-01.tar.gz\n`,
+      `${artifact.sha256}  ./web/agent-studio-web-assets-release-2026-04-12-01.tar.gz\n`,
       'utf8',
     );
 
@@ -1733,7 +1733,7 @@ test('release readiness assertion rejects manifests for the wrong release profil
     assert.throws(
       () => readiness.assertReleaseReadiness({
         releaseAssetsDir,
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         resolveReleaseProfileFn: resolveMinimalReleaseProfile,
       }),
       /Release manifest profile mismatch/,
@@ -1747,7 +1747,7 @@ test('release readiness assertion rejects manifests for the wrong release profil
     assert.throws(
       () => readiness.assertReleaseReadiness({
         releaseAssetsDir,
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         resolveReleaseProfileFn: resolveMinimalReleaseProfile,
       }),
       /Release manifest checksum file mismatch/,
@@ -1763,7 +1763,7 @@ test('release readiness assertion rejects manifests for the wrong release profil
     assert.throws(
       () => readiness.assertReleaseReadiness({
         releaseAssetsDir,
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         resolveReleaseProfileFn: resolveMinimalReleaseProfile,
       }),
       /Release manifest checksum file mismatch/,
@@ -1782,15 +1782,15 @@ test('release readiness assertion rejects checksum file names that resolve outsi
   try {
     mkdirSync(releaseAssetsDir, { recursive: true });
     const artifactContent = 'web-assets';
-    const artifactRelativePath = 'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz';
+    const artifactRelativePath = 'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz';
     const artifactSha256 = sha256(artifactContent);
     writeFileSync(
       path.join(releaseAssetsDir, 'release-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
-        productName: 'Claw Studio',
+        profileId: 'agent-studio',
+        productName: 'Agent Studio',
         releaseTag: 'release-2026-04-12-01',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         generatedAt: '2026-04-12T01:02:03.000Z',
         checksumFileName: '..',
         releaseCoverage: {
@@ -1819,7 +1819,7 @@ test('release readiness assertion rejects checksum file names that resolve outsi
     assert.throws(
       () => readiness.assertReleaseReadiness({
         releaseAssetsDir,
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         resolveReleaseProfileFn: resolveReleaseProfileWithChecksumFileName('..'),
       }),
       /Invalid release checksum file name/,
@@ -1842,7 +1842,7 @@ test('release readiness assertion rejects manifest checksum sidecar names that r
     assert.throws(
       () => readiness.assertReleaseReadiness({
         releaseAssetsDir,
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         resolveReleaseProfileFn: resolveReleaseProfileWithManifestChecksumFileName('../release-manifest.json.sha256.txt'),
       }),
       /Invalid release manifest checksum sidecar file name/,
@@ -1858,7 +1858,7 @@ test('release readiness assertion rejects finalized desktop manifests without re
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-ready-desktop-smoke-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const desktopArtifactRelativePath = 'desktop/windows/x64/Claw.Studio_0.1.0_x64-setup.exe';
-  const webArtifactRelativePath = 'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz';
+  const webArtifactRelativePath = 'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz';
   const desktopArtifactContent = 'desktop-installer';
   const webArtifactContent = createWebReleaseArchiveFixture();
   const desktopArtifactSha256 = sha256(desktopArtifactContent);
@@ -1930,10 +1930,10 @@ test('release readiness assertion rejects finalized desktop manifests without re
     writeFileSync(
       path.join(releaseAssetsDir, 'release-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
-        productName: 'Claw Studio',
+        profileId: 'agent-studio',
+        productName: 'Agent Studio',
         releaseTag: 'release-2026-04-12-01',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         generatedAt: '2026-04-12T01:02:03.000Z',
         checksumFileName: 'SHA256SUMS.txt',
         releaseCoverage: {
@@ -2024,7 +2024,7 @@ test('release readiness assertion rejects unsafe finalized macOS app archive com
   const webDir = path.join(releaseAssetsDir, 'web');
   const appArtifactRelativePath = 'desktop/macos/arm64/Claw.Studio_0.1.0_arm64.app.zip';
   const dmgArtifactRelativePath = 'desktop/macos/arm64/Claw.Studio_0.1.0_arm64.dmg';
-  const webArtifactRelativePath = 'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz';
+  const webArtifactRelativePath = 'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz';
   const smokeManifestRelativePath = 'desktop/macos/arm64/release-asset-manifest.json';
   const installerSmokeReportRelativePath = 'desktop/macos/arm64/installer-smoke-report.json';
   const startupSmokeReportRelativePath = 'desktop/macos/arm64/desktop-startup-smoke-report.json';
@@ -2036,12 +2036,12 @@ test('release readiness assertion rejects unsafe finalized macOS app archive com
     mkdirSync(path.join(desktopDir, 'diagnostics'), { recursive: true });
     const appArchive = createStoredZipArchive([
       {
-        name: 'Claw Studio.app/Contents/MacOS/claw-studio',
+        name: 'Agent Studio.app/Contents/MacOS/agent-studio',
         content: 'binary\n',
       },
       {
-        name: 'Claw Studio.app/Contents/MacOS/claw-studio-link',
-        content: 'claw-studio',
+        name: 'Agent Studio.app/Contents/MacOS/agent-studio-link',
+        content: 'agent-studio',
         externalAttributes: 0o120777 << 16,
       },
     ]);
@@ -2190,10 +2190,10 @@ test('release readiness assertion rejects unsafe finalized macOS app archive com
     writeFileSync(
       path.join(releaseAssetsDir, 'release-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
-        productName: 'Claw Studio',
+        profileId: 'agent-studio',
+        productName: 'Agent Studio',
         releaseTag: 'release-2026-04-12-01',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         generatedAt: '2026-04-12T01:02:03.000Z',
         checksumFileName: 'SHA256SUMS.txt',
         releaseCoverage: {
@@ -2242,7 +2242,7 @@ test('release readiness assertion rejects unsafe finalized web archive entries',
       artifactContent: createWebReleaseArchiveFixture({
         extraEntries: [
           {
-            name: 'claw-studio-web-assets-release-2026-04-12-01/web/dist/assets/index-link.js',
+            name: 'agent-studio-web-assets-release-2026-04-12-01/web/dist/assets/index-link.js',
             content: 'index.js',
             type: '2',
           },
@@ -2282,7 +2282,7 @@ test('release readiness assertion verifies coverage against the release profile,
     });
 
     assert.throws(
-      () => readiness.assertReleaseReadiness({ releaseAssetsDir, profileId: 'claw-studio' }),
+      () => readiness.assertReleaseReadiness({ releaseAssetsDir, profileId: 'agent-studio' }),
       /Release manifest coverage does not match profile/,
     );
   } finally {

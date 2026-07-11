@@ -1,7 +1,7 @@
 > Migrated from `docs/release/release-2026-04-09-88.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
-# Claw Studio release-2026-04-09-88
+# Agent Studio release-2026-04-09-88
 
 ## Highlights
 
@@ -15,8 +15,8 @@
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed because `InstanceDetail.tsx` still contained inline `SectionHeading(...)` and `SectionAvailabilityNotice(...)`
 - Implemented the narrow repair:
-  - added `SectionHeading(...)` and `SectionAvailabilityNotice(...)` back to `packages/sdkwork-clawstudio-instances/src/components/InstanceWorkbenchPrimitives.tsx`
-  - rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` to import those primitives
+  - added `SectionHeading(...)` and `SectionAvailabilityNotice(...)` back to `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceWorkbenchPrimitives.tsx`
+  - rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` to import those primitives
   - removed the inline page definitions
   - kept `getCapabilityTone(...)` in `instanceDetailWorkbenchPresentation.ts` and `formatWorkbenchLabel(...)` in the shared formatting helper, so this loop fixed the chrome boundary without moving authority-bearing logic
 - Fresh OpenClaw fact-source re-read confirmed no authority drift across:
@@ -39,8 +39,8 @@
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceWorkbenchPrimitives.tsx`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceWorkbenchPrimitives.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
 - `docs/review/step-07-section-chrome-shared-primitives-2026-04-09.md`
 - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
 - `docs/release/release-2026-04-09-88.md`
@@ -50,13 +50,13 @@
 
 - RED: `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - GREEN: `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedConfigDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
 - `pnpm check:sdkwork-instances`
 
 ## Risks And Rollback

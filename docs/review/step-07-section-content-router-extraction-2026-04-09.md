@@ -25,7 +25,7 @@
 
 ## Implemented Extraction
 
-- Added `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx` to own:
+- Added `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailSectionContent.tsx` to own:
   - shared section-availability rendering through `renderInstanceDetailSectionAvailability(...)`
   - active-section switching for `overview`, `channels`, `cronTasks`, `llmProviders`, `agents`, `skills`, `files`, `memory`, `tools`, and `config`
   - section-level composition for:
@@ -40,12 +40,12 @@
     - `memory`
     - `tools`
     - `cronTasks`
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds the already-separated `agentSectionContent`, `llmProvidersSectionContent`, `tasksSectionContent`, `memorySectionContent`, and `toolsSectionContent`
   - delegates all section switching and availability routing to `InstanceDetailSectionContent`
   - reuses the extracted `renderInstanceDetailSectionAvailability(...)` helper for `llmProviders`, `memory`, and `tools`
 - Added focused coverage in:
-  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.test.tsx`
+  - `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailSectionContent.test.tsx`
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract gate now enforces:
   - the page no longer keeps the section router and section-availability functions inline
   - the dedicated section-content component owns the overview / channels / skills / files / config routing boundary
@@ -68,42 +68,42 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for runtime truth, managed-provider semantics, ecosystem behavior, Local Proxy projection, and desktop/plugin boundaries. The current loop only moves page-side section composition.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2009`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `2009`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1431`
 
 Relative to the prior current-worktree baseline from `release-2026-04-09-92`, the page hotspot now moves from `2102` to `2009`.
 
 ## Verification
 
 - RED:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailSectionContent.test.tsx`
   - failed first because `InstanceDetailSectionContent.tsx` did not exist yet
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because the page still kept the section router inline and the component file did not exist
 - GREEN:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailSectionContent.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 - YELLOW:
   - repo-wide `pnpm lint`

@@ -29,10 +29,10 @@ function flattenKeys(value: unknown, prefix = ''): string[] {
 
 function extractCommunityTranslationKeys() {
   const files = [
-    'packages/sdkwork-clawstudio-community/src/pages/community/Community.tsx',
-    'packages/sdkwork-clawstudio-community/src/pages/community/CommunityPostDetail.tsx',
-    'packages/sdkwork-clawstudio-community/src/pages/community/NewPost.tsx',
-    'packages/sdkwork-clawstudio-community/src/pages/community/NewPostWorkspace.tsx',
+    'packages/sdkwork-agentstudio-pc-community/src/pages/community/Community.tsx',
+    'packages/sdkwork-agentstudio-pc-community/src/pages/community/CommunityPostDetail.tsx',
+    'packages/sdkwork-agentstudio-pc-community/src/pages/community/NewPost.tsx',
+    'packages/sdkwork-agentstudio-pc-community/src/pages/community/NewPostWorkspace.tsx',
   ];
   const pattern = /community\.[A-Za-z0-9_.]+/g;
   const matches = new Set<string>();
@@ -99,24 +99,24 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-clawstudio-community keeps the V5 community package surface locally', () => {
+runTest('sdkwork-agentstudio-pc-community keeps the V5 community package surface locally', () => {
   const pkg = readJson<{ dependencies?: Record<string, string> }>(
-    'packages/sdkwork-clawstudio-community/package.json',
+    'packages/sdkwork-agentstudio-pc-community/package.json',
   );
-  const indexSource = read('packages/sdkwork-clawstudio-community/src/index.ts');
-  const communityEntrySource = read('packages/sdkwork-clawstudio-community/src/Community.tsx');
-  const detailEntrySource = read('packages/sdkwork-clawstudio-community/src/CommunityPostDetail.tsx');
-  const newPostEntrySource = read('packages/sdkwork-clawstudio-community/src/NewPost.tsx');
+  const indexSource = read('packages/sdkwork-agentstudio-pc-community/src/index.ts');
+  const communityEntrySource = read('packages/sdkwork-agentstudio-pc-community/src/Community.tsx');
+  const detailEntrySource = read('packages/sdkwork-agentstudio-pc-community/src/CommunityPostDetail.tsx');
+  const newPostEntrySource = read('packages/sdkwork-agentstudio-pc-community/src/NewPost.tsx');
 
-  assert.ok(exists('packages/sdkwork-clawstudio-community/src/Community.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-community/src/CommunityPostDetail.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-community/src/NewPost.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-community/src/pages/community/Community.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-community/src/services/communityService.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-community/src/Community.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-community/src/CommunityPostDetail.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-community/src/NewPost.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-community/src/pages/community/Community.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-community/src/services/communityService.ts'));
 
-  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-community']);
+  assert.ok(!pkg.dependencies?.['@sdkwork/agentstudio-pc-studio-community']);
   assert.ok(!pkg.dependencies?.['@google/genai']);
-  assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-community/);
+  assert.doesNotMatch(indexSource, /@sdkwork\/agent-studio-community/);
   assert.match(communityEntrySource, /lazy\(\(\) =>/);
   assert.match(communityEntrySource, /\.\/pages\/community\/Community/);
   assert.match(detailEntrySource, /lazy\(\(\) =>/);
@@ -126,9 +126,9 @@ runTest('sdkwork-clawstudio-community keeps the V5 community package surface loc
 });
 
 runTest(
-  'sdkwork-clawstudio-community exposes a classified-information landing instead of the old article community',
+  'sdkwork-agentstudio-pc-community exposes a classified-information landing instead of the old article community',
   () => {
-    const pageSource = read('packages/sdkwork-clawstudio-community/src/pages/community/Community.tsx');
+    const pageSource = read('packages/sdkwork-agentstudio-pc-community/src/pages/community/Community.tsx');
 
     assert.match(pageSource, /useTranslation/);
     assert.match(pageSource, /id: 'job-seeking'/);
@@ -159,15 +159,15 @@ runTest(
   },
 );
 
-runTest('sdkwork-clawstudio-community routes classifieds through the shared app sdk instead of local mock data', () => {
-  const serviceSource = read('packages/sdkwork-clawstudio-community/src/services/communityService.ts');
-  const coreServiceSource = read('packages/sdkwork-clawstudio-core/src/services/communityService.ts');
+runTest('sdkwork-agentstudio-pc-community routes classifieds through the shared app sdk instead of local mock data', () => {
+  const serviceSource = read('packages/sdkwork-agentstudio-pc-community/src/services/communityService.ts');
+  const coreServiceSource = read('packages/sdkwork-agentstudio-pc-core/src/services/communityService.ts');
   const recommendationSource = read(
-    'packages/sdkwork-clawstudio-community/src/services/communityRecommendations.ts',
+    'packages/sdkwork-agentstudio-pc-community/src/services/communityRecommendations.ts',
   );
-  const newPostSource = read('packages/sdkwork-clawstudio-community/src/pages/community/NewPostWorkspace.tsx');
-  const llmServiceSource = read('packages/sdkwork-clawstudio-community/src/services/llmService.ts');
-  const detailSource = read('packages/sdkwork-clawstudio-community/src/pages/community/CommunityPostDetail.tsx');
+  const newPostSource = read('packages/sdkwork-agentstudio-pc-community/src/pages/community/NewPostWorkspace.tsx');
+  const llmServiceSource = read('packages/sdkwork-agentstudio-pc-community/src/services/llmService.ts');
+  const detailSource = read('packages/sdkwork-agentstudio-pc-community/src/pages/community/CommunityPostDetail.tsx');
 
   assert.match(serviceSource, /@sdkwork\/claw-core/);
   assert.match(serviceSource, /communityService/);
@@ -180,7 +180,7 @@ runTest('sdkwork-clawstudio-community routes classifieds through the shared app 
   assert.doesNotMatch(serviceSource, /client\.comment\.createComment/);
   assert.doesNotMatch(serviceSource, /client\.category\.listCategories/);
   assert.match(coreServiceSource, /createCommunityService/);
-  assert.match(coreServiceSource, /getClawStudioAppClientWithSession/);
+  assert.match(coreServiceSource, /getagentstudioAppClientWithSession/);
   assert.doesNotMatch(coreServiceSource, /getAppSdkClientWithSession/);
   assert.match(coreServiceSource, /unwrapAppSdkResponse/);
   assert.match(coreServiceSource, /client\.feed\.getFeedList/);
@@ -232,10 +232,10 @@ runTest('sdkwork-clawstudio-community routes classifieds through the shared app 
   assert.doesNotMatch(detailSource, /-mt-20/);
 });
 
-runTest('sdkwork-clawstudio-community keeps the NewPost route shell separate from the heavy tiptap editor workspace', () => {
-  const newPostRouteSource = read('packages/sdkwork-clawstudio-community/src/pages/community/NewPost.tsx');
+runTest('sdkwork-agentstudio-pc-community keeps the NewPost route shell separate from the heavy tiptap editor workspace', () => {
+  const newPostRouteSource = read('packages/sdkwork-agentstudio-pc-community/src/pages/community/NewPost.tsx');
 
-  assert.ok(exists('packages/sdkwork-clawstudio-community/src/pages/community/NewPostWorkspace.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-community/src/pages/community/NewPostWorkspace.tsx'));
   assert.match(newPostRouteSource, /Suspense/);
   assert.match(newPostRouteSource, /lazy\(\(\) =>/);
   assert.match(newPostRouteSource, /\.\/NewPostWorkspace/);
@@ -245,10 +245,10 @@ runTest('sdkwork-clawstudio-community keeps the NewPost route shell separate fro
   assert.doesNotMatch(newPostRouteSource, /useEditor/);
 });
 
-runTest('sdkwork-clawstudio-community keeps the route surface and locale coverage aligned with the final classifieds UI', () => {
-  const routesSource = read('packages/sdkwork-clawstudio-shell/src/application/router/AppRoutes.tsx');
-  const enLocale = readJson<Record<string, unknown>>('packages/sdkwork-clawstudio-i18n/src/locales/en.json');
-  const zhLocale = readJson<Record<string, unknown>>('packages/sdkwork-clawstudio-i18n/src/locales/zh.json');
+runTest('sdkwork-agentstudio-pc-community keeps the route surface and locale coverage aligned with the final classifieds UI', () => {
+  const routesSource = read('packages/sdkwork-agentstudio-pc-shell/src/application/router/AppRoutes.tsx');
+  const enLocale = readJson<Record<string, unknown>>('packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json');
+  const zhLocale = readJson<Record<string, unknown>>('packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json');
   const requiredKeys = extractCommunityTranslationKeys();
   const availableEn = new Set(flattenKeys(enLocale));
   const availableZh = new Set(flattenKeys(zhLocale));

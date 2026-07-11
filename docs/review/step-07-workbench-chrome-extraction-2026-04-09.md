@@ -21,16 +21,16 @@
 
 ## Implemented Extraction
 
-- Added pure presentation builders to `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.ts`:
+- Added pure presentation builders to `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.ts`:
   - `buildInstanceWorkbenchSummaryMetrics(...)`
   - `buildInstanceWorkbenchResourceMetrics(...)`
 - Added a dedicated chrome boundary:
-  - `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.tsx`
+  - `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.tsx`
     - owns the lower summary deck
     - owns the section sidebar shell
     - owns the CPU / memory cards
     - owns the shared `SectionHeading(...)` composition for the active workbench section
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`:
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`:
   - now renders `InstanceDetailWorkbenchChrome`
   - keeps `activeSection` state in the page
   - keeps all write-path authority, toast dispatch, reload behavior, and truth-source routing in the page
@@ -60,40 +60,40 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources still place managed OpenClaw authority, provider workspace readonly semantics, market install entry points, channel write bridging, and local desktop runtime boundaries outside the page-level chrome extraction.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2073`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.tsx`: `159`
-- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `273`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `2073`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.tsx`: `159`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `273`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1274`
 
 Relative to the prior loop's `2423`-line page baseline, this loop reduces `InstanceDetail.tsx` to `2073`.
 
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
   - both initially failed because the new builders and the new chrome component did not exist yet
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 - YELLOW:
   - `pnpm lint`

@@ -47,12 +47,12 @@ Currently verified remaining gaps:
 ### 1. Critical: lifecycle actions are synthetic for most non-built-in instances
 
 Evidence:
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:1770`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:1822`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:1864`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:992`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:998`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:1004`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs:1770`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs:1822`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs:1864`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:992`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:998`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:1004`
 
 What happens:
 - Desktop only performs real process control for the built-in local-managed OpenClaw instance.
@@ -78,11 +78,11 @@ Required fix:
 ### 2. Critical: server normalization corrupts remote instance truth
 
 Evidence:
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:438`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:483`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:492`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:499`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:575`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:438`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:483`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:492`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:499`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:575`
 
 What happens:
 - Custom instances default to `deploymentMode = "local-managed"` when missing.
@@ -110,11 +110,11 @@ Required fix:
 ### 3. High: server host can misclassify custom instances as managed OpenClaw workbenches
 
 Evidence:
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:442`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:765`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:901`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:1114`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:1827`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:442`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:765`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:901`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:1114`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:1827`
 
 What happens:
 - Managed workbench eligibility is inferred from:
@@ -141,10 +141,10 @@ Required fix:
 ### 4. High: delete semantics are inconsistent across desktop and server
 
 Evidence:
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:1690`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:1740`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:962`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:975`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs:1690`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs:1740`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:962`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:975`
 
 What happens:
 - Desktop removes the deleted instance from conversations, reassigns `primary_instance_id` when possible, and only deletes a conversation if no participant remains.
@@ -167,9 +167,9 @@ Required fix:
 ### 5. High: server instance detail overstates control and mutability
 
 Evidence:
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:805`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:807`
-- `packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs:808`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:805`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:807`
+- `packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs:808`
 
 What happens:
 - `configWritable` is hardcoded to `true`.
@@ -196,9 +196,9 @@ Required fix:
 ### 6. Medium: desktop built-in instance status can go stale
 
 Evidence:
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:2457`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:4487`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:4549`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs:2457`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs:4487`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs:4549`
 
 What happens:
 - `build_built_in_instance(...)` seeds the built-in status as `Offline`.
@@ -220,7 +220,7 @@ Required fix:
 ### 7. Medium: desktop detail can read the built-in OpenClaw config for any local-managed OpenClaw instance
 
 Evidence:
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs:2277`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs:2277`
 
 What happens:
 - `get_instance_detail(...)` loads `paths.openclaw_config_file` for every instance where:
@@ -243,12 +243,12 @@ Required fix:
 ### 8. Medium: frontend lifecycle UX trusts status instead of capabilities
 
 Evidence:
-- `packages/sdkwork-clawstudio-instances/src/pages/Instances.tsx:584`
-- `packages/sdkwork-clawstudio-instances/src/pages/Instances.tsx:608`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx:1575`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx:4238`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceService.ts:558`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceManagementPresentation.ts:164`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/Instances.tsx:584`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/Instances.tsx:608`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx:1575`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx:4238`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.ts:558`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceManagementPresentation.ts:164`
 
 What happens:
 - List and detail pages expose `start/stop/restart` mostly from `status`.
@@ -406,7 +406,7 @@ Implemented:
 - browser fallback (`webStudio`) now keeps the built-in OpenClaw workbench managed but no longer claims lifecycle control, and it no longer synthesizes a managed workbench for custom `local-managed` OpenClaw entries
 - management-scope presentation is now capability-driven; it no longer treats raw `configWritable` as proof of runtime control and instead distinguishes managed workbench control from remote console/config surfaces
 - node inventory topology classification has been extracted into a pure shared helper, and custom non-built-in `local-managed` metadata runtimes no longer get misclassified as `managedRemote`; they now project as attached external nodes unless the host has explicit managed-runtime evidence
-- `@sdkwork/clawstudio-infrastructure` no longer re-exports `@sdkwork/clawstudio-i18n` from its root barrel, so hosted desktop/browser platform tests can execute without dragging React/i18n into pure transport/runtime validation paths
+- `@sdkwork/agentstudio-pc-infrastructure` no longer re-exports `@sdkwork/agentstudio-pc-i18n` from its root barrel, so hosted desktop/browser platform tests can execute without dragging React/i18n into pure transport/runtime validation paths
 - `instanceService` has been split into:
   - `instanceServiceCore.ts` for pure lifecycle/config/provider logic with explicit dependency injection
   - `instanceService.ts` as a thin runtime wrapper that binds `studio`, `openClawGatewayClient`, and `openClawConfigService`
@@ -417,32 +417,32 @@ Implemented:
 - instance-service test fixtures now project built-in `local-managed` OpenClaw with explicit lifecycle capability truth (`workbenchManaged`, `endpointObserved`, `lifecycleControllable`) instead of relying on stale implicit defaults
 
 Verified:
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml -- --nocapture`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml desktop_combined_hosted_startup_ -- --nocapture`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml public_studio_instance_mutation_routes_preserve_custom_instance_mutations_and_reject_unsupported_lifecycle_control -- --nocapture`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-host-studio/src-host/Cargo.toml`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-host-studio/src-host/Cargo.toml default_provider_ -- --nocapture`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml custom_local_managed_openclaw_detail_does_not_read_built_in_managed_config -- --nocapture`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml built_in_instance_detail_ -- --nocapture`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_server::tests::desktop_backend_ -- --nocapture`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_server_handle_reports_ready_status_after_startup -- --nocapture`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml local_external_openclaw_detail_ -- --nocapture`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml zeroclaw_remote_instance_detail_reports_external_lifecycle_and_dashboard_endpoint -- --nocapture`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml custom_local_managed_openclaw_detail_ -- --nocapture`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml -- --nocapture`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml desktop_combined_hosted_startup_ -- --nocapture`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml public_studio_instance_mutation_routes_preserve_custom_instance_mutations_and_reject_unsupported_lifecycle_control -- --nocapture`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-host-studio/src-host/Cargo.toml`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-host-studio/src-host/Cargo.toml default_provider_ -- --nocapture`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml custom_local_managed_openclaw_detail_does_not_read_built_in_managed_config -- --nocapture`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml built_in_instance_detail_ -- --nocapture`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml embedded_host_server::tests::desktop_backend_ -- --nocapture`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml embedded_host_server_handle_reports_ready_status_after_startup -- --nocapture`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml local_external_openclaw_detail_ -- --nocapture`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml zeroclaw_remote_instance_detail_reports_external_lifecycle_and_dashboard_endpoint -- --nocapture`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml custom_local_managed_openclaw_detail_ -- --nocapture`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceManagementPresentation.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/agentWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/agentSkillManagementService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/nodeInventoryService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/nodeInventoryTopology.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/serverBrowserBridge.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceManagementPresentation.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/agentWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/agentSkillManagementService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/nodeInventoryService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/nodeInventoryTopology.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 
 Current local environment blockers:

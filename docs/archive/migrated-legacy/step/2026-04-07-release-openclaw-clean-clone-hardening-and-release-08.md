@@ -9,7 +9,7 @@
 ## Problems Found
 
 1. `release-2026-04-07-07` failed in GitHub Actions run `24073460127` during `release / Verify release inputs`.
-2. `scripts/openclaw-release-contract.test.mjs` assumed `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json` already existed in a clean checkout, but that file is generated only after the OpenClaw runtime is prepared.
+2. `scripts/openclaw-release-contract.test.mjs` assumed `packages/sdkwork-agentstudio-pc-desktop/src-tauri/resources/openclaw/manifest.json` already existed in a clean checkout, but that file is generated only after the OpenClaw runtime is prepared.
 3. `scripts/prepare-openclaw-runtime.mjs` conflated the requested target platform with the active host filesystem semantics. When Linux-hosted verification exercised `platform: 'win32'`, it used `path.win32` for real filesystem paths under `/tmp/...`, which rewrote host paths into invalid `\\tmp\\...` lookups.
 4. The Windows short-mirror resolver normalized explicit POSIX mirror roots into Windows-style paths, which made Linux-hosted verification drift away from the actual host-accessible paths it needed to use.
 
@@ -32,7 +32,7 @@
 ### OpenClaw clean-clone contract hardening
 
 - Updated `scripts/openclaw-release-contract.test.mjs` so it only reads `resources/openclaw/manifest.json` when that prepared artifact actually exists.
-- Strengthened the clean-clone contract around `packages/sdkwork-clawstudio-desktop/src-tauri/build.rs` instead:
+- Strengthened the clean-clone contract around `packages/sdkwork-agentstudio-pc-desktop/src-tauri/build.rs` instead:
   - the desktop build must read `config/openclaw-release.json`
   - the desktop build must export `SDKWORK_BUNDLED_OPENCLAW_VERSION`
 

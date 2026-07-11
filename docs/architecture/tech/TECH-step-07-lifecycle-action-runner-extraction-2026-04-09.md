@@ -34,15 +34,15 @@
 
 ## Implemented Extraction
 
-- Added `packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.ts` to own:
+- Added `packages/sdkwork-agentstudio-pc-instances/src/services/instanceLifecycleActionSupport.ts` to own:
   - `InstanceLifecycleActionRequest`
   - `CreateInstanceLifecycleActionRunnerArgs`
   - `createInstanceLifecycleActionRunner(...)`
 - Added focused helper coverage in:
-  - `packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.test.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/instanceLifecycleActionSupport.test.ts`
 - Updated the service barrel in:
-  - `packages/sdkwork-clawstudio-instances/src/services/index.ts`
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/index.ts`
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` so the page now:
   - creates `runLifecycleAction` through `createInstanceLifecycleActionRunner(...)`
   - injects reload authority, toast bridges, and `t`
   - keeps all three handlers focused on choosing the page-owned lifecycle callback and translation keys
@@ -68,49 +68,49 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser workbench persistence, Control UI section alignment, default-agent install targets, managed-provider/readonly decisions, Local Proxy ownership, and desktop plugin/runtime ownership. The current loop only moves lifecycle orchestration.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1911`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.ts`: `29`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentSkillMutationSupport.ts`: `204`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawAgentMutationSupport.ts`: `146`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigMutationSupport.ts`: `39`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `373`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts`: `239`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `1911`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceLifecycleActionSupport.ts`: `29`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawAgentSkillMutationSupport.ts`: `204`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawAgentMutationSupport.ts`: `146`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedConfigMutationSupport.ts`: `39`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderCatalogMutationSupport.ts`: `373`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedChannelMutationSupport.ts`: `239`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailSectionContent.tsx`: `222`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `93`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `258`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1431`
 
 Relative to the immediately prior `1906` page baseline from the agent skill request note, the raw page line count now re-measures at `1911`. This loop is still a verified boundary improvement, but not a raw shrink, because the current worktree keeps explicit injected lifecycle runner wiring in the page shell while moving the repeated orchestration cluster into the shared helper.
 
 ## Verification
 
 - RED established in this loop:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceLifecycleActionSupport.test.ts`
   - failed first because `instanceLifecycleActionSupport.ts` did not exist yet
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because the page still owned the inline lifecycle action orchestration cluster
 - GREEN in this loop:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceLifecycleActionSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceLifecycleActionSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 - Repo-wide lint status:
   - not rerun in this loop

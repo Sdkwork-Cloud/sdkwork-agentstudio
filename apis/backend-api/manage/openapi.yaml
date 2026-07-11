@@ -1,0 +1,920 @@
+openapi: 3.1.2
+info:
+  title: SdkWork Agent Studio Manage Backend API
+  version: v1
+  description: >-
+    Authored OpenAPI contract for the Manage control-plane backend-api surface
+    (`/claw/manage/v1/...`). SDKWork-owned custom API; success responses use the
+    `SdkWorkApiResponse` envelope and errors use `application/problem+json`
+    with `SdkWorkProblemDetail` (API_SPEC.md §15). Auth mode: `dual-token`.
+  x-sdkwork-surface: backend-api
+  x-sdkwork-auth-mode: dual-token
+servers:
+  - url: /
+    description: Same-origin Claw server
+tags:
+  - name: manage.rollouts
+    description: Rollout control-plane APIs.
+  - name: manage.host-endpoints
+    description: Host-managed endpoint projection APIs.
+  - name: manage.openclaw
+    description: OpenClaw runtime and gateway control-plane APIs.
+  - name: manage.service
+    description: Native service lifecycle control-plane APIs.
+paths:
+  /claw/manage/v1/rollouts:
+    get:
+      tags: [manage.rollouts]
+      operationId: manage.rollouts.list
+      summary: List rollout records
+      x-sdkwork-auth-mode: dual-token
+      parameters:
+        - $ref: ../../schemas/sdkwork-common.yaml#/components/parameters/PageQuery
+        - $ref: ../../schemas/sdkwork-common.yaml#/components/parameters/PageSizeQuery
+      responses:
+        '200':
+          description: Current rollout list.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ManageRolloutListResult'
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '503':
+          description: The rollout list could not be loaded.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/manage/v1/rollouts/preview:
+    post:
+      tags: [manage.rollouts]
+      operationId: manage.rollouts.preview
+      summary: Preview a rollout
+      x-sdkwork-auth-mode: dual-token
+      requestBody:
+        required: true
+        description: Rollout preview request body identifying the rollout to preview.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreviewRolloutRouteBody'
+      responses:
+        '200':
+          description: Rollout preview result.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ManageRolloutPreview'
+        '400':
+          description: The rollout preview request body was invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '404':
+          description: The requested rollout was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '409':
+          description: The rollout preview could not proceed in the current state.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '503':
+          description: The rollout preview could not be processed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/manage/v1/rollouts/start:
+    post:
+      tags: [manage.rollouts]
+      operationId: manage.rollouts.start
+      summary: Start a rollout after preview
+      x-sdkwork-auth-mode: dual-token
+      requestBody:
+        required: true
+        description: Rollout start request body identifying the rollout to start.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManageRolloutStartInput'
+      responses:
+        '200':
+          description: Started rollout record.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ManageRolloutRecord'
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '404':
+          description: The requested rollout was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '409':
+          description: The rollout could not be started in the current state.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '503':
+          description: The rollout start operation could not be processed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/manage/v1/host-endpoints:
+    get:
+      tags: [manage.host-endpoints]
+      operationId: manage.host-endpoints.list
+      summary: List canonical host-managed endpoints
+      x-sdkwork-auth-mode: dual-token
+      parameters:
+        - $ref: ../../schemas/sdkwork-common.yaml#/components/parameters/PageQuery
+        - $ref: ../../schemas/sdkwork-common.yaml#/components/parameters/PageSizeQuery
+      responses:
+        '200':
+          description: Current host-managed endpoint records.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ManageHostEndpointRecord'
+                          pageInfo:
+                            $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/PageInfo
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/manage/v1/openclaw/runtime:
+    get:
+      tags: [manage.openclaw]
+      operationId: manage.openclaw.runtime.list
+      summary: Read the canonical OpenClaw runtime status
+      x-sdkwork-auth-mode: dual-token
+      responses:
+        '200':
+          description: Current canonical OpenClaw runtime projection.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ManageOpenClawRuntimeRecord'
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/manage/v1/openclaw/gateway:
+    get:
+      tags: [manage.openclaw]
+      operationId: manage.openclaw.gateway.list
+      summary: Read the canonical OpenClaw gateway status
+      x-sdkwork-auth-mode: dual-token
+      responses:
+        '200':
+          description: Current canonical OpenClaw gateway projection.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ManageOpenClawGatewayRecord'
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/manage/v1/openclaw/gateway/invoke:
+    post:
+      tags: [manage.openclaw]
+      operationId: manage.openclaw.gateway.invoke
+      summary: Invoke the canonical OpenClaw gateway control surface
+      x-sdkwork-auth-mode: dual-token
+      requestBody:
+        required: true
+        description: OpenClaw gateway invocation request.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManageOpenClawGatewayInvokeRequest'
+      responses:
+        '200':
+          description: OpenClaw gateway invocation result.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ManageOpenClawGatewayInvokeResult'
+        '400':
+          description: The OpenClaw gateway invocation request body was invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: The OpenClaw gateway control plane could not complete the requested action.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/manage/v1/service/status:
+    get:
+      tags: [manage.service]
+      operationId: manage.service.status.list
+      summary: Read native service status
+      x-sdkwork-auth-mode: dual-token
+      responses:
+        '200':
+          description: Current native service status projection.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ManageServiceExecutionResult'
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: The native service control plane could not complete the requested action.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/manage/v1/service/install:
+    post:
+      tags: [manage.service]
+      operationId: manage.service.install
+      summary: Install the native server service
+      x-sdkwork-auth-mode: dual-token
+      responses:
+        '200':
+          description: Install result from the native service control plane.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ManageServiceExecutionResult'
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: The native service control plane could not complete the requested action.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/manage/v1/service/start:
+    post:
+      tags: [manage.service]
+      operationId: manage.service.start
+      summary: Start the native server service
+      x-sdkwork-auth-mode: dual-token
+      responses:
+        '200':
+          description: Start result from the native service control plane.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ManageServiceExecutionResult'
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: The native service control plane could not complete the requested action.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/manage/v1/service/stop:
+    post:
+      tags: [manage.service]
+      operationId: manage.service.stop
+      summary: Stop the native server service
+      x-sdkwork-auth-mode: dual-token
+      responses:
+        '200':
+          description: Stop result from the native service control plane.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ManageServiceExecutionResult'
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: The native service control plane could not complete the requested action.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/manage/v1/service/restart:
+    post:
+      tags: [manage.service]
+      operationId: manage.service.restart
+      summary: Restart the native server service
+      x-sdkwork-auth-mode: dual-token
+      responses:
+        '200':
+          description: Restart result from the native service control plane.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ManageServiceExecutionResult'
+        '401':
+          description: Authentication is required for the manage control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: The native service control plane could not complete the requested action.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+components:
+  schemas:
+    ManageRolloutStartInput:
+      type: object
+      description: Request body identifying a rollout to start.
+      required:
+        - rolloutId
+      properties:
+        rolloutId:
+          type: string
+        force:
+          type:
+            - boolean
+            - "null"
+    ManageRolloutRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        phase:
+          type: string
+          enum:
+            - draft
+            - previewing
+            - awaitingApproval
+            - ready
+            - promoting
+            - paused
+            - completed
+            - failed
+            - cancelled
+        attempt:
+          type: integer
+          format: uint64
+          minimum: 0
+        targetCount:
+          type: integer
+          minimum: 0
+        updatedAt:
+          type: integer
+          format: uint64
+          minimum: 0
+    ManageRolloutListResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManageRolloutRecord'
+        pageInfo:
+          $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/PageInfo
+    ManageRolloutTargetPreviewRecord:
+      type: object
+      properties:
+        nodeId:
+          type: string
+        preflightOutcome:
+          type: string
+          enum:
+            - admissible
+            - admissibleDegraded
+            - blockedByVersion
+            - blockedByCapability
+            - blockedByTrust
+            - blockedByPolicy
+        blockedReason:
+          type: string
+        desiredStateRevision:
+          type: integer
+          format: uint64
+          minimum: 0
+        desiredStateHash:
+          type: string
+        waveId:
+          type: string
+    ManageRolloutTargetListResult:
+      type: object
+      properties:
+        rolloutId:
+          type: string
+        attempt:
+          type: integer
+          format: uint64
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManageRolloutTargetPreviewRecord'
+    ManageRolloutWaveRecord:
+      type: object
+      properties:
+        waveId:
+          type: string
+        index:
+          type: integer
+          minimum: 1
+        phase:
+          type: string
+          enum:
+            - pending
+            - ready
+            - promoting
+            - verifying
+            - completed
+            - paused
+            - failed
+            - cancelled
+        targetCount:
+          type: integer
+          minimum: 0
+        admissibleCount:
+          type: integer
+          minimum: 0
+        degradedCount:
+          type: integer
+          minimum: 0
+        blockedCount:
+          type: integer
+          minimum: 0
+    ManageRolloutWaveListResult:
+      type: object
+      properties:
+        rolloutId:
+          type: string
+        attempt:
+          type: integer
+          format: uint64
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManageRolloutWaveRecord'
+    PreviewRolloutRouteBody:
+      type: object
+      properties:
+        rolloutId:
+          type: string
+        forceRecompute:
+          type: boolean
+        includeTargets:
+          type: boolean
+    ManageRolloutPreview:
+      type: object
+      properties:
+        rolloutId:
+          type: string
+        phase:
+          type: string
+          enum:
+            - previewing
+            - awaitingApproval
+            - ready
+            - failed
+        attempt:
+          type: integer
+          format: uint64
+          minimum: 0
+        summary:
+          type: object
+          properties:
+            totalTargets:
+              type: integer
+              minimum: 0
+            admissibleTargets:
+              type: integer
+              minimum: 0
+            degradedTargets:
+              type: integer
+              minimum: 0
+            blockedTargets:
+              type: integer
+              minimum: 0
+            predictedWaveCount:
+              type: integer
+              minimum: 0
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManageRolloutTargetPreviewRecord'
+        candidateRevisionSummary:
+          type: object
+          properties:
+            totalTargets:
+              type: integer
+              minimum: 0
+            minDesiredStateRevision:
+              type: integer
+              format: uint64
+              minimum: 0
+            maxDesiredStateRevision:
+              type: integer
+              format: uint64
+              minimum: 0
+        generatedAt:
+          type: integer
+          format: uint64
+          minimum: 0
+    ManageHostEndpointRecord:
+      type: object
+      properties:
+        endpointId:
+          type: string
+        bindHost:
+          type: string
+        requestedPort:
+          type: integer
+          minimum: 0
+        activePort:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+        scheme:
+          type: string
+        baseUrl:
+          type:
+            - string
+            - "null"
+        websocketUrl:
+          type:
+            - string
+            - "null"
+        loopbackOnly:
+          type: boolean
+        dynamicPort:
+          type: boolean
+        lastConflictAt:
+          type:
+            - integer
+            - "null"
+          format: uint64
+          minimum: 0
+        lastConflictReason:
+          type:
+            - string
+            - "null"
+    ManageOpenClawRuntimeRecord:
+      type: object
+      properties:
+        runtimeKind:
+          type: string
+        lifecycle:
+          type: string
+        endpointId:
+          type:
+            - string
+            - "null"
+        requestedPort:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+        activePort:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+        baseUrl:
+          type:
+            - string
+            - "null"
+        websocketUrl:
+          type:
+            - string
+            - "null"
+        managedBy:
+          type: string
+        updatedAt:
+          type: integer
+          format: uint64
+          minimum: 0
+    ManageOpenClawGatewayRecord:
+      type: object
+      properties:
+        gatewayKind:
+          type: string
+        lifecycle:
+          type: string
+        endpointId:
+          type:
+            - string
+            - "null"
+        requestedPort:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+        activePort:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+        baseUrl:
+          type:
+            - string
+            - "null"
+        websocketUrl:
+          type:
+            - string
+            - "null"
+        managedBy:
+          type: string
+        updatedAt:
+          type: integer
+          format: uint64
+          minimum: 0
+    ManageOpenClawGatewayInvokeRequest:
+      type: object
+      required:
+        - tool
+      properties:
+        tool:
+          type: string
+        action:
+          type:
+            - string
+            - "null"
+        args:
+          type:
+            - object
+            - "null"
+          additionalProperties: true
+        sessionKey:
+          type:
+            - string
+            - "null"
+        dryRun:
+          type:
+            - boolean
+            - "null"
+        messageChannel:
+          type:
+            - string
+            - "null"
+        accountId:
+          type:
+            - string
+            - "null"
+        headers:
+          type:
+            - object
+            - "null"
+          additionalProperties:
+            type: string
+    ManageOpenClawGatewayInvokeResult:
+      type: object
+      properties:
+        accepted:
+          type: boolean
+        tool:
+          type: string
+        action:
+          type:
+            - string
+            - "null"
+        dryRun:
+          type: boolean
+        lifecycle:
+          type: string
+        message:
+          type: string
+        updatedAt:
+          type: integer
+          format: uint64
+          minimum: 0
+    ManageServiceShellCommand:
+      type: object
+      properties:
+        program:
+          type: string
+        args:
+          type: array
+          items:
+            type: string
+    ManageServiceCommandResult:
+      type: object
+      properties:
+        program:
+          type: string
+        args:
+          type: array
+          items:
+            type: string
+        exitCode:
+          type:
+            - integer
+            - "null"
+        stdout:
+          type: string
+        stderr:
+          type: string
+    ManageServiceExecutionResult:
+      type: object
+      properties:
+        action:
+          type: string
+        platform:
+          type: string
+        serviceManager:
+          type: string
+        serviceName:
+          type: string
+        serviceConfigPath:
+          type: string
+        executablePath:
+          type: string
+        configFile:
+          type: string
+        commands:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManageServiceShellCommand'
+        runtimeConfig:
+          $ref: '#/components/schemas/ManageServiceRuntimeConfig'
+        artifactWritten:
+          type: boolean
+        writtenFiles:
+          type: array
+          items:
+            type: string
+        state:
+          type: string
+        commandResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManageServiceCommandResult'
+    ManageServiceRuntimeConfig:
+      type: object
+      properties:
+        host:
+          type: string
+        port:
+          type: integer
+          minimum: 0
+        dataDir:
+          type: string
+        webDistDir:
+          type: string
+        stateStore:
+          $ref: '#/components/schemas/ManageServiceStateStoreConfig'
+        auth:
+          $ref: '#/components/schemas/ManageServiceAuthConfig'
+    ManageServiceStateStoreConfig:
+      type: object
+      properties:
+        driver:
+          type: string
+        sqlitePath:
+          type:
+            - string
+            - "null"
+        postgresUrl:
+          type:
+            - string
+            - "null"
+        postgresSchema:
+          type:
+            - string
+            - "null"
+    ManageServiceAuthConfig:
+      type: object
+      properties:
+        manageUsername:
+          type:
+            - string
+            - "null"
+        managePassword:
+          type:
+            - string
+            - "null"
+        internalUsername:
+          type:
+            - string
+            - "null"
+        internalPassword:
+          type:
+            - string
+            - "null"

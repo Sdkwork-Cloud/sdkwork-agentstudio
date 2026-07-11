@@ -6,14 +6,14 @@
 ## Objective
 
 - Eliminate the GitHub release blocker caused by missing `@sdkwork/core-pc-react` sources in CI.
-- Align the GitHub release-source pins with the actual local shared SDK workspaces that Claw Studio consumes.
+- Align the GitHub release-source pins with the actual local shared SDK workspaces that Agent Studio consumes.
 - Publish a new release tag that carries forward all unpublished April 7 release attempts.
 
 ## Problems Found
 
 1. `release-2026-04-07-03` failed before publication because the release verification job could not resolve `@sdkwork/core-pc-react/app`, `@sdkwork/core-pc-react/env`, and `@sdkwork/core-pc-react/runtime`.
 2. `scripts/prepare-shared-sdk-git-sources.mjs` only materialized `retired generic app SDK package` and `@sdkwork/sdk-common`, so the release workflow still depended on the local sibling `../sdkwork-core/sdkwork-core-pc-react` path.
-3. The public `Sdkwork-Cloud/sdkwork-core` repository existed but was empty, so switching Claw Studio to that GitHub repo would still have failed until the package content was published there.
+3. The public `Sdkwork-Cloud/sdkwork-core` repository existed but was empty, so switching Agent Studio to that GitHub repo would still have failed until the package content was published there.
 4. The configured `retired generic app SDK package` release pin no longer matched the local source-of-truth package root, so parity verification failed even after `sdkwork-core` was fixed.
 
 ## Root Cause Evidence
@@ -38,7 +38,7 @@
 
 ## Changes Landed
 
-### Claw Studio release-source support
+### Agent Studio release-source support
 
 - Added `@sdkwork/core-pc-react` support to `scripts/prepare-shared-sdk-git-sources.mjs`, including:
   - GitHub repo default
@@ -84,6 +84,6 @@ Observed result:
 ## Status
 
 - The GitHub release blocker for `@sdkwork/core-pc-react` is resolved.
-- The GitHub-pinned shared SDK sources now match the local Claw Studio source-of-truth workspaces.
-- The next step is to run the full workspace verification, commit the Claw Studio changes, push `main`, publish `release-2026-04-07-04`, and confirm the GitHub release object exists.
+- The GitHub-pinned shared SDK sources now match the local Agent Studio source-of-truth workspaces.
+- The next step is to run the full workspace verification, commit the Agent Studio changes, push `main`, publish `release-2026-04-07-04`, and confirm the GitHub release object exists.
 

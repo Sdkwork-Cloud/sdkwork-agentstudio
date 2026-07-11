@@ -5,7 +5,7 @@ import {
   persistAppSdkSessionTokens,
   readAppSdkSessionTokens,
   resetAppSdkClient,
-} from '../packages/sdkwork-clawstudio-core/src/sdk/useAppSdkClient.ts';
+} from '../packages/sdkwork-agentstudio-pc-core/src/sdk/useAppSdkClient.ts';
 
 function createMemoryStorage(): Storage {
   const store = new Map<string, string>();
@@ -96,18 +96,18 @@ await runTest(
       'refresh-token',
     );
     assert.equal(
-      storage.sessionStorage.getItem('claw-studio.user-center.auth-token'),
+      storage.sessionStorage.getItem('agent-studio.user-center.auth-token'),
       'auth-token',
     );
     assert.equal(
-      storage.sessionStorage.getItem('claw-studio.user-center.access-token'),
+      storage.sessionStorage.getItem('agent-studio.user-center.access-token'),
       'owner-access-token',
     );
     assert.equal(
-      storage.sessionStorage.getItem('claw-studio.user-center.refresh-token'),
+      storage.sessionStorage.getItem('agent-studio.user-center.refresh-token'),
       'refresh-token',
     );
-    assert.equal(storage.localStorage.getItem('claw-studio-auth-session'), null);
+    assert.equal(storage.localStorage.getItem('agent-studio-auth-session'), null);
   },
 );
 
@@ -116,13 +116,13 @@ await runTest(
   () => {
     const storage = prepareRuntime();
 
-    storage.sessionStorage.setItem('claw-studio.user-center.auth-token', 'user-center-auth');
+    storage.sessionStorage.setItem('agent-studio.user-center.auth-token', 'user-center-auth');
     storage.sessionStorage.setItem(
-      'claw-studio.user-center.access-token',
+      'agent-studio.user-center.access-token',
       'user-center-access',
     );
     storage.sessionStorage.setItem(
-      'claw-studio.user-center.refresh-token',
+      'agent-studio.user-center.refresh-token',
       'user-center-refresh',
     );
 

@@ -80,7 +80,7 @@ So the problem was not "task flow missing entirely." The problem was semantic lo
 ### Red
 
 First, the gateway regression test was tightened in
-`packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`.
+`packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.test.ts`.
 
 The updated test expected the official task-flow list surface to preserve:
 
@@ -99,7 +99,7 @@ Fresh red result:
 That failure proved the gap was real and specifically inside task-flow normalization.
 
 For the UI-side behavior, a second focused red/green cycle added pure tests in
-`packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts` for:
+`packages/sdkwork-agentstudio-pc-commons/src/components/taskRuntimeFlowMeta.test.ts` for:
 
 - preferring `goal` over thin summary text
 - avoiding misleading `0/0` activity output when upstream counts are absent
@@ -119,7 +119,7 @@ After the fix:
 
 Updated:
 
-- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.ts`
 
 `OpenClawTaskFlowRecord` now preserves:
 
@@ -136,8 +136,8 @@ only the old `taskCount` fields exist.
 
 Updated:
 
-- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
-- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.ts`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/taskRuntimeFlowMeta.ts`
 
 Behavior changes:
 
@@ -151,11 +151,11 @@ Behavior changes:
 Added:
 
 - `scripts/run-sdkwork-tasks-check.mjs`
-- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/taskRuntimeFlowMeta.test.ts`
 
 Updated:
 
-- `packages/sdkwork-clawstudio-commons/src/components/cronTasksManagerData.test.ts`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/cronTasksManagerData.test.ts`
 - `scripts/sdkwork-tasks-contract.test.ts`
 - `package.json`
 
@@ -171,10 +171,10 @@ by the standard tasks gate.
 
 Updated:
 
-- `packages/sdkwork-clawstudio-i18n/src/locales/en/tasks.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh/tasks.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en/tasks.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/tasks.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json`
 
 New runtime task-flow labels were added for:
 
@@ -188,24 +188,24 @@ Process note:
 - the first compatibility sync failed because a PowerShell rewrite introduced a UTF-8 BOM into
   `zh/tasks.json`
 - the file was immediately rewritten as UTF-8 without BOM
-- `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales` then passed
+- `pnpm.cmd --filter @sdkwork/agentstudio-pc-i18n sync:locales` then passed
 
 ## Files Updated In This Loop
 
 - `package.json`
 - `scripts/run-sdkwork-tasks-check.mjs`
 - `scripts/sdkwork-tasks-contract.test.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
-- `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
-- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
-- `packages/sdkwork-clawstudio-commons/src/components/cronTasksManagerData.test.ts`
-- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.ts`
-- `packages/sdkwork-clawstudio-commons/src/components/taskRuntimeFlowMeta.test.ts`
-- `packages/sdkwork-clawstudio-i18n/src/locales/en/tasks.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh/tasks.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.test.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/taskRuntimeService.test.ts`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/cronTasksManagerData.test.ts`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/taskRuntimeFlowMeta.ts`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/taskRuntimeFlowMeta.test.ts`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en/tasks.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/tasks.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json`
 
 ## Verification
 
@@ -215,8 +215,8 @@ Fresh commands run in this loop:
 node scripts/run-sdkwork-foundation-check.mjs
 pnpm.cmd check:sdkwork-tasks
 node scripts/run-sdkwork-core-check.mjs
-node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts
-pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales
+node --experimental-strip-types packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts
+pnpm.cmd --filter @sdkwork/agentstudio-pc-i18n sync:locales
 pnpm.cmd build
 ```
 

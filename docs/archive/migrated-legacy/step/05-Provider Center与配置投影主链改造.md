@@ -6,7 +6,7 @@
 | --- | --- |
 | 执行模式 | 波次内并行 |
 | 前置 | `03` `04` |
-| 主写入范围 | `packages/sdkwork-clawstudio-core/src/services/localAiProxyRouteService.ts` `packages/sdkwork-clawstudio-core/src/services/openClawLocalProxyProjectionService.ts` `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts` `packages/sdkwork-clawstudio-settings/src` `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` |
+| 主写入范围 | `packages/sdkwork-agentstudio-pc-core/src/services/localAiProxyRouteService.ts` `packages/sdkwork-agentstudio-pc-core/src/services/openClawLocalProxyProjectionService.ts` `packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.ts` `packages/sdkwork-agentstudio-pc-settings/src` `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` |
 | 执行输入 | `05`、`09`、`16`、`17` 架构文档；现有 Provider Center / Kernel Center / ApiSettings 逻辑 |
 | 本步非目标 | 不做聊天 UI 体验增强；不做 ClawHub 生态能力 |
 | 最小输出 | `Provider Route -> Proxy -> Projection -> OpenClaw Config -> Agent` 的唯一主链 |
@@ -29,10 +29,10 @@
 
 - `pnpm.cmd check:sdkwork-settings`
 - `pnpm.cmd check:desktop`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-core/src/services/openClawConfigService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-channels/src/services/channelService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
 - `node scripts/desktop-local-ai-proxy-contract.test.mjs`
 
 ## 5. 结果验证

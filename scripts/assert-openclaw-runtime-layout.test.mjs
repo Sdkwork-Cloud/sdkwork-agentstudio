@@ -62,7 +62,7 @@ function createUnsupportedSourceRuntime(workspaceRootDir, version = retiredOpenC
   const sourceRuntimeDir = path.join(
     workspaceRootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'resources',
     'openclaw-runtime',
@@ -96,7 +96,7 @@ function createUnsupportedBundledNodeRuntime(workspaceRootDir) {
   const bundledNodeRuntimeDir = path.join(
     workspaceRootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'resources',
     'openclaw',

@@ -5,15 +5,15 @@
 
 ## 总览
 
-Claw Studio 现在不是单一的桌面端应用，而是一套可以运行在多种宿主与部署形态上的产品系统。不同模式共享相同的产品能力，但在传输方式、打包结果和运维方式上有所区别。
+Agent Studio 现在不是单一的桌面端应用，而是一套可以运行在多种宿主与部署形态上的产品系统。不同模式共享相同的产品能力，但在传输方式、打包结果和运维方式上有所区别。
 
 ## 模式矩阵
 
 | 模式 | 主要宿主 | 运维访问方式 | 适用场景 | 主要入口 |
 | --- | --- | --- | --- | --- |
 | Web 工作区 | Vite 开发服务器 | 浏览器 | 日常前端开发与联调 | `pnpm dev` |
-| 桌面端运行时 | Tauri + Rust Host | 原生桌面窗口 | 本地 GUI 优先安装与本地受管运行时 | `pnpm tauri:dev` |
-| 原生 Server | Axum + Rust Host | 浏览器同源访问 | 独立 Server 安装与浏览器管理 | `pnpm server:dev` |
+| 桌面端运行时 | Tauri + Rust Host | 原生桌面窗口 | 本地 GUI 优先安装与本地受管运行时 | `pnpm dev:desktop` |
+| 原生 Server | Axum + Rust Host | 浏览器同源访问 | 独立 Server 安装与浏览器管理 | `pnpm dev:server` |
 | Container | Rust Server 容器化部署 | 浏览器通过容器端口访问 | Docker / Compose 环境 | 发布产物中的 container bundle |
 | Kubernetes | Rust Server + Chart | 浏览器通过 ingress 或 service 访问 | 集群部署与平台运维 | 发布产物中的 kubernetes bundle |
 | Web/docs 归档 | 纯静态资源 | 静态站点 | 只发布浏览器静态资源和文档 | 发布产物中的 web archive |

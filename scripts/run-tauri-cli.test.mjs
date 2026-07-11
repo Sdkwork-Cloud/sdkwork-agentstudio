@@ -12,11 +12,11 @@ const defaultPlan = createTauriCliPlan({
   env: {},
   platform: 'linux',
   execPath: '/usr/bin/node',
-  resolveTauriCliEntrypoint: () => '/workspace/claw-studio/node_modules/@tauri-apps/cli/tauri.js',
+  resolveTauriCliEntrypoint: () => '/workspace/agent-studio/node_modules/@tauri-apps/cli/tauri.js',
 });
 
 assert.equal(defaultPlan.command, '/usr/bin/node');
-assert.deepEqual(defaultPlan.args, ['/workspace/claw-studio/node_modules/@tauri-apps/cli/tauri.js', 'dev']);
+assert.deepEqual(defaultPlan.args, ['/workspace/agent-studio/node_modules/@tauri-apps/cli/tauri.js', 'dev']);
 assert.equal(defaultPlan.env.SDKWORK_VITE_MODE, 'development');
 assert.equal(defaultPlan.shell, false);
 
@@ -25,13 +25,13 @@ const testPlan = createTauriCliPlan({
   env: {},
   platform: 'win32',
   execPath: 'C:\\Program Files\\nodejs\\node.exe',
-  resolveTauriCliEntrypoint: () => 'D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
+  resolveTauriCliEntrypoint: () => 'D:\\workspace\\agent-studio\\node_modules\\@tauri-apps\\cli\\tauri.js',
 });
 
 assert.equal(testPlan.command, 'C:\\Program Files\\nodejs\\node.exe');
 assert.deepEqual(
   testPlan.args,
-  ['D:\\workspace\\claw-studio\\node_modules\\@tauri-apps\\cli\\tauri.js', 'dev', '--', '--target', 'x86_64-pc-windows-msvc'],
+  ['D:\\workspace\\agent-studio\\node_modules\\@tauri-apps\\cli\\tauri.js', 'dev', '--', '--target', 'x86_64-pc-windows-msvc'],
 );
 assert.equal(testPlan.env.SDKWORK_VITE_MODE, 'test');
 assert.equal(testPlan.shell, false);

@@ -9,10 +9,10 @@
 ## Attempt Outcome
 
 - The loop repaired one remaining shared local proxy hotspot:
-  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned the shared buffered-response, JSON-outcome, and upstream error-shaping helpers used by OpenAI-compatible, Anthropic native, Gemini native, probe, and observability consumers even though they formed a coherent cross-protocol boundary
+  - `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned the shared buffered-response, JSON-outcome, and upstream error-shaping helpers used by OpenAI-compatible, Anthropic native, Gemini native, probe, and observability consumers even though they formed a coherent cross-protocol boundary
   - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that ownership, so the shared helper stack could drift in or out of the parent runtime file without an explicit structure failure
 - Implemented the narrow repairs:
-  - added `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs` as the dedicated owner for `ProxyRouteOutcome`, buffered response shaping, JSON outcome construction, shared error-message extraction, and upstream JSON response parsing
+  - added `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs` as the dedicated owner for `ProxyRouteOutcome`, buffered response shaping, JSON outcome construction, shared error-message extraction, and upstream JSON response parsing
   - changed `local_ai_proxy.rs` to declare `mod response_io;` while keeping lifecycle, router assembly, auth/header normalization, request parsing, and generic runtime helpers in the parent runtime file
   - repointed `openai_compatible.rs`, `anthropic_native.rs`, `gemini_native.rs`, `probe.rs`, and `observability.rs` to consume the shared response/error owner instead of the parent runtime file
   - tightened the desktop foundation gate so the new owner, its consumers, and the old-helper removal are all explicitly required
@@ -20,19 +20,19 @@
 - Fresh verification:
   - RED: `node scripts/check-desktop-platform-foundation.mjs`
   - GREEN: `node scripts/check-desktop-platform-foundation.mjs`
-  - RED/GREEN: `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-response-io local_ai_proxy_`
+  - RED/GREEN: `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-response-io local_ai_proxy_`
   - `pnpm.cmd check:desktop-openclaw-runtime`
   - RED/GREEN: `pnpm.cmd check:desktop`
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/response_io.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/openai_compatible.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/probe.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs`
 - `scripts/check-desktop-platform-foundation.mjs`
 - `docs/review/step-03-local-ai-proxy-response-io-hotspot-split-2026-04-08.md`
 - `docs/架构/115-2026-04-08-local-ai-proxy-response-io-module-boundary.md`
@@ -43,7 +43,7 @@
 ## Verification Focus
 
 - `node scripts/check-desktop-platform-foundation.mjs`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-response-io local_ai_proxy_`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-response-io local_ai_proxy_`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 

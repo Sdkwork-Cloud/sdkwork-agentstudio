@@ -1,4 +1,4 @@
-# SdkWork Claw Studio Container Deployment Templates
+# SdkWork Agent Studio Container Deployment Templates
 
 This directory is the source tree template location. In the source repository, review and diff:
 
@@ -37,17 +37,17 @@ docker compose -f deploy/docker/docker-compose.yml up -d
 
 Canonical user-center server integration modes:
 
-- `builtin-local`: private deployment with the SdkWork Claw Studio server owning its local user-center data.
+- `builtin-local`: private deployment with the SdkWork Agent Studio server owning its local user-center data.
 - `sdkwork-cloud-app-api`: shared cloud identity backed by `sdkwork-cloud-app-api`.
 - `external-user-center`: third-party identity authority with the same token and handshake contract.
 
 Container entrypoint variables:
 
-- `CLAW_STUDIO_USER_CENTER_MODE`: one of `builtin-local`, `sdkwork-cloud-app-api`, or `external-user-center`.
-- `CLAW_STUDIO_USER_CENTER_APP_API_BASE_URL`: required when `CLAW_STUDIO_USER_CENTER_MODE=sdkwork-cloud-app-api`.
-- `CLAW_STUDIO_USER_CENTER_EXTERNAL_BASE_URL`: required when `CLAW_STUDIO_USER_CENTER_MODE=external-user-center`.
-- `CLAW_STUDIO_USER_CENTER_SECRET_ID`: required for upstream shared-secret handshakes.
-- `CLAW_STUDIO_USER_CENTER_SHARED_SECRET`: required for upstream shared-secret handshakes.
+- `AGENT_STUDIO_USER_CENTER_MODE`: one of `builtin-local`, `sdkwork-cloud-app-api`, or `external-user-center`.
+- `AGENT_STUDIO_USER_CENTER_APP_API_BASE_URL`: required when `AGENT_STUDIO_USER_CENTER_MODE=sdkwork-cloud-app-api`.
+- `AGENT_STUDIO_USER_CENTER_EXTERNAL_BASE_URL`: required when `AGENT_STUDIO_USER_CENTER_MODE=external-user-center`.
+- `AGENT_STUDIO_USER_CENTER_SECRET_ID`: required for upstream shared-secret handshakes.
+- `AGENT_STUDIO_USER_CENTER_SHARED_SECRET`: required for upstream shared-secret handshakes.
 
 NVIDIA CUDA overlay:
 
@@ -65,8 +65,8 @@ The server binary is identical across CPU and GPU-oriented bundles. GPU variants
 deployment overlays and environment presets so operators can keep one release flow while
 switching runtime topology.
 
-The packaged Docker image starts `/opt/claw/app/bin/clawstudio-server` directly. The optional
-`app/start-clawstudio-server.sh` wrapper remains in the bundle for operator convenience outside the
+The packaged Docker image starts `/opt/claw/app/bin/agentstudio-server` directly. The optional
+`app/start-agentstudio-server.sh` wrapper remains in the bundle for operator convenience outside the
 container entrypoint path, but container startup does not route through it.
 
 The base deployment template intentionally requires `CLAW_SERVER_MANAGE_USERNAME` and
@@ -75,5 +75,5 @@ If you do not provide dedicated internal credentials, the Rust server falls back
 manage credential pair for `/claw/internal/v1/*`.
 
 The bundled env overlays keep `CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false` and mount
-`/var/lib/clawstudio-server` for persistent state, so container restarts do not silently drop the
+`/var/lib/agentstudio-server` for persistent state, so container restarts do not silently drop the
 SQLite host-state database.

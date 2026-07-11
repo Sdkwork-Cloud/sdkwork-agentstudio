@@ -31,14 +31,14 @@ import { listKernelDefinitions } from './release/kernel-definitions.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
-const desktopSrcTauriPathSegments = ['packages', 'sdkwork-clawstudio-desktop', 'src-tauri'];
+const desktopSrcTauriPathSegments = ['packages', 'sdkwork-agentstudio-pc-desktop', 'src-tauri'];
 const cacheRoot = path.join(rootDir, '.cache', 'bundled-components');
 const upstreamRoot = path.join(cacheRoot, 'upstreams');
 const buildRoot = path.join(cacheRoot, 'build');
 const generatedRoot = path.join(
   rootDir,
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
   'generated',
 );
@@ -48,7 +48,7 @@ const bundledRoot = resolveBundledBuildRoot(rootDir, process.platform);
 const tauriBundleOverlayConfigPath = path.join(
   rootDir,
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
   'generated',
   'tauri.bundle.overlay.json',
@@ -61,13 +61,13 @@ const openClawRuntimeBundleSourceRoot = resolveBundledResourceMirrorRoot(
 const desktopWebDistBundleSourceRoot = path.join(
   rootDir,
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'dist',
 );
 const sourceFoundationDir = path.join(
   rootDir,
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
   'foundation',
   'components',
@@ -1455,7 +1455,7 @@ function resolveBundledResourceMirrorRoot(
     return path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-clawstudio-desktop',
+      'sdkwork-agentstudio-pc-desktop',
       'src-tauri',
       'resources',
       resourceId,

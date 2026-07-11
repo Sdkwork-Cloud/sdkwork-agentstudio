@@ -3,7 +3,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const WINDOWS_KERNEL_HOST_SERVICE_NAME = 'ClawStudioOpenClawKernel';
+const WINDOWS_KERNEL_HOST_SERVICE_NAME = 'agentstudioOpenClawKernel';
 const WINDOWS_SERVICE_POLL_INTERVAL_MS = 250;
 const WINDOWS_SERVICE_STOP_TIMEOUT_MS = 15_000;
 export const WINDOWS_TAURI_DEV_SESSION_MARKERS = [
@@ -47,7 +47,7 @@ function runWindowsProcessQuery(command, description) {
 
 export function resolveTauriDevBinaryPath(
   srcTauriDir = 'src-tauri',
-  binaryName = 'sdkwork-clawstudio-desktop',
+  binaryName = 'sdkwork-agentstudio-pc-desktop',
   platform = process.platform,
 ) {
   return path.resolve(
@@ -316,7 +316,7 @@ export function waitForExecutableUnlockSync(
 
 export function ensureTauriDevBinaryUnlocked(
   srcTauriDir = 'src-tauri',
-  binaryName = 'sdkwork-clawstudio-desktop',
+  binaryName = 'sdkwork-agentstudio-pc-desktop',
   platform = process.platform,
   {
     inspectProcessesForBinary = listWindowsProcessesForBinary,
@@ -440,7 +440,7 @@ export function ensureTauriDevBinaryUnlocked(
 
 function runCli() {
   const srcTauriDir = process.argv[2] ?? 'src-tauri';
-  const binaryName = process.argv[3] ?? 'sdkwork-clawstudio-desktop';
+  const binaryName = process.argv[3] ?? 'sdkwork-agentstudio-pc-desktop';
   const result = ensureTauriDevBinaryUnlocked(srcTauriDir, binaryName);
 
   if (result.skipped === 'unsupported-platform') {

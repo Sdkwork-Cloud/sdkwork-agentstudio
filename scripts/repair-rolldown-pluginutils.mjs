@@ -400,7 +400,7 @@ export async function repairRolldownPluginutils({
 async function runCli() {
   const report = await repairRolldownPluginutils();
   if (report.repaired.length === 0) {
-    console.log('[repair-rolldown-pluginutils] no damaged pnpm pluginutils packages detected');
+    console.log('[repair-rolldown-pluginutils] no damaged pnpm\u2019s pluginutils packages detected');
     return;
   }
 

@@ -60,27 +60,27 @@ function extractRustStructBody(relativePath, structName) {
 }
 
 assertPath(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process.rs',
   'desktop process service facade module',
 );
 assertPath(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/process_commands.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/commands/process_commands.rs',
   'desktop process command module',
 );
 assertPath(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/job_commands.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/commands/job_commands.rs',
   'desktop job command module',
 );
 assertPath(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/profiles.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/profiles.rs',
   'desktop process profiles module',
 );
 assertPath(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/requests.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/requests.rs',
   'desktop process request module',
 );
 assertPath(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/runtime.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/runtime.rs',
   'desktop process runtime module',
 );
 
@@ -90,58 +90,58 @@ assertIncludes(
   'desktop process verification script',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process.rs',
   'mod profiles;',
   'process profiles module declaration',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process.rs',
   'mod requests;',
   'process requests module declaration',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process.rs',
   'mod runtime;',
   'process runtime module declaration',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process.rs',
   'pub use self::requests::ProcessRequest;',
   'process request public re-export',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process.rs',
   'pub use self::runtime::{ProcessEventSink, ProcessOutputEvent, ProcessOutputStream, ProcessResult};',
   'process runtime public re-exports',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process.rs',
   'pub fn run_profile_and_emit_with_started',
   'process facade profile execution method',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process.rs',
   'pub fn resolve_profile',
   'process facade profile resolution method',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/profiles.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/profiles.rs',
   'pub struct ProcessProfile',
   'process profile type',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/requests.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/requests.rs',
   'ValidatedProcessRequest',
   'validated process request type',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/requests.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/requests.rs',
   '#[serde(deny_unknown_fields, rename_all = "camelCase")]',
   'public process request rejects unrecognized fields',
 );
 {
   const processRequestBody = extractRustStructBody(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/requests.rs',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/requests.rs',
     'ProcessRequest',
   );
   if (/\benv\s*:/.test(processRequestBody)) {
@@ -151,52 +151,52 @@ assertIncludes(
   }
 }
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/requests.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/requests.rs',
   'pub(crate) struct ProcessExecutionRequest',
   'internal process execution request type',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/requests.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/requests.rs',
   'extra_env: BTreeMap<String, String>',
   'internal-only process environment overlay',
 );
 assertMatches(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/requests.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/requests.rs',
   /SpawnPolicyScope::Public\s*=>\s*policy\.validate_command_spawn\(&command,\s*&request\.args\)\?/,
   'public process requests use public spawn policy',
 );
 assertMatches(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/requests.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/requests.rs',
   /SpawnPolicyScope::Profile\s*=>\s*\{?\s*policy\.validate_profile_command_spawn\(&command,\s*&request\.args\)\?/,
   'internal process profile requests use profile spawn policy',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/policy.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/policy.rs',
   'pub fn validate_profile_command_spawn(&self, command: &str, args: &[String]) -> Result<()>',
   'profile-only spawn policy entrypoint',
 );
 assertMatches(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/policy.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/policy.rs',
   /fn is_node_command\(command: &str\) -> bool \{\s*let normalized = command\.replace\('\\\\', "\/"\);/s,
   'profile-only node allowlist normalizes Windows command paths',
 );
 assertMatches(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/policy.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/policy.rs',
   /fn is_npx_command\(command: &str\) -> bool \{\s*let normalized = command\.replace\('\\\\', "\/"\);/s,
   'profile-only npx allowlist normalizes Windows command paths',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/process/runtime.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/process/runtime.rs',
   'struct ProcessRuntime',
   'process runtime coordinator',
 );
 assertIncludes(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/process_commands.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/commands/process_commands.rs',
   '.run_capture_and_emit(',
   'process command remains facade-based',
 );
 assertMatches(
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/job_commands.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/commands/job_commands.rs',
   /\.submit_process_and_emit\(\s*state\.context\.services\.process\.clone\(\),\s*&profile_id,\s*app,\s*\)/,
   'job command remains process-service based',
 );

@@ -28,36 +28,36 @@
 
 ## OpenClaw Fact Sources
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/desktopStartupEvidence.ts`
   - remains the low-level producer of the persisted desktop startup-evidence document, including the sanitized built-in instance projection with `id`, `transportKind`, `baseUrl`, `websocketUrl`, and `status`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/desktopStartupEvidence.test.ts`
   - freezes the passed-launch fixture that already carried the built-in startup instance identity and URL facts, proving the producer surface already existed before this loop
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
   - remains one of the browser/runtime descriptor fact owners referenced by the broader Step 03 hosted desktop chain
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
   - remains a fact source for managed OpenClaw runtime/gateway capability semantics, including the hosted transport expectations used by Step 03 shell-facing convergence
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
   - remains a fact source for the built-in OpenClaw provider presentation model that depends on stable identity and URL truth
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   - remains part of the desktop runtime fact surface for the built-in OpenClaw startup chain and local proxy truth
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
   - remains part of the desktop plugin/runtime wiring surface that Step 03 treats as canonical infrastructure
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/kernel.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/kernel.rs`
   - owns parsing and summarizing the persisted startup-evidence document for the desktop kernel surface
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/kernel.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/kernel.rs`
   - now freezes the built-in startup instance identity, transport, and URL facts in the Rust-side desktop startup-evidence summary contract
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/contracts/runtime.ts`
   - now freezes the shared TypeScript-side desktop startup-evidence summary contract with the same fields
-- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.ts`
   - now maps the published built-in instance fields into `dashboard.startupEvidence`
-- `packages/sdkwork-clawstudio-settings/src/KernelCenter.tsx`
+- `packages/sdkwork-agentstudio-pc-settings/src/KernelCenter.tsx`
   - now presents the published built-in startup instance facts in the shell
 
 ## Verification Focus
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/kernelCenter.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-built-in-red desktop_kernel_info_exposes_persisted_startup_evidence_summary`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/kernelCenter.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.test.ts`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp034-startup-evidence-built-in-red desktop_kernel_info_exposes_persisted_startup_evidence_summary`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 

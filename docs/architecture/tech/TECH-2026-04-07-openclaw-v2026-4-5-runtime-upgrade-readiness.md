@@ -33,9 +33,9 @@ Authoritative upstream baseline already re-validated in the current audit loop:
 Local version sources still pinned to `2026.4.2`:
 
 - `config/openclaw-release.json`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/generated/release/openclaw-resource/manifest.json`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/runtime/package/node_modules/openclaw/package.json`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/resources/openclaw/manifest.json`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/generated/release/openclaw-resource/manifest.json`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/resources/openclaw/runtime/package/node_modules/openclaw/package.json`
 - `.cache/bundled-components/upstreams/openclaw/package.json`
 
 Interpretation:

@@ -48,8 +48,8 @@ function writeDesktopManifest({
   );
 
   writeJsonFile(manifestPath, {
-    profileId: 'claw-studio',
-    productName: 'Claw Studio',
+    profileId: 'agent-studio',
+    productName: 'Agent Studio',
     releaseTag: 'release-2026-04-06-09',
     platform,
     arch,
@@ -71,7 +71,7 @@ function buildDesktopStartupEvidence({
     durationMs: 1120,
     recordedAt: '2026-04-06T12:13:14.000Z',
     app: {
-      name: 'Claw Studio',
+      name: 'Agent Studio',
       version: '0.1.0',
       tauriVersion: '2.0.0',
     },
@@ -169,31 +169,31 @@ test('desktop packaged launch smoke selects the canonical packaged launch artifa
     smoke.resolveDesktopPackagedLaunchArtifact({
       platform: 'windows',
       artifacts: [
-        { relativePath: 'desktop/windows/x64/msi/Claw Studio_0.1.0_x64_en-US.msi' },
-        { relativePath: 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe' },
+        { relativePath: 'desktop/windows/x64/msi/Agent Studio_0.1.0_x64_en-US.msi' },
+        { relativePath: 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe' },
       ],
     }).relativePath,
-    'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe',
+    'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe',
   );
   assert.equal(
     smoke.resolveDesktopPackagedLaunchArtifact({
       platform: 'linux',
       artifacts: [
-        { relativePath: 'desktop/linux/x64/rpm/claw-studio-0.1.0-1.x86_64.rpm' },
-        { relativePath: 'desktop/linux/x64/deb/claw-studio_0.1.0_amd64.deb' },
+        { relativePath: 'desktop/linux/x64/rpm/agent-studio-0.1.0-1.x86_64.rpm' },
+        { relativePath: 'desktop/linux/x64/deb/agent-studio_0.1.0_amd64.deb' },
       ],
     }).relativePath,
-    'desktop/linux/x64/deb/claw-studio_0.1.0_amd64.deb',
+    'desktop/linux/x64/deb/agent-studio_0.1.0_amd64.deb',
   );
   assert.equal(
     smoke.resolveDesktopPackagedLaunchArtifact({
       platform: 'macos',
       artifacts: [
-        { relativePath: 'desktop/macos/arm64/dmg/Claw Studio_0.1.0_aarch64.dmg' },
-        { relativePath: 'desktop/macos/arm64/macos/Claw Studio_0.1.0_arm64.app.zip' },
+        { relativePath: 'desktop/macos/arm64/dmg/Agent Studio_0.1.0_aarch64.dmg' },
+        { relativePath: 'desktop/macos/arm64/macos/Agent Studio_0.1.0_arm64.app.zip' },
       ],
     }).relativePath,
-    'desktop/macos/arm64/macos/Claw Studio_0.1.0_arm64.app.zip',
+    'desktop/macos/arm64/macos/Agent Studio_0.1.0_arm64.app.zip',
   );
 });
 
@@ -215,7 +215,7 @@ test('desktop packaged launch smoke prefers the root desktop executable over nes
   );
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-installed-binary-'));
   const installRoot = path.join(tempRoot, 'install-root');
-  const expectedBinaryPath = path.join(installRoot, 'sdkwork-clawstudio-desktop.exe');
+  const expectedBinaryPath = path.join(installRoot, 'sdkwork-agentstudio-pc-desktop.exe');
   const nestedHelperPath = path.join(
     installRoot,
     'generated',
@@ -258,7 +258,7 @@ test('desktop packaged launch smoke prefers the root desktop executable over nes
 
     const resolvedBinaryPath = smoke.resolveInstalledDesktopBinaryPath({
       installRoot,
-      productName: 'Claw Studio',
+      productName: 'Agent Studio',
       platform: 'windows',
     });
 
@@ -339,7 +339,7 @@ test('desktop packaged launch smoke executes the Windows installer through Power
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-windows-installer-'));
   const smokeRoot = path.join(tempRoot, 'smoke-root');
-  const expectedBinaryPath = path.join(smokeRoot, 'install-root', 'Claw Studio.exe');
+  const expectedBinaryPath = path.join(smokeRoot, 'install-root', 'Agent Studio.exe');
   const expectedUserRoot = path.join(smokeRoot, 'home', '.sdkwork', 'crawstudio');
   const expectedMachineRoot = path.join(smokeRoot, 'program-data', 'SdkWork', 'CrawStudio');
   const expectedEvidencePath = path.join(
@@ -352,9 +352,9 @@ test('desktop packaged launch smoke executes the Windows installer through Power
 
   try {
     const preparedLaunch = await smoke.prepareDesktopPackagedLaunch({
-      artifactPath: 'E:/synthetic/Claw Studio_0.1.0_x64-setup.exe',
+      artifactPath: 'E:/synthetic/Agent Studio_0.1.0_x64-setup.exe',
       artifact: {
-        relativePath: 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe',
+        relativePath: 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe',
       },
       releasePlatform: 'windows',
       smokeRoot,
@@ -408,7 +408,7 @@ test('desktop packaged launch smoke captures packaged startup evidence and forwa
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-packaged-launch-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
   const capturedEvidencePath = path.join(tempRoot, 'captured', 'desktop-startup-evidence.json');
   const launchEvents = [];
 
@@ -420,7 +420,7 @@ test('desktop packaged launch smoke captures packaged startup evidence and forwa
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -445,7 +445,7 @@ test('desktop packaged launch smoke captures packaged startup evidence and forwa
         launchEvents.push('prepare');
         return {
           launcher: {
-            command: 'D:/synthetic/Claw Studio.exe',
+            command: 'D:/synthetic/Agent Studio.exe',
             args: [],
             cwd: 'D:/synthetic',
             env: {
@@ -459,7 +459,7 @@ test('desktop packaged launch smoke captures packaged startup evidence and forwa
         };
       },
       launchDesktopPackagedAppFn: async (launcher) => {
-        assert.equal(launcher.command, 'D:/synthetic/Claw Studio.exe');
+        assert.equal(launcher.command, 'D:/synthetic/Agent Studio.exe');
         launchEvents.push('launch');
         return {
           pid: 1024,
@@ -535,7 +535,7 @@ test('desktop packaged launch smoke fails fast when the launched desktop process
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-packaged-launch-exit-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
   const capturedEvidencePath = path.join(tempRoot, 'captured', 'desktop-startup-evidence.json');
   const child = new EventEmitter();
   child.exitCode = null;
@@ -552,7 +552,7 @@ test('desktop packaged launch smoke fails fast when the launched desktop process
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -573,7 +573,7 @@ test('desktop packaged launch smoke fails fast when the launched desktop process
         target: 'x86_64-pc-windows-msvc',
         prepareDesktopPackagedLaunchFn: async () => ({
           launcher: {
-            command: 'D:/synthetic/Claw Studio.exe',
+            command: 'D:/synthetic/Agent Studio.exe',
             args: [],
             cwd: 'D:/synthetic',
             env: {
@@ -602,7 +602,7 @@ test('desktop packaged launch smoke fails fast when the launched desktop process
           return {
             child,
             pid: 2048,
-            command: 'D:/synthetic/Claw Studio.exe',
+            command: 'D:/synthetic/Agent Studio.exe',
             args: [],
             stdoutChunks,
             stderrChunks,
@@ -639,12 +639,12 @@ test('desktop packaged launch smoke rejects stale packaged installers when a new
     'windows',
     'x64',
     'nsis',
-    'Claw Studio_0.1.0_x64-setup.exe',
+    'Agent Studio_0.1.0_x64-setup.exe',
   );
   const sourceArtifactPath = path.join(
     bundleRoot,
     'nsis',
-    'Claw Studio_0.1.0_x64-setup.exe',
+    'Agent Studio_0.1.0_x64-setup.exe',
   );
 
   try {
@@ -661,7 +661,7 @@ test('desktop packaged launch smoke rejects stale packaged installers when a new
     assert.throws(
       () => smoke.assertPackagedDesktopLaunchArtifactFreshness({
         artifact: {
-          relativePath: 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe',
+          relativePath: 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe',
         },
         artifactPath: packagedArtifactPath,
         platform: 'windows',

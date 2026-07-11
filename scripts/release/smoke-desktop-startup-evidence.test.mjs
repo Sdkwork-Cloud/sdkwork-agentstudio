@@ -40,8 +40,8 @@ function writeDesktopManifest({
   );
 
   writeJsonFile(manifestPath, {
-    profileId: 'claw-studio',
-    productName: 'Claw Studio',
+    profileId: 'agent-studio',
+    productName: 'Agent Studio',
     releaseTag: 'release-2026-04-06-08',
     packageProfileId,
     includedKernelIds,
@@ -80,9 +80,9 @@ function buildDesktopStartupEvidence({
   localAiProxy = {
     lifecycle: 'running',
     messageCaptureEnabled: true,
-    observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-    snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
-    logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+    observabilityDbPath: 'C:/Users/test/AppData/Roaming/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+    snapshotPath: 'C:/Users/test/AppData/Roaming/Agent Studio/state/local-ai-proxy.snapshot.json',
+    logPath: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/local-ai-proxy.log',
   },
 } = {}) {
   return {
@@ -93,7 +93,7 @@ function buildDesktopStartupEvidence({
     durationMs: 1842,
     recordedAt: '2026-04-06T12:13:14.000Z',
     app: {
-      name: 'Claw Studio',
+      name: 'Agent Studio',
       version: '0.1.0',
       tauriVersion: '2.0.0',
     },
@@ -108,10 +108,10 @@ function buildDesktopStartupEvidence({
       components: [],
     },
     paths: {
-      dataDir: 'C:/Users/test/AppData/Roaming/Claw Studio',
-      logsDir: 'C:/Users/test/AppData/Roaming/Claw Studio/logs',
-      machineLogsDir: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/machine',
-      mainLogFile: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/main.log',
+      dataDir: 'C:/Users/test/AppData/Roaming/Agent Studio',
+      logsDir: 'C:/Users/test/AppData/Roaming/Agent Studio/logs',
+      machineLogsDir: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/machine',
+      mainLogFile: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/main.log',
     },
     descriptor: {
       mode: 'desktopCombined',
@@ -203,7 +203,7 @@ test('desktop startup smoke validates captured startup evidence and writes a str
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, artifactRelativePath);
@@ -213,7 +213,7 @@ test('desktop startup smoke validates captured startup evidence and writes a str
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -273,9 +273,9 @@ test('desktop startup smoke validates captured startup evidence and writes a str
       {
         lifecycle: 'running',
         messageCaptureEnabled: true,
-        observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-        snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
-        logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+        observabilityDbPath: 'C:/Users/test/AppData/Roaming/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+        snapshotPath: 'C:/Users/test/AppData/Roaming/Agent Studio/state/local-ai-proxy.snapshot.json',
+        logPath: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/local-ai-proxy.log',
       },
     );
     assert.equal(
@@ -307,7 +307,7 @@ test('desktop startup smoke preserves the canonical managed built-in OpenClaw in
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-managed-id-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, artifactRelativePath);
@@ -317,7 +317,7 @@ test('desktop startup smoke preserves the canonical managed built-in OpenClaw in
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -358,7 +358,7 @@ test('desktop startup smoke rejects unsafe artifact paths before writing reports
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-artifact-path-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = '../desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = '../desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     const manifestPath = writeDesktopManifest({
@@ -367,7 +367,7 @@ test('desktop startup smoke rejects unsafe artifact paths before writing reports
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -397,9 +397,9 @@ test('desktop startup smoke rejects unsafe artifact paths before writing reports
         localAiProxyRuntime: {
           lifecycle: 'running',
           messageCaptureEnabled: true,
-          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-          snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
-          logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+          snapshotPath: 'C:/Users/test/AppData/Roaming/Agent Studio/state/local-ai-proxy.snapshot.json',
+          logPath: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/local-ai-proxy.log',
         },
         artifactRelativePaths: [artifactRelativePath],
       }),
@@ -416,7 +416,7 @@ test('desktop startup smoke rejects captured evidence paths outside release asse
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-evidence-path-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
   const outsideEvidencePath = path.join(tempRoot, 'outside-desktop-startup-evidence.json');
 
   try {
@@ -427,7 +427,7 @@ test('desktop startup smoke rejects captured evidence paths outside release asse
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -451,9 +451,9 @@ test('desktop startup smoke rejects captured evidence paths outside release asse
         localAiProxyRuntime: {
           lifecycle: 'running',
           messageCaptureEnabled: true,
-          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Claw Studio/store/local-ai-proxy-observability.sqlite3',
-          snapshotPath: 'C:/Users/test/AppData/Roaming/Claw Studio/state/local-ai-proxy.snapshot.json',
-          logPath: 'C:/Users/test/AppData/Roaming/Claw Studio/logs/local-ai-proxy.log',
+          observabilityDbPath: 'C:/Users/test/AppData/Roaming/Agent Studio/store/local-ai-proxy-observability.sqlite3',
+          snapshotPath: 'C:/Users/test/AppData/Roaming/Agent Studio/state/local-ai-proxy.snapshot.json',
+          logPath: 'C:/Users/test/AppData/Roaming/Agent Studio/logs/local-ai-proxy.log',
         },
         artifactRelativePaths: [artifactRelativePath],
       }),
@@ -470,7 +470,7 @@ test('desktop startup smoke rejects legacy local-built-in OpenClaw evidence for 
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-legacy-id-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, artifactRelativePath);
@@ -480,7 +480,7 @@ test('desktop startup smoke rejects legacy local-built-in OpenClaw evidence for 
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -522,7 +522,7 @@ test('desktop startup smoke rejects OpenClaw packages without channel config san
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-config-health-missing-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, artifactRelativePath);
@@ -532,7 +532,7 @@ test('desktop startup smoke rejects OpenClaw packages without channel config san
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -574,7 +574,7 @@ test('desktop startup smoke rejects OpenClaw packages with stale channel ids in 
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-config-health-stale-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, artifactRelativePath);
@@ -584,7 +584,7 @@ test('desktop startup smoke rejects OpenClaw packages with stale channel ids in 
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -638,7 +638,7 @@ test('desktop startup smoke rejects OpenClaw packages whose supported channel ev
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-config-health-supported-stale-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, artifactRelativePath);
@@ -648,7 +648,7 @@ test('desktop startup smoke rejects OpenClaw packages whose supported channel ev
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -702,7 +702,7 @@ test('desktop startup smoke accepts hermes-only desktop packages without managed
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-hermes-only-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, artifactRelativePath);
@@ -715,7 +715,7 @@ test('desktop startup smoke accepts hermes-only desktop packages without managed
       defaultEnabledKernelIds: ['hermes'],
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -788,7 +788,7 @@ test('desktop startup smoke rejects captured evidence when bundled package conte
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-profile-drift-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, artifactRelativePath);
@@ -801,7 +801,7 @@ test('desktop startup smoke rejects captured evidence when bundled package conte
       defaultEnabledKernelIds: ['hermes'],
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -845,7 +845,7 @@ test('desktop startup smoke rejects a missing captured startup evidence file', a
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-missing-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, artifactRelativePath);
@@ -855,7 +855,7 @@ test('desktop startup smoke rejects a missing captured startup evidence file', a
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',
@@ -886,7 +886,7 @@ test('desktop startup smoke rejects captured evidence that did not reach the she
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-phase-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/linux/x64/deb/claw-studio_0.1.0_amd64.deb';
+  const artifactRelativePath = 'desktop/linux/x64/deb/agent-studio_0.1.0_amd64.deb';
 
   try {
     writeArtifactFile(releaseAssetsDir, artifactRelativePath);
@@ -896,7 +896,7 @@ test('desktop startup smoke rejects captured evidence that did not reach the she
       arch: 'x64',
       artifacts: [
         {
-          name: 'claw-studio_0.1.0_amd64.deb',
+          name: 'agent-studio_0.1.0_amd64.deb',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'linux',
@@ -941,7 +941,7 @@ test('desktop startup smoke rejects captured evidence when local ai proxy runtim
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-smoke-desktop-startup-local-ai-proxy-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const artifactRelativePath = 'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe';
+  const artifactRelativePath = 'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe';
 
   try {
     writeArtifactFile(releaseAssetsDir, artifactRelativePath);
@@ -951,7 +951,7 @@ test('desktop startup smoke rejects captured evidence when local ai proxy runtim
       arch: 'x64',
       artifacts: [
         {
-          name: 'Claw Studio_0.1.0_x64-setup.exe',
+          name: 'Agent Studio_0.1.0_x64-setup.exe',
           relativePath: artifactRelativePath,
           family: 'desktop',
           platform: 'windows',

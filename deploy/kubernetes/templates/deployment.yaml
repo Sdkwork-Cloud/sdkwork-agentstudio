@@ -1,30 +1,30 @@
 {{- if gt (int .Values.replicaCount) 1 }}
-{{- fail "sdkwork-clawstudio currently supports only replicaCount=1 because the shared host runtime does not coordinate multi-replica state yet." }}
+{{- fail "sdkwork-agentstudio currently supports only replicaCount=1 because the shared host runtime does not coordinate multi-replica state yet." }}
 {{- end }}
 apiVersion: apps/v1
 kind: Deployment
-{{- $authSecretName := default (printf "%s-auth" (include "sdkwork-clawstudio.fullname" .)) .Values.auth.existingSecret }}
+{{- $authSecretName := default (printf "%s-auth" (include "sdkwork-agentstudio.fullname" .)) .Values.auth.existingSecret }}
 metadata:
-  name: {{ include "sdkwork-clawstudio.fullname" . }}
+  name: {{ include "sdkwork-agentstudio.fullname" . }}
   labels:
-    app.kubernetes.io/name: {{ include "sdkwork-clawstudio.name" . }}
-    helm.sh/chart: {{ include "sdkwork-clawstudio.chart" . }}
+    app.kubernetes.io/name: {{ include "sdkwork-agentstudio.name" . }}
+    helm.sh/chart: {{ include "sdkwork-agentstudio.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "sdkwork-clawstudio.name" . }}
+      app.kubernetes.io/name: {{ include "sdkwork-agentstudio.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "sdkwork-clawstudio.name" . }}
+        app.kubernetes.io/name: {{ include "sdkwork-agentstudio.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       containers:
-        - name: sdkwork-clawstudio
+        - name: sdkwork-agentstudio
 {{- if .Values.image.digest }}
           image: {{ .Values.image.repository }}@{{ .Values.image.digest }}
 {{- else }}
@@ -33,7 +33,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:
             - configMapRef:
-                name: {{ include "sdkwork-clawstudio.fullname" . }}-config
+                name: {{ include "sdkwork-agentstudio.fullname" . }}-config
             - secretRef:
                 name: {{ $authSecretName }}
           ports:
@@ -59,7 +59,7 @@ spec:
 {{- if .Values.persistence.enabled }}
         - name: claw-data
           persistentVolumeClaim:
-            claimName: {{ include "sdkwork-clawstudio.fullname" . }}-data
+            claimName: {{ include "sdkwork-agentstudio.fullname" . }}-data
 {{- end }}
       nodeSelector:
 {{- if eq .Values.targetArchitecture "arm64" }}

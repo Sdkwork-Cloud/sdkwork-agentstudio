@@ -17,9 +17,9 @@
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.test.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/registry.test.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/serverBrowserBridge.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/serverBrowserBridge.test.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/registry.test.ts`
 - `docs/review/step-03-执行卡-2026-04-07.md`
 - `docs/review/step-03-多模式runtime平台真值-2026-04-07.md`
 - `docs/架构/02-架构标准与总体设计.md`
@@ -28,8 +28,8 @@
 
 ## Verification Focus
 
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-infrastructure/src/platform/registry.test.ts']))"`
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.test.ts','packages/sdkwork-clawstudio-infrastructure/src/platform/registry.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-infrastructure/src/platform/registry.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-infrastructure/src/platform/serverBrowserBridge.test.ts','packages/sdkwork-agentstudio-pc-infrastructure/src/platform/registry.test.ts']))"`
 
 ## Risks And Rollback
 

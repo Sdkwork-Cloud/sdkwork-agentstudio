@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
 
 const releaseProfile = Object.freeze({
-  id: 'claw-studio',
+  id: 'agent-studio',
   desktop: Object.freeze({
     matrix: Object.freeze([
       Object.freeze({
@@ -72,7 +72,7 @@ test('release coverage helper builds required targets and coverage from artifact
       platform: 'web',
       arch: 'any',
       kind: 'archive',
-      relativePath: 'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz',
+      relativePath: 'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz',
     },
     {
       family: 'desktop',
@@ -86,7 +86,7 @@ test('release coverage helper builds required targets and coverage from artifact
       platform: 'macos',
       arch: 'arm64',
       kind: 'archive',
-      relativePath: 'desktop/macos/arm64/Claw Studio_0.1.0_arm64.app.zip',
+      relativePath: 'desktop/macos/arm64/Agent Studio_0.1.0_arm64.app.zip',
     },
     {
       family: 'container',
@@ -94,7 +94,7 @@ test('release coverage helper builds required targets and coverage from artifact
       arch: 'x64',
       accelerator: 'cpu',
       kind: 'archive',
-      relativePath: 'container/linux/x64/cpu/claw-studio-container-release-linux-x64-cpu.tar.gz',
+      relativePath: 'container/linux/x64/cpu/agent-studio-container-release-linux-x64-cpu.tar.gz',
     },
   ];
   const extraDesktopArtifact = {
@@ -109,7 +109,7 @@ test('release coverage helper builds required targets and coverage from artifact
     platform: 'web',
     arch: 'any',
     kind: 'archive',
-    relativePath: 'web/claw-studio-web-assets-release-2026-04-12-02.tar.gz',
+    relativePath: 'web/agent-studio-web-assets-release-2026-04-12-02.tar.gz',
   };
 
   assert.equal(
@@ -207,8 +207,8 @@ test('release coverage helper builds required targets and coverage from artifact
       {
         target: 'web/web/any',
         artifactPaths: [
-          'web/claw-studio-web-assets-release-2026-04-12-01.tar.gz',
-          'web/claw-studio-web-assets-release-2026-04-12-02.tar.gz',
+          'web/agent-studio-web-assets-release-2026-04-12-01.tar.gz',
+          'web/agent-studio-web-assets-release-2026-04-12-02.tar.gz',
         ],
       },
     ],

@@ -42,7 +42,7 @@
 - 运行证据
 - 文档证据
 
-## 4. Claw Studio 额外核对项
+## 4. Agent Studio 额外核对项
 
 - 若涉及托管模型：是否仍保证全部模型访问统一经 Local Proxy
 - 若涉及 API：是否仍满足对外/管理/内部/Gateway/Proxy 五类边界

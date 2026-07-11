@@ -86,7 +86,7 @@ async function main() {
     'expected docs theme entry to be buildable as native JavaScript',
   );
   const nativeConfig = await import(new URL(`file://${nativeConfigPath}`).href);
-  assert.equal(nativeConfig.default?.title, 'Claw Studio');
+  assert.equal(nativeConfig.default?.title, 'Agent Studio');
   assert.equal(
     nativeConfig.default?.lastUpdated,
     false,

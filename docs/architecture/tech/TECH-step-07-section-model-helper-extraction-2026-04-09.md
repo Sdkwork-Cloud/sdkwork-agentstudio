@@ -23,13 +23,13 @@
 
 ## Implemented Extraction
 
-- Added `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts` to own:
+- Added `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.ts` to own:
   - `buildAgentSectionProps(...)`
   - `buildLlmProviderSectionProps(...)`
   - `buildLlmProviderDialogProps(...)`
 - Exported `InstanceDetailAgentsSectionProps` so the new helper can shape the real section contract instead of duplicating a parallel prop interface.
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` to consume the new builders instead of keeping the three object literals inline.
-- Added `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx` to pin:
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` to consume the new builders instead of keeping the three object literals inline.
+- Added `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.test.tsx` to pin:
   - agent skill pending-key mapping
   - page-owned no-spinner reload wiring
   - provider availability notice preservation
@@ -52,41 +52,41 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for runtime truth, managed-provider behavior, and desktop/runtime boundaries. The new helper does not move those concerns.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2161`
-- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`: `145`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.tsx`: `162`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.tsx`: `166`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `2161`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.ts`: `145`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.tsx`: `162`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.tsx`: `166`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1431`
 
 This loop records a fresh current-worktree hotspot re-baseline. Because the worktree already carries additional in-flight Step 07 edits beyond the previously written release-90 snapshot, this review records a verified boundary improvement and new hotspot profile instead of claiming a clean raw line-count drop from that earlier note.
 
 ## Verification
 
 - RED:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.test.tsx`
   - failed first because `instanceDetailSectionModels.ts` did not exist yet
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because the helper file did not exist and the page still kept the section-model object literals inline
 - GREEN:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 - YELLOW:
 

@@ -89,7 +89,7 @@ function writeReleaseManifest({
   writeFileSync(
     path.join(familyDir, 'release-asset-manifest.json'),
     `${JSON.stringify({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag,
       platform,
       arch,
@@ -123,8 +123,8 @@ test('container deployment smoke validates packaged bundles and writes runtime-b
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-deployment-smoke-container-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const archiveRelativePath = 'container/linux/x64/cpu/claw-studio-container-bundle-release-2026-04-06-02-linux-x64-cpu.tar.gz';
-  const extractedBundleRoot = path.join(tempRoot, 'extracted', 'claw-studio-container');
+  const archiveRelativePath = 'container/linux/x64/cpu/agent-studio-container-bundle-release-2026-04-06-02-linux-x64-cpu.tar.gz';
+  const extractedBundleRoot = path.join(tempRoot, 'extracted', 'agent-studio-container');
 
   try {
     writeReleaseManifest({
@@ -187,7 +187,7 @@ test('container deployment smoke validates packaged bundles and writes runtime-b
             {
               id: 'persistent-storage',
               status: 'passed',
-              detail: 'packaged docker compose persists /var/lib/clawstudio-server',
+              detail: 'packaged docker compose persists /var/lib/agentstudio-server',
             },
             {
               id: 'docker-compose-up',
@@ -239,7 +239,7 @@ test('deployment bundle extraction rejects unsafe archive paths before extractio
   const smoke = await import(pathToFileURL(smokePath).href);
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-deployment-unsafe-archive-'));
-  const archivePath = path.join(tempRoot, 'claw-studio-container-unsafe.tar.gz');
+  const archivePath = path.join(tempRoot, 'agent-studio-container-unsafe.tar.gz');
   const extractDir = path.join(tempRoot, 'extract');
 
   try {
@@ -269,14 +269,14 @@ test('deployment bundle extraction rejects symlink archive entries before extrac
   const smoke = await import(pathToFileURL(smokePath).href);
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-deployment-symlink-archive-'));
-  const archivePath = path.join(tempRoot, 'claw-studio-container-symlink.tar.gz');
+  const archivePath = path.join(tempRoot, 'agent-studio-container-symlink.tar.gz');
   const extractDir = path.join(tempRoot, 'extract');
 
   try {
     mkdirSync(extractDir, { recursive: true });
     writeTarGzArchive(archivePath, [
       createTarRecord({
-        name: 'claw-studio-container/deploy/docker/config-link',
+        name: 'agent-studio-container/deploy/docker/config-link',
         content: '/etc/passwd',
         type: '2',
       }),
@@ -319,14 +319,14 @@ test('container deployment bundle smoke requires packaged manage credentials, pe
       path.join(bundleRoot, 'deploy', 'docker', 'docker-compose.yml'),
       [
         'services:',
-        '  clawstudio-server:',
+        '  agentstudio-server:',
         '    environment:',
         '      CLAW_SERVER_MANAGE_USERNAME: ${CLAW_SERVER_MANAGE_USERNAME:?set CLAW_SERVER_MANAGE_USERNAME before starting the public control plane}',
         '      CLAW_SERVER_MANAGE_PASSWORD: ${CLAW_SERVER_MANAGE_PASSWORD:?set CLAW_SERVER_MANAGE_PASSWORD before starting the public control plane}',
         '    volumes:',
-        '      - clawstudio-server-data:/var/lib/clawstudio-server',
+        '      - agentstudio-server-data:/var/lib/agentstudio-server',
         'volumes:',
-        '  clawstudio-server-data:',
+        '  agentstudio-server-data:',
         '',
       ].join('\n'),
       'utf8',
@@ -336,7 +336,7 @@ test('container deployment bundle smoke requires packaged manage credentials, pe
       [
         'CLAW_DEPLOYMENT_FAMILY=container',
         'CLAW_ACCELERATOR_PROFILE=cpu',
-        'CLAW_SERVER_DATA_DIR=/var/lib/clawstudio-server',
+        'CLAW_SERVER_DATA_DIR=/var/lib/agentstudio-server',
         'CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false',
         '',
       ].join('\n'),
@@ -373,7 +373,7 @@ test('container deployment bundle smoke requires packaged manage credentials, pe
         events.push('inspect');
         return [
           {
-            service: 'clawstudio-server',
+            service: 'agentstudio-server',
             state: 'running',
             health: 'healthy',
           },
@@ -406,7 +406,7 @@ test('container deployment bundle smoke requires packaged manage credentials, pe
     assert.match(result.checks[0].detail, /deployment family/i);
     assert.match(result.checks[1].detail, /safe public bind/i);
     assert.match(result.checks[2].detail, /manage credentials/i);
-    assert.match(result.checks[3].detail, /var\/lib\/clawstudio-server/i);
+    assert.match(result.checks[3].detail, /var\/lib\/agentstudio-server/i);
     assert.match(result.checks[5].detail, /healthy/i);
     assert.deepEqual(
       events,
@@ -440,14 +440,14 @@ test('container deployment bundle smoke rejects packaged runtime profiles that l
       path.join(bundleRoot, 'deploy', 'docker', 'docker-compose.yml'),
       [
         'services:',
-        '  clawstudio-server:',
+        '  agentstudio-server:',
         '    environment:',
         '      CLAW_SERVER_MANAGE_USERNAME: ${CLAW_SERVER_MANAGE_USERNAME:?set CLAW_SERVER_MANAGE_USERNAME before starting the public control plane}',
         '      CLAW_SERVER_MANAGE_PASSWORD: ${CLAW_SERVER_MANAGE_PASSWORD:?set CLAW_SERVER_MANAGE_PASSWORD before starting the public control plane}',
         '    volumes:',
-        '      - clawstudio-server-data:/var/lib/clawstudio-server',
+        '      - agentstudio-server-data:/var/lib/agentstudio-server',
         'volumes:',
-        '  clawstudio-server-data:',
+        '  agentstudio-server-data:',
         '',
       ].join('\n'),
       'utf8',
@@ -457,7 +457,7 @@ test('container deployment bundle smoke rejects packaged runtime profiles that l
       [
         'CLAW_DEPLOYMENT_FAMILY=container',
         'CLAW_ACCELERATOR_PROFILE=cpu',
-        'CLAW_SERVER_DATA_DIR=/var/lib/clawstudio-server',
+        'CLAW_SERVER_DATA_DIR=/var/lib/agentstudio-server',
         'CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=true',
         '',
       ].join('\n'),
@@ -506,14 +506,14 @@ test('container deployment bundle smoke rejects accelerator bundles whose packag
       path.join(bundleRoot, 'deploy', 'docker', 'docker-compose.yml'),
       [
         'services:',
-        '  clawstudio-server:',
+        '  agentstudio-server:',
         '    environment:',
         '      CLAW_SERVER_MANAGE_USERNAME: ${CLAW_SERVER_MANAGE_USERNAME:?set CLAW_SERVER_MANAGE_USERNAME before starting the public control plane}',
         '      CLAW_SERVER_MANAGE_PASSWORD: ${CLAW_SERVER_MANAGE_PASSWORD:?set CLAW_SERVER_MANAGE_PASSWORD before starting the public control plane}',
         '    volumes:',
-        '      - clawstudio-server-data:/var/lib/clawstudio-server',
+        '      - agentstudio-server-data:/var/lib/agentstudio-server',
         'volumes:',
-        '  clawstudio-server-data:',
+        '  agentstudio-server-data:',
         '',
       ].join('\n'),
       'utf8',
@@ -523,7 +523,7 @@ test('container deployment bundle smoke rejects accelerator bundles whose packag
       [
         'CLAW_DEPLOYMENT_FAMILY=container',
         'CLAW_ACCELERATOR_PROFILE=cpu',
-        'CLAW_SERVER_DATA_DIR=/var/lib/clawstudio-server',
+        'CLAW_SERVER_DATA_DIR=/var/lib/agentstudio-server',
         'CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false',
         '',
       ].join('\n'),
@@ -572,13 +572,13 @@ test('container deployment bundle smoke rejects packaged compose layouts missing
       path.join(bundleRoot, 'deploy', 'docker', 'docker-compose.yml'),
       [
         'services:',
-        '  clawstudio-server:',
+        '  agentstudio-server:',
         '    environment:',
         '      CLAW_SERVER_INTERNAL_USERNAME: ${CLAW_SERVER_INTERNAL_USERNAME:-}',
         '    volumes:',
-        '      - clawstudio-server-data:/var/lib/clawstudio-server',
+        '      - agentstudio-server-data:/var/lib/agentstudio-server',
         'volumes:',
-        '  clawstudio-server-data:',
+        '  agentstudio-server-data:',
         '',
       ].join('\n'),
       'utf8',
@@ -588,7 +588,7 @@ test('container deployment bundle smoke rejects packaged compose layouts missing
       [
         'CLAW_DEPLOYMENT_FAMILY=container',
         'CLAW_ACCELERATOR_PROFILE=cpu',
-        'CLAW_SERVER_DATA_DIR=/var/lib/clawstudio-server',
+        'CLAW_SERVER_DATA_DIR=/var/lib/agentstudio-server',
         'CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false',
         '',
       ].join('\n'),
@@ -620,8 +620,8 @@ test('kubernetes deployment smoke validates packaged charts and writes render-ba
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-deployment-smoke-kubernetes-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const archiveRelativePath = 'kubernetes/linux/x64/cpu/claw-studio-kubernetes-bundle-release-2026-04-06-03-linux-x64-cpu.tar.gz';
-  const extractedBundleRoot = path.join(tempRoot, 'extracted', 'claw-studio-kubernetes');
+  const archiveRelativePath = 'kubernetes/linux/x64/cpu/agent-studio-kubernetes-bundle-release-2026-04-06-03-linux-x64-cpu.tar.gz';
+  const extractedBundleRoot = path.join(tempRoot, 'extracted', 'agent-studio-kubernetes');
 
   try {
     writeReleaseManifest({
@@ -648,7 +648,7 @@ test('kubernetes deployment smoke validates packaged charts and writes render-ba
         assert.equal(archivePath.replaceAll('\\', '/'), path.join(releaseAssetsDir, archiveRelativePath).replaceAll('\\', '/'));
         assert.match(extractDir.replaceAll('\\', '/'), /claw-deployment-smoke-kubernetes-/);
         mkdirSync(path.join(extractedBundleRoot, 'chart', 'templates'), { recursive: true });
-        writeFileSync(path.join(extractedBundleRoot, 'chart', 'Chart.yaml'), 'apiVersion: v2\nname: claw-studio\n', 'utf8');
+        writeFileSync(path.join(extractedBundleRoot, 'chart', 'Chart.yaml'), 'apiVersion: v2\nname: agent-studio\n', 'utf8');
         writeFileSync(path.join(extractedBundleRoot, 'values.release.yaml'), 'targetArchitecture: x64\n', 'utf8');
         return extractedBundleRoot;
       },
@@ -695,7 +695,7 @@ test('kubernetes deployment smoke validates packaged charts and writes render-ba
             {
               id: 'persistent-storage',
               status: 'passed',
-              detail: 'rendered manifests mount /var/lib/clawstudio-server through a PersistentVolumeClaim',
+              detail: 'rendered manifests mount /var/lib/agentstudio-server through a PersistentVolumeClaim',
             },
             {
               id: 'kubectl-client-dry-run',
@@ -739,7 +739,7 @@ test('kubernetes deployment bundle smoke requires packaged image metadata, secre
         platform: 'linux',
         arch: 'x64',
         accelerator: 'cpu',
-        imageRepository: 'ghcr.io/sdkwork-cloud/claw-studio-server',
+        imageRepository: 'ghcr.io/sdkwork-cloud/agent-studio-server',
         imageTag: 'release-2026-04-06-07-linux-x64',
         imageDigest: 'sha256:1234567890abcdef',
       }, null, 2)}\n`,
@@ -771,8 +771,8 @@ test('kubernetes deployment bundle smoke requires packaged image metadata, secre
           '  template:',
           '    spec:',
           '      containers:',
-          '        - name: claw-studio',
-          '          image: ghcr.io/sdkwork-cloud/claw-studio-server@sha256:1234567890abcdef',
+          '        - name: agent-studio',
+          '          image: ghcr.io/sdkwork-cloud/agent-studio-server@sha256:1234567890abcdef',
           '          env:',
           '            - name: CLAW_DEPLOYMENT_FAMILY',
           '              value: "kubernetes"',
@@ -780,24 +780,24 @@ test('kubernetes deployment bundle smoke requires packaged image metadata, secre
           '              value: "cpu"',
           '          envFrom:',
           '            - secretRef:',
-          '                name: claw-studio-auth',
+          '                name: agent-studio-auth',
           '          volumeMounts:',
           '            - name: claw-data',
-          '              mountPath: /var/lib/clawstudio-server',
+          '              mountPath: /var/lib/agentstudio-server',
           '          readinessProbe:',
           '            httpGet:',
           '              path: /claw/health/ready',
           '      volumes:',
           '        - name: claw-data',
           '          persistentVolumeClaim:',
-          '            claimName: claw-studio-data',
+          '            claimName: agent-studio-data',
           '      nodeSelector:',
           '        kubernetes.io/arch: amd64',
           '---',
           'apiVersion: v1',
           'kind: Secret',
           'metadata:',
-          '  name: claw-studio-auth',
+          '  name: agent-studio-auth',
           '---',
           'apiVersion: v1',
           'kind: PersistentVolumeClaim',
@@ -835,7 +835,7 @@ test('kubernetes deployment bundle smoke rejects release values whose packaged a
         platform: 'linux',
         arch: 'arm64',
         accelerator: 'nvidia-cuda',
-        imageRepository: 'ghcr.io/sdkwork-cloud/claw-studio-server',
+        imageRepository: 'ghcr.io/sdkwork-cloud/agent-studio-server',
         imageTag: 'release-2026-04-06-09-linux-arm64',
         imageDigest: 'sha256:fedcba0987654321',
       }, null, 2)}\n`,
@@ -867,8 +867,8 @@ test('kubernetes deployment bundle smoke rejects release values whose packaged a
             '  template:',
             '    spec:',
             '      containers:',
-            '        - name: claw-studio',
-            '          image: ghcr.io/sdkwork-cloud/claw-studio-server@sha256:fedcba0987654321',
+            '        - name: agent-studio',
+            '          image: ghcr.io/sdkwork-cloud/agent-studio-server@sha256:fedcba0987654321',
             '          env:',
             '            - name: CLAW_DEPLOYMENT_FAMILY',
             '              value: "kubernetes"',
@@ -876,24 +876,24 @@ test('kubernetes deployment bundle smoke rejects release values whose packaged a
             '              value: "cpu"',
             '          envFrom:',
             '            - secretRef:',
-            '                name: claw-studio-auth',
+            '                name: agent-studio-auth',
             '          volumeMounts:',
             '            - name: claw-data',
-            '              mountPath: /var/lib/clawstudio-server',
+            '              mountPath: /var/lib/agentstudio-server',
             '          readinessProbe:',
             '            httpGet:',
             '              path: /claw/health/ready',
             '      volumes:',
             '        - name: claw-data',
             '          persistentVolumeClaim:',
-            '            claimName: claw-studio-data',
+            '            claimName: agent-studio-data',
             '      nodeSelector:',
             '        kubernetes.io/arch: amd64',
             '---',
             'apiVersion: v1',
             'kind: Secret',
             'metadata:',
-            '  name: claw-studio-auth',
+            '  name: agent-studio-auth',
             '---',
             'apiVersion: v1',
             'kind: PersistentVolumeClaim',
@@ -933,21 +933,21 @@ test('kubernetes deployment bundle smoke rejects bundles missing immutable image
             '  template:',
             '    spec:',
             '      containers:',
-            '        - name: claw-studio',
-            '          image: ghcr.io/sdkwork-cloud/claw-studio-server:release-2026-04-06-08-linux-x64',
+            '        - name: agent-studio',
+            '          image: ghcr.io/sdkwork-cloud/agent-studio-server:release-2026-04-06-08-linux-x64',
             '          envFrom:',
             '            - secretRef:',
-            '                name: claw-studio-auth',
+            '                name: agent-studio-auth',
             '          volumeMounts:',
             '            - name: claw-data',
-            '              mountPath: /var/lib/clawstudio-server',
+            '              mountPath: /var/lib/agentstudio-server',
             '          readinessProbe:',
             '            httpGet:',
             '              path: /claw/health/ready',
             '      volumes:',
             '        - name: claw-data',
             '          persistentVolumeClaim:',
-            '            claimName: claw-studio-data',
+            '            claimName: agent-studio-data',
             '---',
             'apiVersion: v1',
             'kind: PersistentVolumeClaim',
@@ -967,7 +967,7 @@ test('deployment smoke records structured skipped evidence when required capabil
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-deployment-smoke-skipped-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
-  const archiveRelativePath = 'container/linux/x64/cpu/claw-studio-container-bundle-release-2026-04-06-04-linux-x64-cpu.tar.gz';
+  const archiveRelativePath = 'container/linux/x64/cpu/agent-studio-container-bundle-release-2026-04-06-04-linux-x64-cpu.tar.gz';
 
   try {
     writeReleaseManifest({

@@ -23,19 +23,19 @@
 
 ## Implemented Fix
 
-- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailProviderDeleteStateSupport.ts`.
+- Added `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailProviderDeleteStateSupport.ts`.
 - Added `createInstanceDetailProviderDeleteStateBindings(...)` so the shared helper now owns only:
   - provider delete-id setter pass-through binding
   - provider-model delete-id setter pass-through binding
   - provider delete-id clear callback binding
   - provider-model delete-id clear callback binding
-- Added focused direct coverage in `packages/sdkwork-clawstudio-instances/src/services/instanceDetailProviderDeleteStateSupport.test.ts`.
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Added focused direct coverage in `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailProviderDeleteStateSupport.test.ts`.
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds `providerDeleteStateBindings` once through `createInstanceDetailProviderDeleteStateBindings({ setProviderDeleteId, setProviderModelDeleteId })`
   - routes `buildLlmProviderDialogStateHandlers(...)` through `providerDeleteStateBindings.setProviderDeleteId` and `providerDeleteStateBindings.setProviderModelDeleteId`
   - routes `buildOpenClawProviderMutationHandlers(...)` through `providerDeleteStateBindings.clearProviderDeleteId` and `providerDeleteStateBindings.clearProviderModelDeleteId`
   - stops keeping inline provider delete-state wrappers in the page shell
-- Exported the new helper from `packages/sdkwork-clawstudio-instances/src/services/index.ts`.
+- Exported the new helper from `packages/sdkwork-agentstudio-pc-instances/src/services/index.ts`.
 - Updated `scripts/run-sdkwork-instances-check.mjs` so the new helper test runs inside `pnpm.cmd check:sdkwork-instances`.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract now requires:
   - the page to use `createInstanceDetailProviderDeleteStateBindings(...)`
@@ -64,25 +64,25 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for studio-backed workbench truth, runtime persistence, provider-center projection, Local Proxy routing, ecosystem/runtime ownership, and desktop plugin/runtime registration. This loop only centralizes the page-side provider delete-state binding layer.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1019` lines / `40530` bytes
-- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailProviderDeleteStateSupport.ts`: `19` lines / `838` bytes
-- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailProviderDeleteStateSupport.test.ts`: `47` lines / `1630` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `1019` lines / `40530` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailProviderDeleteStateSupport.ts`: `19` lines / `838` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailProviderDeleteStateSupport.test.ts`: `47` lines / `1630` bytes
 
 Relative to the immediately prior `1072` page baseline from `release-2026-04-10-160`, the fresh current dirty worktree re-measured `InstanceDetail.tsx` at `1019`. This loop records a verified boundary improvement for the shared provider delete-state family while also documenting that the broader page baseline has shifted again in the current dirty worktree and is now the operative truth for subsequent loops.
 
@@ -111,15 +111,15 @@ Relative to the immediately prior `1072` page baseline from `release-2026-04-10-
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailProviderDeleteStateSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailProviderDeleteStateSupport.test.ts`
   - failed first because `instanceDetailProviderDeleteStateSupport.ts` did not yet exist
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` still kept inline provider delete-state wrappers and did not yet construct `providerDeleteStateBindings`
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailProviderDeleteStateSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailProviderDeleteStateSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

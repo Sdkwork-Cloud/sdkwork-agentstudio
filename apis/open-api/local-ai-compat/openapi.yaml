@@ -1,0 +1,450 @@
+openapi: 3.1.2
+info:
+  title: Local AI Compatibility Proxy API
+  version: v1
+  description: >-
+    Authored OpenAPI contract for the local AI compatibility proxy surface.
+    Vendor-compatibility API: every operation declares
+    `x-sdkwork-wire-protocol: external` with
+    `x-sdkwork-external-protocol-id: local-ai-compat-v1` (API_SPEC.md §4.5.2).
+    Routes mirror upstream provider wire (OpenAI `/v1/*`, Google
+    `/v1beta/*`, Anthropic `/anthropic/v1/*`, plus `/health`). Request and
+    response bodies are opaque provider-compatible JSON and do NOT use the
+    `SdkWorkApiResponse` envelope.
+  x-sdkwork-surface: open-api
+  x-sdkwork-external-protocol-id: local-ai-compat-v1
+servers:
+  - url: /
+    description: Same-origin built-in host
+tags:
+  - name: local-ai-compat
+    description: Provider-compatible root-native routes proxied by the built-in host.
+paths:
+  /health:
+    get:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.health.get
+      summary: Proxy /health through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1/health:
+    get:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.v1.health.get
+      summary: Proxy /v1/health through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1/models:
+    get:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.v1.models.list
+      summary: Proxy /v1/models through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1beta/models:
+    get:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.v1beta.models.list
+      summary: Proxy /v1beta/models through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1/chat/completions:
+    post:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.v1.chat.completions.create
+      summary: Proxy /v1/chat/completions through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      requestBody:
+        required: false
+        description: Opaque provider-compatible request body.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1/completions:
+    post:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.v1.completions.create
+      summary: Proxy /v1/completions through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      requestBody:
+        required: false
+        description: Opaque provider-compatible request body.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1/embeddings:
+    post:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.v1.embeddings.create
+      summary: Proxy /v1/embeddings through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      requestBody:
+        required: false
+        description: Opaque provider-compatible request body.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1/responses:
+    post:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.v1.responses.create
+      summary: Proxy /v1/responses through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      requestBody:
+        required: false
+        description: Opaque provider-compatible request body.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1beta/models/{model}:generateContent:
+    parameters:
+      - $ref: '#/components/parameters/GoogleModelName'
+    post:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.v1beta.models.generateContent
+      summary: Proxy /v1beta/models/{model}:generateContent through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      requestBody:
+        required: false
+        description: Opaque provider-compatible request body.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1beta/models/{model}:streamGenerateContent:
+    parameters:
+      - $ref: '#/components/parameters/GoogleModelName'
+    post:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.v1beta.models.streamGenerateContent
+      summary: Proxy /v1beta/models/{model}:streamGenerateContent through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      requestBody:
+        required: false
+        description: Opaque provider-compatible request body.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /anthropic/v1/messages:
+    post:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.anthropic.v1.messages.create
+      summary: Proxy /anthropic/v1/messages through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      requestBody:
+        required: false
+        description: Opaque provider-compatible request body.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /anthropic/v1/messages/count_tokens:
+    post:
+      tags: [local-ai-compat]
+      operationId: local-ai-compat.anthropic.v1.messages.count_tokens
+      summary: Proxy /anthropic/v1/messages/count_tokens through the built-in local AI compatibility surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: local-ai-compat-v1
+      requestBody:
+        required: false
+        description: Opaque provider-compatible request body.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Compatibility response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The local AI compatibility upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The local AI compatibility surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+components:
+  parameters:
+    GoogleModelName:
+      name: model
+      in: path
+      required: true
+      description: >-
+        Google Generative model identifier including the `:generateContent` or
+        `:streamGenerateContent` action suffix as routed by the upstream
+        provider.
+      schema:
+        type: string

@@ -5,12 +5,12 @@
 layout: home
 
 hero:
-  name: Claw Studio
+  name: Agent Studio
   text: One product shell, multiple host modes, one documented control plane.
   tagline: Web, desktop, native server, container, and Kubernetes modes now share a clearer architecture, a published native `/claw/*` API surface, and a unified release system.
   image:
     src: /logo.svg
-    alt: Claw Studio
+    alt: Agent Studio
   actions:
     - theme: brand
       text: Get Started
@@ -21,7 +21,7 @@ hero:
 
 features:
   - title: Multi-Mode Delivery
-    details: Run Claw Studio as a web workspace, a Tauri desktop app, a standalone Rust server, a Docker deployment, or a Kubernetes release family.
+    details: Run Agent Studio as a web workspace, a Tauri desktop app, a standalone Rust server, a Docker deployment, or a Kubernetes release family.
   - title: Native Control Plane
     details: The server publishes documented `/claw/health/*`, `/claw/api/v1/*`, `/claw/openapi/*`, `/claw/internal/v1/*`, and `/claw/manage/v1/*` route families.
   - title: Package-First Architecture
@@ -36,7 +36,7 @@ features:
 
 ## What This Site Covers
 
-This VitePress site is the public source of truth for how Claw Studio is organized, how it is packaged, and which native APIs are currently implemented.
+This VitePress site is the public source of truth for how Agent Studio is organized, how it is packaged, and which native APIs are currently implemented.
 
 It is designed for three audiences:
 
@@ -65,7 +65,7 @@ The native server currently publishes:
 - `/claw/internal/v1/*`
 - `/claw/manage/v1/*`
 
-Use [API Overview](/reference/api-reference) for the route-family map and [Claw Server Runtime](/reference/clawstudio-server-runtime) for runtime behavior details.
+Use [API Overview](/reference/api-reference) for the route-family map and [Claw Server Runtime](/reference/agentstudio-server-runtime) for runtime behavior details.
 
 > Historical plans under `docs/plans` and `docs/superpowers` remain intentionally excluded from public search indexing. Public documentation here should describe implemented behavior or explicitly marked future boundaries only.
 

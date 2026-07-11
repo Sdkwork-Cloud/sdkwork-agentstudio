@@ -41,7 +41,7 @@ Result:
 
 Regression coverage was written first in:
 
-- `packages/sdkwork-clawstudio-chat/src/runtime/openClawGatewayConnectionsPolicy.test.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/runtime/openClawGatewayConnectionsPolicy.test.ts`
 
 The test encoded the required runtime contract:
 
@@ -63,7 +63,7 @@ Observed pre-fix failure:
 
 File:
 
-- `packages/sdkwork-clawstudio-chat/src/runtime/openClawGatewayConnectionsPolicy.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/runtime/openClawGatewayConnectionsPolicy.ts`
 
 Change:
 
@@ -84,7 +84,7 @@ Result:
 
 File:
 
-- `packages/sdkwork-clawstudio-chat/src/runtime/OpenClawGatewayConnections.tsx`
+- `packages/sdkwork-agentstudio-pc-chat/src/runtime/OpenClawGatewayConnections.tsx`
 
 Change:
 
@@ -102,7 +102,7 @@ Result:
 
 Files:
 
-- `packages/sdkwork-clawstudio-chat/src/runtime/openClawGatewayConnectionsPolicy.test.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/runtime/openClawGatewayConnectionsPolicy.test.ts`
 - `scripts/run-sdkwork-chat-check.mjs`
 
 Change:
@@ -114,7 +114,7 @@ Change:
 
 The following commands were run after the fix:
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/runtime/openClawGatewayConnectionsPolicy.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-chat/src/runtime/openClawGatewayConnectionsPolicy.test.ts`
 - `node scripts/run-sdkwork-chat-check.mjs`
 - `pnpm.cmd lint`
 

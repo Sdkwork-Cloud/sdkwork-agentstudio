@@ -7,9 +7,9 @@
 
 The desktop local AI proxy must keep the shared request-entry and request-guard layer in a dedicated module:
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, shared router assembly, extracted module wiring, and generic proxy/timing/text/logging helpers
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/request_context.rs`
   owns:
   - `current_snapshot(...)`
   - `require_route_for_protocol(...)`

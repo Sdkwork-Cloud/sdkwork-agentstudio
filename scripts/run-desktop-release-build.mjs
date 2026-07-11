@@ -31,15 +31,15 @@ import { buildDesktopCargoTargetEnv } from './desktop-cargo-target.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
-const desktopSrcTauriDir = path.join('packages', 'sdkwork-clawstudio-desktop', 'src-tauri');
+const desktopSrcTauriDir = path.join('packages', 'sdkwork-agentstudio-pc-desktop', 'src-tauri');
 const desktopTauriBundleOverlayConfig = path.join(
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
   'generated',
   'tauri.bundle.overlay.json',
 );
-const desktopPackageName = '@sdkwork/clawstudio-desktop';
+const desktopPackageName = '@sdkwork/agentstudio-pc-desktop';
 
 export function resolveSpawnCommand(command, platform = process.platform) {
   if (platform !== 'win32') {
@@ -184,7 +184,7 @@ function resolveReleasePhasePlan({
 
       const args = [
         '--dir',
-        path.join('packages', 'sdkwork-clawstudio-desktop'),
+        path.join('packages', 'sdkwork-agentstudio-pc-desktop'),
         'exec',
         'tauri',
         'build',
@@ -231,7 +231,7 @@ function resolveReleasePhasePlan({
         '--filter',
         desktopPackageName,
         'run',
-        'tauri:build',
+        'build:desktop',
         '--',
         '--profile',
         profileId,
@@ -452,7 +452,7 @@ export function canRecoverMacosBundleFailure({
   targetDir = path.join(
     rootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'target',
   ),
@@ -483,7 +483,7 @@ export function repairMacosDmgBundleOutput({
   targetDir = path.join(
     rootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'target',
   ),

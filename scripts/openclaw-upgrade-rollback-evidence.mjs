@@ -61,7 +61,7 @@ function resolveEvidencePaths(workspaceRootDir) {
     bundledManifestPath: path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-clawstudio-desktop',
+      'sdkwork-agentstudio-pc-desktop',
       'src-tauri',
       'resources',
       'openclaw',
@@ -70,7 +70,7 @@ function resolveEvidencePaths(workspaceRootDir) {
     packagedManifestPath: path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-clawstudio-desktop',
+      'sdkwork-agentstudio-pc-desktop',
       'src-tauri',
       'generated',
       'release',
@@ -156,7 +156,7 @@ export async function buildOpenClawUpgradeRollbackEvidence({
   const resourceDir = path.join(
     workspaceRootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'resources',
     'openclaw',

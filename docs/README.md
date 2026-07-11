@@ -1,4 +1,4 @@
-# Claw Studio Documentation
+# Agent Studio Documentation
 
 ## Audience Routing
 

@@ -1,7 +1,7 @@
 > Migrated from `docs/release/release-2026-04-09-89.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
-# Claw Studio release-2026-04-09-89
+# Agent Studio release-2026-04-09-89
 
 ## Highlights
 
@@ -12,13 +12,13 @@
 ## Attempt Outcome
 
 - Fresh RED in this loop was explicit:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
   - both failed first because the new summary/resource builders and the new chrome component did not exist yet
 - Implemented the Step 07 extraction:
-  - added `buildInstanceWorkbenchSummaryMetrics(...)` and `buildInstanceWorkbenchResourceMetrics(...)` to `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.ts`
-  - added `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.tsx`
-  - rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` to delegate the lower summary deck, section sidebar, resource cards, and section heading shell to the dedicated component
+  - added `buildInstanceWorkbenchSummaryMetrics(...)` and `buildInstanceWorkbenchResourceMetrics(...)` to `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.ts`
+  - added `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.tsx`
+  - rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` to delegate the lower summary deck, section sidebar, resource cards, and section heading shell to the dedicated component
   - updated `scripts/sdkwork-instances-contract.test.ts` so the summary-card contract follows the new page -> chrome -> presentation boundary
 - Fixed verification-only drift found during the same loop:
   - corrected the `updatingSkillKeys` / `removingSkillKeys` prop values in `InstanceDetail.tsx` to the actual `updatingAgentSkillKeys` / `removingAgentSkillKeys` state
@@ -34,13 +34,13 @@
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.tsx`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
-- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.ts`
-- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailOverviewSection.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailOverviewSection.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`
 - `scripts/sdkwork-instances-contract.test.ts`
 - `docs/review/step-07-workbench-chrome-extraction-2026-04-09.md`
 - `docs/鏋舵瀯/134-2026-04-08-instance-detail-section-decomposition-progress.md`
@@ -50,14 +50,14 @@
 ## Verification Focus
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 - YELLOW:
   - `pnpm lint`

@@ -1,0 +1,58 @@
+openapi: 3.1.2
+info:
+  title: OpenClaw Gateway Proxy API
+  version: v1
+  description: >-
+    Authored OpenAPI contract for the governed OpenClaw gateway proxy surface.
+    Vendor-compatibility API: every operation declares
+    `x-sdkwork-wire-protocol: external` with
+    `x-sdkwork-external-protocol-id: openclaw-gateway-v1` (API_SPEC.md §4.5.2).
+    Request and response bodies are opaque provider-compatible JSON and do NOT
+    use the `SdkWorkApiResponse` envelope.
+  x-sdkwork-surface: open-api
+  x-sdkwork-external-protocol-id: openclaw-gateway-v1
+servers:
+  - url: /
+    description: Same-origin built-in host
+tags:
+  - name: openclaw-gateway
+    description: Governed OpenClaw gateway routes proxied by the built-in host.
+paths:
+  /claw/gateway/openclaw/tools/invoke:
+    post:
+      tags: [openclaw-gateway]
+      operationId: gateway.openclaw.tools.invoke
+      summary: Proxy /claw/gateway/openclaw/tools/invoke through the governed OpenClaw gateway surface
+      x-sdkwork-wire-protocol: external
+      x-sdkwork-external-protocol-id: openclaw-gateway-v1
+      requestBody:
+        required: false
+        description: Opaque OpenClaw gateway request body.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: OpenClaw gateway response from the proxied upstream route.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '502':
+          description: The OpenClaw gateway upstream could not be reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '503':
+          description: The OpenClaw gateway proxy surface is not active.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+components: {}

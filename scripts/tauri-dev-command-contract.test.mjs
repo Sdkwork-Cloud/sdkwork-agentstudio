@@ -20,29 +20,23 @@ function fail(message) {
   throw new Error(message);
 }
 
-function parsePort(url) {
-  return new URL(url).port;
-}
-
-const desktopPackage = readJson('packages/sdkwork-clawstudio-desktop/package.json');
-const tauriConfig = readJson('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.conf.json');
-const tauriWindowsConfig = readJson('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json');
-const tauriLinuxConfig = readJson('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.linux.conf.json');
-const tauriMacosConfig = readJson('packages/sdkwork-clawstudio-desktop/src-tauri/tauri.macos.conf.json');
-const windowsInstallerHooksPath = 'packages/sdkwork-clawstudio-desktop/src-tauri/installer-hooks.nsh';
+const desktopPackage = readJson('packages/sdkwork-agentstudio-pc-desktop/package.json');
+const tauriConfig = readJson('packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.conf.json');
+const tauriWindowsConfig = readJson('packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.windows.conf.json');
+const tauriLinuxConfig = readJson('packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.linux.conf.json');
+const tauriMacosConfig = readJson('packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.macos.conf.json');
+const windowsInstallerHooksPath = 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/installer-hooks.nsh';
 const nodeScriptRunner = 'sdkwork-run-node';
 const bundledSyncDevCommand = `${nodeScriptRunner} ../../scripts/sync-bundled-components.mjs --dev --no-fetch`;
 const bundledSyncBuildCommand = `${nodeScriptRunner} ../../scripts/sync-bundled-components.mjs --no-fetch --release`;
 const staleTargetGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-tauri-target-clean.mjs src-tauri`;
 const rustToolchainGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-native-rust-toolchain.mjs`;
 const devBinaryUnlockGuardCommand =
-  `${nodeScriptRunner} ../../scripts/ensure-tauri-dev-binary-unlocked.mjs src-tauri sdkwork-clawstudio-desktop`;
+  `${nodeScriptRunner} ../../scripts/ensure-tauri-dev-binary-unlocked.mjs src-tauri sdkwork-agentstudio-pc-desktop`;
 const devPortGuardCommand = `${nodeScriptRunner} ../../scripts/ensure-tauri-dev-port-free.mjs 127.0.0.1 1426`;
 const bundledOpenClawPrepareCommand = `${nodeScriptRunner} ../../scripts/prepare-openclaw-runtime.mjs`;
 const desktopBuildVerifyCommand = `${nodeScriptRunner} ../../scripts/verify-desktop-build-assets.mjs`;
 const tauriDevRunnerCommand = `${nodeScriptRunner} ../../scripts/run-tauri-cli.mjs dev`;
-const tauriInfoRunnerCommand = `${nodeScriptRunner} ../../scripts/run-tauri-cli.mjs info`;
-const tauriIconRunnerCommand = `${nodeScriptRunner} ../../scripts/run-tauri-cli.mjs icon src-tauri/app-icon.svg`;
 const desktopBundleRunnerCommand = `${nodeScriptRunner} ../../scripts/run-desktop-release-build.mjs --phase bundle --vite-mode production`;
 
 function assertCommandsAppearInOrder(script, commands, label) {
@@ -59,41 +53,15 @@ function assertCommandsAppearInOrder(script, commands, label) {
   }
 }
 
-const tauriDevScript = desktopPackage.scripts?.['dev:tauri'];
-if (typeof tauriDevScript !== 'string' || tauriDevScript.trim().length === 0) {
-  fail('Desktop package must define a dedicated "dev:tauri" script.');
-}
-
-const expectedBeforeDevCommand = 'pnpm run dev:tauri';
-if (tauriConfig.build?.beforeDevCommand !== expectedBeforeDevCommand) {
-  fail(
-    `Desktop Tauri beforeDevCommand must be "${expectedBeforeDevCommand}", received "${tauriConfig.build?.beforeDevCommand ?? ''}".`,
-  );
-}
-
-const devUrl = tauriConfig.build?.devUrl;
-if (typeof devUrl !== 'string' || devUrl.trim().length === 0) {
-  fail('Desktop Tauri config must define build.devUrl.');
-}
-
-const devUrlPort = parsePort(devUrl);
-if (!tauriDevScript.includes(`--port ${devUrlPort}`)) {
-  fail(`Desktop "dev:tauri" must bind Vite to Tauri devUrl port ${devUrlPort}.`);
-}
-
-if (!tauriDevScript.includes('--host 127.0.0.1')) {
-  fail('Desktop "dev:tauri" must bind Vite to host 127.0.0.1.');
-}
-
-const tauriCliDevScript = desktopPackage.scripts?.['tauri:dev'];
+const tauriCliDevScript = desktopPackage.scripts?.['dev:desktop'];
 if (typeof tauriCliDevScript !== 'string' || tauriCliDevScript.trim().length === 0) {
-  fail('Desktop package must define a "tauri:dev" script.');
+  fail('Desktop package must define a "dev:desktop" script.');
 }
 
-const bundledOpenClawPrepareScript = desktopPackage.scripts?.['prepare:openclaw-runtime'];
+const bundledOpenClawPrepareScript = desktopPackage.scripts?.['sdk:prepare-openclaw-runtime'];
 if (bundledOpenClawPrepareScript !== bundledOpenClawPrepareCommand) {
   fail(
-    `Desktop package must define "prepare:openclaw-runtime" as "${bundledOpenClawPrepareCommand}".`,
+    `Desktop package must define "sdk:prepare-openclaw-runtime" as "${bundledOpenClawPrepareCommand}".`,
   );
 }
 
@@ -112,22 +80,12 @@ assertCommandsAppearInOrder(
     devPortGuardCommand,
     tauriDevRunnerCommand,
   ],
-  'Desktop "tauri:dev"',
+  'Desktop "dev:desktop"',
 );
 
-const tauriCliBuildScript = desktopPackage.scripts?.['tauri:build'];
+const tauriCliBuildScript = desktopPackage.scripts?.['build:desktop'];
 if (typeof tauriCliBuildScript !== 'string' || tauriCliBuildScript.trim().length === 0) {
-  fail('Desktop package must define a "tauri:build" script.');
-}
-
-const tauriCliIconScript = desktopPackage.scripts?.['tauri:icon'];
-if (tauriCliIconScript !== tauriIconRunnerCommand) {
-  fail(`Desktop "tauri:icon" must delegate through "${tauriIconRunnerCommand}".`);
-}
-
-const tauriCliInfoScript = desktopPackage.scripts?.['tauri:info'];
-if (tauriCliInfoScript !== tauriInfoRunnerCommand) {
-  fail(`Desktop "tauri:info" must delegate through "${tauriInfoRunnerCommand}".`);
+  fail('Desktop package must define a "build:desktop" script.');
 }
 
 const desktopBuildScript = desktopPackage.scripts?.build;
@@ -156,12 +114,12 @@ assertCommandsAppearInOrder(
     staleTargetGuardCommand,
     desktopBundleRunnerCommand,
   ],
-  'Desktop "tauri:build"',
+  'Desktop "build:desktop"',
 );
 
 if (!tauriCliBuildScript.includes(desktopBundleRunnerCommand)) {
   fail(
-    `Desktop "tauri:build" must delegate the final bundle step through "${desktopBundleRunnerCommand}".`,
+    `Desktop "build:desktop" must delegate the final bundle step through "${desktopBundleRunnerCommand}".`,
   );
 }
 
@@ -183,7 +141,7 @@ if (Array.isArray(bundledResources) && bundledResources.some((resource) => resou
 }
 
 const windowsBundleResources = bundledComponentsModule.createTauriBundleOverlayConfig({
-  workspaceRootDir: 'D:\\workspace\\claw-studio',
+  workspaceRootDir: 'D:\\workspace\\agent-studio',
   platform: 'win32',
 }).bundle?.resources;
 if (!windowsBundleResources || Array.isArray(windowsBundleResources)) {
@@ -285,11 +243,11 @@ if (typeof tauriLinuxConfig.bundle?.linux?.deb?.postInstallScript !== 'undefined
 if (typeof tauriLinuxConfig.bundle?.linux?.rpm?.postInstallScript !== 'undefined') {
   fail('Desktop Linux rpm packaging must not wire a legacy OpenClaw postinstall script.');
 }
-if (existsSync(path.join(rootDir, 'packages/sdkwork-clawstudio-desktop/src-tauri/linux-postinstall-openclaw.sh'))) {
+if (existsSync(path.join(rootDir, 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/linux-postinstall-openclaw.sh'))) {
   fail('Legacy Linux OpenClaw postinstall hook must be removed after the external-runtime hard cut.');
 }
 
-const tauriBuildScriptSource = readText('packages/sdkwork-clawstudio-desktop/src-tauri/build.rs');
+const tauriBuildScriptSource = readText('packages/sdkwork-agentstudio-pc-desktop/src-tauri/build.rs');
 if (!tauriBuildScriptSource.includes('../dist')) {
   fail('Desktop build.rs must keep the frontendDist path available for clean-clone cargo test runs.');
 }

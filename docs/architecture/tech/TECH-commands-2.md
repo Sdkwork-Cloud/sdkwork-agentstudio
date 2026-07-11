@@ -19,29 +19,27 @@
 | 命令 | 作用 |
 | --- | --- |
 | `pnpm check:arch` | 校验分包边界、目录结构与包根导入规则 |
-| `pnpm check:parity` | 校验关键行为与 `upgrade/claw-studio-v5` 的对齐情况 |
-| `pnpm sync:features` | 同步仓库维护的 feature package 接线脚本 |
+| `pnpm check:parity` | 校验关键行为与 `upgrade/agent-studio-v5` 的对齐情况 |
+| `pnpm sdk:sync-features` | 同步仓库维护的 feature package 接线脚本 |
 
 ## 桌面端命令
 
 | 命令 | 作用 |
 | --- | --- |
-| `pnpm tauri:dev` | 启动桌面端开发环境并拉起 Tauri |
-| `pnpm tauri:build` | 构建桌面端安装包与发布产物 |
-| `pnpm tauri:icon` | 重新生成桌面端图标资源 |
-| `pnpm tauri:info` | 输出 Tauri 环境信息 |
+| `pnpm dev:desktop` | 启动桌面端开发环境并拉起 Tauri |
+| `pnpm build:desktop` | 构建桌面端安装包与发布产物 |
 | `pnpm check:desktop` | 校验桌面端运行时与命令契约 |
 | `pnpm check:desktop-openclaw-runtime` | 校验内置 OpenClaw 运行时的升级就绪度、打包元数据与 release 资产契约 |
 | `pnpm release:desktop` | 执行 CI 使用的桌面端 release 构建入口 |
-| `pnpm release:package:desktop` | 将已经构建完成的桌面端安装器与校验文件收集到 `artifacts/release`；需要先执行 `pnpm release:desktop` 或 `pnpm tauri:build` |
+| `pnpm release:package:desktop` | 将已经构建完成的桌面端安装器与校验文件收集到 `artifacts/release`；需要先执行 `pnpm release:desktop` 或 `pnpm build:desktop` |
 | `pnpm release:package:web` | 重新构建、归档、校验并 smoke 真实 Web/docs 产物到 `artifacts/release` |
 
 ## Server 与部署命令
 
 | 命令 | 作用 |
 | --- | --- |
-| `pnpm server:dev` | 以开发模式启动原生 Rust Server |
-| `pnpm server:build` | 构建原生 Rust Server 二进制，可追加 `-- --target <triple>` 指定目标三元组；在 Windows 上如果已安装 WSL 发行版，构建 Linux target 时会自动桥接到 WSL |
+| `pnpm dev:server` | 以开发模式启动原生 Rust Server |
+| `pnpm build:server` | 构建原生 Rust Server 二进制，可追加 `-- --target <triple>` 指定目标三元组；在 Windows 上如果已安装 WSL 发行版，构建 Linux target 时会自动桥接到 WSL |
 | `pnpm check:multi-mode` | 运行本地最高信号门禁，一次覆盖 desktop、server、统一 host runtime、OpenClaw 就绪度与 release 打包契约 |
 | `pnpm check:server` | 校验 Server 结构并运行 Rust 测试 |
 | `pnpm check:sdkwork-host-runtime` | 校验跨 desktop、server、docker、kubernetes 的统一运行时 authority 与 smoke 契约 |
@@ -79,9 +77,8 @@
 ## 针对单个包执行
 
 ```bash
-pnpm --filter @sdkwork/clawstudio-web build
-pnpm --filter @sdkwork/clawstudio-desktop tauri:info
-pnpm --filter @sdkwork/clawstudio-market lint
+pnpm --filter @sdkwork/agentstudio-pc-web build
+pnpm --filter @sdkwork/agentstudio-pc-market lint
 ```
 ## 发布证据完整性补充
 

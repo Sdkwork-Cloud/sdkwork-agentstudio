@@ -21,7 +21,7 @@ const workspaceRoot = workspaceRootHelper.resolveWorkspaceRootDir(
 const canonicalWorkspaceRoot = workspaceRootHelper.resolveCanonicalWorkspaceRootDir(
   path.resolve(import.meta.dirname, '..'),
 );
-const packageDir = path.resolve(import.meta.dirname, '..', 'packages', 'sdkwork-clawstudio-web');
+const packageDir = path.resolve(import.meta.dirname, '..', 'packages', 'sdkwork-agentstudio-pc-web');
 
 assert.equal(
   workspaceRootHelper.resolveWorkspaceRootDir(packageDir),
@@ -69,53 +69,53 @@ assert.equal(
 );
 
 assert.equal(
-  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/clawstudio-infrastructure'),
+  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/agentstudio-pc-infrastructure'),
   path.resolve(
     workspaceRoot,
-    'packages/sdkwork-clawstudio-infrastructure/src/index.ts',
+    'packages/sdkwork-agentstudio-pc-infrastructure/src/index.ts',
   ),
-  'workspace package resolution must map @sdkwork/clawstudio-* packages to their source entry',
+  'workspace package resolution must map @sdkwork/agentstudio-pc-* packages to their source entry',
 );
 
 assert.equal(
-  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/clawstudio-core'),
+  loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/agentstudio-pc-core'),
   path.resolve(
     workspaceRoot,
-    'packages/sdkwork-clawstudio-core/src/node.ts',
+    'packages/sdkwork-agentstudio-pc-core/src/node.ts',
   ),
   'workspace package resolution must respect package root exports for Node-safe entries',
 );
 
 assert.equal(
   loader.resolveWorkspacePackageSourceAliasPath(
-    '@sdkwork/clawstudio-core',
+    '@sdkwork/agentstudio-pc-core',
     pathToFileURL(
       path.resolve(
         workspaceRoot,
-        'packages/sdkwork-clawstudio-instances/src/components/InstanceDetailConfigToolsSection.test.tsx',
+        'packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailConfigToolsSection.test.tsx',
       ),
     ).href,
   ),
   path.resolve(
     workspaceRoot,
-    'packages/sdkwork-clawstudio-core/src/index.ts',
+    'packages/sdkwork-agentstudio-pc-core/src/index.ts',
   ),
   'workspace package resolution must prefer browser root exports for tsx component entrypoints',
 );
 
 assert.equal(
   loader.resolveWorkspacePackageSourceAliasPath(
-    '@sdkwork/clawstudio-core',
+    '@sdkwork/agentstudio-pc-core',
     pathToFileURL(
       path.resolve(
         workspaceRoot,
-        'packages/sdkwork-clawstudio-commons/src/hooks/useKeyboardShortcuts.ts',
+        'packages/sdkwork-agentstudio-pc-commons/src/hooks/useKeyboardShortcuts.ts',
       ),
     ).href,
   ),
   path.resolve(
     workspaceRoot,
-    'packages/sdkwork-clawstudio-core/src/index.ts',
+    'packages/sdkwork-agentstudio-pc-core/src/index.ts',
   ),
   'workspace package resolution must prefer browser root exports for browser hook sources',
 );
@@ -174,7 +174,7 @@ assert.equal(
 assert.equal(
   loader.resolveWorkspacePackageSourceAliasPath('@sdkwork/sdkwork-im-backend-sdk'),
   null,
-  'workspace package resolution must not remap sdkwork-im backend sdk imports through the claw studio workspace',
+  'workspace package resolution must not remap sdkwork-im backend sdk imports through the Agent Studio workspace',
 );
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdkwork-ts-loader-'));

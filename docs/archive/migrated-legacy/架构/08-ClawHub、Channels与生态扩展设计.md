@@ -2,7 +2,7 @@
 
 ## 1. 目标
 
-OpenClaw Studio 不只管理实例，还要管理实例“能接什么、能扩什么、能装什么”。因此 `ClawHub + Channels + Extensions` 共同构成生态扩展层。
+OpenAgent Studio 不只管理实例，还要管理实例“能接什么、能扩什么、能装什么”。因此 `ClawHub + Channels + Extensions` 共同构成生态扩展层。
 
 ## 2. 当前事实
 

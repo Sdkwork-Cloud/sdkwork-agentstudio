@@ -1,0 +1,33 @@
+version: 1
+defaultProfile: cloud.production
+
+profiles:
+  cloud.production:
+    install:
+      layout: binary-package
+    expose:
+      - domain: agentstudio.sdkwork.com
+        tls: sdkwork.com
+        mode: web+api
+        web: adaptive
+    packages: []
+
+  cloud.staging:
+    install:
+      layout: binary-package
+    expose:
+      - domain: agentstudio-staging.sdkwork.com
+        tls: sdkwork.com
+        mode: web+api
+        web: adaptive
+    packages: []
+
+  standalone.development:
+    install:
+      layout: source-tree
+    expose:
+      - domain: localhost
+        tls: off
+        mode: web+api
+        web: adaptive
+    packages: []

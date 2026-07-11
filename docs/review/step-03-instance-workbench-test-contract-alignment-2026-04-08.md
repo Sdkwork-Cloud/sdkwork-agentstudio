@@ -2,7 +2,7 @@
 
 ## Scope
 
-- Target blocker: `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- Target blocker: `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts`
 - Goal: remove the next top-of-stack workspace lint blocker by aligning the test helper layer with the current `InstanceWorkbenchService` dependency contracts and `StudioWorkbenchTaskRecord` shape.
 
 ## Root Cause
@@ -30,7 +30,7 @@
 
 - `pnpm.cmd lint 2>&1 | Select-String -Pattern 'instanceWorkbenchService\.test\.ts' -Context 0,2`
   - No remaining diagnostics for `instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts`
   - Passed
 
 ## Architecture Writeback
@@ -41,5 +41,5 @@
 ## Remaining Frontier
 
 - Workspace lint is still blocked by:
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.test.ts`
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.test.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.test.ts`

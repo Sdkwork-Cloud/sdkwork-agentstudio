@@ -13,25 +13,25 @@
 
 ### 2.1 Host 与 Shell
 
-- `sdkwork-clawstudio-web`：Web 预览宿主
-- `sdkwork-clawstudio-desktop`：桌面宿主与 Tauri 运行时
-- `sdkwork-clawstudio-shell`：路由、布局、全局入口
+- `sdkwork-agentstudio-pc-web`：Web 预览宿主
+- `sdkwork-agentstudio-pc-desktop`：桌面宿主与 Tauri 运行时
+- `sdkwork-agentstudio-pc-shell`：路由、布局、全局入口
 
 ### 2.2 业务 Feature
 
-- `sdkwork-clawstudio-chat`
-- `sdkwork-clawstudio-instances`
-- `sdkwork-clawstudio-settings`
-- `sdkwork-clawstudio-market`
+- `sdkwork-agentstudio-pc-chat`
+- `sdkwork-agentstudio-pc-instances`
+- `sdkwork-agentstudio-pc-settings`
+- `sdkwork-agentstudio-pc-market`
 - `removed-install-feature`
 
 ### 2.3 基础能力
 
-- `sdkwork-clawstudio-core`
-- `sdkwork-clawstudio-infrastructure`
-- `sdkwork-clawstudio-types`
-- `sdkwork-clawstudio-ui`
-- `sdkwork-clawstudio-i18n`
+- `sdkwork-agentstudio-pc-core`
+- `sdkwork-agentstudio-pc-infrastructure`
+- `sdkwork-agentstudio-pc-types`
+- `sdkwork-agentstudio-pc-ui`
+- `sdkwork-agentstudio-pc-i18n`
 
 ## 3. OpenClaw 托管相关边界
 
@@ -134,7 +134,7 @@
 
 ## 8. 2026-04-07 基线审计补充
 
-- 当前工作区实际包含 `35` 个包，不只本文列出的核心模块；`sdkwork-clawstudio-account`、`apps`、`auth`、`center`、`community`、`dashboard`、`devices`、`docs`、`extensions`、`github`、`host-*`、`huggingface`、`mall`、`model-purchase`、`points`、`tasks` 等扩展包已进入同一分层体系，`Step 02` 必须补齐全量映射。
+- 当前工作区实际包含 `35` 个包，不只本文列出的核心模块；`sdkwork-agentstudio-pc-account`、`apps`、`auth`、`center`、`community`、`dashboard`、`devices`、`docs`、`extensions`、`github`、`host-*`、`huggingface`、`mall`、`model-purchase`、`points`、`tasks` 等扩展包已进入同一分层体系，`Step 02` 必须补齐全量映射。
 - 当前主风险来自实现热点而不是边界原则缺失：`local_ai_proxy.rs` `8081` 行、`studio.rs` `8074` 行、`InstanceDetail.tsx` `5328` 行、`prepare-openclaw-runtime.mjs` `3290` 行、`openClawGatewaySessionStore.ts` `2767` 行、`openClawGatewayClient.ts` `2737` 行。
 - 基线审计已确认 OpenClaw 主链存在且有效：桌面侧已具备 `gateway` 投影与托管调用，`Local Proxy` 已覆盖多协议模型访问与 Provider 投影，`Instance Detail` 已形成十个工作台分区。
 - 因此后续重点不是继续堆功能，而是把 `Host/Shell/Foundation -> Runtime/Proxy -> API 契约 -> Feature Workbench` 从大文件拆成稳定模块。

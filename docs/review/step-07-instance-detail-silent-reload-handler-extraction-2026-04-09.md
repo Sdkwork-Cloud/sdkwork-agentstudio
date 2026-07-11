@@ -22,19 +22,19 @@
 
 ## Implemented Fix
 
-- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailReloadSupport.ts`.
+- Added `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailReloadSupport.ts`.
 - Added `createInstanceDetailSilentWorkbenchReloadHandler(...)` so the shared helper now owns only:
   - current-instance id guarding
   - pre-binding `{ withSpinner: false }`
   - forwarding into an injected page-owned `reloadWorkbench(...)`
-- Added focused direct coverage in `packages/sdkwork-clawstudio-instances/src/services/instanceDetailReloadSupport.test.ts`.
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Added focused direct coverage in `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailReloadSupport.test.ts`.
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds `reloadCurrentWorkbenchSilently` through `createInstanceDetailSilentWorkbenchReloadHandler(...)`
   - reuses that helper-backed callback for both `onReloadFiles` and `onReloadConfig`
-- Rewired `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts` so `buildAgentSectionProps(...)` now:
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.ts` so `buildAgentSectionProps(...)` now:
   - builds `reloadAgentWorkbenchSilently` through the same shared helper
   - stops keeping the inline `instanceId ? loadWorkbench(instanceId, { withSpinner: false }) : undefined` wrapper
-- Exported the new helper from `packages/sdkwork-clawstudio-instances/src/services/index.ts`.
+- Exported the new helper from `packages/sdkwork-agentstudio-pc-instances/src/services/index.ts`.
 - Updated `scripts/run-sdkwork-instances-check.mjs` so the new helper test runs inside `pnpm.cmd check:sdkwork-instances`.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract now requires:
   - the page to use `createInstanceDetailSilentWorkbenchReloadHandler(...)`
@@ -60,26 +60,26 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for studio-backed workbench truth, runtime persistence, provider-center projection, Local Proxy routing, ecosystem/runtime ownership, and desktop plugin/runtime registration. This loop only centralizes the page-side and section-model-side silent reload pre-binding layer.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1056` lines / `41202` bytes
-- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailReloadSupport.ts`: `16` lines / `496` bytes
-- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailReloadSupport.test.ts`: `73` lines / `2117` bytes
-- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`: `463` lines / `14550` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `1056` lines / `41202` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailReloadSupport.ts`: `16` lines / `496` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailReloadSupport.test.ts`: `73` lines / `2117` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.ts`: `463` lines / `14550` bytes
 
 Relative to the last recorded `release-2026-04-09-148` page baseline of `994`, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1056`. This loop still records a verified boundary improvement for the remaining silent reload wrapper cluster, while the broader page baseline has drifted upward in the current dirty worktree and should be treated as the fresh truth for subsequent loops.
 
@@ -99,15 +99,15 @@ Relative to the last recorded `release-2026-04-09-148` page baseline of `994`, t
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailReloadSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailReloadSupport.test.ts`
   - failed first because `instanceDetailReloadSupport.ts` did not yet exist
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `instanceDetailReloadSupport.ts` did not yet exist
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailReloadSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailReloadSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

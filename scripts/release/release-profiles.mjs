@@ -4,7 +4,7 @@ import {
   parseDesktopTargetTriple,
 } from './desktop-targets.mjs';
 
-export const DEFAULT_RELEASE_PROFILE_ID = 'claw-studio';
+export const DEFAULT_RELEASE_PROFILE_ID = 'agent-studio';
 export const RELEASE_ASSET_MANIFEST_FILE_NAME = 'release-asset-manifest.json';
 
 const NATIVE_RELEASE_TARGET_MATRIX = Object.freeze([
@@ -77,9 +77,9 @@ const DEPLOYMENT_ACCELERATOR_MATRIX = Object.freeze([
   }),
 ]);
 
-const CLAW_STUDIO_RELEASE_PROFILE = Object.freeze({
-  id: 'claw-studio',
-  productName: 'Claw Studio',
+const AGENT_STUDIO_RELEASE_PROFILE = Object.freeze({
+  id: 'agent-studio',
+  productName: 'Agent Studio',
   defaultPackageProfileId: 'openclaw-only',
   desktop: {
     matrix: Object.freeze(
@@ -95,7 +95,7 @@ const CLAW_STUDIO_RELEASE_PROFILE = Object.freeze({
     }),
   },
   server: Object.freeze({
-    binaryName: 'clawstudio-server',
+    binaryName: 'agentstudio-server',
     matrix: Object.freeze(
       NATIVE_RELEASE_TARGET_MATRIX.map((entry) => Object.freeze({
         ...entry,
@@ -124,7 +124,7 @@ const CLAW_STUDIO_RELEASE_PROFILE = Object.freeze({
 });
 
 const RELEASE_PROFILES = new Map([
-  [CLAW_STUDIO_RELEASE_PROFILE.id, CLAW_STUDIO_RELEASE_PROFILE],
+  [AGENT_STUDIO_RELEASE_PROFILE.id, AGENT_STUDIO_RELEASE_PROFILE],
 ]);
 
 export function resolveReleaseProfile(profileId = DEFAULT_RELEASE_PROFILE_ID) {

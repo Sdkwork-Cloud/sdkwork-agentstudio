@@ -31,15 +31,15 @@ Confirmed outcomes:
 
 Commands executed on 2026-04-05:
 
-- `cargo test --manifest-path packages/sdkwork-clawstudio-host-studio/src-host/Cargo.toml built_in`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-host-studio/src-host/Cargo.toml built_in`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:sdkwork-host-runtime`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml health`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml health`
 - `node scripts/release-deployment-contract.test.mjs`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml public_studio_workbench`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml public_studio_workbench`
 - `pnpm.cmd check:server`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-core/src/services/openClawConfigService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd lint`
 
@@ -53,7 +53,7 @@ Result:
 | --- | --- | --- | --- |
 | Built-in OpenClaw managed projection withheld when runtime is inactive | server / docker / k8s | `cargo test ... built_in`, `pnpm.cmd check:sdkwork-host-runtime` | Pass |
 | Hosted browser config workbench uses gateway authority when runtime is online and file fallback only for offline desktop flows | hosted browser + desktop local fallback | `pnpm.cmd check:sdkwork-host-runtime` | Pass |
-| Hosted/browser managed OpenClaw agent, channel, web search, auth cooldown, and channel-toggle mutations use gateway authority when runtime is online | hosted browser + desktop local fallback | `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`, `node --experimental-strip-types packages/sdkwork-clawstudio-core/src/services/openClawConfigService.test.ts` | Pass |
+| Hosted/browser managed OpenClaw agent, channel, web search, auth cooldown, and channel-toggle mutations use gateway authority when runtime is online | hosted browser + desktop local fallback | `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`, `node --experimental-strip-types packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.test.ts` | Pass |
 | Hosted/browser conversation list does not fall back to stale snapshot truth for offline managed OpenClaw | hosted browser | `pnpm.cmd check:sdkwork-host-runtime` | Pass |
 | Server public workbench task/file/provider routes reject built-in mutations without live runtime authority | server | `cargo test ... public_studio_workbench`, `pnpm.cmd check:server` | Pass |
 | Runtime-aware readiness endpoint returns non-ready when runtime authority is missing | server / docker / k8s | `cargo test ... health`, `pnpm.cmd check:server` | Pass |

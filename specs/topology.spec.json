@@ -1,0 +1,42 @@
+{
+  "$schema": "https://sdkwork.com/schemas/topology.spec.v1.json",
+  "appId": "sdkwork-agentstudio",
+  "database": {
+    "appPrefix": "SDKWORK_AGENTSTUDIO",
+    "engines": ["sqlite"],
+    "defaultEngine": "sqlite"
+  },
+  "surfaces": {
+    "application.public-ingress": {
+      "kind": "application",
+      "bindEnv": "SDKWORK_AGENTSTUDIO_SERVER_BIND",
+      "websocketPath": "/claw/ws",
+      "description": "Public ingress for the Agent Studio browser/desktop shell and HTTP API."
+    },
+    "application.app-http": {
+      "kind": "application",
+      "bindEnv": "SDKWORK_AGENTSTUDIO_SERVER_BIND",
+      "description": "App-API only surface (same upstream as public-ingress in standalone mode)."
+    },
+    "application.backend-http": {
+      "kind": "application",
+      "bindEnv": "SDKWORK_AGENTSTUDIO_SERVER_BIND",
+      "description": "Backend-API only surface (same upstream as public-ingress in standalone mode)."
+    }
+  },
+  "cloudPublicHosts": {
+    "application.public-ingress": {
+      "httpHost": "agentstudio.sdkwork.com",
+      "tls": "sdkwork.com"
+    }
+  },
+  "profileFiles": {
+    "cloud.production": "deploy/profiles/cloud.production.env",
+    "cloud.staging": "deploy/profiles/cloud.staging.env",
+    "standalone.development": "deploy/profiles/standalone.development.env"
+  },
+  "defaults": {
+    "gatewayBind": "0.0.0.0:18797",
+    "acceleratorProfile": "cpu"
+  }
+}

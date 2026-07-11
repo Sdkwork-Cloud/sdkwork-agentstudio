@@ -32,10 +32,10 @@ Local upstream locale files currently present in
 Local app locale-source reality in this workspace:
 
 - Dedicated split source bundles are still maintained only for:
-  - `packages/sdkwork-clawstudio-i18n/src/locales/en/*`
-  - `packages/sdkwork-clawstudio-i18n/src/locales/zh/*`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/en/*`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/*`
 - The app runtime already accepts a broader language surface in
-  `packages/sdkwork-clawstudio-i18n/src/config.ts`.
+  `packages/sdkwork-agentstudio-pc-i18n/src/config.ts`.
 - That means the language picker can expose more locale codes than the repo currently translates
   natively.
 
@@ -57,7 +57,7 @@ Why that was a real architecture issue:
 1. The same selector is consumed through the shared package stack, so the misleading language
    surface would ship consistently across web, desktop, server-hosted, Docker, and k8s packaging.
 2. The current repo still reuses `en` or `zh` bundles underneath for many exposed locale codes.
-3. A user choosing `fr`, `ja`, `pt-BR`, or `zh-TW` could reasonably infer that Claw Studio had a
+3. A user choosing `fr`, `ja`, `pt-BR`, or `zh-TW` could reasonably infer that Agent Studio had a
    dedicated translation for that locale when it did not.
 
 Conclusion:
@@ -76,7 +76,7 @@ Accepted strategy:
 - Surface fallback notes directly in the settings selector and for the currently selected explicit
   language.
 - Preserve a truthful Chinese fallback string without directly patching the encoding-dirty
-  `packages/sdkwork-clawstudio-i18n/src/locales/zh/settings.json` file in this environment.
+  `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/settings.json` file in this environment.
 
 Rejected alternatives:
 
@@ -91,36 +91,36 @@ Rejected alternatives:
 
 ## Step 4: Files changed in this loop
 
-- `packages/sdkwork-clawstudio-i18n/src/config.ts`
+- `packages/sdkwork-agentstudio-pc-i18n/src/config.ts`
   - added dedicated-bundle metadata helpers and native language labels
-- `packages/sdkwork-clawstudio-settings/src/GeneralSettings.tsx`
+- `packages/sdkwork-agentstudio-pc-settings/src/GeneralSettings.tsx`
   - renders per-locale fallback notes and an explicit fallback note for the active language
-- `packages/sdkwork-clawstudio-i18n/src/index.test.ts`
+- `packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts`
   - asserts language metadata truthfulness and bundle-source behavior
-- `packages/sdkwork-clawstudio-i18n/src/locales/en/settings.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en/settings.json`
   - adds the shared `settings.general.languageFallbackTo` copy
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/index.ts`
   - injects the matching Chinese fallback string as a runtime override
-- `packages/sdkwork-clawstudio-i18n/src/locales/README.md`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/README.md`
   - documents that fallback-backed locales must be surfaced honestly
 - `scripts/sdkwork-settings-contract.test.ts`
   - asserts the settings surface uses the new fallback metadata helpers
-- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json`
 
 Important implementation note:
 
-- The Chinese fallback string currently lives in `packages/sdkwork-clawstudio-i18n/src/locales/zh/index.ts`
-  instead of `packages/sdkwork-clawstudio-i18n/src/locales/zh/settings.json` because the split JSON file
+- The Chinese fallback string currently lives in `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/index.ts`
+  instead of `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/settings.json` because the split JSON file
   is encoding-dirty in this environment and was not safe to patch directly in this loop.
 
 ## Step 5: Verification evidence
 
 Focused verification re-run for this landing:
 
-- `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales`
+- `pnpm.cmd --filter @sdkwork/agentstudio-pc-i18n sync:locales`
   - passed
-- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts`
   - passed
 - `node scripts/run-sdkwork-settings-check.mjs`
   - passed

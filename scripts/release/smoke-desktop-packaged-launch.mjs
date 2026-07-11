@@ -667,15 +667,15 @@ function resolveInstallRootFromPackagedManifest(extractRoot) {
 
 function resolveInstalledDesktopBinaryPath({
   installRoot,
-  productName = 'Claw Studio',
+  productName = 'Agent Studio',
   platform,
 } = {}) {
   const releasePlatform = normalizeDesktopPlatform(platform);
   if (releasePlatform === 'windows') {
     const preferredRootExecutables = [
       `${productName}.exe`,
-      'sdkwork-clawstudio-desktop.exe',
-      'claw-studio.exe',
+      'sdkwork-agentstudio-pc-desktop.exe',
+      'agent-studio.exe',
     ];
     for (const executableName of preferredRootExecutables) {
       const productExecutable = path.join(installRoot, executableName);
@@ -714,8 +714,8 @@ function resolveInstalledDesktopBinaryPath({
     }
   } else if (releasePlatform === 'linux') {
     const candidates = [
-      path.join(installRoot, 'claw-studio'),
-      path.join(installRoot, 'sdkwork-clawstudio-desktop'),
+      path.join(installRoot, 'agent-studio'),
+      path.join(installRoot, 'sdkwork-agentstudio-pc-desktop'),
       path.join(installRoot, productName),
     ];
     for (const candidate of candidates) {
@@ -813,7 +813,7 @@ function resolveMacosAppBundlePath(extractRoot) {
   return appBundles[0];
 }
 
-function resolveMacosAppExecutablePath(appBundlePath, productName = 'Claw Studio') {
+function resolveMacosAppExecutablePath(appBundlePath, productName = 'Agent Studio') {
   const macosDir = path.join(appBundlePath, 'Contents', 'MacOS');
   const preferredPath = path.join(macosDir, productName);
   if (existsSync(preferredPath)) {
@@ -864,7 +864,7 @@ export async function prepareDesktopPackagedLaunch({
   artifactPath,
   artifact,
   releasePlatform,
-  productName = 'Claw Studio',
+  productName = 'Agent Studio',
   smokeRoot,
   env = process.env,
   runCommandFn = runCommand,
@@ -1227,7 +1227,7 @@ export async function smokeDesktopPackagedLaunch({
       manifest,
       artifact,
       artifactPath,
-      productName: String(manifest?.productName ?? 'Claw Studio').trim() || 'Claw Studio',
+      productName: String(manifest?.productName ?? 'Agent Studio').trim() || 'Agent Studio',
       smokeRoot,
     });
     processRecord = {

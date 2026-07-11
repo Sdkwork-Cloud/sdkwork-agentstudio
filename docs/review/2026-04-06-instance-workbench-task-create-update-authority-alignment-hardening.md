@@ -3,8 +3,8 @@
 ## Problem
 
 The previous OpenClaw task-routing hardening closed the follow-up action split in
-`packages/sdkwork-clawstudio-core/src/services/taskService.ts`, and
-`packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`
+`packages/sdkwork-agentstudio-pc-core/src/services/taskService.ts`, and
+`packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`
 already routed these actions correctly for existing tasks:
 
 - `cloneTask(...)`
@@ -52,7 +52,7 @@ Implemented contract:
 Code changes:
 
 - added a local `hasWorkbench(detail)` helper in
-  `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`
+  `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`
 - changed `createTask(...)` to use the gateway only for OpenClaw instances
   without backend workbench authority
 - changed `updateTask(...)` to use the same rule
@@ -61,7 +61,7 @@ Code changes:
 
 Added focused coverage in:
 
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts`
 
 The new regression freezes this behavior:
 
@@ -91,7 +91,7 @@ contract test, including:
 
 Executed in this iteration:
 
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts']))"`
 - `node scripts/run-sdkwork-instances-check.mjs`
 - `pnpm.cmd check:sdkwork-instances`
 

@@ -10,12 +10,12 @@ test('release path helper normalizes and rejects unsafe release-relative paths',
   const releasePaths = await import(pathToFileURL(pathsPath).href);
 
   assert.equal(
-    releasePaths.normalizeReleaseRelativePath('web\\claw-studio-web-assets.tar.gz'),
-    'web/claw-studio-web-assets.tar.gz',
+    releasePaths.normalizeReleaseRelativePath('web\\agent-studio-web-assets.tar.gz'),
+    'web/agent-studio-web-assets.tar.gz',
   );
 
   assert.doesNotThrow(() => releasePaths.assertSafeReleaseRelativePath(
-    'web/claw-studio-web-assets.tar.gz',
+    'web/agent-studio-web-assets.tar.gz',
     { contextLabel: 'Release manifest' },
   ));
 
@@ -35,7 +35,7 @@ test('release path helper normalizes and rejects unsafe release-relative paths',
   );
   assert.throws(
     () => releasePaths.assertSafeReleaseRelativePath(
-      './web/claw-studio-web-assets.tar.gz',
+      './web/agent-studio-web-assets.tar.gz',
       { contextLabel: 'Release manifest' },
     ),
     /non-canonical artifact path/,

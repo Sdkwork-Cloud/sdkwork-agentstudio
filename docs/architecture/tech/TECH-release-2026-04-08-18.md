@@ -9,16 +9,16 @@
 ## Attempt Outcome
 
 - The loop repaired two linked verification gaps:
-  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still mixed loopback proxy lifecycle with managed OpenClaw provider projection and `openclaw.json` write logic
-  - `scripts/openclaw-release-contract.test.mjs` still treated `packages/sdkwork-clawstudio-tasks/src/services/taskService.test.ts` as an OpenClaw version-fixture owner even though that file had already become a thin wrapper contract test
+  - `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still mixed loopback proxy lifecycle with managed OpenClaw provider projection and `openclaw.json` write logic
+  - `scripts/openclaw-release-contract.test.mjs` still treated `packages/sdkwork-agentstudio-pc-tasks/src/services/taskService.test.ts` as an OpenClaw version-fixture owner even though that file had already become a thin wrapper contract test
 - Implemented the narrow repairs:
-  - added `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/projection.rs`
+  - added `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/projection.rs`
   - delegated `LocalAiProxyService::project_managed_openclaw_provider(...)` from `local_ai_proxy.rs` into the new projection module
   - tightened `scripts/check-desktop-platform-foundation.mjs` so the Step 03 desktop structure gate now requires the projection module file, the `mod projection;` declaration, and the explicit delegation call
   - removed the stale tasks-test fixture path from `scripts/openclaw-release-contract.test.mjs`
 - Fresh verification:
   - `node scripts/check-desktop-platform-foundation.mjs`
-  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032 project_managed_openclaw_provider`
+  - `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032 project_managed_openclaw_provider`
   - `node scripts/openclaw-release-contract.test.mjs`
   - `pnpm.cmd check:desktop`
   - `pnpm.cmd check:desktop-openclaw-runtime`
@@ -27,8 +27,8 @@
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/projection.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/projection.rs`
 - `scripts/check-desktop-platform-foundation.mjs`
 - `scripts/openclaw-release-contract.test.mjs`
 - `docs/review/step-03-local-ai-proxy-projection-hotspot-split-2026-04-08.md`
@@ -40,7 +40,7 @@
 ## Verification Focus
 
 - `node scripts/check-desktop-platform-foundation.mjs`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032 project_managed_openclaw_provider`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032 project_managed_openclaw_provider`
 - `node scripts/openclaw-release-contract.test.mjs`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd check:desktop-openclaw-runtime`

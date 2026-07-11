@@ -5,7 +5,7 @@
 
 ## 目的
 
-本文记录当前 Claw Studio 已经实现的 rollout control plane 接口面，它在桌面端 combined mode、平台桥接层和 Server 模式之间共享同一套逻辑契约。
+本文记录当前 Agent Studio 已经实现的 rollout control plane 接口面，它在桌面端 combined mode、平台桥接层和 Server 模式之间共享同一套逻辑契约。
 
 ## 当前接口
 

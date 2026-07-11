@@ -1,6 +1,6 @@
 # Claw Server 运行时参考
 
-本文记录当前 `packages/sdkwork-clawstudio-server` 的内置宿主运行时，以及被桌面嵌入式宿主复用的同一套路由契约。
+本文记录当前 `packages/sdkwork-agentstudio-pc-server` 的内置宿主运行时，以及被桌面嵌入式宿主复用的同一套路由契约。
 
 ## 目标
 
@@ -23,16 +23,16 @@
 当前 Rust 入口已经提供真实 CLI：
 
 ```bash
-cargo run --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml -- run
-cargo run --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml -- print-config
-cargo run --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml -- service print-manifest --platform linux
-cargo run --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml -- service status
+cargo run --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml -- run
+cargo run --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml -- print-config
+cargo run --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml -- service print-manifest --platform linux
+cargo run --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml -- service status
 ```
 
 当前命令说明：
 
-- CLI 逻辑命令面是 `clawstudio-server run`、`clawstudio-server print-config`、`clawstudio-server service print-manifest --platform <linux|macos|windows>` 与 `clawstudio-server service <install|start|stop|restart|status>`
-- 当前打包后的 release bundle 会把同一套命令面暴露在原生二进制 `bin/clawstudio-server` 或 `bin/clawstudio-server.exe` 上；这个原生二进制就是打包后的规范启动入口，在 bundle 布局完整时会自动解析 `CLAW_SERVER_WEB_DIST` 与 `CLAW_SERVER_DATA_DIR` 的包内默认值，而 `start-clawstudio-server.sh`、`start-clawstudio-server.cmd` 继续作为围绕同一原生二进制的可选便捷包装层
+- CLI 逻辑命令面是 `agentstudio-server run`、`agentstudio-server print-config`、`agentstudio-server service print-manifest --platform <linux|macos|windows>` 与 `agentstudio-server service <install|start|stop|restart|status>`
+- 当前打包后的 release bundle 会把同一套命令面暴露在原生二进制 `bin/agentstudio-server` 或 `bin/agentstudio-server.exe` 上；这个原生二进制就是打包后的规范启动入口，在 bundle 布局完整时会自动解析 `CLAW_SERVER_WEB_DIST` 与 `CLAW_SERVER_DATA_DIR` 的包内默认值，而 `start-agentstudio-server.sh`、`start-agentstudio-server.cmd` 继续作为围绕同一原生二进制的可选便捷包装层
 - `run` 是默认命令
 - `print-config` 会输出当前生效的运行时配置
 - `service print-manifest` 会输出跨平台服务清单元数据，以及对应平台的单元内容
@@ -42,10 +42,10 @@ cargo run --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml
 
 当前服务清单投影：
 
-- Linux 使用 `systemd`，目标路径为 `/etc/systemd/system/clawstudio-server.service`
+- Linux 使用 `systemd`，目标路径为 `/etc/systemd/system/agentstudio-server.service`
 - macOS 使用 `launchd`，目标路径为 `/Library/LaunchDaemons/ai.sdkwork.claw.server.plist`
 - Windows 使用 `windowsService`，目标路径为 `<CLAW_SERVER_DATA_DIR>/service/windows-service.json`
-- 当 `CLAW_SERVER_CONFIG` 与 `--config` 都未提供时，默认配置文件路径为 `<CLAW_SERVER_DATA_DIR>/clawstudio-server.config.json`
+- 当 `CLAW_SERVER_CONFIG` 与 `--config` 都未提供时，默认配置文件路径为 `<CLAW_SERVER_DATA_DIR>/agentstudio-server.config.json`
 
 当前服务生命周期说明：
 
@@ -62,12 +62,12 @@ cargo run --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml
 CLAW_SERVER_CONFIG=
 CLAW_SERVER_HOST=127.0.0.1
 CLAW_SERVER_PORT=18797
-CLAW_SERVER_DATA_DIR=.clawstudio-server
+CLAW_SERVER_DATA_DIR=.agentstudio-server
 CLAW_SERVER_STATE_STORE_DRIVER=sqlite
 CLAW_SERVER_STATE_STORE_SQLITE_PATH=
 CLAW_SERVER_STATE_STORE_POSTGRES_URL=
 CLAW_SERVER_STATE_STORE_POSTGRES_SCHEMA=
-CLAW_SERVER_WEB_DIST=../sdkwork-clawstudio-web/dist
+CLAW_SERVER_WEB_DIST=../sdkwork-agentstudio-pc-web/dist
 CLAW_SERVER_MANAGE_USERNAME=
 CLAW_SERVER_MANAGE_PASSWORD=
 CLAW_SERVER_INTERNAL_USERNAME=
@@ -89,7 +89,7 @@ CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false
 
 ## 启动行为
 
-Server 入口位于 `packages/sdkwork-clawstudio-server/src-host/src/main.rs`。
+Server 入口位于 `packages/sdkwork-agentstudio-pc-server/src-host/src/main.rs`。
 
 启动流程如下：
 
@@ -291,18 +291,18 @@ Server 入口位于 `packages/sdkwork-clawstudio-server/src-host/src/main.rs`。
 
 ## 浏览器资源托管
 
-静态资源托管位于 `packages/sdkwork-clawstudio-server/src-host/src/http/static_assets.rs`。
+静态资源托管位于 `packages/sdkwork-agentstudio-pc-server/src-host/src/http/static_assets.rs`。
 
 当前行为：
 
 - 当配置了 manage 凭据时，浏览器壳与静态资源共享相同的 Basic Auth challenge
 - 先返回真实静态文件，再走 SPA fallback
 - 未命中的浏览器路由会回退到 `index.html`
-- 返回的 HTML 会注入 `sdkwork-clawstudio-host-mode`、`sdkwork-clawstudio-manage-base-path`、`sdkwork-clawstudio-internal-base-path` 等宿主元数据
+- 返回的 HTML 会注入 `sdkwork-agentstudio-pc-host-mode`、`sdkwork-agentstudio-pc-manage-base-path`、`sdkwork-agentstudio-pc-internal-base-path` 等宿主元数据
 
 ## 桌面嵌入式宿主复用
 
-桌面端通过 `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/embedded_host_server.rs` 复用同一套路由。
+桌面端通过 `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/embedded_host_server.rs` 复用同一套路由。
 
 桌面侧的补充说明：
 
@@ -317,8 +317,8 @@ Server 入口位于 `packages/sdkwork-clawstudio-server/src-host/src/main.rs`。
 当前这一条运行时实现的聚焦验证：
 
 ```bash
-cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml
-cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_bootstrap
+cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml
+cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml embedded_host_bootstrap
 ```
 
 工作区层面仍常用：

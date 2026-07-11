@@ -3,9 +3,9 @@
 ## Scope
 
 - Target blockers:
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.test.ts`
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
-- Goal: remove the next `sdkwork-clawstudio-instances` lint blockers caused by stale shallow test-helper typing for nested `StudioInstanceDetailRecord` overrides.
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.test.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
+- Goal: remove the next `sdkwork-agentstudio-pc-instances` lint blockers caused by stale shallow test-helper typing for nested `StudioInstanceDetailRecord` overrides.
 
 ## Root Cause
 
@@ -25,9 +25,9 @@
 - targeted `pnpm.cmd lint` scan produced no diagnostics for:
   - `openClawManagementCapabilities.test.ts`
   - `openClawProviderWorkspacePresentation.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.test.ts`
   - Passed
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
   - Passed
 
 ## Architecture Writeback
@@ -37,7 +37,7 @@
 
 ## Remaining Frontier
 
-- Workspace lint has advanced beyond the `sdkwork-clawstudio-instances` helper drift and is now headed by broader package blockers including:
-  - `packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts`
-  - `packages/sdkwork-clawstudio-chat/src/index.ts`
-  - `packages/sdkwork-clawstudio-chat/src/services/openclaw/openClawGatewayClient.test.ts`
+- Workspace lint has advanced beyond the `sdkwork-agentstudio-pc-instances` helper drift and is now headed by broader package blockers including:
+  - `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.test.ts`
+  - `packages/sdkwork-agentstudio-pc-chat/src/index.ts`
+  - `packages/sdkwork-agentstudio-pc-chat/src/services/openclaw/openClawGatewayClient.test.ts`

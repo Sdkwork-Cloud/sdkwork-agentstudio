@@ -35,7 +35,7 @@ function createReadJsonFileStub() {
       };
     }
 
-    if (normalizedPath.endsWith('/packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json')) {
+    if (normalizedPath.endsWith('/packages/sdkwork-agentstudio-pc-desktop/src-tauri/resources/openclaw/manifest.json')) {
       return {
         schemaVersion: 1,
         runtimeId: 'openclaw',
@@ -46,7 +46,7 @@ function createReadJsonFileStub() {
       };
     }
 
-    if (normalizedPath.endsWith('/packages/sdkwork-clawstudio-desktop/src-tauri/generated/release/openclaw-resource/manifest.json')) {
+    if (normalizedPath.endsWith('/packages/sdkwork-agentstudio-pc-desktop/src-tauri/generated/release/openclaw-resource/manifest.json')) {
       return {
         schemaVersion: 1,
         runtimeId: 'openclaw',
@@ -94,13 +94,13 @@ test('upgrade rollback evidence summarizes explicit upgrade and rollback readine
     inspectPreparedOpenClawRuntimeFn: async () => ({
       reusable: true,
       reason: 'ready',
-      manifestPath: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json',
+      manifestPath: 'D:/synthetic/workspace/packages/sdkwork-agentstudio-pc-desktop/src-tauri/resources/openclaw/manifest.json',
     }),
     verifyDesktopOpenClawReleaseAssetsFn: async () => ({
       manifest: {
         openclawVersion: currentOpenClawVersion,
       },
-      packagedResourceDir: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/generated/release/openclaw-resource',
+      packagedResourceDir: 'D:/synthetic/workspace/packages/sdkwork-agentstudio-pc-desktop/src-tauri/generated/release/openclaw-resource',
     }),
   });
 
@@ -144,7 +144,7 @@ test('upgrade rollback evidence turns packaged release verification failures int
     inspectPreparedOpenClawRuntimeFn: async () => ({
       reusable: true,
       reason: 'ready',
-      manifestPath: 'D:/synthetic/workspace/packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json',
+      manifestPath: 'D:/synthetic/workspace/packages/sdkwork-agentstudio-pc-desktop/src-tauri/resources/openclaw/manifest.json',
     }),
     verifyDesktopOpenClawReleaseAssetsFn: async () => {
       throw new Error('Missing packaged OpenClaw release manifest.');

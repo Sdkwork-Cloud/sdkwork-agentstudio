@@ -132,10 +132,10 @@ export function createUserCenterStandardCommandPlan({
     },
     {
       ...authPlan,
-      label: 'claw-studio auth and user-center standard',
+      label: 'agent-studio auth and user-center standard',
     },
     {
-      label: 'claw-studio deployment user-center entrypoint contract',
+      label: 'agent-studio deployment user-center entrypoint contract',
       command: nodeExecutable,
       args: [resolveServerUserCenterEntrypointContractTestFile({
         workspaceRoot: resolvedWorkspaceRoot,

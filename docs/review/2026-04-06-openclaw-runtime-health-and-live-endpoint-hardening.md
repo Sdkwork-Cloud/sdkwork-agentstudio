@@ -18,7 +18,7 @@ Two independent problems were amplifying each other:
 1. The built-in instance baseline projection published `baseUrl` and `websocketUrl` even before the managed gateway was actually running.
 2. The desktop supervisor only remembered that the OpenClaw gateway had once become ready. After that point it did not continuously re-check that the managed process still had a working loopback listener.
 
-That meant Claw Studio could keep projecting a connectable built-in OpenClaw runtime even when:
+That meant Agent Studio could keep projecting a connectable built-in OpenClaw runtime even when:
 
 - the gateway had not started yet
 - the process had exited
@@ -36,7 +36,7 @@ The user-visible result matched the reported field failures:
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
 
 Behavior change:
 
@@ -49,7 +49,7 @@ This prevents the baseline registry/detail projection from advertising a live lo
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
 
 Behavior change:
 
@@ -63,7 +63,7 @@ This keeps config and desired-state metadata available without lying about runti
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/supervisor.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/supervisor.rs`
 
 Behavior change:
 
@@ -81,7 +81,7 @@ This closes the stale-supervisor-state gap that was allowing dead loopback endpo
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
 
 Behavior change:
 
@@ -94,14 +94,14 @@ This gives the UI and startup surfaces a truthful error state instead of a false
 
 ### New regression tests
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
   - `built_in_instance_detail_hides_live_gateway_endpoints_when_the_gateway_is_not_running`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/supervisor.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/supervisor.rs`
   - `supervisor_marks_the_openclaw_gateway_unhealthy_when_the_loopback_listener_disappears`
 
 ### Updated regression expectations
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
   - `built_in_instance_detail_reports_gateway_and_openai_http_endpoints_when_the_gateway_is_running`
   - `built_in_instance_detail_exposes_console_access_with_auto_login_url`
   - `built_in_instance_detail_hides_auto_login_for_secret_ref_tokens`
@@ -112,10 +112,10 @@ These tests now explicitly require a running supervisor-backed OpenClaw runtime 
 
 The following commands were run after the code changes:
 
-- `cargo test built_in_instance_detail_hides_live_gateway_endpoints_when_the_gateway_is_not_running --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test supervisor_marks_the_openclaw_gateway_unhealthy_when_the_loopback_listener_disappears --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test built_in_instance_detail_ --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test supervisor_ --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
+- `cargo test built_in_instance_detail_hides_live_gateway_endpoints_when_the_gateway_is_not_running --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test supervisor_marks_the_openclaw_gateway_unhealthy_when_the_loopback_listener_disappears --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test built_in_instance_detail_ --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test supervisor_ --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
 - `pnpm.cmd check:desktop`
 
 All of the above completed successfully in this iteration.

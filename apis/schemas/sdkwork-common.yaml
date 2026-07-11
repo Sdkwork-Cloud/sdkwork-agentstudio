@@ -1,0 +1,139 @@
+openapi: 3.1.2
+info:
+  title: SDKWork Common Schemas
+  version: v1
+  description: >-
+    Shared OpenAPI schema components for SDKWork-owned HTTP surfaces. This file
+    is referenced via `$ref` from each surface's `openapi.yaml` and is not
+    published as a standalone API document. See `API_SPEC.md` §15 for the
+    response envelope contract.
+paths: {}
+components:
+  schemas:
+    SdkWorkApiResponse:
+      type: object
+      description: "Canonical SDKWork success envelope (API_SPEC.md §15.1.1)."
+      properties:
+        code:
+          type: integer
+          description: "0 for success, non-zero for errors."
+          example: 0
+        data:
+          description: "The response payload. Structure depends on the endpoint."
+        traceId:
+          type: string
+          description: "Server-side trace ID for request correlation."
+      required:
+        - code
+        - data
+        - traceId
+    SdkWorkProblemDetail:
+      type: object
+      description: "RFC 9457 application/problem+json error body (API_SPEC.md §15.2)."
+      properties:
+        type:
+          type: string
+          description: "URI reference for the problem type."
+        title:
+          type: string
+          description: "Short human-readable summary."
+        status:
+          type: integer
+          minimum: 100
+          maximum: 599
+          description: "HTTP status code."
+        detail:
+          type:
+            - string
+            - "null"
+          description: "Human-readable explanation specific to this occurrence."
+        instance:
+          type:
+            - string
+            - "null"
+          description: "URI reference identifying the problem occurrence."
+        code:
+          type: integer
+          description: "Platform result code (API_SPEC.md §15.3)."
+        traceId:
+          type: string
+          description: "Server-side trace ID for request correlation."
+        operationId:
+          type:
+            - string
+            - "null"
+          description: "OpenAPI operationId if available."
+      required:
+        - type
+        - title
+        - status
+        - code
+        - traceId
+    PageInfo:
+      type: object
+      additionalProperties: false
+      required: [mode]
+      description: "Pagination metadata for list/search responses (API_SPEC.md §16, PAGINATION_SPEC.md §3)."
+      properties:
+        mode:
+          type: string
+          enum: [offset, cursor]
+          description: "Pagination mode used for this response."
+        page:
+          type: integer
+          minimum: 1
+          description: "Current one-based page index when mode is offset."
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 200
+          description: "Effective page size for this response."
+        totalItems:
+          type: string
+          format: int64
+          pattern: "^[0-9]+$"
+          x-sdkwork-int64-string: true
+          description: "Total rows matching the filter when mode is offset."
+        totalPages:
+          type: integer
+          minimum: 0
+          description: "Total pages when mode is offset."
+        nextCursor:
+          type:
+            - string
+            - "null"
+          description: "Opaque next-page token when mode is cursor and hasMore is true."
+        hasMore:
+          type: boolean
+          description: "Whether another page exists."
+  parameters:
+    PageQuery:
+      name: page
+      in: query
+      required: false
+      description: "One-based page index for offset pagination. Default 1."
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        default: 1
+    PageSizeQuery:
+      name: page_size
+      in: query
+      required: false
+      description: "Page size for offset or cursor pagination. Default 20, maximum 200."
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 200
+        default: 20
+    CursorQuery:
+      name: cursor
+      in: query
+      required: false
+      description: "Opaque cursor token from a previous list response pageInfo.nextCursor. Mutually exclusive with page."
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 512

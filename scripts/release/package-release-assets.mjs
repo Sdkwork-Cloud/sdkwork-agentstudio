@@ -48,30 +48,30 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..', '..');
-const webDistDir = path.join(rootDir, 'packages', 'sdkwork-clawstudio-web', 'dist');
+const webDistDir = path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-web', 'dist');
 const docsDistDir = path.join(rootDir, 'docs', '.vitepress', 'dist');
-const serverPackageDir = path.join(rootDir, 'packages', 'sdkwork-clawstudio-server');
+const serverPackageDir = path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-server');
 const serverTargetDir = path.join(serverPackageDir, 'src-host', 'target');
 const serverEnvExamplePath = path.join(serverPackageDir, '.env.example');
 const desktopTargetDir = path.join(
   rootDir,
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
   'target',
 );
 const desktopTauriConfigPath = path.join(
   rootDir,
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
   'tauri.conf.json',
 );
 const dockerDeploymentDir = path.join(rootDir, 'deploy', 'docker');
 const kubernetesDeploymentDir = path.join(rootDir, 'deploy', 'kubernetes');
-const DEFAULT_SERVER_BINARY_NAME = 'clawstudio-server';
+const DEFAULT_SERVER_BINARY_NAME = 'agentstudio-server';
 const DEFAULT_DEPLOYMENT_ACCELERATOR = 'cpu';
-const DEFAULT_KUBERNETES_IMAGE_REPOSITORY = 'claw-studio-server';
+const DEFAULT_KUBERNETES_IMAGE_REPOSITORY = 'agent-studio-server';
 const SUPPORTED_DEPLOYMENT_ACCELERATORS = new Set([
   'cpu',
   'nvidia-cuda',
@@ -171,7 +171,7 @@ export function buildServerArchiveBaseName({
     throw new Error('releaseTag is required to package server release assets.');
   }
 
-  return `claw-studio-server-${normalizedReleaseTag}-${normalizedPlatform}-${normalizedArch}`;
+  return `agent-studio-server-${normalizedReleaseTag}-${normalizedPlatform}-${normalizedArch}`;
 }
 
 export function buildDeploymentBundleBaseName({
@@ -194,20 +194,20 @@ export function buildDeploymentBundleBaseName({
     throw new Error(`Unsupported deployment family: ${family}`);
   }
 
-  return `claw-studio-${normalizedFamily}-bundle-${normalizedReleaseTag}-${normalizedPlatform}-${normalizedArch}-${normalizedAccelerator}`;
+  return `agent-studio-${normalizedFamily}-bundle-${normalizedReleaseTag}-${normalizedPlatform}-${normalizedArch}-${normalizedAccelerator}`;
 }
 
 function buildServerBinaryMissingHint(targetTriple = '') {
   const normalizedTargetTriple = String(targetTriple ?? '').trim();
   if (normalizedTargetTriple.length > 0) {
-    return ` Build a matching native server binary first with "pnpm server:build -- --target ${normalizedTargetTriple}".`;
+    return ` Build a matching native server binary first with "pnpm build:server -- --target ${normalizedTargetTriple}".`;
   }
 
-  return ' Build a native server binary first with "pnpm server:build".';
+  return ' Build a native server binary first with "pnpm build:server".';
 }
 
 function buildDesktopBundleMissingHint() {
-  return ' Run "pnpm release:desktop" or "pnpm tauri:build" first. "pnpm release:package:desktop" only collects installers and app bundles that were already produced by the desktop release build.';
+  return ' Run "pnpm release:desktop" or "pnpm build:desktop" first. "pnpm release:package:desktop" only collects installers and app bundles that were already produced by the desktop release build.';
 }
 
 function resolveServerBinaryFileName(platformId) {
@@ -310,8 +310,8 @@ function createDirectoryArchive({
 
 function writeServerLauncherScripts(bundleRoot, platformId) {
   const serverBinaryName = resolveServerBinaryFileName(platformId);
-  const unixLauncherPath = path.join(bundleRoot, 'start-clawstudio-server.sh');
-  const windowsLauncherPath = path.join(bundleRoot, 'start-clawstudio-server.cmd');
+  const unixLauncherPath = path.join(bundleRoot, 'start-agentstudio-server.sh');
+  const windowsLauncherPath = path.join(bundleRoot, 'start-agentstudio-server.cmd');
 
   writeFileSync(
     unixLauncherPath,
@@ -320,7 +320,7 @@ function writeServerLauncherScripts(bundleRoot, platformId) {
       'set -eu',
       'SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"',
       'export CLAW_SERVER_WEB_DIST="${CLAW_SERVER_WEB_DIST:-$SCRIPT_DIR/web/dist}"',
-      'export CLAW_SERVER_DATA_DIR="${CLAW_SERVER_DATA_DIR:-$SCRIPT_DIR/.clawstudio-server}"',
+      'export CLAW_SERVER_DATA_DIR="${CLAW_SERVER_DATA_DIR:-$SCRIPT_DIR/.agentstudio-server}"',
       'exec "$SCRIPT_DIR/bin/' + serverBinaryName + '" "$@"',
       '',
     ].join('\n'),
@@ -333,7 +333,7 @@ function writeServerLauncherScripts(bundleRoot, platformId) {
       'setlocal',
       'set "SCRIPT_DIR=%~dp0"',
       'if not defined CLAW_SERVER_WEB_DIST set "CLAW_SERVER_WEB_DIST=%SCRIPT_DIR%web\\dist"',
-      'if not defined CLAW_SERVER_DATA_DIR set "CLAW_SERVER_DATA_DIR=%SCRIPT_DIR%.clawstudio-server"',
+      'if not defined CLAW_SERVER_DATA_DIR set "CLAW_SERVER_DATA_DIR=%SCRIPT_DIR%.agentstudio-server"',
       `"%SCRIPT_DIR%bin\\${serverBinaryName}" %*`,
       '',
     ].join('\r\n'),
@@ -352,12 +352,12 @@ function writeServerRuntimeReadme({
   archId,
 }) {
   const canonicalBinaryCommand = platformId === 'windows'
-    ? '.\\bin\\clawstudio-server.exe'
-    : './bin/clawstudio-server';
+    ? '.\\bin\\agentstudio-server.exe'
+    : './bin/agentstudio-server';
   writeFileSync(
     path.join(bundleRoot, 'README.md'),
     [
-      '# Claw Studio Server Bundle',
+      '# Agent Studio Server Bundle',
       '',
       `Release: ${releaseTag}`,
       `Platform: ${platformId}`,
@@ -373,8 +373,8 @@ function writeServerRuntimeReadme({
       '',
       'When launched from a packaged bundle, the native binary automatically defaults',
       '`CLAW_SERVER_WEB_DIST` to the bundled `web/dist` folder and',
-      '`CLAW_SERVER_DATA_DIR` to `.clawstudio-server` inside the extracted bundle.',
-      '`start-clawstudio-server.sh` and `start-clawstudio-server.cmd` remain optional convenience wrappers',
+      '`CLAW_SERVER_DATA_DIR` to `.agentstudio-server` inside the extracted bundle.',
+      '`start-agentstudio-server.sh` and `start-agentstudio-server.cmd` remain optional convenience wrappers',
       'around the same native binary.',
       '',
       '## Environment',
@@ -458,12 +458,12 @@ function writeDeploymentBundleReadme({
 }) {
   const deploymentCommand = family === 'container'
     ? 'docker compose -f deploy/docker/docker-compose.yml up -d'
-    : 'helm upgrade --install claw-studio ./chart -f values.release.yaml';
+    : 'helm upgrade --install agent-studio ./chart -f values.release.yaml';
 
   writeFileSync(
     path.join(bundleRoot, 'README.md'),
     [
-      `# Claw Studio ${family === 'container' ? 'Container' : 'Kubernetes'} Bundle`,
+      `# Agent Studio ${family === 'container' ? 'Container' : 'Kubernetes'} Bundle`,
       '',
       `Release: ${releaseTag}`,
       `Platform: ${platformId}`,
@@ -519,7 +519,7 @@ export function buildWebArchiveBaseName(releaseTag) {
     throw new Error('releaseTag is required to package web release assets.');
   }
 
-  return `claw-studio-web-assets-${releaseTag.trim()}`;
+  return `agent-studio-web-assets-${releaseTag.trim()}`;
 }
 
 export function buildDesktopBundleRootCandidates({
@@ -996,7 +996,7 @@ export function packageServerAssets({
 
   rmSync(platformOutputDir, { recursive: true, force: true });
   ensureDirectory(platformOutputDir);
-  const stagingRoot = mkdtempSync(path.join(os.tmpdir(), 'clawstudio-server-release-'));
+  const stagingRoot = mkdtempSync(path.join(os.tmpdir(), 'agentstudio-server-release-'));
   const bundleRoot = path.join(stagingRoot, archiveBaseName);
   const archivePath = path.join(
     platformOutputDir,
@@ -1316,7 +1316,7 @@ export function packageWebAssets({
   const archiveBaseName = buildWebArchiveBaseName(releaseTag);
   ensureDirectory(outputDir);
 
-  const stagingRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-studio-release-web-'));
+  const stagingRoot = mkdtempSync(path.join(os.tmpdir(), 'agent-studio-release-web-'));
   const archiveRoot = path.join(stagingRoot, archiveBaseName);
 
   try {

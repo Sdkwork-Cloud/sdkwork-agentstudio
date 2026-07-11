@@ -61,12 +61,12 @@ assert.deepEqual(explicitConfigLoaderPlan.args, ['build', '--mode', 'production'
 
 let preparedWorkspaceRootDir = null;
 await prepareViteHostEnvironment({
-  workspaceRootDir: '/tmp/claw-studio',
+  workspaceRootDir: '/tmp/agent-studio',
   repairImpl: async ({ workspaceRootDir }) => {
     preparedWorkspaceRootDir = workspaceRootDir;
   },
 });
-assert.equal(preparedWorkspaceRootDir, '/tmp/claw-studio');
+assert.equal(preparedWorkspaceRootDir, '/tmp/agent-studio');
 
 assert.throws(
   () => createViteHostPlan({
@@ -116,7 +116,7 @@ try {
   await writeFile(path.join(viteStoreDir, 'dist', 'node', 'cli.js'), '#!/usr/bin/env node\n');
 
   const viteExecutablePlan = resolveViteExecutablePlan({
-    cwd: path.join(workspaceRootDir, 'packages', 'sdkwork-clawstudio-web'),
+    cwd: path.join(workspaceRootDir, 'packages', 'sdkwork-agentstudio-pc-web'),
     workspaceRootDir,
     platform: 'win32',
     nodeExecutable: 'node.exe',
@@ -129,7 +129,7 @@ try {
   const pnpmBackedBuildPlan = createViteHostPlan({
     argv: ['build'],
     env: {},
-    cwd: path.join(workspaceRootDir, 'packages', 'sdkwork-clawstudio-web'),
+    cwd: path.join(workspaceRootDir, 'packages', 'sdkwork-agentstudio-pc-web'),
     workspaceRootDir,
     platform: 'win32',
   });

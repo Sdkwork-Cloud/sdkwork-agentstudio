@@ -1,11 +1,11 @@
 > Migrated from `docs/review/2026-04-06-dependency-audit-and-upgrade.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
-# 2026-04-06 Claw Studio Dependency Audit And Upgrade
+# 2026-04-06 Agent Studio Dependency Audit And Upgrade
 
 ## Scope
 
-This pass only updates direct dependency declarations that were confirmed behind the latest npm registry release during the live audit for the `apps/claw-studio` workspace.
+This pass only updates direct dependency declarations that were confirmed behind the latest npm registry release during the live audit for the `apps/agent-studio` workspace.
 
 The user explicitly requested no install step in this pass, so this change set intentionally does not refresh `pnpm-lock.yaml`.
 
@@ -38,7 +38,7 @@ The only direct dependencies behind the latest registry release were:
 
 ## Updated Files
 
-- `packages/sdkwork-clawstudio-community/package.json`
+- `packages/sdkwork-agentstudio-pc-community/package.json`
   - `@tiptap/extension-highlight` -> `^3.22.2`
   - `@tiptap/extension-image` -> `^3.22.2`
   - `@tiptap/extension-link` -> `^3.22.2`
@@ -48,19 +48,19 @@ The only direct dependencies behind the latest registry release were:
   - `@tiptap/react` -> `^3.22.2`
   - `@tiptap/starter-kit` -> `^3.22.2`
 
-- `packages/sdkwork-clawstudio-core/package.json`
+- `packages/sdkwork-agentstudio-pc-core/package.json`
   - `fuse.js` -> `^7.3.0`
 
-- `packages/sdkwork-clawstudio-github/package.json`
+- `packages/sdkwork-agentstudio-pc-github/package.json`
   - `fuse.js` -> `^7.3.0`
 
-- `packages/sdkwork-clawstudio-huggingface/package.json`
+- `packages/sdkwork-agentstudio-pc-huggingface/package.json`
   - `fuse.js` -> `^7.3.0`
 
-- `packages/sdkwork-clawstudio-market/package.json`
+- `packages/sdkwork-agentstudio-pc-market/package.json`
   - `fuse.js` -> `^7.3.0`
 
-- `packages/sdkwork-clawstudio-shell/package.json`
+- `packages/sdkwork-agentstudio-pc-shell/package.json`
   - `fuse.js` -> `^7.3.0`
 
 ## Compatibility Assessment

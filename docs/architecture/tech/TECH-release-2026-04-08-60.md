@@ -5,14 +5,14 @@
 
 - Continued the real `Step 07` frontier by removing stale cron-task ownership leftovers from `InstanceDetail.tsx`.
 - Kept `CronTasksManager embedded` as the single owner of task catalog, task history, and task actions inside Instance Detail.
-- Reduced the full `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` hotspot from `3290` to `3142` lines on fresh measurement.
+- Reduced the full `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` hotspot from `3290` to `3142` lines on fresh measurement.
 
 ## Attempt Outcome
 
 - Tightened contract coverage in:
   - `scripts/sdkwork-instances-contract.test.ts`
 - Removed stale page-owned cron-task logic from:
-  - `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+  - `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
     - task history drawer state
     - duplicated task action helpers
     - duplicated task history drawer rendering
@@ -22,7 +22,7 @@
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
 - `scripts/sdkwork-instances-contract.test.ts`
 - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
 - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
@@ -33,10 +33,10 @@
 
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
 
 ## Risks And Rollback
 

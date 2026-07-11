@@ -21,7 +21,7 @@ const desktopMacosTauriConfig = path.join(
   'src-tauri',
   'tauri.macos.conf.json',
 );
-const desktopPackageDir = path.join('packages', 'sdkwork-clawstudio-desktop');
+const desktopPackageDir = path.join('packages', 'sdkwork-agentstudio-pc-desktop');
 
 function read(relativePath) {
   return readFileSync(path.join(rootDir, relativePath), 'utf8');
@@ -37,7 +37,7 @@ function createPnpmCliFixture(prefix = 'claw-pnpm-cli-') {
 test('desktop release inputs keep the Windows Tauri installer config under version control', (t) => {
   const trackedFiles = spawnSync(
     'git',
-    ['ls-files', 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json'],
+    ['ls-files', 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.windows.conf.json'],
     {
       cwd: rootDir,
       encoding: 'utf8',
@@ -54,12 +54,12 @@ test('desktop release inputs keep the Windows Tauri installer config under versi
   assert.equal(trackedFiles.status, 0);
   assert.match(
     trackedFiles.stdout,
-    /packages\/sdkwork-clawstudio-desktop\/src-tauri\/tauri\.windows\.conf\.json/,
+    /packages\/sdkwork-agentstudio-pc-desktop\/src-tauri\/tauri\.windows\.conf\.json/,
     'release verification must not depend on an untracked local tauri.windows.conf.json file',
   );
 });
 
-test('repository exposes a cross-platform claw-studio release workflow', () => {
+test('repository exposes a cross-platform agent-studio release workflow', () => {
   const workflowPath = path.join(rootDir, '.github', 'workflows', 'release.yml');
   const reusableWorkflowPath = path.join(rootDir, '.github', 'workflows', 'release-reusable.yml');
   assert.equal(existsSync(workflowPath), true, 'missing .github/workflows/release.yml');
@@ -86,7 +86,7 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
     /secrets:\s*inherit/,
     'release caller workflow must pass repository secrets through to the reusable release workflow',
   );
-  assert.match(workflow, /release_profile:\s*claw-studio/);
+  assert.match(workflow, /release_profile:\s*agent-studio/);
   assert.match(workflow, /package_profile:\s*\$\{\{ github\.event_name == 'push' && 'openclaw-only' \|\| github\.event\.inputs\.package_profile \}\}/);
   assert.match(
     workflow,
@@ -182,12 +182,12 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
   assert.match(reusableWorkflow, /pnpm check:server/);
   assert.match(
     reusableWorkflow,
-    /node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-clawstudio-desktop\/src-tauri\/Cargo\.toml/,
+    /node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-agentstudio-pc-desktop\/src-tauri\/Cargo\.toml/,
     'release verification must execute Rust checks through scripts/run-cargo.mjs so Cargo dependency resolution stays locked and diagnostics stay consistent with local checks',
   );
   assert.doesNotMatch(
     reusableWorkflow,
-    /(^|\s)cargo test --manifest-path packages\/sdkwork-clawstudio-desktop\/src-tauri\/Cargo\.toml/,
+    /(^|\s)cargo test --manifest-path packages\/sdkwork-agentstudio-pc-desktop\/src-tauri\/Cargo\.toml/,
     'release workflow must not bypass the shared Cargo wrapper',
   );
   assert.match(reusableWorkflow, /pnpm build/);
@@ -246,7 +246,7 @@ test('repository exposes a cross-platform claw-studio release workflow', () => {
     'release workflow must persist published image metadata by architecture for downstream packaging',
   );
   assert.match(reusableWorkflow, /pnpm server:build/);
-  assert.match(reusableWorkflow, /node scripts\/run-clawstudio-server-build\.mjs --target \$\{\{ matrix\.target \}\}/);
+  assert.match(reusableWorkflow, /node scripts\/run-agentstudio-server-build\.mjs --target \$\{\{ matrix\.target \}\}/);
   assert.match(reusableWorkflow, /node scripts\/release\/package-release-assets\.mjs server --profile \$\{\{ inputs\.release_profile \}\} --release-tag \$\{\{ needs\.prepare\.outputs\.release_tag \}\} --platform \$\{\{ matrix\.platform \}\} --arch \$\{\{ matrix\.arch \}\} --target \$\{\{ matrix\.target \}\}/);
   assert.match(reusableWorkflow, /node scripts\/release\/package-release-assets\.mjs container --profile \$\{\{ inputs\.release_profile \}\} --release-tag \$\{\{ needs\.prepare\.outputs\.release_tag \}\} --platform \$\{\{ matrix\.platform \}\} --arch \$\{\{ matrix\.arch \}\} --target \$\{\{ matrix\.target \}\} --accelerator \$\{\{ matrix\.accelerator \}\}/);
   assert.match(reusableWorkflow, /node scripts\/release\/package-release-assets\.mjs kubernetes --profile \$\{\{ inputs\.release_profile \}\} --release-tag \$\{\{ needs\.prepare\.outputs\.release_tag \}\} --platform \$\{\{ matrix\.platform \}\} --arch \$\{\{ matrix\.arch \}\} --target \$\{\{ matrix\.target \}\} --accelerator \$\{\{ matrix\.accelerator \}\}/);
@@ -322,7 +322,7 @@ test('ci workflow authenticates private GitHub shared SDK source preparation', (
 });
 
 test('desktop tauri build script keeps generated bundled resources explicit', () => {
-  const buildScript = read('packages/sdkwork-clawstudio-desktop/src-tauri/build.rs');
+  const buildScript = read('packages/sdkwork-agentstudio-pc-desktop/src-tauri/build.rs');
 
   assert.match(buildScript, /generated\/bundled/);
   assert.match(buildScript, /placeholder\.txt/);
@@ -344,7 +344,7 @@ test('root package exposes release helper scripts for desktop and asset packagin
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/release-profiles\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/kernel-definitions\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/run-desktop-release-build\.test\.mjs/);
-  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/run-clawstudio-server-build\.test\.mjs/);
+  assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/run-agentstudio-server-build\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/release-smoke-contract\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/release-paths\.test\.mjs/);
   assert.match(rootPackage.scripts['check:release-flow'], /sdkwork-run-node scripts\/release\/release-coverage\.test\.mjs/);
@@ -371,7 +371,7 @@ test('root package exposes release helper scripts for desktop and asset packagin
   assert.match(rootPackage.scripts['lint'], /sdkwork-run-pnpm check:automation/);
   assert.match(rootPackage.scripts['check:shared-sdk-release-parity'], /sdkwork-run-node scripts\/check-shared-sdk-release-parity\.mjs/);
   assert.match(rootPackage.scripts['check:server'], /sdkwork-run-node scripts\/check-server-platform-foundation\.mjs/);
-  assert.match(rootPackage.scripts['check:server'], /sdkwork-run-node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-clawstudio-server\/src-host\/Cargo\.toml/);
+  assert.match(rootPackage.scripts['check:server'], /sdkwork-run-node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-agentstudio-pc-server\/src-host\/Cargo\.toml/);
   assert.match(
     rootPackage.scripts['check:desktop-openclaw-runtime'],
     /sdkwork-run-node scripts\/verify-desktop-openclaw-release-assets\.test\.mjs/,
@@ -388,14 +388,14 @@ test('root package exposes release helper scripts for desktop and asset packagin
     'release flow verification must include the dedicated OpenClaw release asset verifier test',
   );
   assert.match(rootPackage.scripts['build:web'], /sdkwork-run-pnpm prepare:shared-sdk && sdkwork-run-pnpm --filter @sdkwork\/claw-web build/);
-  assert.match(rootPackage.scripts['build:server'], /sdkwork-run-node scripts\/run-clawstudio-server-build\.mjs/);
+  assert.match(rootPackage.scripts['build:server'], /sdkwork-run-node scripts\/run-agentstudio-server-build\.mjs/);
   assert.match(
     rootPackage.scripts['build:desktop-host'],
-    /sdkwork-run-pnpm --dir packages\/sdkwork-clawstudio-desktop build:prod/,
+    /sdkwork-run-pnpm --dir packages\/sdkwork-agentstudio-pc-desktop build:prod/,
   );
   assert.match(
     rootPackage.scripts['build:desktop'],
-    /sdkwork-run-pnpm --dir packages\/sdkwork-clawstudio-desktop tauri:build:prod/,
+    /sdkwork-run-pnpm --dir packages\/sdkwork-agentstudio-pc-desktop build:desktop:prod/,
   );
   assert.match(
     rootPackage.scripts['package:desktop'],
@@ -475,7 +475,7 @@ test('root package exposes release helper scripts for desktop and asset packagin
     /sdkwork-run-node scripts\/release\/local-release-command\.mjs finalize --allow-partial-release/,
     'partial release aggregation must be an explicit local/debug command',
   );
-  assert.match(rootPackage.scripts['server:build'], /sdkwork-run-node scripts\/run-clawstudio-server-build\.mjs/);
+  assert.match(rootPackage.scripts['server:build'], /sdkwork-run-node scripts\/run-agentstudio-server-build\.mjs/);
 });
 
 test('release closure guard passes against the committed release packaging contracts', () => {
@@ -785,7 +785,7 @@ test('release closure contract guards deployment bootstrap smoke evidence', () =
   );
   assert.match(
     deploymentBootstrapSmokeReport,
-    /helm upgrade --install claw-studio \.\/chart -f values\.release\.yaml/,
+    /helm upgrade --install agent-studio \.\/chart -f values\.release\.yaml/,
     'deployment bootstrap smoke report must preserve singleton-k8s install commands',
   );
 });
@@ -854,7 +854,7 @@ test('shared sdk package preparation resolves the workspace root consistently fr
   assert.equal(typeof helper.createSharedSdkPackageContext, 'function');
   assert.equal(typeof helper.resolveCanonicalWorkspaceRootDir, 'function');
 
-  const packageDir = path.join(rootDir, 'packages', 'sdkwork-clawstudio-web');
+  const packageDir = path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-web');
   const expectedWorkspaceRoot = rootDir;
   const expectedCanonicalWorkspaceRoot = rootDir.includes(`${path.sep}.worktrees${path.sep}`)
     ? path.resolve(rootDir, '..', '..')
@@ -864,7 +864,7 @@ test('shared sdk package preparation resolves the workspace root consistently fr
     '.worktrees',
     'synthetic-worktree',
     'packages',
-    'sdkwork-clawstudio-web',
+    'sdkwork-agentstudio-pc-web',
   );
   assert.equal(helper.resolveWorkspaceRootDir(rootDir), expectedWorkspaceRoot);
   assert.equal(helper.resolveWorkspaceRootDir(packageDir), expectedWorkspaceRoot);
@@ -924,7 +924,7 @@ test('shared sdk package preparation repairs package-local dependency links from
   assert.equal(typeof helper.ensurePackageDependencyLinks, 'function');
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-links-'));
-  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const workspaceRoot = path.join(tempRoot, 'apps', 'agent-studio');
   const sharedAppSdkRoot = path.join(
     tempRoot,
     'sdkwork-appbase',
@@ -964,7 +964,7 @@ test('shared sdk package preparation repairs package-local dependency links from
   mkdirSync(workspaceRoot, { recursive: true });
   writeFileSync(
     path.join(workspaceRoot, 'package.json'),
-    JSON.stringify({ name: '@sdkwork/clawstudio-workspace' }, null, 2),
+    JSON.stringify({ name: '@sdkwork/agentstudio-workspace' }, null, 2),
     'utf8',
   );
   writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
@@ -1043,7 +1043,7 @@ test('shared sdk package preparation preserves existing package-local dependency
   const helper = await import(pathToFileURL(helperPath).href);
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-preserve-links-'));
-  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const workspaceRoot = path.join(tempRoot, 'apps', 'agent-studio');
   const sharedAppSdkRoot = path.join(
     tempRoot,
     'sdkwork-appbase',
@@ -1083,7 +1083,7 @@ test('shared sdk package preparation preserves existing package-local dependency
   mkdirSync(workspaceRoot, { recursive: true });
   writeFileSync(
     path.join(workspaceRoot, 'package.json'),
-    JSON.stringify({ name: '@sdkwork/clawstudio-workspace' }, null, 2),
+    JSON.stringify({ name: '@sdkwork/agentstudio-workspace' }, null, 2),
     'utf8',
   );
   writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
@@ -1158,7 +1158,7 @@ test('shared sdk package preparation resolves pnpm virtual store packages even w
   const helper = await import(pathToFileURL(helperPath).href);
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-truncated-pnpm-root-'));
-  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const workspaceRoot = path.join(tempRoot, 'apps', 'agent-studio');
   const shortenedStoreDir = path.join(
     workspaceRoot,
     'node_modules',
@@ -1172,7 +1172,7 @@ test('shared sdk package preparation resolves pnpm virtual store packages even w
   mkdirSync(workspaceRoot, { recursive: true });
   writeFileSync(
     path.join(workspaceRoot, 'package.json'),
-    JSON.stringify({ name: '@sdkwork/clawstudio-workspace' }, null, 2),
+    JSON.stringify({ name: '@sdkwork/agentstudio-workspace' }, null, 2),
     'utf8',
   );
   writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
@@ -1205,14 +1205,14 @@ test('shared sdk package preparation can skip devDependency hydration for packag
   const helper = await import(pathToFileURL(helperPath).href);
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-runtime-links-'));
-  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const workspaceRoot = path.join(tempRoot, 'apps', 'agent-studio');
   const packageRoot = path.join(tempRoot, 'sdk', 'runtime-only-package');
   const localDependencyRoot = path.join(tempRoot, 'sdk', 'shared-runtime-dependency');
 
   mkdirSync(workspaceRoot, { recursive: true });
   writeFileSync(
     path.join(workspaceRoot, 'package.json'),
-    JSON.stringify({ name: '@sdkwork/clawstudio-workspace' }, null, 2),
+    JSON.stringify({ name: '@sdkwork/agentstudio-workspace' }, null, 2),
     'utf8',
   );
   writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
@@ -1270,7 +1270,7 @@ test('shared sdk package preparation can hydrate peer dependencies for linked so
   const helper = await import(pathToFileURL(helperPath).href);
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-peer-links-'));
-  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const workspaceRoot = path.join(tempRoot, 'apps', 'agent-studio');
   const packageRoot = path.join(tempRoot, 'apps', 'sdkwork-appbase', 'packages', 'pc-react', 'intelligence', 'sdkwork-local-api-proxy');
 
   const writeWorkspaceInstalledPackage = (packageName, version = '1.0.0') => {
@@ -1296,7 +1296,7 @@ test('shared sdk package preparation can hydrate peer dependencies for linked so
   mkdirSync(workspaceRoot, { recursive: true });
   writeFileSync(
     path.join(workspaceRoot, 'package.json'),
-    JSON.stringify({ name: '@sdkwork/clawstudio-workspace' }, null, 2),
+    JSON.stringify({ name: '@sdkwork/agentstudio-workspace' }, null, 2),
     'utf8',
   );
   writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
@@ -1357,7 +1357,7 @@ test('shared sdk package preparation skips optional external source package muta
   const helper = await import(pathToFileURL(helperPath).href);
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-optional-skip-'));
-  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const workspaceRoot = path.join(tempRoot, 'apps', 'agent-studio');
   const sharedSdkCommonRoot = path.join(
     tempRoot,
     'apps',
@@ -1448,7 +1448,7 @@ test('shared sdk package preparation skips optional external source package muta
   mkdirSync(workspaceRoot, { recursive: true });
   writeFileSync(
     path.join(workspaceRoot, 'package.json'),
-    JSON.stringify({ name: '@sdkwork/clawstudio-workspace' }, null, 2),
+    JSON.stringify({ name: '@sdkwork/agentstudio-workspace' }, null, 2),
     'utf8',
   );
   writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
@@ -1568,7 +1568,7 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
   const helper = await import(pathToFileURL(helperPath).href);
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-local-proxy-peers-'));
-  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const workspaceRoot = path.join(tempRoot, 'apps', 'agent-studio');
   const sharedSdkCommonRoot = path.join(
     tempRoot,
     'apps',
@@ -1643,7 +1643,7 @@ test('shared sdk package preparation hydrates local api proxy peers for clean re
   mkdirSync(workspaceRoot, { recursive: true });
   writeFileSync(
     path.join(workspaceRoot, 'package.json'),
-    JSON.stringify({ name: '@sdkwork/clawstudio-workspace' }, null, 2),
+    JSON.stringify({ name: '@sdkwork/agentstudio-workspace' }, null, 2),
     'utf8',
   );
   writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
@@ -1743,7 +1743,7 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
   const helper = await import(pathToFileURL(helperPath).href);
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-core-deps-'));
-  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const workspaceRoot = path.join(tempRoot, 'apps', 'agent-studio');
   const sharedSdkCommonRoot = path.join(
     tempRoot,
     'apps',
@@ -1834,7 +1834,7 @@ test('shared sdk package preparation hydrates core pc react SDK dependencies for
   mkdirSync(workspaceRoot, { recursive: true });
   writeFileSync(
     path.join(workspaceRoot, 'package.json'),
-    JSON.stringify({ name: '@sdkwork/clawstudio-workspace' }, null, 2),
+    JSON.stringify({ name: '@sdkwork/agentstudio-workspace' }, null, 2),
     'utf8',
   );
   writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), 'packages: []\n', 'utf8');
@@ -1938,7 +1938,7 @@ test('shared sdk package preparation exposes a generator root for relocated IM a
   assert.equal(typeof helper.createSharedSdkBuildEnv, 'function');
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-generator-root-'));
-  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const workspaceRoot = path.join(tempRoot, 'apps', 'agent-studio');
   const expectedGeneratorRoot = path.join(tempRoot, 'apps', 'sdkwork-sdk-generator');
   const explicitGeneratorRoot = path.join(tempRoot, 'custom-generator-root');
 
@@ -1970,7 +1970,7 @@ test('shared sdk package preparation exposes a generator root for relocated IM a
         {},
       ).SDKWORK_GENERATOR_ROOT,
       path.resolve(workspaceRoot),
-      'GitHub release clean-room builds should fall back to the installed claw-studio workspace dependencies',
+      'GitHub release clean-room builds should fall back to the installed agent-studio workspace dependencies',
     );
 
     assert.equal(
@@ -2268,7 +2268,7 @@ test('git-backed shared sdk source helper can materialize pinned local git sourc
   const helper = await import(pathToFileURL(helperPath).href);
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-shared-sdk-'));
-  const workspaceRoot = path.join(tempRoot, 'apps', 'claw-studio');
+  const workspaceRoot = path.join(tempRoot, 'apps', 'agent-studio');
   const configPath = path.join(workspaceRoot, 'config', 'shared-sdk-release-sources.json');
   const sourceRepoRoot = path.join(tempRoot, 'source-repos');
   const appbaseAppRepoRoot = path.join(sourceRepoRoot, 'sdkwork-appbase');
@@ -2736,12 +2736,12 @@ test('desktop release build runner injects the supported Visual Studio generator
     assert.deepEqual(windowsPlan.args, [
       pnpmCliPath,
       '--filter',
-      '@sdkwork/clawstudio-desktop',
+      '@sdkwork/agentstudio-pc-desktop',
       'run',
-      'tauri:build',
+      'build:desktop',
       '--',
       '--profile',
-      'claw-studio',
+      'agent-studio',
       '--package-profile',
       'openclaw-only',
       '--vite-mode',
@@ -2756,12 +2756,12 @@ test('desktop release build runner injects the supported Visual Studio generator
     assert.equal(linuxPlan.command, 'pnpm');
     assert.deepEqual(linuxPlan.args, [
       '--filter',
-      '@sdkwork/clawstudio-desktop',
+      '@sdkwork/agentstudio-pc-desktop',
       'run',
-      'tauri:build',
+      'build:desktop',
       '--',
       '--profile',
-      'claw-studio',
+      'agent-studio',
       '--package-profile',
       'openclaw-only',
       '--vite-mode',
@@ -2849,12 +2849,12 @@ test('desktop release build runner forwards explicit target triples to tauri bui
     assert.deepEqual(arm64WindowsPlan.args, [
       pnpmCliPath,
       '--filter',
-      '@sdkwork/clawstudio-desktop',
+      '@sdkwork/agentstudio-pc-desktop',
       'run',
-      'tauri:build',
+      'build:desktop',
       '--',
       '--profile',
-      'claw-studio',
+      'agent-studio',
       '--package-profile',
       'openclaw-only',
       '--vite-mode',
@@ -2887,7 +2887,7 @@ test('desktop release bundle phase merges the generated Windows bundle overlay c
   assert.deepEqual(windowsBundlePlan.args, [
     'scripts/run-windows-tauri-bundle.mjs',
     '--profile',
-    'claw-studio',
+    'agent-studio',
     '--config',
     path.join(desktopPackageDir, desktopBundleOverlayConfig),
     '--bundles',
@@ -3064,8 +3064,8 @@ test('desktop release build runner can recover a macOS dmg bundle failure when t
   try {
     const targetDir = path.join(tempRoot, 'target');
     const bundleRoot = path.join(targetDir, 'release', 'bundle');
-    const appBundleDir = path.join(bundleRoot, 'macos', 'Claw Studio.app');
-    const dmgPath = path.join(bundleRoot, 'dmg', 'Claw Studio_0.1.0_x64.dmg');
+    const appBundleDir = path.join(bundleRoot, 'macos', 'Agent Studio.app');
+    const dmgPath = path.join(bundleRoot, 'dmg', 'Agent Studio_0.1.0_x64.dmg');
 
     mkdirSync(path.join(appBundleDir, 'Contents'), { recursive: true });
     mkdirSync(path.dirname(dmgPath), { recursive: true });
@@ -3096,8 +3096,8 @@ test('desktop release build runner can recover a macOS dmg bundle failure when T
   try {
     const targetDir = path.join(tempRoot, 'target');
     const bundleRoot = path.join(targetDir, 'release', 'bundle');
-    const appBundleDir = path.join(bundleRoot, 'macos', 'Claw Studio.app');
-    const dmgPath = path.join(bundleRoot, 'macos', 'Claw Studio_0.1.0_x64.dmg');
+    const appBundleDir = path.join(bundleRoot, 'macos', 'Agent Studio.app');
+    const dmgPath = path.join(bundleRoot, 'macos', 'Agent Studio_0.1.0_x64.dmg');
 
     mkdirSync(path.join(appBundleDir, 'Contents'), { recursive: true });
     writeFileSync(dmgPath, 'synthetic dmg');
@@ -3127,7 +3127,7 @@ test('desktop release build runner does not treat a Tauri rw temporary dmg as a 
   try {
     const targetDir = path.join(tempRoot, 'target');
     const bundleRoot = path.join(targetDir, 'release', 'bundle');
-    const appBundleDir = path.join(bundleRoot, 'macos', 'Claw Studio.app');
+    const appBundleDir = path.join(bundleRoot, 'macos', 'Agent Studio.app');
     const temporaryDmgPath = path.join(bundleRoot, 'macos', 'rw.86444.Claw.Studio_0.1.0_x64.dmg');
 
     mkdirSync(path.join(appBundleDir, 'Contents'), { recursive: true });
@@ -3158,7 +3158,7 @@ test('desktop release build runner can repair a macOS dmg bundle failure by conv
   try {
     const targetDir = path.join(tempRoot, 'target');
     const bundleRoot = path.join(targetDir, 'release', 'bundle');
-    const appBundleDir = path.join(bundleRoot, 'macos', 'Claw Studio.app');
+    const appBundleDir = path.join(bundleRoot, 'macos', 'Agent Studio.app');
     const temporaryDmgPath = path.join(bundleRoot, 'macos', 'rw.86444.Claw.Studio_0.1.0_x64.dmg');
     const finalDmgPath = path.join(bundleRoot, 'dmg', 'Claw.Studio_0.1.0_x64.dmg');
 
@@ -3208,7 +3208,7 @@ test('desktop release build runner does not recover a macOS dmg bundle failure w
   try {
     const targetDir = path.join(tempRoot, 'target');
     const bundleRoot = path.join(targetDir, 'release', 'bundle');
-    const appBundleDir = path.join(bundleRoot, 'macos', 'Claw Studio.app');
+    const appBundleDir = path.join(bundleRoot, 'macos', 'Agent Studio.app');
 
     mkdirSync(path.join(appBundleDir, 'Contents'), { recursive: true });
 
@@ -3226,7 +3226,7 @@ test('desktop release build runner does not recover a macOS dmg bundle failure w
   }
 });
 
-test('release plan resolver expands the claw-studio profile into the full desktop matrix', async () => {
+test('release plan resolver expands the agent-studio profile into the full desktop matrix', async () => {
   const resolverPath = path.join(rootDir, 'scripts', 'release', 'resolve-release-plan.mjs');
   assert.equal(existsSync(resolverPath), true, 'missing scripts/release/resolve-release-plan.mjs');
 
@@ -3235,13 +3235,13 @@ test('release plan resolver expands the claw-studio profile into the full deskto
   assert.equal(typeof resolver.parseArgs, 'function');
 
   const plan = resolver.createReleasePlan({
-    profileId: 'claw-studio',
+    profileId: 'agent-studio',
     packageProfileId: 'dual-kernel',
     releaseTag: 'release-2026-03-31-03',
     gitRef: 'refs/tags/release-2026-03-31-03',
   });
 
-  assert.equal(plan.profileId, 'claw-studio');
+  assert.equal(plan.profileId, 'agent-studio');
   assert.equal(plan.defaultPackageProfileId, 'openclaw-only');
   assert.equal(plan.packageProfileId, 'dual-kernel');
   assert.deepEqual(plan.packageProfile.includedKernelIds, ['openclaw', 'hermes']);
@@ -3346,7 +3346,7 @@ test('release plan resolver exposes target counts through GitHub output', async 
   assert.equal(typeof resolver.buildGitHubOutputLines, 'function');
 
   const plan = resolver.createReleasePlan({
-    profileId: 'claw-studio',
+    profileId: 'agent-studio',
     packageProfileId: 'dual-kernel',
     releaseTag: 'release-2026-03-31-03',
   });
@@ -3376,19 +3376,19 @@ test('release asset packager knows how to filter desktop bundle outputs, resolve
   assert.equal(packager.normalizePlatformId('linux'), 'linux');
 
   assert.equal(
-    packager.shouldIncludeDesktopBundleFile('windows', 'nsis/Claw Studio_0.1.0_x64-setup.exe'),
+    packager.shouldIncludeDesktopBundleFile('windows', 'nsis/Agent Studio_0.1.0_x64-setup.exe'),
     true,
   );
   assert.equal(
-    packager.shouldIncludeDesktopBundleFile('windows', 'deb/claw-studio_0.1.0_amd64.deb'),
+    packager.shouldIncludeDesktopBundleFile('windows', 'deb/agent-studio_0.1.0_amd64.deb'),
     false,
   );
   assert.equal(
-    packager.shouldIncludeDesktopBundleFile('linux', 'deb/claw-studio_0.1.0_amd64.deb'),
+    packager.shouldIncludeDesktopBundleFile('linux', 'deb/agent-studio_0.1.0_amd64.deb'),
     true,
   );
   assert.equal(
-    packager.shouldIncludeDesktopBundleFile('macos', 'dmg/Claw Studio_0.1.0_aarch64.dmg'),
+    packager.shouldIncludeDesktopBundleFile('macos', 'dmg/Agent Studio_0.1.0_aarch64.dmg'),
     true,
   );
   assert.equal(
@@ -3401,7 +3401,7 @@ test('release asset packager knows how to filter desktop bundle outputs, resolve
       targetDir: path.join(
         rootDir,
         'packages',
-        'sdkwork-clawstudio-desktop',
+        'sdkwork-agentstudio-pc-desktop',
         'src-tauri',
         'target',
       ),
@@ -3409,7 +3409,7 @@ test('release asset packager knows how to filter desktop bundle outputs, resolve
     path.join(
       rootDir,
       'packages',
-      'sdkwork-clawstudio-desktop',
+      'sdkwork-agentstudio-pc-desktop',
       'src-tauri',
       'target',
       'aarch64-pc-windows-msvc',
@@ -3450,7 +3450,7 @@ test('release asset packager knows how to filter desktop bundle outputs, resolve
 
   assert.equal(
     packager.buildWebArchiveBaseName('release-2026-03-26'),
-    'claw-studio-web-assets-release-2026-03-26',
+    'agent-studio-web-assets-release-2026-03-26',
   );
 });
 

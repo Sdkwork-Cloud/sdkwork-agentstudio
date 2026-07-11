@@ -24,19 +24,19 @@
 
 ## Implemented Fix
 
-- Extended `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts` with:
+- Extended `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.ts` with:
   - `BuildManagedMemorySectionContentInput`
   - `BuildManagedToolsSectionContentInput`
   - `buildManagedMemorySectionContent(...)`
   - `buildManagedToolsSectionContent(...)`
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now routes:
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` so the page now routes:
   - `memorySectionContent` through `buildManagedMemorySectionContent(...)`
   - `toolsSectionContent` through `buildManagedToolsSectionContent(...)`
 - Removed the direct page-local managed section wrapper usage for:
   - `InstanceDetailManagedMemorySection`
   - `InstanceDetailManagedToolsSection`
 - Added focused helper coverage in:
-  - `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.test.tsx`
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the boundary gate now requires:
   - the page to reference `buildManagedMemorySectionContent(...)`
   - the page to reference `buildManagedToolsSectionContent(...)`
@@ -59,26 +59,26 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for studio-backed task/provider APIs, Provider Center managed-route detection, channel and marketplace flows, local proxy ownership, and desktop plugin/runtime registration. This loop only centralizes one more pure section-composition pair.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1408`
-- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`: `457`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `1408`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.ts`: `457`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1134`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1431`
 
 Relative to the immediately prior `1408` page baseline from `release-2026-04-09-136`, this loop keeps the page hotspot flat while shifting the remaining managed memory / tools content wrappers into the shared section-model helper.
 
@@ -95,10 +95,10 @@ Relative to the immediately prior `1408` page baseline from `release-2026-04-09-
 - GREEN:
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
-  - `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx` still cannot be executed directly in this sandbox because `pnpm.cmd exec tsx ...` returns `spawn EPERM`; the helper coverage remains typechecked by the web lint pass
+  - `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.test.tsx` still cannot be executed directly in this sandbox because `pnpm.cmd exec tsx ...` returns `spawn EPERM`; the helper coverage remains typechecked by the web lint pass
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about `@buape/carbon@0.0.0-beta-20260327000044`
 
 ## Closure Status

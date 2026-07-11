@@ -6,7 +6,7 @@
 | --- | --- |
 | 执行模式 | 强串行 |
 | 前置 | `02` `03` |
-| 主写入范围 | `packages/sdkwork-clawstudio-server/src-host` `packages/sdkwork-clawstudio-infrastructure/src/platform` `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts` `docs/reference/api-reference.md` |
+| 主写入范围 | `packages/sdkwork-agentstudio-pc-server/src-host` `packages/sdkwork-agentstudio-pc-infrastructure/src/platform` `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.ts` `docs/reference/api-reference.md` |
 | 执行输入 | `16`、`17` 架构文档；现有 `/claw/*`、Hosted Studio、Gateway、Proxy 契约实现 |
 | 本步非目标 | 不做 Provider/Chat/Instance 具体 UI 功能完善 |
 | 最小输出 | 清晰的对外、管理、内部、Gateway、Proxy 五类 API 边界与唯一调用入口 |

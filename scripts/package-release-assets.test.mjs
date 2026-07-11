@@ -23,7 +23,7 @@ function writeSyntheticServerRuntime({
   writeFileSync(path.join(webDistDir, 'assets', 'index.js'), 'console.log("synthetic");\n', 'utf8');
   writeFileSync(
     envExamplePath,
-    'CLAW_SERVER_HOST=0.0.0.0\nCLAW_SERVER_PORT=18797\nCLAW_SERVER_WEB_DIST=../sdkwork-clawstudio-web/dist\n',
+    'CLAW_SERVER_HOST=0.0.0.0\nCLAW_SERVER_PORT=18797\nCLAW_SERVER_WEB_DIST=../sdkwork-agentstudio-pc-web/dist\n',
     'utf8',
   );
 }
@@ -191,7 +191,7 @@ function readTarGzEntries(archivePath) {
 test('readTarGzEntries preserves PAX long-path metadata for nested release bundle files', () => {
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-tar-pax-'));
   const archivePath = path.join(tempRoot, 'bundle.tar.gz');
-  const longPath = 'claw-studio-container-bundle-release-2026-04-03-03-linux-x64-nvidia-cuda/deploy/docker/docker-compose.nvidia-cuda.yml';
+  const longPath = 'agent-studio-container-bundle-release-2026-04-03-03-linux-x64-nvidia-cuda/deploy/docker/docker-compose.nvidia-cuda.yml';
 
   try {
     writeFileSync(
@@ -204,7 +204,7 @@ test('readTarGzEntries preserves PAX long-path metadata for nested release bundl
         }),
         createTarRecord({
           name: 'docker-compose.nvidia-cuda.yml',
-          content: 'services:\n  claw-studio:\n    image: claw\n',
+          content: 'services:\n  agent-studio:\n    image: claw\n',
         }),
       ]),
     );
@@ -213,7 +213,7 @@ test('readTarGzEntries preserves PAX long-path metadata for nested release bundl
     assert.equal(entries.has(longPath), true);
     assert.match(
       entries.get(longPath).content.toString('utf8'),
-      /claw-studio/,
+      /agent-studio/,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -261,17 +261,17 @@ test('release asset packager archives macOS app bundles into release-safe zip as
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-release-macos-app-'));
   const targetDir = path.join(tempRoot, 'target');
   const bundleRoot = path.join(targetDir, 'x86_64-apple-darwin', 'release', 'bundle', 'macos');
-  const appDir = path.join(bundleRoot, 'Claw Studio.app');
+  const appDir = path.join(bundleRoot, 'Agent Studio.app');
   const outputDir = path.join(tempRoot, 'release-assets');
   const tauriConfigPath = path.join(tempRoot, 'tauri.conf.json');
 
   try {
     mkdirSync(path.join(appDir, 'Contents', 'MacOS'), { recursive: true });
     writeFileSync(path.join(appDir, 'Contents', 'Info.plist'), '<plist version="1.0"></plist>\n');
-    writeFileSync(path.join(appDir, 'Contents', 'MacOS', 'claw-studio'), '#!/bin/sh\n');
+    writeFileSync(path.join(appDir, 'Contents', 'MacOS', 'agent-studio'), '#!/bin/sh\n');
     writeFileSync(
       tauriConfigPath,
-      `${JSON.stringify({ productName: 'Claw Studio', version: '0.1.0' }, null, 2)}\n`,
+      `${JSON.stringify({ productName: 'Agent Studio', version: '0.1.0' }, null, 2)}\n`,
       'utf8',
     );
 
@@ -290,7 +290,7 @@ test('release asset packager archives macOS app bundles into release-safe zip as
       'macos',
       'x64',
       'macos',
-      'Claw Studio_0.1.0_x64.app.zip',
+      'Agent Studio_0.1.0_x64.app.zip',
     );
     const checksumPath = `${archivePath}.sha256.txt`;
     const manifestPath = path.join(
@@ -305,14 +305,14 @@ test('release asset packager archives macOS app bundles into release-safe zip as
     assert.equal(existsSync(checksumPath), true, `missing expected checksum ${checksumPath}`);
     assert.match(
       readFileSync(checksumPath, 'utf8'),
-      /Claw Studio_0\.1\.0_x64\.app\.zip/,
+      /Agent Studio_0\.1\.0_x64\.app\.zip/,
     );
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
     assert.equal(manifest.artifacts.length, 1);
     assert.equal(manifest.artifacts[0].family, 'desktop');
     assert.equal(
       manifest.artifacts[0].relativePath,
-      'desktop/macos/x64/macos/Claw Studio_0.1.0_x64.app.zip',
+      'desktop/macos/x64/macos/Agent Studio_0.1.0_x64.app.zip',
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -331,7 +331,7 @@ test('release asset packager collects Windows desktop installers from the target
   try {
     mkdirSync(bundleRoot, { recursive: true });
     writeFileSync(
-      path.join(bundleRoot, 'Claw Studio_0.1.0_x64-setup.exe'),
+      path.join(bundleRoot, 'Agent Studio_0.1.0_x64-setup.exe'),
       'synthetic desktop installer\n',
       'utf8',
     );
@@ -350,7 +350,7 @@ test('release asset packager collects Windows desktop installers from the target
       'windows',
       'x64',
       'nsis',
-      'Claw Studio_0.1.0_x64-setup.exe',
+      'Agent Studio_0.1.0_x64-setup.exe',
     );
     const manifestPath = path.join(
       outputDir,
@@ -390,14 +390,14 @@ test('release asset packager collects Windows desktop installers from the target
           installMode: 'first-launch-archive-extract',
           bundledResourceRoot: 'resources/openclaw/',
           runtimeArchive: 'resources/openclaw/runtime.zip',
-          sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json',
+          sourceConfigPath: 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.windows.conf.json',
           requiredExternalRuntimes: ['nodejs'],
         },
       },
     );
     assert.equal(
       manifest.artifacts[0].relativePath,
-      'desktop/windows/x64/nsis/Claw Studio_0.1.0_x64-setup.exe',
+      'desktop/windows/x64/nsis/Agent Studio_0.1.0_x64-setup.exe',
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -416,7 +416,7 @@ test('release asset packager records explicit dual-kernel package profile metada
   try {
     mkdirSync(bundleRoot, { recursive: true });
     writeFileSync(
-      path.join(bundleRoot, 'Claw Studio_0.1.0_x64-setup.exe'),
+      path.join(bundleRoot, 'Agent Studio_0.1.0_x64-setup.exe'),
       'synthetic desktop installer\n',
       'utf8',
     );
@@ -476,12 +476,12 @@ test('release asset packager records Linux OpenClaw install contract metadata be
     mkdirSync(debBundleRoot, { recursive: true });
     mkdirSync(rpmBundleRoot, { recursive: true });
     writeFileSync(
-      path.join(debBundleRoot, 'claw-studio_0.1.0_amd64.deb'),
+      path.join(debBundleRoot, 'agent-studio_0.1.0_amd64.deb'),
       'synthetic deb installer\n',
       'utf8',
     );
     writeFileSync(
-      path.join(rpmBundleRoot, 'claw-studio-0.1.0-1.x86_64.rpm'),
+      path.join(rpmBundleRoot, 'agent-studio-0.1.0-1.x86_64.rpm'),
       'synthetic rpm installer\n',
       'utf8',
     );
@@ -513,7 +513,7 @@ test('release asset packager records Linux OpenClaw install contract metadata be
           installMode: 'first-launch-archive-extract',
           bundledResourceRoot: 'resources/openclaw/',
           runtimeArchive: 'resources/openclaw/runtime.zip',
-          sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.linux.conf.json',
+          sourceConfigPath: 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.linux.conf.json',
           requiredExternalRuntimes: ['nodejs'],
           packageFormats: ['deb', 'rpm'],
         },
@@ -532,7 +532,7 @@ test('release asset packager records macOS OpenClaw staged-layout contract metad
   const targetDir = path.join(tempRoot, 'target');
   const dmgBundleRoot = path.join(targetDir, 'aarch64-apple-darwin', 'release', 'bundle', 'dmg');
   const macosBundleRoot = path.join(targetDir, 'aarch64-apple-darwin', 'release', 'bundle', 'macos');
-  const appDir = path.join(macosBundleRoot, 'Claw Studio.app');
+  const appDir = path.join(macosBundleRoot, 'Agent Studio.app');
   const outputDir = path.join(tempRoot, 'release-assets');
   const tauriConfigPath = path.join(tempRoot, 'tauri.conf.json');
 
@@ -540,15 +540,15 @@ test('release asset packager records macOS OpenClaw staged-layout contract metad
     mkdirSync(dmgBundleRoot, { recursive: true });
     mkdirSync(path.join(appDir, 'Contents', 'MacOS'), { recursive: true });
     writeFileSync(
-      path.join(dmgBundleRoot, 'Claw Studio_0.1.0_aarch64.dmg'),
+      path.join(dmgBundleRoot, 'Agent Studio_0.1.0_aarch64.dmg'),
       'synthetic dmg installer\n',
       'utf8',
     );
     writeFileSync(path.join(appDir, 'Contents', 'Info.plist'), '<plist version="1.0"></plist>\n');
-    writeFileSync(path.join(appDir, 'Contents', 'MacOS', 'claw-studio'), '#!/bin/sh\n');
+    writeFileSync(path.join(appDir, 'Contents', 'MacOS', 'agent-studio'), '#!/bin/sh\n');
     writeFileSync(
       tauriConfigPath,
-      `${JSON.stringify({ productName: 'Claw Studio', version: '0.1.0' }, null, 2)}\n`,
+      `${JSON.stringify({ productName: 'Agent Studio', version: '0.1.0' }, null, 2)}\n`,
       'utf8',
     );
 
@@ -580,7 +580,7 @@ test('release asset packager records macOS OpenClaw staged-layout contract metad
           installMode: 'preexpanded-managed-layout',
           bundledResourceRoot: 'resources/openclaw/',
           runtimeArchive: 'resources/openclaw/runtime.zip',
-          sourceConfigPath: 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.macos.conf.json',
+          sourceConfigPath: 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.macos.conf.json',
           stagedInstallRootSource: 'generated/release/macos-install-root/',
           stagedInstallRootTarget: 'MacOS/',
           requiredExternalRuntimes: ['nodejs'],
@@ -608,7 +608,7 @@ test('release asset packager removes stale Windows desktop output paths before c
     mkdirSync(staleOutputDir, { recursive: true });
     writeFileSync(staleInstallerPath, 'stale desktop installer\n', 'utf8');
     writeFileSync(
-      path.join(bundleRoot, 'Claw Studio_0.1.0_x64-setup.exe'),
+      path.join(bundleRoot, 'Agent Studio_0.1.0_x64-setup.exe'),
       'synthetic desktop installer\n',
       'utf8',
     );
@@ -661,7 +661,7 @@ test('release asset packager explains how to build missing desktop and server re
         outputDir,
         targetDir,
       }),
-      /Run "pnpm release:desktop" or "pnpm tauri:build" first/,
+      /Run "pnpm release:desktop" or "pnpm build:desktop" first/,
     );
 
     assert.throws(
@@ -697,7 +697,7 @@ test('server asset packager rejects shared release binaries when an explicit tar
     writeSyntheticServerRuntime({
       serverTargetDir,
       targetTriple: '',
-      binaryName: 'clawstudio-server',
+      binaryName: 'agentstudio-server',
       webDistDir,
       envExamplePath,
     });
@@ -720,11 +720,11 @@ test('server asset packager rejects shared release binaries when an explicit tar
         );
         assert.match(
           error.message,
-          /x86_64-unknown-linux-gnu[\\/]+release[\\/]+clawstudio-server/,
+          /x86_64-unknown-linux-gnu[\\/]+release[\\/]+agentstudio-server/,
         );
         assert.doesNotMatch(
           error.message,
-          /server-target[\\/]+release[\\/]+clawstudio-server/,
+          /server-target[\\/]+release[\\/]+agentstudio-server/,
         );
         assert.match(
           error.message,
@@ -758,7 +758,7 @@ test('release asset packager exposes desktop, web, server, container, and kubern
       platform: 'windows',
       arch: 'x64',
     }),
-    'claw-studio-server-release-2026-04-03-01-windows-x64',
+    'agent-studio-server-release-2026-04-03-01-windows-x64',
   );
   assert.equal(
     packager.buildDeploymentBundleBaseName({
@@ -768,7 +768,7 @@ test('release asset packager exposes desktop, web, server, container, and kubern
       arch: 'arm64',
       accelerator: 'cpu',
     }),
-    'claw-studio-container-bundle-release-2026-04-03-01-linux-arm64-cpu',
+    'agent-studio-container-bundle-release-2026-04-03-01-linux-arm64-cpu',
   );
   assert.equal(
     packager.buildDeploymentBundleBaseName({
@@ -778,7 +778,7 @@ test('release asset packager exposes desktop, web, server, container, and kubern
       arch: 'x64',
       accelerator: 'nvidia-cuda',
     }),
-    'claw-studio-kubernetes-bundle-release-2026-04-03-01-linux-x64-nvidia-cuda',
+    'agent-studio-kubernetes-bundle-release-2026-04-03-01-linux-x64-nvidia-cuda',
   );
   assert.throws(
     () => packager.parseArgs(['server', '--release-tag']),
@@ -852,11 +852,11 @@ test('web asset packager archives built web and docs outputs with family metadat
 
     const archivePath = path.join(
       outputDir,
-      `claw-studio-web-assets-${releaseTag}.tar.gz`,
+      `agent-studio-web-assets-${releaseTag}.tar.gz`,
     );
     const manifestPath = path.join(outputDir, 'web', 'release-asset-manifest.json');
     const archiveEntries = readTarGzEntries(archivePath);
-    const bundleRoot = `claw-studio-web-assets-${releaseTag}`;
+    const bundleRoot = `agent-studio-web-assets-${releaseTag}`;
 
     assert.equal(existsSync(archivePath), true, `missing expected web archive ${archivePath}`);
     assert.equal(existsSync(`${archivePath}.sha256.txt`), true, 'missing expected web checksum');
@@ -871,7 +871,7 @@ test('web asset packager archives built web and docs outputs with family metadat
     assert.equal(manifest.artifacts[0].arch, 'any');
     assert.equal(
       manifest.artifacts[0].relativePath,
-      `claw-studio-web-assets-${releaseTag}.tar.gz`,
+      `agent-studio-web-assets-${releaseTag}.tar.gz`,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -893,7 +893,7 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
     writeSyntheticServerRuntime({
       serverTargetDir,
       targetTriple: 'x86_64-unknown-linux-gnu',
-      binaryName: 'clawstudio-server',
+      binaryName: 'agentstudio-server',
       webDistDir,
       envExamplePath,
     });
@@ -914,7 +914,7 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
       'server',
       'linux',
       'x64',
-      `claw-studio-server-${releaseTag}-linux-x64.tar.gz`,
+      `agent-studio-server-${releaseTag}-linux-x64.tar.gz`,
     );
     const manifestPath = path.join(
       outputDir,
@@ -923,18 +923,18 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
       'x64',
       'release-asset-manifest.json',
     );
-    const bundleRoot = `claw-studio-server-${releaseTag}-linux-x64`;
+    const bundleRoot = `agent-studio-server-${releaseTag}-linux-x64`;
     const archiveEntries = readTarGzEntries(archivePath);
 
     assert.equal(existsSync(archivePath), true, `missing expected server archive ${archivePath}`);
     assert.equal(existsSync(`${archivePath}.sha256.txt`), true, 'missing expected server checksum');
-    assert.equal(archiveEntries.has(`${bundleRoot}/bin/clawstudio-server`), true);
+    assert.equal(archiveEntries.has(`${bundleRoot}/bin/agentstudio-server`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/web/dist/index.html`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/.env.example`), true);
-    assert.equal(archiveEntries.has(`${bundleRoot}/start-clawstudio-server.sh`), true);
+    assert.equal(archiveEntries.has(`${bundleRoot}/start-agentstudio-server.sh`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/README.md`), true);
     assert.match(
-      archiveEntries.get(`${bundleRoot}/start-clawstudio-server.sh`).content.toString('utf8'),
+      archiveEntries.get(`${bundleRoot}/start-agentstudio-server.sh`).content.toString('utf8'),
       /CLAW_SERVER_WEB_DIST="\$\{CLAW_SERVER_WEB_DIST:-\$SCRIPT_DIR\/web\/dist\}"/,
     );
     assert.match(
@@ -943,7 +943,7 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
     );
     assert.match(
       archiveEntries.get(`${bundleRoot}/README.md`).content.toString('utf8'),
-      /\.\/bin\/clawstudio-server/,
+      /\.\/bin\/agentstudio-server/,
     );
     assert.match(
       archiveEntries.get(`${bundleRoot}/README.md`).content.toString('utf8'),
@@ -951,7 +951,7 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
     );
     assert.match(
       archiveEntries.get(`${bundleRoot}/README.md`).content.toString('utf8'),
-      /start-clawstudio-server\.sh` and `start-clawstudio-server\.cmd` remain optional convenience wrappers[\s\S]*same native binary/,
+      /start-agentstudio-server\.sh` and `start-agentstudio-server\.cmd` remain optional convenience wrappers[\s\S]*same native binary/,
     );
 
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -961,7 +961,7 @@ test('server asset packager bundles the embedded runtime, launchers, and manifes
     assert.equal(manifest.artifacts[0].family, 'server');
     assert.equal(
       manifest.artifacts[0].relativePath,
-      `server/linux/x64/claw-studio-server-${releaseTag}-linux-x64.tar.gz`,
+      `server/linux/x64/agent-studio-server-${releaseTag}-linux-x64.tar.gz`,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -984,7 +984,7 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
     writeSyntheticServerRuntime({
       serverTargetDir,
       targetTriple: 'x86_64-unknown-linux-gnu',
-      binaryName: 'clawstudio-server',
+      binaryName: 'agentstudio-server',
       webDistDir,
       envExamplePath,
     });
@@ -1008,7 +1008,7 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
       'linux',
       'x64',
       'nvidia-cuda',
-      `claw-studio-container-bundle-${releaseTag}-linux-x64-nvidia-cuda.tar.gz`,
+      `agent-studio-container-bundle-${releaseTag}-linux-x64-nvidia-cuda.tar.gz`,
     );
     const manifestPath = path.join(
       outputDir,
@@ -1018,13 +1018,13 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
       'nvidia-cuda',
       'release-asset-manifest.json',
     );
-    const bundleRoot = `claw-studio-container-bundle-${releaseTag}-linux-x64-nvidia-cuda`;
+    const bundleRoot = `agent-studio-container-bundle-${releaseTag}-linux-x64-nvidia-cuda`;
     const archiveEntries = readTarGzEntries(archivePath);
 
     assert.equal(existsSync(archivePath), true, `missing expected container archive ${archivePath}`);
     assert.equal(existsSync(`${archivePath}.sha256.txt`), true, 'missing expected container checksum');
-    assert.equal(archiveEntries.has(`${bundleRoot}/app/bin/clawstudio-server`), true);
-    assert.equal(archiveEntries.has(`${bundleRoot}/app/start-clawstudio-server.sh`), true);
+    assert.equal(archiveEntries.has(`${bundleRoot}/app/bin/agentstudio-server`), true);
+    assert.equal(archiveEntries.has(`${bundleRoot}/app/start-agentstudio-server.sh`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/deploy/docker/Dockerfile`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/deploy/docker/docker-compose.nvidia-cuda.yml`), true);
     assert.equal(archiveEntries.has(`${bundleRoot}/deploy/docker/profiles/default.env`), true);
@@ -1063,7 +1063,7 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
     const resolvedAmdEnv = resolveArchiveRelativePath(composeDir, amdEnvPath);
 
     assert.equal(
-      archiveEntries.has(`${resolvedBuildContext}/app/start-clawstudio-server.sh`),
+      archiveEntries.has(`${resolvedBuildContext}/app/start-agentstudio-server.sh`),
       true,
       'compose build context must resolve to the bundle root so the app runtime is visible',
     );
@@ -1104,12 +1104,12 @@ test('container asset packager bundles deployment overlays, app runtime, and rel
     );
     assert.match(
       dockerfileSource,
-      /CMD\s+\["\/opt\/claw\/app\/bin\/clawstudio-server"\]/,
-      'packaged dockerfile must launch the canonical bundled clawstudio-server binary directly',
+      /CMD\s+\["\/opt\/claw\/app\/bin\/agentstudio-server"\]/,
+      'packaged dockerfile must launch the canonical bundled agentstudio-server binary directly',
     );
     assert.doesNotMatch(
       dockerfileSource,
-      /CMD\s+\["\/bin\/sh",\s*"\/opt\/claw\/app\/start-clawstudio-server\.sh"\]/,
+      /CMD\s+\["\/bin\/sh",\s*"\/opt\/claw\/app\/start-agentstudio-server\.sh"\]/,
       'packaged dockerfile must not launch the optional wrapper script as the container entrypoint',
     );
     assert.match(
@@ -1138,7 +1138,7 @@ test('kubernetes asset packager bundles chart assets and generated release value
 
   try {
     mkdirSync(path.join(deployDir, 'templates'), { recursive: true });
-    writeFileSync(path.join(deployDir, 'Chart.yaml'), 'apiVersion: v2\nname: claw-studio\n', 'utf8');
+    writeFileSync(path.join(deployDir, 'Chart.yaml'), 'apiVersion: v2\nname: agent-studio\n', 'utf8');
     writeFileSync(path.join(deployDir, 'values.yaml'), 'replicaCount: 1\n', 'utf8');
     writeFileSync(path.join(deployDir, 'values-amd-rocm.yaml'), 'resources: {}\n', 'utf8');
     writeFileSync(path.join(deployDir, 'templates', 'service.yaml'), 'apiVersion: v1\nkind: Service\n', 'utf8');
@@ -1158,7 +1158,7 @@ test('kubernetes asset packager bundles chart assets and generated release value
       'linux',
       'arm64',
       'amd-rocm',
-      `claw-studio-kubernetes-bundle-${releaseTag}-linux-arm64-amd-rocm.tar.gz`,
+      `agent-studio-kubernetes-bundle-${releaseTag}-linux-arm64-amd-rocm.tar.gz`,
     );
     const manifestPath = path.join(
       outputDir,
@@ -1168,7 +1168,7 @@ test('kubernetes asset packager bundles chart assets and generated release value
       'amd-rocm',
       'release-asset-manifest.json',
     );
-    const bundleRoot = `claw-studio-kubernetes-bundle-${releaseTag}-linux-arm64-amd-rocm`;
+    const bundleRoot = `agent-studio-kubernetes-bundle-${releaseTag}-linux-arm64-amd-rocm`;
     const archiveEntries = readTarGzEntries(archivePath);
 
     assert.equal(existsSync(archivePath), true, `missing expected kubernetes archive ${archivePath}`);
@@ -1186,7 +1186,7 @@ test('kubernetes asset packager bundles chart assets and generated release value
     );
     assert.match(
       archiveEntries.get(`${bundleRoot}/values.release.yaml`).content.toString('utf8'),
-      /image:\n  repository: claw-studio-server\n  tag: release-2026-04-03-04/,
+      /image:\n  repository: agent-studio-server\n  tag: release-2026-04-03-04/,
     );
     assert.match(
       archiveEntries.get(`${bundleRoot}/release-metadata.json`).content.toString('utf8'),

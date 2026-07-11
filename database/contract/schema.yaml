@@ -1,0 +1,74 @@
+schema_version: 1
+kind: sdkwork.database.schema
+module_id: sdkwork-agentstudio
+contract_version: 0.1.0
+owner_team: sdkwork-agentstudio
+compliance_level: L2
+engines:
+  - sqlite
+  - postgres
+table_prefix: ""
+tables:
+  - name: host_catalog_documents
+    columns:
+      - { name: catalog_key, type: string, required: true }
+      - { name: document_json, type: text, required: true }
+      - { name: updated_at, type: int64, required: true }
+    constraints:
+      - { name: pk_host_catalog_documents, type: primary, columns: [catalog_key] }
+
+  - name: storage_entries
+    columns:
+      - { name: namespace, type: string, required: true }
+      - { name: key, type: string, required: true }
+      - { name: value, type: text, required: true }
+      - { name: updated_at, type: int64, required: true }
+    constraints:
+      - { name: pk_storage_entries, type: primary, columns: [namespace, key] }
+
+  - name: sessions
+    columns:
+      - { name: session_id, type: string, required: true }
+      - { name: started_at, type: instant, required: false }
+      - { name: title, type: string, required: false }
+    constraints:
+      - { name: pk_sessions, type: primary, columns: [session_id] }
+
+  - name: messages
+    columns:
+      - { name: id, type: int64, required: true }
+      - { name: session_id, type: string, required: true }
+      - { name: role, type: string, required: true }
+      - { name: content, type: text, required: true }
+      - { name: run_id, type: string, required: false }
+      - { name: model, type: string, required: false }
+      - { name: timestamp, type: instant, required: false }
+    constraints:
+      - { name: pk_messages, type: primary, columns: [id] }
+      - { name: fk_messages_session, type: foreign, columns: [session_id] }
+
+  - name: runs
+    columns:
+      - { name: run_id, type: string, required: true }
+      - { name: session_id, type: string, required: true }
+      - { name: agent_id, type: string, required: false }
+      - { name: model, type: string, required: false }
+      - { name: status, type: string, required: true }
+      - { name: created_at_ms, type: int64, required: true }
+      - { name: updated_at_ms, type: int64, required: true }
+    constraints:
+      - { name: pk_runs, type: primary, columns: [run_id] }
+      - { name: fk_runs_session, type: foreign, columns: [session_id] }
+
+  - name: agents
+    columns:
+      - { name: instance_id, type: string, required: true }
+      - { name: agent_id, type: string, required: true }
+      - { name: label, type: string, required: true }
+      - { name: description, type: text, required: false }
+      - { name: source, type: string, required: true }
+      - { name: system_prompt, type: text, required: false }
+      - { name: avatar, type: string, required: false }
+      - { name: creator, type: string, required: false }
+    constraints:
+      - { name: pk_agents, type: primary, columns: [instance_id, agent_id] }

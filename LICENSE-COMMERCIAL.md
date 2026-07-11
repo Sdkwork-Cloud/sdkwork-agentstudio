@@ -1,6 +1,6 @@
-# Claw Studio Commercial Licensing Policy
+# Agent Studio Commercial Licensing Policy
 
-Claw Studio is available under a dual-license model:
+Agent Studio is available under a dual-license model:
 
 - Open source license: `AGPL-3.0-only`
 - Commercial license: available from SdkWork under a separate written agreement
@@ -17,11 +17,11 @@ You must obtain a separate commercial license from SdkWork before production use
 
 - you want to keep your product, service, or modifications closed source
 - you do not want to satisfy AGPL source-disclosure or network-use obligations
-- you are embedding Claw Studio into a commercial product, appliance, or packaged solution
-- you are distributing Claw Studio to customers as an OEM, white-label, or private-delivery offering
+- you are embedding Agent Studio into a commercial product, appliance, or packaged solution
+- you are distributing Agent Studio to customers as an OEM, white-label, or private-delivery offering
 - you need commercial terms such as procurement support, invoices, warranty commitments, SLA, or dedicated engineering support
 
-If you are unsure whether your deployment can comply with AGPL, contact SdkWork before using Claw Studio in a commercial production environment.
+If you are unsure whether your deployment can comply with AGPL, contact SdkWork before using Agent Studio in a commercial production environment.
 
 ## 3. Commercial Packages
 

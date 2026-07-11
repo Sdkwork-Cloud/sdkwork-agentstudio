@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "sdkwork.component.spec",
   "component": {
-    "name": "sdkwork-clawstudio",
-    "displayName": "SdkWork Claw Studio",
+    "name": "sdkwork-agentstudio",
+    "displayName": "SdkWork Agent Studio",
     "version": "0.1.0",
     "type": "app",
-    "root": "sdkwork-clawstudio",
+    "root": "sdkwork-agentstudio",
     "domain": "system",
     "declaredDomain": null,
     "capability": "component",
@@ -160,7 +160,7 @@
   },
   "verification": {
     "commands": [
-      "pnpm --filter @sdkwork/clawstudio-workspace build"
+      "pnpm --filter @sdkwork/agentstudio-workspace build"
     ]
   },
   "metadata": {

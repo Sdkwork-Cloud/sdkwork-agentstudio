@@ -18,29 +18,29 @@
   - hardened `scripts/release-flow-contract.test.mjs` so the git-dependent release-flow assertions skip only when this sandbox blocks Node child-process spawns with `EPERM`, which restored fresh `pnpm.cmd lint` evidence without relaxing the release contract on normal environments
 - Actual workspace result:
   - `node scripts/openclaw-upgrade-rollback-evidence.mjs --rollback-version 2026.4.2` returned `rollbackReady: true`
-  - the report proved `2026.4.2` stayed aligned across `config/openclaw-release.json`, `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json`, and `packages/sdkwork-clawstudio-desktop/src-tauri/generated/release/openclaw-resource/manifest.json`
+  - the report proved `2026.4.2` stayed aligned across `config/openclaw-release.json`, `packages/sdkwork-agentstudio-pc-desktop/src-tauri/resources/openclaw/manifest.json`, and `packages/sdkwork-agentstudio-pc-desktop/src-tauri/generated/release/openclaw-resource/manifest.json`
   - the report also proved the prepared runtime was reusable and the packaged release assets verified successfully for the current Windows `x64` desktop target
   - a fresh `pnpm.cmd lint` initially failed because `scripts/release-flow-contract.test.mjs` hit sandbox-only `EPERM` errors while spawning `git` / `cmd.exe` from Node; after the targeted hardening, fresh `pnpm.cmd lint` returned green again
 
 ## OpenClaw Fact Sources
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
   - the browser host still anchors built-in OpenClaw defaults to the shared bundled version and built-in workspace file identities, so release drift would leak directly into the host truth source
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
   - managed OpenClaw editing remains gated on `runtimeKind === 'openclaw'`, a real managed config path, and `lifecycle.configWritable === true`, so rollback evidence must preserve that writable managed baseline
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
   - managed gateway probing and provider-center affordances still key off the built-in `local-managed` OpenClaw lifecycle, not a separate fallback runtime
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
   - provider workspace presentation still makes provider config effectively readonly once the detail is provider-center managed, reinforcing the need for one authoritative rollback baseline
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
   - managed channel writes still flow through the platform bridge and OpenClaw config snapshots, so release rollback must keep the managed config surface intact
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
   - market installation still lazy-loads the ClawHub and instances roots, so runtime release evidence cannot hide behind handwritten transport shortcuts
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
   - agent installation still requires a writable OpenClaw config path before mutating workspace state
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   - the desktop runtime still materializes the proxy snapshot, binds the loopback proxy, and projects the managed OpenClaw provider into `openclaw.json` on the Rust side
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
   - the plugin module still only registers host plugins, so runtime lifecycle and rollback evidence must stay explicit in dedicated runtime scripts instead of being hidden in plugin bootstrap
 
 ## Verification Focus

@@ -26,17 +26,17 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-clawstudio-devices is implemented locally with an OpenClaw pairing workspace service', () => {
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-devices/package.json');
-  const indexSource = read('packages/sdkwork-clawstudio-devices/src/index.ts');
-  const serviceSource = read('packages/sdkwork-clawstudio-devices/src/services/deviceService.ts');
+runTest('sdkwork-agentstudio-pc-devices is implemented locally with an OpenClaw pairing workspace service', () => {
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-agentstudio-pc-devices/package.json');
+  const indexSource = read('packages/sdkwork-agentstudio-pc-devices/src/index.ts');
+  const serviceSource = read('packages/sdkwork-agentstudio-pc-devices/src/services/deviceService.ts');
 
-  assert.ok(exists('packages/sdkwork-clawstudio-devices/src/Devices.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-devices/src/services/deviceService.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-devices/src/Devices.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-devices/src/services/deviceService.ts'));
 
-  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-devices']);
-  assert.equal(pkg.dependencies?.['@sdkwork/clawstudio-types'], 'workspace:*');
-  assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-devices/);
+  assert.ok(!pkg.dependencies?.['@sdkwork/agentstudio-pc-studio-devices']);
+  assert.equal(pkg.dependencies?.['@sdkwork/agentstudio-pc-types'], 'workspace:*');
+  assert.doesNotMatch(indexSource, /@sdkwork\/agent-studio-devices/);
 
   assert.doesNotMatch(serviceSource, /studioMockService/);
   assert.match(serviceSource, /openClawGatewayClient/);
@@ -55,8 +55,8 @@ runTest('sdkwork-clawstudio-devices is implemented locally with an OpenClaw pair
   assert.doesNotMatch(serviceSource, /fetch\('/);
 });
 
-runTest('sdkwork-clawstudio-devices renders truthful pairing and token controls instead of mock hardware telemetry', () => {
-  const pageSource = read('packages/sdkwork-clawstudio-devices/src/pages/devices/Devices.tsx');
+runTest('sdkwork-agentstudio-pc-devices renders truthful pairing and token controls instead of mock hardware telemetry', () => {
+  const pageSource = read('packages/sdkwork-agentstudio-pc-devices/src/pages/devices/Devices.tsx');
 
   assert.match(pageSource, /getWorkspaceSnapshot/);
   assert.match(pageSource, /approvePairing/);
@@ -75,8 +75,8 @@ runTest('sdkwork-clawstudio-devices renders truthful pairing and token controls 
   assert.doesNotMatch(pageSource, /installedSkills/);
 });
 
-runTest('sdkwork-clawstudio-types does not export a generic hardware Device DTO', () => {
-  const typesSource = read('packages/sdkwork-clawstudio-types/src/index.ts');
+runTest('sdkwork-agentstudio-pc-types does not export a generic hardware Device DTO', () => {
+  const typesSource = read('packages/sdkwork-agentstudio-pc-types/src/index.ts');
 
   assert.doesNotMatch(typesSource, /export interface Device\b/);
   assert.doesNotMatch(typesSource, /\bbattery\b/);
@@ -84,11 +84,11 @@ runTest('sdkwork-clawstudio-types does not export a generic hardware Device DTO'
   assert.doesNotMatch(typesSource, /\bhardwareSpecs\b/);
 });
 
-runTest('sdkwork-clawstudio-devices is explicitly scoped to local runtime device pairing', () => {
+runTest('sdkwork-agentstudio-pc-devices is explicitly scoped to local runtime device pairing', () => {
   const spec = readJson<{ component?: { domain?: string; capability?: string } }>(
-    'packages/sdkwork-clawstudio-devices/specs/component.spec.json',
+    'packages/sdkwork-agentstudio-pc-devices/specs/component.spec.json',
   );
-  const serviceSource = read('packages/sdkwork-clawstudio-devices/src/services/deviceService.ts');
+  const serviceSource = read('packages/sdkwork-agentstudio-pc-devices/src/services/deviceService.ts');
 
   assert.equal(spec.component?.domain, 'device');
   assert.equal(spec.component?.capability, 'runtime-device-pairing');

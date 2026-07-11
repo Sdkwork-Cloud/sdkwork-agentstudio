@@ -20,7 +20,7 @@
 
 ## Implemented Extraction
 
-- Added `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.tsx` to own:
+- Added `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.tsx` to own:
   - status and runtime badges
   - uptime / type / version chrome
   - instance-level action buttons for:
@@ -30,8 +30,8 @@
     - stop
     - start
     - uninstall
-- Added `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.test.tsx` to pin the new header render contract.
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` to render `InstanceDetailHeader` and pass page-owned handlers through props.
+- Added `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.test.tsx` to pin the new header render contract.
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` to render `InstanceDetailHeader` and pass page-owned handlers through props.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so:
   - header destructive-action evidence follows the new page -> header boundary
   - lifecycle gating evidence follows the new page -> header boundary instead of assuming the JSX branch must stay in the page file forever
@@ -49,40 +49,40 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources still keep OpenClaw authority classification, provider workspace semantics, and desktop runtime boundaries outside the extracted header chrome.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1981`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.tsx`: `159`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailWorkbenchChrome.tsx`: `159`
-- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `273`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `1981`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.tsx`: `159`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailWorkbenchChrome.tsx`: `159`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `273`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1274`
 
 Relative to the immediately previous `2073`-line page baseline from the same day, this loop reduces `InstanceDetail.tsx` again to `1981`.
 
 ## Verification
 
 - RED:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - both initially failed because the new header component and the updated contract boundary did not exist yet
 - GREEN:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 - YELLOW:
 

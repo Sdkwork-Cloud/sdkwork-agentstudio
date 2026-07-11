@@ -44,8 +44,8 @@ This continuation is no longer limited to hosted-runtime bootstrap hardening. Th
 ### 1. Desktop hosted runtime resolver no longer revives stale descriptors
 
 Files:
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.ts`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
 
 What changed:
 
@@ -61,7 +61,7 @@ Why it matters:
 ### 2. Server-host HTML metadata injection now escapes dynamic values
 
 Files:
-- `packages/sdkwork-clawstudio-server/src-host/src/http/static_assets.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/static_assets.rs`
 
 What changed:
 
@@ -80,10 +80,10 @@ Why it matters:
 ### 3. Host platform version now reports a real package version
 
 Files:
-- `packages/sdkwork-clawstudio-host-core/src-host/src/lib.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/bootstrap.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/main.rs`
+- `packages/sdkwork-agentstudio-pc-host-core/src-host/src/lib.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/main.rs`
 
 What changed:
 
@@ -100,8 +100,8 @@ Why it matters:
 ### 4. Desktop embedded host opt-out is now closed as a pseudo-mode
 
 Files:
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/config.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/config.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs`
 
 What changed:
 
@@ -117,13 +117,13 @@ Why it matters:
 ### 5. Stable host-resource timestamps now stop drifting across unchanged reads
 
 Files:
-- `packages/sdkwork-clawstudio-server/src-host/src/bootstrap.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/internal_node_sessions.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/api_public.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/openapi.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/manage_openclaw.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/main.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/embedded_host_server.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/internal_node_sessions.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/api_public.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/openapi.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/manage_openclaw.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/main.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/embedded_host_server.rs`
 
 What changed:
 
@@ -146,13 +146,13 @@ Why it matters:
 ### 6. Host platform capabilities now separate supported surface from live availability
 
 Files:
-- `packages/sdkwork-clawstudio-server/src-host/src/bootstrap.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/internal_node_sessions.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/openapi.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/main.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/embedded_host_server.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/internal.ts`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/internal_node_sessions.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/openapi.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/main.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/embedded_host_server.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/contracts/internal.ts`
 
 What changed:
 
@@ -175,17 +175,17 @@ Why it matters:
 ### 7. Hosted browser bootstrap now prefers a structured descriptor endpoint
 
 Files:
-- `packages/sdkwork-clawstudio-server/src-host/src/http/static_assets.rs`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/index.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/index.ts`
-- `packages/sdkwork-clawstudio-core/src/platform/index.ts`
-- `packages/sdkwork-clawstudio-shell/src/application/bootstrap/bootstrapShellRuntime.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/static_assets.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/serverBrowserBridge.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/index.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/index.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/platform/index.ts`
+- `packages/sdkwork-agentstudio-pc-shell/src/application/bootstrap/bootstrapShellRuntime.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs`
 
 What changed:
 
-- server and desktop embedded-host roots now expose `/sdkwork-clawstudio-bootstrap.json`
+- server and desktop embedded-host roots now expose `/sdkwork-agentstudio-pc-bootstrap.json`
 - the structured descriptor publishes:
   - host mode
   - distribution/deployment family
@@ -235,9 +235,9 @@ Why it matters:
 ### 9. Desktop hosted studio bridge now reuses one deferred hosted adapter contract
 
 Files:
-- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.test.ts`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 
 What changed:
 
@@ -257,8 +257,8 @@ Why it matters:
 ### 10. Desktop supervisor now waits for OpenClaw invoke readiness instead of raw TCP listen
 
 Files:
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/supervisor.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/mod.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/supervisor.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/mod.rs`
 
 What changed:
 
@@ -280,33 +280,33 @@ Why it matters:
 
 Commands executed in this pass:
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.test.ts`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml inject_server_host_metadata_escapes_dynamic_metadata_values`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml static_assets`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml internal_host_platform_route_reports_desktop_identity_in_desktop_combined_mode`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml host_platform_status_matches_desktop_combined_capability_contract`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml internal_host_platform_route_keeps_updated_at_stable_across_unchanged_reads`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml public_api_discovery_route_keeps_generated_at_stable_across_unchanged_reads`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml openapi_discovery_route_keeps_generated_at_stable_across_unchanged_reads`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml manage_openclaw_runtime_route_keeps_updated_at_stable_across_unchanged_reads`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_manage_openclaw_provider_honors_requested_projection_timestamp`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_server_state_binds_manage_openclaw_provider_to_live_supervisor_runtime`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml internal_host_platform_route_reports_complete_manage_capabilities_in_server_mode`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml internal_host_platform_route_omits_manage_service_capabilities_in_desktop_combined_mode`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml openapi_v1_document_describes_host_platform_state_store_driver`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml host_platform_status_matches_desktop_combined_capability_contract`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml host_platform_status_excludes_gateway_invoke_from_available_capabilities_when_runtime_is_not_ready`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/registry.test.ts`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_exposes_structured_browser_bootstrap_descriptor`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_exposes_canonical_server_route_families`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.test.ts`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml inject_server_host_metadata_escapes_dynamic_metadata_values`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml static_assets`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml internal_host_platform_route_reports_desktop_identity_in_desktop_combined_mode`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml host_platform_status_matches_desktop_combined_capability_contract`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml internal_host_platform_route_keeps_updated_at_stable_across_unchanged_reads`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml public_api_discovery_route_keeps_generated_at_stable_across_unchanged_reads`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml openapi_discovery_route_keeps_generated_at_stable_across_unchanged_reads`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml manage_openclaw_runtime_route_keeps_updated_at_stable_across_unchanged_reads`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml embedded_host_manage_openclaw_provider_honors_requested_projection_timestamp`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml embedded_host_server_state_binds_manage_openclaw_provider_to_live_supervisor_runtime`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml internal_host_platform_route_reports_complete_manage_capabilities_in_server_mode`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml internal_host_platform_route_omits_manage_service_capabilities_in_desktop_combined_mode`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml openapi_v1_document_describes_host_platform_state_store_driver`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml host_platform_status_matches_desktop_combined_capability_contract`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml host_platform_status_excludes_gateway_invoke_from_available_capabilities_when_runtime_is_not_ready`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/serverBrowserBridge.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/registry.test.ts`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_exposes_structured_browser_bootstrap_descriptor`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml embedded_host_bootstrap_exposes_canonical_server_route_families`
 - `node scripts/release-deployment-contract.test.mjs`
 - `node scripts/package-release-assets.test.mjs`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml supervisor_waits_for_gateway_http_invoke`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --lib supervisor_`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml supervisor_waits_for_gateway_http_invoke`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --lib supervisor_`
 - `pnpm.cmd check:release-flow`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd check:server`

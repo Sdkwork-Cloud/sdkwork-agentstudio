@@ -29,22 +29,22 @@
 
 ## Implemented Extraction
 
-- Added `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts` to own:
+- Added `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedChannelMutationSupport.ts` to own:
   - `applyOpenClawManagedChannelDraftChange(...)`
   - `buildOpenClawManagedChannelToggleMutationRequest(...)`
   - `buildOpenClawManagedChannelSaveMutationRequest(...)`
   - `buildOpenClawManagedChannelDeleteMutationRequest(...)`
   - `runOpenClawManagedChannelMutation(...)` through injected page-owned callbacks
 - Added focused coverage in:
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` so the page now:
   - consumes the shared managed-channel draft patch helper
   - consumes the shared managed-channel mutation-request builders
   - forwards the built request into `runOpenClawManagedChannelMutation(...)`
   - injects the real `instanceService.*`, `loadWorkbench(...)`, and `toast` operations into the helper-owned runner
   - keeps the delete follow-up draft reset and selection-state cleanup page-owned
 - Updated:
-  - `packages/sdkwork-clawstudio-instances/src/services/index.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/index.ts`
   - `scripts/sdkwork-instances-contract.test.ts`
 
 ## Boundary Decision
@@ -66,27 +66,27 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for channel truth, hosted/runtime projection, official ecosystem behavior, Local Proxy ownership, and desktop plugin/runtime boundaries. The current loop only moves page-side managed-channel mutation orchestration.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1823`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.ts`: `223`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`: `215`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `87`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `247`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `1823`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedChannelMutationSupport.ts`: `223`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailSectionContent.tsx`: `215`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailManagedMemorySection.tsx`: `87`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailManagedToolsSection.tsx`: `247`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1274`
 
 Relative to the prior current-worktree baseline from `release-2026-04-09-94`, the page hotspot now moves from `1972` to `1823`.
 
@@ -96,10 +96,10 @@ Relative to the prior current-worktree baseline from `release-2026-04-09-94`, th
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because the managed-channel contract still expected the deleted local marker `const runManagedChannelMutation = async` after the page boundary moved to `runOpenClawManagedChannelMutation(...)`
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 - YELLOW:
   - `pnpm lint`

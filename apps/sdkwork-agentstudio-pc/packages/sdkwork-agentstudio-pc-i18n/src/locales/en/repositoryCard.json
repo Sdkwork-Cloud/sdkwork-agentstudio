@@ -1,0 +1,11 @@
+{
+  "stats": {
+    "stars": "Stars",
+    "downloads": "Downloads",
+    "forks": "Forks"
+  },
+  "actions": {
+    "clone": "Clone",
+    "download": "Download"
+  }
+}

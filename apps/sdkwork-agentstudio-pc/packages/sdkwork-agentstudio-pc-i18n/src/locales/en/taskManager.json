@@ -1,0 +1,9 @@
+{
+  "activeTasks": "{{count, number}} active tasks",
+  "allCompleted": "All tasks completed",
+  "clearCompleted": "Clear completed",
+  "noRecentTasks": "No recent tasks",
+  "processing": "Processing...",
+  "finalizing": "Finalizing...",
+  "failedTryAgain": "Task failed. Please try again."
+}

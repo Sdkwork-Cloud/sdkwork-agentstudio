@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "sdkwork-clawstudio.fullname" . }}
+  name: {{ include "sdkwork-agentstudio.fullname" . }}
   annotations:
 {{ toYaml .Values.ingress.annotations | indent 4 }}
 spec:
@@ -19,7 +19,7 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "sdkwork-clawstudio.fullname" $ }}
+                name: {{ include "sdkwork-agentstudio.fullname" $ }}
                 port:
                   number: {{ $.Values.service.port }}
           {{- end }}

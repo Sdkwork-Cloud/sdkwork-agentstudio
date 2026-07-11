@@ -2244,7 +2244,7 @@ pnpm build:app
 pnpm test
 
 # 构建桌面应用
-pnpm tauri build
+pnpm build:desktop
 ```
 
 ### 12.2 发布流程

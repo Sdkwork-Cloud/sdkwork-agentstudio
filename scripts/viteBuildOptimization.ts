@@ -29,8 +29,8 @@ export const CLAW_VITE_DEDUPE_PACKAGES = [
   'crypto-js',
   'curve25519-js',
   'md5-typescript',
-  '@sdkwork/clawstudio-infrastructure',
-  '@sdkwork/clawstudio-i18n',
+  '@sdkwork/agentstudio-pc-infrastructure',
+  '@sdkwork/agentstudio-pc-i18n',
   '@sdkwork/sdk-common',
 ] as const;
 
@@ -55,26 +55,26 @@ export function createClawManualChunks(entries: ClawManualChunkEntries | string)
   return function manualChunks(id: string) {
     const normalizedId = normalizePath(id);
 
-    if (normalizedId.includes('/packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts')) {
+    if (normalizedId.includes('/packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts')) {
       return 'claw-platform-web-studio';
     }
 
-    if (normalizedId.includes('/packages/sdkwork-clawstudio-i18n/src/locales/en/')) {
+    if (normalizedId.includes('/packages/sdkwork-agentstudio-pc-i18n/src/locales/en/')) {
       return 'claw-i18n-en';
     }
 
-    if (normalizedId.includes('/packages/sdkwork-clawstudio-i18n/src/locales/zh/')) {
+    if (normalizedId.includes('/packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/')) {
       return 'claw-i18n-zh';
     }
 
     if (
-      normalizedId.includes('/packages/sdkwork-clawstudio-i18n/src/') ||
+      normalizedId.includes('/packages/sdkwork-agentstudio-pc-i18n/src/') ||
       i18nRuntimePattern.test(normalizedId)
     ) {
       return 'claw-i18n-runtime';
     }
 
-    if (normalizedId.includes('/packages/sdkwork-clawstudio-infrastructure/src/')) {
+    if (normalizedId.includes('/packages/sdkwork-agentstudio-pc-infrastructure/src/')) {
       return 'claw-infrastructure';
     }
 

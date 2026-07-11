@@ -29,17 +29,17 @@
 
 - Top-level release blocker:
   - `pnpm.cmd lint`
-    - `@sdkwork/clawstudio-web lint`
+    - `@sdkwork/agentstudio-pc-web lint`
     - `pnpm check:arch`
     - `pnpm check:parity`
     - `pnpm check:automation`
 - Formal parity promotion:
   - `pnpm.cmd check:sdkwork-foundation`
-    - includes `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+    - includes `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
   - `pnpm.cmd check:sdkwork-channels`
-    - includes `packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts`
+    - includes `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.test.ts`
   - `pnpm.cmd check:sdkwork-market`
-    - includes `packages/sdkwork-clawstudio-market/src/services/marketService.test.ts`
+    - includes `packages/sdkwork-agentstudio-pc-market/src/services/marketService.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
     - includes current Instance Detail / OpenClaw workbench regression coverage, including:
       - `openClawConfigSchemaSupport.test.ts`

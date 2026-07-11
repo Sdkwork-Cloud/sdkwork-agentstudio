@@ -26,25 +26,25 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-clawstudio-tasks is implemented locally instead of re-exporting claw-studio-tasks', () => {
+runTest('sdkwork-agentstudio-pc-tasks is implemented locally instead of re-exporting agent-studio-tasks', () => {
   const pkg = readJson<{ dependencies?: Record<string, string> }>(
-    'packages/sdkwork-clawstudio-tasks/package.json',
+    'packages/sdkwork-agentstudio-pc-tasks/package.json',
   );
-  const indexSource = read('packages/sdkwork-clawstudio-tasks/src/index.ts');
-  const servicesIndexSource = read('packages/sdkwork-clawstudio-tasks/src/services/index.ts');
+  const indexSource = read('packages/sdkwork-agentstudio-pc-tasks/src/index.ts');
+  const servicesIndexSource = read('packages/sdkwork-agentstudio-pc-tasks/src/services/index.ts');
 
-  assert.ok(exists('packages/sdkwork-clawstudio-tasks/src/Tasks.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-tasks/src/components/GlobalTaskManager.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-tasks/src/store/useTaskStore.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-tasks/src/pages/Tasks.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-tasks/src/services/taskService.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-tasks/src/Tasks.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-tasks/src/components/GlobalTaskManager.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-tasks/src/store/useTaskStore.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-tasks/src/pages/Tasks.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-tasks/src/services/taskService.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-commons/src/components/CronTasksManager.tsx'));
 
-  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-tasks']);
-  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-instances']);
-  assert.equal(pkg.dependencies?.['@sdkwork/clawstudio-core'], 'workspace:*');
-  assert.equal(pkg.dependencies?.['@sdkwork/clawstudio-commons'], 'workspace:*');
-  assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-tasks/);
+  assert.ok(!pkg.dependencies?.['@sdkwork/agentstudio-pc-studio-tasks']);
+  assert.ok(!pkg.dependencies?.['@sdkwork/agentstudio-pc-instances']);
+  assert.equal(pkg.dependencies?.['@sdkwork/agentstudio-pc-core'], 'workspace:*');
+  assert.equal(pkg.dependencies?.['@sdkwork/agentstudio-pc-commons'], 'workspace:*');
+  assert.doesNotMatch(indexSource, /@sdkwork\/agent-studio-tasks/);
   assert.match(indexSource, /\.\/Tasks/);
   assert.match(indexSource, /\.\/components\/GlobalTaskManager/);
   assert.match(indexSource, /\.\/store\/useTaskStore/);
@@ -53,11 +53,11 @@ runTest('sdkwork-clawstudio-tasks is implemented locally instead of re-exporting
   assert.doesNotMatch(servicesIndexSource, /\.test['"]/);
 });
 
-runTest('sdkwork-clawstudio-tasks routes cron CRUD through the shared manager and the real runtime bridges', () => {
-  const serviceSource = read('packages/sdkwork-clawstudio-core/src/services/taskService.ts');
-  const runtimeServiceSource = read('packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.ts');
-  const managerSource = read('packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx');
-  const pageSource = read('packages/sdkwork-clawstudio-tasks/src/pages/Tasks.tsx');
+runTest('sdkwork-agentstudio-pc-tasks routes cron CRUD through the shared manager and the real runtime bridges', () => {
+  const serviceSource = read('packages/sdkwork-agentstudio-pc-core/src/services/taskService.ts');
+  const runtimeServiceSource = read('packages/sdkwork-agentstudio-pc-core/src/services/taskRuntimeService.ts');
+  const managerSource = read('packages/sdkwork-agentstudio-pc-commons/src/components/CronTasksManager.tsx');
+  const pageSource = read('packages/sdkwork-agentstudio-pc-tasks/src/pages/Tasks.tsx');
 
   assert.match(serviceSource, /studio\.getInstanceDetail\(instanceId\)/);
   assert.match(serviceSource, /from '\.\/taskSurfaceSupport\.ts'/);
@@ -98,8 +98,8 @@ runTest('sdkwork-clawstudio-tasks routes cron CRUD through the shared manager an
   assert.doesNotMatch(pageSource, /taskService\.(createTask|create)\(activeInstanceId,/);
 });
 
-runTest('sdkwork-clawstudio-tasks shared manager keeps the refined task workspace and card actions', () => {
-  const managerSource = read('packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx');
+runTest('sdkwork-agentstudio-pc-tasks shared manager keeps the refined task workspace and card actions', () => {
+  const managerSource = read('packages/sdkwork-agentstudio-pc-commons/src/components/CronTasksManager.tsx');
 
   assert.match(managerSource, /buildTaskCreateWorkspaceState/);
   assert.match(managerSource, /buildTaskCardState/);
@@ -114,8 +114,8 @@ runTest('sdkwork-clawstudio-tasks shared manager keeps the refined task workspac
   assert.match(managerSource, /taskService\.deleteTask\(/);
 });
 
-runTest('sdkwork-clawstudio-tasks shared manager uses the shared task catalog surface', () => {
-  const managerSource = read('packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx');
+runTest('sdkwork-agentstudio-pc-tasks shared manager uses the shared task catalog surface', () => {
+  const managerSource = read('packages/sdkwork-agentstudio-pc-commons/src/components/CronTasksManager.tsx');
 
   assert.match(managerSource, /TaskCatalog/);
   assert.match(managerSource, /TaskExecutionHistoryDrawer/);
@@ -123,10 +123,10 @@ runTest('sdkwork-clawstudio-tasks shared manager uses the shared task catalog su
   assert.doesNotMatch(managerSource, /<TaskRow/);
 });
 
-runTest('sdkwork-clawstudio-tasks shared manager binds cron agent selection to the connected instance catalog', () => {
-  const managerSource = read('packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx');
-  const dataSource = read('packages/sdkwork-clawstudio-commons/src/components/cronTasksManagerData.ts');
-  const coreServiceSource = read('packages/sdkwork-clawstudio-core/src/services/openClawAgentCatalogService.ts');
+runTest('sdkwork-agentstudio-pc-tasks shared manager binds cron agent selection to the connected instance catalog', () => {
+  const managerSource = read('packages/sdkwork-agentstudio-pc-commons/src/components/CronTasksManager.tsx');
+  const dataSource = read('packages/sdkwork-agentstudio-pc-commons/src/components/cronTasksManagerData.ts');
+  const coreServiceSource = read('packages/sdkwork-agentstudio-pc-core/src/services/openClawAgentCatalogService.ts');
 
   assert.match(managerSource, /loadTaskStudioSnapshot/);
   assert.match(managerSource, /getAgentCatalog:\s*\(instanceId\)\s*=>/);
@@ -151,13 +151,13 @@ runTest('sdkwork-clawstudio-tasks shared manager binds cron agent selection to t
   assert.match(coreServiceSource, /buildTaskAgentSelectState/);
 });
 
-runTest('sdkwork-clawstudio-tasks runtime board copy is wired for the latest OpenClaw task and task-flow surfaces', () => {
-  const managerSource = read('packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx');
+runTest('sdkwork-agentstudio-pc-tasks runtime board copy is wired for the latest OpenClaw task and task-flow surfaces', () => {
+  const managerSource = read('packages/sdkwork-agentstudio-pc-commons/src/components/CronTasksManager.tsx');
   const en = readJson<{ tasks: { page: { runtime?: Record<string, unknown> } } }>(
-    'packages/sdkwork-clawstudio-i18n/src/locales/en.json',
+    'packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json',
   );
   const zh = readJson<{ tasks: { page: { runtime?: Record<string, unknown> } } }>(
-    'packages/sdkwork-clawstudio-i18n/src/locales/zh.json',
+    'packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json',
   );
 
   const enRuntime = en.tasks.page.runtime;
@@ -322,8 +322,8 @@ runTest('sdkwork-clawstudio-tasks runtime board copy is wired for the latest Ope
   assert.equal(typeof zhDetail?.loadFailed, 'string');
 });
 
-runTest('sdkwork-clawstudio-tasks shared manager uses compact label-control rows in the task editor', () => {
-  const managerSource = read('packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx');
+runTest('sdkwork-agentstudio-pc-tasks shared manager uses compact label-control rows in the task editor', () => {
+  const managerSource = read('packages/sdkwork-agentstudio-pc-commons/src/components/CronTasksManager.tsx');
 
   assert.match(managerSource, /function renderCompactField\(/);
   assert.match(managerSource, /md:grid-cols-\[10rem,minmax\(0,1fr\)\]/);
@@ -341,9 +341,9 @@ runTest('sdkwork-clawstudio-tasks shared manager uses compact label-control rows
   );
 });
 
-runTest('sdkwork-clawstudio-tasks ships readable zh task copy without mojibake placeholders', () => {
+runTest('sdkwork-agentstudio-pc-tasks ships readable zh task copy without mojibake placeholders', () => {
   const zh = readJson<{ tasks: { page: Record<string, unknown> } }>(
-    'packages/sdkwork-clawstudio-i18n/src/locales/zh.json',
+    'packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json',
   );
   const taskPage = zh.tasks.page as {
     title: string;

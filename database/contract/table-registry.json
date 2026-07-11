@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.database.table-registry",
+  "moduleId": "sdkwork-agentstudio",
+  "ownerTeam": "sdkwork-agentstudio",
+  "complianceLevel": "L2",
+  "tables": [
+    { "table_name": "host_catalog_documents", "status": "active" },
+    { "table_name": "storage_entries", "status": "active" },
+    { "table_name": "sessions", "status": "active" },
+    { "table_name": "messages", "status": "active" },
+    { "table_name": "runs", "status": "active" },
+    { "table_name": "agents", "status": "active" }
+  ]
+}

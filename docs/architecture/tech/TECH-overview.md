@@ -5,7 +5,7 @@
 
 ## Product Surface
 
-The workspace reproduces the Claw Studio product surface from `upgrade/claw-studio-v5` while mapping responsibilities into dedicated packages and a shared dual-host shell.
+The workspace reproduces the Agent Studio product surface from `upgrade/agent-studio-v5` while mapping responsibilities into dedicated packages and a shared dual-host shell.
 
 ## Workspace Group
 
@@ -43,7 +43,7 @@ Each feature package owns its pages, components, and services. This keeps busine
 
 ## UI Parity Goal
 
-The migration target is functional and visual parity with `upgrade/claw-studio-v5`. Package extraction is a maintainability improvement, not a product redesign.
+The migration target is functional and visual parity with `upgrade/agent-studio-v5`. Package extraction is a maintainability improvement, not a product redesign.
 
 The approved template extension is `dashboard`, which intentionally upgrades the entry experience beyond V5 parity so new applications open on an operational control plane instead of a single feature page.
 

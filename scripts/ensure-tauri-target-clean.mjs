@@ -359,7 +359,7 @@ function resolveCandidateTargetDirs(resolvedSrcTauriDir, env = process.env) {
       platform: process.platform,
       cwd: process.cwd(),
     }));
-  } else if (path.basename(packageRootDir).toLowerCase() === 'sdkwork-clawstudio-desktop') {
+  } else if (path.basename(packageRootDir).toLowerCase() === 'sdkwork-agentstudio-pc-desktop') {
     targetDirs.push(resolveDefaultDesktopCargoTargetDir({
       desktopPackageDir: packageRootDir,
       platform: process.platform,

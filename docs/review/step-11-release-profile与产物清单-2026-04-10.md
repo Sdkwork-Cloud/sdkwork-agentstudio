@@ -28,7 +28,7 @@ This loop rechecked the Step 11 release plan through `pnpm.cmd release:plan`.
 | Family | Target | Artifact status | Smoke status | Notes |
 | --- | --- | --- | --- | --- |
 | Desktop | windows / x64 | Existing manifest and installer smoke report remained present | Packaged launch blocked | `release-asset-manifest.json` and `installer-smoke-report.json` exist, but no fresh startup evidence was captured on this host |
-| Server | windows / x64 | Re-emitted | Passed | `claw-studio-server-release-local-windows-x64.zip` and `release-smoke-report.json` both refreshed successfully |
+| Server | windows / x64 | Re-emitted | Passed | `agent-studio-server-release-local-windows-x64.zip` and `release-smoke-report.json` both refreshed successfully |
 | Container | linux / x64 / cpu | Not emitted | Failed before packaging | linux server binary could not be built on this host |
 | Kubernetes | linux / x64 / cpu | Emitted | Skipped | bundle archive and manifest were emitted, chart smoke skipped because `helm` is missing |
 
@@ -38,13 +38,13 @@ This loop rechecked the Step 11 release plan through `pnpm.cmd release:plan`.
   - `artifacts/release/desktop/windows/x64/release-asset-manifest.json`
   - `artifacts/release/desktop/windows/x64/installer-smoke-report.json`
 - Server / windows / x64:
-  - `artifacts/release/server/windows/x64/claw-studio-server-release-local-windows-x64.zip`
-  - `artifacts/release/server/windows/x64/claw-studio-server-release-local-windows-x64.zip.sha256.txt`
+  - `artifacts/release/server/windows/x64/agent-studio-server-release-local-windows-x64.zip`
+  - `artifacts/release/server/windows/x64/agent-studio-server-release-local-windows-x64.zip.sha256.txt`
   - `artifacts/release/server/windows/x64/release-asset-manifest.json`
   - `artifacts/release/server/windows/x64/release-smoke-report.json`
 - Kubernetes / linux / x64 / cpu:
-  - `artifacts/release/kubernetes/linux/x64/cpu/claw-studio-kubernetes-bundle-release-local-linux-x64-cpu.tar.gz`
-  - `artifacts/release/kubernetes/linux/x64/cpu/claw-studio-kubernetes-bundle-release-local-linux-x64-cpu.tar.gz.sha256.txt`
+  - `artifacts/release/kubernetes/linux/x64/cpu/agent-studio-kubernetes-bundle-release-local-linux-x64-cpu.tar.gz`
+  - `artifacts/release/kubernetes/linux/x64/cpu/agent-studio-kubernetes-bundle-release-local-linux-x64-cpu.tar.gz.sha256.txt`
   - `artifacts/release/kubernetes/linux/x64/cpu/release-asset-manifest.json`
   - `artifacts/release/kubernetes/linux/x64/cpu/release-smoke-report.json`
 
@@ -53,7 +53,7 @@ This loop rechecked the Step 11 release plan through `pnpm.cmd release:plan`.
 The repaired Windows server bundle now emits one runtime-backed smoke contract:
 
 - `status=passed`
-- `launcherRelativePath=bin/sdkwork-clawstudio-server.exe`
+- `launcherRelativePath=bin/sdkwork-agentstudio-pc-server.exe`
 - `runtimeBaseUrl=http://127.0.0.1:<dynamic-port>`
 - checks:
   - `health-ready`
@@ -67,7 +67,7 @@ This matters because the smoke no longer validates a helper script in isolation;
 The linux / x64 / cpu kubernetes bundle emitted successfully in this pass:
 
 - archive:
-  - `claw-studio-kubernetes-bundle-release-local-linux-x64-cpu.tar.gz`
+  - `agent-studio-kubernetes-bundle-release-local-linux-x64-cpu.tar.gz`
 - smoke contract:
   - `status=skipped`
   - `smokeKind=chart-render`
@@ -88,7 +88,7 @@ The concrete blocker is the packaged-launch command:
 
 - `node scripts/release/smoke-desktop-packaged-launch.mjs --platform windows --arch x64`
 - result:
-  - `spawnSync ... Claw Studio_0.1.0_x64-setup.exe EPERM`
+  - `spawnSync ... Agent Studio_0.1.0_x64-setup.exe EPERM`
 
 ### Container bundle
 

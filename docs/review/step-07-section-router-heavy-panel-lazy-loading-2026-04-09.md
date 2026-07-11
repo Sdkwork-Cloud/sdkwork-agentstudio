@@ -12,7 +12,7 @@
 
 ## Root Cause
 
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx` still statically imported:
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailSectionContent.tsx` still statically imported:
   - `InstanceDetailFilesSection.tsx`
   - `InstanceConfigWorkbenchPanel.tsx`
 - That meant the section router pulled both heavy surfaces into the main `InstanceDetail` route chunk even when users only opened overview, channels, skills, memory, or tools.
@@ -47,10 +47,10 @@
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1444`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.tsx`: `232`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `1444`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailSectionContent.tsx`: `232`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1274`
 - Fresh build output now shows:
   - `dist/assets/InstanceDetail-CO9QGjPk.js`: `179.55 kB`
   - `dist/assets/InstanceConfigWorkbenchPanel-BoVtLBcy.js`: `63.33 kB`
@@ -63,19 +63,19 @@
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because the section router still eagerly imported the heavy `files` and `config` panels
 - GREEN after implementation and fresh re-run:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailSectionContent.test.tsx`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawChannelPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchHydration.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawAgentPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceMemoryWorkbenchPresentation.test.ts`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailSectionContent.test.tsx`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawChannelPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedChannelPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedChannelMutationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchHydration.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawAgentPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedConfigDrafts.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceMemoryWorkbenchPresentation.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 
 ## Closure Status

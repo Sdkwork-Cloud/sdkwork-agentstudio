@@ -66,8 +66,8 @@ Conclusion:
 The module-by-module re-review found a narrower but still real parity gap:
 
 - Shared request-override persistence already existed in:
-  - `sdkwork-clawstudio-core`
-  - `sdkwork-clawstudio-settings`
+  - `sdkwork-agentstudio-pc-core`
+  - `sdkwork-agentstudio-pc-settings`
   - Provider Center editor UI
 - Manual Anthropic-family protocol inference for `cloudflare-ai-gateway` already existed.
 - But Provider Center still did not surface `Cloudflare AI Gateway` as an official known provider:
@@ -102,9 +102,9 @@ Rejected alternatives:
 Red phase:
 
 - Added failing assertions to:
-  - `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.test.ts`
-  - `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
-  - `packages/sdkwork-clawstudio-settings/src/services/providerConfigEditorPolicy.test.ts`
+  - `packages/sdkwork-agentstudio-pc-core/src/services/providerRoutingCatalogService.test.ts`
+  - `packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.test.ts`
+  - `packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigEditorPolicy.test.ts`
 - Canonical repo runners failed for the expected reason:
   - `node scripts/run-sdkwork-core-check.mjs`
   - `node scripts/run-sdkwork-settings-check.mjs`
@@ -114,18 +114,18 @@ Red phase:
 Green phase:
 
 - Added one shared provider-channel definition in:
-  - `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.ts`
+  - `packages/sdkwork-agentstudio-pc-core/src/services/providerRoutingCatalogService.ts`
 - Added one curated Provider Center preset in:
-  - `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.ts`
+  - `packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.ts`
 - Re-ran the same repo runners and confirmed the new assertions pass.
 
 ## Step 5: Files changed in this loop
 
-- `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.ts`
-- `packages/sdkwork-clawstudio-core/src/services/providerRoutingCatalogService.test.ts`
-- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.ts`
-- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
-- `packages/sdkwork-clawstudio-settings/src/services/providerConfigEditorPolicy.test.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/providerRoutingCatalogService.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/providerRoutingCatalogService.test.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.test.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigEditorPolicy.test.ts`
 
 Behavior after the landing:
 
@@ -153,7 +153,7 @@ Fresh workspace and host verification:
   - passed
 - `pnpm.cmd build`
   - passed
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml ollama`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml ollama`
   - passed
 - `pnpm.cmd check:desktop`
   - passed

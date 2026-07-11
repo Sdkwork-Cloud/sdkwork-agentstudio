@@ -17,7 +17,7 @@ test('archive entry safety classifies Unix-mode ZIP directory entries without re
       archivePath,
       createStoredZipArchive([
         {
-          name: 'Claw Studio.app',
+          name: 'Agent Studio.app',
           content: '',
           externalAttributes: 0o040755 << 16,
         },
@@ -29,7 +29,7 @@ test('archive entry safety classifies Unix-mode ZIP directory entries without re
     });
 
     assert.equal(entries.length, 1);
-    assert.equal(entries[0].normalizedPath, 'Claw Studio.app');
+    assert.equal(entries[0].normalizedPath, 'Agent Studio.app');
     assert.equal(entries[0].type, 'directory');
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });

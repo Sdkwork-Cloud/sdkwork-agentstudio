@@ -1,0 +1,975 @@
+openapi: 3.1.2
+info:
+  title: SdkWork Agent Studio Internal Host Coordination API
+  version: v1
+  description: >-
+    Authored OpenAPI contract for the internal host-coordination API surface
+    (`/claw/internal/v1/...`). SDKWork-owned custom API; success responses use
+    the `SdkWorkApiResponse` envelope and errors use
+    `application/problem+json` with `SdkWorkProblemDetail` (API_SPEC.md §15).
+    Auth mode: `dual-token`.
+  x-sdkwork-surface: internal-api
+  x-sdkwork-auth-mode: dual-token
+servers:
+  - url: /
+    description: Same-origin Claw server
+tags:
+  - name: internal.host-platform
+    description: Host platform status projection APIs.
+  - name: internal.node-sessions
+    description: Node session lifecycle coordination APIs.
+paths:
+  /claw/internal/v1/host-platform:
+    get:
+      tags: [internal.host-platform]
+      operationId: internal.host-platform.read
+      summary: Read host platform status
+      x-sdkwork-auth-mode: dual-token
+      responses:
+        '200':
+          description: Current host platform status.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/HostPlatformStatusRecord'
+        '401':
+          description: Authentication is required for the internal control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/internal/v1/node-sessions:
+    get:
+      tags: [internal.node-sessions]
+      operationId: internal.node-sessions.list
+      summary: List live and projected node sessions
+      x-sdkwork-auth-mode: dual-token
+      parameters:
+        - $ref: ../../schemas/sdkwork-common.yaml#/components/parameters/PageQuery
+        - $ref: ../../schemas/sdkwork-common.yaml#/components/parameters/PageSizeQuery
+      responses:
+        '200':
+          description: Merged live and projected node sessions.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/NodeSessionRecord'
+                          pageInfo:
+                            $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/PageInfo
+        '401':
+          description: Authentication is required for the internal control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: Node session list could not be loaded.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/internal/v1/node-sessions/hello:
+    post:
+      tags: [internal.node-sessions]
+      operationId: internal.node-sessions.hello
+      summary: Register a node session and receive a lease proposal
+      x-sdkwork-auth-mode: dual-token
+      requestBody:
+        required: true
+        description: Node hello request.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeSessionHelloInput'
+      responses:
+        '200':
+          description: Hello response with compatibility preview and lease proposal.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NodeSessionHelloResponse'
+        '400':
+          description: The node hello request body was invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '401':
+          description: Authentication is required for the internal control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '409':
+          description: The node hello request could not be processed in the current control-plane state.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: Node hello could not be processed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '503':
+          description: A required control-plane dependency was unavailable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/internal/v1/node-sessions/admit:
+    post:
+      tags: [internal.node-sessions]
+      operationId: internal.node-sessions.admit
+      summary: Admit a previously created node session
+      x-sdkwork-auth-mode: dual-token
+      requestBody:
+        required: true
+        description: Node admit request.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeSessionAdmitInput'
+      responses:
+        '200':
+          description: Admitted node session state.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NodeSessionAdmitResponse'
+        '400':
+          description: The node session admit request body was invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '401':
+          description: Authentication is required for the internal control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '403':
+          description: The node session bootstrap token was invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '404':
+          description: The requested node session was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '409':
+          description: The node session could not be admitted in the current state.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: The node session could not be admitted.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/internal/v1/node-sessions/heartbeat:
+    post:
+      tags: [internal.node-sessions]
+      operationId: internal.node-sessions.heartbeat
+      summary: Refresh an admitted node session lease
+      x-sdkwork-auth-mode: dual-token
+      requestBody:
+        required: true
+        description: Heartbeat request.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeSessionHeartbeatInput'
+      responses:
+        '200':
+          description: Refreshed node session lease and posture.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NodeSessionHeartbeatResponse'
+        '400':
+          description: The node session heartbeat request body was invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '401':
+          description: Authentication is required for the internal control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '404':
+          description: The requested node session was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '409':
+          description: The node session lease was invalid, expired, or replaced.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: The heartbeat could not be processed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/internal/v1/node-sessions/pull-desired-state:
+    post:
+      tags: [internal.node-sessions]
+      operationId: internal.node-sessions.pull-desired-state
+      summary: Fetch the current desired state for a node session
+      x-sdkwork-auth-mode: dual-token
+      requestBody:
+        required: true
+        description: Desired-state pull request.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeSessionPullDesiredStateInput'
+      responses:
+        '200':
+          description: Desired-state projection or not-modified response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NodeSessionPullDesiredStateResponse'
+        '400':
+          description: The desired-state pull request body was invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '401':
+          description: Authentication is required for the internal control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '404':
+          description: The requested node session was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '409':
+          description: The node session lease was invalid, expired, or replaced.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: The desired-state pull could not be processed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '503':
+          description: The control plane could not provide the requested desired-state projection.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/internal/v1/node-sessions/ack-desired-state:
+    post:
+      tags: [internal.node-sessions]
+      operationId: internal.node-sessions.ack-desired-state
+      summary: Acknowledge desired-state application
+      x-sdkwork-auth-mode: dual-token
+      requestBody:
+        required: true
+        description: Desired-state acknowledgement request.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeSessionAckDesiredStateInput'
+      responses:
+        '200':
+          description: Desired-state acknowledgement was recorded.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NodeSessionAckDesiredStateResponse'
+        '400':
+          description: The desired-state acknowledgement request body was invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '401':
+          description: Authentication is required for the internal control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '404':
+          description: The requested node session was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '409':
+          description: The acknowledgement conflicted with the current session or desired state.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: The acknowledgement could not be processed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+  /claw/internal/v1/node-sessions/close:
+    post:
+      tags: [internal.node-sessions]
+      operationId: internal.node-sessions.close
+      summary: Gracefully close a node session
+      x-sdkwork-auth-mode: dual-token
+      requestBody:
+        required: true
+        description: Node session close request.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeSessionCloseInput'
+      responses:
+        '200':
+          description: Node session was closed.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkApiResponse
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NodeSessionCloseResponse'
+        '400':
+          description: The node session close request body was invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '401':
+          description: Authentication is required for the internal control-plane surface.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '404':
+          description: The requested node session was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '409':
+          description: The node session lease was invalid or expired.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+        '500':
+          description: The node session could not be closed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../schemas/sdkwork-common.yaml#/components/schemas/SdkWorkProblemDetail
+components:
+  schemas:
+    HostPlatformStatusRecord:
+      type: object
+      properties:
+        mode:
+          type: string
+        lifecycle:
+          type: string
+        distributionFamily:
+          type: string
+          enum:
+            - web
+            - desktop
+            - server
+        deploymentFamily:
+          type: string
+          enum:
+            - bareMetal
+            - container
+            - kubernetes
+        acceleratorProfile:
+          type:
+            - string
+            - "null"
+          enum:
+            - cpu
+            - nvidia-cuda
+            - amd-rocm
+            - "null"
+        hostId:
+          type: string
+        displayName:
+          type: string
+        version:
+          type: string
+        desiredStateProjectionVersion:
+          type: string
+        rolloutEngineVersion:
+          type: string
+        manageBasePath:
+          type: string
+        internalBasePath:
+          type: string
+        stateStoreDriver:
+          type: string
+          enum:
+            - json-file
+            - sqlite
+        stateStore:
+          $ref: '#/components/schemas/HostPlatformStateStoreRecord'
+        capabilityKeys:
+          type: array
+          items:
+            type: string
+        supportedCapabilityKeys:
+          type: array
+          items:
+            type: string
+        availableCapabilityKeys:
+          type: array
+          items:
+            type: string
+        updatedAt:
+          type: integer
+          format: uint64
+          minimum: 0
+    HostPlatformStateStoreRecord:
+      type: object
+      properties:
+        activeProfileId:
+          type: string
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/HostPlatformStateStoreProviderRecord'
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/HostPlatformStateStoreProfileRecord'
+    HostPlatformStateStoreProviderRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        availability:
+          type: string
+        requiresConfiguration:
+          type: boolean
+        configurationKeys:
+          type: array
+          items:
+            type: string
+        projectionMode:
+          type: string
+          enum:
+            - runtime
+            - metadataOnly
+    HostPlatformStateStoreProfileRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        driver:
+          type: string
+        active:
+          type: boolean
+        availability:
+          type: string
+        path:
+          type:
+            - string
+            - "null"
+        connectionConfigured:
+          type: boolean
+        configuredKeys:
+          type: array
+          items:
+            type: string
+        projectionMode:
+          type: string
+          enum:
+            - runtime
+            - metadataOnly
+    NodeSessionRecord:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        nodeId:
+          type: string
+        state:
+          type: string
+          enum:
+            - pending
+            - admitted
+            - degraded
+            - blocked
+            - replaced
+            - closed
+        compatibilityState:
+          type: string
+          enum:
+            - compatible
+            - degraded
+            - blocked
+        successorSessionId:
+          type: string
+        desiredStateRevision:
+          type: integer
+          format: uint64
+          minimum: 0
+        desiredStateHash:
+          type: string
+        lastAppliedRevision:
+          type: integer
+          format: uint64
+          minimum: 0
+        lastAppliedHash:
+          type: string
+        lastKnownGoodRevision:
+          type: integer
+          format: uint64
+          minimum: 0
+        lastKnownGoodHash:
+          type: string
+        lastApplyResult:
+          type: string
+          enum:
+            - accepted
+            - applied
+            - appliedDegraded
+            - rejected
+            - superseded
+        lastSeenAt:
+          type: integer
+          format: uint64
+          minimum: 0
+    NodeSessionHelloInput:
+      type: object
+      properties:
+        bootId:
+          type: string
+        nodeClaim:
+          type: object
+          properties:
+            claimedNodeId:
+              type: string
+            hostPlatform:
+              type: string
+            hostArch:
+              type: string
+        versionManifest:
+          type: object
+          properties:
+            internalApiVersion:
+              type: string
+            configProjectionVersion:
+              type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+    NodeSessionHelloResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        helloToken:
+          type: string
+        leaseProposal:
+          type: object
+          properties:
+            leaseId:
+              type: string
+            issuedAt:
+              type: integer
+              format: uint64
+              minimum: 0
+            expiresAt:
+              type: integer
+              format: uint64
+              minimum: 0
+        admissionMode:
+          type: string
+          enum:
+            - bootstrapRequired
+            - blocked
+        compatibilityPreview:
+          type: object
+          properties:
+            compatibilityState:
+              type: string
+              enum:
+                - compatible
+                - degraded
+                - blocked
+            desiredStateRevision:
+              type: integer
+              format: uint64
+              minimum: 0
+            desiredStateHash:
+              type: string
+            reason:
+              type: string
+        nextAction:
+          type: string
+          enum:
+            - callAdmit
+            - stopAndWait
+    NodeSessionAdmitInput:
+      type: object
+      properties:
+        helloToken:
+          type: string
+    NodeSessionAdmitResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        lease:
+          type: object
+          properties:
+            leaseId:
+              type: string
+            issuedAt:
+              type: integer
+              format: uint64
+              minimum: 0
+            expiresAt:
+              type: integer
+              format: uint64
+              minimum: 0
+        compatibilityResult:
+          type: object
+          properties:
+            compatibilityState:
+              type: string
+              enum:
+                - compatible
+                - degraded
+                - blocked
+            desiredStateRevision:
+              type: integer
+              format: uint64
+              minimum: 0
+            desiredStateHash:
+              type: string
+            reason:
+              type: string
+        effectiveCapabilities:
+          type: array
+          items:
+            type: string
+        heartbeatPolicy:
+          type: object
+          properties:
+            intervalSeconds:
+              type: integer
+              minimum: 0
+            missTolerance:
+              type: integer
+              minimum: 0
+            fullReportInterval:
+              type: integer
+              minimum: 0
+        desiredStateCursor:
+          type: object
+          properties:
+            currentRevision:
+              type: integer
+              format: uint64
+              minimum: 0
+            currentHash:
+              type: string
+            requiredConfigProjectionVersion:
+              type: string
+    NodeSessionHeartbeatInput:
+      type: object
+      properties:
+        leaseId:
+          type: string
+        lastSeenRevision:
+          type: integer
+          format: uint64
+          minimum: 0
+    NodeSessionHeartbeatResponse:
+      type: object
+      properties:
+        lease:
+          type: object
+          properties:
+            leaseId:
+              type: string
+            issuedAt:
+              type: integer
+              format: uint64
+              minimum: 0
+            expiresAt:
+              type: integer
+              format: uint64
+              minimum: 0
+        compatibilityResult:
+          type: object
+          properties:
+            compatibilityState:
+              type: string
+              enum:
+                - compatible
+                - degraded
+                - blocked
+            desiredStateRevision:
+              type: integer
+              format: uint64
+              minimum: 0
+            desiredStateHash:
+              type: string
+            reason:
+              type: string
+        managementPosture:
+          type: object
+          properties:
+            compatibilityState:
+              type: string
+              enum:
+                - compatible
+                - degraded
+                - blocked
+            allowedOperations:
+              type: array
+              items:
+                type: string
+        desiredStateHint:
+          type: object
+          properties:
+            hasUpdate:
+              type: boolean
+            targetRevision:
+              type: integer
+              format: uint64
+              minimum: 0
+            targetHash:
+              type: string
+            mandatory:
+              type: boolean
+    NodeSessionPullDesiredStateInput:
+      type: object
+      properties:
+        leaseId:
+          type: string
+        knownRevision:
+          type: integer
+          format: uint64
+          minimum: 0
+        knownHash:
+          type: string
+        supportedConfigProjectionVersions:
+          type: array
+          items:
+            type: string
+        effectiveCapabilities:
+          type: array
+          items:
+            type: string
+    NodeSessionPullDesiredStateResponse:
+      oneOf:
+        - type: object
+          properties:
+            mode:
+              type: string
+              const: notModified
+            desiredStateRevision:
+              type: integer
+              format: uint64
+              minimum: 0
+            desiredStateHash:
+              type: string
+            configProjectionVersion:
+              type: string
+        - type: object
+          properties:
+            mode:
+              type: string
+              const: projection
+            desiredStateRevision:
+              type: integer
+              format: uint64
+              minimum: 0
+            desiredStateHash:
+              type: string
+            configProjectionVersion:
+              type: string
+            requiredCapabilities:
+              type: array
+              items:
+                type: string
+            projection:
+              type: object
+              properties:
+                nodeId:
+                  type: string
+                desiredStateRevision:
+                  type: integer
+                  format: uint64
+                  minimum: 0
+                desiredStateHash:
+                  type: string
+                configProjectionVersion:
+                  type: string
+                semanticPayload:
+                  type: string
+            applyPolicy:
+              type: object
+              properties:
+                mandatory:
+                  type: boolean
+    NodeSessionAckDesiredStateInput:
+      type: object
+      properties:
+        leaseId:
+          type: string
+        desiredStateRevision:
+          type: integer
+          format: uint64
+          minimum: 0
+        desiredStateHash:
+          type: string
+        result:
+          type: string
+          enum:
+            - accepted
+            - applied
+            - appliedDegraded
+            - rejected
+            - superseded
+        effectiveCapabilities:
+          type: array
+          items:
+            type: string
+        observedEndpoints:
+          type: array
+          items:
+            type: string
+        applySummary:
+          type: object
+          properties:
+            appliedAt:
+              type: integer
+              format: uint64
+              minimum: 0
+            lastKnownGoodRevision:
+              type: integer
+              format: uint64
+              minimum: 0
+            compatibilityReasons:
+              type: array
+              items:
+                type: string
+            errors:
+              type: array
+              items:
+                type: string
+            warnings:
+              type: array
+              items:
+                type: string
+    NodeSessionAckDesiredStateResponse:
+      type: object
+      properties:
+        recorded:
+          type: boolean
+        nextExpectedRevision:
+          type: integer
+          format: uint64
+          minimum: 0
+        managementPosture:
+          type: object
+          properties:
+            compatibilityState:
+              type: string
+              enum:
+                - compatible
+                - degraded
+                - blocked
+            allowedOperations:
+              type: array
+              items:
+                type: string
+    NodeSessionCloseInput:
+      type: object
+      properties:
+        leaseId:
+          type: string
+        reason:
+          type: string
+        successorHint:
+          type: string
+    NodeSessionCloseResponse:
+      type: object
+      properties:
+        closed:
+          type: boolean
+        replacementExpected:
+          type: boolean

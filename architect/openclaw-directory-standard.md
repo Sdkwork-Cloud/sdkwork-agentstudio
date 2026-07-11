@@ -3,7 +3,7 @@
 ## Goal
 
 This document defines the single canonical OpenClaw directory layout used by
-Claw Studio desktop.
+Agent Studio desktop.
 
 The intent is to remove path ambiguity, remove legacy config discovery, and keep
 the OpenClaw user root separate from kernel governance state.

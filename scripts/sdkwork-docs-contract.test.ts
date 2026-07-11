@@ -40,17 +40,17 @@ async function runTest(name: string, fn: () => void | Promise<void>) {
   }
 }
 
-await runTest('sdkwork-clawstudio-docs keeps the V5 docs package surface locally', () => {
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-docs/package.json');
-  const indexSource = read('packages/sdkwork-clawstudio-docs/src/index.ts');
+await runTest('sdkwork-agentstudio-pc-docs keeps the V5 docs package surface locally', () => {
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-agentstudio-pc-docs/package.json');
+  const indexSource = read('packages/sdkwork-agentstudio-pc-docs/src/index.ts');
 
-  assert.ok(exists('packages/sdkwork-clawstudio-docs/src/Docs.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-docs/src/content/index.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-docs/src/Docs.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-docs/src/content/index.ts'));
 
   assert.match(indexSource, /export \* from '\.\/Docs';/);
   assert.match(indexSource, /export \* from '\.\/content';/);
-  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-docs']);
-  assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-docs/);
+  assert.ok(!pkg.dependencies?.['@sdkwork/agentstudio-pc-studio-docs']);
+  assert.doesNotMatch(indexSource, /@sdkwork\/agent-studio-docs/);
 });
 
 await runTest('workspace docs document server verification and release planning entrypoints', () => {
@@ -145,7 +145,7 @@ await runTest('workspace docs document server verification and release planning 
   assert.match(releaseAndDeployment, /package-target/);
   assert.match(releaseAndDeployment, /priority/);
   assert.match(releaseAndDeployment, /does not replace `release:assert-ready`/);
-  assert.match(releaseAndDeployment, /local and CI success-path proof[\s\S]*covers every target required by the default `claw-studio` profile[\s\S]*cross-checks the fixture target count against the real `release:plan\.requiredTargetCount` summary[\s\S]*real `release:assert-ready`/);
+  assert.match(releaseAndDeployment, /local and CI success-path proof[\s\S]*covers every target required by the default `agent-studio` profile[\s\S]*cross-checks the fixture target count against the real `release:plan\.requiredTargetCount` summary[\s\S]*real `release:assert-ready`/);
   assert.match(releaseAndDeployment, /CI detects release-matrix drift before a publish run/);
   assert.match(releaseAndDeployment, /releaseCoverage/);
   assert.match(releaseAndDeploymentZh, /releaseCoverage/);
@@ -387,7 +387,7 @@ await runTest('workspace docs keep internal plans out of public local-search ind
   assert.equal(policyModule.shouldIndexSearchPage('guide/getting-started.md'), true);
   assert.equal(policyModule.shouldIndexSearchPage('reference/commands.md'), true);
   assert.equal(policyModule.shouldIndexSearchPage('plans/2026-03-10-tauri-local-packaging-workflow.md'), false);
-  assert.equal(policyModule.shouldIndexSearchPage('superpowers/specs/2026-04-02-claw-studio-unified-host-platform-v7-design.md'), false);
+  assert.equal(policyModule.shouldIndexSearchPage('superpowers/specs/2026-04-02-agent-studio-unified-host-platform-v7-design.md'), false);
   assert.equal(policyModule.shouldIndexSearchPage('reports/2026-04-05-unified-rust-host-runtime-hardening-smoke.md'), false);
   assert.equal(policyModule.shouldIndexSearchPage('release/release-2026-04-08-34.md'), false);
   assert.equal(policyModule.shouldIndexSearchPage('review/step-03-local-ai-proxy-shared-types-hotspot-split-2026-04-08.md'), false);

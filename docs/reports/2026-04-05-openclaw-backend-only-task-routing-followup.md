@@ -3,7 +3,7 @@
 Date: 2026-04-05
 
 Scope:
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`
 - backend-authored OpenClaw workbench tasks in desktop, server, docker, and kubernetes hosted modes
 - task clone/run/history/status/delete routing after workbench load
 
@@ -25,13 +25,13 @@ In practice, this breaks backend-only or degraded OpenClaw task management flows
 ## Root Cause
 
 Evidence:
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3001`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3054`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3339`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3368`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3406`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3440`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3457`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3001`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3054`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3339`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3368`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3406`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3440`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3457`
 
 Previous behavior:
 - task routing state only stored instance identity
@@ -46,9 +46,9 @@ That assumption is false for:
 ## Implemented Fix
 
 Implemented in:
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:2991`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3209`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3339`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:2991`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3209`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3339`
 
 Changes:
 - introduced explicit task route state: `taskId -> { instanceId, mode: 'backend' | 'gateway' }`
@@ -61,7 +61,7 @@ Changes:
 ## Regression Coverage
 
 New regression:
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts:2873`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts:2873`
 
 What it proves:
 - a backend-authored OpenClaw task remains fully operable when live gateway task APIs are unavailable
@@ -71,8 +71,8 @@ What it proves:
 ## Verification
 
 Executed:
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 
 Result:
@@ -85,8 +85,8 @@ The following items are still open after this change.
 ### 1. `createTask(...)` and `updateTask(...)` still infer "OpenClaw = gateway"
 
 Evidence:
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3315`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3325`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3315`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3325`
 
 Current behavior:
 - both methods check only `isOpenClawDetail(detail)`
@@ -102,8 +102,8 @@ Status:
 ### 2. on-demand file and memory loaders still assume live gateway availability
 
 Evidence:
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3261`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts:3272`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3261`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts:3272`
 
 Current behavior:
 - `listInstanceFiles(...)` loads OpenClaw file catalog through gateway-backed helpers whenever agents are present

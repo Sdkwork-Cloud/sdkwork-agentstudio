@@ -1,4 +1,4 @@
-# 2026-04-06 Claw Studio System Review Remediation Design
+# 2026-04-06 Agent Studio System Review Remediation Design
 
 ## Design Goals
 

@@ -158,7 +158,7 @@ assert.match(
   'sync-bundled-components must run pnpm install before building OpenClaw so package-manager state, not custom node_modules probing, hydrates new dependencies',
 );
 const overlay = syncModule.createTauriBundleOverlayConfig({
-  workspaceRootDir: 'D:\\workspace\\claw-studio',
+  workspaceRootDir: 'D:\\workspace\\agent-studio',
   platform: 'win32',
 });
 
@@ -169,7 +169,7 @@ assert.equal(typeof overlay.bundle.resources, 'object');
 const resources = overlay.bundle.resources;
 
 assert.ok(
-  syncModuleSource.indexOf("const desktopSrcTauriPathSegments = ['packages', 'sdkwork-clawstudio-desktop', 'src-tauri'];") <
+  syncModuleSource.indexOf("const desktopSrcTauriPathSegments = ['packages', 'sdkwork-agentstudio-pc-desktop', 'src-tauri'];") <
     syncModuleSource.indexOf('const bundledRoot = resolveBundledBuildRoot(rootDir, process.platform);'),
   'desktopSrcTauriPathSegments must be initialized before bundledRoot for non-Windows module loading',
 );
@@ -252,7 +252,7 @@ assert.deepEqual(
 
 assert.deepEqual(
   syncModule.createTauriBundleOverlayConfig({
-    workspaceRootDir: 'D:\\workspace\\claw-studio',
+    workspaceRootDir: 'D:\\workspace\\agent-studio',
     platform: 'win32',
     packageProfileId: 'hermes-only',
   }),
@@ -272,43 +272,43 @@ const cachedOpenClawRepoDir = syncModule.resolveComponentRepositoryDir({
   component: {
     checkoutDir: 'openclaw',
   },
-  upstreamRootDir: 'D:\\workspace\\claw-studio\\.cache\\bundled-components\\upstreams',
+  upstreamRootDir: 'D:\\workspace\\agent-studio\\.cache\\bundled-components\\upstreams',
 });
 
 assert.equal(
   cachedOpenClawRepoDir,
-  'D:\\workspace\\claw-studio\\.cache\\bundled-components\\upstreams\\openclaw',
+  'D:\\workspace\\agent-studio\\.cache\\bundled-components\\upstreams\\openclaw',
   'sync-bundled-components must continue to use cached upstream checkouts for non-vendored components',
 );
 
 const windowsBundledBuildRoot = syncModule.resolveBundledBuildRoot(
-  'D:\\workspace\\claw-studio',
+  'D:\\workspace\\agent-studio',
   'win32',
   'unit-test-run',
 );
 
 assert.equal(
   windowsBundledBuildRoot,
-  'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors\\bundled-unit-test-run',
+  'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors\\bundled-unit-test-run',
   'sync-bundled-components must stage Windows bundled assets into a dedicated mirror directory instead of mutating a long-lived shared bundled root in place',
 );
 
 const overriddenWindowsBundledBuildRoot = syncModule.resolveBundledBuildRoot(
-  'D:\\workspace\\claw-studio',
+  'D:\\workspace\\agent-studio',
   'win32',
   'unit-test-run',
-  'D:\\workspace\\claw-studio\\.cache\\short-mirrors',
+  'D:\\workspace\\agent-studio\\.cache\\short-mirrors',
 );
 
 assert.equal(
   overriddenWindowsBundledBuildRoot,
-  'D:\\workspace\\claw-studio\\.cache\\short-mirrors\\bundled-mirrors\\bundled-unit-test-run',
+  'D:\\workspace\\agent-studio\\.cache\\short-mirrors\\bundled-mirrors\\bundled-unit-test-run',
   'sync-bundled-components must allow the Windows short mirror base directory to be overridden for restricted environments that cannot write to the drive-root mirror location',
 );
 
 {
-  const windowsMirrorBaseDir = 'D:\\.sdkwork-bc\\claw-studio';
-  const mirrorRoot = 'D:\\.sdkwork-bc\\claw-studio\\bundled-mirrors';
+  const windowsMirrorBaseDir = 'D:\\.sdkwork-bc\\agent-studio';
+  const mirrorRoot = 'D:\\.sdkwork-bc\\agent-studio\\bundled-mirrors';
   const activeBundleRoot = `${mirrorRoot}\\bundled-20260405-120000-1234`;
   const removedMirrorPaths = [];
   const loggedMessages = [];
@@ -321,7 +321,7 @@ assert.equal(
   ]);
 
   const prunedMirrorPaths = syncModule.pruneWindowsBundledMirrorRoots({
-    workspaceRootDir: 'D:\\workspace\\claw-studio',
+    workspaceRootDir: 'D:\\workspace\\agent-studio',
     platform: 'win32',
     activeBundleRoot,
     windowsMirrorBaseDir,
@@ -589,7 +589,7 @@ assert.doesNotMatch(
           reason: 'invalid',
         }),
         prepareOpenClawRuntimeImpl: async () => ({
-          resourceDir: 'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\resources\\openclaw',
+          resourceDir: 'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\resources\\openclaw',
           manifest: {
             cliRelativePath: 'runtime/package/node_modules/openclaw/openclaw.mjs',
           },
@@ -625,7 +625,7 @@ assert.doesNotMatch(
           preparedNodeVersion: '22.20.0',
         }),
         prepareOpenClawRuntimeImpl: async () => ({
-          resourceDir: 'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\resources\\openclaw',
+          resourceDir: 'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\resources\\openclaw',
           manifest: {
             cliRelativePath: 'runtime/package/node_modules/openclaw/openclaw.mjs',
           },

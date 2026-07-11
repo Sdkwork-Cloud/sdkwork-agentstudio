@@ -7,7 +7,7 @@ import {
   normalizeCargoInvocationArgs,
 } from './cargo-command-standards.mjs';
 
-const workspaceRoot = 'D:\\workspace\\claw-studio';
+const workspaceRoot = 'D:\\workspace\\agent-studio';
 
 assert.deepEqual(
   ensureLockedCargoSubcommandArgs(['build', '--manifest-path', 'src-host/Cargo.toml']),
@@ -31,14 +31,14 @@ assert.deepEqual(
   normalizeCargoInvocationArgs([
     'test',
     '--manifest-path',
-    'packages/sdkwork-clawstudio-server/src-host/Cargo.toml',
+    'packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml',
     '--target-dir=target/check-server',
   ], { cwd: workspaceRoot }),
   [
     'test',
     '--locked',
     '--manifest-path',
-    path.resolve(workspaceRoot, 'packages/sdkwork-clawstudio-server/src-host/Cargo.toml'),
+    path.resolve(workspaceRoot, 'packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml'),
     `--target-dir=${path.resolve(workspaceRoot, 'target/check-server')}`,
   ],
   'Cargo invocation normalization must lock dependency resolution and absolutize path arguments',

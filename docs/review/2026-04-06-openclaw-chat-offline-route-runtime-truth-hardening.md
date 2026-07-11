@@ -14,7 +14,7 @@ The bug affected OpenClaw instances across:
 
 ## Root Cause
 
-`packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService.ts`
+`packages/sdkwork-agentstudio-pc-chat/src/services/instanceChatRouteService.ts`
 enforced runtime truth only for built-in managed OpenClaw:
 
 - `deploymentMode === 'local-managed' && status !== 'online'` returned
@@ -71,20 +71,20 @@ still passes by accident.
 
 ## Files Changed
 
-- `packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/services/instanceChatRouteService.ts`
 
 ## Verification
 
 Red evidence captured before implementation:
 
 - focused TypeScript check for
-  `packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService.test.ts`
+  `packages/sdkwork-agentstudio-pc-chat/src/services/instanceChatRouteService.test.ts`
 - focused TypeScript check for `scripts/sdkwork-chat-contract.test.ts`
 
 Green evidence after implementation:
 
 - focused TypeScript check for
-  `packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService.test.ts`
+  `packages/sdkwork-agentstudio-pc-chat/src/services/instanceChatRouteService.test.ts`
 - focused TypeScript check for `scripts/sdkwork-chat-contract.test.ts`
 - `node scripts/run-sdkwork-chat-check.mjs`
 - `pnpm.cmd lint`

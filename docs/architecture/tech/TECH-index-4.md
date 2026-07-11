@@ -5,12 +5,12 @@
 layout: home
 
 hero:
-  name: Claw Studio
+  name: Agent Studio
   text: 一个产品外壳，多种运行模式，一套清晰的控制平面文档。
   tagline: Web、桌面端、原生 Server、Docker 与 Kubernetes 现在共享更清晰的架构说明、已发布的原生 `/claw/*` API 面，以及统一的发布体系。
   image:
     src: /logo.svg
-    alt: Claw Studio
+    alt: Agent Studio
   actions:
     - theme: brand
       text: 快速开始
@@ -36,7 +36,7 @@ features:
 
 ## 这套文档覆盖什么
 
-这个 VitePress 站点是当前 Claw Studio 公开文档的主入口，重点说明三类内容：
+这个 VitePress 站点是当前 Agent Studio 公开文档的主入口，重点说明三类内容：
 
 - 如何在 `pnpm` workspace 中进行开发与协作
 - 如何以桌面端、原生 Server、Docker、Kubernetes 等方式交付应用
@@ -63,7 +63,7 @@ features:
 - `/claw/internal/v1/*`
 - `/claw/manage/v1/*`
 
-请结合 [API 总览](/zh-CN/reference/api-reference) 查看接口分层，再结合 [Claw Server 运行时](/zh-CN/reference/clawstudio-server-runtime) 查看运行时行为细节。
+请结合 [API 总览](/zh-CN/reference/api-reference) 查看接口分层，再结合 [Claw Server 运行时](/zh-CN/reference/agentstudio-server-runtime) 查看运行时行为细节。
 
 > `docs/plans` 与 `docs/superpowers` 中的历史计划文档会继续保留，但它们不会进入公开搜索索引。对外文档只应描述当前已实现行为，或明确标注为未来规划的边界。
 

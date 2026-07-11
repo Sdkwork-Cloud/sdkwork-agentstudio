@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.database.module",
+  "moduleId": "sdkwork-agentstudio",
+  "serviceCode": "agentstudio",
+  "displayName": "SdkWork Agent Studio Database",
+  "owner": "sdkwork-agentstudio",
+  "engines": ["sqlite"],
+  "defaultEngine": "sqlite",
+  "tablePrefix": "",
+  "contractVersion": "0.1.0",
+  "baselineStrategy": "migration",
+  "modules": [],
+  "lifecycle": {
+    "autoMigrate": true,
+    "seedOnBoot": true,
+    "defaultSeedLocale": "zh-CN",
+    "defaultSeedProfile": "standard",
+    "activeSeedLocales": ["zh-CN"],
+    "driftCheckIntervalSec": 60
+  },
+  "paths": {
+    "contract": "contract/schema.yaml",
+    "migrations": "migrations",
+    "seeds": "seeds",
+    "driftPolicy": "drift/policy.yaml"
+  },
+  "spi": {
+    "module": "DefaultDatabaseModule"
+  }
+}

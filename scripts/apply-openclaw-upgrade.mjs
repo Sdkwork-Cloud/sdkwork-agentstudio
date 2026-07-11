@@ -37,7 +37,7 @@ export async function readOpenClawVersionState({
     path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-clawstudio-desktop',
+      'sdkwork-agentstudio-pc-desktop',
       'src-tauri',
       'resources',
       'openclaw',
@@ -48,7 +48,7 @@ export async function readOpenClawVersionState({
     path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-clawstudio-desktop',
+      'sdkwork-agentstudio-pc-desktop',
       'src-tauri',
       'generated',
       'release',
@@ -60,7 +60,7 @@ export async function readOpenClawVersionState({
     path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-clawstudio-desktop',
+      'sdkwork-agentstudio-pc-desktop',
       'src-tauri',
       'resources',
       'openclaw',

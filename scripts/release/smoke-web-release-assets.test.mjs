@@ -66,7 +66,7 @@ function writeWebReleaseFixture({
   records = [],
 } = {}) {
   const webDir = path.join(releaseAssetsDir, 'web');
-  const archiveBaseName = `claw-studio-web-assets-${releaseTag}`;
+  const archiveBaseName = `agent-studio-web-assets-${releaseTag}`;
   const archiveRelativePath = `${archiveBaseName}.tar.gz`;
   const archivePath = path.join(releaseAssetsDir, archiveRelativePath);
 
@@ -88,8 +88,8 @@ function writeWebReleaseFixture({
   writeFileSync(
     path.join(webDir, 'release-asset-manifest.json'),
     `${JSON.stringify({
-      profileId: 'claw-studio',
-      productName: 'Claw Studio',
+      profileId: 'agent-studio',
+      productName: 'Agent Studio',
       releaseTag,
       platform: 'web',
       arch: 'any',
@@ -126,7 +126,7 @@ function buildPassingArchiveRecords(bundleRoot) {
     }),
     createTarRecord({
       name: `${bundleRoot}/web/dist/assets/index.js`,
-      content: 'console.log("claw studio");\n',
+      content: 'console.log("Agent Studio");\n',
     }),
     createTarRecord({
       name: `${bundleRoot}/docs/dist/index.html`,
@@ -142,7 +142,7 @@ function buildPassingArchiveRecords(bundleRoot) {
         {
           title: 'Getting Started',
           url: '/guide/getting-started',
-          text: 'Start with Claw Studio',
+          text: 'Start with Agent Studio',
         },
       ])}\n`,
     }),
@@ -165,7 +165,7 @@ test('web release smoke validates the packaged archive and records release evide
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-web-smoke-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const releaseTag = 'release-2026-04-11-01';
-  const archiveBaseName = `claw-studio-web-assets-${releaseTag}`;
+  const archiveBaseName = `agent-studio-web-assets-${releaseTag}`;
 
   try {
     const fixture = writeWebReleaseFixture({
@@ -211,7 +211,7 @@ test('web release smoke rejects archives that leak internal documentation into p
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-web-smoke-internal-docs-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const releaseTag = 'release-2026-04-11-02';
-  const archiveBaseName = `claw-studio-web-assets-${releaseTag}`;
+  const archiveBaseName = `agent-studio-web-assets-${releaseTag}`;
 
   try {
     writeWebReleaseFixture({
@@ -244,7 +244,7 @@ test('web release smoke rejects internal documentation directory entries', async
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-web-smoke-internal-dir-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const releaseTag = 'release-2026-04-11-04';
-  const archiveBaseName = `claw-studio-web-assets-${releaseTag}`;
+  const archiveBaseName = `agent-studio-web-assets-${releaseTag}`;
 
   try {
     writeWebReleaseFixture({
@@ -278,7 +278,7 @@ test('web release smoke rejects duplicate normalized archive entries', async () 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-web-smoke-duplicate-entry-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const releaseTag = 'release-2026-04-11-05';
-  const archiveBaseName = `claw-studio-web-assets-${releaseTag}`;
+  const archiveBaseName = `agent-studio-web-assets-${releaseTag}`;
 
   try {
     writeWebReleaseFixture({
@@ -311,7 +311,7 @@ test('web release smoke rejects symlink archive entries', async () => {
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-web-smoke-symlink-entry-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const releaseTag = 'release-2026-04-11-06';
-  const archiveBaseName = `claw-studio-web-assets-${releaseTag}`;
+  const archiveBaseName = `agent-studio-web-assets-${releaseTag}`;
 
   try {
     writeWebReleaseFixture({
@@ -345,7 +345,7 @@ test('web release smoke rejects stale manifest checksums before recording eviden
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-web-smoke-checksum-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const releaseTag = 'release-2026-04-11-03';
-  const archiveBaseName = `claw-studio-web-assets-${releaseTag}`;
+  const archiveBaseName = `agent-studio-web-assets-${releaseTag}`;
 
   try {
     const fixture = writeWebReleaseFixture({

@@ -9,25 +9,25 @@
 ## Attempt Outcome
 
 - The loop repaired one remaining Gemini native request-serving hotspot:
-  - `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned the Gemini-native models and model-action handlers even though they formed a self-contained native protocol boundary
+  - `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs` still owned the Gemini-native models and model-action handlers even though they formed a self-contained native protocol boundary
   - `scripts/check-desktop-platform-foundation.mjs` did not yet freeze that Gemini native boundary
 - Implemented the narrow repairs:
-  - added `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
+  - added `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
   - delegated router registration through `get(gemini_native::models_handler_v1beta)`, `post(gemini_native::model_action_handler_v1beta)`, and `post(gemini_native::model_action_handler_v1)` from `local_ai_proxy.rs`
   - moved the Gemini native model-list handler, model-action handlers, model-action parser, and supported-generation-method helper into the same module
   - removed the obsolete in-file Gemini native handler stack from `local_ai_proxy.rs`
   - tightened the desktop foundation gate so the Gemini native module file, declaration, router delegations, and old-handler removal are now required
 - Fresh verification:
   - `node scripts/check-desktop-platform-foundation.mjs`
-  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_gemini_`
-  - `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_`
+  - `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_gemini_`
+  - `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_`
   - `pnpm.cmd check:desktop-openclaw-runtime`
   - `pnpm.cmd check:desktop`
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
 - `scripts/check-desktop-platform-foundation.mjs`
 - `docs/review/step-03-local-ai-proxy-gemini-native-hotspot-split-2026-04-08.md`
 - `docs/架构/111-2026-04-08-local-ai-proxy-gemini-native-module-boundary.md`
@@ -38,8 +38,8 @@
 ## Verification Focus
 
 - `node scripts/check-desktop-platform-foundation.mjs`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_gemini_`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_gemini_`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml --target-dir target/step03-cp032-gemini-native local_ai_proxy_`
 - `pnpm.cmd check:desktop-openclaw-runtime`
 - `pnpm.cmd check:desktop`
 

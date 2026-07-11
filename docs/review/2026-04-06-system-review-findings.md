@@ -1,4 +1,4 @@
-# 2026-04-06 Claw Studio System Review Findings
+# 2026-04-06 Agent Studio System Review Findings
 
 ## Scope
 
@@ -28,11 +28,11 @@
 
 本轮新增复核到的直接证据：
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
   - 通过
-- `cargo test desktop_combined_hosted_startup_preflight_allows_browser_session_header_for_critical_routes --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml`
+- `cargo test desktop_combined_hosted_startup_preflight_allows_browser_session_header_for_critical_routes --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml`
   - 通过
-- `cargo test desktop_combined_hosted_startup_requests_include_cors_headers_on_successful_responses --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml`
+- `cargo test desktop_combined_hosted_startup_requests_include_cors_headers_on_successful_responses --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml`
   - 通过
 - `node scripts/desktop-hosted-runtime-regression-contract.test.mjs`
   - 初始失败，证明 `check:desktop` 之前并未强制执行桌面 hosted runtime 相关回归
@@ -45,9 +45,9 @@
 
 - 用户仍报告 `CORS`、`resolveHostedBasePath`、`browserBaseUrl unavailable`、OpenClaw 503、WebSocket refused 等问题。
 - 但当前源码里：
-  - `packages/sdkwork-clawstudio-server/src-host/src/http/router.rs` 已带 `host_control_plane_cors`
-  - `packages/sdkwork-clawstudio-server/src-host/src/main.rs` 已有桌面 browser-session CORS 预检与响应测试
-  - `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts` 已有 hosted runtime descriptor、session token、base path 逻辑
+  - `packages/sdkwork-agentstudio-pc-server/src-host/src/http/router.rs` 已带 `host_control_plane_cors`
+  - `packages/sdkwork-agentstudio-pc-server/src-host/src/main.rs` 已有桌面 browser-session CORS 预检与响应测试
+  - `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.ts` 已有 hosted runtime descriptor、session token、base path 逻辑
 
 判断：
 
@@ -69,9 +69,9 @@
 现象：
 
 - 以下关键回归原本存在，却未进入强制桌面验证链路：
-  - `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
-  - `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
-  - `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
+  - `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
+  - `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
+  - `packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
 
 影响：
 
@@ -199,7 +199,7 @@ Still open for this area:
 Closed in this iteration:
 
 - the Node TypeScript regression loader now resolves the sibling workspace package `@sdkwork/core-pc-react`
-- the loader now resolves the exported subpaths used by Claw Studio:
+- the loader now resolves the exported subpaths used by Agent Studio:
   - `@sdkwork/core-pc-react/app`
   - `@sdkwork/core-pc-react/env`
   - `@sdkwork/core-pc-react/runtime`
@@ -210,8 +210,8 @@ Closed in this iteration:
 Fresh evidence:
 
 - `node scripts/ts-extension-loader.test.mjs`
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-settings/src/services/localAiProxyLogsService.test.ts','packages/sdkwork-clawstudio-core/src/services/kernelPlatformService.test.ts']))"`
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-settings/src/services/localAiProxyLogsService.test.ts','packages/sdkwork-agentstudio-pc-core/src/services/kernelPlatformService.test.ts']))"`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.test.ts packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
 
 Still open for this area:
 
@@ -286,7 +286,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 
@@ -338,7 +338,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`
@@ -369,7 +369,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`
@@ -402,7 +402,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`
@@ -431,7 +431,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`
@@ -463,7 +463,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceFileWorkbench.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceFileWorkbench.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 Verification note:
@@ -497,8 +497,8 @@ Closed in this iteration:
 - stale built-in snapshot metadata no longer allows local conversation snapshot
   reads while detail authority says the managed OpenClaw runtime is not ready
 - focused regressions now lock both user-visible failure modes:
-  - `packages/sdkwork-clawstudio-chat/src/store/chatStoreAuthority.test.ts`
-  - `packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.test.ts`
+  - `packages/sdkwork-agentstudio-pc-chat/src/store/chatStoreAuthority.test.ts`
+  - `packages/sdkwork-agentstudio-pc-chat/src/store/studioConversationGateway.test.ts`
 
 Fresh evidence:
 
@@ -529,7 +529,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-shell/src/application/layouts/chatRuntimeWarmersPolicy.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-shell/src/application/layouts/chatRuntimeWarmersPolicy.test.ts`
 - `pnpm.cmd check:sdkwork-shell`
 - `pnpm.cmd lint`
 
@@ -555,7 +555,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/runtime/openClawGatewayConnectionsPolicy.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-chat/src/runtime/openClawGatewayConnectionsPolicy.test.ts`
 - `node scripts/run-sdkwork-chat-check.mjs`
 - `pnpm.cmd lint`
 
@@ -572,7 +572,7 @@ Still open after this iteration:
 
 Closed in this iteration:
 
-- `sdkwork-clawstudio-core` task routing no longer treats
+- `sdkwork-agentstudio-pc-core` task routing no longer treats
   `runtimeKind === "openclaw"` as proof that gateway cron APIs are the
   authoritative task surface
 - backend-authored OpenClaw workbench tasks now stay on the backend/studio
@@ -641,13 +641,13 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `cargo test --manifest-path packages/sdkwork-clawstudio-host-studio/src-host/Cargo.toml hides_console_launch_while_runtime_is_offline`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml hides_console_launch_while_runtime_is_offline`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-host-studio/src-host/Cargo.toml console_launch`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-host-studio/src-host/Cargo.toml default_provider_local_external_openclaw_detail_exposes_console_access_without_workbench`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml console_launch`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml local_external_openclaw_detail_reads_install_record_for_console_auto_login`
-- `cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml remote_openclaw_instance_detail_does_not_reuse_built_in_local_workbench`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-host-studio/src-host/Cargo.toml hides_console_launch_while_runtime_is_offline`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml hides_console_launch_while_runtime_is_offline`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-host-studio/src-host/Cargo.toml console_launch`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-host-studio/src-host/Cargo.toml default_provider_local_external_openclaw_detail_exposes_console_access_without_workbench`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml console_launch`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml local_external_openclaw_detail_reads_install_record_for_console_auto_login`
+- `cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml remote_openclaw_instance_detail_does_not_reuse_built_in_local_workbench`
 
 Still open after this iteration:
 
@@ -674,7 +674,7 @@ Closed in this iteration:
 Fresh evidence:
 
 - focused TypeScript check for
-  `packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService.test.ts`
+  `packages/sdkwork-agentstudio-pc-chat/src/services/instanceChatRouteService.test.ts`
 - focused TypeScript check for `scripts/sdkwork-chat-contract.test.ts`
 - `node scripts/run-sdkwork-chat-check.mjs`
 - `pnpm.cmd lint`
@@ -703,7 +703,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`
@@ -733,8 +733,8 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `cargo test control_plane_manage_openclaw_provider_reports_gateway_invoke_available_when_gateway_is_ready --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml`
-- `cargo test internal_host_platform_route_reports_gateway_invoke_available_when_control_plane_gateway_is_ready --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml`
+- `cargo test control_plane_manage_openclaw_provider_reports_gateway_invoke_available_when_gateway_is_ready --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml`
+- `cargo test internal_host_platform_route_reports_gateway_invoke_available_when_control_plane_gateway_is_ready --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml`
 - `pnpm.cmd check:server`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd lint`
@@ -766,11 +766,11 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `cargo test built_in_instance_detail_projects_control_ui_base_path_into_live_gateway_websocket_url --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test built_in_instance_detail_exposes_console_access_with_auto_login_url --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test built_in_instance_detail_hides_live_gateway_endpoints_when_the_gateway_is_not_running --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
+- `cargo test built_in_instance_detail_projects_control_ui_base_path_into_live_gateway_websocket_url --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test built_in_instance_detail_exposes_console_access_with_auto_login_url --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test built_in_instance_detail_hides_live_gateway_endpoints_when_the_gateway_is_not_running --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
 - `pnpm.cmd check:desktop`
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-instances/src/services/instanceOnboardingService.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-instances/src/services/instanceOnboardingService.test.ts']))"`
 - `pnpm.cmd lint`
 
 Still open after this iteration:
@@ -779,7 +779,7 @@ Still open after this iteration:
   and websocket reachability is still needed beyond the current contract-level
   coverage
 - browser-only fallback normalization in
-  `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts` still needs
+  `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts` still needs
   targeted review if runtime evidence shows it can override canonical host
   metadata
 - upward validation for chat, notification, cron, proxy router, and instance
@@ -805,8 +805,8 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `cargo test managed_openclaw_gateway_projection_projects_control_ui_base_path_into_websocket_url --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test built_in_instance_detail_projects_control_ui_base_path_into_live_gateway_websocket_url --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
+- `cargo test managed_openclaw_gateway_projection_projects_control_ui_base_path_into_websocket_url --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test built_in_instance_detail_projects_control_ui_base_path_into_live_gateway_websocket_url --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`
 
@@ -816,7 +816,7 @@ Still open after this iteration:
   dialability, and post-startup gateway reachability is still needed beyond the
   now-correct metadata projection
 - browser-only fallback normalization in
-  `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts` still needs
+  `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts` still needs
   targeted review if runtime evidence shows it can override canonical host
   metadata
 - upward validation for chat, notification, cron, proxy router, and instance
@@ -840,7 +840,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`
@@ -848,7 +848,7 @@ Fresh evidence:
 Still open after this iteration:
 
 - browser-only fallback normalization in
-  `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts` still needs
+  `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts` still needs
   targeted review if any renderer path can override canonical host-published
   runtime truth
 - launched-session validation for chat, notification, cron, proxy router, and
@@ -870,8 +870,8 @@ Closed in this iteration:
   desktop authority is active, preventing a second overwrite path after desktop
   startup sequencing has already been corrected
 - `check:sdkwork-foundation` now executes the real platform source tests:
-  - `packages/sdkwork-clawstudio-infrastructure/src/platform/registry.test.ts`
-  - `packages/sdkwork-clawstudio-infrastructure/src/platform/serverBrowserBridge.test.ts`
+  - `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/registry.test.ts`
+  - `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/serverBrowserBridge.test.ts`
 
 Fresh evidence:
 
@@ -895,7 +895,7 @@ Still open after this iteration:
 Closed in this iteration:
 
 - the user-facing chat send/stream path in
-  `packages/sdkwork-clawstudio-chat/src/services/chatService.ts` no longer resolves
+  `packages/sdkwork-agentstudio-pc-chat/src/services/chatService.ts` no longer resolves
   OpenClaw route truth from `studio.getInstance(...)` alone
 - `chatService` now uses the same authoritative instance-detail route resolver
   already used by chat store hydration, conversation snapshots, and the shared
@@ -906,7 +906,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-chat/src/services/chatService.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-chat/src/services/chatService.test.ts']))"`
 - `pnpm.cmd check:sdkwork-chat`
 
 Still open after this iteration:
@@ -921,7 +921,7 @@ Still open after this iteration:
 
 Closed in this iteration:
 
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`
   no longer treats `runtimeKind === "openclaw"` as enough evidence to route
   task creation or task updates through direct gateway cron APIs
 - backend-authored OpenClaw workbench sessions now keep task create/update on
@@ -932,7 +932,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts']))"`
 - `node scripts/run-sdkwork-instances-check.mjs`
 - `pnpm.cmd check:sdkwork-instances`
 
@@ -950,7 +950,7 @@ Closed in this iteration:
 - explicit "set as active" actions in the instances feature no longer use
   `instance.status === 'online'` as a page-local gate
 - active-instance selection is now modeled in
-  `packages/sdkwork-clawstudio-instances/src/services/instanceActionCapabilities.ts`
+  `packages/sdkwork-agentstudio-pc-instances/src/services/instanceActionCapabilities.ts`
   so instance list and instance detail consume the same shared rule
 - offline or startup-converging instances remain selectable as the active shell
   context, matching the existing header/sidebar switcher behavior instead of
@@ -958,7 +958,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-instances/src/services/instanceActionCapabilities.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-instances/src/services/instanceActionCapabilities.test.ts']))"`
 - `node scripts/run-sdkwork-instances-check.mjs`
 
 Still open after this iteration:
@@ -975,7 +975,7 @@ Closed in this iteration:
 - shared OpenClaw management readiness no longer treats
   `detail.instance.status === 'online'` as the only proof that a config-backed
   gateway is ready
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
   now accepts runtime-observed readiness when `endpointObserved === true` and
   `detail.health.status !== 'offline'`
 - config-backed OpenClaw gateway management paths no longer reject a live
@@ -983,7 +983,7 @@ Closed in this iteration:
 
 Fresh evidence:
 
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.test.ts','packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.test.ts','packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts']))"`
 
 Still open after this iteration:
 
@@ -1010,7 +1010,7 @@ Fresh evidence:
 - `node scripts/tauri-dev-command-contract.test.mjs`
 - `node scripts/check-desktop-platform-foundation.mjs`
 - `node scripts/run-tauri-cli.mjs info`
-- `pnpm.cmd --dir packages/sdkwork-clawstudio-desktop tauri:info`
+- `pnpm.cmd --dir packages/sdkwork-agentstudio-pc-desktop tauri:info`
 - `pnpm.cmd tauri:info`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`

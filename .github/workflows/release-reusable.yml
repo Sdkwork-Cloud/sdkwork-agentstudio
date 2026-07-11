@@ -157,7 +157,7 @@ jobs:
           pnpm lint
           pnpm check:desktop
           pnpm check:server
-          node scripts/run-cargo.mjs test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml
+          node scripts/run-cargo.mjs test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml
           pnpm build
           pnpm server:build
           pnpm docs:build
@@ -251,14 +251,14 @@ jobs:
         if: contains(needs.prepare.outputs.package_profile_included_kernel_ids, 'openclaw')
         run: node scripts/run-desktop-release-build.mjs --profile ${{ inputs.release_profile }} --package-profile ${{ needs.prepare.outputs.package_profile_id }} --phase prepare-openclaw --target ${{ matrix.target }}
 
-      - name: Build Claw Studio desktop bundle on Windows
+      - name: Build Agent Studio desktop bundle on Windows
         if: matrix.platform == 'windows'
         env:
           CMAKE_GENERATOR: Visual Studio 17 2022
           HOST_CMAKE_GENERATOR: Visual Studio 17 2022
         run: node scripts/run-desktop-release-build.mjs --profile ${{ inputs.release_profile }} --package-profile ${{ needs.prepare.outputs.package_profile_id }} --phase bundle --target ${{ matrix.target }}
 
-      - name: Build Claw Studio desktop bundle on Unix
+      - name: Build Agent Studio desktop bundle on Unix
         if: matrix.platform != 'windows'
         run: node scripts/run-desktop-release-build.mjs --profile ${{ inputs.release_profile }} --package-profile ${{ needs.prepare.outputs.package_profile_id }} --phase bundle --target ${{ matrix.target }}
 
@@ -415,7 +415,7 @@ jobs:
         run: pnpm build
 
       - name: Build server binary
-        run: node scripts/run-clawstudio-server-build.mjs --target ${{ matrix.target }}
+        run: node scripts/run-agentstudio-server-build.mjs --target ${{ matrix.target }}
 
       - name: Package server release assets
         run: node scripts/release/package-release-assets.mjs server --profile ${{ inputs.release_profile }} --release-tag ${{ needs.prepare.outputs.release_tag }} --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --target ${{ matrix.target }} --output-dir artifacts/release
@@ -497,7 +497,7 @@ jobs:
         run: pnpm build
 
       - name: Build server binary
-        run: node scripts/run-clawstudio-server-build.mjs --target ${{ matrix.target }}
+        run: node scripts/run-agentstudio-server-build.mjs --target ${{ matrix.target }}
 
       - name: Package container release assets
         run: node scripts/release/package-release-assets.mjs container --profile ${{ inputs.release_profile }} --release-tag ${{ needs.prepare.outputs.release_tag }} --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --target ${{ matrix.target }} --accelerator ${{ matrix.accelerator }} --output-dir artifacts/release
@@ -525,7 +525,7 @@ jobs:
               ;;
           esac
           {
-            echo "image_repository=ghcr.io/${owner}/claw-studio-server"
+            echo "image_repository=ghcr.io/${owner}/agent-studio-server"
             echo "image_tag=${{ needs.prepare.outputs.release_tag }}-linux-${{ matrix.arch }}"
             echo "docker_platform=${docker_platform}"
           } >> "$GITHUB_OUTPUT"
@@ -581,7 +581,7 @@ jobs:
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.version=${{ needs.prepare.outputs.release_tag }}
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.title=claw-studio-server
+            org.opencontainers.image.title=agent-studio-server
 
       - name: Record published OCI image metadata
         if: matrix.accelerator == 'cpu'

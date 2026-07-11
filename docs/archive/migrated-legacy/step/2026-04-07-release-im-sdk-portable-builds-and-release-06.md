@@ -9,17 +9,17 @@
 ## Problems Found
 
 1. `release-2026-04-07-05` was documented as published even though the GitHub Actions release run failed and no successful GitHub Release publication was confirmed.
-2. In a clean-room Claw Studio workspace, `pnpm prepare:shared-sdk` only built `@sdkwork/sdk-common` and `retired generic app SDK package`, leaving the IM TypeScript packages without `dist` type output even though `@sdkwork/core-pc-react` imports them during `pnpm lint`.
-3. On Windows, `scripts/prepare-shared-sdk-packages.mjs` assumed `.pnpm` virtual-store directories always kept the full package name prefix, which breaks when pnpm shortens long directory names.
+2. In a clean-room Agent Studio workspace, `pnpm sdk:prepare-shared` only built `@sdkwork/sdk-common` and `retired generic app SDK package`, leaving the IM TypeScript packages without `dist` type output even though `@sdkwork/core-pc-react` imports them during `pnpm lint`.
+3. On Windows, `scripts/prepare-shared-sdk-packages.mjs` assumed `.pnpm` virtual-store directories always kept the full package name prefix, which breaks when pnpm's virtual store shortens long directory names.
 4. Even after IM package roots were materialized, `Sdkwork-Cloud/sdkwork-im-sdk` still failed in the clean-room release workspace because the TypeScript `composed` and `adapter-wukongim` packages invoked `vite` and `tsc` through hard-coded `../../../node_modules/*` paths.
-5. The first Claw Studio pin update used an incorrect full Git SHA for the new IM SDK commit, which parity verification correctly rejected before release.
+5. The first Agent Studio pin update used an incorrect full Git SHA for the new IM SDK commit, which parity verification correctly rejected before release.
 
 ## Root Cause Evidence
 
 ### Clean-room reproduction
 
 1. A fresh workspace clone under `D:\\temp\\claw-release-repro` reproduced the release-only failure path instead of relying on the existing multi-repo local environment.
-2. Before any fixes, `pnpm prepare:shared-sdk` in that clean room failed on Windows because `resolveWorkspaceInstalledPackageRoot()` could not find `@typescript-eslint/eslint-plugin` once pnpm shortened the `.pnpm` directory name.
+2. Before any fixes, `pnpm sdk:prepare-shared` in that clean room failed on Windows because `resolveWorkspaceInstalledPackageRoot()` could not find `@typescript-eslint/eslint-plugin` once pnpm's virtual store shortened the `.pnpm` directory name.
 3. After fixing that resolver, the same clean room advanced to the GitHub-matching failure: `pnpm lint` reported missing modules for:
    - `@sdkwork/im-sdk`
    - `@sdkwork/rtc-sdk`
@@ -29,7 +29,7 @@
 
 1. After extending `prepare-shared-sdk-packages.mjs` to build the IM/RTC package chain, the next clean-room failure moved into the legacy realtime adapter package.
 2. That package failed with a missing monorepo-local `vite` path, proving the build script depended on one specific repository directory layout instead of package-local tool resolution.
-3. Updating the IM TypeScript package scripts to `vite build` and `tsc -p tsconfig.build.json --noEmit`, plus explicit `devDependencies`, made both packages build successfully in the Claw Studio workspace.
+3. Updating the IM TypeScript package scripts to `vite build` and `tsc -p tsconfig.build.json --noEmit`, plus explicit `devDependencies`, made both packages build successfully in the Agent Studio workspace.
 4. The portable IM SDK fix was committed and pushed to `Sdkwork-Cloud/sdkwork-im-sdk` as `c71a0f115c08cb164d5a857cdac15ea6d3adc006`.
 
 ### Pin verification evidence
@@ -40,7 +40,7 @@
 
 ## Changes Landed
 
-### Claw Studio workspace
+### Agent Studio workspace
 
 - Extended `scripts/prepare-shared-sdk-packages.mjs` to:
   - expose IM package roots in the shared SDK context
@@ -78,7 +78,7 @@ pnpm lint
 pnpm check:desktop
 pnpm check:server
 pnpm build
-pnpm server:build
+pnpm build:server
 pnpm docs:build
 ```
 
@@ -87,11 +87,11 @@ Observed result:
 1. All release contract and shared SDK parity checks passed.
 2. `pnpm lint` passed after the IM SDK pin and shared SDK preparation fixes.
 3. `pnpm check:desktop` and `pnpm check:server` both passed.
-4. `pnpm build`, `pnpm server:build`, and `pnpm docs:build` all passed.
+4. `pnpm build`, `pnpm build:server`, and `pnpm docs:build` all passed.
 5. A clean-room reproduction under `D:\\temp\\claw-release-repro` advanced past the original IM SDK failure and consumed the pinned IM SDK commit `c71a0f115c08cb164d5a857cdac15ea6d3adc006`.
 
 ## Status
 
 - The release documentation is now consistent with the observed April 7 history.
 - The next release candidate is `release-2026-04-07-06`.
-- Remaining operational work: commit Claw Studio changes, push `main`, create the new release tag, and confirm the GitHub Release succeeds before marking `release-2026-04-07-06` as published.
+- Remaining operational work: commit Agent Studio changes, push `main`, create the new release tag, and confirm the GitHub Release succeeds before marking `release-2026-04-07-06` as published.

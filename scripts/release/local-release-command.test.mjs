@@ -18,13 +18,13 @@ test('local release helper resolves usable defaults for root release commands', 
     platform: 'win32',
     arch: 'x64',
     resolveGitRepositoryFn() {
-      return 'Sdkwork-Cloud/claw-studio';
+      return 'Sdkwork-Cloud/agent-studio';
     },
   });
 
   assert.equal(planContext.releaseTag, 'release-local');
-  assert.equal(planContext.profileId, 'claw-studio');
-  assert.equal(planContext.repository, 'Sdkwork-Cloud/claw-studio');
+  assert.equal(planContext.profileId, 'agent-studio');
+  assert.equal(planContext.repository, 'Sdkwork-Cloud/agent-studio');
 
   const serverContext = helper.resolveLocalReleaseContext({
     mode: 'package:server',
@@ -176,7 +176,7 @@ test('local release helper resolves usable defaults for root release commands', 
     platform: 'win32',
     arch: 'x64',
     resolveGitRepositoryFn() {
-      return 'Sdkwork-Cloud/claw-studio';
+      return 'Sdkwork-Cloud/agent-studio';
     },
   });
 
@@ -195,7 +195,7 @@ test('local release helper resolves usable defaults for root release commands', 
       repository: 'Cli-Owner/cli-repo',
     },
     resolveGitRepositoryFn() {
-      return 'Sdkwork-Cloud/claw-studio';
+      return 'Sdkwork-Cloud/agent-studio';
     },
   });
 
@@ -210,7 +210,7 @@ test('local release helper resolves usable defaults for root release commands', 
     platform: 'win32',
     arch: 'x64',
     resolveGitRepositoryFn() {
-      return 'Sdkwork-Cloud/claw-studio';
+      return 'Sdkwork-Cloud/agent-studio';
     },
   });
 
@@ -227,7 +227,7 @@ test('local release helper forwards explicit partial finalization intent', async
     env: {},
     releaseTag: 'release-2026-04-11-06',
     releaseAssetsDir: 'D:/synthetic/release-assets',
-    repository: 'Sdkwork-Cloud/claw-studio',
+    repository: 'Sdkwork-Cloud/agent-studio',
     allowPartialRelease: true,
     finalizeReleaseAssetsFn(options) {
       finalizeCalls.push(options);
@@ -240,9 +240,9 @@ test('local release helper forwards explicit partial finalization intent', async
     releaseAssetsDir: call.releaseAssetsDir.replaceAll('\\', '/'),
   })), [
     {
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-2026-04-11-06',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       releaseAssetsDir: 'D:/synthetic/release-assets',
       allowPartialRelease: true,
     },
@@ -274,7 +274,7 @@ test('local release helper forwards release readiness assertions through the fin
     })),
     [
       {
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseAssetsDir: 'D:/synthetic/release-assets',
       },
     ],
@@ -307,13 +307,13 @@ test('local release helper prints machine-readable release status for an empty r
       releaseTag: 'release-2026-04-18-01',
       releaseAssetsDir,
       resolveGitRepositoryFn() {
-        return 'Sdkwork-Cloud/claw-studio';
+        return 'Sdkwork-Cloud/agent-studio';
       },
     });
 
     const status = JSON.parse(stdoutChunks.join(''));
     assert.equal(result.mode, 'status');
-    assert.equal(status.profileId, 'claw-studio');
+    assert.equal(status.profileId, 'agent-studio');
     assert.equal(status.releaseTag, 'release-2026-04-18-01');
     assert.equal(status.releaseAssetsDir.replaceAll('\\', '/'), releaseAssetsDir.replaceAll('\\', '/'));
     assert.equal(status.releaseAssetsDirExists, false);
@@ -374,7 +374,7 @@ test('local release helper reports partial release status from existing partial 
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'claw-release-status-web-'));
   const releaseAssetsDir = path.join(tempRoot, 'release-assets');
   const webDir = path.join(releaseAssetsDir, 'web');
-  const webArchiveRelativePath = 'web/claw-studio-web-assets-release-2026-04-18-01.tar.gz';
+  const webArchiveRelativePath = 'web/agent-studio-web-assets-release-2026-04-18-01.tar.gz';
   const stdoutChunks = [];
   const originalWrite = process.stdout.write;
 
@@ -392,7 +392,7 @@ test('local release helper reports partial release status from existing partial 
     fs.writeFileSync(
       path.join(webDir, 'release-asset-manifest.json'),
       `${JSON.stringify({
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         releaseTag: 'release-2026-04-18-01',
         family: 'web',
         platform: 'web',
@@ -416,7 +416,7 @@ test('local release helper reports partial release status from existing partial 
       releaseTag: 'release-2026-04-18-01',
       releaseAssetsDir,
       resolveGitRepositoryFn() {
-        return 'Sdkwork-Cloud/claw-studio';
+        return 'Sdkwork-Cloud/agent-studio';
       },
     });
 
@@ -462,8 +462,8 @@ test('local release helper always refreshes server prerequisites for local serve
 
   const buildCalls = [];
   const existingBinaries = new Set([
-    'D:/synthetic/clawstudio-server.exe',
-    'D:/synthetic/clawstudio-server',
+    'D:/synthetic/agentstudio-server.exe',
+    'D:/synthetic/agentstudio-server',
   ]);
   const serverResult = helper.ensureLocalServerBuildPrerequisite({
     context: {
@@ -475,7 +475,7 @@ test('local release helper always refreshes server prerequisites for local serve
       return existingBinaries.has(targetPath);
     },
     resolveBinaryPath() {
-      return 'D:/synthetic/clawstudio-server.exe';
+      return 'D:/synthetic/agentstudio-server.exe';
     },
     runServerBuildFn(options) {
       buildCalls.push(options);
@@ -492,7 +492,7 @@ test('local release helper always refreshes server prerequisites for local serve
       return existingBinaries.has(targetPath);
     },
     resolveBinaryPath() {
-      return 'D:/synthetic/clawstudio-server';
+      return 'D:/synthetic/agentstudio-server';
     },
     runServerBuildFn(options) {
       buildCalls.push(options);
@@ -504,11 +504,11 @@ test('local release helper always refreshes server prerequisites for local serve
     { targetTriple: 'x86_64-unknown-linux-gnu' },
   ]);
   assert.deepEqual(serverResult, {
-    binaryPath: 'D:/synthetic/clawstudio-server.exe',
+    binaryPath: 'D:/synthetic/agentstudio-server.exe',
     built: true,
   });
   assert.deepEqual(containerResult, {
-    binaryPath: 'D:/synthetic/clawstudio-server',
+    binaryPath: 'D:/synthetic/agentstudio-server',
     built: true,
   });
 });
@@ -533,11 +533,11 @@ test('local release helper rejects server prerequisite builds that do not materi
         return false;
       },
       resolveBinaryPath() {
-        return 'D:/synthetic/clawstudio-server';
+        return 'D:/synthetic/agentstudio-server';
       },
       runServerBuildFn() {},
     }),
-    /Server build completed without producing the canonical binary at D:\/synthetic\/clawstudio-server/i,
+    /Server build completed without producing the canonical binary at D:\/synthetic\/agentstudio-server/i,
   );
 
   assert.equal(existenceChecks, 1);
@@ -557,7 +557,7 @@ test('local release helper auto-builds stale desktop prerequisites for local des
   const result = helper.ensureLocalDesktopBuildPrerequisite({
     context: {
       mode: 'package:desktop',
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       target: 'x86_64-pc-windows-msvc',
     },
     fileExists() {
@@ -578,7 +578,7 @@ test('local release helper auto-builds stale desktop prerequisites for local des
 
   assert.deepEqual(buildCalls, [
     {
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       targetTriple: 'x86_64-pc-windows-msvc',
     },
   ]);
@@ -601,7 +601,7 @@ test('local release helper rejects desktop prerequisite builds that do not mater
     () => helper.ensureLocalDesktopBuildPrerequisite({
       context: {
         mode: 'package:desktop',
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         target: 'x86_64-pc-windows-msvc',
       },
       fileExists() {
@@ -632,7 +632,7 @@ test('local release helper runs desktop prerequisite builds through the unified 
 
   const spawnCalls = [];
   helper.runLocalDesktopBuild({
-    profileId: 'claw-studio',
+    profileId: 'agent-studio',
     targetTriple: 'x86_64-pc-windows-msvc',
     spawnSyncImpl(command, args, options) {
       spawnCalls.push({
@@ -652,7 +652,7 @@ test('local release helper runs desktop prerequisite builds through the unified 
       args: [
         path.join(rootDir, 'scripts', 'run-desktop-release-build.mjs'),
         '--profile',
-        'claw-studio',
+        'agent-studio',
         '--target',
         'x86_64-pc-windows-msvc',
       ],
@@ -967,7 +967,7 @@ test('local release helper forwards the resolved package profile into plan gener
     assert.equal(context.packageProfileId, 'dual-kernel');
     assert.deepEqual(planCalls, [
       {
-        profileId: 'claw-studio',
+        profileId: 'agent-studio',
         packageProfileId: 'dual-kernel',
         releaseTag: 'release-local',
         gitRef: 'refs/tags/release-local',
@@ -1188,7 +1188,7 @@ test('local release helper runs web prerequisite builds through canonical local 
         command: process.execPath,
         args: [path.join(rootDir, 'scripts', 'run-vite-host.mjs'), 'build', '--mode', 'production'],
         options: {
-          cwd: path.join(rootDir, 'packages', 'sdkwork-clawstudio-web'),
+          cwd: path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-web'),
           shell: false,
           stdio: 'inherit',
           windowsHide: true,
@@ -1290,9 +1290,9 @@ test('release readiness fixture generator creates a complete default-profile pub
   try {
     const result = fixture.writeReleaseReadinessFixture({
       releaseAssetsDir,
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-fixture',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
     });
 
     assert.equal(result.releaseAssetsDir, releaseAssetsDir);
@@ -1301,7 +1301,7 @@ test('release readiness fixture generator creates a complete default-profile pub
     assert.equal(result.releasePlanTargetCount, 25);
 
     const plan = releasePlan.createReleasePlan({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-fixture',
     });
 
@@ -1311,7 +1311,7 @@ test('release readiness fixture generator creates a complete default-profile pub
 
     const readinessResult = readiness.assertReleaseReadiness({
       releaseAssetsDir,
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
     });
 
     assert.equal(readinessResult.artifactCount, 25);
@@ -1361,7 +1361,7 @@ test('release readiness fixture generator writes smoke manifests for the selecte
       releaseAssetsDir,
       profileId: profile.id,
       releaseTag: 'release-fixture',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       resolveReleaseProfileFn(requestedProfileId) {
         assert.equal(requestedProfileId, profile.id);
         return profile;
@@ -1436,7 +1436,7 @@ test('release readiness fixture generator requires release plan target count met
         releaseAssetsDir,
         profileId: profile.id,
         releaseTag: 'release-fixture',
-        repository: 'Sdkwork-Cloud/claw-studio',
+        repository: 'Sdkwork-Cloud/agent-studio',
         resolveReleaseProfileFn() {
           return profile;
         },
@@ -1463,9 +1463,9 @@ test('release readiness fixture generator refuses to clean real release asset di
   assert.throws(
     () => fixture.writeReleaseReadinessFixture({
       releaseAssetsDir: path.join(rootDir, 'artifacts', 'release'),
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-fixture',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       clean: true,
     }),
     /Refusing to clean unsafe release readiness fixture directory/,
@@ -1482,9 +1482,9 @@ test('release readiness fixture generator refuses to clean non-temporary externa
   assert.throws(
     () => fixture.writeReleaseReadinessFixture({
       releaseAssetsDir: externalOutputDir,
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       releaseTag: 'release-fixture',
-      repository: 'Sdkwork-Cloud/claw-studio',
+      repository: 'Sdkwork-Cloud/agent-studio',
       clean: true,
     }),
     /Refusing to use release readiness fixture directory outside the workspace or system temporary directory/,

@@ -115,9 +115,9 @@ const zhSidebar = {
 };
 
 export default {
-  title: 'Claw Studio',
+  title: 'Agent Studio',
   description:
-    'Official Claw Studio documentation for web, desktop, native server, container, and Kubernetes deployment modes.',
+    'Official Agent Studio documentation for web, desktop, native server, container, and Kubernetes deployment modes.',
   cleanUrls: true,
   lastUpdated: false,
   srcExclude: publicDocsSrcExclude,
@@ -130,13 +130,13 @@ export default {
     ['link', { rel: 'icon', href: '/logo.svg' }],
     ['meta', { name: 'theme-color', content: '#0f766e' }],
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'Claw Studio' }],
+    ['meta', { property: 'og:title', content: 'Agent Studio' }],
     [
       'meta',
       {
         property: 'og:description',
         content:
-          'Official Claw Studio documentation for the package-first workspace, native control plane, and release system.',
+          'Official Agent Studio documentation for the package-first workspace, native control plane, and release system.',
       },
     ],
     ['meta', { property: 'og:image', content: '/social-card.svg' }],
@@ -160,8 +160,8 @@ export default {
           label: 'On this page',
         },
         footer: {
-          message: 'Built for a package-first Claw Studio workspace and unified host platform.',
-          copyright: 'Copyright (c) 2026 Claw Studio contributors',
+          message: 'Built for a package-first Agent Studio workspace and unified host platform.',
+          copyright: 'Copyright (c) 2026 Agent Studio contributors',
         },
         docFooter: {
           prev: 'Previous page',
@@ -178,7 +178,7 @@ export default {
       lang: 'zh-CN',
       link: '/zh-CN/',
       description:
-        'Official Claw Studio documentation for web, desktop, native server, container, and Kubernetes deployment modes.',
+        'Official Agent Studio documentation for web, desktop, native server, container, and Kubernetes deployment modes.',
       themeConfig: {
         nav: zhNav,
         sidebar: zhSidebar,
@@ -187,8 +187,8 @@ export default {
           label: 'On this page',
         },
         footer: {
-          message: 'Built for a package-first Claw Studio workspace and unified host platform.',
-          copyright: 'Copyright (c) 2026 Claw Studio contributors',
+          message: 'Built for a package-first Agent Studio workspace and unified host platform.',
+          copyright: 'Copyright (c) 2026 Agent Studio contributors',
         },
         docFooter: {
           prev: 'Previous page',

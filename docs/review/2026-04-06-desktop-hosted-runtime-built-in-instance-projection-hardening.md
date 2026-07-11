@@ -5,7 +5,7 @@
 This iteration hardened the desktop hosted runtime readiness probe so it no
 longer treats the built-in instance as ready based only on matching URLs.
 
-That earlier behavior was too weak for the current Claw Studio architecture.
+That earlier behavior was too weak for the current Agent Studio architecture.
 Several downstream paths do not merely require a loopback URL. They require the
 built-in instance to be projected as the specific managed OpenClaw shape the
 desktop host promises:
@@ -32,13 +32,13 @@ built-in instance as a generic endpoint record.
 
 Concrete downstream examples:
 
-- `packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/services/instanceChatRouteService.ts`
   blocks built-in chat routing unless the managed OpenClaw instance is
   `local-managed` and `online`
-- `packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/store/studioConversationGateway.ts`
   only suppresses stale snapshot authority when the instance is projected as a
   managed OpenClaw instance
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchHydration.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchHydration.ts`
   uses `runtimeKind === "openclaw"` to decide whether OpenClaw workbench
   sections should hydrate lazily
 
@@ -59,7 +59,7 @@ truth.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.ts`
 
 Added evidence fields:
 
@@ -79,7 +79,7 @@ publication and URL alignment.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.ts`
 
 `assertDesktopHostedRuntimeReady(...)` now rejects when the built-in instance:
 
@@ -95,7 +95,7 @@ and instance workbench flows.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 
 New regressions:
 
@@ -112,7 +112,7 @@ projection.
 
 The following commands were executed after the fix:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`

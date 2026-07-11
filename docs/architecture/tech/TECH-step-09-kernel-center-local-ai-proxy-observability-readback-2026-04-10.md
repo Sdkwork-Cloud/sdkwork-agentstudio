@@ -22,8 +22,8 @@
   - `routeTests`
   - `messageCaptureEnabled`
   - `observabilityDbPath`
-- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts` dropped those fields when it shaped `dashboard.localAiProxy`.
-- `packages/sdkwork-clawstudio-settings/src/KernelCenter.tsx` therefore only showed lifecycle, URLs, ports, paths, and last error, which meant support and release-readiness work still could not read back route-level proxy observability from the kernel surface.
+- `packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.ts` dropped those fields when it shaped `dashboard.localAiProxy`.
+- `packages/sdkwork-agentstudio-pc-settings/src/KernelCenter.tsx` therefore only showed lifecycle, URLs, ports, paths, and last error, which meant support and release-readiness work still could not read back route-level proxy observability from the kernel surface.
 
 ## Implemented Fix
 
@@ -33,11 +33,11 @@
   - `messageCaptureEnabled`
   - `observabilityDbPath`
 - Added focused RED/GREEN coverage in:
-  - `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
-  - `packages/sdkwork-clawstudio-settings/src/kernelCenterView.test.ts`
+  - `packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.test.ts`
+  - `packages/sdkwork-agentstudio-pc-settings/src/kernelCenterView.test.ts`
   - `scripts/sdkwork-settings-contract.test.ts`
-- Added pure UI formatting helpers in `packages/sdkwork-clawstudio-settings/src/kernelCenterView.ts` for stable route metric/test summaries.
-- Updated `packages/sdkwork-clawstudio-settings/src/KernelCenter.tsx` so `Kernel Center -> Local AI Proxy` now reads back:
+- Added pure UI formatting helpers in `packages/sdkwork-agentstudio-pc-settings/src/kernelCenterView.ts` for stable route metric/test summaries.
+- Updated `packages/sdkwork-agentstudio-pc-settings/src/KernelCenter.tsx` so `Kernel Center -> Local AI Proxy` now reads back:
   - message capture state
   - observability database path
   - route metric record count
@@ -45,19 +45,19 @@
   - per-route metric summaries
   - per-route latest test summaries
 - Added localized copy in:
-  - `packages/sdkwork-clawstudio-i18n/src/locales/en/settings.json`
-  - `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
-  - `packages/sdkwork-clawstudio-i18n/src/locales/zh/settings.json`
-  - `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/en/settings.json`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/settings.json`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json`
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts`
-- `packages/sdkwork-clawstudio-types/src/index.ts`
-- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-agentstudio-pc-types/src/index.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
 
 The governing fact in this loop is unchanged: Kernel Center may only read back local proxy observability already produced by the runtime truth source. It must not invent route health, test status, or log state in the UI layer.
 
@@ -71,11 +71,11 @@ The governing fact in this loop is unchanged: Kernel Center may only read back l
 ## Verification
 
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/kernelCenterView.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/kernelCenterView.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-settings-contract.test.ts`
   - `pnpm.cmd check:sdkwork-settings`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd build` still prints the non-blocking Rolldown plugin timing warning while exiting successfully

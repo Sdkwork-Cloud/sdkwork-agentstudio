@@ -1,4 +1,4 @@
-# Claw Studio Technical Architecture
+# Agent Studio Technical Architecture
 
 Status: active
 Owner: SDKWork maintainers
@@ -178,8 +178,8 @@ Specs: ARCHITECTURE_DECISION_SPEC.md, DOCUMENTATION_SPEC.md
 - [TECH-architecture.md](TECH-architecture.md)
 - [TECH-claw-rollout-api-2.md](TECH-claw-rollout-api-2.md)
 - [TECH-claw-rollout-api.md](TECH-claw-rollout-api.md)
-- [TECH-clawstudio-server-runtime-2.md](TECH-clawstudio-server-runtime-2.md)
-- [TECH-clawstudio-server-runtime.md](TECH-clawstudio-server-runtime.md)
+- [TECH-agentstudio-server-runtime-2.md](TECH-agentstudio-server-runtime-2.md)
+- [TECH-agentstudio-server-runtime.md](TECH-agentstudio-server-runtime.md)
 - [TECH-commands-2.md](TECH-commands-2.md)
 - [TECH-commands.md](TECH-commands.md)
 - [TECH-desktop-2.md](TECH-desktop-2.md)

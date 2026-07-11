@@ -6,7 +6,7 @@
 | --- | --- |
 | 执行模式 | 强串行 |
 | 前置 | `01` |
-| 主写入范围 | `packages/sdkwork-clawstudio-web` `packages/sdkwork-clawstudio-desktop` `packages/sdkwork-clawstudio-shell` `packages/sdkwork-clawstudio-core` `packages/sdkwork-clawstudio-infrastructure` `packages/sdkwork-clawstudio-types` `packages/sdkwork-clawstudio-ui` `scripts/check-arch-boundaries.mjs` |
+| 主写入范围 | `packages/sdkwork-agentstudio-pc-web` `packages/sdkwork-agentstudio-pc-desktop` `packages/sdkwork-agentstudio-pc-shell` `packages/sdkwork-agentstudio-pc-core` `packages/sdkwork-agentstudio-pc-infrastructure` `packages/sdkwork-agentstudio-pc-types` `packages/sdkwork-agentstudio-pc-ui` `scripts/check-arch-boundaries.mjs` |
 | 执行输入 | `02/03/04/09/16/17` 架构文档、AGENTS 包边界约束、Step 01 审计结果 |
 | 本步非目标 | 不处理具体聊天功能；不处理 Provider/Instance 业务细节 |
 | 最小输出 | 清晰分层、稳定导出、热点文件拆分计划、边界脚本收紧 |
@@ -20,7 +20,7 @@
 ## 3. 实施落地规划
 
 1. 清理 `web/desktop` 的业务沉积，把业务编排回推到 `shell/feature/core/infrastructure`。
-2. 收紧 `sdkwork-clawstudio-shell` 的路由与全局 Provider 边界，避免继续沉积 feature service。
+2. 收紧 `sdkwork-agentstudio-pc-shell` 的路由与全局 Provider 边界，避免继续沉积 feature service。
 3. 梳理 `core/infrastructure/types/ui/i18n` 的职责与 package root 导出。
 4. 按 Step 01 热点清单，优先拆出超大文件中的“契约/映射/编排/UI”子模块。
 5. 强化 `scripts/check-arch-boundaries.mjs` 与相关 contract checks，防止回退。
@@ -31,7 +31,7 @@
 - `pnpm.cmd check:sdkwork-structure`
 - `pnpm.cmd check:sdkwork-hosts`
 - `pnpm.cmd check:sdkwork-feature-bridges`
-- `pnpm.cmd sync:features`
+- `pnpm.cmd sdk:sync-features`
 
 ## 5. 结果验证
 

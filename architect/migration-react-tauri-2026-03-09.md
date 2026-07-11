@@ -2,25 +2,25 @@
 
 ## 目标
 - 严格遵循 `architect/architect-standard-react+tauri.md`
-- 采用 `pnpm workspace` 分包管理
-- 使用 `@sdkwork/clawstudio-studio-xxx` 命名规范
+- 采用 `pnpm's workspace` 分包管理
+- 使用 `@sdkwork/agentstudio-pc-studio-xxx` 命名规范
 - 保持现有功能、路由、交互与界面样式一致
 
 ## 最终分包结构
 
 ```text
 packages/
-├─ claw-studio-web             (@sdkwork/clawstudio-studio-web)
-├─ claw-studio-domain          (@sdkwork/clawstudio-studio-domain)
-├─ claw-studio-infrastructure  (@sdkwork/clawstudio-studio-infrastructure)
-└─ claw-studio-business        (@sdkwork/clawstudio-studio-business)
+├─ agent-studio-web             (@sdkwork/agentstudio-pc-studio-web)
+├─ agent-studio-domain          (@sdkwork/agentstudio-pc-studio-domain)
+├─ agent-studio-infrastructure  (@sdkwork/agentstudio-pc-studio-infrastructure)
+└─ agent-studio-business        (@sdkwork/agentstudio-pc-studio-business)
 ```
 
 ## 分层职责
-- `claw-studio-domain`: 领域实体与核心类型
-- `claw-studio-infrastructure`: 平台适配与底层能力（HTTP/Platform）
-- `claw-studio-business`: services/stores/hooks 业务逻辑
-- `claw-studio-web`: 页面、组件、路由、应用装配与服务端入口
+- `agent-studio-domain`: 领域实体与核心类型
+- `agent-studio-infrastructure`: 平台适配与底层能力（HTTP/Platform）
+- `agent-studio-business`: services/stores/hooks 业务逻辑
+- `agent-studio-web`: 页面、组件、路由、应用装配与服务端入口
 
 ## 依赖方向（高内聚、低耦合）
 - `web -> business -> (domain + infrastructure)`

@@ -6,8 +6,8 @@
 ## 1. Context
 
 - After the previous Step 03 install/settings loop, the next visible workspace lint blockers moved to:
-  - `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
-  - `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.test.ts`
+  - `packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.test.ts`
+  - `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.test.ts`
 - Both were test-contract issues rather than production logic regressions.
 
 ## 2. Root Cause
@@ -19,12 +19,12 @@
 
 ## 3. Changes
 
-- `packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.test.ts`
   - Added a typed `createRuntimeConfig()` helper that always returns a full `ProviderConfigRecord['config']`.
   - Added a typed `createRecord()` helper that constructs complete `ProviderConfigRecord` fixtures with required normalized fields.
   - Replaced the scattered ad hoc record literals in the apply/list/runtime-metrics tests with `createRecord(...)`.
   - Added the missing `routeId: string` annotation in the local proxy route test stub.
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.test.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.test.ts`
   - Added `showNotification` to the `PlatformAPI` stub.
   - Added `updateInstanceFileContent` and `updateInstanceLlmProviderConfig` to the `StudioPlatformAPI` stub via passthrough bindings to the original studio bridge.
 
@@ -32,13 +32,13 @@
 
 | Command | Result | Note |
 | --- | --- | --- |
-| `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts` | passed | 15 provider-center regression cases stayed green after fixture normalization |
+| `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.test.ts` | passed | 15 provider-center regression cases stayed green after fixture normalization |
 | `pnpm.cmd lint` targeted check for `providerConfigCenterService.test.ts` | passed | returned `provider-config-center-clean` |
-| `node --experimental-strip-types packages/sdkwork-clawstudio-agent/src/services/agentInstallService.test.ts` | passed | 5 agent-install regression cases stayed green after stub alignment |
+| `node --experimental-strip-types packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.test.ts` | passed | 5 agent-install regression cases stayed green after stub alignment |
 | `pnpm.cmd lint` targeted check for `agentInstallService.test.ts` | passed | returned `agent-install-clean` |
 
 ## 5. Remaining Gaps
 
-- Fresh workspace lint evidence shows the next head blocker has moved to `packages/sdkwork-clawstudio-apps/src/services/appStoreService.test.ts`.
+- Fresh workspace lint evidence shows the next head blocker has moved to `packages/sdkwork-agentstudio-pc-apps/src/services/appStoreService.test.ts`.
 - This loop intentionally did not touch the later chat/community/install/task/instances failures once the current top-of-stack provider/agent contract drift was closed.
 

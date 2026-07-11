@@ -190,7 +190,7 @@ function main() {
   }
 
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'claw-shared-sdk-release-parity-'));
-  const tempWorkspaceDir = path.join(tempRoot, 'apps', 'claw-studio');
+  const tempWorkspaceDir = path.join(tempRoot, 'apps', 'agent-studio');
   fs.mkdirSync(tempWorkspaceDir, { recursive: true });
 
   try {

@@ -16,27 +16,27 @@ const helmSecretSource = read('deploy/kubernetes/templates/secret.yaml');
 
 assert.match(
   dockerComposeSource,
-  /CLAW_STUDIO_USER_CENTER_MODE:\s*\$\{CLAW_STUDIO_USER_CENTER_MODE:-builtin-local\}/u,
+  /AGENT_STUDIO_USER_CENTER_MODE:\s*\$\{AGENT_STUDIO_USER_CENTER_MODE:-builtin-local\}/u,
   'docker-compose must default server deployments to builtin-local user-center mode.',
 );
 assert.match(
   dockerComposeSource,
-  /CLAW_STUDIO_USER_CENTER_APP_API_BASE_URL:\s*\$\{CLAW_STUDIO_USER_CENTER_APP_API_BASE_URL:-\}/u,
+  /AGENT_STUDIO_USER_CENTER_APP_API_BASE_URL:\s*\$\{AGENT_STUDIO_USER_CENTER_APP_API_BASE_URL:-\}/u,
   'docker-compose must expose sdkwork-cloud-app-api upstream base-url wiring.',
 );
 assert.match(
   dockerComposeSource,
-  /CLAW_STUDIO_USER_CENTER_EXTERNAL_BASE_URL:\s*\$\{CLAW_STUDIO_USER_CENTER_EXTERNAL_BASE_URL:-\}/u,
+  /AGENT_STUDIO_USER_CENTER_EXTERNAL_BASE_URL:\s*\$\{AGENT_STUDIO_USER_CENTER_EXTERNAL_BASE_URL:-\}/u,
   'docker-compose must expose external user-center base-url wiring.',
 );
 assert.match(
   dockerComposeSource,
-  /CLAW_STUDIO_USER_CENTER_SECRET_ID:\s*\$\{CLAW_STUDIO_USER_CENTER_SECRET_ID:-\}/u,
+  /AGENT_STUDIO_USER_CENTER_SECRET_ID:\s*\$\{AGENT_STUDIO_USER_CENTER_SECRET_ID:-\}/u,
   'docker-compose must expose the shared secret-id bridge variable.',
 );
 assert.match(
   dockerComposeSource,
-  /CLAW_STUDIO_USER_CENTER_SHARED_SECRET:\s*\$\{CLAW_STUDIO_USER_CENTER_SHARED_SECRET:-\}/u,
+  /AGENT_STUDIO_USER_CENTER_SHARED_SECRET:\s*\$\{AGENT_STUDIO_USER_CENTER_SHARED_SECRET:-\}/u,
   'docker-compose must expose the shared-secret bridge variable.',
 );
 
@@ -76,29 +76,29 @@ assert.match(
 
 assert.match(
   helmConfigMapSource,
-  /CLAW_STUDIO_USER_CENTER_MODE:\s*\{\{\s*\.Values\.userCenter\.mode/u,
+  /AGENT_STUDIO_USER_CENTER_MODE:\s*\{\{\s*\.Values\.userCenter\.mode/u,
   'Helm ConfigMap must project the active user-center mode into the server runtime.',
 );
 assert.match(
   helmConfigMapSource,
-  /CLAW_STUDIO_USER_CENTER_APP_API_BASE_URL:\s*\{\{\s*\.Values\.userCenter\.appApiBaseUrl/u,
+  /AGENT_STUDIO_USER_CENTER_APP_API_BASE_URL:\s*\{\{\s*\.Values\.userCenter\.appApiBaseUrl/u,
   'Helm ConfigMap must project the sdkwork-cloud-app-api base-url into the server runtime.',
 );
 assert.match(
   helmConfigMapSource,
-  /CLAW_STUDIO_USER_CENTER_EXTERNAL_BASE_URL:\s*\{\{\s*\.Values\.userCenter\.externalBaseUrl/u,
+  /AGENT_STUDIO_USER_CENTER_EXTERNAL_BASE_URL:\s*\{\{\s*\.Values\.userCenter\.externalBaseUrl/u,
   'Helm ConfigMap must project the external user-center base-url into the server runtime.',
 );
 
 assert.match(
   helmSecretSource,
-  /CLAW_STUDIO_USER_CENTER_SECRET_ID:/u,
+  /AGENT_STUDIO_USER_CENTER_SECRET_ID:/u,
   'Helm Secret must project the shared secret-id bridge variable.',
 );
 assert.match(
   helmSecretSource,
-  /CLAW_STUDIO_USER_CENTER_SHARED_SECRET:/u,
+  /AGENT_STUDIO_USER_CENTER_SHARED_SECRET:/u,
   'Helm Secret must project the shared shared-secret bridge variable.',
 );
 
-console.log('claw-studio server deployment user-center entrypoint contract passed.');
+console.log('agent-studio server deployment user-center entrypoint contract passed.');

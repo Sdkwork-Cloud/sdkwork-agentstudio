@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "apps/sdkwork-clawstudio-pc/packages/sdkwork-clawstudio-host-core/src-host",
-    "apps/sdkwork-clawstudio-pc/packages/sdkwork-clawstudio-host-studio/src-host",
-    "apps/sdkwork-clawstudio-pc/packages/sdkwork-clawstudio-server/src-host",
-    "apps/sdkwork-clawstudio-pc/packages/sdkwork-clawstudio-desktop/src-tauri",
+    "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-host-core/src-host",
+    "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-host-studio/src-host",
+    "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-server/src-host",
+    "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-desktop/src-tauri",
 ]
 
 [workspace.package]
@@ -13,10 +13,11 @@ version = "0.1.0"
 
 [workspace.dependencies]
 # SDKWork workspace members - declared once at workspace root
-sdkwork-clawstudio-host-core = { path = "apps/sdkwork-clawstudio-pc/packages/sdkwork-clawstudio-host-core/src-host" }
-sdkwork-clawstudio-host-studio = { path = "apps/sdkwork-clawstudio-pc/packages/sdkwork-clawstudio-host-studio/src-host" }
-sdkwork-clawstudio-server = { path = "apps/sdkwork-clawstudio-pc/packages/sdkwork-clawstudio-server/src-host" }
-sdkwork-clawstudio-desktop = { path = "apps/sdkwork-clawstudio-pc/packages/sdkwork-clawstudio-desktop/src-tauri" }
+# Crate names follow RUST_CODE_SPEC; directory paths follow APP_PC_ARCHITECTURE_SPEC
+sdkwork-agentstudio-service-host = { path = "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-host-core/src-host" }
+sdkwork-agentstudio-studio-service-host = { path = "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-host-studio/src-host" }
+sdkwork-agentstudio-standalone-gateway = { path = "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-server/src-host" }
+sdkwork-agentstudio-tauri-host = { path = "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-desktop/src-tauri" }
 sdkwork-local-api-proxy-native = { path = "../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy/native/tauri-rust" }
 
 # SDKWork platform framework crates (sdkwork-web-framework)
@@ -41,4 +42,4 @@ time = "=0.3.37"
 
 [patch.crates-io]
 # xcap vendor patch — must be at workspace root per Cargo requirements.
-xcap = { path = "apps/sdkwork-clawstudio-pc/packages/sdkwork-clawstudio-desktop/src-tauri/vendor/xcap" }
+xcap = { path = "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-desktop/src-tauri/vendor/xcap" }

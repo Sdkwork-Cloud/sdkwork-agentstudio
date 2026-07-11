@@ -6,7 +6,7 @@
 | --- | --- |
 | 执行模式 | 波次内并行 |
 | 前置 | `04` `05` `06` |
-| 主写入范围 | `packages/sdkwork-clawstudio-instances/src` `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts` `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts` |
+| 主写入范围 | `packages/sdkwork-agentstudio-pc-instances/src` `packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.ts` `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.ts` |
 | 执行输入 | `07`、`15`、`17` 架构文档；现有实例目录、详情、工作台、配置服务 |
 | 本步非目标 | 不做发布链和商业化链；不直接扩展外部供应商协议 |
 | 最小输出 | 统一实例目录、统一实例详情骨架、十个分区的完整运行治理工作台 |
@@ -21,7 +21,7 @@
 ## 3. 实施落地规划
 
 1. 优先治理热点：
-   `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`、
+   `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`、
    `instanceWorkbenchServiceCore.ts`、
    `instanceServiceCore.ts`。
 2. 按分区拆分工作台：`overview`、`channels`、`cronTasks`、`llmProviders`、`agents`、`skills`、`files`、`memory`、`tools`、`config`。
@@ -33,10 +33,10 @@
 
 - `pnpm.cmd check:sdkwork-instances`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
 
 ## 5. 结果验证
 

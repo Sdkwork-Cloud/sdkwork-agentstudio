@@ -21,11 +21,11 @@
 ## Implemented Repair
 
 - Restored section chrome ownership to:
-  - `packages/sdkwork-clawstudio-instances/src/components/InstanceWorkbenchPrimitives.tsx`
+  - `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceWorkbenchPrimitives.tsx`
     - `SectionHeading(...)`
     - `SectionAvailabilityNotice(...)`
 - Rewired:
-  - `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+  - `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
     - now imports `SectionHeading` and `SectionAvailabilityNotice` from the shared primitive module
     - no longer defines those two helpers inline
     - still owns section-availability routing and still passes:
@@ -48,32 +48,32 @@
 
 ## OpenClaw Fact Sources Re-read
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
   - still proves browser-backed workbench detail persists provider edits, files, tasks, and managed channel writes through the real bridge
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
   - still freezes Control UI section ordering
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
   - still owns managed OpenClaw authority classification
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
   - still turns managed-state classification into provider workspace readonly/manageability decisions
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
   - still owns channel write bridging and did not move into the page
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
   - still owns market discovery and skill/package install entry points
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
   - still owns writable OpenClaw config path resolution and workspace materialization
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   - still owns Local Proxy protocol/runtime boundaries
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
   - still owns desktop plugin registration
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `2423`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceWorkbenchPrimitives.tsx`: `87`
-- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `206`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1431`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `2423`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceWorkbenchPrimitives.tsx`: `87`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.ts`: `206`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1132`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1431`
 
 Relative to the immediately pre-fix page state (`2453` lines), this loop reduces `InstanceDetail.tsx` to `2423` while restoring the intended shared section-chrome boundary.
 
@@ -84,13 +84,13 @@ Relative to the immediately pre-fix page state (`2453` lines), this loop reduces
 - GREEN:
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - Additional fresh verification:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawManagedConfigDrafts.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagedConfigDrafts.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailWorkbenchPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderDrafts.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
   - `pnpm check:sdkwork-instances`
 
 All commands passed on fresh execution after the shared-primitive repair landed.

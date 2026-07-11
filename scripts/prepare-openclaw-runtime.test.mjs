@@ -75,7 +75,7 @@ const defaultRuntimeSupplementalPackages = [
 const customRuntimeSupplementalPackages = ['@buape/carbon@0.14.0'];
 const cachedNodeRuntimeSidecarManifestRelativePath = '.sdkwork-node-runtime.json';
 const runtimeSidecarManifestRelativePath = path.join('runtime', '.sdkwork-openclaw-runtime.json');
-const trackedResourcePlaceholder = 'packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/.gitkeep';
+const trackedResourcePlaceholder = 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/resources/openclaw/.gitkeep';
 const fakeNodeExecutableContent = 'not-a-real-node-runtime';
 
 const staleOpenClawVersion = derivePreviousNumericVersion(expectedOpenClawVersion);
@@ -410,7 +410,7 @@ function createTarGzArchiveBuffer(records = []) {
 function listTrackedOpenClawResourceFiles() {
   const result = spawnSync(
     'git',
-    ['ls-files', '--', 'packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw'],
+    ['ls-files', '--', 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/resources/openclaw'],
     {
       cwd: rootDir,
       encoding: 'utf8',
@@ -477,12 +477,12 @@ try {
   }
 
   const windowsMirrorBaseDirForWin32 = resolveBundledResourceMirrorBaseDir(
-    'D:\\workspace\\claw-studio',
+    'D:\\workspace\\agent-studio',
     {},
     'win32',
   );
   const windowsMirrorBaseDirForWindows = resolveBundledResourceMirrorBaseDir(
-    'D:\\workspace\\claw-studio',
+    'D:\\workspace\\agent-studio',
     {},
     'windows',
   );
@@ -493,18 +493,18 @@ try {
   }
 
   const posixMirrorBaseDir = resolveBundledResourceMirrorBaseDir(
-    '/tmp/workspace/claw-studio',
+    '/tmp/workspace/agent-studio',
     {},
     'win32',
   );
-  if (posixMirrorBaseDir !== '/tmp/workspace/claw-studio/.cache/short-mirrors') {
+  if (posixMirrorBaseDir !== '/tmp/workspace/agent-studio/.cache/short-mirrors') {
     throw new Error(
       `Expected resolveBundledResourceMirrorBaseDir to preserve a host-accessible POSIX base dir when targeting win32 from a POSIX workspace, received ${posixMirrorBaseDir}`,
     );
   }
 
   const configuredPosixMirrorBaseDir = resolveBundledResourceMirrorBaseDir(
-    '/tmp/workspace/claw-studio',
+    '/tmp/workspace/agent-studio',
     {
       SDKWORK_WINDOWS_MIRROR_BASE_DIR: '/tmp/windows-resource-mirrors',
     },
@@ -517,12 +517,12 @@ try {
   }
 
   const windowsMirrorRootForWindows = resolveBundledResourceMirrorRoot(
-    'D:\\workspace\\claw-studio',
+    'D:\\workspace\\agent-studio',
     'openclaw',
     'windows',
   );
   const windowsMirrorRootForWin32 = resolveBundledResourceMirrorRoot(
-    'D:\\workspace\\claw-studio',
+    'D:\\workspace\\agent-studio',
     'openclaw',
     'win32',
   );
@@ -533,18 +533,18 @@ try {
   }
 
   const posixMirrorRoot = resolveBundledResourceMirrorRoot(
-    '/tmp/workspace/claw-studio',
+    '/tmp/workspace/agent-studio',
     'openclaw',
     'win32',
   );
-  if (posixMirrorRoot !== '/tmp/workspace/claw-studio/.cache/short-mirrors/openclaw') {
+  if (posixMirrorRoot !== '/tmp/workspace/agent-studio/.cache/short-mirrors/openclaw') {
     throw new Error(
       `Expected resolveBundledResourceMirrorRoot to preserve a host-accessible POSIX mirror root when targeting win32 from a POSIX workspace, received ${posixMirrorRoot}`,
     );
   }
 
   const configuredPosixMirrorRoot = resolveBundledResourceMirrorRoot(
-    '/tmp/workspace/claw-studio',
+    '/tmp/workspace/agent-studio',
     'openclaw',
     'win32',
     '/tmp/windows-resource-mirrors',
@@ -1009,9 +1009,9 @@ try {
 
   const windowsAliasOperations = [];
   await syncWindowsPackagedOpenClawAliasRoot({
-    workspaceRootDir: 'D:\\workspace\\claw-studio',
+    workspaceRootDir: 'D:\\workspace\\agent-studio',
     packagedResourceDir:
-      'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\release\\openclaw-resource',
+      'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\release\\openclaw-resource',
     platform: 'win32',
     mkdirImpl: async (targetPath) => {
       windowsAliasOperations.push(['mkdir', targetPath]);
@@ -1026,12 +1026,12 @@ try {
 
   if (
     JSON.stringify(windowsAliasOperations) !== JSON.stringify([
-      ['cleanup', 'D:\\.sdkwork-bc\\claw-studio\\openclaw'],
-      ['mkdir', 'D:\\.sdkwork-bc\\claw-studio'],
+      ['cleanup', 'D:\\.sdkwork-bc\\agent-studio\\openclaw'],
+      ['mkdir', 'D:\\.sdkwork-bc\\agent-studio'],
       [
         'symlink',
-        'D:\\workspace\\claw-studio\\packages\\sdkwork-clawstudio-desktop\\src-tauri\\generated\\release\\openclaw-resource',
-        'D:\\.sdkwork-bc\\claw-studio\\openclaw',
+        'D:\\workspace\\agent-studio\\packages\\sdkwork-agentstudio-pc-desktop\\src-tauri\\generated\\release\\openclaw-resource',
+        'D:\\.sdkwork-bc\\agent-studio\\openclaw',
         'junction',
       ],
     ])
@@ -1187,7 +1187,7 @@ try {
   const staleFallbackStatePath = path.join(
     staleFallbackWorkspaceRoot,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'generated',
     'release',
@@ -2123,21 +2123,21 @@ try {
       TMP: 'C:\\Users\\admin\\AppData\\Local\\Temp',
     },
     {
-      cacheDir: 'C:\\.sdkwork-bc\\claw-studio\\openclaw-cache',
+      cacheDir: 'C:\\.sdkwork-bc\\agent-studio\\openclaw-cache',
       platform: 'win32',
     },
   );
-  if (managedInstallEnv.npm_config_cache?.toLowerCase() !== 'c:\\.sdkwork-bc\\claw-studio\\openclaw-cache\\npm-cache') {
+  if (managedInstallEnv.npm_config_cache?.toLowerCase() !== 'c:\\.sdkwork-bc\\agent-studio\\openclaw-cache\\npm-cache') {
     throw new Error(
       `Expected runtime install env to force a short npm cache path, received ${managedInstallEnv.npm_config_cache}`,
     );
   }
-  if (managedInstallEnv.TEMP?.toLowerCase() !== 'c:\\.sdkwork-bc\\claw-studio\\openclaw-cache\\tmp') {
+  if (managedInstallEnv.TEMP?.toLowerCase() !== 'c:\\.sdkwork-bc\\agent-studio\\openclaw-cache\\tmp') {
     throw new Error(
       `Expected runtime install env to force a short TEMP path, received ${managedInstallEnv.TEMP}`,
     );
   }
-  if (managedInstallEnv.TMP?.toLowerCase() !== 'c:\\.sdkwork-bc\\claw-studio\\openclaw-cache\\tmp') {
+  if (managedInstallEnv.TMP?.toLowerCase() !== 'c:\\.sdkwork-bc\\agent-studio\\openclaw-cache\\tmp') {
     throw new Error(
       `Expected runtime install env to force a short TMP path, received ${managedInstallEnv.TMP}`,
     );
@@ -2172,24 +2172,24 @@ try {
   }
 
   const windowsCacheDir = resolveDefaultOpenClawPrepareCacheDir({
-    workspaceRootDir: 'C:\\workspaces\\claw-studio',
+    workspaceRootDir: 'C:\\workspaces\\agent-studio',
     platform: 'win32',
     localAppData: 'C:\\Users\\admin\\AppData\\Local',
     homeDir: 'C:\\Users\\admin',
   });
-  if (windowsCacheDir.toLowerCase() !== 'c:\\.sdkwork-bc\\claw-studio\\openclaw-cache') {
+  if (windowsCacheDir.toLowerCase() !== 'c:\\.sdkwork-bc\\agent-studio\\openclaw-cache') {
     throw new Error(`Expected short Windows cache dir, received ${windowsCacheDir}`);
   }
   const envOverrideCacheDir = resolveDefaultOpenClawPrepareCacheDir({
-    workspaceRootDir: 'C:\\workspaces\\claw-studio',
+    workspaceRootDir: 'C:\\workspaces\\agent-studio',
     platform: 'win32',
     env: {
-      OPENCLAW_PREPARE_CACHE_DIR: 'D:\\workspace\\claw-studio\\.cache\\openclaw-cache',
+      OPENCLAW_PREPARE_CACHE_DIR: 'D:\\workspace\\agent-studio\\.cache\\openclaw-cache',
     },
     localAppData: 'C:\\Users\\admin\\AppData\\Local',
     homeDir: 'C:\\Users\\admin',
   });
-  if (envOverrideCacheDir.toLowerCase() !== 'd:\\workspace\\claw-studio\\.cache\\openclaw-cache') {
+  if (envOverrideCacheDir.toLowerCase() !== 'd:\\workspace\\agent-studio\\.cache\\openclaw-cache') {
     throw new Error(`Expected OPENCLAW_PREPARE_CACHE_DIR to override the default prepare cache dir, received ${envOverrideCacheDir}`);
   }
 

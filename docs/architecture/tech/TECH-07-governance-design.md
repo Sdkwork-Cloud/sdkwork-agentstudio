@@ -5,7 +5,7 @@
 
 ## 1. 实例模型定位
 
-实例不是附属能力，而是 OpenClaw Studio 的核心资源模型。聊天、渠道、Provider、Agent、Skill、文件、任务和配置最终都挂靠在实例上。
+实例不是附属能力，而是 OpenAgent Studio 的核心资源模型。聊天、渠道、Provider、Agent、Skill、文件、任务和配置最终都挂靠在实例上。
 
 ## 2. 当前实例类型
 

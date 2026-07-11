@@ -1,7 +1,7 @@
 > Migrated from `docs/release/release-2026-04-08-83.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
-# Claw Studio release-2026-04-08-83
+# Agent Studio release-2026-04-08-83
 
 ## Highlights
 
@@ -12,11 +12,11 @@
 ## Attempt Outcome
 
 - Expanded shared provider draft helpers in:
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderDrafts.ts`
 - Expanded focused helper coverage in:
-  - `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
+  - `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderDrafts.test.ts`
 - Rewired provider draft mutation handlers in:
-  - `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+  - `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
 - Extended the contract suite so the page stays on the new helper boundary in:
   - `scripts/sdkwork-instances-contract.test.ts`
 - Updated the ongoing Step 07 evidence set:
@@ -25,9 +25,9 @@
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderDrafts.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderDrafts.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
 - `scripts/sdkwork-instances-contract.test.ts`
 - `docs/review/step-07-instance-detail分区一致性-2026-04-08.md`
 - `docs/架构/134-2026-04-08-instance-detail-section-decomposition-progress.md`
@@ -36,12 +36,12 @@
 
 ## Verification Focus
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawProviderDrafts.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderDrafts.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
 - `pnpm.cmd check:sdkwork-instances`
 
 ## Risks And Rollback

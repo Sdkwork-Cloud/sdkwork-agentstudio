@@ -4,9 +4,9 @@
 
 The desktop local AI proxy must keep Anthropic native protocol request-serving in a dedicated module:
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, shared router assembly, auth/header normalization, upstream dispatch entrypoints, and the runtime-facing service methods
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/anthropic_native.rs`
   owns Anthropic native `/v1/messages` request handling, including native header forwarding, upstream `/messages` dispatch, and streaming passthrough wiring through the shared runtime owners
 
 `scripts/check-desktop-platform-foundation.mjs` must assert the module file, the `mod anthropic_native;` declaration, and router delegation through `post(anthropic_native::messages_handler)`.

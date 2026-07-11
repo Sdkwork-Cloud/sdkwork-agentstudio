@@ -5,15 +5,15 @@
 
 ## Overview
 
-Claw Studio is no longer documented as a single desktop-only product shell. The current workspace supports multiple host and deployment shapes that share the same product surface but differ in transport, packaging, and operational model.
+Agent Studio is no longer documented as a single desktop-only product shell. The current workspace supports multiple host and deployment shapes that share the same product surface but differ in transport, packaging, and operational model.
 
 ## Mode Matrix
 
 | Mode | Primary Host | Operator Access | Best For | Main Entry |
 | --- | --- | --- | --- | --- |
 | Web workspace | Vite dev server | Browser | day-to-day frontend development | `pnpm dev` |
-| Desktop runtime | Tauri + Rust host | Native desktop window | local GUI-first installs and managed local runtimes | `pnpm tauri:dev` |
-| Native server | Axum + Rust host | Browser over same-origin server | standalone server installs with browser-based management | `pnpm server:dev` |
+| Desktop runtime | Tauri + Rust host | Native desktop window | local GUI-first installs and managed local runtimes | `pnpm dev:desktop` |
+| Native server | Axum + Rust host | Browser over same-origin server | standalone server installs with browser-based management | `pnpm dev:server` |
 | Container | Rust server inside Docker bundle | Browser via exposed container port | Docker and Compose-based deployment | packaged container bundle |
 | Kubernetes | Rust server behind chart values | Browser through ingress or service exposure | clustered deployment and platform operations | packaged Kubernetes bundle |
 | Web/docs archive | Static assets only | Static file host | publishing docs and browser assets without the Rust control plane | packaged web archive |

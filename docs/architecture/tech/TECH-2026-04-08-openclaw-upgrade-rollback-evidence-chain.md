@@ -8,8 +8,8 @@
 Any Step 03 claim that the desktop OpenClaw runtime is upgrade-ready or rollback-ready must now be backed by one explicit evidence report that joins:
 
 - `config/openclaw-release.json` as the baseline version source
-- the prepared runtime inspection under `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw`
-- the packaged release asset verification under `packages/sdkwork-clawstudio-desktop/src-tauri/generated/release/openclaw-resource`
+- the prepared runtime inspection under `packages/sdkwork-agentstudio-pc-desktop/src-tauri/resources/openclaw`
+- the packaged release asset verification under `packages/sdkwork-agentstudio-pc-desktop/src-tauri/generated/release/openclaw-resource`
 
 `check:desktop-openclaw-runtime` must execute `scripts/openclaw-upgrade-rollback-evidence.test.mjs` so the evidence surface stays under the same Step 03 gate as readiness, prepare, and packaged-release verification.
 

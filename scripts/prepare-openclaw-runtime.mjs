@@ -70,7 +70,7 @@ const WINDOWS_UNC_PATH_PATTERN = /^(?:\\\\|\/\/)[^\\/]+[\\/][^\\/]+/;
 export const DEFAULT_RESOURCE_DIR = path.join(
   rootDir,
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
   'resources',
   'openclaw',
@@ -125,7 +125,7 @@ function resolveWindowsMirrorBaseDirStatePath(workspaceRootDir = rootDir) {
   return path.join(
     workspaceRootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'generated',
     'release',
@@ -316,7 +316,7 @@ export function resolveBundledResourceMirrorRoot(
     return path.join(
       workspaceRootDir,
       'packages',
-      'sdkwork-clawstudio-desktop',
+      'sdkwork-agentstudio-pc-desktop',
       'src-tauri',
       'resources',
       resourceId,
@@ -334,7 +334,7 @@ export function resolvePackagedOpenClawResourceDir(
   return path.join(
     workspaceRootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'generated',
     'release',
@@ -349,7 +349,7 @@ export function resolvePackagedOpenClawInstallRootLayoutDir(
   return path.join(
     workspaceRootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'generated',
     'release',

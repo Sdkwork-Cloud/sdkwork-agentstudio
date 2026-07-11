@@ -41,7 +41,7 @@ Regression coverage was added first for the route gating policy.
 
 File:
 
-- `packages/sdkwork-clawstudio-shell/src/application/layouts/chatRuntimeWarmersPolicy.test.ts`
+- `packages/sdkwork-agentstudio-pc-shell/src/application/layouts/chatRuntimeWarmersPolicy.test.ts`
 
 Reproduction encoded by the test:
 
@@ -62,7 +62,7 @@ Observed pre-fix failure:
 
 File:
 
-- `packages/sdkwork-clawstudio-shell/src/application/layouts/chatRuntimeWarmersPolicy.ts`
+- `packages/sdkwork-agentstudio-pc-shell/src/application/layouts/chatRuntimeWarmersPolicy.ts`
 
 Change:
 
@@ -81,7 +81,7 @@ Result:
 
 File:
 
-- `packages/sdkwork-clawstudio-shell/src/application/layouts/MainLayout.tsx`
+- `packages/sdkwork-agentstudio-pc-shell/src/application/layouts/MainLayout.tsx`
 
 Change:
 
@@ -98,7 +98,7 @@ Result:
 
 Files:
 
-- `packages/sdkwork-clawstudio-shell/src/application/layouts/chatRuntimeWarmersPolicy.test.ts`
+- `packages/sdkwork-agentstudio-pc-shell/src/application/layouts/chatRuntimeWarmersPolicy.test.ts`
 - `scripts/sdkwork-shell-contract.test.ts`
 - `package.json`
 
@@ -113,7 +113,7 @@ Change:
 
 The following commands were run after the fix:
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-shell/src/application/layouts/chatRuntimeWarmersPolicy.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-shell/src/application/layouts/chatRuntimeWarmersPolicy.test.ts`
 - `pnpm.cmd check:sdkwork-shell`
 - `pnpm.cmd lint`
 

@@ -44,7 +44,7 @@ descriptor and the runtime was healthy.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.ts`
 
 Behavior change:
 
@@ -63,7 +63,7 @@ by blindly trusting `hostEndpoints[0]`.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
 
 Behavior change:
 
@@ -78,7 +78,7 @@ by readiness enforcement.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 
 New regression:
 
@@ -95,7 +95,7 @@ The probe is now required to stay green in that scenario.
 
 The following commands were executed after the fix:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 

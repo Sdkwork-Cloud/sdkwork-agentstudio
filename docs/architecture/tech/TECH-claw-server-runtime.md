@@ -1,9 +1,9 @@
-> Migrated from `docs/reference/clawstudio-server-runtime.md` on 2026-06-24.
+> Migrated from `docs/reference/agentstudio-server-runtime.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
 # Claw Server Runtime Reference
 
-This document captures the current built-in host runtime that ships from `packages/sdkwork-clawstudio-server` and the shared router contract reused by the desktop embedded host.
+This document captures the current built-in host runtime that ships from `packages/sdkwork-agentstudio-pc-server` and the shared router contract reused by the desktop embedded host.
 
 ## Purpose
 
@@ -26,16 +26,16 @@ The current runtime slice does these things:
 The Rust entry exposes a real command surface:
 
 ```bash
-cargo run --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml -- run
-cargo run --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml -- print-config
-cargo run --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml -- service print-manifest --platform linux
-cargo run --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml -- service status
+cargo run --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml -- run
+cargo run --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml -- print-config
+cargo run --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml -- service print-manifest --platform linux
+cargo run --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml -- service status
 ```
 
 Current command notes:
 
-- the CLI contract is `clawstudio-server run`, `clawstudio-server print-config`, `clawstudio-server service print-manifest --platform <linux|macos|windows>`, and `clawstudio-server service <install|start|stop|restart|status>`
-- current packaged release bundles expose that same command surface through the shipped native binary under `bin/clawstudio-server` on Linux or macOS and `bin/clawstudio-server.exe` on Windows; this native binary is the canonical packaged launcher, it auto-resolves bundled defaults for `CLAW_SERVER_WEB_DIST` and `CLAW_SERVER_DATA_DIR` when the expected bundle layout is present, and `start-clawstudio-server.sh` plus `start-clawstudio-server.cmd` remain optional convenience wrappers around the same binary
+- the CLI contract is `agentstudio-server run`, `agentstudio-server print-config`, `agentstudio-server service print-manifest --platform <linux|macos|windows>`, and `agentstudio-server service <install|start|stop|restart|status>`
+- current packaged release bundles expose that same command surface through the shipped native binary under `bin/agentstudio-server` on Linux or macOS and `bin/agentstudio-server.exe` on Windows; this native binary is the canonical packaged launcher, it auto-resolves bundled defaults for `CLAW_SERVER_WEB_DIST` and `CLAW_SERVER_DATA_DIR` when the expected bundle layout is present, and `start-agentstudio-server.sh` plus `start-agentstudio-server.cmd` remain optional convenience wrappers around the same binary
 - `run` is the default command
 - `print-config` resolves the effective runtime configuration after CLI overrides, config file values, environment variables, and built-in defaults
 - `service print-manifest` prints portable service metadata and the platform-specific unit content for `systemd`, `launchd`, or `windowsService`
@@ -45,10 +45,10 @@ Current command notes:
 
 Current manifest projection:
 
-- Linux projects `systemd` semantics with `/etc/systemd/system/clawstudio-server.service`
+- Linux projects `systemd` semantics with `/etc/systemd/system/agentstudio-server.service`
 - macOS projects `launchd` semantics with `/Library/LaunchDaemons/ai.sdkwork.claw.server.plist`
 - Windows projects `windowsService` semantics with `<CLAW_SERVER_DATA_DIR>/service/windows-service.json`
-- if `CLAW_SERVER_CONFIG` and `--config` are both omitted, the canonical config path falls back to `<CLAW_SERVER_DATA_DIR>/clawstudio-server.config.json`
+- if `CLAW_SERVER_CONFIG` and `--config` are both omitted, the canonical config path falls back to `<CLAW_SERVER_DATA_DIR>/agentstudio-server.config.json`
 
 Current lifecycle notes:
 
@@ -65,12 +65,12 @@ The current server shell reads:
 CLAW_SERVER_CONFIG=
 CLAW_SERVER_HOST=127.0.0.1
 CLAW_SERVER_PORT=18797
-CLAW_SERVER_DATA_DIR=.clawstudio-server
+CLAW_SERVER_DATA_DIR=.agentstudio-server
 CLAW_SERVER_STATE_STORE_DRIVER=sqlite
 CLAW_SERVER_STATE_STORE_SQLITE_PATH=
 CLAW_SERVER_STATE_STORE_POSTGRES_URL=
 CLAW_SERVER_STATE_STORE_POSTGRES_SCHEMA=
-CLAW_SERVER_WEB_DIST=../sdkwork-clawstudio-web/dist
+CLAW_SERVER_WEB_DIST=../sdkwork-agentstudio-pc-web/dist
 CLAW_SERVER_MANAGE_USERNAME=
 CLAW_SERVER_MANAGE_PASSWORD=
 CLAW_SERVER_INTERNAL_USERNAME=
@@ -92,7 +92,7 @@ Current behavior notes:
 
 ## Startup Behavior
 
-The server entrypoint is `packages/sdkwork-clawstudio-server/src-host/src/main.rs`.
+The server entrypoint is `packages/sdkwork-agentstudio-pc-server/src-host/src/main.rs`.
 
 At startup the server:
 
@@ -294,18 +294,18 @@ Example shape:
 
 ## Browser App Serving
 
-Static serving is implemented in `packages/sdkwork-clawstudio-server/src-host/src/http/static_assets.rs`.
+Static serving is implemented in `packages/sdkwork-agentstudio-pc-server/src-host/src/http/static_assets.rs`.
 
 Current behavior:
 
 - browser shell routes and static assets share the manage basic-auth challenge when manage credentials are configured
 - real files under the web `dist` directory are returned before SPA fallback
 - unmatched browser routes fall back to `index.html`
-- the returned HTML is injected with host metadata such as `sdkwork-clawstudio-host-mode`, `sdkwork-clawstudio-manage-base-path`, and `sdkwork-clawstudio-internal-base-path`
+- the returned HTML is injected with host metadata such as `sdkwork-agentstudio-pc-host-mode`, `sdkwork-agentstudio-pc-manage-base-path`, and `sdkwork-agentstudio-pc-internal-base-path`
 
 ## Desktop Embedded Host Reuse
 
-The desktop runtime reuses the same Rust router through `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/embedded_host_server.rs`.
+The desktop runtime reuses the same Rust router through `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/embedded_host_server.rs`.
 
 Desktop-specific notes:
 
@@ -320,8 +320,8 @@ Desktop-specific notes:
 Focused verification for this runtime slice:
 
 ```bash
-cargo test --manifest-path packages/sdkwork-clawstudio-server/src-host/Cargo.toml
-cargo test --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml embedded_host_bootstrap
+cargo test --manifest-path packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml
+cargo test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml embedded_host_bootstrap
 ```
 
 Workspace checks still commonly use:

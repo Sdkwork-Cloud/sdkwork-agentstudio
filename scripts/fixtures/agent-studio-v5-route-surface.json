@@ -1,0 +1,25 @@
+{
+  "source": "upgrade/agent-studio-v5/src/App.tsx",
+  "routes": [
+    "/",
+    "/auth",
+    "/channels",
+    "/chat",
+    "/claw-center",
+    "/claw-center/:id",
+    "/claw-upload",
+    "/community",
+    "/community/:id",
+    "/community/new",
+    "/devices",
+    "/docs",
+    "/extensions",
+    "/forgot-password",
+    "/instances",
+    "/instances/:id",
+    "/login",
+    "/register",
+    "/settings",
+    "/tasks"
+  ]
+}

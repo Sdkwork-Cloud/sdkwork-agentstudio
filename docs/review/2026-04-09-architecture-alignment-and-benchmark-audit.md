@@ -21,7 +21,7 @@
   - `plugins/mod.rs`
 - Fresh local evidence:
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 - Official benchmark references:
   - Cursor Background Agents: `https://docs.cursor.com/background-agents`
@@ -67,7 +67,7 @@
   - Cursor documents asynchronous background agents with status, follow-ups, and takeover
   - GitHub documents an autonomous coding agent with ephemeral environments, tests, linters, and iterative PR feedback
 - Current local status:
-  - Claw Studio has instance tasks, agent skills, and workbench sections
+  - Agent Studio has instance tasks, agent skills, and workbench sections
   - it does not yet expose a unified background execution lane for long-running coding/review tasks
 - Fix direction:
   - design a workbench-native background agent lane on top of current task/runtime surfaces
@@ -79,7 +79,7 @@
   - Windsurf Workflows are reusable markdown workflows surfaced directly in product
   - Cursor MCP supports prompts/resources/tools through the MCP surface
 - Current local status:
-  - Claw Studio already has prompt assets in `docs/prompts/`
+  - Agent Studio already has prompt assets in `docs/prompts/`
   - those assets are not yet versioned, browsable, or runnable as first-class workflow objects inside the app
 - Fix direction:
   - promote prompt/workflow assets into a managed workflow registry with versioning, permissions, and audit trail
@@ -90,7 +90,7 @@
   - Cursor Bugbot provides automated PR review with fix suggestions
   - GitHub MCP and cloud-agent docs show tool-governed review/automation lanes
 - Current local status:
-  - Claw Studio relies on manual `docs/review/` loops plus contract tests
+  - Agent Studio relies on manual `docs/review/` loops plus contract tests
   - there is no product-native diff review lane that files findings, links evidence, and tracks remediation state
 - Fix direction:
   - design a review workbench that writes findings into `docs/review/` and runtime tasks, not just chat output

@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 const rootDir = path.resolve(import.meta.dirname, '..', '..');
 
-test('release profiles expose a reusable claw-studio release matrix with standard desktop bundle coverage', async () => {
+test('release profiles expose a reusable agent-studio release matrix with standard desktop bundle coverage', async () => {
   const profilePath = path.join(rootDir, 'scripts', 'release', 'release-profiles.mjs');
   assert.equal(existsSync(profilePath), true, 'missing scripts/release/release-profiles.mjs');
 
@@ -18,13 +18,13 @@ test('release profiles expose a reusable claw-studio release matrix with standar
   assert.equal(typeof profiles.buildContainerReleaseMatrix, 'function');
   assert.equal(typeof profiles.buildKubernetesReleaseMatrix, 'function');
 
-  const profile = profiles.resolveReleaseProfile('claw-studio');
-  const matrix = profiles.buildDesktopReleaseMatrix('claw-studio');
-  const serverMatrix = profiles.buildServerReleaseMatrix('claw-studio');
-  const containerMatrix = profiles.buildContainerReleaseMatrix('claw-studio');
-  const kubernetesMatrix = profiles.buildKubernetesReleaseMatrix('claw-studio');
+  const profile = profiles.resolveReleaseProfile('agent-studio');
+  const matrix = profiles.buildDesktopReleaseMatrix('agent-studio');
+  const serverMatrix = profiles.buildServerReleaseMatrix('agent-studio');
+  const containerMatrix = profiles.buildContainerReleaseMatrix('agent-studio');
+  const kubernetesMatrix = profiles.buildKubernetesReleaseMatrix('agent-studio');
 
-  assert.equal(profile.id, 'claw-studio');
+  assert.equal(profile.id, 'agent-studio');
   assert.equal(profile.release.manifestFileName, 'release-manifest.json');
   assert.equal(profile.release.manifestChecksumFileName, 'release-manifest.json.sha256.txt');
   assert.equal(profile.release.attestationEvidenceFileName, 'release-attestations.json');
@@ -68,7 +68,7 @@ test('release profiles expose a reusable claw-studio release matrix with standar
   );
   assert.deepEqual(
     profiles.resolveDesktopBundleTargets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       platform: 'windows',
       arch: 'x64',
     }),
@@ -76,7 +76,7 @@ test('release profiles expose a reusable claw-studio release matrix with standar
   );
   assert.deepEqual(
     profiles.resolveDesktopBundleTargets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       platform: 'linux',
       arch: 'x64',
     }),
@@ -84,7 +84,7 @@ test('release profiles expose a reusable claw-studio release matrix with standar
   );
   assert.deepEqual(
     profiles.resolveDesktopBundleTargets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       platform: 'linux',
       arch: 'x64',
       bundleTargets: ['appimage'],
@@ -93,7 +93,7 @@ test('release profiles expose a reusable claw-studio release matrix with standar
   );
   assert.deepEqual(
     profiles.resolveDesktopBundleTargets({
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       platform: 'macos',
       arch: 'arm64',
     }),

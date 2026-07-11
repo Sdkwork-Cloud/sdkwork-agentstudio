@@ -39,4 +39,4 @@ assert.deepEqual(commandPlan[2].args, [
   resolveServerUserCenterEntrypointContractTestFile({ workspaceRoot }),
 ]);
 
-console.log('claw-studio run-user-center-standard contract passed.');
+console.log('agent-studio run-user-center-standard contract passed.');

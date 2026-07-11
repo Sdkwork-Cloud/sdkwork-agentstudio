@@ -4,33 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-catalogs:
-  default:
-    '@types/react':
-      specifier: ^19.2.14
-      version: 19.2.14
-    '@types/react-dom':
-      specifier: ^19.2.3
-      version: 19.2.3
-    lucide-react:
-      specifier: ^1.7.0
-      version: 1.7.0
-    qrcode:
-      specifier: ^1.5.4
-      version: 1.5.4
-    react:
-      specifier: ^19.2.4
-      version: 19.2.4
-    react-dom:
-      specifier: ^19.2.4
-      version: 19.2.4
-    typescript:
-      specifier: ^6.0.2
-      version: 6.0.2
-    vite-plugin-dts:
-      specifier: ^4.5.4
-      version: 4.5.4
-
 importers:
 
   .:
@@ -56,94 +29,19 @@ importers:
         version: 6.0.2
       vitepress:
         specifier: ^1.6.4
-        version: 1.6.4(@algolia/client-search@5.50.1)(@types/node@25.9.2)(@types/react@19.2.14)(fuse.js@7.3.0)(lightningcss@1.32.0)(postcss@8.5.15)(qrcode@1.5.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(search-insights@2.17.3)(typescript@6.0.2)
+        version: 1.6.4(@algolia/client-search@5.50.1)(@types/node@25.9.2)(@types/react@19.2.14)(fuse.js@7.3.0)(lightningcss@1.32.0)(postcss@8.5.15)(qrcode@1.5.4)(search-insights@2.17.3)(typescript@6.0.2)
       vue:
         specifier: ^3.5.32
         version: 3.5.32(typescript@6.0.2)
-
-  ../craw-chat/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript:
-    dependencies:
-      '@sdkwork/im-sdk-generated':
-        specifier: link:./generated/server-openapi
-        version: link:generated/server-openapi
-      '@sdkwork/sdk-common':
-        specifier: ^1.0.2
-        version: link:../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
-      ws:
-        specifier: ^8.18.1
-        version: 8.21.0
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
 
   ../sdkwork-appbase/packages/common/foundation/sdkwork-runtime-bootstrap:
-    devDependencies:
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.3
-
-  ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-contracts:
-    devDependencies:
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.3
-
-  ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-runtime:
     dependencies:
-      '@sdkwork/iam-app-sdk':
+      '@sdkwork/utils':
         specifier: workspace:*
-        version: link:../../../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi
-      '@sdkwork/iam-backend-sdk':
-        specifier: workspace:*
-        version: link:../../../../sdks/sdkwork-iam-backend-sdk/sdkwork-iam-backend-sdk-typescript/generated/server-openapi
-      '@sdkwork/iam-contracts':
-        specifier: workspace:*
-        version: link:../sdkwork-iam-contracts
-      '@sdkwork/iam-sdk-ports':
-        specifier: workspace:*
-        version: link:../sdkwork-iam-sdk-ports
-      '@sdkwork/iam-service':
-        specifier: workspace:*
-        version: link:../sdkwork-iam-service
-      '@sdkwork/runtime-bootstrap':
-        specifier: workspace:*
-        version: link:../../foundation/sdkwork-runtime-bootstrap
-      '@sdkwork/sdk-common':
-        specifier: ^1.0.2
-        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
-    devDependencies:
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.3
-
-  ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-sdk-adapter:
-    dependencies:
-      '@sdkwork/iam-sdk-ports':
-        specifier: workspace:*
-        version: link:../sdkwork-iam-sdk-ports
-    devDependencies:
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.3
-
-  ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-sdk-ports:
-    dependencies:
-      '@sdkwork/iam-contracts':
-        specifier: workspace:*
-        version: link:../sdkwork-iam-contracts
-    devDependencies:
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.3
-
-  ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-service:
-    dependencies:
-      '@sdkwork/iam-contracts':
-        specifier: workspace:*
-        version: link:../sdkwork-iam-contracts
-      '@sdkwork/iam-sdk-ports':
-        specifier: workspace:*
-        version: link:../sdkwork-iam-sdk-ports
-      '@sdkwork/runtime-bootstrap':
-        specifier: workspace:*
-        version: link:../../foundation/sdkwork-runtime-bootstrap
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
     devDependencies:
       typescript:
         specifier: ^6.0.2
@@ -154,6 +52,9 @@ importers:
       '@sdkwork/runtime-bootstrap':
         specifier: workspace:*
         version: link:../../../common/foundation/sdkwork-runtime-bootstrap
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       react:
         specifier: '>=18.2.0 <20.0.0'
         version: 19.2.4
@@ -170,6 +71,9 @@ importers:
 
   ../sdkwork-appbase/packages/pc-react/foundation/sdkwork-i18n-pc-react:
     dependencies:
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       i18next:
         specifier: ^26.1.0
         version: 26.3.1(typescript@6.0.3)
@@ -182,97 +86,6 @@ importers:
       react-i18next:
         specifier: ^17.0.7
         version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
-
-  ../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react:
-    dependencies:
-      '@sdkwork/appbase-pc-react':
-        specifier: '*'
-        version: link:../../foundation/sdkwork-appbase-pc-react
-      '@sdkwork/i18n-pc-react':
-        specifier: workspace:*
-        version: link:../../foundation/sdkwork-i18n-pc-react
-      '@sdkwork/iam-sdk-adapter':
-        specifier: workspace:*
-        version: link:../../../common/iam/sdkwork-iam-sdk-adapter
-      '@sdkwork/runtime-bootstrap':
-        specifier: workspace:*
-        version: link:../../../common/foundation/sdkwork-runtime-bootstrap
-      '@sdkwork/ui-pc-react':
-        specifier: '*'
-        version: link:../../../../../sdkwork-ui/sdkwork-ui-pc-react
-      lucide-react:
-        specifier: 'catalog:'
-        version: 1.7.0(react@19.2.4)
-      qrcode:
-        specifier: 'catalog:'
-        version: 1.5.4
-      react:
-        specifier: '>=18.2.0 <20.0.0'
-        version: 19.2.4
-      react-dom:
-        specifier: '>=18.2.0 <20.0.0'
-        version: 19.2.4(react@19.2.4)
-      react-router-dom:
-        specifier: '>=7.0.0 <8.0.0'
-        version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-    devDependencies:
-      '@sdkwork/core-pc-react':
-        specifier: workspace:*
-        version: link:../../../../../sdkwork-core/sdkwork-core-pc-react
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.3
-
-  ../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-runtime-pc-react:
-    dependencies:
-      '@sdkwork/iam-app-sdk':
-        specifier: workspace:*
-        version: link:../../../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi
-      '@sdkwork/iam-contracts':
-        specifier: workspace:*
-        version: link:../../../common/iam/sdkwork-iam-contracts
-      '@sdkwork/iam-runtime':
-        specifier: workspace:*
-        version: link:../../../common/iam/sdkwork-iam-runtime
-      '@sdkwork/sdk-common':
-        specifier: ^1.0.2
-        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
-    devDependencies:
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.3
-
-  ../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi:
-    dependencies:
-      '@sdkwork/sdk-common':
-        specifier: ^1.0.2
-        version: link:../../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.39
-      rollup:
-        specifier: ^4.0.0
-        version: 4.60.1
-      typescript:
-        specifier: ^5.3.0
-        version: 5.9.3
-
-  ../sdkwork-iam/sdks/sdkwork-iam-backend-sdk/sdkwork-iam-backend-sdk-typescript/generated/server-openapi:
-    dependencies:
-      '@sdkwork/sdk-common':
-        specifier: ^1.0.2
-        version: link:../../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.39
-      rollup:
-        specifier: ^4.0.0
-        version: 4.60.1
-      typescript:
-        specifier: ^5.3.0
-        version: 5.9.3
 
   ../sdkwork-core/sdkwork-core-pc-react:
     dependencies:
@@ -315,14 +128,209 @@ importers:
     dependencies:
       '@sdkwork/iam-app-sdk':
         specifier: workspace:*
-        version: link:../../../../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi
+        version: link:../../../../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
       '@sdkwork/sdk-common':
         specifier: ^1.0.3
         version: link:../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../sdkwork-utils/packages/sdkwork-utils-typescript
     devDependencies:
       typescript:
         specifier: ^5.8.2
         version: 5.9.3
+
+  ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-contracts:
+    dependencies:
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
+    devDependencies:
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+
+  ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-credential-entry:
+    dependencies:
+      '@sdkwork/iam-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
+      '@sdkwork/runtime-bootstrap':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-appbase/packages/common/foundation/sdkwork-runtime-bootstrap
+      '@sdkwork/sdk-common':
+        specifier: ^1.0.2
+        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
+    devDependencies:
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+
+  ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-runtime:
+    dependencies:
+      '@sdkwork/iam-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
+      '@sdkwork/iam-backend-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-iam-backend-sdk/sdkwork-iam-backend-sdk-typescript
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-contracts
+      '@sdkwork/iam-sdk-ports':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-sdk-ports
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-service
+      '@sdkwork/runtime-bootstrap':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-appbase/packages/common/foundation/sdkwork-runtime-bootstrap
+      '@sdkwork/sdk-common':
+        specifier: ^1.0.2
+        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+    devDependencies:
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+
+  ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-sdk-adapter:
+    dependencies:
+      '@sdkwork/iam-sdk-ports':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-sdk-ports
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
+    devDependencies:
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+
+  ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-sdk-ports:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-contracts
+    devDependencies:
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+
+  ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-service:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-contracts
+      '@sdkwork/iam-sdk-ports':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-sdk-ports
+      '@sdkwork/runtime-bootstrap':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-appbase/packages/common/foundation/sdkwork-runtime-bootstrap
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
+    devDependencies:
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+
+  ../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react:
+    dependencies:
+      '@sdkwork/appbase-pc-react':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-appbase/packages/pc-react/foundation/sdkwork-appbase-pc-react
+      '@sdkwork/i18n-pc-react':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-appbase/packages/pc-react/foundation/sdkwork-i18n-pc-react
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-sdk-adapter':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-sdk-adapter
+      '@sdkwork/runtime-bootstrap':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-appbase/packages/common/foundation/sdkwork-runtime-bootstrap
+      '@sdkwork/ui-pc-react':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-ui/sdkwork-ui-pc-react
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
+      lucide-react:
+        specifier: 'catalog:'
+        version: 1.7.0(react@19.2.4)
+      qrcode:
+        specifier: 'catalog:'
+        version: 1.5.4
+      react:
+        specifier: '>=18.2.0 <20.0.0'
+        version: 19.2.4
+      react-dom:
+        specifier: '>=18.2.0 <20.0.0'
+        version: 19.2.4(react@19.2.4)
+      react-router-dom:
+        specifier: '>=7.0.0 <8.0.0'
+        version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+    devDependencies:
+      '@sdkwork/core-pc-react':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-core/sdkwork-core-pc-react
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+
+  ../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-runtime-pc-react:
+    dependencies:
+      '@sdkwork/iam-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-credential-entry':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-credential-entry
+      '@sdkwork/iam-runtime':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-runtime
+      '@sdkwork/sdk-common':
+        specifier: ^1.0.2
+        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+    devDependencies:
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+
+  ../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript:
+    dependencies:
+      '@sdkwork/sdk-common':
+        specifier: workspace:*
+        version: link:../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+
+  ../sdkwork-iam/sdks/sdkwork-iam-backend-sdk/sdkwork-iam-backend-sdk-typescript:
+    dependencies:
+      '@sdkwork/sdk-common':
+        specifier: workspace:*
+        version: link:../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+
+  ../sdkwork-im/sdks/sdkwork-im-sdk/sdkwork-im-sdk-typescript:
+    dependencies:
+      '@sdkwork/sdk-common':
+        specifier: ^1.0.2
+        version: link:../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+      ws:
+        specifier: ^8.18.1
+        version: 8.21.0
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.2
 
   ../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy:
     dependencies:
@@ -339,21 +347,11 @@ importers:
         specifier: '>=18.2.0 <20.0.0'
         version: 19.2.4(react@19.2.4)
 
-  ../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi:
+  ../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript:
     dependencies:
       '@sdkwork/sdk-common':
-        specifier: ^1.0.2
-        version: link:../../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.39
-      rollup:
-        specifier: ^4.0.0
-        version: 4.60.1
-      typescript:
-        specifier: ^5.3.0
-        version: 5.9.3
+        specifier: workspace:*
+        version: link:../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
 
   ../sdkwork-rtc/sdks/sdkwork-rtc-sdk/sdkwork-rtc-sdk-typescript: {}
 
@@ -517,17 +515,26 @@ importers:
         specifier: ^3.5.32
         version: 3.5.32(typescript@6.0.2)
 
-  packages/sdkwork-claw-account:
+  ../sdkwork-utils/packages/sdkwork-utils-typescript:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.0
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-account:
     dependencies:
-      '@sdkwork/claw-core':
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-i18n':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-i18n':
         specifier: workspace:*
-        version: link:../sdkwork-claw-i18n
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-i18n
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -542,25 +549,25 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/sdkwork-claw-agent:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-agent:
     dependencies:
-      '@sdkwork/claw-core':
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-infrastructure':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-infrastructure':
         specifier: workspace:*
-        version: link:../sdkwork-claw-infrastructure
-      '@sdkwork/claw-types':
+        version: link:../sdkwork-agentstudio-pc-infrastructure
+      '@sdkwork/agentstudio-pc-types':
         specifier: workspace:*
-        version: link:../sdkwork-claw-types
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-types
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
       '@tanstack/react-query':
         specifier: ^5.96.2
         version: 5.96.2(react@19.2.4)
@@ -578,7 +585,7 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-router-dom:
         specifier: ^7.14.0
         version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -586,14 +593,17 @@ importers:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/sdkwork-claw-auth:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-auth:
     dependencies:
-      '@sdkwork/claw-core':
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -611,7 +621,7 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-router-dom:
         specifier: ^7.14.0
         version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -619,23 +629,23 @@ importers:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/sdkwork-claw-center:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-center:
     dependencies:
-      '@sdkwork/claw-core':
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-i18n':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-i18n':
         specifier: workspace:*
-        version: link:../sdkwork-claw-i18n
-      '@sdkwork/claw-infrastructure':
+        version: link:../sdkwork-agentstudio-pc-i18n
+      '@sdkwork/agentstudio-pc-infrastructure':
         specifier: workspace:*
-        version: link:../sdkwork-claw-infrastructure
-      '@sdkwork/claw-types':
+        version: link:../sdkwork-agentstudio-pc-infrastructure
+      '@sdkwork/agentstudio-pc-types':
         specifier: workspace:*
-        version: link:../sdkwork-claw-types
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-types
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -653,7 +663,7 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-router-dom:
         specifier: ^7.14.0
         version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -661,20 +671,20 @@ importers:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/sdkwork-claw-channels:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-channels:
     dependencies:
-      '@sdkwork/claw-core':
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-infrastructure':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-infrastructure':
         specifier: workspace:*
-        version: link:../sdkwork-claw-infrastructure
-      '@sdkwork/claw-types':
+        version: link:../sdkwork-agentstudio-pc-infrastructure
+      '@sdkwork/agentstudio-pc-types':
         specifier: workspace:*
-        version: link:../sdkwork-claw-types
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-types
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -692,28 +702,31 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
 
-  packages/sdkwork-claw-chat:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-chat:
     dependencies:
-      '@sdkwork/claw-core':
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-i18n':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-i18n':
         specifier: workspace:*
-        version: link:../sdkwork-claw-i18n
-      '@sdkwork/claw-infrastructure':
+        version: link:../sdkwork-agentstudio-pc-i18n
+      '@sdkwork/agentstudio-pc-infrastructure':
         specifier: workspace:*
-        version: link:../sdkwork-claw-infrastructure
-      '@sdkwork/claw-types':
+        version: link:../sdkwork-agentstudio-pc-infrastructure
+      '@sdkwork/agentstudio-pc-types':
         specifier: workspace:*
-        version: link:../sdkwork-claw-types
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-types
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
       '@sdkwork/local-api-proxy':
         specifier: workspace:*
-        version: link:../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
+        version: link:../../../../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       '@tanstack/react-query':
         specifier: ^5.96.2
         version: 5.96.2(react@19.2.4)
@@ -737,7 +750,7 @@ importers:
         version: 19.2.4(react@19.2.4)
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.14)(react@19.2.4)
@@ -754,14 +767,14 @@ importers:
         specifier: ^5.0.12
         version: 5.0.12(@types/react@19.2.14)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
 
-  packages/sdkwork-claw-commons:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-commons:
     dependencies:
-      '@sdkwork/claw-core':
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
       lucide-react:
         specifier: ^1.7.0
         version: 1.7.0(react@19.2.4)
@@ -773,19 +786,19 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/sdkwork-claw-community:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-community:
     dependencies:
-      '@sdkwork/claw-core':
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
       '@tiptap/extension-highlight':
         specifier: ^3.22.2
         version: 3.22.2(@tiptap/core@3.22.2(@tiptap/pm@3.22.2))
@@ -824,7 +837,7 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-router-dom:
         specifier: ^7.14.0
         version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -832,38 +845,41 @@ importers:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/sdkwork-claw-core:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-core:
     dependencies:
-      '@sdkwork/iam-app-sdk':
+      '@sdkwork/agentstudio-pc-i18n':
         specifier: workspace:*
-        version: link:../../../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi
+        version: link:../sdkwork-agentstudio-pc-i18n
+      '@sdkwork/agentstudio-pc-infrastructure':
+        specifier: workspace:*
+        version: link:../sdkwork-agentstudio-pc-infrastructure
+      '@sdkwork/agentstudio-pc-types':
+        specifier: workspace:*
+        version: link:../sdkwork-agentstudio-pc-types
       '@sdkwork/auth-pc-react':
         specifier: workspace:*
-        version: link:../../../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react
+        version: link:../../../../../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react
       '@sdkwork/auth-runtime-pc-react':
         specifier: workspace:*
-        version: link:../../../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-runtime-pc-react
-      '@sdkwork/claw-i18n':
-        specifier: workspace:*
-        version: link:../sdkwork-claw-i18n
-      '@sdkwork/claw-infrastructure':
-        specifier: workspace:*
-        version: link:../sdkwork-claw-infrastructure
-      '@sdkwork/claw-types':
-        specifier: workspace:*
-        version: link:../sdkwork-claw-types
+        version: link:../../../../../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-runtime-pc-react
       '@sdkwork/core-pc-react':
         specifier: workspace:*
-        version: link:../../../sdkwork-core/sdkwork-core-pc-react
+        version: link:../../../../../sdkwork-core/sdkwork-core-pc-react
       '@sdkwork/drive-app-sdk':
         specifier: workspace:*
-        version: link:../../../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript
+        version: link:../../../../../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript
+      '@sdkwork/iam-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
       '@sdkwork/local-api-proxy':
         specifier: workspace:*
-        version: link:../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
+        version: link:../../../../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
       '@sdkwork/messaging-app-sdk':
         specifier: workspace:*
-        version: link:../../../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript/generated/server-openapi
+        version: link:../../../../../sdkwork-messaging/sdks/sdkwork-messaging-app-sdk/sdkwork-messaging-app-sdk-typescript
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       fuse.js:
         specifier: ^7.3.0
         version: 7.3.0
@@ -878,7 +894,7 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-router-dom:
         specifier: ^7.14.0
         version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -888,25 +904,28 @@ importers:
     devDependencies:
       vitest:
         specifier: ^4.1.2
-        version: 4.1.2(@types/node@25.9.2)(jsdom@29.0.1)(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))
+        version: 4.1.2(@types/node@25.9.2)(jsdom@29.0.1)(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  packages/sdkwork-claw-dashboard:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-dashboard:
     dependencies:
-      '@sdkwork/claw-core':
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-i18n':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-i18n':
         specifier: workspace:*
-        version: link:../sdkwork-claw-i18n
-      '@sdkwork/claw-infrastructure':
+        version: link:../sdkwork-agentstudio-pc-i18n
+      '@sdkwork/agentstudio-pc-infrastructure':
         specifier: workspace:*
-        version: link:../sdkwork-claw-infrastructure
-      '@sdkwork/claw-types':
+        version: link:../sdkwork-agentstudio-pc-infrastructure
+      '@sdkwork/agentstudio-pc-types':
         specifier: workspace:*
-        version: link:../sdkwork-claw-types
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-types
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -921,22 +940,25 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-router-dom:
         specifier: ^7.14.0
         version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/sdkwork-claw-desktop:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-desktop:
     dependencies:
-      '@sdkwork/claw-distribution':
+      '@sdkwork/agentstudio-pc-distribution':
         specifier: workspace:*
-        version: link:../sdkwork-claw-distribution
-      '@sdkwork/claw-infrastructure':
+        version: link:../sdkwork-agentstudio-pc-distribution
+      '@sdkwork/agentstudio-pc-infrastructure':
         specifier: workspace:*
-        version: link:../sdkwork-claw-infrastructure
-      '@sdkwork/claw-shell':
+        version: link:../sdkwork-agentstudio-pc-infrastructure
+      '@sdkwork/agentstudio-pc-shell':
         specifier: workspace:*
-        version: link:../sdkwork-claw-shell
+        version: link:../sdkwork-agentstudio-pc-shell
+      '@tailwindcss/vite':
+        specifier: ^4.2.2
+        version: 4.2.2(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
       '@tauri-apps/api':
         specifier: ^2.10.1
         version: 2.10.1
@@ -952,19 +974,19 @@ importers:
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      tailwindcss:
+        specifier: ^4.2.2
+        version: 4.2.2
     devDependencies:
       '@tailwindcss/typography':
         specifier: ^0.5.19
         version: 0.5.19(tailwindcss@4.2.2)
-      '@tailwindcss/vite':
-        specifier: ^4.2.2
-        version: 4.2.2(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))
       '@tauri-apps/cli':
         specifier: ^2.10.1
         version: 2.10.1
       '@types/node':
         specifier: ^25.5.2
-        version: 25.5.2
+        version: 25.9.2
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -973,28 +995,25 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
         specifier: ^6.0.1
-        version: 6.0.1(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))
-      tailwindcss:
-        specifier: ^4.2.2
-        version: 4.2.2
+        version: 6.0.1(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
       typescript:
         specifier: ~6.0.2
-        version: 6.0.2
+        version: 6.0.3
       vite:
         specifier: ^8.0.3
-        version: 8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)
+        version: 8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0)
 
-  packages/sdkwork-claw-devices:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-devices:
     dependencies:
-      '@sdkwork/claw-infrastructure':
+      '@sdkwork/agentstudio-pc-infrastructure':
         specifier: workspace:*
-        version: link:../sdkwork-claw-infrastructure
-      '@sdkwork/claw-types':
+        version: link:../sdkwork-agentstudio-pc-infrastructure
+      '@sdkwork/agentstudio-pc-types':
         specifier: workspace:*
-        version: link:../sdkwork-claw-types
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-types
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -1009,11 +1028,11 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
 
-  packages/sdkwork-claw-distribution: {}
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-distribution: {}
 
-  packages/sdkwork-claw-docs:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-docs:
     dependencies:
       '@types/react':
         specifier: ^19.2.14
@@ -1032,19 +1051,22 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-router-dom:
         specifier: ^7.14.0
         version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/sdkwork-claw-extensions:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-extensions:
     dependencies:
-      '@sdkwork/claw-core':
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -1062,59 +1084,65 @@ importers:
         version: 19.2.4
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/sdkwork-claw-host-core: {}
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-host-core: {}
 
-  packages/sdkwork-claw-host-studio: {}
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-host-studio: {}
 
-  packages/sdkwork-claw-i18n:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-i18n:
     dependencies:
       i18next:
         specifier: ^26.0.3
-        version: 26.0.3(typescript@6.0.3)
+        version: 26.3.1(typescript@6.0.3)
       i18next-browser-languagedetector:
         specifier: ^8.2.1
         version: 8.2.1
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.0.3(typescript@6.0.3))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
 
-  packages/sdkwork-claw-infrastructure:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-infrastructure:
     dependencies:
-      '@sdkwork/claw-i18n':
+      '@sdkwork/agentstudio-pc-i18n':
         specifier: workspace:*
-        version: link:../sdkwork-claw-i18n
-      '@sdkwork/claw-types':
+        version: link:../sdkwork-agentstudio-pc-i18n
+      '@sdkwork/agentstudio-pc-types':
         specifier: workspace:*
-        version: link:../sdkwork-claw-types
+        version: link:../sdkwork-agentstudio-pc-types
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
 
-  packages/sdkwork-claw-instances:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-instances:
     dependencies:
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@sdkwork/claw-commons':
+      '@sdkwork/agentstudio-pc-commons':
         specifier: workspace:*
-        version: link:../sdkwork-claw-commons
-      '@sdkwork/claw-core':
+        version: link:../sdkwork-agentstudio-pc-commons
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-infrastructure':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-infrastructure':
         specifier: workspace:*
-        version: link:../sdkwork-claw-infrastructure
-      '@sdkwork/claw-types':
+        version: link:../sdkwork-agentstudio-pc-infrastructure
+      '@sdkwork/agentstudio-pc-types':
         specifier: workspace:*
-        version: link:../sdkwork-claw-types
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-types
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
       '@sdkwork/local-api-proxy':
         specifier: workspace:*
-        version: link:../../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
+        version: link:../../../../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -1138,7 +1166,7 @@ importers:
         version: 19.2.4(react@19.2.4)
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-router-dom:
         specifier: ^7.14.0
         version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1146,35 +1174,35 @@ importers:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/sdkwork-claw-server:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-server:
     dependencies:
-      '@sdkwork/claw-host-core':
+      '@sdkwork/agentstudio-pc-host-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-host-core
+        version: link:../sdkwork-agentstudio-pc-host-core
 
-  packages/sdkwork-claw-settings:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-settings:
     dependencies:
-      '@sdkwork/claw-account':
+      '@sdkwork/agentstudio-pc-account':
         specifier: workspace:*
-        version: link:../sdkwork-claw-account
-      '@sdkwork/claw-core':
+        version: link:../sdkwork-agentstudio-pc-account
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-i18n':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-i18n':
         specifier: workspace:*
-        version: link:../sdkwork-claw-i18n
-      '@sdkwork/claw-infrastructure':
+        version: link:../sdkwork-agentstudio-pc-i18n
+      '@sdkwork/agentstudio-pc-infrastructure':
         specifier: workspace:*
-        version: link:../sdkwork-claw-infrastructure
-      '@sdkwork/claw-types':
+        version: link:../sdkwork-agentstudio-pc-infrastructure
+      '@sdkwork/agentstudio-pc-types':
         specifier: workspace:*
-        version: link:../sdkwork-claw-types
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-types
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
       '@sdkwork/local-api-proxy':
         specifier: workspace:*
-        version: link:../../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
+        version: link:../../../../../sdkwork-local-router/apps/sdkwork-local-router-pc/packages/sdkwork-local-api-proxy
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -1195,7 +1223,7 @@ importers:
         version: 19.2.4(react@19.2.4)
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-router-dom:
         specifier: ^7.14.0
         version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1203,59 +1231,59 @@ importers:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  packages/sdkwork-claw-shell:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-shell:
     dependencies:
-      '@sdkwork/claw-account':
+      '@sdkwork/agentstudio-pc-account':
         specifier: workspace:*
-        version: link:../sdkwork-claw-account
-      '@sdkwork/claw-agent':
+        version: link:../sdkwork-agentstudio-pc-account
+      '@sdkwork/agentstudio-pc-agent':
         specifier: workspace:*
-        version: link:../sdkwork-claw-agent
-      '@sdkwork/claw-auth':
+        version: link:../sdkwork-agentstudio-pc-agent
+      '@sdkwork/agentstudio-pc-auth':
         specifier: workspace:*
-        version: link:../sdkwork-claw-auth
-      '@sdkwork/claw-center':
+        version: link:../sdkwork-agentstudio-pc-auth
+      '@sdkwork/agentstudio-pc-center':
         specifier: workspace:*
-        version: link:../sdkwork-claw-center
-      '@sdkwork/claw-channels':
+        version: link:../sdkwork-agentstudio-pc-center
+      '@sdkwork/agentstudio-pc-channels':
         specifier: workspace:*
-        version: link:../sdkwork-claw-channels
-      '@sdkwork/claw-chat':
+        version: link:../sdkwork-agentstudio-pc-channels
+      '@sdkwork/agentstudio-pc-chat':
         specifier: workspace:*
-        version: link:../sdkwork-claw-chat
-      '@sdkwork/claw-community':
+        version: link:../sdkwork-agentstudio-pc-chat
+      '@sdkwork/agentstudio-pc-community':
         specifier: workspace:*
-        version: link:../sdkwork-claw-community
-      '@sdkwork/claw-core':
+        version: link:../sdkwork-agentstudio-pc-community
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-dashboard':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-dashboard':
         specifier: workspace:*
-        version: link:../sdkwork-claw-dashboard
-      '@sdkwork/claw-devices':
+        version: link:../sdkwork-agentstudio-pc-dashboard
+      '@sdkwork/agentstudio-pc-devices':
         specifier: workspace:*
-        version: link:../sdkwork-claw-devices
-      '@sdkwork/claw-docs':
+        version: link:../sdkwork-agentstudio-pc-devices
+      '@sdkwork/agentstudio-pc-docs':
         specifier: workspace:*
-        version: link:../sdkwork-claw-docs
-      '@sdkwork/claw-extensions':
+        version: link:../sdkwork-agentstudio-pc-docs
+      '@sdkwork/agentstudio-pc-extensions':
         specifier: workspace:*
-        version: link:../sdkwork-claw-extensions
-      '@sdkwork/claw-i18n':
+        version: link:../sdkwork-agentstudio-pc-extensions
+      '@sdkwork/agentstudio-pc-i18n':
         specifier: workspace:*
-        version: link:../sdkwork-claw-i18n
-      '@sdkwork/claw-instances':
+        version: link:../sdkwork-agentstudio-pc-i18n
+      '@sdkwork/agentstudio-pc-instances':
         specifier: workspace:*
-        version: link:../sdkwork-claw-instances
-      '@sdkwork/claw-settings':
+        version: link:../sdkwork-agentstudio-pc-instances
+      '@sdkwork/agentstudio-pc-settings':
         specifier: workspace:*
-        version: link:../sdkwork-claw-settings
-      '@sdkwork/claw-tasks':
+        version: link:../sdkwork-agentstudio-pc-settings
+      '@sdkwork/agentstudio-pc-tasks':
         specifier: workspace:*
-        version: link:../sdkwork-claw-tasks
-      '@sdkwork/claw-ui':
+        version: link:../sdkwork-agentstudio-pc-tasks
+      '@sdkwork/agentstudio-pc-ui':
         specifier: workspace:*
-        version: link:../sdkwork-claw-ui
+        version: link:../sdkwork-agentstudio-pc-ui
       '@tailwindcss/typography':
         specifier: ^0.5.19
         version: 0.5.19(tailwindcss@4.2.2)
@@ -1282,7 +1310,7 @@ importers:
         version: 19.2.4(react@19.2.4)
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-router-dom:
         specifier: ^7.14.0
         version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1293,17 +1321,17 @@ importers:
         specifier: ^4.2.2
         version: 4.2.2
 
-  packages/sdkwork-claw-tasks:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-tasks:
     dependencies:
-      '@sdkwork/claw-commons':
+      '@sdkwork/agentstudio-pc-commons':
         specifier: workspace:*
-        version: link:../sdkwork-claw-commons
-      '@sdkwork/claw-core':
+        version: link:../sdkwork-agentstudio-pc-commons
+      '@sdkwork/agentstudio-pc-core':
         specifier: workspace:*
-        version: link:../sdkwork-claw-core
-      '@sdkwork/claw-types':
+        version: link:../sdkwork-agentstudio-pc-core
+      '@sdkwork/agentstudio-pc-types':
         specifier: workspace:*
-        version: link:../sdkwork-claw-types
+        version: link:../sdkwork-agentstudio-pc-types
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -1318,11 +1346,15 @@ importers:
         version: 12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
 
-  packages/sdkwork-claw-types: {}
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-types:
+    dependencies:
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
 
-  packages/sdkwork-claw-ui:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-ui:
     dependencies:
       '@radix-ui/react-checkbox':
         specifier: ^1.3.3
@@ -1341,7 +1373,7 @@ importers:
         version: 1.3.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@radix-ui/react-slot':
         specifier: ^1.2.4
-        version: 1.2.4(@types/react@19.2.14)(react@19.2.4)
+        version: 1.2.5(@types/react@19.2.14)(react@19.2.4)
       '@radix-ui/react-switch':
         specifier: ^1.2.6
         version: 1.2.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1365,7 +1397,7 @@ importers:
         version: 19.2.4(react@19.2.4)
       react-i18next:
         specifier: ^17.0.2
-        version: 17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
+        version: 17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.14)(react@19.2.4)
@@ -1379,42 +1411,42 @@ importers:
         specifier: ^3.5.0
         version: 3.5.0
 
-  packages/sdkwork-claw-web:
+  apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-web:
     dependencies:
-      '@sdkwork/claw-i18n':
+      '@sdkwork/agentstudio-pc-i18n':
         specifier: workspace:*
-        version: link:../sdkwork-claw-i18n
-      '@sdkwork/claw-shell':
+        version: link:../sdkwork-agentstudio-pc-i18n
+      '@sdkwork/agentstudio-pc-shell':
         specifier: workspace:*
-        version: link:../sdkwork-claw-shell
+        version: link:../sdkwork-agentstudio-pc-shell
+      '@tailwindcss/vite':
+        specifier: ^4.2.2
+        version: 4.2.2(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
       react:
         specifier: ^19.2.4
         version: 19.2.4
       react-dom:
         specifier: ^19.2.4
         version: 19.2.4(react@19.2.4)
+      tailwindcss:
+        specifier: ^4.2.2
+        version: 4.2.2
     devDependencies:
       '@tailwindcss/typography':
         specifier: ^0.5.19
         version: 0.5.19(tailwindcss@4.2.2)
-      '@tailwindcss/vite':
-        specifier: ^4.2.2
-        version: 4.2.2(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))
       '@types/node':
         specifier: ^25.5.2
-        version: 25.5.2
+        version: 25.9.2
       '@vitejs/plugin-react':
         specifier: ^6.0.1
-        version: 6.0.1(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))
-      tailwindcss:
-        specifier: ^4.2.2
-        version: 4.2.2
+        version: 6.0.1(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
       typescript:
         specifier: ~6.0.2
-        version: 6.0.2
+        version: 6.0.3
       vite:
         specifier: ^8.0.3
-        version: 8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)
+        version: 8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0)
 
 packages:
 
@@ -3669,11 +3701,8 @@ packages:
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
-  '@types/node@20.19.39':
-    resolution: {integrity: sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw==}
-
-  '@types/node@25.5.2':
-    resolution: {integrity: sha512-tO4ZIRKNC+MDWV4qKVZe3Ql/woTnmHDr5JD8UI5hn2pwBrHEwOEMZK7WlNb5RKB6EoJ02gwmQS9OrjuFnZYdpg==}
+  '@types/node@22.20.0':
+    resolution: {integrity: sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g==}
 
   '@types/node@25.9.2':
     resolution: {integrity: sha512-G05zqtJhcDLb8uslf5EjCxXg9G1KQxiV8OS0R26IC//Eoyitzqe8z37I7cqvnZlrlSfgocQRfSn/AHBZJJFyGw==}
@@ -4431,14 +4460,6 @@ packages:
   i18next-browser-languagedetector@8.2.1:
     resolution: {integrity: sha512-bZg8+4bdmaOiApD7N7BPT9W8MLZG+nPTOFlLiJiT8uzKXFjhxw4v2ierCXOwB5sFDMtuA5G4kgYZ0AznZxQ/cw==}
 
-  i18next@26.0.3:
-    resolution: {integrity: sha512-1571kXINxHKY7LksWp8wP+zP0YqHSSpl/OW0Y0owFEf2H3s8gCAffWaZivcz14rMkOvn3R/psiQxVsR9t2Nafg==}
-    peerDependencies:
-      typescript: ^5 || ^6
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-
   i18next@26.3.1:
     resolution: {integrity: sha512-txQqd5EULsqEh9OJqRH15aCaOuy/nLJyhw5EHCSKLKJE1aBbb3Zve2+uQIxgWhPm1QqUQoWyQBm2kfmmIrzkcQ==}
     peerDependencies:
@@ -5091,22 +5112,6 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
 
-  react-i18next@17.0.2:
-    resolution: {integrity: sha512-shBftH2vaTWK2Bsp7FiL+cevx3xFJlvFxmsDFQSrJc+6twHkP0tv/bGa01VVWzpreUVVwU+3Hev5iFqRg65RwA==}
-    peerDependencies:
-      i18next: '>= 26.0.1'
-      react: '>= 16.8.0'
-      react-dom: '*'
-      react-native: '*'
-      typescript: ^5 || ^6
-    peerDependenciesMeta:
-      react-dom:
-        optional: true
-      react-native:
-        optional: true
-      typescript:
-        optional: true
-
   react-i18next@17.0.8:
     resolution: {integrity: sha512-0ooKbGLU8JXhe1zwpQUWIeXSgLPOfwJmgheWRIUpcoA0CpyabpGhayjdG+/eA5esC1AQ8h2jWpXjJfzQzeDOCw==}
     peerDependencies:
@@ -5475,9 +5480,6 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  undici-types@7.18.2:
-    resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
-
   undici-types@7.24.6:
     resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
 
@@ -5797,6 +5799,11 @@ packages:
   yallist@4.0.0:
     resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
 
+  yaml@2.9.0:
+    resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   yargs-parser@18.1.3:
     resolution: {integrity: sha512-o50j0JeToy/4K6OZcaQmW6lyXXKhq7csREXcDwk2omFPJEwUNOVtJKvmDr9EI1fAJZUyZcRF7kxGBWmRXudrCQ==}
     engines: {node: '>=6'}
@@ -6028,6 +6035,17 @@ snapshots:
       - react-dom
       - search-insights
 
+  '@docsearch/js@3.8.2(@algolia/client-search@5.50.1)(@types/react@19.2.14)(search-insights@2.17.3)':
+    dependencies:
+      '@docsearch/react': 3.8.2(@algolia/client-search@5.50.1)(@types/react@19.2.14)(search-insights@2.17.3)
+      preact: 10.29.1
+    transitivePeerDependencies:
+      - '@algolia/client-search'
+      - '@types/react'
+      - react
+      - react-dom
+      - search-insights
+
   '@docsearch/react@3.8.2(@algolia/client-search@5.50.1)(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(search-insights@2.17.3)':
     dependencies:
       '@algolia/autocomplete-core': 1.17.7(@algolia/client-search@5.50.1)(algoliasearch@5.50.1)(search-insights@2.17.3)
@@ -6038,6 +6056,18 @@ snapshots:
       '@types/react': 19.2.14
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
+      search-insights: 2.17.3
+    transitivePeerDependencies:
+      - '@algolia/client-search'
+
+  '@docsearch/react@3.8.2(@algolia/client-search@5.50.1)(@types/react@19.2.14)(search-insights@2.17.3)':
+    dependencies:
+      '@algolia/autocomplete-core': 1.17.7(@algolia/client-search@5.50.1)(algoliasearch@5.50.1)(search-insights@2.17.3)
+      '@algolia/autocomplete-preset-algolia': 1.17.7(@algolia/client-search@5.50.1)(algoliasearch@5.50.1)
+      '@docsearch/css': 3.8.2
+      algoliasearch: 5.50.1
+    optionalDependencies:
+      '@types/react': 19.2.14
       search-insights: 2.17.3
     transitivePeerDependencies:
       - '@algolia/client-search'
@@ -7445,12 +7475,12 @@ snapshots:
       postcss-selector-parser: 6.0.10
       tailwindcss: 4.2.2
 
-  '@tailwindcss/vite@4.2.2(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))':
+  '@tailwindcss/vite@4.2.2(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
       '@tailwindcss/node': 4.2.2
       '@tailwindcss/oxide': 4.2.2
       tailwindcss: 4.2.2
-      vite: 8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)
+      vite: 8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0)
 
   '@tailwindcss/vite@4.2.2(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))':
     dependencies:
@@ -7799,13 +7829,9 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
-  '@types/node@20.19.39':
+  '@types/node@22.20.0':
     dependencies:
       undici-types: 6.21.0
-
-  '@types/node@25.5.2':
-    dependencies:
-      undici-types: 7.18.2
 
   '@types/node@25.9.2':
     dependencies:
@@ -7929,10 +7955,10 @@ snapshots:
 
   '@ungap/structured-clone@1.3.0': {}
 
-  '@vitejs/plugin-react@6.0.1(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))':
+  '@vitejs/plugin-react@6.0.1(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
       '@rolldown/pluginutils': 1.0.0-rc.7
-      vite: 8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)
+      vite: 8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0)
 
   '@vitejs/plugin-react@6.0.1(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))':
     dependencies:
@@ -7953,13 +7979,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.2(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))':
+  '@vitest/mocker@4.1.2(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
       '@vitest/spy': 4.1.2
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)
+      vite: 8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0)
 
   '@vitest/mocker@4.1.2(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))':
     dependencies:
@@ -8663,12 +8689,6 @@ snapshots:
   i18next-browser-languagedetector@8.2.1:
     dependencies:
       '@babel/runtime': 7.29.2
-
-  i18next@26.0.3(typescript@6.0.3):
-    dependencies:
-      '@babel/runtime': 7.29.2
-    optionalDependencies:
-      typescript: 6.0.3
 
   i18next@26.3.1(typescript@6.0.3):
     optionalDependencies:
@@ -9529,27 +9549,6 @@ snapshots:
     dependencies:
       react: 19.2.4
 
-  react-i18next@17.0.2(i18next@26.0.3(typescript@6.0.3))(react@19.2.4)(typescript@6.0.3):
-    dependencies:
-      '@babel/runtime': 7.29.2
-      html-parse-stringify: 3.0.1
-      i18next: 26.0.3(typescript@6.0.3)
-      react: 19.2.4
-      use-sync-external-store: 1.6.0(react@19.2.4)
-    optionalDependencies:
-      typescript: 6.0.3
-
-  react-i18next@17.0.2(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3):
-    dependencies:
-      '@babel/runtime': 7.29.2
-      html-parse-stringify: 3.0.1
-      i18next: 26.3.1(typescript@6.0.3)
-      react: 19.2.4
-      use-sync-external-store: 1.6.0(react@19.2.4)
-    optionalDependencies:
-      react-dom: 19.2.4(react@19.2.4)
-      typescript: 6.0.3
-
   react-i18next@17.0.8(i18next@26.3.1(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3):
     dependencies:
       '@babel/runtime': 7.29.2
@@ -9963,8 +9962,6 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici-types@7.18.2: {}
-
   undici-types@7.24.6: {}
 
   undici@7.24.7: {}
@@ -10082,22 +10079,20 @@ snapshots:
       jiti: 2.6.1
       tsx: 4.21.0
 
-  vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0):
+  vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0):
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.4
-      postcss: 8.5.8
-      rolldown: 1.0.0-rc.12(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
-      tinyglobby: 0.2.15
+      postcss: 8.5.15
+      rolldown: 1.0.3
+      tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 25.5.2
+      '@types/node': 25.9.2
       esbuild: 0.27.4
       fsevents: 2.3.3
       jiti: 2.6.1
       tsx: 4.21.0
-    transitivePeerDependencies:
-      - '@emnapi/core'
-      - '@emnapi/runtime'
+      yaml: 2.9.0
 
   vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0):
     dependencies:
@@ -10165,10 +10160,59 @@ snapshots:
       - typescript
       - universal-cookie
 
-  vitest@4.1.2(@types/node@25.9.2)(jsdom@29.0.1)(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)):
+  vitepress@1.6.4(@algolia/client-search@5.50.1)(@types/node@25.9.2)(@types/react@19.2.14)(fuse.js@7.3.0)(lightningcss@1.32.0)(postcss@8.5.15)(qrcode@1.5.4)(search-insights@2.17.3)(typescript@6.0.2):
+    dependencies:
+      '@docsearch/css': 3.8.2
+      '@docsearch/js': 3.8.2(@algolia/client-search@5.50.1)(@types/react@19.2.14)(search-insights@2.17.3)
+      '@iconify-json/simple-icons': 1.2.76
+      '@shikijs/core': 2.5.0
+      '@shikijs/transformers': 2.5.0
+      '@shikijs/types': 2.5.0
+      '@types/markdown-it': 14.1.2
+      '@vitejs/plugin-vue': 5.2.4(vite@5.4.21(@types/node@25.9.2)(lightningcss@1.32.0))(vue@3.5.32(typescript@6.0.2))
+      '@vue/devtools-api': 7.7.9
+      '@vue/shared': 3.5.32
+      '@vueuse/core': 12.8.2(typescript@6.0.2)
+      '@vueuse/integrations': 12.8.2(focus-trap@7.8.0)(fuse.js@7.3.0)(qrcode@1.5.4)(typescript@6.0.2)
+      focus-trap: 7.8.0
+      mark.js: 8.11.1
+      minisearch: 7.2.0
+      shiki: 2.5.0
+      vite: 5.4.21(@types/node@25.9.2)(lightningcss@1.32.0)
+      vue: 3.5.32(typescript@6.0.2)
+    optionalDependencies:
+      postcss: 8.5.15
+    transitivePeerDependencies:
+      - '@algolia/client-search'
+      - '@types/node'
+      - '@types/react'
+      - async-validator
+      - axios
+      - change-case
+      - drauu
+      - fuse.js
+      - idb-keyval
+      - jwt-decode
+      - less
+      - lightningcss
+      - nprogress
+      - qrcode
+      - react
+      - react-dom
+      - sass
+      - sass-embedded
+      - search-insights
+      - sortablejs
+      - stylus
+      - sugarss
+      - terser
+      - typescript
+      - universal-cookie
+
+  vitest@4.1.2(@types/node@25.9.2)(jsdom@29.0.1)(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.2
-      '@vitest/mocker': 4.1.2(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))
+      '@vitest/mocker': 4.1.2(vite@8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.2
       '@vitest/runner': 4.1.2
       '@vitest/snapshot': 4.1.2
@@ -10185,7 +10229,7 @@ snapshots:
       tinyexec: 1.0.4
       tinyglobby: 0.2.15
       tinyrainbow: 3.1.0
-      vite: 8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)
+      vite: 8.0.16(@types/node@25.9.2)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 25.9.2
@@ -10281,6 +10325,8 @@ snapshots:
   y18n@4.0.3: {}
 
   yallist@4.0.0: {}
+
+  yaml@2.9.0: {}
 
   yargs-parser@18.1.3:
     dependencies:

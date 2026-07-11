@@ -2,7 +2,7 @@
 
 ## 1. Context
 
-- After the app-store loop, the next visible workspace lint blocker moved to `packages/sdkwork-clawstudio-chat/src/services/openClawGatewayHistoryConfigService.test.ts`.
+- After the app-store loop, the next visible workspace lint blocker moved to `packages/sdkwork-agentstudio-pc-chat/src/services/openClawGatewayHistoryConfigService.test.ts`.
 - The production service logic was already small and stable.
   The failure came from the test fixture still targeting an older `StudioInstanceDetailRecord` and `OpenClawConfigSnapshot` shape.
 
@@ -23,7 +23,7 @@
 
 ## 3. Changes
 
-- `packages/sdkwork-clawstudio-chat/src/services/openClawGatewayHistoryConfigService.test.ts`
+- `packages/sdkwork-agentstudio-pc-chat/src/services/openClawGatewayHistoryConfigService.test.ts`
   - Rebuilt the `StudioInstanceDetailRecord` fixture against the current contract:
     - `deploymentMode: 'local-managed'`
     - `status: 'online'`
@@ -36,11 +36,11 @@
 
 | Command | Result | Note |
 | --- | --- | --- |
-| `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/openClawGatewayHistoryConfigService.test.ts` | passed | 3 gateway-history regression cases stayed green after the fixture refresh |
+| `node --experimental-strip-types packages/sdkwork-agentstudio-pc-chat/src/services/openClawGatewayHistoryConfigService.test.ts` | passed | 3 gateway-history regression cases stayed green after the fixture refresh |
 | targeted `pnpm.cmd lint` check for `openClawGatewayHistoryConfigService.test.ts` | passed | returned `openclaw-gateway-history-clean` |
 
 ## 5. Remaining Gaps
 
-- Fresh workspace lint evidence shows the next blocker stack has now moved to `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts`.
+- Fresh workspace lint evidence shows the next blocker stack has now moved to `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts`.
 - That next slice is broader than this loop:
   it includes task record contract drift, OpenClaw config snapshot helper drift, and several untyped callback parameters.

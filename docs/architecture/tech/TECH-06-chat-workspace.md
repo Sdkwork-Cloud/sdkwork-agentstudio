@@ -9,7 +9,7 @@
 | --- | --- |
 | 执行模式 | 波次内并行 |
 | 前置 | `04` `05` |
-| 主写入范围 | `packages/sdkwork-clawstudio-chat/src` `packages/sdkwork-clawstudio-core/src/stores` `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts` |
+| 主写入范围 | `packages/sdkwork-agentstudio-pc-chat/src` `packages/sdkwork-agentstudio-pc-core/src/stores` `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.ts` |
 | 执行输入 | `06`、`16`、`17` 架构文档；现有 Chat、Gateway Session、Conversation、Route Service 实现 |
 | 本步非目标 | 不做 Instance Detail 十个分区的深度治理 |
 | 最小输出 | 统一聊天入口、统一路由决策、统一 OpenClaw Gateway / HTTP 兼容链 |
@@ -32,8 +32,8 @@
 
 - `pnpm.cmd check:sdkwork-chat`
 - `node --experimental-strip-types scripts/sdkwork-chat-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/chatService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-chat/src/services/chatService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-chat/src/services/instanceChatRouteService.test.ts`
 
 ## 5. 结果验证
 

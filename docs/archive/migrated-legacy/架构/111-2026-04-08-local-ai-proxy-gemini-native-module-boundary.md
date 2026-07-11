@@ -4,9 +4,9 @@
 
 The desktop local AI proxy must keep Gemini native protocol request-serving in a dedicated module:
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, shared router assembly, auth/header normalization, upstream dispatch entrypoints, and the runtime-facing service methods
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/gemini_native.rs`
   owns Gemini native `/v1beta/models`, `/v1beta/models/{model_action}`, and `/v1/models/{model_action}` request handlers plus Gemini-specific model-action parsing and supported-generation-method classification
 
 `scripts/check-desktop-platform-foundation.mjs` must assert the module file, the `mod gemini_native;` declaration, router delegation through `gemini_native::...`, and the removal of the old in-file Gemini handler definitions from the main runtime file.

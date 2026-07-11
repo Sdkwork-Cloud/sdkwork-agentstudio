@@ -26,7 +26,7 @@ pnpm dev
 
 ```bash
 pnpm install
-pnpm tauri:dev
+pnpm dev:desktop
 ```
 
 ### Server
@@ -34,17 +34,17 @@ pnpm tauri:dev
 ```bash
 pnpm install
 pnpm build
-pnpm server:dev
+pnpm dev:server
 ```
 
-Use `pnpm build` before `pnpm server:dev` when you want the native server to serve the current built browser bundle.
+Use `pnpm build` before `pnpm dev:server` when you want the native server to serve the current built browser bundle.
 
 ## Default Access Points
 
 | Mode | Default Or Typical Entry |
 | --- | --- |
 | Web workspace | `http://localhost:3001` |
-| Desktop runtime | native desktop window after `pnpm tauri:dev` |
+| Desktop runtime | native desktop window after `pnpm dev:desktop` |
 | Native server | `http://127.0.0.1:18797` by default |
 | Container | mapped host port from the deployment bundle |
 | Kubernetes | ingress domain or cluster service URL |
@@ -59,7 +59,7 @@ Typical workflow:
 
 1. Download the Windows desktop release asset from GitHub Releases.
 2. Run the installer.
-3. Launch Claw Studio from the Start menu or installation directory.
+3. Launch Agent Studio from the Start menu or installation directory.
 
 ### Linux
 
@@ -98,7 +98,7 @@ The packaged server archive contains:
 Extract the archive and start the server with:
 
 ```powershell
-.\bin\clawstudio-server.exe
+.\bin\agentstudio-server.exe
 ```
 
 ### Linux And macOS
@@ -106,15 +106,15 @@ Extract the archive and start the server with:
 Extract the archive and start the server with:
 
 ```bash
-./bin/clawstudio-server
+./bin/agentstudio-server
 ```
 
 When the packaged binary is launched from the extracted bundle, it defaults:
 
 - `CLAW_SERVER_WEB_DIST` to the embedded `web/dist`
-- `CLAW_SERVER_DATA_DIR` to `.clawstudio-server` inside the extracted bundle
+- `CLAW_SERVER_DATA_DIR` to `.agentstudio-server` inside the extracted bundle
 
-Optional convenience wrappers `start-clawstudio-server.cmd` and `start-clawstudio-server.sh` invoke the same binary and preserve those bundled defaults.
+Optional convenience wrappers `start-agentstudio-server.cmd` and `start-agentstudio-server.sh` invoke the same binary and preserve those bundled defaults.
 
 After startup, open `http://<host>:<port>` in a browser.
 
@@ -169,7 +169,7 @@ The most important runtime variables are:
 - `CLAW_SERVER_INTERNAL_USERNAME`
 - `CLAW_SERVER_INTERNAL_PASSWORD`
 
-See [Environment](/reference/environment) and [Claw Server Runtime](/reference/clawstudio-server-runtime) for the current supported values.
+See [Environment](/reference/environment) and [Claw Server Runtime](/reference/agentstudio-server-runtime) for the current supported values.
 
 ## Common Day-2 Operations
 
@@ -178,35 +178,35 @@ See [Environment](/reference/environment) and [Claw Server Runtime](/reference/c
 Windows:
 
 ```powershell
-taskkill /IM clawstudio-server.exe /F
-.\bin\clawstudio-server.exe
+taskkill /IM agentstudio-server.exe /F
+.\bin\agentstudio-server.exe
 ```
 
 Linux Or macOS:
 
 ```bash
-pkill -f clawstudio-server || true
-./bin/clawstudio-server
+pkill -f agentstudio-server || true
+./bin/agentstudio-server
 ```
 
-These commands are direct process-level examples for the packaged native binary. Optional wrapper scripts remain available for operator convenience, but the `bin/` binary is the canonical packaged entry point. If you install the native server as a system service, prefer `clawstudio-server service start|stop|restart|status` so CLI control, browser management, and projected service manifests stay aligned.
+These commands are direct process-level examples for the packaged native binary. Optional wrapper scripts remain available for operator convenience, but the `bin/` binary is the canonical packaged entry point. If you install the native server as a system service, prefer `agentstudio-server service start|stop|restart|status` so CLI control, browser management, and projected service manifests stay aligned.
 
 ### Install The Native Server As A Managed Service
 
-Current packaged server bundles ship the native service-capable binary under `bin/` as the canonical runtime entry. `start-clawstudio-server.sh` and `start-clawstudio-server.cmd` remain optional convenience wrappers around that same binary.
+Current packaged server bundles ship the native service-capable binary under `bin/` as the canonical runtime entry. `start-agentstudio-server.sh` and `start-agentstudio-server.cmd` remain optional convenience wrappers around that same binary.
 
 Windows:
 
 ```powershell
-.\bin\clawstudio-server.exe service install
-.\bin\clawstudio-server.exe service status
+.\bin\agentstudio-server.exe service install
+.\bin\agentstudio-server.exe service status
 ```
 
 Linux Or macOS:
 
 ```bash
-./bin/clawstudio-server service install
-./bin/clawstudio-server service status
+./bin/agentstudio-server service install
+./bin/agentstudio-server service status
 ```
 
 Use `service print-manifest --platform <linux|macos|windows>` when you need to inspect the projected unit before installing it. Service lifecycle commands default to the current platform, but they still require whatever privileges the host service manager expects.
@@ -221,7 +221,7 @@ docker compose -f deploy/docker/docker-compose.yml logs --tail=200
 ### Inspect Kubernetes Deployment State
 
 ```bash
-helm status claw-studio
+helm status agent-studio
 kubectl get pods
 kubectl get svc
 ```
@@ -237,7 +237,7 @@ Use a browser or curl against:
 ## Docker Deployment
 
 The container bundle packages the server runtime under `app/` and ships Docker deployment files under `deploy/`.
-Inside the image, Docker starts the canonical bundled binary at `app/bin/clawstudio-server` directly rather than routing through the optional shell wrapper.
+Inside the image, Docker starts the canonical bundled binary at `app/bin/agentstudio-server` directly rather than routing through the optional shell wrapper.
 
 Run these commands from the extracted bundle root. The compose files resolve env overlays from `deploy/docker/profiles/*` and use the extracted bundle root as the Docker build context.
 
@@ -266,7 +266,7 @@ The Kubernetes bundle ships a Helm-compatible chart plus `values.release.yaml`.
 Typical deployment:
 
 ```bash
-helm upgrade --install claw-studio ./chart -f values.release.yaml
+helm upgrade --install agent-studio ./chart -f values.release.yaml
 ```
 
 You can layer additional environment-specific values files on top of the release defaults.
@@ -292,9 +292,9 @@ pnpm release:plan
 
 Local packaging prerequisites:
 
-- `pnpm release:package:desktop` only packages finished desktop installers and app bundles. Run `pnpm release:desktop` or `pnpm tauri:build` first.
+- `pnpm release:package:desktop` only packages finished desktop installers and app bundles. Run `pnpm release:desktop` or `pnpm build:desktop` first.
 - `pnpm release:package:server` refreshes the matching native server release binary first when you use the root local wrapper. That build remains incremental, but it guarantees the packaged archive uses the current target output instead of a stale prior binary.
-- `pnpm release:package:container` refreshes a matching Linux server binary first when you use the root local wrapper. On Windows, `pnpm server:build -- --target x86_64-unknown-linux-gnu` can build that target through WSL automatically when a Linux distro is installed. On macOS, the same fallback still depends on an explicit Linux target toolchain.
+- `pnpm release:package:container` refreshes a matching Linux server binary first when you use the root local wrapper. On Windows, `pnpm build:server -- --target x86_64-unknown-linux-gnu` can build that target through WSL automatically when a Linux distro is installed. On macOS, the same fallback still depends on an explicit Linux target toolchain.
 - `pnpm release:package:kubernetes` packages chart and values assets only, so it can be prepared locally without building the server binary.
 - `pnpm release:finalize` reads packaged assets from the active release asset directory and rejects incomplete release-profile coverage by default. The local wrapper defaults that directory to `artifacts/release`, while GitHub workflows use `release-assets/`. During local finalization, `release-manifest.json.repository` resolves from `SDKWORK_RELEASE_REPOSITORY`, then `GITHUB_REPOSITORY`, then `git remote origin`, `release-manifest.json.releaseCoverage` records required, present, and missing targets, `release-manifest.json.releaseMetadata` records pre-rendered `release-notes.md`, and structured `status=skipped` deployment smoke for `container` and `kubernetes` is preserved instead of being flattened into a false pass. Run `pnpm release:write-attestation-evidence` after the finalized asset set has GitHub artifact attestations, then run `pnpm release:assert-ready` before publishing; readiness rejects partial or `--allow-partial-release` manifests, verifies `release-attestations.json`, `SHA256SUMS.txt`, artifact checksums, artifact sizes, and release metadata checksums/sizes against the finalized manifest, requires `release-notes.md` to remain covered by `releaseMetadata`, `SHA256SUMS.txt`, and `release-attestations.json`, requires every release subject attestation to be bound to the same sha256/repository/release tag/source ref/predicate/signer workflow identity through `gh attestation verify --signer-workflow`, and rejects artifacts whose required family-specific smoke metadata is missing, malformed, references smoke evidence files that are no longer present in the release asset directory, has smoke evidence sha256/size bindings that no longer match the referenced files, or no longer matches the referenced smoke report contents. Use `pnpm release:finalize:partial` only for explicit local/debug aggregation of an incomplete artifact directory.
 
@@ -304,8 +304,8 @@ The packaged server archives currently ship the native service-capable server bi
 
 That means:
 
-- non-service deployments should start `./bin/clawstudio-server` or `.\bin\clawstudio-server.exe`
-- `start-clawstudio-server.sh` and `start-clawstudio-server.cmd` remain optional convenience aliases for local operator startup
-- managed installs should run through `./bin/clawstudio-server service *` or `.\bin\clawstudio-server.exe service *`
+- non-service deployments should start `./bin/agentstudio-server` or `.\bin\agentstudio-server.exe`
+- `start-agentstudio-server.sh` and `start-agentstudio-server.cmd` remain optional convenience aliases for local operator startup
+- managed installs should run through `./bin/agentstudio-server service *` or `.\bin\agentstudio-server.exe service *`
 - `systemd`, `launchd`, and Windows Service lifecycles are still executed through the host platform's own service manager, so installation and control require the corresponding operator privileges
 

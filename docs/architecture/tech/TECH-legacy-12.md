@@ -9,7 +9,7 @@
 | --- | --- |
 | 执行模式 | 波次内并行 |
 | 前置 | `08` `10` `11` |
-| 主写入范围 | `packages/sdkwork-clawstudio-account` `packages/sdkwork-clawstudio-dashboard` `packages/sdkwork-clawstudio-mall` `packages/sdkwork-clawstudio-model-purchase` `packages/sdkwork-clawstudio-points` `docs/release/` |
+| 主写入范围 | `packages/sdkwork-agentstudio-pc-account` `packages/sdkwork-agentstudio-pc-dashboard` `packages/sdkwork-agentstudio-pc-mall` `packages/sdkwork-agentstudio-pc-model-purchase` `packages/sdkwork-agentstudio-pc-points` `docs/release/` |
 | 执行输入 | `01`、`13`、`14` 架构文档；现有账户、积分、模型购买、仪表盘能力 |
 | 本步非目标 | 不改变核心 Runtime 主链；不改变发布脚本主结构 |
 | 最小输出 | 商业化能力面、权限/权益边界、运营与审计证据、版本运营规则 |
@@ -71,7 +71,7 @@
 ### 6.4 架构能力闭环判定
 
 - 账户、权益、积分、模型购买、商城、仪表盘形成独立业务面，且变更不会污染 Runtime 主链。
-- 商业化能力不得绕过本地 Proxy，不得改写 `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`、`packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts` 定义的托管 OpenClaw 语义，也不得破坏全局 channels、Instance Detail、chat 真相源。
+- 商业化能力不得绕过本地 Proxy，不得改写 `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`、`packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts` 定义的托管 OpenClaw 语义，也不得破坏全局 channels、Instance Detail、chat 真相源。
 - 若权限/权益/审计不能与发布说明、feature flag、运营证据对齐，本 step 不算闭环。
 
 ### 6.5 快速完整执行建议

@@ -17,7 +17,7 @@ The shared Rust host kernel is structurally in place, but several low-level cont
 
 Commands executed:
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
 
 Result:
 
@@ -29,10 +29,10 @@ Result:
 ### 1. High: host capability declarations are mode-derived, not provider-derived
 
 Evidence:
-- `packages/sdkwork-clawstudio-server/src-host/src/bootstrap.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/internal_node_sessions.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/main.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/internal_node_sessions.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/main.rs`
 
 What is happening:
 
@@ -67,11 +67,11 @@ Required direction:
 ### 2. High: host platform `version` is not a version
 
 Evidence:
-- `packages/sdkwork-clawstudio-host-core/src-host/src/lib.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/bootstrap.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/api_public.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/openapi.rs`
+- `packages/sdkwork-agentstudio-pc-host-core/src-host/src/lib.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/api_public.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/openapi.rs`
 
 What is happening:
 
@@ -102,11 +102,11 @@ Required direction:
 ### 3. High: `updatedAt` and `generatedAt` are request-time stamps, not state-time stamps
 
 Evidence:
-- `packages/sdkwork-clawstudio-server/src-host/src/bootstrap.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/internal_node_sessions.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/api_public.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/manage_openclaw.rs`
-- `packages/sdkwork-clawstudio-server/src-host/src/http/routes/openapi.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/internal_node_sessions.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/api_public.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/manage_openclaw.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/openapi.rs`
 
 What is happening:
 
@@ -139,8 +139,8 @@ Required direction:
 ### 4. Medium: desktop hosted runtime resolver intentionally reuses stale descriptors across null/error refreshes
 
 Evidence:
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.ts`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.test.ts`
 
 What is happening:
 
@@ -179,8 +179,8 @@ Required direction:
 ### 5. Medium: HTML host metadata injection is still too raw for a control-plane contract
 
 Evidence:
-- `packages/sdkwork-clawstudio-server/src-host/src/http/static_assets.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs`
+- `packages/sdkwork-agentstudio-pc-server/src-host/src/http/static_assets.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/desktop_host_bootstrap.rs`
 
 What is happening:
 

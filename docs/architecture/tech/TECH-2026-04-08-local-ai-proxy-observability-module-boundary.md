@@ -7,9 +7,9 @@
 
 The desktop local AI proxy must keep shared observability and request-audit logic in a dedicated module:
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, request-serving orchestration, auth/header normalization, upstream dispatch, route selection, and the runtime-facing service methods
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs`
   owns route metrics updates, token-usage adjustments, request-log persistence, completed-stream request-log persistence, request-audit context shaping, logged-message extraction, request preview resolution, and response preview extraction
 
 `scripts/check-desktop-platform-foundation.mjs` must assert the module file, the `mod observability;` declaration, explicit `observability::...` delegation from the main local proxy runtime, and the removal of the old in-file observability helper definitions.

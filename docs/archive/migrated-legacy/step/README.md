@@ -1,4 +1,4 @@
-# Claw Studio 分步实施计划索引
+# Agent Studio 分步实施计划索引
 
 ## 1. 文档定位
 
@@ -8,22 +8,22 @@
 
 ## 2. 适用范围
 
-- `packages/sdkwork-clawstudio-web`
-- `packages/sdkwork-clawstudio-desktop`
-- `packages/sdkwork-clawstudio-shell`
-- `packages/sdkwork-clawstudio-core`
-- `packages/sdkwork-clawstudio-infrastructure`
-- `packages/sdkwork-clawstudio-types`
-- `packages/sdkwork-clawstudio-ui`
-- `packages/sdkwork-clawstudio-i18n`
-- `packages/sdkwork-clawstudio-chat`
-- `packages/sdkwork-clawstudio-instances`
-- `packages/sdkwork-clawstudio-settings`
-- `packages/sdkwork-clawstudio-market`
-- `packages/sdkwork-clawstudio-channels`
+- `packages/sdkwork-agentstudio-pc-web`
+- `packages/sdkwork-agentstudio-pc-desktop`
+- `packages/sdkwork-agentstudio-pc-shell`
+- `packages/sdkwork-agentstudio-pc-core`
+- `packages/sdkwork-agentstudio-pc-infrastructure`
+- `packages/sdkwork-agentstudio-pc-types`
+- `packages/sdkwork-agentstudio-pc-ui`
+- `packages/sdkwork-agentstudio-pc-i18n`
+- `packages/sdkwork-agentstudio-pc-chat`
+- `packages/sdkwork-agentstudio-pc-instances`
+- `packages/sdkwork-agentstudio-pc-settings`
+- `packages/sdkwork-agentstudio-pc-market`
+- `packages/sdkwork-agentstudio-pc-channels`
 - `packages/removed-install-feature`
-- `packages/sdkwork-clawstudio-server`
-- `packages/sdkwork-clawstudio-distribution`
+- `packages/sdkwork-agentstudio-pc-server`
+- `packages/sdkwork-agentstudio-pc-distribution`
 - `scripts/`
 - `config/`
 - `docs/release/`
@@ -53,17 +53,17 @@
 
 以下源码和测试是 step 执行时的强制对齐基线，不能只参考文档口述：
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 凡涉及全局 channels 配置、instances、ClawHub、插件机制、chat、Instance Detail 的 step，都必须先读这些文件，再宣称“已与 OpenClaw 对齐”。
 

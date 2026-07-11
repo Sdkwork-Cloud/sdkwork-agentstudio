@@ -11,24 +11,24 @@
 
 - The loop repaired the next real Step 03 workspace lint blocker chain:
   - `scripts/sdkwork-instances-contract.test.ts` already passed, so the previous `@monaco-editor/react` note was stale
-  - fresh `pnpm.cmd lint` failed in `scripts/sdkwork-settings-contract.test.ts` because `packages/sdkwork-clawstudio-i18n/src/locales/en.json` and `packages/sdkwork-clawstudio-i18n/src/locales/zh.json` had drifted behind the split `settings.json` locale resources that already carried the `Kernel Center` startup-evidence copy
-  - after the locale aggregates were resynced, `packages/sdkwork-clawstudio-i18n/src/index.test.ts` exposed the next blocker: Chinese channel-name literals still embedded in `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts`
+  - fresh `pnpm.cmd lint` failed in `scripts/sdkwork-settings-contract.test.ts` because `packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json` and `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json` had drifted behind the split `settings.json` locale resources that already carried the `Kernel Center` startup-evidence copy
+  - after the locale aggregates were resynced, `packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts` exposed the next blocker: Chinese channel-name literals still embedded in `packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.ts`
 - Implemented the narrow repairs:
-  - regenerated the aggregate locale bundles with `pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales`
+  - regenerated the aggregate locale bundles with `pnpm.cmd --filter @sdkwork/agentstudio-pc-i18n sync:locales`
   - normalized the built-in OpenClaw channel definition names to `SDKWORK Official Account` and `WeChat Official Account`
   - updated `openClawConfigService.test.ts` expectations to the new shared source constants
 - Fresh verification:
   - `node --experimental-strip-types scripts/sdkwork-settings-contract.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-core/src/services/openClawConfigService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.test.ts`
   - `pnpm.cmd lint`
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts`
-- `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.test.ts`
-- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
+- `packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.test.ts`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json`
 - `docs/review/step-03-kernel-center-compat-locale-sync-and-openclaw-channel-label-normalization-2026-04-08.md`
 - `docs/review/step-03-执行卡-2026-04-07.md`
 - `docs/release/release-2026-04-08-49.md`
@@ -37,8 +37,8 @@
 ## Verification Focus
 
 - `node --experimental-strip-types scripts/sdkwork-settings-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-core/src/services/openClawConfigService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.test.ts`
 - `pnpm.cmd lint`
 
 ## Risks And Rollback

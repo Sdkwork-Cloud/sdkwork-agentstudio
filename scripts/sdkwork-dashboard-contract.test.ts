@@ -26,39 +26,39 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-clawstudio-dashboard is implemented as a dedicated local feature package', () => {
+runTest('sdkwork-agentstudio-pc-dashboard is implemented as a dedicated local feature package', () => {
   const pkg = readJson<{ dependencies?: Record<string, string> }>(
-    'packages/sdkwork-clawstudio-dashboard/package.json',
+    'packages/sdkwork-agentstudio-pc-dashboard/package.json',
   );
-  const indexSource = read('packages/sdkwork-clawstudio-dashboard/src/index.ts');
+  const indexSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/index.ts');
 
-  assert.ok(exists('packages/sdkwork-clawstudio-dashboard/src/Dashboard.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-dashboard/src/Usage.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-dashboard/src/pages/Dashboard.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-dashboard/src/pages/UsageWorkspace.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-dashboard/src/services/index.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-dashboard/src/services/dashboardService.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-dashboard/src/services/usageWorkspaceService.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-dashboard/src/types/index.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-dashboard/src/Dashboard.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-dashboard/src/Usage.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-dashboard/src/pages/Dashboard.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-dashboard/src/pages/UsageWorkspace.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-dashboard/src/services/index.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-dashboard/src/services/dashboardService.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-dashboard/src/services/usageWorkspaceService.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-dashboard/src/types/index.ts'));
 
-  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-dashboard']);
-  assert.equal(pkg.dependencies?.['@sdkwork/clawstudio-core'], 'workspace:*');
-  assert.equal(pkg.dependencies?.['@sdkwork/clawstudio-i18n'], 'workspace:*');
-  assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-dashboard/);
+  assert.ok(!pkg.dependencies?.['@sdkwork/agentstudio-pc-studio-dashboard']);
+  assert.equal(pkg.dependencies?.['@sdkwork/agentstudio-pc-core'], 'workspace:*');
+  assert.equal(pkg.dependencies?.['@sdkwork/agentstudio-pc-i18n'], 'workspace:*');
+  assert.doesNotMatch(indexSource, /@sdkwork\/agent-studio-dashboard/);
   assert.match(indexSource, /\.\/Dashboard/);
   assert.match(indexSource, /\.\/Usage/);
   assert.match(indexSource, /\.\/services\/dashboardService/);
   assert.match(indexSource, /\.\/services\/usageWorkspaceService/);
 });
 
-runTest('sdkwork-clawstudio-dashboard keeps the gateway-backed usage workspace in the shared dashboard package', () => {
-  const usageExportSource = read('packages/sdkwork-clawstudio-dashboard/src/Usage.tsx');
-  const usagePageSource = read('packages/sdkwork-clawstudio-dashboard/src/pages/UsageWorkspace.tsx');
-  const usageServiceSource = read('packages/sdkwork-clawstudio-dashboard/src/services/usageWorkspaceService.ts');
-  const enLocale = readJson<any>('packages/sdkwork-clawstudio-i18n/src/locales/en.json');
-  const zhLocale = readJson<any>('packages/sdkwork-clawstudio-i18n/src/locales/zh.json');
-  const enDashboardLocale = readJson<any>('packages/sdkwork-clawstudio-i18n/src/locales/en/dashboard.json');
-  const zhDashboardLocale = readJson<any>('packages/sdkwork-clawstudio-i18n/src/locales/zh/dashboard.json');
+runTest('sdkwork-agentstudio-pc-dashboard keeps the gateway-backed usage workspace in the shared dashboard package', () => {
+  const usageExportSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/Usage.tsx');
+  const usagePageSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/pages/UsageWorkspace.tsx');
+  const usageServiceSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/services/usageWorkspaceService.ts');
+  const enLocale = readJson<any>('packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json');
+  const zhLocale = readJson<any>('packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json');
+  const enDashboardLocale = readJson<any>('packages/sdkwork-agentstudio-pc-i18n/src/locales/en/dashboard.json');
+  const zhDashboardLocale = readJson<any>('packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/dashboard.json');
 
   assert.match(usageExportSource, /UsageWorkspace/);
   assert.match(usagePageSource, /usageWorkspaceService/);
@@ -138,8 +138,8 @@ runTest('sdkwork-clawstudio-dashboard keeps the gateway-backed usage workspace i
   assert.doesNotMatch(usagePageSource, /@sdkwork\/claw-desktop/);
 });
 
-runTest('sdkwork-clawstudio-dashboard aggregates shared runtime data into a control-plane snapshot', () => {
-  const serviceSource = read('packages/sdkwork-clawstudio-dashboard/src/services/dashboardService.ts');
+runTest('sdkwork-agentstudio-pc-dashboard aggregates shared runtime data into a control-plane snapshot', () => {
+  const serviceSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/services/dashboardService.ts');
 
   assert.match(serviceSource, /listInstances/);
   assert.match(serviceSource, /getInstanceDetail/);
@@ -172,16 +172,16 @@ runTest('sdkwork-clawstudio-dashboard aggregates shared runtime data into a cont
   assert.doesNotMatch(serviceSource, /PRODUCT_PROFILES/);
 });
 
-runTest('sdkwork-clawstudio-dashboard recommendations target retained workspace routes', () => {
-  const serviceSource = read('packages/sdkwork-clawstudio-dashboard/src/services/dashboardService.ts');
+runTest('sdkwork-agentstudio-pc-dashboard recommendations target retained workspace routes', () => {
+  const serviceSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/services/dashboardService.ts');
 
   assert.doesNotMatch(serviceSource, /actionPath: '\/market'/);
   assert.match(serviceSource, /actionPath: '\/agents'/);
 });
 
-runTest('sdkwork-clawstudio-dashboard renders a professional operator cockpit instead of a placeholder page', () => {
-  const pageSource = read('packages/sdkwork-clawstudio-dashboard/src/pages/Dashboard.tsx');
-  const chartSource = read('packages/sdkwork-clawstudio-dashboard/src/components/TokenTrendChart.tsx');
+runTest('sdkwork-agentstudio-pc-dashboard renders a professional operator cockpit instead of a placeholder page', () => {
+  const pageSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/pages/Dashboard.tsx');
+  const chartSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/components/TokenTrendChart.tsx');
 
   assert.doesNotMatch(pageSource, /dashboard\.page\.title/);
   assert.doesNotMatch(pageSource, /dashboard\.page\.eyebrow/);
@@ -237,8 +237,8 @@ runTest('sdkwork-clawstudio-dashboard renders a professional operator cockpit in
   assert.doesNotMatch(pageSource, /dashboard\.metrics\.automationCadence/);
 });
 
-runTest('sdkwork-clawstudio-dashboard avoids garbled copy and redundant operator summary patterns', () => {
-  const pageSource = read('packages/sdkwork-clawstudio-dashboard/src/pages/Dashboard.tsx');
+runTest('sdkwork-agentstudio-pc-dashboard avoids garbled copy and redundant operator summary patterns', () => {
+  const pageSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/pages/Dashboard.tsx');
 
   assert.doesNotMatch(pageSource, /鈫\?/);
   assert.doesNotMatch(pageSource, /<SectionHeader[\s\S]*title=\{t\('dashboard\.page\.title'\)\}/);
@@ -247,8 +247,8 @@ runTest('sdkwork-clawstudio-dashboard avoids garbled copy and redundant operator
   assert.match(pageSource, /formatInteger\(row\.requestCount\)/);
 });
 
-runTest('sdkwork-clawstudio-dashboard keeps Chinese analytics copy intact', () => {
-  const zhLocale = readJson<any>('packages/sdkwork-clawstudio-i18n/src/locales/zh.json');
+runTest('sdkwork-agentstudio-pc-dashboard keeps Chinese analytics copy intact', () => {
+  const zhLocale = readJson<any>('packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json');
 
   assert.match(zhLocale.dashboard.page.title, /[\p{Script=Han}]/u);
   assert.doesNotMatch(zhLocale.dashboard.page.title, /\?/);
@@ -267,17 +267,17 @@ runTest('sdkwork-clawstudio-dashboard keeps Chinese analytics copy intact', () =
   assert.match(zhLocale.dashboard.tabs.recentRevenueRecords, /[\p{Script=Han}]/u);
 });
 
-runTest('sdkwork-clawstudio-dashboard token trend chart tolerates missing series input', () => {
-  const chartSource = read('packages/sdkwork-clawstudio-dashboard/src/components/TokenTrendChart.tsx');
+runTest('sdkwork-agentstudio-pc-dashboard token trend chart tolerates missing series input', () => {
+  const chartSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/components/TokenTrendChart.tsx');
 
   assert.match(chartSource, /points\s*=\s*\[\]/);
   assert.match(chartSource, /series\s*=\s*\[\]/);
 });
 
-runTest('sdkwork-clawstudio-dashboard token trend chart uses the available card width more aggressively', () => {
-  const pageSource = read('packages/sdkwork-clawstudio-dashboard/src/pages/Dashboard.tsx');
-  const chartSource = read('packages/sdkwork-clawstudio-dashboard/src/components/TokenTrendChart.tsx');
-  const revenueChartSource = read('packages/sdkwork-clawstudio-dashboard/src/components/RevenueTrendChart.tsx');
+runTest('sdkwork-agentstudio-pc-dashboard token trend chart uses the available card width more aggressively', () => {
+  const pageSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/pages/Dashboard.tsx');
+  const chartSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/components/TokenTrendChart.tsx');
+  const revenueChartSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/components/RevenueTrendChart.tsx');
 
   assert.doesNotMatch(
     pageSource,
@@ -296,8 +296,8 @@ runTest('sdkwork-clawstudio-dashboard token trend chart uses the available card 
   assert.doesNotMatch(chartSource, /w-\[calc\(100%\+1rem\)\]/);
 });
 
-runTest('sdkwork-clawstudio-dashboard keeps advanced time-range configuration inside a popup instead of inline chart controls', () => {
-  const chartSource = read('packages/sdkwork-clawstudio-dashboard/src/components/TokenTrendChart.tsx');
+runTest('sdkwork-agentstudio-pc-dashboard keeps advanced time-range configuration inside a popup instead of inline chart controls', () => {
+  const chartSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/components/TokenTrendChart.tsx');
 
   assert.match(chartSource, /DialogContent/);
   assert.match(chartSource, /DialogTitle/);
@@ -308,8 +308,8 @@ runTest('sdkwork-clawstudio-dashboard keeps advanced time-range configuration in
   assert.doesNotMatch(chartSource, /\{controls\.rangeMode === 'custom' \? \(/);
 });
 
-runTest('sdkwork-clawstudio-dashboard lets chart filters wrap on tablet widths before locking into a desktop row', () => {
-  const chartSource = read('packages/sdkwork-clawstudio-dashboard/src/components/TokenTrendChart.tsx');
+runTest('sdkwork-agentstudio-pc-dashboard lets chart filters wrap on tablet widths before locking into a desktop row', () => {
+  const chartSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/components/TokenTrendChart.tsx');
 
   assert.match(chartSource, /sm:flex-row sm:flex-wrap sm:items-end xl:flex-nowrap/);
   assert.match(chartSource, /sm:min-w-\[11rem\] sm:flex-1 xl:w-44 xl:flex-none/);
@@ -320,11 +320,11 @@ runTest('sdkwork-clawstudio-dashboard lets chart filters wrap on tablet widths b
   assert.doesNotMatch(chartSource, /className="mt-2 h-auto w-full items-center justify-between/);
 });
 
-runTest('sdkwork-clawstudio-dashboard prefers reflow over text compression at intermediate viewport widths', () => {
-  const pageSource = read('packages/sdkwork-clawstudio-dashboard/src/pages/Dashboard.tsx');
-  const summaryCardSource = read('packages/sdkwork-clawstudio-dashboard/src/components/DashboardSummaryCard.tsx');
-  const sectionHeaderSource = read('packages/sdkwork-clawstudio-dashboard/src/components/SectionHeader.tsx');
-  const ringChartSource = read('packages/sdkwork-clawstudio-dashboard/src/components/DistributionRingChart.tsx');
+runTest('sdkwork-agentstudio-pc-dashboard prefers reflow over text compression at intermediate viewport widths', () => {
+  const pageSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/pages/Dashboard.tsx');
+  const summaryCardSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/components/DashboardSummaryCard.tsx');
+  const sectionHeaderSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/components/SectionHeader.tsx');
+  const ringChartSource = read('packages/sdkwork-agentstudio-pc-dashboard/src/components/DistributionRingChart.tsx');
 
   assert.match(pageSource, /xl:grid-cols-2 2xl:grid-cols-3/);
   assert.match(pageSource, /sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2/);

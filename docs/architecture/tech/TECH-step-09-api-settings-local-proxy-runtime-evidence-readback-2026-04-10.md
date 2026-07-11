@@ -22,19 +22,19 @@
   - `observabilityDbPath`
   - `snapshotPath`
   - `logPath`
-- `packages/sdkwork-clawstudio-settings/src/services/localAiProxyLogsService.ts` only exposed:
+- `packages/sdkwork-agentstudio-pc-settings/src/services/localAiProxyLogsService.ts` only exposed:
   - request logs
   - message logs
   - message capture settings
-- `packages/sdkwork-clawstudio-settings/src/ApiSettings.tsx` therefore showed pagination, log records, and the capture toggle, but it still could not read back the active proxy lifecycle or artifact paths from the local logs workspace.
+- `packages/sdkwork-agentstudio-pc-settings/src/ApiSettings.tsx` therefore showed pagination, log records, and the capture toggle, but it still could not read back the active proxy lifecycle or artifact paths from the local logs workspace.
 
 ## Implemented Fix
 
-- Added `getRuntimeSummary()` to `packages/sdkwork-clawstudio-settings/src/services/localAiProxyLogsService.ts`.
+- Added `getRuntimeSummary()` to `packages/sdkwork-agentstudio-pc-settings/src/services/localAiProxyLogsService.ts`.
   - it reads `kernelPlatformService.getInfo()?.localAiProxy`
   - it forwards runtime truth only
   - it normalizes blank values to null/unavailable fallbacks without fabricating new facts
-- Updated `packages/sdkwork-clawstudio-settings/src/ApiSettings.tsx` so the request/message log shell now:
+- Updated `packages/sdkwork-agentstudio-pc-settings/src/ApiSettings.tsx` so the request/message log shell now:
   - loads runtime summary whenever the active logs workspace is entered
   - refreshes runtime summary together with request/message log reloads
   - renders a compact `data-slot="api-log-runtime-summary"` strip for:
@@ -45,20 +45,20 @@
 - Preserved the existing mutable boundary:
   - request/message logs remain read-only evidence
   - message capture toggle remains the only control surface in this workspace
-- Fixed the stale package-barrel expectation in `packages/sdkwork-clawstudio-settings/src/apiSettingsShell.test.ts`.
+- Fixed the stale package-barrel expectation in `packages/sdkwork-agentstudio-pc-settings/src/apiSettingsShell.test.ts`.
 - Added localized runtime evidence copy in:
-  - `packages/sdkwork-clawstudio-i18n/src/locales/en/apiLogs.json`
-  - `packages/sdkwork-clawstudio-i18n/src/locales/zh/apiLogs.json`
-  - `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
-  - `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/en/apiLogs.json`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/apiLogs.json`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json`
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/contracts/runtime.ts`
-- `packages/sdkwork-clawstudio-types/src/index.ts`
-- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/contracts/runtime.ts`
+- `packages/sdkwork-agentstudio-pc-types/src/index.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/health.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/observability.rs`
 
 The governing fact in this loop is unchanged: `ApiSettings` may only read runtime evidence that is already published by the desktop/runtime contract. It must not infer lifecycle from logs, synthesize paths from packaging assumptions, or rebuild proxy state in the UI.
 
@@ -71,12 +71,12 @@ The governing fact in this loop is unchanged: `ApiSettings` may only read runtim
 ## Verification
 
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/localAiProxyLogsService.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/apiSettingsShell.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/services/localAiProxyLogsService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/apiSettingsShell.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-settings-contract.test.ts`
   - `node scripts/run-sdkwork-settings-check.mjs`
   - `pnpm.cmd check:sdkwork-settings`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-settings` still prints the non-blocking supplemental-package warning for `@buape/carbon@0.0.0-beta-20260327000044`

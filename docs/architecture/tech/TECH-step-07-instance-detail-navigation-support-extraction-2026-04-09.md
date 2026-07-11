@@ -29,7 +29,7 @@
 
 ## Implemented Fix
 
-- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailNavigationSupport.ts`.
+- Added `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailNavigationSupport.ts`.
 - Added `createSharedStatusLabelGetter(...)` so the shared helper now owns:
   - shared instance-status translation key shaping
 - Added `buildInstanceDetailNavigationHandlers(...)` so the shared helper now owns:
@@ -37,12 +37,12 @@
   - provider-center route packaging
   - agent-market route packaging with optional `instanceId` query shaping
   - active-instance guard and setter routing
-- Added focused direct coverage in `packages/sdkwork-clawstudio-instances/src/services/instanceDetailNavigationSupport.test.ts`.
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Added focused direct coverage in `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailNavigationSupport.test.ts`.
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds `detailNavigationHandlers`
   - builds `getSharedStatusLabel` through `createSharedStatusLabelGetter(...)`
   - passes navigation callbacks from that helper into the header, back buttons, agent section props, and provider section props
-- Exported the new helper from `packages/sdkwork-clawstudio-instances/src/services/index.ts`.
+- Exported the new helper from `packages/sdkwork-agentstudio-pc-instances/src/services/index.ts`.
 - Updated `scripts/run-sdkwork-instances-check.mjs` so the new helper test runs inside `pnpm.cmd check:sdkwork-instances`.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract now requires:
   - the page to use `createSharedStatusLabelGetter(...)`
@@ -66,25 +66,25 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed workbench persistence, provider-center routing context, managed-config writability, ecosystem/runtime ownership, Local Proxy routing/projection, and desktop plugin/runtime registration. This loop only centralizes page-side route and status-label wrapper composition.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `998` lines / `41071` bytes
-- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailNavigationSupport.ts`: `37` lines / `1142` bytes
-- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailNavigationSupport.test.ts`: `87` lines / `2942` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `998` lines / `41071` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailNavigationSupport.ts`: `37` lines / `1142` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailNavigationSupport.test.ts`: `87` lines / `2942` bytes
 
 Relative to the immediately prior `991` page baseline from `release-2026-04-09-146`, the current dirty worktree now re-measures `InstanceDetail.tsx` at `998`. This loop improves the page boundary by moving the remaining lightweight navigation and status-label wrappers into a shared helper, but the fresh page baseline is slightly higher because the page now carries one more explicit shared-builder wiring point.
 
@@ -96,15 +96,15 @@ Relative to the immediately prior `991` page baseline from `release-2026-04-09-1
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailNavigationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailNavigationSupport.test.ts`
   - failed first because `instanceDetailNavigationSupport.ts` did not yet exist
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` still kept inline navigation wrappers and direct shared-status mapping
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailNavigationSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailNavigationSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

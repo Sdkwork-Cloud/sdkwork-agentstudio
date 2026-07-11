@@ -557,7 +557,7 @@ function renderHomeHero(frontmatter) {
   const hero = frontmatter.hero;
   return [
     '<section class="home-hero">',
-    `<h1>${escapeHtml(hero.name ?? 'Claw Studio')}</h1>`,
+    `<h1>${escapeHtml(hero.name ?? 'Agent Studio')}</h1>`,
     hero.text ? `<p>${escapeHtml(hero.text)}</p>` : '',
     hero.tagline ? `<p>${escapeHtml(hero.tagline)}</p>` : '',
     '</section>',

@@ -4,21 +4,21 @@
 ## Highlights
 
 - Step 03 continued with a Node-root alignment loop across community, dashboard commerce, and install progress contracts.
-- This loop includes two real production contract repairs in `@sdkwork/clawstudio-core` plus targeted test fixture updates.
+- This loop includes two real production contract repairs in `@sdkwork/agentstudio-pc-core` plus targeted test fixture updates.
 
 ## Attempt Outcome
 
-- `@sdkwork/clawstudio-core` now publishes `communityService` and `dashboardCommerceService` to Node consumers without eagerly importing app SDK session helpers during module evaluation.
-- `sdkwork-clawstudio-community` and `sdkwork-clawstudio-dashboard` service tests now execute cleanly under `node --experimental-strip-types`.
+- `@sdkwork/agentstudio-pc-core` now publishes `communityService` and `dashboardCommerceService` to Node consumers without eagerly importing app SDK session helpers during module evaluation.
+- `sdkwork-agentstudio-pc-community` and `sdkwork-agentstudio-pc-dashboard` service tests now execute cleanly under `node --experimental-strip-types`.
 - `installProgressService.test.ts` now matches the current `InstallProgressEvent` contract by including the required base metadata fields.
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-core/src/services/communityService.ts`
-- `packages/sdkwork-clawstudio-core/src/services/dashboardCommerceService.ts`
-- `packages/sdkwork-clawstudio-core/src/services/node/index.ts`
-- `packages/sdkwork-clawstudio-community/src/services/communityService.test.ts`
-- `packages/sdkwork-clawstudio-dashboard/src/services/dashboardService.test.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/communityService.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/dashboardCommerceService.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/node/index.ts`
+- `packages/sdkwork-agentstudio-pc-community/src/services/communityService.test.ts`
+- `packages/sdkwork-agentstudio-pc-dashboard/src/services/dashboardService.test.ts`
 - `packages/removed-install-feature/src/services/installProgressService.test.ts`
 - `docs/review/step-03-community-dashboard-node-root-and-install-progress-alignment-2026-04-08.md`
 - `docs/鏋舵瀯/98-2026-04-08-node-root-lazy-app-sdk-services.md`
@@ -28,9 +28,9 @@
 
 ## Verification Focus
 
-- `node --experimental-strip-types packages/sdkwork-clawstudio-community/src/services/communityService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-dashboard/src/services/dashboardService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-core/src/services/dashboardCommerceService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-community/src/services/communityService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-dashboard/src/services/dashboardService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-core/src/services/dashboardCommerceService.test.ts`
 - `node --experimental-strip-types packages/removed-install-feature/src/services/installProgressService.test.ts`
 
 ## Risks And Rollback

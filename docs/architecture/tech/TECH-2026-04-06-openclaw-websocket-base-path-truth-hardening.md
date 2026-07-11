@@ -12,11 +12,11 @@ associated OpenClaw gateway was configured with `gateway.controlUi.basePath`.
 ## Root Causes
 
 1. Desktop built-in live-state projection in
-   `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs`
+   `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs`
    hardcoded the built-in websocket URL to the gateway origin and ignored the
    managed config `controlUi.basePath`.
 2. Local-external OpenClaw onboarding in
-   `packages/sdkwork-clawstudio-instances/src/services/instanceOnboardingService.ts`
+   `packages/sdkwork-agentstudio-pc-instances/src/services/instanceOnboardingService.ts`
    also hardcoded the websocket URL to the gateway origin and ignored the same
    config field while discovering and associating existing OpenClaw installs.
 
@@ -52,11 +52,11 @@ associated OpenClaw gateway was configured with `gateway.controlUi.basePath`.
 
 ## Verification
 
-- `cargo test built_in_instance_detail_projects_control_ui_base_path_into_live_gateway_websocket_url --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test built_in_instance_detail_exposes_console_access_with_auto_login_url --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test built_in_instance_detail_hides_live_gateway_endpoints_when_the_gateway_is_not_running --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
+- `cargo test built_in_instance_detail_projects_control_ui_base_path_into_live_gateway_websocket_url --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test built_in_instance_detail_exposes_console_access_with_auto_login_url --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test built_in_instance_detail_hides_live_gateway_endpoints_when_the_gateway_is_not_running --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
 - `pnpm.cmd check:desktop`
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-instances/src/services/instanceOnboardingService.test.ts']))"`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-instances/src/services/instanceOnboardingService.test.ts']))"`
 - `pnpm.cmd lint`
 
 ## Outcome
@@ -74,7 +74,7 @@ associated OpenClaw gateway was configured with `gateway.controlUi.basePath`.
   websocket become reachable in one managed desktop startup, not only in
   contract-level tests.
 - Review browser-only fallback normalization in
-  `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts` if live
+  `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts` if live
   evidence shows it can override canonical websocket metadata from the host.
 - Continue upward validation for chat, notification, cron, proxy router, and
   instance-detail behavior on top of the corrected websocket authority truth.

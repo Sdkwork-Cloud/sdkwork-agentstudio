@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DEFAULT_WORKSPACE_ROOT = path.resolve(__dirname, '..');
-const WORKSPACE_PACKAGE_NAME = '@sdkwork/clawstudio-workspace';
+const WORKSPACE_PACKAGE_NAME = '@sdkwork/agentstudio-workspace';
 const WORKTREE_SEGMENT = `${path.sep}.worktrees${path.sep}`;
 
 function isWorkspaceRootDir(candidateDir) {

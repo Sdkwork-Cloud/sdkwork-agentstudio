@@ -5,7 +5,7 @@
 
 ## 目标
 
-本文记录当前 `claw-studio` 的运行时集成基线，用来替代早期围绕独立 provider router runtime 的历史设计说明。
+本文记录当前 `agent-studio` 的运行时集成基线，用来替代早期围绕独立 provider router runtime 的历史设计说明。
 
 ## 当前架构
 
@@ -14,7 +14,7 @@
 1. Tauri 与 Rust Host 负责安装、生命周期管理和打包期集成。
 2. 桌面组件服务负责软件发现、受管安装记录和安装元数据。
 3. OpenClaw 是桌面端本地受管场景中的主运行时。
-4. Claw Studio 通过 OpenClaw 兼容配置文件和运行时桥接来读写 provider 与 agent 配置。
+4. Agent Studio 通过 OpenClaw 兼容配置文件和运行时桥接来读写 provider 与 agent 配置。
 5. Web Host 与 Desktop Host 保持轻量，只消费包根暴露的 API。
 
 ## 运行时边界

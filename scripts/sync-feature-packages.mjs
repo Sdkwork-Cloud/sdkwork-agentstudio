@@ -6,23 +6,23 @@ const packagesDir = path.join(root, 'packages');
 
 const allPackageDirs = fs
   .readdirSync(packagesDir, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-clawstudio-'))
+  .filter((entry) => entry.isDirectory() && entry.name.startsWith('sdkwork-agentstudio-pc-'))
   .map((entry) => entry.name);
 
 const shared = new Set([
-  'sdkwork-clawstudio-web',
-  'sdkwork-clawstudio-desktop',
-  'sdkwork-clawstudio-host-core',
-  'sdkwork-clawstudio-host-studio',
-  'sdkwork-clawstudio-shell',
-  'sdkwork-clawstudio-commons',
-  'sdkwork-clawstudio-core',
-  'sdkwork-clawstudio-infrastructure',
-  'sdkwork-clawstudio-types',
-  'sdkwork-clawstudio-i18n',
-  'sdkwork-clawstudio-ui',
-  'sdkwork-clawstudio-distribution',
-  'sdkwork-clawstudio-server',
+  'sdkwork-agentstudio-pc-web',
+  'sdkwork-agentstudio-pc-desktop',
+  'sdkwork-agentstudio-pc-host-core',
+  'sdkwork-agentstudio-pc-host-studio',
+  'sdkwork-agentstudio-pc-shell',
+  'sdkwork-agentstudio-pc-commons',
+  'sdkwork-agentstudio-pc-core',
+  'sdkwork-agentstudio-pc-infrastructure',
+  'sdkwork-agentstudio-pc-types',
+  'sdkwork-agentstudio-pc-i18n',
+  'sdkwork-agentstudio-pc-ui',
+  'sdkwork-agentstudio-pc-distribution',
+  'sdkwork-agentstudio-pc-server',
 ]);
 
 const featureDirs = allPackageDirs.filter((dir) => !shared.has(dir));

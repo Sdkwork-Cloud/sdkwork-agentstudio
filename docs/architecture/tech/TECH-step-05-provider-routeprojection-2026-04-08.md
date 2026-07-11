@@ -27,37 +27,37 @@
 
 ## OpenClaw Fact Sources
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
   - remains the browser-hosted workbench/platform fact source for managed instance and channel persistence semantics.
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
   - keeps the browser workbench persistence contract honest for managed channel configuration and workbench readback.
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
   - remains the shell-facing workbench consumer that must stay on authoritative managed provider and config surfaces.
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
   - continues to freeze config-workbench section ordering and editing behavior on the OpenClaw config truth chain.
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
   - remains the channel workspace service that must route managed reads/writes back to `openClawConfigService`.
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
   - keeps skill installation on default-agent workspace resolution instead of introducing provider-side transport shortcuts.
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
   - remains the agent-install fact source for config-path ownership, agent path resolution, and explicit `saveAgent()` writeback.
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
   - remains the managed OpenClaw capability gate that prevents provider-center behavior from drifting onto unsupported runtimes.
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
   - remains the presentation-layer fact source for whether Provider Center is managed and read-only on a given detail surface.
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   - remains the single Local Proxy runtime and observability truth source for `Step 05`.
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
   - remains the stable plugin-registration boundary and stayed unchanged through this `Step 05` closure loop.
 
 ## Verification Focus
 
 - `pnpm.cmd check:sdkwork-settings`
 - `pnpm.cmd check:desktop`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-settings/src/services/providerConfigCenterService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-core/src/services/openClawConfigService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-settings/src/services/providerConfigCenterService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-channels/src/services/channelService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
 - `node scripts/desktop-local-ai-proxy-contract.test.mjs`
 
 ## Architecture Writeback

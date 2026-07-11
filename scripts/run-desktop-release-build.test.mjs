@@ -89,7 +89,7 @@ test('desktop release build helper creates the correct OpenClaw preflight for bu
   assert.deepEqual(
     allPreflight.args,
     ['scripts/prepare-openclaw-runtime.mjs'],
-    'phase=all must prepare and verify the bundled OpenClaw runtime before delegating into tauri:build',
+    'phase=all must prepare and verify the bundled OpenClaw runtime before delegating into build:desktop',
   );
   assert.equal(allPreflight.env.SDKWORK_DESKTOP_TARGET_PLATFORM, 'macos');
   assert.equal(allPreflight.env.SDKWORK_DESKTOP_TARGET_ARCH, 'arm64');
@@ -142,7 +142,7 @@ test('desktop release build all-phase plan forwards bundle customization flags i
   try {
     const plan = helper.createDesktopReleaseBuildPlan({
       phase: 'all',
-      profileId: 'claw-studio',
+      profileId: 'agent-studio',
       packageProfileId: 'dual-kernel',
       viteMode: 'test',
       bundleTargets: ['nsis', 'msi'],
@@ -158,12 +158,12 @@ test('desktop release build all-phase plan forwards bundle customization flags i
       [
         pnpmCliPath,
         '--filter',
-        '@sdkwork/clawstudio-desktop',
+        '@sdkwork/agentstudio-pc-desktop',
         'run',
-        'tauri:build',
+        'build:desktop',
         '--',
         '--profile',
-        'claw-studio',
+        'agent-studio',
         '--package-profile',
         'dual-kernel',
         '--vite-mode',
@@ -192,7 +192,7 @@ test('desktop release build sync-phase plan forwards explicit package profile se
 
   const plan = helper.createDesktopReleaseBuildPlan({
     phase: 'sync',
-    profileId: 'claw-studio',
+    profileId: 'agent-studio',
     packageProfileId: 'hermes-only',
     releaseMode: true,
     platform: 'linux',

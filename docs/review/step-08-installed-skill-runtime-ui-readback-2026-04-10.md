@@ -22,37 +22,37 @@
 
 ## Implemented Fix
 
-- Added `packages/sdkwork-clawstudio-market/src/pages/marketInstalledSkillPresentation.ts` as a focused presentation helper for installed-skill runtime metadata.
-- Added RED/GREEN coverage in `packages/sdkwork-clawstudio-market/src/pages/marketInstalledSkillPresentation.test.ts` for:
+- Added `packages/sdkwork-agentstudio-pc-market/src/pages/marketInstalledSkillPresentation.ts` as a focused presentation helper for installed-skill runtime metadata.
+- Added RED/GREEN coverage in `packages/sdkwork-agentstudio-pc-market/src/pages/marketInstalledSkillPresentation.test.ts` for:
   - missing metadata fallback
   - disabled skills with missing requirements
   - enabled skills that still need attention
-- Updated `packages/sdkwork-clawstudio-market/src/pages/Market.tsx` so My Skills cards now show runtime-aware status labels derived from `instanceAsset`.
-- Updated `packages/sdkwork-clawstudio-market/src/pages/SkillDetail.tsx` so installed skills now read back:
+- Updated `packages/sdkwork-agentstudio-pc-market/src/pages/Market.tsx` so My Skills cards now show runtime-aware status labels derived from `instanceAsset`.
+- Updated `packages/sdkwork-agentstudio-pc-market/src/pages/SkillDetail.tsx` so installed skills now read back:
   - compatibility
   - runtime status
   - source
   - scope
   - missing requirement count
 - Added localized copy in:
-  - `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
-  - `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json`
+  - `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json`
 - Explicit non-goal in this loop:
   - `SkillPackDetail` still does not fabricate pack-level compatibility from static catalog data
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 The governing fact for this loop is unchanged: UI readback must follow installed-skill runtime truth from the agent workbench projection of `gateway.skills.status`, not static catalog copy.
 
@@ -68,10 +68,10 @@ The governing fact for this loop is unchanged: UI readback must follow installed
 ## Verification
 
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-market/src/pages/marketInstalledSkillPresentation.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-market/src/services/mySkillService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-market/src/pages/marketInstalledSkillPresentation.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-market/src/services/mySkillService.test.ts`
   - `pnpm.cmd check:sdkwork-market`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd build` still prints the non-blocking Rolldown plugin timing warning while exiting successfully

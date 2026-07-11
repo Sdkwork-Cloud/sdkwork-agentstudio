@@ -49,7 +49,7 @@ const desktopBuildScriptSource = readFileSync(
   path.join(
     rootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'build.rs',
   ),
@@ -64,26 +64,26 @@ const applyUpgradeSource = readFileSync(
   'utf8',
 );
 const webStudioSource = readFileSync(
-  path.join(rootDir, 'packages', 'sdkwork-clawstudio-infrastructure', 'src', 'platform', 'webStudio.ts'),
+  path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-infrastructure', 'src', 'platform', 'webStudio.ts'),
   'utf8',
 );
 const clawTypesIndexSource = readFileSync(
-  path.join(rootDir, 'packages', 'sdkwork-clawstudio-types', 'src', 'index.ts'),
+  path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-types', 'src', 'index.ts'),
   'utf8',
 );
 const clawTypesKernelReleaseCatalogSource = readFileSync(
-  path.join(rootDir, 'packages', 'sdkwork-clawstudio-types', 'src', 'kernelReleaseCatalog.ts'),
+  path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-types', 'src', 'kernelReleaseCatalog.ts'),
   'utf8',
 );
 const clawTypesOpenClawReleaseSource = readFileSync(
-  path.join(rootDir, 'packages', 'sdkwork-clawstudio-types', 'src', 'openclawRelease.ts'),
+  path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-types', 'src', 'openclawRelease.ts'),
   'utf8',
 );
 const desktopOpenClawReleaseBridgeSource = readFileSync(
   path.join(
     rootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'src',
     'framework',
@@ -95,7 +95,7 @@ const desktopBootstrapSource = readFileSync(
   path.join(
     rootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'src',
     'app',
@@ -107,7 +107,7 @@ const desktopStudioSource = readFileSync(
   path.join(
     rootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src-tauri',
     'src',
     'framework',
@@ -117,22 +117,22 @@ const desktopStudioSource = readFileSync(
   'utf8',
 );
 const versionFixtureSourcePaths = [
-  'packages/sdkwork-clawstudio-instances/src/services/instanceManagementPresentation.test.ts',
-  'packages/sdkwork-clawstudio-instances/src/services/agentWorkbenchService.test.ts',
-  'packages/sdkwork-clawstudio-instances/src/services/agentSkillManagementService.test.ts',
-  'packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchService.test.ts',
-  'packages/sdkwork-clawstudio-instances/src/services/instanceService.test.ts',
-  'packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts',
-  'packages/sdkwork-clawstudio-chat/src/services/chatService.test.ts',
-  'packages/sdkwork-clawstudio-chat/src/services/openclaw/openClawGatewayClientRegistry.test.ts',
-  'packages/sdkwork-clawstudio-chat/src/store/chatStoreAuthority.test.ts',
-  'packages/sdkwork-clawstudio-core/src/services/openClawMirrorService.test.ts',
-  'packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts',
-  'packages/sdkwork-clawstudio-dashboard/src/services/usageWorkspaceService.test.ts',
-  'packages/sdkwork-clawstudio-instances/src/services/instanceActionCapabilities.test.ts',
-  'packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchSnapshotSupport.test.ts',
-  'packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.test.ts',
-  'packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.test.ts',
+  'packages/sdkwork-agentstudio-pc-instances/src/services/instanceManagementPresentation.test.ts',
+  'packages/sdkwork-agentstudio-pc-instances/src/services/agentWorkbenchService.test.ts',
+  'packages/sdkwork-agentstudio-pc-instances/src/services/agentSkillManagementService.test.ts',
+  'packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchService.test.ts',
+  'packages/sdkwork-agentstudio-pc-instances/src/services/instanceService.test.ts',
+  'packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.test.ts',
+  'packages/sdkwork-agentstudio-pc-chat/src/services/chatService.test.ts',
+  'packages/sdkwork-agentstudio-pc-chat/src/services/openclaw/openClawGatewayClientRegistry.test.ts',
+  'packages/sdkwork-agentstudio-pc-chat/src/store/chatStoreAuthority.test.ts',
+  'packages/sdkwork-agentstudio-pc-core/src/services/openClawMirrorService.test.ts',
+  'packages/sdkwork-agentstudio-pc-core/src/services/taskRuntimeService.test.ts',
+  'packages/sdkwork-agentstudio-pc-dashboard/src/services/usageWorkspaceService.test.ts',
+  'packages/sdkwork-agentstudio-pc-instances/src/services/instanceActionCapabilities.test.ts',
+  'packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchSnapshotSupport.test.ts',
+  'packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.test.ts',
+  'packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.test.ts',
 ];
 const versionFixtureSources = versionFixtureSourcePaths.map((fixturePath) => ({
   fixturePath,
@@ -140,11 +140,11 @@ const versionFixtureSources = versionFixtureSourcePaths.map((fixturePath) => ({
 }));
 const retiredOpenClawVersionLiteralSourcePaths = [
   ...versionFixtureSourcePaths,
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/desktop_kernel.rs',
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio/hermes_chat.rs',
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
-  'packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/commands/desktop_kernel.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio/hermes_chat.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs',
+  'packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts',
   'scripts/ensure-tauri-target-clean.test.mjs',
   'scripts/openclaw-upgrade-execution-evidence.test.mjs',
   'scripts/openclaw-upgrade-rollback-evidence.test.mjs',
@@ -164,7 +164,7 @@ const retiredOpenClawVersionLiteralSources = retiredOpenClawVersionLiteralSource
 const retiredOpenClawVersionLiteralPattern =
   /\b2026\.(?:3\.24|4\.(?:2|5|7|8|9|11|20|21|22|23|24|25))(?:[-+][0-9A-Za-z.-]+)?\b/u;
 const retiredOpenClawNodeVersionLiteralSourcePaths = [
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/upgrades.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/upgrades.rs',
   'scripts/ensure-tauri-target-clean.test.mjs',
 ];
 const retiredOpenClawNodeVersionLiteralSources =
@@ -178,9 +178,9 @@ function stripRustTestModules(source) {
 }
 
 const retiredAuthorityCompatibilityFieldSourcePaths = [
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/layout.rs',
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs',
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/layout.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs',
 ];
 const retiredAuthorityCompatibilityFieldSources =
   retiredAuthorityCompatibilityFieldSourcePaths.map((fixturePath) => ({
@@ -189,7 +189,7 @@ const retiredAuthorityCompatibilityFieldSources =
   }));
 const retiredAuthorityCompatibilityFieldPattern = /\blegacy(?:_runtime_roots|RuntimeRoots)\b/u;
 const retiredDisplayVersionCompatibilitySourcePaths = [
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs',
 ];
 const retiredDisplayVersionCompatibilitySources =
   retiredDisplayVersionCompatibilitySourcePaths.map((fixturePath) => ({
@@ -198,7 +198,7 @@ const retiredDisplayVersionCompatibilitySources =
   }));
 const retiredDisplayVersionCompatibilityPattern = /\bnormalize_legacy_active_version_label\b/u;
 const activeStateRuntimeAliasSourcePath =
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/layout.rs';
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/layout.rs';
 const activeStateRuntimeAliasSource = readFileSync(
   path.join(rootDir, activeStateRuntimeAliasSourcePath),
   'utf8',
@@ -212,10 +212,10 @@ const retiredCachedNodeRuntimeCompatibilityPattern =
 const retiredPreparedRuntimeRepairPattern =
   /repairPreparedOpenClawRuntimeManifest|repaired-existing-manifest|repaired-manifest|repaired-sidecar/u;
 const legacyOpenClawMirrorLiteralSourcePaths = [
-  'packages/sdkwork-clawstudio-core/src/services/openClawMirrorService.test.ts',
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_mirror_export.rs',
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_mirror_import.rs',
-  'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_mirror_manifest.rs',
+  'packages/sdkwork-agentstudio-pc-core/src/services/openClawMirrorService.test.ts',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/openclaw_mirror_export.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/openclaw_mirror_import.rs',
+  'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/openclaw_mirror_manifest.rs',
 ];
 const legacyOpenClawMirrorLiteralSources = legacyOpenClawMirrorLiteralSourcePaths.map(
   (fixturePath) => ({
@@ -273,7 +273,7 @@ const sourceComponentRegistry = JSON.parse(
     path.join(
       rootDir,
       'packages',
-      'sdkwork-clawstudio-desktop',
+      'sdkwork-agentstudio-pc-desktop',
       'src-tauri',
       'foundation',
       'components',
@@ -285,7 +285,7 @@ const sourceComponentRegistry = JSON.parse(
 const desktopBundledManifestPath = path.join(
   rootDir,
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
   'resources',
   'openclaw',
@@ -297,7 +297,7 @@ const desktopBundledManifest = existsSync(desktopBundledManifestPath)
 const desktopBundledRuntimePackageJsonPath = path.join(
   rootDir,
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
   'resources',
   'openclaw',
@@ -678,42 +678,42 @@ assert.doesNotMatch(
 assert.match(
   clawTypesIndexSource,
   /export \* from '\.\/openclawRelease\.ts';/,
-  '@sdkwork/clawstudio-types must export the shared OpenClaw release metadata for frontend/runtime consumers',
+  '@sdkwork/agentstudio-pc-types must export the shared OpenClaw release metadata for frontend/runtime consumers',
 );
 assert.match(
   clawTypesIndexSource,
   /export \* from '\.\/kernelReleaseCatalog\.ts';/,
-  '@sdkwork/clawstudio-types must export the shared kernel release registry catalog for frontend/runtime consumers',
+  '@sdkwork/agentstudio-pc-types must export the shared kernel release registry catalog for frontend/runtime consumers',
 );
 assert.match(
   clawTypesKernelReleaseCatalogSource,
   /kernelId:\s*'openclaw'/,
-  '@sdkwork/clawstudio-types kernel release catalog must register OpenClaw metadata from the shared kernel release registry',
+  '@sdkwork/agentstudio-pc-types kernel release catalog must register OpenClaw metadata from the shared kernel release registry',
 );
 assert.match(
   clawTypesKernelReleaseCatalogSource,
   /kernelId:\s*'hermes'/,
-  '@sdkwork/clawstudio-types kernel release catalog must register Hermes metadata from the shared kernel release registry',
+  '@sdkwork/agentstudio-pc-types kernel release catalog must register Hermes metadata from the shared kernel release registry',
 );
 assert.match(
   clawTypesOpenClawReleaseSource,
   /runtimeSupplementalPackages:\s*string\[\];/,
-  '@sdkwork/clawstudio-types shared OpenClaw release metadata must expose prepared runtime supplemental packages',
+  '@sdkwork/agentstudio-pc-types shared OpenClaw release metadata must expose prepared runtime supplemental packages',
 );
 assert.match(
   clawTypesOpenClawReleaseSource,
   /resolveKernelReleaseConfig\('openclaw'\)/,
-  '@sdkwork/clawstudio-types OpenClaw release metadata must resolve through the shared kernel release catalog',
+  '@sdkwork/agentstudio-pc-types OpenClaw release metadata must resolve through the shared kernel release catalog',
 );
 assert.match(
   clawTypesOpenClawReleaseSource,
   /runtimeSupplementalPackages:\s*(normalizeRuntimeSupplementalPackages\(\s*metadata\.runtimeSupplementalPackages\s*,?\s*\)|metadata\.runtimeSupplementalPackages|normalizedSupplementalPackages)/,
-  '@sdkwork/clawstudio-types must project prepared runtime supplemental packages from the shared release config, with optional normalization',
+  '@sdkwork/agentstudio-pc-types must project prepared runtime supplemental packages from the shared release config, with optional normalization',
 );
 assert.match(
   clawTypesOpenClawReleaseSource,
   /DEFAULT_BUNDLED_OPENCLAW_RUNTIME_SUPPLEMENTAL_PACKAGES\s*=\s*OPENCLAW_RELEASE\.runtimeSupplementalPackages/,
-  '@sdkwork/clawstudio-types must export the prepared runtime supplemental package list for frontend/runtime consumers',
+  '@sdkwork/agentstudio-pc-types must export the prepared runtime supplemental package list for frontend/runtime consumers',
 );
 assert.match(
   webStudioSource,
@@ -779,7 +779,7 @@ assert.equal(
     path.join(
       rootDir,
       'packages',
-      'sdkwork-clawstudio-desktop',
+      'sdkwork-agentstudio-pc-desktop',
       'src-tauri',
       'resources',
       'openclaw',

@@ -123,7 +123,7 @@ test('release status reports complete when coverage is complete and no structura
     platform: 'web',
     arch: 'any',
     kind: 'archive',
-    relativePath: 'web/claw-studio-web.tar.gz',
+    relativePath: 'web/agent-studio-web.tar.gz',
   };
   writeArtifact(releaseAssetsDir, artifact.relativePath);
   writePartialManifest(releaseAssetsDir, 'web', [artifact]);
@@ -176,14 +176,14 @@ test('release status is invalid when complete coverage contains duplicate target
       platform: 'web',
       arch: 'any',
       kind: 'archive',
-      relativePath: 'web/claw-studio-web-a.tar.gz',
+      relativePath: 'web/agent-studio-web-a.tar.gz',
     },
     {
       family: 'web',
       platform: 'web',
       arch: 'any',
       kind: 'archive',
-      relativePath: 'web/claw-studio-web-b.tar.gz',
+      relativePath: 'web/agent-studio-web-b.tar.gz',
     },
   ];
   for (const artifact of artifacts) {
@@ -211,8 +211,8 @@ test('release status is invalid when complete coverage contains duplicate target
     {
       target: 'web/web/any',
       artifactPaths: [
-        'web/claw-studio-web-a.tar.gz',
-        'web/claw-studio-web-b.tar.gz',
+        'web/agent-studio-web-a.tar.gz',
+        'web/agent-studio-web-b.tar.gz',
       ],
     },
   ]);
@@ -256,14 +256,14 @@ test('release status is invalid when complete coverage contains artifacts outsid
       platform: 'web',
       arch: 'any',
       kind: 'archive',
-      relativePath: 'web/claw-studio-web.tar.gz',
+      relativePath: 'web/agent-studio-web.tar.gz',
     },
     {
       family: 'server',
       platform: 'linux',
       arch: 'x64',
       kind: 'archive',
-      relativePath: 'server/linux/x64/claw-studio-server.tar.gz',
+      relativePath: 'server/linux/x64/agent-studio-server.tar.gz',
     },
   ];
   for (const artifact of artifacts) {
@@ -288,7 +288,7 @@ test('release status is invalid when complete coverage contains artifacts outsid
     'artifacts-outside-release-profile': 1,
   });
   assert.deepEqual(status.outOfProfileArtifactPaths, [
-    'server/linux/x64/claw-studio-server.tar.gz',
+    'server/linux/x64/agent-studio-server.tar.gz',
   ]);
   assert.deepEqual(status.issues.map((issue) => issue.code), [
     'artifacts-outside-release-profile',
@@ -329,7 +329,7 @@ test('release status prioritizes blocking issue actions before missing target pa
     platform: 'linux',
     arch: 'x64',
     kind: 'archive',
-    relativePath: 'server/linux/x64/claw-studio-server.tar.gz',
+    relativePath: 'server/linux/x64/agent-studio-server.tar.gz',
   };
   writeArtifact(releaseAssetsDir, artifact.relativePath);
   writePartialManifest(releaseAssetsDir, 'server', [artifact]);

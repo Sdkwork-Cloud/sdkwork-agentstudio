@@ -50,7 +50,7 @@ test('docker deployment templates keep compose commands and overlay profiles ali
   );
   assert.match(dockerCompose, /profiles\/default\.env/);
   assert.match(dockerCompose, /18797:18797/);
-  assert.match(dockerCompose, /\/var\/lib\/clawstudio-server/);
+  assert.match(dockerCompose, /\/var\/lib\/agentstudio-server/);
   assert.match(
     dockerCompose,
     /CLAW_SERVER_MANAGE_USERNAME:\s+\$\{CLAW_SERVER_MANAGE_USERNAME:\?/,
@@ -65,7 +65,7 @@ test('docker deployment templates keep compose commands and overlay profiles ali
   assert.match(amdCompose, /profiles\/amd-rocm\.env/);
   assert.match(defaultEnv, /CLAW_ACCELERATOR_PROFILE=cpu/);
   assert.match(defaultEnv, /CLAW_DEPLOYMENT_FAMILY=container/);
-  assert.match(defaultEnv, /CLAW_SERVER_DATA_DIR=\/var\/lib\/clawstudio-server/);
+  assert.match(defaultEnv, /CLAW_SERVER_DATA_DIR=\/var\/lib\/agentstudio-server/);
   assert.match(defaultEnv, /CLAW_SERVER_ALLOW_INSECURE_PUBLIC_BIND=false/);
   assert.match(nvidiaEnv, /CLAW_ACCELERATOR_PROFILE=nvidia-cuda/);
   assert.match(nvidiaEnv, /CLAW_DEPLOYMENT_FAMILY=container/);
@@ -104,7 +104,7 @@ test('kubernetes deployment templates keep accelerator overlays and chart wiring
 
   assert.match(
     kubernetesReadme,
-    /helm upgrade --install claw-studio \.\/chart[\s\S]*-f values\.release\.yaml/,
+    /helm upgrade --install agent-studio \.\/chart[\s\S]*-f values\.release\.yaml/,
   );
   assert.match(kubernetesReadme, /values-nvidia-cuda\.yaml/);
   assert.match(kubernetesReadme, /values-amd-rocm\.yaml/);
@@ -113,12 +113,12 @@ test('kubernetes deployment templates keep accelerator overlays and chart wiring
     /image tag/i,
     'kubernetes deployment docs must explain the versioned image tag contract',
   );
-  assert.match(chart, /name:\s+claw-studio/);
+  assert.match(chart, /name:\s+agent-studio/);
   assert.match(values, /targetArchitecture:\s+x64/);
-  assert.match(values, /repository:\s+claw-studio-server/);
+  assert.match(values, /repository:\s+agent-studio-server/);
   assert.match(values, /auth:\s*[\s\S]*existingSecret:/);
   assert.match(values, /persistence:\s*[\s\S]*enabled:\s+true/);
-  assert.match(values, /persistence:\s*[\s\S]*mountPath:\s+\/var\/lib\/clawstudio-server/);
+  assert.match(values, /persistence:\s*[\s\S]*mountPath:\s+\/var\/lib\/agentstudio-server/);
   assert.doesNotMatch(
     values,
     /tag:\s+latest/,
@@ -146,7 +146,7 @@ test('kubernetes deployment templates keep accelerator overlays and chart wiring
   );
   assert.match(
     deployment,
-    /\{\{- if gt \(int \.Values\.replicaCount\) 1 \}\}[\s\S]*\{\{- fail "claw-studio currently supports only replicaCount=1 because the shared host runtime does not coordinate multi-replica state yet." \}\}/,
+    /\{\{- if gt \(int \.Values\.replicaCount\) 1 \}\}[\s\S]*\{\{- fail "agent-studio currently supports only replicaCount=1 because the shared host runtime does not coordinate multi-replica state yet." \}\}/,
     'kubernetes deployment template must reject unsupported multi-replica shared-runtime installs',
   );
   assert.match(secret, /kind:\s+Secret/);
@@ -166,7 +166,7 @@ test('kubernetes deployment templates keep accelerator overlays and chart wiring
     /image:\s+\{\{[^}]*\.Values\.image\.repository[^}]*\}\}:\{\{[^}]*\.Values\.image\.tag[^}]*\}\}/,
     'kubernetes deployment template must retain explicit tag-based fallback',
   );
-  assert.match(releaseDoc, /helm upgrade --install claw-studio \.\/chart -f values\.release\.yaml/);
+  assert.match(releaseDoc, /helm upgrade --install agent-studio \.\/chart -f values\.release\.yaml/);
   assert.match(
     releaseDoc,
     /release tag/i,
@@ -182,7 +182,7 @@ test('kubernetes deployment templates keep accelerator overlays and chart wiring
 test('docker image, kubernetes chart, and server readiness routes share the same truthful readiness contract', () => {
   const dockerfile = read('deploy/docker/Dockerfile');
   const deployment = read('deploy/kubernetes/templates/deployment.yaml');
-  const healthRoute = read('packages/sdkwork-clawstudio-server/src-host/src/http/routes/health.rs');
+  const healthRoute = read('packages/sdkwork-agentstudio-pc-server/src-host/src/http/routes/health.rs');
 
   assert.match(
     dockerfile,
@@ -191,17 +191,17 @@ test('docker image, kubernetes chart, and server readiness routes share the same
   );
   assert.match(
     dockerfile,
-    /chmod \+x \/opt\/claw\/app\/bin\/clawstudio-server/,
-    'docker image must chmod the packaged clawstudio-server binary rather than a stale legacy binary path',
+    /chmod \+x \/opt\/claw\/app\/bin\/agentstudio-server/,
+    'docker image must chmod the packaged agentstudio-server binary rather than a stale legacy binary path',
   );
   assert.match(
     dockerfile,
-    /CMD\s+\["\/opt\/claw\/app\/bin\/clawstudio-server"\]/,
-    'docker image must launch the canonical packaged clawstudio-server binary directly',
+    /CMD\s+\["\/opt\/claw\/app\/bin\/agentstudio-server"\]/,
+    'docker image must launch the canonical packaged agentstudio-server binary directly',
   );
   assert.doesNotMatch(
     dockerfile,
-    /CMD\s+\["\/bin\/sh",\s*"\/opt\/claw\/app\/start-clawstudio-server\.sh"\]/,
+    /CMD\s+\["\/bin\/sh",\s*"\/opt\/claw\/app\/start-agentstudio-server\.sh"\]/,
     'docker image must not route container startup through the optional wrapper script',
   );
   assert.match(
@@ -274,7 +274,7 @@ test('deployment bootstrap smoke report preserves runtime-backed docker and sing
   );
   assert.match(
     smokeReport,
-    /helm upgrade --install claw-studio \.\/chart -f values\.release\.yaml/,
+    /helm upgrade --install agent-studio \.\/chart -f values\.release\.yaml/,
     'deployment bootstrap smoke report must include the singleton-k8s install command',
   );
   assert.match(

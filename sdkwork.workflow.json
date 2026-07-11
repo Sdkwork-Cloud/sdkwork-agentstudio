@@ -1,0 +1,47 @@
+{
+  "$schema": "https://sdkwork.com/schemas/workflow.spec.v1.json",
+  "appId": "sdkwork-agentstudio",
+  "targets": [
+    {
+      "name": "web",
+      "formats": ["zip"],
+      "runtimeTarget": "browser",
+      "deploymentProfile": "cloud",
+      "description": "Browser web bundle for cloud deployment."
+    },
+    {
+      "name": "desktop-windows",
+      "formats": ["zip", "nsis"],
+      "runtimeTarget": "desktop",
+      "deploymentProfile": "standalone",
+      "platform": "DESKTOP_WINDOWS",
+      "architecture": "x64",
+      "description": "Windows desktop bundle (Tauri)."
+    },
+    {
+      "name": "desktop-macos",
+      "formats": ["dmg"],
+      "runtimeTarget": "desktop",
+      "deploymentProfile": "standalone",
+      "platform": "DESKTOP_MACOS",
+      "architecture": "universal",
+      "description": "macOS desktop bundle (Tauri)."
+    },
+    {
+      "name": "desktop-linux",
+      "formats": ["appimage", "deb"],
+      "runtimeTarget": "desktop",
+      "deploymentProfile": "standalone",
+      "platform": "DESKTOP_LINUX",
+      "architecture": "x64",
+      "description": "Linux desktop bundle (Tauri)."
+    },
+    {
+      "name": "server",
+      "formats": ["deb", "rpm"],
+      "runtimeTarget": "server",
+      "deploymentProfile": "standalone",
+      "description": "Standalone server binary package."
+    }
+  ]
+}

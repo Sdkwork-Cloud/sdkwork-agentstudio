@@ -30,12 +30,12 @@
 
 ## Implemented Fix
 
-- Extended `@sdkwork/clawstudio-types` `Skill` with optional `instanceAsset` metadata plus explicit:
+- Extended `@sdkwork/agentstudio-pc-types` `Skill` with optional `instanceAsset` metadata plus explicit:
   - `SkillInstanceAssetScope`
   - `SkillInstanceAssetStatus`
   - `SkillInstanceAssetCompatibility`
   - `SkillInstanceAssetMetadata`
-- Updated `packages/sdkwork-clawstudio-market/src/services/mySkillService.ts` so installed skills now preserve:
+- Updated `packages/sdkwork-agentstudio-pc-market/src/services/mySkillService.ts` so installed skills now preserve:
   - `source`
   - `scope`
   - `status`
@@ -56,22 +56,22 @@
   - workspace-scoped skills still route through `agentSkillManagementService.removeSkill`
   - non-workspace skills still route through `agentSkillManagementService.setSkillEnabled`
 - Added direct helper coverage and contract enforcement in:
-  - `packages/sdkwork-clawstudio-market/src/services/mySkillService.test.ts`
+  - `packages/sdkwork-agentstudio-pc-market/src/services/mySkillService.test.ts`
   - `scripts/sdkwork-market-contract.test.ts`
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These checks confirm the surrounding Step 08 authority remains stable:
 
@@ -94,18 +94,18 @@ These checks confirm the surrounding Step 08 authority remains stable:
 ## Verification
 
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-market/src/services/mySkillService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-market/src/services/mySkillService.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-market-contract.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-market/src/services/marketService.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts`
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-agent/src/services/agentInstallService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-market/src/services/marketService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-channels/src/services/channelService.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.test.ts`
   - `pnpm.cmd check:sdkwork-market`
   - `pnpm.cmd check:sdkwork-channels`
   - `pnpm.cmd check:sdkwork-agent`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
-  - `packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts` still prints the existing non-blocking supplemental-package warning for `@buape/carbon@0.0.0-beta-20260327000044`
+  - `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.test.ts` still prints the existing non-blocking supplemental-package warning for `@buape/carbon@0.0.0-beta-20260327000044`
   - `pnpm.cmd build` still prints the non-blocking Rolldown plugin timing warning while exiting successfully
 
 ## Closure Status

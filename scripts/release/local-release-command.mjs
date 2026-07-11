@@ -6,7 +6,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { runServerBuild } from '../run-clawstudio-server-build.mjs';
+import { runServerBuild } from '../run-agentstudio-server-build.mjs';
 import { inspectTauriTarget } from '../ensure-tauri-target-clean.mjs';
 import {
   DEFAULT_RELEASE_PROFILE_ID,
@@ -63,17 +63,17 @@ const rootDir = path.resolve(__dirname, '..', '..');
 const desktopSrcTauriDir = path.join(
   rootDir,
   'packages',
-  'sdkwork-clawstudio-desktop',
+  'sdkwork-agentstudio-pc-desktop',
   'src-tauri',
 );
 const serverBuildTargetDir = path.join(
   rootDir,
   'packages',
-  'sdkwork-clawstudio-server',
+  'sdkwork-agentstudio-pc-server',
   'src-host',
   'target',
 );
-const webPackageDir = path.join(rootDir, 'packages', 'sdkwork-clawstudio-web');
+const webPackageDir = path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-web');
 const webDistDir = path.join(webPackageDir, 'dist');
 const docsDistDir = path.join(rootDir, 'docs', '.vitepress', 'dist');
 
@@ -172,8 +172,8 @@ export function resolveGitRepositoryFromRemote({
 
 function resolveServerBinaryFileName(platform = '') {
   return normalizeDesktopPlatform(platform) === 'windows'
-    ? 'clawstudio-server.exe'
-    : 'clawstudio-server';
+    ? 'agentstudio-server.exe'
+    : 'agentstudio-server';
 }
 
 export function resolveLocalServerBinaryPath({
@@ -652,7 +652,7 @@ export function resolveLocalReleaseContext({
   const imageRepository = firstNonEmpty(
     cliOverrides.imageRepository,
     env?.[RELEASE_IMAGE_REPOSITORY_ENV_VAR],
-    'claw-studio-server',
+    'agent-studio-server',
   );
   const imageTag = firstNonEmpty(
     cliOverrides.imageTag,

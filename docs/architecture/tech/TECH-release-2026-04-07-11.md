@@ -17,7 +17,7 @@
 ## Change Scope
 
 - `scripts/check-arch-boundaries.mjs`
-- `scripts/check-sdkwork-clawstudio-hosts.mjs`
+- `scripts/check-sdkwork-agentstudio-pc-hosts.mjs`
 - `scripts/sync-feature-packages.mjs`
 - `scripts/sync-feature-packages.test.mjs`
 - `package.json`
@@ -28,7 +28,7 @@
 
 ## Verification Focus
 
-- `pnpm.cmd sync:features`
+- `pnpm.cmd sdk:sync-features`
 - `pnpm.cmd check:arch`
 - `pnpm.cmd check:sdkwork-structure`
 - `pnpm.cmd check:sdkwork-hosts`

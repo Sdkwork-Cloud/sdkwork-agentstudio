@@ -1,7 +1,7 @@
 > Migrated from `docs/release/release-2026-04-09-90.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
-# Claw Studio release-2026-04-09-90
+# Agent Studio release-2026-04-09-90
 
 ## Highlights
 
@@ -12,12 +12,12 @@
 ## Attempt Outcome
 
 - Fresh RED in this loop was explicit:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - both failed first because `InstanceDetailHeader.tsx` and the updated header-boundary contract did not exist yet
 - Implemented the Step 07 extraction:
-  - added `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.tsx`
-  - rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` to delegate the top hero / action chrome to the dedicated component
+  - added `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.tsx`
+  - rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` to delegate the top hero / action chrome to the dedicated component
   - updated `scripts/sdkwork-instances-contract.test.ts` so lifecycle-gating and destructive-action evidence follow the new page -> header boundary
 - Current hotspot profile after the extraction:
   - `InstanceDetail.tsx`: `1981`
@@ -30,10 +30,10 @@
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.tsx`
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.test.tsx`
-- `packages/sdkwork-clawstudio-instances/src/components/index.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.test.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/index.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
 - `scripts/sdkwork-instances-contract.test.ts`
 - `docs/review/step-07-header-chrome-extraction-2026-04-09.md`
 - `docs/鏋舵瀯/134-2026-04-08-instance-detail-section-decomposition-progress.md`
@@ -43,13 +43,13 @@
 ## Verification Focus
 
 - RED:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - GREEN:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/InstanceDetailHeader.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailHeader.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 - YELLOW:
   - repo-wide `pnpm lint`

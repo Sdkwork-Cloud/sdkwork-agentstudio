@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -7,13 +7,13 @@ import {
   createClawAuthUserCenterPluginDefinition,
   createClawAuthUserCenterServerPluginDefinition,
   createClawAuthUserCenterServerValidationPluginDefinition,
-} from '../packages/sdkwork-clawstudio-auth/src/userCenterStandard.ts';
+} from '../packages/sdkwork-agentstudio-pc-auth/src/userCenterStandard.ts';
 
 const root = path.resolve(import.meta.dirname, '..');
-const bridgePath = path.join(root, 'packages', 'sdkwork-clawstudio-auth', 'src', 'userCenterStandard.ts');
-const validationPath = path.join(root, 'packages', 'sdkwork-clawstudio-auth', 'src', 'validation.ts');
-const runtimePath = path.join(root, 'packages', 'sdkwork-clawstudio-auth', 'src', 'userCenterRuntime.ts');
-const indexPath = path.join(root, 'packages', 'sdkwork-clawstudio-auth', 'src', 'index.ts');
+const bridgePath = path.join(root, 'packages', 'sdkwork-agentstudio-pc-auth', 'src', 'userCenterStandard.ts');
+const validationPath = path.join(root, 'packages', 'sdkwork-agentstudio-pc-auth', 'src', 'validation.ts');
+const runtimePath = path.join(root, 'packages', 'sdkwork-agentstudio-pc-auth', 'src', 'userCenterRuntime.ts');
+const indexPath = path.join(root, 'packages', 'sdkwork-agentstudio-pc-auth', 'src', 'index.ts');
 
 const bridgeSource = fs.readFileSync(bridgePath, 'utf8');
 const indexSource = fs.readFileSync(indexPath, 'utf8');
@@ -101,7 +101,7 @@ assert.equal(serverValidation.middleware.handshake.required, true);
 
 const localPlugin = createClawAuthUserCenterPluginDefinition();
 assert.equal(localPlugin.capability, 'user-center');
-assert.equal(localPlugin.bridgeConfig.namespace, 'claw-studio');
+assert.equal(localPlugin.bridgeConfig.namespace, 'agent-studio');
 assert.deepEqual(localPlugin.capabilities, ['auth']);
 assert.equal(localPlugin.integration.activeKind, 'builtin-local');
 assert.equal(localPlugin.manifests.auth?.loginRoutePath, '/login');
@@ -126,8 +126,8 @@ assert.equal(externalPlugin.clientDeployment.externalUserCenter?.providerKey, 'c
 assert.deepEqual(
   externalPlugin.clientDeployment.externalUserCenter?.artifacts.map((artifact) => artifact.fileName),
   [
-    'claw-studio.external-user-center.runtime.env.example',
-    'claw-studio.external-user-center.gateway.env.example',
+    'agent-studio.external-user-center.runtime.env.example',
+    'agent-studio.external-user-center.gateway.env.example',
   ],
 );
 assert.deepEqual(
@@ -135,9 +135,9 @@ assert.deepEqual(
     .filter((entry) => entry.required)
     .map((entry) => entry.envName),
   [
-    'CLAW_STUDIO_USER_CENTER_EXTERNAL_BASE_URL',
-    'CLAW_STUDIO_USER_CENTER_SECRET_ID',
-    'CLAW_STUDIO_USER_CENTER_SHARED_SECRET',
+    'AGENT_STUDIO_USER_CENTER_EXTERNAL_BASE_URL',
+    'AGENT_STUDIO_USER_CENTER_SECRET_ID',
+    'AGENT_STUDIO_USER_CENTER_SHARED_SECRET',
   ],
 );
 
@@ -157,10 +157,10 @@ const previousWindow = globalThis.window;
 
 try {
   globalThis.window = {
-    __CLAW_STUDIO_USER_CENTER_MODE__: ' sdkwork-cloud-app-api ',
-    __CLAW_STUDIO_USER_CENTER_APP_API_BASE_URL__: ' https://app-api.sdkwork.local/claw/ ',
-    __CLAW_STUDIO_USER_CENTER_PROVIDER_KEY__: ' Claw App API ',
-    __CLAW_STUDIO_USER_CENTER_LOCAL_API_BASE_PATH__: ' /gateway/user-center ',
+    __AGENT_STUDIO_USER_CENTER_MODE__: ' sdkwork-cloud-app-api ',
+    __AGENT_STUDIO_USER_CENTER_APP_API_BASE_URL__: ' https://app-api.sdkwork.local/claw/ ',
+    __AGENT_STUDIO_USER_CENTER_PROVIDER_KEY__: ' Claw App API ',
+    __AGENT_STUDIO_USER_CENTER_LOCAL_API_BASE_PATH__: ' /gateway/user-center ',
   };
 
   const appApiConfig = runtime.createClawAuthCanonicalUserCenterConfig();
@@ -170,10 +170,10 @@ try {
   assert.equal(appApiConfig.provider.providerKey, 'claw-app-api');
 
   globalThis.window = {
-    __CLAW_STUDIO_USER_CENTER_MODE__: ' external-user-center ',
-    __CLAW_STUDIO_USER_CENTER_EXTERNAL_BASE_URL__: ' https://identity.vendor.local/claw-runtime/ ',
-    __CLAW_STUDIO_USER_CENTER_PROVIDER_KEY__: ' Claw Runtime SSO ',
-    __CLAW_STUDIO_USER_CENTER_LOCAL_API_BASE_PATH__: ' /external/user-center ',
+    __AGENT_STUDIO_USER_CENTER_MODE__: ' external-user-center ',
+    __AGENT_STUDIO_USER_CENTER_EXTERNAL_BASE_URL__: ' https://identity.vendor.local/claw-runtime/ ',
+    __AGENT_STUDIO_USER_CENTER_PROVIDER_KEY__: ' Claw Runtime SSO ',
+    __AGENT_STUDIO_USER_CENTER_LOCAL_API_BASE_PATH__: ' /external/user-center ',
   };
 
   const externalConfig = runtime.createClawAuthCanonicalUserCenterConfig();
@@ -189,9 +189,9 @@ try {
   );
 
   globalThis.window = {
-    __CLAW_STUDIO_USER_CENTER_MODE__: ' builtin-local ',
-    __CLAW_STUDIO_USER_CENTER_PROVIDER_KEY__: ' claw-local-window ',
-    __CLAW_STUDIO_USER_CENTER_LOCAL_API_BASE_PATH__: ' /window/user-center ',
+    __AGENT_STUDIO_USER_CENTER_MODE__: ' builtin-local ',
+    __AGENT_STUDIO_USER_CENTER_PROVIDER_KEY__: ' claw-local-window ',
+    __AGENT_STUDIO_USER_CENTER_LOCAL_API_BASE_PATH__: ' /window/user-center ',
   };
 
   const localConfig = runtime.createClawAuthCanonicalUserCenterConfig();
@@ -254,46 +254,46 @@ for (const [label, source] of [
 ]) {
   assert.match(
     source,
-    /VITE_CLAW_STUDIO_USER_CENTER_MODE=sdkwork-cloud-app-api/u,
+    /VITE_AGENT_STUDIO_USER_CENTER_MODE=sdkwork-cloud-app-api/u,
     `${label} must pin the canonical cloud user-center runtime mode.`,
   );
   assert.match(
     source,
-    /VITE_CLAW_STUDIO_USER_CENTER_PROVIDER_KEY=claw-studio-app-api/u,
+    /VITE_AGENT_STUDIO_USER_CENTER_PROVIDER_KEY=agent-studio-app-api/u,
     `${label} must pin the canonical cloud user-center provider key.`,
   );
   assert.match(
     source,
-    /VITE_CLAW_STUDIO_USER_CENTER_LOCAL_API_BASE_PATH=\/api\/app\/v1\/user-center/u,
+    /VITE_AGENT_STUDIO_USER_CENTER_LOCAL_API_BASE_PATH=\/api\/app\/v1\/user-center/u,
     `${label} must pin the canonical local fallback API base path.`,
   );
   assert.doesNotMatch(
     source,
-    /VITE_CLAW_STUDIO_USER_CENTER_(?:APP_API_BASE_URL|EXTERNAL_BASE_URL|SECRET_ID|SHARED_SECRET)=/u,
+    /VITE_AGENT_STUDIO_USER_CENTER_(?:APP_API_BASE_URL|EXTERNAL_BASE_URL|SECRET_ID|SHARED_SECRET)=/u,
     `${label} must not publish private bridge authority or secret env vars through public Vite runtime env.`,
   );
 }
 
 assert.match(
   rootEnvExampleSource,
-  /CLAW_STUDIO_USER_CENTER_APP_API_BASE_URL/u,
+  /AGENT_STUDIO_USER_CENTER_APP_API_BASE_URL/u,
   '.env.example must document the private gateway env name for sdkwork-cloud-app-api deployments.',
 );
 assert.match(
   rootEnvExampleSource,
-  /CLAW_STUDIO_USER_CENTER_SECRET_ID/u,
+  /AGENT_STUDIO_USER_CENTER_SECRET_ID/u,
   '.env.example must document the private gateway secret-id env name.',
 );
 assert.match(
   rootEnvExampleSource,
-  /CLAW_STUDIO_USER_CENTER_SHARED_SECRET/u,
+  /AGENT_STUDIO_USER_CENTER_SHARED_SECRET/u,
   '.env.example must document the private gateway shared-secret env name.',
 );
 assert.match(
   rootEnvExampleSource,
-  /CLAW_STUDIO_USER_CENTER_EXTERNAL_BASE_URL/u,
+  /AGENT_STUDIO_USER_CENTER_EXTERNAL_BASE_URL/u,
   '.env.example must document the private gateway external authority base-url env name.',
 );
 
-console.log('claw-studio user-center standard bridge passed.');
+console.log('agent-studio user-center standard bridge passed.');
 

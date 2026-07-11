@@ -25,18 +25,18 @@
 
 ## Implemented Fix
 
-- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailConsoleErrorSupport.ts`.
+- Added `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailConsoleErrorSupport.ts`.
 - Added `createInstanceDetailConsoleErrorReporters(...)` so the shared helper now owns only:
   - workbench-load failure logging
   - agent-workbench failure logging
   - files lazy-load failure logging
   - memories lazy-load failure logging
-- Added focused direct coverage in `packages/sdkwork-clawstudio-instances/src/services/instanceDetailConsoleErrorSupport.test.ts`.
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Added focused direct coverage in `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailConsoleErrorSupport.test.ts`.
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` so the page now:
   - builds `consoleErrorReporters` once through `createInstanceDetailConsoleErrorReporters({ console })`
   - routes the `loadWorkbench(...)` catch branch through `consoleErrorReporters.reportWorkbenchLoadError(...)`
   - routes agent/files/memories hydration `reportError` bindings through the shared helper instead of inline `console.error(...)` wrappers
-- Exported the new helper from `packages/sdkwork-clawstudio-instances/src/services/index.ts`.
+- Exported the new helper from `packages/sdkwork-agentstudio-pc-instances/src/services/index.ts`.
 - Updated `scripts/run-sdkwork-instances-check.mjs` so the new helper test runs inside `pnpm.cmd check:sdkwork-instances`.
 - Updated `scripts/sdkwork-instances-contract.test.ts` so the contract now requires:
   - the page to use `createInstanceDetailConsoleErrorReporters(...)`
@@ -61,25 +61,25 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for studio-backed workbench truth, runtime persistence, provider-center projection, Local Proxy routing, ecosystem/runtime ownership, and desktop plugin/runtime registration. This loop only centralizes the page-side console error reporter binding layer.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1011` lines / `41365` bytes
-- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailConsoleErrorSupport.ts`: `20` lines / `831` bytes
-- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailConsoleErrorSupport.test.ts`: `46` lines / `1714` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `1011` lines / `41365` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailConsoleErrorSupport.ts`: `20` lines / `831` bytes
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailConsoleErrorSupport.test.ts`: `46` lines / `1714` bytes
 
 Relative to the immediately prior `1064` page baseline from `release-2026-04-10-151`, the fresh current dirty worktree now re-measures `InstanceDetail.tsx` at `1011`. This loop records a verified boundary improvement for the shared console error reporter family while also documenting that the broader page baseline has shifted again in the current dirty worktree and is now the operative truth for subsequent loops.
 
@@ -100,15 +100,15 @@ Relative to the immediately prior `1064` page baseline from `release-2026-04-10-
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailConsoleErrorSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailConsoleErrorSupport.test.ts`
   - failed first because `instanceDetailConsoleErrorSupport.ts` did not yet exist
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` still kept inline `console.error(...)` reporter wrappers
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailConsoleErrorSupport.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailConsoleErrorSupport.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

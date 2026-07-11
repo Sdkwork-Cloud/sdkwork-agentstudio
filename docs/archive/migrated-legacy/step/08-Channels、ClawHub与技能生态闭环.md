@@ -6,7 +6,7 @@
 | --- | --- |
 | 执行模式 | 波次内并行 |
 | 前置 | `05` `07` |
-| 主写入范围 | `packages/sdkwork-clawstudio-market` `packages/sdkwork-clawstudio-channels` `packages/sdkwork-clawstudio-instances/src/services/agentSkillManagementServiceCore.ts` `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts` |
+| 主写入范围 | `packages/sdkwork-agentstudio-pc-market` `packages/sdkwork-agentstudio-pc-channels` `packages/sdkwork-agentstudio-pc-instances/src/services/agentSkillManagementServiceCore.ts` `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts` |
 | 执行输入 | `08`、`17` 架构文档；现有 Market、My Skills、Channels、Skill Install 逻辑 |
 | 本步非目标 | 不在本步内做发布形态工程化；不在本步内做性能压测 |
 | 最小输出 | 实例级生态资产生命周期：浏览、安装、升级、禁用、卸载、回读、审计 |
@@ -33,9 +33,9 @@
 - `pnpm.cmd check:sdkwork-agent`
 - `node --experimental-strip-types scripts/sdkwork-market-contract.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-channels-contract.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-market/src/services/marketService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-channels/src/services/channelService.test.ts`
-- `node --experimental-strip-types packages/sdkwork-clawstudio-agent/src/services/agentInstallService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-market/src/services/marketService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-channels/src/services/channelService.test.ts`
+- `node --experimental-strip-types packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.test.ts`
 
 ## 5. 结果验证
 

@@ -31,20 +31,20 @@ Every pull request should include:
 Use:
 
 ```ts
-import { Chat } from '@sdkwork/clawstudio-chat';
+import { Chat } from '@sdkwork/agentstudio-pc-chat';
 ```
 
 Do not use:
 
 ```ts
-import { Chat } from '@sdkwork/clawstudio-chat/src/pages/chat/Chat';
+import { Chat } from '@sdkwork/agentstudio-pc-chat/src/pages/chat/Chat';
 ```
 
 ### Keep Shell And Entry Layers Clean
 
-- `@sdkwork/clawstudio-web` should remain an entry shell
-- `@sdkwork/clawstudio-desktop` should remain a desktop entry shell
-- `@sdkwork/clawstudio-shell` should compose routes and global UX, not accumulate feature-local services
+- `@sdkwork/agentstudio-pc-web` should remain an entry shell
+- `@sdkwork/agentstudio-pc-desktop` should remain a desktop entry shell
+- `@sdkwork/agentstudio-pc-shell` should compose routes and global UX, not accumulate feature-local services
 
 ### Respect Feature Ownership
 

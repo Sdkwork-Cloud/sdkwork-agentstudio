@@ -23,7 +23,7 @@ pnpm dev
 
 ```bash
 pnpm install
-pnpm tauri:dev
+pnpm dev:desktop
 ```
 
 ### Server
@@ -31,17 +31,17 @@ pnpm tauri:dev
 ```bash
 pnpm install
 pnpm build
-pnpm server:dev
+pnpm dev:server
 ```
 
-当你希望原生 Server 提供当前构建出的浏览器界面时，先执行 `pnpm build` 再执行 `pnpm server:dev`。
+当你希望原生 Server 提供当前构建出的浏览器界面时，先执行 `pnpm build` 再执行 `pnpm dev:server`。
 
 ## 默认访问入口
 
 | 模式 | 默认或典型入口 |
 | --- | --- |
 | Web 工作区 | `http://localhost:3001` |
-| 桌面端运行时 | 执行 `pnpm tauri:dev` 后打开原生窗口 |
+| 桌面端运行时 | 执行 `pnpm dev:desktop` 后打开原生窗口 |
 | 原生 Server | 默认 `http://127.0.0.1:18797` |
 | Container | 由部署包映射出的宿主端口 |
 | Kubernetes | ingress 域名或 service 地址 |
@@ -75,21 +75,21 @@ pnpm server:dev
 ### Windows
 
 ```powershell
-.\bin\clawstudio-server.exe
+.\bin\agentstudio-server.exe
 ```
 
 ### Linux 与 macOS
 
 ```bash
-./bin/clawstudio-server
+./bin/agentstudio-server
 ```
 
 当从解压后的 bundle 中直接启动原生二进制时，会默认：
 
 - 将 `CLAW_SERVER_WEB_DIST` 指向包内的 `web/dist`
-- 将 `CLAW_SERVER_DATA_DIR` 指向解压目录下的 `.clawstudio-server`
+- 将 `CLAW_SERVER_DATA_DIR` 指向解压目录下的 `.agentstudio-server`
 
-`start-clawstudio-server.cmd` 与 `start-clawstudio-server.sh` 仍然是可选的便捷包装脚本，它们调用的是同一个原生二进制，并保持相同的 bundle 默认值。
+`start-agentstudio-server.cmd` 与 `start-agentstudio-server.sh` 仍然是可选的便捷包装脚本，它们调用的是同一个原生二进制，并保持相同的 bundle 默认值。
 
 ## 安装后验证
 
@@ -130,7 +130,7 @@ curl -u operator:manage-secret \
 
 ## Docker 部署
 
-容器镜像会直接启动规范的 `app/bin/clawstudio-server` 原生二进制，而不是通过可选的 shell wrapper 间接启动。
+容器镜像会直接启动规范的 `app/bin/agentstudio-server` 原生二进制，而不是通过可选的 shell wrapper 间接启动。
 
 以下命令需要在解压后的 bundle 根目录执行。Compose 文件会从 `deploy/docker/profiles/*` 解析环境覆盖项，并把 bundle 根目录作为 Docker build context。
 
@@ -155,7 +155,7 @@ docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compo
 ## Kubernetes 部署
 
 ```bash
-helm upgrade --install claw-studio ./chart -f values.release.yaml
+helm upgrade --install agent-studio ./chart -f values.release.yaml
 ```
 
 ## 打包前校验
@@ -168,9 +168,9 @@ pnpm release:plan
 
 本地打包前置条件：
 
-- `pnpm release:package:desktop` 只会收集已经生成完成的桌面安装器与应用包，需要先执行 `pnpm release:desktop` 或 `pnpm tauri:build`。
+- `pnpm release:package:desktop` 只会收集已经生成完成的桌面安装器与应用包，需要先执行 `pnpm release:desktop` 或 `pnpm build:desktop`。
 - `pnpm release:package:server` 在使用根级本地 wrapper 时会先刷新对应 target 的原生 Server release 二进制。这个构建仍然是增量的，但可以保证打包时使用的是当前 target 的最新产物，而不是之前遗留的旧二进制。
-- `pnpm release:package:container` 在使用根级本地 wrapper 时会先刷新匹配目标架构的 Linux Server 二进制。在 Windows 上，如果已经安装 WSL 发行版，`pnpm server:build -- --target x86_64-unknown-linux-gnu` 会自动通过 WSL 构建；在 macOS 上，这条回退路径仍然需要显式准备对应的 Rust target 与 cross-build toolchain。
+- `pnpm release:package:container` 在使用根级本地 wrapper 时会先刷新匹配目标架构的 Linux Server 二进制。在 Windows 上，如果已经安装 WSL 发行版，`pnpm build:server -- --target x86_64-unknown-linux-gnu` 会自动通过 WSL 构建；在 macOS 上，这条回退路径仍然需要显式准备对应的 Rust target 与 cross-build toolchain。
 - `pnpm release:package:kubernetes` 只打包 chart 与 values 资产，因此不依赖本地先构建 Server 二进制。
 - `pnpm release:finalize` 会读取当前 release 资产目录中的 family manifest。本地 wrapper 默认目录是 `artifacts/release`，GitHub workflow 使用的是 `release-assets/`。本地执行时，`release-manifest.json.repository` 会依次从 `SDKWORK_RELEASE_REPOSITORY`、`GITHUB_REPOSITORY`、`git remote origin` 推断；对于 `container` / `kubernetes`，结构化的 `status=skipped` deployment smoke 证据也会被原样保留，而不是被错误地视为通过。
 
@@ -181,35 +181,35 @@ pnpm release:plan
 Windows：
 
 ```powershell
-taskkill /IM clawstudio-server.exe /F
-.\bin\clawstudio-server.exe
+taskkill /IM agentstudio-server.exe /F
+.\bin\agentstudio-server.exe
 ```
 
 Linux 或 macOS：
 
 ```bash
-pkill -f clawstudio-server || true
-./bin/clawstudio-server
+pkill -f agentstudio-server || true
+./bin/agentstudio-server
 ```
 
-这些是针对打包后原生二进制的直接进程操作示例。包装脚本仍可用于本地运维便捷启动，但 `bin/` 下的二进制才是打包交付的规范入口。如果你把原生 Server 安装为系统服务，请优先使用 `clawstudio-server service start|stop|restart|status`，这样 CLI、浏览器管理和服务清单投影会保持一致。
+这些是针对打包后原生二进制的直接进程操作示例。包装脚本仍可用于本地运维便捷启动，但 `bin/` 下的二进制才是打包交付的规范入口。如果你把原生 Server 安装为系统服务，请优先使用 `agentstudio-server service start|stop|restart|status`，这样 CLI、浏览器管理和服务清单投影会保持一致。
 
 ### 安装为受管系统服务
 
-当前打包后的 Server bundle 会在 `bin/` 目录下提供原生 service-capable 二进制，作为规范运行入口；`start-clawstudio-server.sh` 与 `start-clawstudio-server.cmd` 只是围绕同一原生二进制的可选便捷包装层。
+当前打包后的 Server bundle 会在 `bin/` 目录下提供原生 service-capable 二进制，作为规范运行入口；`start-agentstudio-server.sh` 与 `start-agentstudio-server.cmd` 只是围绕同一原生二进制的可选便捷包装层。
 
 Windows：
 
 ```powershell
-.\bin\clawstudio-server.exe service install
-.\bin\clawstudio-server.exe service status
+.\bin\agentstudio-server.exe service install
+.\bin\agentstudio-server.exe service status
 ```
 
 Linux 或 macOS：
 
 ```bash
-./bin/clawstudio-server service install
-./bin/clawstudio-server service status
+./bin/agentstudio-server service install
+./bin/agentstudio-server service status
 ```
 
 如果需要先审阅即将投影出来的服务单元，可以执行 `service print-manifest --platform <linux|macos|windows>`。`service install/start/stop/restart/status` 默认会使用当前平台，但仍然要求操作者具备对应系统服务管理器所需的权限。
@@ -224,7 +224,7 @@ docker compose -f deploy/docker/docker-compose.yml logs --tail=200
 ### 查看 Kubernetes 部署状态
 
 ```bash
-helm status claw-studio
+helm status agent-studio
 kubectl get pods
 kubectl get svc
 ```
@@ -239,7 +239,7 @@ kubectl get svc
 
 ## 当前服务管理器边界
 
-当前原生 Server 运行时已经内建 `systemd`、`launchd` 和 `Windows Service` 风格的服务生命周期支持。非 service 安装应优先使用 `./bin/clawstudio-server` 或 `.\bin\clawstudio-server.exe` 作为打包后的规范入口，`start-clawstudio-server.sh` 与 `start-clawstudio-server.cmd` 仅作为本地运维便捷包装脚本存在。`./bin/clawstudio-server service *`、`.\bin\clawstudio-server.exe service *` 与逻辑命令面 `clawstudio-server service *` 共享同一套受管服务入口。真正的安装、启动与停止仍然通过宿主操作系统自己的服务管理器完成，因此需要对应的平台权限。
+当前原生 Server 运行时已经内建 `systemd`、`launchd` 和 `Windows Service` 风格的服务生命周期支持。非 service 安装应优先使用 `./bin/agentstudio-server` 或 `.\bin\agentstudio-server.exe` 作为打包后的规范入口，`start-agentstudio-server.sh` 与 `start-agentstudio-server.cmd` 仅作为本地运维便捷包装脚本存在。`./bin/agentstudio-server service *`、`.\bin\agentstudio-server.exe service *` 与逻辑命令面 `agentstudio-server service *` 共享同一套受管服务入口。真正的安装、启动与停止仍然通过宿主操作系统自己的服务管理器完成，因此需要对应的平台权限。
 ## Release Readiness Gate
 
 在发布前，`pnpm release:finalize` 之后必须执行：
@@ -256,6 +256,6 @@ pnpm release:assert-ready
 发布完整性补充：`pnpm release:finalize` 会为顶层 `release-manifest.json` 生成 `release-manifest.json.sha256.txt`；部署或发布前的 `pnpm release:assert-ready` 会先校验该 sidecar，再继续校验 `SHA256SUMS.txt`、artifact checksum/size 与 smoke evidence。
 ## release-attestations.json
 
-发布前在 `pnpm release:finalize` 之后运行 `pnpm release:write-attestation-evidence -- --release-assets-dir artifacts/release --repository Sdkwork-Cloud/claw-studio --release-tag release-local`，再运行 `pnpm release:assert-ready`。`release-attestations.json` 记录每个 artifact 与 release metadata（包括 `release-notes.md`）的 `gh attestation verify` 结果，并要求 `relativePath`、`sha256`、`repository`、`releaseTag`、`sourceRef`、`predicateType` 与 `release-manifest.json` 一致。
+发布前在 `pnpm release:finalize` 之后运行 `pnpm release:write-attestation-evidence -- --release-assets-dir artifacts/release --repository Sdkwork-Cloud/agent-studio --release-tag release-local`，再运行 `pnpm release:assert-ready`。`release-attestations.json` 记录每个 artifact 与 release metadata（包括 `release-notes.md`）的 `gh attestation verify` 结果，并要求 `relativePath`、`sha256`、`repository`、`releaseTag`、`sourceRef`、`predicateType` 与 `release-manifest.json` 一致。
 
 部署发布必须把 artifact 证明绑定到指定发布 workflow：`gh attestation verify --signer-workflow <owner/repo/.github/workflows/release-reusable.yml>`。`release-attestations.json` 会记录 `signerWorkflow` 与 `signerWorkflowIdentity`，`pnpm release:assert-ready` 会拒绝未绑定 signer workflow identity 或命令中缺少 `--signer-workflow` 的证明证据。

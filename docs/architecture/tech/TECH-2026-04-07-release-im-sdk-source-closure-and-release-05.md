@@ -32,12 +32,12 @@
 
 1. `node scripts/check-shared-sdk-release-parity.mjs` now passes after the IM SDK source materialization changes and the external `sdkwork-im-sdk` TypeScript release commit `06e92a2e6a2946de05501a4d2785d7e0a4349bb9`.
 2. The parity result confirms that the release-relevant package roots match their pinned GitHub refs even though the broader sibling repositories still contain unrelated dirty work outside the release scope.
-3. This is the correct release gate because Claw Studio consumes only the package roots listed in `pnpm-workspace.yaml` and `config/shared-sdk-release-sources.json`, not every unrelated file in those external repositories.
+3. This is the correct release gate because Agent Studio consumes only the package roots listed in `pnpm-workspace.yaml` and `config/shared-sdk-release-sources.json`, not every unrelated file in those external repositories.
 
 ### Media-account surface evidence
 
-1. `packages/sdkwork-clawstudio-ui/src/components/ChannelRegionTabs.tsx` already defines the region order as `['domestic', 'global', 'media', 'all']`, so `媒体账号` is already before `全部`.
-2. `packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts` already exposes:
+1. `packages/sdkwork-agentstudio-pc-ui/src/components/ChannelRegionTabs.tsx` already defines the region order as `['domestic', 'global', 'media', 'all']`, so `媒体账号` is already before `全部`.
+2. `packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.ts` already exposes:
    - `SDKWORK公众号`
    - `微信公众号`
 3. `scripts/sdkwork-ui-contract.test.ts` already locks:
@@ -89,7 +89,7 @@ Observed result:
 
 1. Shared SDK release parity passed for all six pinned package roots.
 2. The IM SDK release-relevant TypeScript package roots are clean relative to their published GitHub commit.
-3. The app SDK and sdk-common repositories still contain broader local work, but the release gate confirms that the package roots consumed by Claw Studio still match the pinned GitHub refs.
+3. The app SDK and sdk-common repositories still contain broader local work, but the release gate confirms that the package roots consumed by Agent Studio still match the pinned GitHub refs.
 4. The media-account tab and channel set were verified from source and existing regression tests, so no additional UI code change was necessary for this requirement.
 
 ## Status

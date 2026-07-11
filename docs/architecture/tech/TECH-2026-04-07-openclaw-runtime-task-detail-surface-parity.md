@@ -75,9 +75,9 @@ Explicit non-goals:
 
 Failing expectations were in place before production changes:
 
-1. `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
+1. `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.test.ts`
    - expected `client.getRuntimeTaskDetail()` to call official `tasks.show`
-2. `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
+2. `packages/sdkwork-agentstudio-pc-core/src/services/taskRuntimeService.test.ts`
    - expected `service.getRuntimeTaskDetail()` for OpenClaw instances
 3. `scripts/sdkwork-tasks-contract.test.ts`
    - expected a runtime-task detail entrypoint and dedicated task-board detail copy
@@ -118,8 +118,8 @@ After implementation and locale sync:
 
 Updated:
 
-- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/services/openClawGatewayClient.test.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/services/openClawGatewayClient.test.ts`
 
 Changes:
 
@@ -132,8 +132,8 @@ Changes:
 
 Updated:
 
-- `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.ts`
-- `packages/sdkwork-clawstudio-core/src/services/taskRuntimeService.test.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/taskRuntimeService.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/taskRuntimeService.test.ts`
 
 Changes:
 
@@ -145,7 +145,7 @@ Changes:
 
 Updated:
 
-- `packages/sdkwork-clawstudio-commons/src/components/CronTasksManager.tsx`
+- `packages/sdkwork-agentstudio-pc-commons/src/components/CronTasksManager.tsx`
 
 Changes:
 
@@ -174,10 +174,10 @@ Changes:
 
 Updated:
 
-- `packages/sdkwork-clawstudio-i18n/src/locales/en/tasks.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh/tasks.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/en.json`
-- `packages/sdkwork-clawstudio-i18n/src/locales/zh.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en/tasks.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/tasks.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json`
+- `packages/sdkwork-agentstudio-pc-i18n/src/locales/zh.json`
 - `scripts/sdkwork-tasks-contract.test.ts`
 
 Changes:
@@ -199,8 +199,8 @@ Implementation note:
 Fresh commands run after landing the fix:
 
 ```bash
-pnpm.cmd --filter @sdkwork/clawstudio-i18n sync:locales
-node --experimental-strip-types packages/sdkwork-clawstudio-i18n/src/index.test.ts
+pnpm.cmd --filter @sdkwork/agentstudio-pc-i18n sync:locales
+node --experimental-strip-types packages/sdkwork-agentstudio-pc-i18n/src/index.test.ts
 node scripts/run-sdkwork-foundation-check.mjs
 node scripts/run-sdkwork-core-check.mjs
 pnpm.cmd check:sdkwork-tasks

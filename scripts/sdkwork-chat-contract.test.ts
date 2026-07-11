@@ -27,61 +27,61 @@ async function runTest(name: string, fn: () => void | Promise<void>) {
   }
 }
 
-await runTest('sdkwork-clawstudio-chat is implemented locally instead of re-exporting claw-studio-chat', () => {
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-chat/package.json');
-  const indexSource = read('packages/sdkwork-clawstudio-chat/src/index.ts');
+await runTest('sdkwork-agentstudio-pc-chat is implemented locally instead of re-exporting agent-studio-chat', () => {
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-agentstudio-pc-chat/package.json');
+  const indexSource = read('packages/sdkwork-agentstudio-pc-chat/src/index.ts');
 
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/chatService.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/clawChatService.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/openclaw/openClawGatewayClient.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/store/useChatStore.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/store/openClawGatewaySessionStore.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/types/index.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/chatService.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/clawChatService.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/openclaw/openClawGatewayClient.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/store/useChatStore.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/store/openClawGatewaySessionStore.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/types/index.ts'));
 
-  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-chat']);
+  assert.ok(!pkg.dependencies?.['@sdkwork/agentstudio-pc-studio-chat']);
   assert.ok(!pkg.dependencies?.['@google/genai']);
-  assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-chat/);
+  assert.doesNotMatch(indexSource, /@sdkwork\/agent-studio-chat/);
   assert.match(indexSource, /Chat/);
   assert.match(indexSource, /useChatStore/);
   assert.match(indexSource, /chatService/);
 });
 
-await runTest('sdkwork-clawstudio-chat routes model selection through the composer', () => {
-  const chatPageSource = read('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx');
+await runTest('sdkwork-agentstudio-pc-chat routes model selection through the composer', () => {
+  const chatPageSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx');
   const chatPageCompositionSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageCompositionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageCompositionState.ts',
   );
   const chatPagePresentationPropsSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPagePresentationPropsState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPagePresentationPropsState.ts',
   );
   const conversationPaneSource = read(
-    'packages/sdkwork-clawstudio-chat/src/components/ChatConversationPane.tsx',
+    'packages/sdkwork-agentstudio-pc-chat/src/components/ChatConversationPane.tsx',
   );
   const presentationHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPresentationState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPresentationState.ts',
   );
   const conversationPanePresentationHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatConversationPanePresentationState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatConversationPanePresentationState.ts',
   );
   const presentationNavigationHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPresentationNavigation.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPresentationNavigation.ts',
   );
   const compactModelPreferenceHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatCompactModelPreference.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatCompactModelPreference.ts',
   );
-  const composerPanelSource = read('packages/sdkwork-clawstudio-chat/src/components/ChatComposerPanel.tsx');
-  const chatInputSource = read('packages/sdkwork-clawstudio-chat/src/components/ChatInput.tsx');
+  const composerPanelSource = read('packages/sdkwork-agentstudio-pc-chat/src/components/ChatComposerPanel.tsx');
+  const chatInputSource = read('packages/sdkwork-agentstudio-pc-chat/src/components/ChatInput.tsx');
 
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/chatComposerState.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/components/ChatComposerPanel.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/components/ChatConversationPane.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/pages/useChatPresentationState.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/pages/useChatPresentationNavigation.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/pages/useChatCompactModelPreference.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/pages/useChatConversationPanePresentationState.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/pages/useChatSessionContextDrawerPresentationState.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/chatComposerState.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/components/ChatComposerPanel.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/components/ChatConversationPane.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPresentationState.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPresentationNavigation.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/pages/useChatCompactModelPreference.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/pages/useChatConversationPanePresentationState.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/pages/useChatSessionContextDrawerPresentationState.ts'));
   assert.doesNotMatch(chatPageSource, /showModelDropdown/);
   assert.doesNotMatch(chatPageSource, /setShowModelDropdown/);
   assert.doesNotMatch(chatPageSource, /chat\.page\.selectModel/);
@@ -140,12 +140,12 @@ await runTest('sdkwork-clawstudio-chat routes model selection through the compos
   assert.match(chatInputSource, /dark:bg-transparent/);
 });
 
-await runTest('sdkwork-clawstudio-chat derives active channel and model ids from instance config', () => {
+await runTest('sdkwork-agentstudio-pc-chat derives active channel and model ids from instance config', () => {
   const chatPageCompositionSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageCompositionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageCompositionState.ts',
   );
   const modelPreferenceStateHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatModelPreferenceSourceState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatModelPreferenceSourceState.ts',
   );
 
   assert.match(chatPageCompositionSource, /useChatPageSourceState/);
@@ -159,12 +159,12 @@ await runTest('sdkwork-clawstudio-chat derives active channel and model ids from
   );
 });
 
-await runTest('sdkwork-clawstudio-chat keeps page-local UI state inside a dedicated page hook', () => {
-  const chatPageSource = read('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx');
+await runTest('sdkwork-agentstudio-pc-chat keeps page-local UI state inside a dedicated page hook', () => {
+  const chatPageSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx');
   const chatPageCompositionSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageCompositionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageCompositionState.ts',
   );
-  const uiStateHookSource = read('packages/sdkwork-clawstudio-chat/src/pages/useChatPageUiState.ts');
+  const uiStateHookSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageUiState.ts');
 
   assert.match(chatPageCompositionSource, /useChatPageUiState/);
   assert.doesNotMatch(chatPageSource, /import \{ useState \} from 'react';/);
@@ -184,9 +184,9 @@ await runTest('sdkwork-clawstudio-chat keeps page-local UI state inside a dedica
   assert.match(uiStateHookSource, /export function useChatPageUiState\(\)/);
 });
 
-await runTest('sdkwork-clawstudio-chat keeps the light conversation background distinct from the composer surface', () => {
-  const chatPageSource = read('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx');
-  const chatChromeSurfaceSource = read('packages/sdkwork-clawstudio-chat/src/components/chatChromeSurface.ts');
+await runTest('sdkwork-agentstudio-pc-chat keeps the light conversation background distinct from the composer surface', () => {
+  const chatPageSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx');
+  const chatChromeSurfaceSource = read('packages/sdkwork-agentstudio-pc-chat/src/components/chatChromeSurface.ts');
 
   assert.match(
     chatPageSource,
@@ -202,25 +202,25 @@ await runTest('sdkwork-clawstudio-chat keeps the light conversation background d
   );
 });
 
-await runTest('sdkwork-clawstudio-chat keeps route-level boundaries by consuming shared core services instead of other route packages', () => {
-  const chatPageSource = read('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx');
+await runTest('sdkwork-agentstudio-pc-chat keeps route-level boundaries by consuming shared core services instead of other route packages', () => {
+  const chatPageSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx');
   const sourceStateHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageSourceState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageSourceState.ts',
   );
   const instanceSourceHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatInstanceSourceState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatInstanceSourceState.ts',
   );
   const modelPreferenceSourceHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatModelPreferenceSourceState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatModelPreferenceSourceState.ts',
   );
   const chatContextCatalogHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatContextCatalogState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatContextCatalogState.ts',
   );
   const chatSkillCatalogHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatSkillCatalogState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatSkillCatalogState.ts',
   );
-  const chatServiceSource = read('packages/sdkwork-clawstudio-chat/src/services/chatService.ts');
-  const chatInputSource = read('packages/sdkwork-clawstudio-chat/src/components/ChatInput.tsx');
+  const chatServiceSource = read('packages/sdkwork-agentstudio-pc-chat/src/services/chatService.ts');
+  const chatInputSource = read('packages/sdkwork-agentstudio-pc-chat/src/components/ChatInput.tsx');
 
   assert.doesNotMatch(chatPageSource, /from '@sdkwork\/claw-market'/);
   assert.doesNotMatch(chatPageSource, /from '@sdkwork\/claw-settings'/);
@@ -240,16 +240,16 @@ await runTest('sdkwork-clawstudio-chat keeps route-level boundaries by consuming
   assert.doesNotMatch(chatServiceSource, /useLLMStore/);
 });
 
-await runTest('sdkwork-clawstudio-chat routes model configuration entry points into settings after api-router removal', () => {
-  const chatPageSource = read('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx');
+await runTest('sdkwork-agentstudio-pc-chat routes model configuration entry points into settings after api-router removal', () => {
+  const chatPageSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx');
   const presentationNavigationHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPresentationNavigation.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPresentationNavigation.ts',
   );
   const sessionContextDrawerPresentationHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatSessionContextDrawerPresentationState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatSessionContextDrawerPresentationState.ts',
   );
   const conversationPanePresentationHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatConversationPanePresentationState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatConversationPanePresentationState.ts',
   );
 
   assert.match(chatPageSource, /<ChatSessionContextDrawer \{\.\.\.sessionContextDrawerProps\} \/>/);
@@ -260,9 +260,9 @@ await runTest('sdkwork-clawstudio-chat routes model configuration entry points i
   assert.doesNotMatch(chatPageSource, /navigate\('\/api-router'\)/);
 });
 
-await runTest('sdkwork-clawstudio-chat resolves model catalogs through the shared provider routing catalog instead of studio mocks', () => {
+await runTest('sdkwork-agentstudio-pc-chat resolves model catalogs through the shared provider routing catalog instead of studio mocks', () => {
   const serviceSource = read(
-    'packages/sdkwork-clawstudio-chat/src/services/instanceEffectiveModelCatalogService.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/services/instanceEffectiveModelCatalogService.ts',
   );
 
   assert.doesNotMatch(serviceSource, /studioMockService/);
@@ -270,9 +270,9 @@ await runTest('sdkwork-clawstudio-chat resolves model catalogs through the share
   assert.match(serviceSource, /from '@sdkwork\/claw-core'/);
 });
 
-await runTest('sdkwork-clawstudio-chat model catalog runtime probing keys gateway behavior off route mode instead of the OpenClaw kernel id', () => {
+await runTest('sdkwork-agentstudio-pc-chat model catalog runtime probing keys gateway behavior off route mode instead of the OpenClaw kernel id', () => {
   const coreSource = read(
-    'packages/sdkwork-clawstudio-chat/src/services/instanceEffectiveModelCatalogCore.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/services/instanceEffectiveModelCatalogCore.ts',
   );
 
   assert.match(coreSource, /if \(route\.mode !== 'instanceOpenClawGatewayWs'\) \{/);
@@ -285,63 +285,63 @@ await runTest('sdkwork-clawstudio-chat model catalog runtime probing keys gatewa
   assert.match(coreSource, /channels: buildRuntimeFallbackChannels\(gatewayModels\),/);
 });
 
-await runTest('sdkwork-clawstudio-chat services barrel stays Node-safe for pure service tests', () => {
-  const servicesIndexSource = read('packages/sdkwork-clawstudio-chat/src/services/index.ts');
-  const chatStoreSource = read('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts');
+await runTest('sdkwork-agentstudio-pc-chat services barrel stays Node-safe for pure service tests', () => {
+  const servicesIndexSource = read('packages/sdkwork-agentstudio-pc-chat/src/services/index.ts');
+  const chatStoreSource = read('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts');
 
   assert.doesNotMatch(servicesIndexSource, /clawChatService/);
   assert.doesNotMatch(servicesIndexSource, /react-i18next/);
   assert.doesNotMatch(chatStoreSource, /zustand/);
 });
 
-await runTest('sdkwork-clawstudio-chat exposes the kernel-native chat standard across shared types, services, and store projections', () => {
-  const typesIndexSource = read('packages/sdkwork-clawstudio-types/src/index.ts');
-  const servicesIndexSource = read('packages/sdkwork-clawstudio-chat/src/services/index.ts');
-  const chatStoreSource = read('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts');
-  const agentServiceSource = read('packages/sdkwork-clawstudio-chat/src/services/agentService.ts');
-  const chatPageSource = read('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx');
+await runTest('sdkwork-agentstudio-pc-chat exposes the kernel-native chat standard across shared types, services, and store projections', () => {
+  const typesIndexSource = read('packages/sdkwork-agentstudio-pc-types/src/index.ts');
+  const servicesIndexSource = read('packages/sdkwork-agentstudio-pc-chat/src/services/index.ts');
+  const chatStoreSource = read('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts');
+  const agentServiceSource = read('packages/sdkwork-agentstudio-pc-chat/src/services/agentService.ts');
+  const chatPageSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx');
   const chatPageCompositionSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageCompositionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageCompositionState.ts',
   );
   const chatPageWorkspaceSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageWorkspaceState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageWorkspaceState.ts',
   );
   const chatPageContractsSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/chatPageContracts.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/chatPageContracts.ts',
   );
   const chatSessionViewHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatSessionViewState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatSessionViewState.ts',
   );
   const chatActiveSessionProjectionHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatActiveSessionProjectionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatActiveSessionProjectionState.ts',
   );
   const chatMessageDisplayHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatMessageDisplayState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatMessageDisplayState.ts',
   );
   const chatInteractionHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatInteractionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatInteractionState.ts',
   );
   const chatSendExecutionHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatSendExecutionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatSendExecutionState.ts',
   );
   const chatCheckRunner = read('scripts/run-sdkwork-chat-check.mjs');
 
-  assert.ok(exists('packages/sdkwork-clawstudio-types/src/kernelChatModel.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/openclaw/openClawKernelChatProjection.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/store/localChatKernelProjection.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/kernelChatAgentCatalogService.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/kernelChatSessionState.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/kernelChatMessageState.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/chatHttpMessagePayload.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/chatHttpStreamProtocol.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/kernelChatMessagePartsPresentation.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/chatSessionOwnerPresentation.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/chatSidebarAgentRailPresentation.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/chatSidebarChromePresentation.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/services/chatSidebarHistoryPresentation.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/pages/chatPageContracts.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/pages/useChatActiveSessionProjectionState.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-chat/src/pages/useChatMessageDisplayState.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-types/src/kernelChatModel.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/openclaw/openClawKernelChatProjection.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/store/localChatKernelProjection.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/kernelChatAgentCatalogService.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/kernelChatSessionState.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/kernelChatMessageState.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/chatHttpMessagePayload.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/chatHttpStreamProtocol.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/kernelChatMessagePartsPresentation.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/chatSessionOwnerPresentation.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/chatSidebarAgentRailPresentation.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/chatSidebarChromePresentation.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/services/chatSidebarHistoryPresentation.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/pages/chatPageContracts.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/pages/useChatActiveSessionProjectionState.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-chat/src/pages/useChatMessageDisplayState.ts'));
   assert.match(typesIndexSource, /kernelChatModel/);
   assert.match(servicesIndexSource, /chatSessionOwnerPresentation/);
   assert.match(servicesIndexSource, /chatHttpMessagePayload/);
@@ -386,23 +386,23 @@ await runTest('sdkwork-clawstudio-chat exposes the kernel-native chat standard a
   assert.match(chatMessageDisplayHookSource, /resolveKernelChatMessageState/);
   assert.match(chatSendExecutionHookSource, /createChatComposerSendActions/);
   assert.match(chatSendExecutionHookSource, /from '\.\/chatPageContracts';/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-types\/src\/kernelChatModel\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/kernelChatAgentCatalogService\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/kernelChatSessionState\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/kernelChatMessageState\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/chatSessionOwnerPresentation\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/chatHttpMessagePayload\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/chatHttpStreamProtocol\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/kernelChatMessagePartsPresentation\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/chatSidebarAgentRailPresentation\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/chatSidebarChromePresentation\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/chatSidebarHistoryPresentation\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/openclaw\/openClawKernelChatProjection\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/services\/store\/localChatKernelProjection\.test\.ts/);
-  assert.match(chatCheckRunner, /packages\/sdkwork-clawstudio-chat\/src\/store\/openClawGatewayKernelProjection\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-types\/src\/kernelChatModel\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/kernelChatAgentCatalogService\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/kernelChatSessionState\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/kernelChatMessageState\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/chatSessionOwnerPresentation\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/chatHttpMessagePayload\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/chatHttpStreamProtocol\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/kernelChatMessagePartsPresentation\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/chatSidebarAgentRailPresentation\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/chatSidebarChromePresentation\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/chatSidebarHistoryPresentation\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/openclaw\/openClawKernelChatProjection\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/services\/store\/localChatKernelProjection\.test\.ts/);
+  assert.match(chatCheckRunner, /packages\/sdkwork-agentstudio-pc-chat\/src\/store\/openClawGatewayKernelProjection\.test\.ts/);
 });
 
-await runTest('sdkwork-clawstudio-chat parity checks use the shared Node TypeScript runner for Node-loaded chat services', () => {
+await runTest('sdkwork-agentstudio-pc-chat parity checks use the shared Node TypeScript runner for Node-loaded chat services', () => {
   const workspacePackageJson = read('package.json');
   const chatCheckRunner = read('scripts/run-sdkwork-chat-check.mjs');
   const nodeTypeScriptRunner = read('scripts/run-node-typescript-check.mjs');
@@ -420,19 +420,19 @@ await runTest('sdkwork-clawstudio-chat parity checks use the shared Node TypeScr
   assert.doesNotMatch(chatCheckRunner, /tsx/);
 });
 
-await runTest('sdkwork-clawstudio-chat chat service loads under Node without Vite env injection', async () => {
+await runTest('sdkwork-agentstudio-pc-chat chat service loads under Node without Vite env injection', async () => {
   const chatServiceModuleUrl = pathToFileURL(
-    path.join(root, 'packages/sdkwork-clawstudio-chat/src/services/chatService.ts'),
+    path.join(root, 'packages/sdkwork-agentstudio-pc-chat/src/services/chatService.ts'),
   ).href;
   const chatServiceModule =
-    (await import(chatServiceModuleUrl)) as typeof import('../packages/sdkwork-clawstudio-chat/src/services/chatService');
+    (await import(chatServiceModuleUrl)) as typeof import('../packages/sdkwork-agentstudio-pc-chat/src/services/chatService');
 
   assert.ok(chatServiceModule.chatService);
   assert.equal(typeof chatServiceModule.buildSystemInstruction, 'function');
 });
 
-await runTest('sdkwork-clawstudio-chat chat service forbids browser-direct provider calls and env-key fallbacks', () => {
-  const chatServiceSource = read('packages/sdkwork-clawstudio-chat/src/services/chatService.ts');
+await runTest('sdkwork-agentstudio-pc-chat chat service forbids browser-direct provider calls and env-key fallbacks', () => {
+  const chatServiceSource = read('packages/sdkwork-agentstudio-pc-chat/src/services/chatService.ts');
 
   assert.doesNotMatch(chatServiceSource, /@google\/genai/);
   assert.doesNotMatch(chatServiceSource, /GoogleGenAI/);
@@ -448,19 +448,19 @@ await runTest('sdkwork-clawstudio-chat chat service forbids browser-direct provi
   assert.match(chatServiceSource, /normalizeChatTransportStream/);
 });
 
-await runTest('sdkwork-clawstudio-chat chat service requires a real active instance before streaming', async () => {
+await runTest('sdkwork-agentstudio-pc-chat chat service requires a real active instance before streaming', async () => {
   const chatServiceModuleUrl = pathToFileURL(
-    path.join(root, 'packages/sdkwork-clawstudio-chat/src/services/chatService.ts'),
+    path.join(root, 'packages/sdkwork-agentstudio-pc-chat/src/services/chatService.ts'),
   ).href;
   const instanceStoreModuleUrl = pathToFileURL(
-    path.join(root, 'packages/sdkwork-clawstudio-core/src/stores/instanceStore.ts'),
+    path.join(root, 'packages/sdkwork-agentstudio-pc-core/src/stores/instanceStore.ts'),
   ).href;
   const {
     chatService,
-  } = (await import(chatServiceModuleUrl)) as typeof import('../packages/sdkwork-clawstudio-chat/src/services/chatService');
+  } = (await import(chatServiceModuleUrl)) as typeof import('../packages/sdkwork-agentstudio-pc-chat/src/services/chatService');
   const {
     instanceStore,
-  } = (await import(instanceStoreModuleUrl)) as typeof import('../packages/sdkwork-clawstudio-core/src/stores/instanceStore');
+  } = (await import(instanceStoreModuleUrl)) as typeof import('../packages/sdkwork-agentstudio-pc-core/src/stores/instanceStore');
 
   const initialState = instanceStore.getState();
 
@@ -494,11 +494,11 @@ await runTest('sdkwork-clawstudio-chat chat service requires a real active insta
   }
 });
 
-await runTest('sdkwork-clawstudio-chat store tolerates migrated sessions without messages arrays', async () => {
+await runTest('sdkwork-agentstudio-pc-chat store tolerates migrated sessions without messages arrays', async () => {
   const storeModuleUrl = pathToFileURL(
-    path.join(root, 'packages/sdkwork-clawstudio-chat/src/store/chatStore.ts'),
+    path.join(root, 'packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts'),
   ).href;
-  const { chatStore } = (await import(storeModuleUrl)) as typeof import('../packages/sdkwork-clawstudio-chat/src/store/chatStore');
+  const { chatStore } = (await import(storeModuleUrl)) as typeof import('../packages/sdkwork-agentstudio-pc-chat/src/store/chatStore');
 
   const initialState = chatStore.getState();
 
@@ -541,11 +541,11 @@ await runTest('sdkwork-clawstudio-chat store tolerates migrated sessions without
   }
 });
 
-await runTest('sdkwork-clawstudio-chat derives a readable local session title from the first user message', async () => {
+await runTest('sdkwork-agentstudio-pc-chat derives a readable local session title from the first user message', async () => {
   const storeModuleUrl = pathToFileURL(
-    path.join(root, 'packages/sdkwork-clawstudio-chat/src/store/chatStore.ts'),
+    path.join(root, 'packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts'),
   ).href;
-  const { chatStore } = (await import(storeModuleUrl)) as typeof import('../packages/sdkwork-clawstudio-chat/src/store/chatStore');
+  const { chatStore } = (await import(storeModuleUrl)) as typeof import('../packages/sdkwork-agentstudio-pc-chat/src/store/chatStore');
 
   const initialState = chatStore.getState();
 
@@ -587,33 +587,33 @@ await runTest('sdkwork-clawstudio-chat derives a readable local session title fr
   }
 });
 
-await runTest('sdkwork-clawstudio-chat keeps active session state isolated per instance and hard-cuts instance chat onto adapter-owned authority', () => {
-  const chatStoreSource = read('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts');
-  const localGatewaySource = read('packages/sdkwork-clawstudio-chat/src/store/studioConversationGateway.ts');
-  const chatMappingSource = read('packages/sdkwork-clawstudio-chat/src/chatSessionMapping.ts');
-  const chatPageSource = read('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx');
+await runTest('sdkwork-agentstudio-pc-chat keeps active session state isolated per instance and hard-cuts instance chat onto adapter-owned authority', () => {
+  const chatStoreSource = read('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts');
+  const localGatewaySource = read('packages/sdkwork-agentstudio-pc-chat/src/store/studioConversationGateway.ts');
+  const chatMappingSource = read('packages/sdkwork-agentstudio-pc-chat/src/chatSessionMapping.ts');
+  const chatPageSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx');
   const chatPageCompositionSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageCompositionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageCompositionState.ts',
   );
   const chatPageWorkspaceSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageWorkspaceState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageWorkspaceState.ts',
   );
   const sourceStateHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageSourceState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageSourceState.ts',
   );
   const runtimeSourceHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatRuntimeSourceState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatRuntimeSourceState.ts',
   );
   const chatPageRuntimeHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageRuntimeState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageRuntimeState.ts',
   );
   const chatInteractionHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatInteractionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatInteractionState.ts',
   );
   const chatSendExecutionHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatSendExecutionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatSendExecutionState.ts',
   );
-  const chatSidebarSource = read('packages/sdkwork-clawstudio-chat/src/components/ChatSidebar.tsx');
+  const chatSidebarSource = read('packages/sdkwork-agentstudio-pc-chat/src/components/ChatSidebar.tsx');
 
   assert.match(chatStoreSource, /activeSessionIdByInstance/);
   assert.match(chatStoreSource, /syncStateByInstance/);
@@ -653,28 +653,28 @@ await runTest('sdkwork-clawstudio-chat keeps active session state isolated per i
   assert.doesNotMatch(chatSidebarSource, /\{session\.title\}/);
 });
 
-await runTest('sdkwork-clawstudio-chat does not fall back to local HTTP while an instance route is still unresolved', () => {
-  const chatPageSource = read('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx');
+await runTest('sdkwork-agentstudio-pc-chat does not fall back to local HTTP while an instance route is still unresolved', () => {
+  const chatPageSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx');
   const chatPageCompositionSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageCompositionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageCompositionState.ts',
   );
   const chatPageWorkspaceSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageWorkspaceState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageWorkspaceState.ts',
   );
   const chatPageRuntimeHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageRuntimeState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageRuntimeState.ts',
   );
   const chatSessionViewHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatSessionViewState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatSessionViewState.ts',
   );
   const chatActiveSessionProjectionHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatActiveSessionProjectionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatActiveSessionProjectionState.ts',
   );
   const chatInteractionHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatInteractionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatInteractionState.ts',
   );
   const chatSendExecutionHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatSendExecutionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatSendExecutionState.ts',
   );
 
   assert.match(chatPageCompositionSource, /useChatPageWorkspaceState/);
@@ -714,21 +714,21 @@ await runTest('sdkwork-clawstudio-chat does not fall back to local HTTP while an
   );
 });
 
-await runTest('sdkwork-clawstudio-chat re-hydrates the active instance when the same instance route authority changes after the route has already resolved', () => {
-  const chatPageSource = read('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx');
+await runTest('sdkwork-agentstudio-pc-chat re-hydrates the active instance when the same instance route authority changes after the route has already resolved', () => {
+  const chatPageSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx');
   const chatPageCompositionSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageCompositionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageCompositionState.ts',
   );
   const pageSynchronizationHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageSynchronizationState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageSynchronizationState.ts',
   );
   const runtimeSynchronizationHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatRuntimeSynchronization.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatRuntimeSynchronization.ts',
   );
   const instanceHydrationSynchronizationHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatInstanceHydrationSynchronization.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatInstanceHydrationSynchronization.ts',
   );
-  const servicesIndexSource = read('packages/sdkwork-clawstudio-chat/src/services/index.ts');
+  const servicesIndexSource = read('packages/sdkwork-agentstudio-pc-chat/src/services/index.ts');
 
   assert.match(
     servicesIndexSource,
@@ -793,10 +793,10 @@ await runTest('sdkwork-clawstudio-chat re-hydrates the active instance when the 
   );
 });
 
-await runTest('sdkwork-clawstudio-chat re-runs gateway warmup when directory status changes without requiring the warmed instance id set to change', () => {
-  const warmersSource = read('packages/sdkwork-clawstudio-chat/src/runtime/OpenClawGatewayConnections.tsx');
+await runTest('sdkwork-agentstudio-pc-chat re-runs gateway warmup when directory status changes without requiring the warmed instance id set to change', () => {
+  const warmersSource = read('packages/sdkwork-agentstudio-pc-chat/src/runtime/OpenClawGatewayConnections.tsx');
   const warmersPolicySource = read(
-    'packages/sdkwork-clawstudio-chat/src/runtime/openClawGatewayConnectionsPolicy.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/runtime/openClawGatewayConnectionsPolicy.ts',
   );
 
   assert.match(
@@ -821,10 +821,10 @@ await runTest('sdkwork-clawstudio-chat re-runs gateway warmup when directory sta
   );
 });
 
-await runTest('sdkwork-clawstudio-chat re-runs gateway warmup for warmed instances when built-in OpenClaw runtime status events arrive outside directory polling', () => {
-  const warmersSource = read('packages/sdkwork-clawstudio-chat/src/runtime/OpenClawGatewayConnections.tsx');
+await runTest('sdkwork-agentstudio-pc-chat re-runs gateway warmup for warmed instances when built-in OpenClaw runtime status events arrive outside directory polling', () => {
+  const warmersSource = read('packages/sdkwork-agentstudio-pc-chat/src/runtime/OpenClawGatewayConnections.tsx');
   const warmersPolicySource = read(
-    'packages/sdkwork-clawstudio-chat/src/runtime/openClawGatewayConnectionsPolicy.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/runtime/openClawGatewayConnectionsPolicy.ts',
   );
 
   assert.match(
@@ -865,8 +865,8 @@ await runTest('sdkwork-clawstudio-chat re-runs gateway warmup for warmed instanc
   );
 });
 
-await runTest('sdkwork-clawstudio-chat wires OpenClaw history config into the gateway session store', () => {
-  const chatStoreSource = read('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts');
+await runTest('sdkwork-agentstudio-pc-chat wires OpenClaw history config into the gateway session store', () => {
+  const chatStoreSource = read('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts');
 
   assert.match(chatStoreSource, /openClawGatewayHistoryConfigService/);
   assert.match(chatStoreSource, /resolveHistoryMaxChars\(instanceId\)/);
@@ -876,8 +876,8 @@ await runTest('sdkwork-clawstudio-chat wires OpenClaw history config into the ga
   );
 });
 
-await runTest('sdkwork-clawstudio-chat re-resolves authoritative instance routes before session creation mutations instead of trusting stale cached modes', () => {
-  const chatStoreSource = read('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts');
+await runTest('sdkwork-agentstudio-pc-chat re-resolves authoritative instance routes before session creation mutations instead of trusting stale cached modes', () => {
+  const chatStoreSource = read('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts');
 
   assert.match(
     chatStoreSource,
@@ -893,8 +893,8 @@ await runTest('sdkwork-clawstudio-chat re-resolves authoritative instance routes
   );
 });
 
-await runTest('sdkwork-clawstudio-chat re-resolves authoritative instance routes before session selection mutations instead of trusting stale cached modes', () => {
-  const chatStoreSource = read('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts');
+await runTest('sdkwork-agentstudio-pc-chat re-resolves authoritative instance routes before session selection mutations instead of trusting stale cached modes', () => {
+  const chatStoreSource = read('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts');
 
   assert.match(
     chatStoreSource,
@@ -906,8 +906,8 @@ await runTest('sdkwork-clawstudio-chat re-resolves authoritative instance routes
   );
 });
 
-await runTest('sdkwork-clawstudio-chat re-resolves authoritative instance routes before gateway-backed session deletion and reset mutations', () => {
-  const chatStoreSource = read('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts');
+await runTest('sdkwork-agentstudio-pc-chat re-resolves authoritative instance routes before gateway-backed session deletion and reset mutations', () => {
+  const chatStoreSource = read('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts');
 
   assert.match(
     chatStoreSource,
@@ -931,8 +931,8 @@ await runTest('sdkwork-clawstudio-chat re-resolves authoritative instance routes
   );
 });
 
-await runTest('sdkwork-clawstudio-chat transport-backed session deletion keeps active fallback inside authoritative adapter scope instead of reusing stale gateway sessions', () => {
-  const chatStoreSource = read('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts');
+await runTest('sdkwork-agentstudio-pc-chat transport-backed session deletion keeps active fallback inside authoritative adapter scope instead of reusing stale gateway sessions', () => {
+  const chatStoreSource = read('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts');
 
   assert.match(
     chatStoreSource,
@@ -944,8 +944,8 @@ await runTest('sdkwork-clawstudio-chat transport-backed session deletion keeps a
   );
 });
 
-await runTest('sdkwork-clawstudio-chat transport-backed session creation keeps the authoritative instance scope adapter-only', () => {
-  const chatStoreSource = read('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts');
+await runTest('sdkwork-agentstudio-pc-chat transport-backed session creation keeps the authoritative instance scope adapter-only', () => {
+  const chatStoreSource = read('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts');
 
   assert.match(
     chatStoreSource,
@@ -954,8 +954,8 @@ await runTest('sdkwork-clawstudio-chat transport-backed session creation keeps t
   assert.doesNotMatch(chatStoreSource, /persistSession\(/);
 });
 
-await runTest('sdkwork-clawstudio-chat transport-backed session clearing and flush keep the active scope adapter-only', () => {
-  const chatStoreSource = read('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts');
+await runTest('sdkwork-agentstudio-pc-chat transport-backed session clearing and flush keep the active scope adapter-only', () => {
+  const chatStoreSource = read('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts');
 
   assert.match(
     chatStoreSource,
@@ -967,8 +967,8 @@ await runTest('sdkwork-clawstudio-chat transport-backed session clearing and flu
   );
 });
 
-await runTest('sdkwork-clawstudio-chat transport-backed message append and edit mutations keep authoritative instance scope adapter-only', () => {
-  const chatStoreSource = read('packages/sdkwork-clawstudio-chat/src/store/chatStore.ts');
+await runTest('sdkwork-agentstudio-pc-chat transport-backed message append and edit mutations keep authoritative instance scope adapter-only', () => {
+  const chatStoreSource = read('packages/sdkwork-agentstudio-pc-chat/src/store/chatStore.ts');
 
   assert.match(
     chatStoreSource,
@@ -980,8 +980,8 @@ await runTest('sdkwork-clawstudio-chat transport-backed message append and edit 
   );
 });
 
-await runTest('sdkwork-clawstudio-chat bootstrap state machine does not auto-create local sessions while hydration is in an error state', () => {
-  const bootstrapSource = read('packages/sdkwork-clawstudio-chat/src/services/chatSessionBootstrap.ts');
+await runTest('sdkwork-agentstudio-pc-chat bootstrap state machine does not auto-create local sessions while hydration is in an error state', () => {
+  const bootstrapSource = read('packages/sdkwork-agentstudio-pc-chat/src/services/chatSessionBootstrap.ts');
 
   assert.match(
     bootstrapSource,
@@ -997,8 +997,8 @@ await runTest('sdkwork-clawstudio-chat bootstrap state machine does not auto-cre
   );
 });
 
-await runTest('sdkwork-clawstudio-chat llm store does not seed default browser-direct provider channels', () => {
-  const llmStoreSource = read('packages/sdkwork-clawstudio-settings/src/store/useLLMStore.ts');
+await runTest('sdkwork-agentstudio-pc-chat llm store does not seed default browser-direct provider channels', () => {
+  const llmStoreSource = read('packages/sdkwork-agentstudio-pc-settings/src/store/useLLMStore.ts');
 
   assert.doesNotMatch(llmStoreSource, /const DEFAULT_CHANNELS:/);
   assert.doesNotMatch(llmStoreSource, /channels:\s*DEFAULT_CHANNELS/);
@@ -1006,12 +1006,12 @@ await runTest('sdkwork-clawstudio-chat llm store does not seed default browser-d
   assert.doesNotMatch(llmStoreSource, /activeModelId:\s*'gemini-3-flash-preview'/);
 });
 
-await runTest('sdkwork-clawstudio-chat resolves runtime chat routes for multiple claw instance kinds', async () => {
+await runTest('sdkwork-agentstudio-pc-chat resolves runtime chat routes for multiple claw instance kinds', async () => {
   const runtimeRouteModuleUrl = pathToFileURL(
-    path.join(root, 'packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService.ts'),
+    path.join(root, 'packages/sdkwork-agentstudio-pc-chat/src/services/instanceChatRouteService.ts'),
   ).href;
   const { resolveInstanceChatRoute } =
-    (await import(runtimeRouteModuleUrl)) as typeof import('../packages/sdkwork-clawstudio-chat/src/services/instanceChatRouteService');
+    (await import(runtimeRouteModuleUrl)) as typeof import('../packages/sdkwork-agentstudio-pc-chat/src/services/instanceChatRouteService');
 
   const openClawRoute = resolveInstanceChatRoute({
     id: 'managed-openclaw-primary',
@@ -1036,7 +1036,7 @@ await runTest('sdkwork-clawstudio-chat resolves runtime chat routes for multiple
     capabilities: ['chat', 'health'],
     storage: {
       provider: 'localFile',
-      namespace: 'claw-studio',
+      namespace: 'agent-studio',
     },
     config: {
       port: '21280',
@@ -1074,7 +1074,7 @@ await runTest('sdkwork-clawstudio-chat resolves runtime chat routes for multiple
     capabilities: ['chat', 'health'],
     storage: {
       provider: 'localFile',
-      namespace: 'claw-studio',
+      namespace: 'agent-studio',
     },
     config: {
       port: '18795',
@@ -1226,7 +1226,7 @@ await runTest('sdkwork-clawstudio-chat resolves runtime chat routes for multiple
     capabilities: ['chat', 'health'],
     storage: {
       provider: 'localFile',
-      namespace: 'claw-studio',
+      namespace: 'agent-studio',
     },
     config: {
       port: '18798',
@@ -1264,7 +1264,7 @@ await runTest('sdkwork-clawstudio-chat resolves runtime chat routes for multiple
     capabilities: ['chat', 'health'],
     storage: {
       provider: 'remoteApi',
-      namespace: 'claw-studio',
+      namespace: 'agent-studio',
     },
     config: {
       port: '443',
@@ -1299,49 +1299,49 @@ await runTest('sdkwork-clawstudio-chat resolves runtime chat routes for multiple
   assert.equal(resolveInstanceChatRoute(null).mode, 'directLlm');
 });
 
-await runTest('sdkwork-clawstudio-chat reflows chrome before text gets squeezed on smaller screens', () => {
-  const chatPageSource = read('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx');
+await runTest('sdkwork-agentstudio-pc-chat reflows chrome before text gets squeezed on smaller screens', () => {
+  const chatPageSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx');
   const chatPageCompositionSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatPageCompositionState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatPageCompositionState.ts',
   );
   const sidebarChromeSource = read(
-    'packages/sdkwork-clawstudio-chat/src/components/ChatSidebarChrome.tsx',
+    'packages/sdkwork-agentstudio-pc-chat/src/components/ChatSidebarChrome.tsx',
   );
   const conversationPaneSource = read(
-    'packages/sdkwork-clawstudio-chat/src/components/ChatConversationPane.tsx',
+    'packages/sdkwork-agentstudio-pc-chat/src/components/ChatConversationPane.tsx',
   );
   const conversationPanePresentationHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatConversationPanePresentationState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatConversationPanePresentationState.ts',
   );
-  const sidebarHookSource = read('packages/sdkwork-clawstudio-chat/src/pages/useChatSidebarState.ts');
-  const chatSidebarSource = read('packages/sdkwork-clawstudio-chat/src/components/ChatSidebar.tsx');
+  const sidebarHookSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/useChatSidebarState.ts');
+  const chatSidebarSource = read('packages/sdkwork-agentstudio-pc-chat/src/components/ChatSidebar.tsx');
   const chatSidebarAgentItemSource = read(
-    'packages/sdkwork-clawstudio-chat/src/components/ChatSidebarAgentItem.tsx',
+    'packages/sdkwork-agentstudio-pc-chat/src/components/ChatSidebarAgentItem.tsx',
   );
   const chatSidebarSessionItemSource = read(
-    'packages/sdkwork-clawstudio-chat/src/components/ChatSidebarSessionItem.tsx',
+    'packages/sdkwork-agentstudio-pc-chat/src/components/ChatSidebarSessionItem.tsx',
   );
   const chatSidebarViewStateSource = read(
-    'packages/sdkwork-clawstudio-chat/src/services/chatSidebarViewState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/services/chatSidebarViewState.ts',
   );
-  const topControlsSource = read('packages/sdkwork-clawstudio-chat/src/components/ChatTopControls.tsx');
-  const composerPanelSource = read('packages/sdkwork-clawstudio-chat/src/components/ChatComposerPanel.tsx');
-  const chatInputSource = read('packages/sdkwork-clawstudio-chat/src/components/ChatInput.tsx');
-  const chatMessageSource = read('packages/sdkwork-clawstudio-chat/src/components/ChatMessage.tsx');
+  const topControlsSource = read('packages/sdkwork-agentstudio-pc-chat/src/components/ChatTopControls.tsx');
+  const composerPanelSource = read('packages/sdkwork-agentstudio-pc-chat/src/components/ChatComposerPanel.tsx');
+  const chatInputSource = read('packages/sdkwork-agentstudio-pc-chat/src/components/ChatInput.tsx');
+  const chatMessageSource = read('packages/sdkwork-agentstudio-pc-chat/src/components/ChatMessage.tsx');
   const createAgentMenuSource = read(
-    'packages/sdkwork-clawstudio-chat/src/components/ChatSidebarCreateAgentMenu.tsx',
+    'packages/sdkwork-agentstudio-pc-chat/src/components/ChatSidebarCreateAgentMenu.tsx',
   );
   const sidebarItemPrimitivesSource = read(
-    'packages/sdkwork-clawstudio-chat/src/components/chatSidebarItemPrimitives.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/components/chatSidebarItemPrimitives.ts',
   );
   const sessionActionMenuSource = read(
-    'packages/sdkwork-clawstudio-chat/src/components/ChatSidebarSessionActionMenu.tsx',
+    'packages/sdkwork-agentstudio-pc-chat/src/components/ChatSidebarSessionActionMenu.tsx',
   );
   const chatChromeSurfaceSource = read(
-    'packages/sdkwork-clawstudio-chat/src/components/chatChromeSurface.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/components/chatChromeSurface.ts',
   );
-  const englishChatLocaleSource = read('packages/sdkwork-clawstudio-i18n/src/locales/en/chat.json');
-  const chineseChatLocaleSource = read('packages/sdkwork-clawstudio-i18n/src/locales/zh/chat.json');
+  const englishChatLocaleSource = read('packages/sdkwork-agentstudio-pc-i18n/src/locales/en/chat.json');
+  const chineseChatLocaleSource = read('packages/sdkwork-agentstudio-pc-i18n/src/locales/zh/chat.json');
 
   assert.match(chatPageSource, /useChatPageCompositionState/);
   assert.match(
@@ -1361,7 +1361,7 @@ await runTest('sdkwork-clawstudio-chat reflows chrome before text gets squeezed 
   assert.doesNotMatch(chatPageSource, /className="hidden h-full w-72 shrink-0 lg:flex xl:w-80"/);
   assert.doesNotMatch(chatPageSource, /className="fixed inset-0 z-40 bg-zinc-950\/45 backdrop-blur-sm lg:hidden"/);
   assert.doesNotMatch(chatPageSource, /className="fixed inset-y-0 left-0 z-50 w-\[min\(22rem,calc\(100vw-1rem\)\)\] lg:hidden"/);
-  assert.match(sidebarChromeSource, /const CHAT_SIDEBAR_WIDTH_STORAGE_KEY = 'claw-studio\.chat\.sidebar\.width';/);
+  assert.match(sidebarChromeSource, /const CHAT_SIDEBAR_WIDTH_STORAGE_KEY = 'agent-studio\.chat\.sidebar\.width';/);
   assert.match(sidebarChromeSource, /className="group\/chat-sidebar-resize relative hidden h-full shrink-0 lg:flex"/);
   assert.match(sidebarChromeSource, /style=\{\{ width: `\$\{sidebarWidth\}px` \}\}/);
   assert.match(sidebarChromeSource, /className="absolute inset-y-0 right-\[-6px\] z-20 hidden w-3 cursor-col-resize touch-none lg:flex"/);
@@ -1671,15 +1671,15 @@ await runTest('sdkwork-clawstudio-chat reflows chrome before text gets squeezed 
   assert.doesNotMatch(chatMessageSource, /<Bot className=/);
 });
 
-await runTest('sdkwork-clawstudio-chat empty state scales from stacked mobile welcome to a balanced desktop split layout', () => {
-  const chatPageSource = read('packages/sdkwork-clawstudio-chat/src/pages/Chat.tsx');
+await runTest('sdkwork-agentstudio-pc-chat empty state scales from stacked mobile welcome to a balanced desktop split layout', () => {
+  const chatPageSource = read('packages/sdkwork-agentstudio-pc-chat/src/pages/Chat.tsx');
   const conversationPaneSource = read(
-    'packages/sdkwork-clawstudio-chat/src/components/ChatConversationPane.tsx',
+    'packages/sdkwork-agentstudio-pc-chat/src/components/ChatConversationPane.tsx',
   );
   const conversationPanePresentationHookSource = read(
-    'packages/sdkwork-clawstudio-chat/src/pages/useChatConversationPanePresentationState.ts',
+    'packages/sdkwork-agentstudio-pc-chat/src/pages/useChatConversationPanePresentationState.ts',
   );
-  const chatEmptyStateSource = read('packages/sdkwork-clawstudio-chat/src/components/ChatEmptyState.tsx');
+  const chatEmptyStateSource = read('packages/sdkwork-agentstudio-pc-chat/src/components/ChatEmptyState.tsx');
 
   assert.match(chatPageSource, /import \{ ChatConversationPane \} from '\.\.\/components\/ChatConversationPane';/);
   assert.match(conversationPaneSource, /import \{ ChatEmptyState \} from '\.\/ChatEmptyState';/);

@@ -78,7 +78,7 @@ This removes the dependency on `tauri.cmd`, `tauri`, and shell PATH lookup.
 
 ### 2. Unified desktop package CLI entrypoints
 
-Updated `packages/sdkwork-clawstudio-desktop/package.json`:
+Updated `packages/sdkwork-agentstudio-pc-desktop/package.json`:
 
 - `tauri:icon` now runs `node ../../scripts/run-tauri-cli.mjs icon src-tauri/app-icon.svg`
 - `tauri:info` now runs `node ../../scripts/run-tauri-cli.mjs info`
@@ -111,7 +111,7 @@ Focused regression and contract verification:
 Real command-path verification:
 
 - `node scripts/run-tauri-cli.mjs info`
-- `pnpm.cmd --dir packages/sdkwork-clawstudio-desktop tauri:info`
+- `pnpm.cmd --dir packages/sdkwork-agentstudio-pc-desktop tauri:info`
 - `pnpm.cmd tauri:info`
 
 Broader regression sweep:

@@ -2,7 +2,7 @@
 replicaCount: 1
 
 image:
-  repository: sdkwork-clawstudio-server
+  repository: sdkwork-agentstudio-pc-server
   tag: 0.1.0
   digest: ""
   pullPolicy: IfNotPresent
@@ -25,7 +25,7 @@ ingress:
 server:
   host: 0.0.0.0
   port: 18797
-  dataDir: /var/lib/clawstudio-server
+  dataDir: /var/lib/agentstudio-server
 
 userCenter:
   mode: builtin-local
@@ -43,7 +43,7 @@ auth:
 
 persistence:
   enabled: true
-  mountPath: /var/lib/clawstudio-server
+  mountPath: /var/lib/agentstudio-server
   size: 10Gi
   accessModes:
     - ReadWriteOnce

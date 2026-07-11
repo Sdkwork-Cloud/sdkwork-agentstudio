@@ -25,15 +25,15 @@ The active bundled OpenClaw version is sourced from one canonical metadata file 
 
 1. `config/openclaw-release.json`
    - `stableVersion = "2026.4.2"`
-2. `packages/sdkwork-clawstudio-types/src/openclawRelease.ts`
+2. `packages/sdkwork-agentstudio-pc-types/src/openclawRelease.ts`
    - exports `DEFAULT_BUNDLED_OPENCLAW_VERSION` from the shared release metadata
 3. `scripts/sync-bundled-components.mjs`
    - normalizes bundled component metadata to the shared stable version
-4. `packages/sdkwork-clawstudio-desktop/src-tauri/foundation/components/component-registry.json`
+4. `packages/sdkwork-agentstudio-pc-desktop/src-tauri/foundation/components/component-registry.json`
    - bundled component registry declares `bundledVersion = "2026.4.2"`
-5. `packages/sdkwork-clawstudio-desktop/src-tauri/resources/openclaw/manifest.json`
+5. `packages/sdkwork-agentstudio-pc-desktop/src-tauri/resources/openclaw/manifest.json`
    - packaged embedded runtime manifest declares `openclawVersion = "2026.4.2"`
-6. `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/openclaw_release.rs`
+6. `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/openclaw_release.rs`
    - Rust host consumes the bundled version via `SDKWORK_BUNDLED_OPENCLAW_VERSION`
 
 Result: the desktop package, TypeScript runtime metadata, and Rust embedded host are aligned on the same stable version chain.
@@ -64,7 +64,7 @@ These are not product runtime pins, but they make version review noisy and easy 
 
 ### 4. Some `2026.4.2` literals are fixture data, not runtime configuration drift
 
-For example, `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/paths.rs` contains `2026.4.2` in tests that validate runtime-directory migration behavior. Those literals are exercising migration semantics, not defining the shipping version source of truth.
+For example, `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/paths.rs` contains `2026.4.2` in tests that validate runtime-directory migration behavior. Those literals are exercising migration semantics, not defining the shipping version source of truth.
 
 ## Decision
 

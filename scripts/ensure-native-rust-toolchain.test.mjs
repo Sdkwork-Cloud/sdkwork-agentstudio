@@ -119,7 +119,7 @@ try {
 assert.ok(missingToolError instanceof Error, 'Missing cargo should fail the Rust toolchain guard');
 assert.match(
   missingToolError.message,
-  /Rust\/Cargo toolchain is required for Claw Studio native desktop and server development, checks, and builds\./,
+  /Rust\/Cargo toolchain is required for Agent Studio native desktop and server development, checks, and builds\./,
 );
 assert.match(missingToolError.message, /Missing command\(s\): cargo/);
 assert.match(missingToolError.message, /Install Rust via rustup: https:\/\/rustup\.rs\//);

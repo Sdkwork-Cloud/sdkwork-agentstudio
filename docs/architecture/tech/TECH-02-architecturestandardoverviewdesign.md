@@ -172,7 +172,7 @@ Bundled Components
 - `web` Host 源码根目录已冻结为启动薄层，只允许 `App.tsx`、`main.tsx` 等入口文件。
 - `desktop` Host 源码根目录已冻结为 `desktop/` 子树加根入口文件，不再允许业务沉积。
 - `shell` 源码根目录已冻结为 `application/`、`components/`、`styles/` 与根 `index.ts`。
-- `check-arch-boundaries` 与 `check-sdkwork-clawstudio-hosts` 已成为 Step 02 的实际门禁，而不是文档建议。
+- `check-arch-boundaries` 与 `check-sdkwork-agentstudio-pc-hosts` 已成为 Step 02 的实际门禁，而不是文档建议。
 - `sync-feature-packages` 已被校正为“feature public surface 同步器”，不再误改 host 包，也不再把深层 `pages/...` 路径暴露到 package root。
 
 ## 13. 2026-04-07 Hosted Browser 平台真值补充

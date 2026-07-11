@@ -120,37 +120,37 @@ runTest('OpenClaw quality gate keeps fact-source tests in parity runners', () =>
 
   assert.match(
     foundationRunner,
-    /packages\/sdkwork-clawstudio-infrastructure\/src\/platform\/webStudio\.test\.ts/,
+    /packages\/sdkwork-agentstudio-pc-infrastructure\/src\/platform\/webStudio\.test\.ts/,
     'foundation runner must execute webStudio fact-source coverage',
   );
   assert.match(
     agentRunner,
-    /packages\/sdkwork-clawstudio-agent\/src\/services\/agentInstallService\.test\.ts/,
+    /packages\/sdkwork-agentstudio-pc-agent\/src\/services\/agentInstallService\.test\.ts/,
     'agent runner must execute agentInstallService fact-source coverage',
   );
   assert.match(
     channelsRunner,
-    /packages\/sdkwork-clawstudio-channels\/src\/services\/channelService\.test\.ts/,
+    /packages\/sdkwork-agentstudio-pc-channels\/src\/services\/channelService\.test\.ts/,
     'channels runner must execute channelService fact-source coverage',
   );
   assert.match(
     instancesRunner,
-    /packages\/sdkwork-clawstudio-instances\/src\/services\/openClawConfigSchemaSupport\.test\.ts/,
+    /packages\/sdkwork-agentstudio-pc-instances\/src\/services\/openClawConfigSchemaSupport\.test\.ts/,
     'instances runner must execute config schema fact-source coverage',
   );
   assert.match(
     instancesRunner,
-    /packages\/sdkwork-clawstudio-instances\/src\/services\/openClawManagementCapabilities\.test\.ts/,
+    /packages\/sdkwork-agentstudio-pc-instances\/src\/services\/openClawManagementCapabilities\.test\.ts/,
     'instances runner must execute management capabilities fact-source coverage',
   );
   assert.match(
     instancesRunner,
-    /packages\/sdkwork-clawstudio-instances\/src\/services\/openClawProviderWorkspacePresentation\.test\.ts/,
+    /packages\/sdkwork-agentstudio-pc-instances\/src\/services\/openClawProviderWorkspacePresentation\.test\.ts/,
     'instances runner must execute provider workspace fact-source coverage',
   );
   assert.match(
     instancesRunner,
-    /packages\/sdkwork-clawstudio-instances\/src\/services\/instanceOnboardingService\.test\.ts/,
+    /packages\/sdkwork-agentstudio-pc-instances\/src\/services\/instanceOnboardingService\.test\.ts/,
     'instances runner must execute OpenClaw onboarding association coverage',
   );
   assert.match(
@@ -162,7 +162,7 @@ runTest('OpenClaw quality gate keeps fact-source tests in parity runners', () =>
 
 runTest('OpenClaw quality gate centralizes canonical built-in instance id literals inside targeted desktop and release tests', () => {
   const targetedFiles = [
-    'packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts',
+    'packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts',
     'scripts/release/smoke-desktop-startup-evidence.test.mjs',
   ];
 
@@ -183,10 +183,10 @@ runTest('OpenClaw quality gate centralizes canonical built-in instance id litera
 
 runTest('OpenClaw quality gate confines retired built-in ids to explicit rejection coverage', () => {
   const allowedRetiredBuiltInIdFiles = new Set([
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
-    'packages/sdkwork-clawstudio-host-studio/src-host/src/lib.rs',
-    'packages/sdkwork-clawstudio-instances/src/services/nodeInventoryService.test.ts',
-    'packages/sdkwork-clawstudio-types/src/builtInKernelIdentity.test.ts',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs',
+    'packages/sdkwork-agentstudio-pc-host-studio/src-host/src/lib.rs',
+    'packages/sdkwork-agentstudio-pc-instances/src/services/nodeInventoryService.test.ts',
+    'packages/sdkwork-agentstudio-pc-types/src/builtInKernelIdentity.test.ts',
     'scripts/openclaw-quality-gate-contract.test.mjs',
     'scripts/release/smoke-desktop-startup-evidence.test.mjs',
     'scripts/sdkwork-host-runtime-contract.test.ts',
@@ -212,10 +212,10 @@ runTest('OpenClaw quality gate confines retired built-in ids to explicit rejecti
 });
 
 runTest('OpenClaw quality gate centralizes canonical browser fallback gateway defaults', () => {
-  const typesSource = read('packages/sdkwork-clawstudio-types/src/builtInKernelIdentity.ts');
-  const webStudioSource = read('packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts');
-  const hostCoreSource = read('packages/sdkwork-clawstudio-host-core/src-host/src/lib.rs');
-  const serverSource = read('packages/sdkwork-clawstudio-server/src-host/src/main.rs');
+  const typesSource = read('packages/sdkwork-agentstudio-pc-types/src/builtInKernelIdentity.ts');
+  const webStudioSource = read('packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts');
+  const hostCoreSource = read('packages/sdkwork-agentstudio-pc-host-core/src-host/src/lib.rs');
+  const serverSource = read('packages/sdkwork-agentstudio-pc-server/src-host/src/main.rs');
   const startupSmokeSource = read('scripts/release/smoke-desktop-startup-evidence.mjs');
 
   assert.match(typesSource, /export const OPENCLAW_GATEWAY_DEFAULT_PORT = 21_280;/);
@@ -249,8 +249,8 @@ runTest('OpenClaw quality gate centralizes canonical browser fallback gateway de
 });
 
 runTest('OpenClaw quality gate keeps Studio loopback ports out of OpenClaw derived sidecar ports', () => {
-  const portsSource = read('packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/ports.rs');
-  const configSource = read('packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/config.rs');
+  const portsSource = read('packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/ports.rs');
+  const configSource = read('packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/config.rs');
 
   assert.match(
     portsSource,
@@ -281,7 +281,7 @@ runTest('OpenClaw quality gate keeps Studio loopback ports out of OpenClaw deriv
 
 runTest('OpenClaw quality gate hardens desktop gateway startup probes and stale process cleanup', () => {
   const supervisorSource = read(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/supervisor.rs',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/supervisor.rs',
   );
 
   assert.match(
@@ -313,11 +313,11 @@ runTest('OpenClaw quality gate hardens desktop gateway startup probes and stale 
 
 runTest('OpenClaw quality gate rejects packaged runtimes with missing channel metadata before config rewrite', () => {
   const runtimeSource = read(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
   );
-  const sharedChannelSource = read('packages/sdkwork-clawstudio-types/src/openclawChannels.ts');
+  const sharedChannelSource = read('packages/sdkwork-agentstudio-pc-types/src/openclawChannels.ts');
   const desktopChannelConfigSource = read(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_channel_config.rs',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/openclaw_channel_config.rs',
   );
   const releaseAssetVerifierSource = read('scripts/verify-desktop-openclaw-release-assets.mjs');
   const verifierTestSource = read('scripts/verify-desktop-openclaw-release-assets.test.mjs');
@@ -340,12 +340,12 @@ runTest('OpenClaw quality gate rejects packaged runtimes with missing channel me
   assert.deepEqual(
     desktopChannelIds,
     sharedChannelIds,
-    'desktop channel sanitizer must use the same bundled channel id set as @sdkwork/clawstudio-types',
+    'desktop channel sanitizer must use the same bundled channel id set as @sdkwork/agentstudio-pc-types',
   );
   assert.deepEqual(
     releaseVerifierChannelIds,
     sharedChannelIds,
-    'desktop release verifier must use the same bundled channel id set as @sdkwork/clawstudio-types',
+    'desktop release verifier must use the same bundled channel id set as @sdkwork/agentstudio-pc-types',
   );
   assert.equal(
     sharedChannelIds.includes('qq'),
@@ -385,7 +385,7 @@ runTest('OpenClaw quality gate rejects packaged runtimes with missing channel me
     'desktop activation must sanitize retired channels before writing the managed OpenClaw config file',
   );
   const desktopStudioSource = read(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/studio.rs',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/studio.rs',
   );
   assert.match(
     desktopChannelConfigSource,
@@ -423,9 +423,9 @@ runTest('OpenClaw quality gate rejects packaged runtimes with missing channel me
     'desktop Studio config writes must prefer active OpenClaw runtime channel metadata and only fall back to the bundled channel set when active runtime state is unavailable',
   );
   const coreChannelConfigSource = read(
-    'packages/sdkwork-clawstudio-core/src/services/openClawChannelConfigService.ts',
+    'packages/sdkwork-agentstudio-pc-core/src/services/openClawChannelConfigService.ts',
   );
-  const coreConfigSource = read('packages/sdkwork-clawstudio-core/src/services/openClawConfigService.ts');
+  const coreConfigSource = read('packages/sdkwork-agentstudio-pc-core/src/services/openClawConfigService.ts');
   assert.match(
     coreChannelConfigSource,
     /const modelByChannelRoot = readObject\(channelsRoot\.modelByChannel\);[\s\S]*const channelModelOverrides = readObject\(modelByChannelRoot\[channelId\]\);[\s\S]*delete channelModelOverrides\[overrideKey\];[\s\S]*delete channelsRoot\.modelByChannel;/,
@@ -466,7 +466,7 @@ runTest('OpenClaw quality gate rejects packaged runtimes with missing channel me
     /const normalizedRaw = normalizeStructuredOpenClawConfigRootBeforeWrite\(parsed\)\s*\?\s*`\$\{stringifyJson5\(parsed, 2\)\}\\n`\s*:\s*raw;[\s\S]*\.writeFile\(normalizedConfigFile, normalizedRaw\)/,
     'raw config document saves must sanitize retired channels before writing user-edited openclaw.json',
   );
-  const browserStudioSource = read('packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts');
+  const browserStudioSource = read('packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts');
   assert.match(
     browserStudioSource,
     /function pruneBrowserOpenClawModelByChannel[\s\S]*isSupportedBrowserOpenClawChannel\(channelId\)[\s\S]*typeof modelRef === 'string'/,
@@ -492,7 +492,7 @@ runTest('OpenClaw quality gate rejects packaged runtimes with missing channel me
     /if \(Object\.keys\(prunedChannels\)\.length === 0\) \{\s*delete root\.channels;\s*return;\s*\}/,
     'browser fallback persistence must remove an empty channels root after retired channel pruning',
   );
-  const channelsServiceSource = read('packages/sdkwork-clawstudio-channels/src/services/channelService.ts');
+  const channelsServiceSource = read('packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts');
   assert.match(
     channelsServiceSource,
     /const orderedIds = definitions\.map\(\(definition\) => definition\.id\);/,
@@ -504,7 +504,7 @@ runTest('OpenClaw quality gate rejects packaged runtimes with missing channel me
     'channels feature fallback must reject retired aliases while rendering runtime-discovered external plugin channels read-only',
   );
   const instanceChannelWorkbenchSource = read(
-    'packages/sdkwork-clawstudio-instances/src/services/openClawChannelWorkbenchSupport.ts',
+    'packages/sdkwork-agentstudio-pc-instances/src/services/openClawChannelWorkbenchSupport.ts',
   );
   assert.match(
     instanceChannelWorkbenchSource,
@@ -540,10 +540,10 @@ runTest('OpenClaw quality gate rejects packaged runtimes with missing channel me
 
 runTest('OpenClaw quality gate recovers malformed canonical configs before release startup rewrite', () => {
   const authoritySource = read(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/kernel_runtime_authority.rs',
   );
   const runtimeSource = read(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/openclaw_runtime.rs',
   );
   const importSource = authoritySource
     .split('pub fn import_or_default_openclaw_config')
@@ -638,12 +638,12 @@ runTest('OpenClaw quality gate forbids retired gateway default ports and legacy 
 
 runTest('OpenClaw quality gate centralizes hidden Windows child process flags', () => {
   const desktopChildProcessSource = read(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/child_process.rs',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/child_process.rs',
   );
   const desktopInternalCliSource = read(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/internal_cli.rs',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/internal_cli.rs',
   );
-  const serverServiceSource = read('packages/sdkwork-clawstudio-server/src-host/src/service.rs');
+  const serverServiceSource = read('packages/sdkwork-agentstudio-pc-server/src-host/src/service.rs');
 
   assert.match(
     desktopChildProcessSource,
@@ -758,10 +758,10 @@ runTest('OpenClaw quality gate keeps desktop and release automation child proces
 
 runTest('OpenClaw mirror archive shell helpers are compile-time isolated by platform', () => {
   const exportSource = read(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_mirror_export.rs',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/openclaw_mirror_export.rs',
   );
   const importSource = read(
-    'packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_mirror_import.rs',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/openclaw_mirror_import.rs',
   );
 
   assert.doesNotMatch(

@@ -48,7 +48,7 @@ business-logic defect in OpenClaw itself.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.ts`
 
 Behavior change:
 
@@ -66,7 +66,7 @@ it away.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.ts`
 
 Behavior change:
 
@@ -81,7 +81,7 @@ reaching into an internal file directly.
 
 File:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/DesktopBootstrapApp.tsx`
 
 Behavior change:
 
@@ -105,7 +105,7 @@ them under a debugger.
 
 Files:
 
-- `packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `scripts/sdkwork-host-runtime-contract.test.ts`
 
 Coverage added:
@@ -120,7 +120,7 @@ Coverage added:
 
 The following commands were executed after the fix:
 
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts`
 - `node --experimental-strip-types scripts/sdkwork-host-runtime-contract.test.ts`
 - `pnpm.cmd check:desktop`
 - `pnpm.cmd lint`

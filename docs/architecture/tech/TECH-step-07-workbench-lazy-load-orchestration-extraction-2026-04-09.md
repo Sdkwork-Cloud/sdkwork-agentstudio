@@ -30,7 +30,7 @@
 
 ## Implemented Fix
 
-- Extended `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchHydration.ts`.
+- Extended `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchHydration.ts`.
 - Added two shared orchestration entry points:
   - `startLazyLoadInstanceWorkbenchFiles(...)`
   - `startLazyLoadInstanceWorkbenchMemory(...)`
@@ -39,7 +39,7 @@
   - cancellation guard orchestration
   - merge application back into the current workbench snapshot
   - loading-state lifecycle while the request remains active
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the two lazy-load effects now call those helpers instead of manually:
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` so the two lazy-load effects now call those helpers instead of manually:
   - creating `cancelled`
   - toggling the loading flags inline
   - calling `mergeLazyLoadedWorkbenchFiles(...)` and `mergeLazyLoadedWorkbenchMemories(...)` inline
@@ -50,7 +50,7 @@
   - `setIsWorkbenchFilesLoading`
   - `setIsWorkbenchMemoryLoading`
   - page-owned `console.error(...)` reporters
-- Expanded `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchHydration.test.ts` with direct coverage proving:
+- Expanded `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchHydration.test.ts` with direct coverage proving:
   - files hydrate through the injected loader and merge back into the current workbench
   - memory failures route through the injected error reporter and restore loading when active
   - cancellation suppresses post-resolution merge and loading reset
@@ -79,25 +79,25 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed OpenClaw workbench persistence, managed-route truth, market and skill-install flows, local proxy projection, and desktop runtime/plugin registration. This loop only centralizes page-side lazy-load orchestration for already-authoritative workbench hydration loaders.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1251`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchHydration.ts`: `222`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `1251`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchHydration.ts`: `222`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1274`
 
 Relative to the immediately prior `1297` page baseline from `release-2026-04-09-139`, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1251`. This loop records another verified page-side reduction while moving the remaining lazy-load async orchestration into the shared hydration helper.
 
@@ -109,15 +109,15 @@ Relative to the immediately prior `1297` page baseline from `release-2026-04-09-
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchHydration.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchHydration.test.ts`
   - failed first because `instanceWorkbenchHydration.ts` did not yet export `startLazyLoadInstanceWorkbenchFiles`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because `InstanceDetail.tsx` did not yet route the lazy-load effects through the new helper
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchHydration.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchHydration.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

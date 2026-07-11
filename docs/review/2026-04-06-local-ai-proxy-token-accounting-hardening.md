@@ -4,7 +4,7 @@
 
 This iteration closed a narrow but user-visible observability gap in the desktop local AI proxy:
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
 
 The work focused on OpenAI `responses`-shaped token usage, translated `responses` payloads, and request-log visibility for prompt/completion/total/cache token counts.
 
@@ -89,11 +89,11 @@ Added or strengthened regression coverage for:
 
 Verified in this iteration:
 
-- `cargo test extract_token_usage_reads_openai_responses_cached_input_tokens --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test local_ai_proxy_request_logs_capture_openai_responses_input_output_and_cache_usage --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test local_ai_proxy_openai_responses_translate_to_ --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `cargo test local_ai_proxy_ --manifest-path packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml`
-- `rustfmt --edition 2021 --check packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `cargo test extract_token_usage_reads_openai_responses_cached_input_tokens --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test local_ai_proxy_request_logs_capture_openai_responses_input_output_and_cache_usage --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test local_ai_proxy_openai_responses_translate_to_ --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `cargo test local_ai_proxy_ --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml`
+- `rustfmt --edition 2021 --check packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
 
 All passed on 2026-04-06.
 

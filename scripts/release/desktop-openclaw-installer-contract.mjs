@@ -9,11 +9,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..', '..');
 
-const WINDOWS_TAURI_CONFIG_PATH = 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.windows.conf.json';
-const WINDOWS_INSTALLER_HOOKS_PATH = 'packages/sdkwork-clawstudio-desktop/src-tauri/installer-hooks.nsh';
-const LINUX_TAURI_CONFIG_PATH = 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.linux.conf.json';
-const LINUX_POSTINSTALL_PATH = 'packages/sdkwork-clawstudio-desktop/src-tauri/linux-postinstall-openclaw.sh';
-const MACOS_TAURI_CONFIG_PATH = 'packages/sdkwork-clawstudio-desktop/src-tauri/tauri.macos.conf.json';
+const WINDOWS_TAURI_CONFIG_PATH = 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.windows.conf.json';
+const WINDOWS_INSTALLER_HOOKS_PATH = 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/installer-hooks.nsh';
+const LINUX_TAURI_CONFIG_PATH = 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.linux.conf.json';
+const LINUX_POSTINSTALL_PATH = 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/linux-postinstall-openclaw.sh';
+const MACOS_TAURI_CONFIG_PATH = 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/tauri.macos.conf.json';
 
 function readJson(workspaceRootDir, relativePath) {
   return JSON.parse(

@@ -75,7 +75,7 @@ export const WEB_ASSET_GLOBAL_BUDGETS = {
 };
 
 export function resolveWebDistAssetsDir(rootDir = repositoryRootDir) {
-  return path.join(rootDir, 'packages', 'sdkwork-clawstudio-web', 'dist', 'assets');
+  return path.join(rootDir, 'packages', 'sdkwork-agentstudio-pc-web', 'dist', 'assets');
 }
 
 function formatKiB(bytes) {

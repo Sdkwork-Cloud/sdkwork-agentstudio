@@ -11,7 +11,7 @@ const tauriBridgeSource = readFileSync(
   path.join(
     rootDir,
     'packages',
-    'sdkwork-clawstudio-desktop',
+    'sdkwork-agentstudio-pc-desktop',
     'src',
     'desktop',
     'tauriBridge.ts',
@@ -21,32 +21,32 @@ const tauriBridgeSource = readFileSync(
 
 assert.match(
   desktopCheckScript,
-  /packages\/sdkwork-clawstudio-desktop\/src\/desktop\/desktopHostedBridge\.test\.ts/,
+  /packages\/sdkwork-agentstudio-pc-desktop\/src\/desktop\/desktopHostedBridge\.test\.ts/,
   'check:desktop must execute the desktop hosted bridge regression suite',
 );
 assert.match(
   desktopCheckScript,
-  /packages\/sdkwork-clawstudio-desktop\/src\/desktop\/desktopHostRuntimeResolver\.test\.ts/,
+  /packages\/sdkwork-agentstudio-pc-desktop\/src\/desktop\/desktopHostRuntimeResolver\.test\.ts/,
   'check:desktop must execute the desktop host runtime resolver regression suite',
 );
 assert.match(
   desktopCheckScript,
-  /packages\/sdkwork-clawstudio-desktop\/src\/desktop\/bootstrap\/DesktopBootstrapApp\.test\.ts/,
+  /packages\/sdkwork-agentstudio-pc-desktop\/src\/desktop\/bootstrap\/DesktopBootstrapApp\.test\.ts/,
   'check:desktop must execute the desktop bootstrap readiness regression suite',
 );
 assert.match(
   desktopCheckScript,
-  /packages\/sdkwork-clawstudio-desktop\/src\/desktop\/bootstrap\/desktopStartupEvidence\.test\.ts/,
+  /packages\/sdkwork-agentstudio-pc-desktop\/src\/desktop\/bootstrap\/desktopStartupEvidence\.test\.ts/,
   'check:desktop must execute the desktop startup evidence regression suite',
 );
 assert.match(
   desktopCheckScript,
-  /node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-clawstudio-desktop\/src-tauri\/Cargo\.toml(?: [^&]+)? embedded_host_bootstrap_exposes_structured_browser_bootstrap_descriptor/,
+  /node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-agentstudio-pc-desktop\/src-tauri\/Cargo\.toml(?: [^&]+)? embedded_host_bootstrap_exposes_structured_browser_bootstrap_descriptor/,
   'check:desktop must execute the Rust embedded host bootstrap descriptor regression',
 );
 assert.match(
   desktopCheckScript,
-  /node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-clawstudio-desktop\/src-tauri\/Cargo\.toml(?: [^&]+)? embedded_host_bootstrap_exposes_canonical_server_route_families/,
+  /node scripts\/run-cargo\.mjs test --manifest-path packages\/sdkwork-agentstudio-pc-desktop\/src-tauri\/Cargo\.toml(?: [^&]+)? embedded_host_bootstrap_exposes_canonical_server_route_families/,
   'check:desktop must execute the Rust embedded host canonical route regression',
 );
 assert.doesNotMatch(

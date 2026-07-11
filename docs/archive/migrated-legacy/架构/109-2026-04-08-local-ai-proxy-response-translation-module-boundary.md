@@ -4,9 +4,9 @@
 
 The desktop local AI proxy must keep shared response-translation logic in a dedicated module:
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
   owns runtime lifecycle, request-serving orchestration, auth/header normalization, upstream dispatch, route-test persistence, observability, and the runtime-facing service methods
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy/response_translation.rs`
   owns Anthropic/Gemini/Ollama response text extraction, stop-reason mapping, OpenAI chat-completion shaping, OpenAI responses-api shaping, embeddings response shaping, and the shared provider response helpers consumed by both buffered and streaming translation paths
 
 `scripts/check-desktop-platform-foundation.mjs` must assert the module file, the `mod response_translation;` declaration, and explicit `response_translation::...` delegation from the main local proxy runtime.

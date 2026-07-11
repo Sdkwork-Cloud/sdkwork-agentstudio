@@ -1,9 +1,9 @@
 services:
-  clawstudio-server:
+  agentstudio-server:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
-    image: sdkwork-clawstudio-server:local
+    image: sdkwork-agentstudio-pc-server:local
     restart: unless-stopped
     env_file:
       - profiles/default.env
@@ -12,15 +12,15 @@ services:
       CLAW_SERVER_MANAGE_PASSWORD: ${CLAW_SERVER_MANAGE_PASSWORD:?set CLAW_SERVER_MANAGE_PASSWORD before starting the public control plane}
       CLAW_SERVER_INTERNAL_USERNAME: ${CLAW_SERVER_INTERNAL_USERNAME:-}
       CLAW_SERVER_INTERNAL_PASSWORD: ${CLAW_SERVER_INTERNAL_PASSWORD:-}
-      CLAW_STUDIO_USER_CENTER_MODE: ${CLAW_STUDIO_USER_CENTER_MODE:-builtin-local}
-      CLAW_STUDIO_USER_CENTER_APP_API_BASE_URL: ${CLAW_STUDIO_USER_CENTER_APP_API_BASE_URL:-}
-      CLAW_STUDIO_USER_CENTER_EXTERNAL_BASE_URL: ${CLAW_STUDIO_USER_CENTER_EXTERNAL_BASE_URL:-}
-      CLAW_STUDIO_USER_CENTER_SECRET_ID: ${CLAW_STUDIO_USER_CENTER_SECRET_ID:-}
-      CLAW_STUDIO_USER_CENTER_SHARED_SECRET: ${CLAW_STUDIO_USER_CENTER_SHARED_SECRET:-}
+      AGENT_STUDIO_USER_CENTER_MODE: ${AGENT_STUDIO_USER_CENTER_MODE:-builtin-local}
+      AGENT_STUDIO_USER_CENTER_APP_API_BASE_URL: ${AGENT_STUDIO_USER_CENTER_APP_API_BASE_URL:-}
+      AGENT_STUDIO_USER_CENTER_EXTERNAL_BASE_URL: ${AGENT_STUDIO_USER_CENTER_EXTERNAL_BASE_URL:-}
+      AGENT_STUDIO_USER_CENTER_SECRET_ID: ${AGENT_STUDIO_USER_CENTER_SECRET_ID:-}
+      AGENT_STUDIO_USER_CENTER_SHARED_SECRET: ${AGENT_STUDIO_USER_CENTER_SHARED_SECRET:-}
     ports:
       - "18797:18797"
     volumes:
-      - clawstudio-server-data:/var/lib/clawstudio-server
+      - agentstudio-server-data:/var/lib/agentstudio-server
 
 volumes:
-  clawstudio-server-data:
+  agentstudio-server-data:

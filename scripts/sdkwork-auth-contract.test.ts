@@ -26,8 +26,8 @@ function runTest(name: string, fn: () => void) {
   }
 }
 
-runTest('sdkwork-clawstudio-auth keeps the V5 auth entry surface locally', () => {
-  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-clawstudio-auth/package.json');
+runTest('sdkwork-agentstudio-pc-auth keeps the V5 auth entry surface locally', () => {
+  const pkg = readJson<{ dependencies?: Record<string, string> }>('packages/sdkwork-agentstudio-pc-auth/package.json');
   const locales = readJson<{
     auth?: {
       account?: string;
@@ -133,24 +133,24 @@ runTest('sdkwork-clawstudio-auth keeps the V5 auth entry surface locally', () =>
         missingCode?: string;
       };
     };
-  }>('packages/sdkwork-clawstudio-i18n/src/locales/en.json');
-  const indexSource = read('packages/sdkwork-clawstudio-auth/src/index.ts');
+  }>('packages/sdkwork-agentstudio-pc-i18n/src/locales/en.json');
+  const indexSource = read('packages/sdkwork-agentstudio-pc-auth/src/index.ts');
 
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/pages/Auth.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/pages/AuthPage.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/pages/AuthOAuthCallbackPage.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/pages/authRouteUtils.ts'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/components/auth/AuthMethodTabs.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/components/auth/AccountPasswordLoginForm.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/components/auth/PhoneCodeLoginForm.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/components/auth/EmailCodeLoginForm.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/components/auth/RegisterFlow.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/components/auth/ForgotPasswordFlow.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/components/auth/QrLoginPanel.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/components/auth/OAuthProviderGrid.tsx'));
-  assert.ok(exists('packages/sdkwork-clawstudio-auth/src/components/auth/authConfig.ts'));
-  assert.ok(!pkg.dependencies?.['@sdkwork/clawstudio-studio-auth']);
-  assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-auth/);
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/pages/Auth.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/pages/AuthPage.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/pages/AuthOAuthCallbackPage.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/pages/authRouteUtils.ts'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/components/auth/AuthMethodTabs.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/components/auth/AccountPasswordLoginForm.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/components/auth/PhoneCodeLoginForm.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/components/auth/EmailCodeLoginForm.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/components/auth/RegisterFlow.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/components/auth/ForgotPasswordFlow.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/components/auth/QrLoginPanel.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/components/auth/OAuthProviderGrid.tsx'));
+  assert.ok(exists('packages/sdkwork-agentstudio-pc-auth/src/components/auth/authConfig.ts'));
+  assert.ok(!pkg.dependencies?.['@sdkwork/agentstudio-pc-studio-auth']);
+  assert.doesNotMatch(indexSource, /@sdkwork\/agent-studio-auth/);
   assert.match(indexSource, /\.\/pages\/Auth/);
   assert.match(indexSource, /\.\/pages\/AuthOAuthCallbackPage/);
   assert.match(indexSource, /setAuthRuntimeConfig/);
@@ -158,17 +158,17 @@ runTest('sdkwork-clawstudio-auth keeps the V5 auth entry surface locally', () =>
   assert.match(indexSource, /clearAuthRuntimeConfig/);
   assert.match(indexSource, /AuthRuntimeConfig/);
 
-  const authSource = read('packages/sdkwork-clawstudio-auth/src/pages/AuthPage.tsx');
-  const callbackSource = read('packages/sdkwork-clawstudio-auth/src/pages/AuthOAuthCallbackPage.tsx');
-  const routeUtilsSource = read('packages/sdkwork-clawstudio-auth/src/pages/authRouteUtils.ts');
-  const authConfigSource = read('packages/sdkwork-clawstudio-auth/src/components/auth/authConfig.ts');
-  const registerSource = read('packages/sdkwork-clawstudio-auth/src/components/auth/RegisterFlow.tsx');
-  const forgotSource = read('packages/sdkwork-clawstudio-auth/src/components/auth/ForgotPasswordFlow.tsx');
-  const qrPanelSource = read('packages/sdkwork-clawstudio-auth/src/components/auth/QrLoginPanel.tsx');
-  const accountPasswordLoginFormSource = read('packages/sdkwork-clawstudio-auth/src/components/auth/AccountPasswordLoginForm.tsx');
-  const authMethodTabsSource = read('packages/sdkwork-clawstudio-auth/src/components/auth/AuthMethodTabs.tsx');
-  const oauthProviderGridSource = read('packages/sdkwork-clawstudio-auth/src/components/auth/OAuthProviderGrid.tsx');
-  const verificationCodeFieldSource = read('packages/sdkwork-clawstudio-auth/src/components/auth/VerificationCodeField.tsx');
+  const authSource = read('packages/sdkwork-agentstudio-pc-auth/src/pages/AuthPage.tsx');
+  const callbackSource = read('packages/sdkwork-agentstudio-pc-auth/src/pages/AuthOAuthCallbackPage.tsx');
+  const routeUtilsSource = read('packages/sdkwork-agentstudio-pc-auth/src/pages/authRouteUtils.ts');
+  const authConfigSource = read('packages/sdkwork-agentstudio-pc-auth/src/components/auth/authConfig.ts');
+  const registerSource = read('packages/sdkwork-agentstudio-pc-auth/src/components/auth/RegisterFlow.tsx');
+  const forgotSource = read('packages/sdkwork-agentstudio-pc-auth/src/components/auth/ForgotPasswordFlow.tsx');
+  const qrPanelSource = read('packages/sdkwork-agentstudio-pc-auth/src/components/auth/QrLoginPanel.tsx');
+  const accountPasswordLoginFormSource = read('packages/sdkwork-agentstudio-pc-auth/src/components/auth/AccountPasswordLoginForm.tsx');
+  const authMethodTabsSource = read('packages/sdkwork-agentstudio-pc-auth/src/components/auth/AuthMethodTabs.tsx');
+  const oauthProviderGridSource = read('packages/sdkwork-agentstudio-pc-auth/src/components/auth/OAuthProviderGrid.tsx');
+  const verificationCodeFieldSource = read('packages/sdkwork-agentstudio-pc-auth/src/components/auth/VerificationCodeField.tsx');
   assert.match(authSource, /useTranslation/);
   assert.match(authSource, /AuthMethodTabs/);
   assert.match(authSource, /AccountPasswordLoginForm/);
@@ -325,9 +325,9 @@ runTest('sdkwork-clawstudio-auth keeps the V5 auth entry surface locally', () =>
   assert.equal(locales.auth?.oauth?.missingCode, 'Authorization code is missing.');
 });
 
-runTest('sdkwork-clawstudio-auth leaves desktop window controls to the shared shell header', () => {
-  const authSource = read('packages/sdkwork-clawstudio-auth/src/pages/AuthPage.tsx');
-  const callbackSource = read('packages/sdkwork-clawstudio-auth/src/pages/AuthOAuthCallbackPage.tsx');
+runTest('sdkwork-agentstudio-pc-auth leaves desktop window controls to the shared shell header', () => {
+  const authSource = read('packages/sdkwork-agentstudio-pc-auth/src/pages/AuthPage.tsx');
+  const callbackSource = read('packages/sdkwork-agentstudio-pc-auth/src/pages/AuthOAuthCallbackPage.tsx');
 
   assert.doesNotMatch(authSource, /DesktopWindowControls/);
   assert.doesNotMatch(authSource, /data-slot="auth-window-chrome"/);
@@ -337,12 +337,12 @@ runTest('sdkwork-clawstudio-auth leaves desktop window controls to the shared sh
   assert.doesNotMatch(callbackSource, /variant="floating"/);
 });
 
-runTest('sdkwork-clawstudio-auth parity checks use the shared Node TypeScript runner for auth service contracts', () => {
+runTest('sdkwork-agentstudio-pc-auth parity checks use the shared Node TypeScript runner for auth service contracts', () => {
   const workspacePackageJson = read('package.json');
   const authCheckRunner = read('scripts/run-sdkwork-auth-check.mjs');
   const nodeTypeScriptRunner = read('scripts/run-node-typescript-check.mjs');
-  const authStoreSource = read('packages/sdkwork-clawstudio-core/src/stores/authStore.ts');
-  const useAuthStoreSource = read('packages/sdkwork-clawstudio-core/src/stores/useAuthStore.ts');
+  const authStoreSource = read('packages/sdkwork-agentstudio-pc-core/src/stores/authStore.ts');
+  const useAuthStoreSource = read('packages/sdkwork-agentstudio-pc-core/src/stores/useAuthStore.ts');
 
   assert.match(
     workspacePackageJson,

@@ -1,7 +1,7 @@
 > Migrated from `docs/release/release-2026-04-09-87.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
-# Claw Studio release-2026-04-09-87
+# Agent Studio release-2026-04-09-87
 
 ## Highlights
 
@@ -34,7 +34,7 @@
 ## Change Scope
 
 - `config/openclaw-release.json`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/foundation/components/component-registry.json`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/foundation/components/component-registry.json`
 - `scripts/openclaw-release-contract.test.mjs`
 - `scripts/verify-desktop-openclaw-release-assets.test.mjs`
 - `scripts/prepare-openclaw-runtime.mjs`

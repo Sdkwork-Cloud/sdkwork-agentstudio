@@ -10,7 +10,7 @@ The host now exposes one unified external base URL and splits ownership into thr
 - root-native local AI compatibility routes at `/health`, `/v1/*`, and `/v1beta/*`
 - governed OpenClaw gateway proxy routes under `/claw/gateway/openclaw/*`
 
-Static assets, `/`, and `/sdkwork-clawstudio-bootstrap.json` are still host surfaces, but they are not OpenAPI-managed APIs.
+Static assets, `/`, and `/sdkwork-agentstudio-pc-bootstrap.json` are still host surfaces, but they are not OpenAPI-managed APIs.
 
 ## Unified Host Route Taxonomy
 
@@ -317,11 +317,11 @@ Boundary rules:
 - all published documents use `openapi: 3.1.0`
 - generated schema files are runtime artifacts, not committed source files
 
-For runtime schema snapshots and startup catalog output, see [Claw Server Runtime](/reference/clawstudio-server-runtime).
+For runtime schema snapshots and startup catalog output, see [Claw Server Runtime](/reference/agentstudio-server-runtime).
 
 ## Related Documents
 
-- [Claw Server Runtime](/reference/clawstudio-server-runtime)
+- [Claw Server Runtime](/reference/agentstudio-server-runtime)
 - [Claw Rollout API](/reference/claw-rollout-api)
 - [Commands](/reference/commands)
 - [Environment](/reference/environment)

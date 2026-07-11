@@ -232,35 +232,3 @@ Authority: `PAGINATION_SPEC.md`, `API_SPEC.md` §14.1/§16, `DATABASE_SPEC.md` �
 ## Human Review Rules
 
 Request human review before breaking SDKWORK standards, changing public naming, altering security/auth behavior, changing database migrations or production deployment config, deleting data/files, or changing generated SDK ownership. Surface unresolved spec paths, app identity conflicts, component ownership conflicts, and API authority ambiguity instead of guessing.
-
-## Existing Local Guidance
-
-The repository-specific guidance below was preserved from the previous `AGENTS.md`. If it conflicts with the SDKWORK sections above or with `../sdkwork-specs/`, the SDKWORK standards win.
-
-### Project Structure & Module Organization
-This repo is a `pnpm` workspace rooted at `packages/sdkwork-clawstudio-*`. `packages/sdkwork-clawstudio-web` is the browser host (`vite.config.ts`, `src/App.tsx`, `src/main.tsx`) and `packages/sdkwork-clawstudio-desktop` is the Tauri desktop host. Both hosts should stay limited to routing, layout, providers, platform bootstrap, and runtime entry code. Shared layers live in `sdkwork-clawstudio-types` for entities and shared types, `sdkwork-clawstudio-infrastructure` for HTTP/config/platform adapters, `sdkwork-clawstudio-core` for shared services, hooks, and stores, `sdkwork-clawstudio-i18n` for locale bootstrap, and `sdkwork-clawstudio-ui` for reusable UI. Feature packages such as `sdkwork-clawstudio-chat`, `sdkwork-clawstudio-market`, and `sdkwork-clawstudio-settings` should keep `src/components`, `src/pages`, and `src/services` as their minimum boundaries when they own those concerns. Cross-package APIs must be consumed from the package root only. Do not import from package-internal subpaths after the package name. Respect dependency flow: `web/desktop -> shell -> feature -> (core + infrastructure + types + ui)`.
-
-### Build, Test, and Development Commands
-- `pnpm install`: install all workspace dependencies.
-- `pnpm dev`: start the Vite browser host at `http://localhost:3001`.
-- `pnpm lint`: run the web TypeScript check plus `scripts/check-arch-boundaries.mjs`.
-- `pnpm build`: create the production bundle for `@sdkwork/clawstudio-web`.
-- `pnpm preview`: serve the built app locally.
-- `pnpm check:arch`: validate package layering and shell boundaries.
-- `pnpm sync:features`: refresh feature package wiring.
-- `pnpm tauri:dev` / `pnpm tauri:build`: run desktop development or production builds.
-
-### Coding Style & Naming Conventions
-Use TypeScript and React function components with hooks. Follow the existing style: 2-space indentation, semicolons, and grouped imports. Components and pages use `PascalCase.tsx`; services and utilities use `camelCase.ts`; Zustand hooks use `useXStore.ts`. Internal workspace packages must stay scoped as `@sdkwork/clawstudio-xxx` in kebab-case with directories named `sdkwork-clawstudio-xxx`. Do not place business `services`, `stores`, or `hooks` inside `packages/sdkwork-clawstudio-web/src` or `packages/sdkwork-clawstudio-desktop/src`.
-
-### Previous SDKWORK Standards Notes
-Before changing domains, APIs, SDK contracts, database schemas, reusable modules, frontend UI/service logic, app manifests, IAM/auth/permission behavior, deployment/runtime configuration, external integrations, events, observability, performance, privacy, or generated-client integration, read the canonical standards in `../sdkwork-specs/README.md` and then the relevant spec files under `../sdkwork-specs/`. Local conventions may extend these standards but must not contradict them.
-
-### Testing Guidelines
-There is no repo-wide `pnpm test` script or coverage gate yet. Keep logic-heavy tests next to source as `*.test.ts` or `*.test.tsx`, for example `packages/sdkwork-clawstudio-core/src/services/updateService.test.ts`. Before opening a PR, run `pnpm lint` and `pnpm build` from the workspace root. If you add new behavior, include a focused test or a clear manual verification note.
-
-### Commit & Pull Request Guidelines
-Recent history follows Conventional Commits such as `feat:` and `docs:`. Keep each commit scoped to one package or one architectural concern. PRs should include a short summary, affected packages, verification commands, linked issues, and screenshots for UI changes.
-
-### Security & Configuration Tips
-Never commit secrets. Start from `.env.example`; `GEMINI_API_KEY` is required for AI endpoints, and `SDKWORK_ACCESS_TOKEN` is optional for protected API bootstrap before login. Document every new environment variable in the relevant package docs or example env file.

@@ -2,24 +2,24 @@
 
 ## Overview
 
-Claw Studio ships a Tauri desktop runtime through `@sdkwork/clawstudio-desktop`. It reuses the shared shell and product feature packages while adding native runtime integration, update checks, and packaging commands.
+Agent Studio ships a Tauri desktop runtime through `@sdkwork/agentstudio-pc-desktop`. It reuses the shared shell and product feature packages while adding native runtime integration, update checks, and packaging commands.
 
 ## Important Paths
 
-- `packages/sdkwork-clawstudio-desktop/src/main.tsx`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/createDesktopApp.tsx`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/catalog.ts`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/runtime.ts`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/providers/DesktopProviders.tsx`
-- `packages/sdkwork-clawstudio-desktop/src/desktop/tauriBridge.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/`
+- `packages/sdkwork-agentstudio-pc-desktop/src/main.tsx`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/createDesktopApp.tsx`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/catalog.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/runtime.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/providers/DesktopProviders.tsx`
+- `packages/sdkwork-agentstudio-pc-desktop/src/desktop/tauriBridge.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/`
 
 The template-grade bridge surface is documented in [Desktop Template API](./desktop-template.md).
 
 ## Run Desktop Development
 
 ```bash
-pnpm tauri:dev
+pnpm dev:desktop
 ```
 
 The desktop package uses a dedicated Vite command for Tauri development on `127.0.0.1:1426`.
@@ -40,14 +40,12 @@ This avoids the previous failure mode where a slow or temporarily unhealthy buil
 ## Build The Desktop App
 
 ```bash
-pnpm tauri:build
+pnpm build:desktop
 ```
 
 Useful supporting commands:
 
 ```bash
-pnpm tauri:info
-pnpm tauri:icon
 pnpm check:desktop
 ```
 
@@ -69,11 +67,11 @@ Desktop runtime behavior relies on typed environment configuration from the infr
 
 Desktop shells keep privileged credentials in trusted hosts or host-mediated auth flows rather than injecting root tokens through Vite env.
 
-The root `.env.example` and `packages/sdkwork-clawstudio-desktop/.env.example` document these values.
+The root `.env.example` and `packages/sdkwork-agentstudio-pc-desktop/.env.example` document these values.
 
-## Troubleshooting `pnpm tauri:dev`
+## Troubleshooting `pnpm dev:desktop`
 
-If `pnpm tauri:dev` fails before Tauri starts, read the Rust preflight output carefully.
+If `pnpm dev:desktop` fails before Tauri starts, read the Rust preflight output carefully.
 
 When the guard reports:
 
@@ -85,17 +83,17 @@ the problem is not the built-in OpenClaw startup path. It means the current `nod
 In that situation:
 
 1. Run `cargo --version` and `rustc --version` directly in the same terminal.
-2. If those commands work in the shell but `pnpm tauri:dev` still fails, `node.exe` is being blocked from spawning child processes.
+2. If those commands work in the shell but `pnpm dev:desktop` still fails, `node.exe` is being blocked from spawning child processes.
 3. Confirm the resolved executables with `where.exe cargo`, `where.exe rustc`, `Get-Command cargo`, or `Get-Command rustc`.
 4. Check endpoint security, application allowlists, execution policy, WDAC/AppLocker rules, and any sandbox or remote-dev restrictions applied to `node.exe`.
-5. Re-run `pnpm tauri:dev` only after Node child-process execution is allowed again.
+5. Re-run `pnpm dev:desktop` only after Node child-process execution is allowed again.
 
 If desktop startup reaches the UI but the built-in OpenClaw runtime is still unhealthy, inspect the persisted startup evidence at `diagnostics/desktop-startup-evidence.json` and use the in-app retry/details actions from the built-in instance screen.
 
 ## Desktop Architecture Notes
 
 - the desktop entry package stays thin
-- shell composition remains in `@sdkwork/clawstudio-shell`
+- shell composition remains in `@sdkwork/agentstudio-pc-shell`
 - update and configuration logic flow through shared infrastructure and core layers
 - native execution and packaging live under `src-tauri`
 - the standard desktop bridge now exposes a template API with command catalog, event catalog, grouped domain facades, and a normalized bridge error model

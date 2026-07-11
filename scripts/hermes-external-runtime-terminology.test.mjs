@@ -11,7 +11,7 @@ function readWorkspaceFile(relativePath) {
 
 test('Hermes shared surfaces keep external-runtime and WSL2-or-remote semantics', () => {
   const registryWorkbenchSupportSource = readWorkspaceFile(
-    'packages/sdkwork-clawstudio-instances/src/services/instanceRegistryWorkbenchSupport.ts',
+    'packages/sdkwork-agentstudio-pc-instances/src/services/instanceRegistryWorkbenchSupport.ts',
   );
   assert.match(
     registryWorkbenchSupportSource,
@@ -25,7 +25,7 @@ test('Hermes shared surfaces keep external-runtime and WSL2-or-remote semantics'
   );
 
   const nodeInventoryServiceTestSource = readWorkspaceFile(
-    'packages/sdkwork-clawstudio-instances/src/services/nodeInventoryService.test.ts',
+    'packages/sdkwork-agentstudio-pc-instances/src/services/nodeInventoryService.test.ts',
   );
   assert.doesNotMatch(
     nodeInventoryServiceTestSource,
@@ -34,7 +34,7 @@ test('Hermes shared surfaces keep external-runtime and WSL2-or-remote semantics'
   );
 
   const nodeInventoryTopologyTestSource = readWorkspaceFile(
-    'packages/sdkwork-clawstudio-instances/src/services/nodeInventoryTopology.test.ts',
+    'packages/sdkwork-agentstudio-pc-instances/src/services/nodeInventoryTopology.test.ts',
   );
   assert.doesNotMatch(
     nodeInventoryTopologyTestSource,
@@ -43,7 +43,7 @@ test('Hermes shared surfaces keep external-runtime and WSL2-or-remote semantics'
   );
 
   const startupRefreshSupportTestSource = readWorkspaceFile(
-    'packages/sdkwork-clawstudio-instances/src/services/instanceStartupRefreshSupport.test.ts',
+    'packages/sdkwork-agentstudio-pc-instances/src/services/instanceStartupRefreshSupport.test.ts',
   );
   assert.doesNotMatch(
     startupRefreshSupportTestSource,

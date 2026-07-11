@@ -30,18 +30,18 @@ const packageContracts = [
   {
     pkg: 'channels',
     files: [
-      'packages/sdkwork-clawstudio-channels/src/Channels.tsx',
-      'packages/sdkwork-clawstudio-channels/src/services/channelService.ts',
+      'packages/sdkwork-agentstudio-pc-channels/src/Channels.tsx',
+      'packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts',
     ],
     requiredExports: ["export * from './Channels';"],
   },
   {
     pkg: 'community',
     files: [
-      'packages/sdkwork-clawstudio-community/src/Community.tsx',
-      'packages/sdkwork-clawstudio-community/src/CommunityPostDetail.tsx',
-      'packages/sdkwork-clawstudio-community/src/NewPost.tsx',
-      'packages/sdkwork-clawstudio-community/src/services/communityService.ts',
+      'packages/sdkwork-agentstudio-pc-community/src/Community.tsx',
+      'packages/sdkwork-agentstudio-pc-community/src/CommunityPostDetail.tsx',
+      'packages/sdkwork-agentstudio-pc-community/src/NewPost.tsx',
+      'packages/sdkwork-agentstudio-pc-community/src/services/communityService.ts',
     ],
     requiredExports: [
       "export * from './Community';",
@@ -52,30 +52,30 @@ const packageContracts = [
   {
     pkg: 'devices',
     files: [
-      'packages/sdkwork-clawstudio-devices/src/Devices.tsx',
-      'packages/sdkwork-clawstudio-devices/src/services/deviceService.ts',
+      'packages/sdkwork-agentstudio-pc-devices/src/Devices.tsx',
+      'packages/sdkwork-agentstudio-pc-devices/src/services/deviceService.ts',
     ],
     requiredExports: ["export * from './Devices';"],
   },
   {
     pkg: 'docs',
     files: [
-      'packages/sdkwork-clawstudio-docs/src/Docs.tsx',
-      'packages/sdkwork-clawstudio-docs/src/content/index.ts',
-      'packages/sdkwork-clawstudio-docs/src/content/ArchitectureDoc.tsx',
-      'packages/sdkwork-clawstudio-docs/src/content/CliDoc.tsx',
-      'packages/sdkwork-clawstudio-docs/src/content/InstallDoc.tsx',
-      'packages/sdkwork-clawstudio-docs/src/content/IntroDoc.tsx',
-      'packages/sdkwork-clawstudio-docs/src/content/QuickstartDoc.tsx',
-      'packages/sdkwork-clawstudio-docs/src/content/SkillsDoc.tsx',
+      'packages/sdkwork-agentstudio-pc-docs/src/Docs.tsx',
+      'packages/sdkwork-agentstudio-pc-docs/src/content/index.ts',
+      'packages/sdkwork-agentstudio-pc-docs/src/content/ArchitectureDoc.tsx',
+      'packages/sdkwork-agentstudio-pc-docs/src/content/CliDoc.tsx',
+      'packages/sdkwork-agentstudio-pc-docs/src/content/InstallDoc.tsx',
+      'packages/sdkwork-agentstudio-pc-docs/src/content/IntroDoc.tsx',
+      'packages/sdkwork-agentstudio-pc-docs/src/content/QuickstartDoc.tsx',
+      'packages/sdkwork-agentstudio-pc-docs/src/content/SkillsDoc.tsx',
     ],
     requiredExports: ["export * from './Docs';", "export * from './content';"],
   },
   {
     pkg: 'extensions',
     files: [
-      'packages/sdkwork-clawstudio-extensions/src/Extensions.tsx',
-      'packages/sdkwork-clawstudio-extensions/src/services/extensionService.ts',
+      'packages/sdkwork-agentstudio-pc-extensions/src/Extensions.tsx',
+      'packages/sdkwork-agentstudio-pc-extensions/src/services/extensionService.ts',
     ],
     requiredExports: ["export * from './Extensions';"],
   },
@@ -83,13 +83,13 @@ const packageContracts = [
 
 runTest('remaining sdkwork feature packages are implemented locally instead of bridge re-exports', () => {
   for (const contract of packageContracts) {
-    const packagePath = `packages/sdkwork-clawstudio-${contract.pkg}/package.json`;
-    const indexPath = `packages/sdkwork-clawstudio-${contract.pkg}/src/index.ts`;
+    const packagePath = `packages/sdkwork-agentstudio-pc-${contract.pkg}/package.json`;
+    const indexPath = `packages/sdkwork-agentstudio-pc-${contract.pkg}/src/index.ts`;
     const pkg = readJson<{ dependencies?: Record<string, string> }>(packagePath);
     const indexSource = read(indexPath);
 
-    assert.ok(!pkg.dependencies?.[`@sdkwork/clawstudio-studio-${contract.pkg}`], contract.pkg);
-    assert.doesNotMatch(indexSource, /@sdkwork\/claw-studio-/);
+    assert.ok(!pkg.dependencies?.[`@sdkwork/agentstudio-pc-studio-${contract.pkg}`], contract.pkg);
+    assert.doesNotMatch(indexSource, /@sdkwork\/agent-studio-/);
 
     for (const file of contract.files) {
       assert.ok(exists(file), file);

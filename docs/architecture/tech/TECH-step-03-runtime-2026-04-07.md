@@ -12,9 +12,9 @@
 
 ## 2. 已落地证据
 
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/openclaw_runtime_snapshot.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/commands/desktop_kernel.rs`
-- `packages/sdkwork-clawstudio-settings/src/services/kernelCenterService.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/openclaw_runtime_snapshot.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/commands/desktop_kernel.rs`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/kernelCenterService.ts`
 - `packages/removed-install-feature/src/services/openClawBootstrapService.ts`
 
 ## 3. 后续硬约束

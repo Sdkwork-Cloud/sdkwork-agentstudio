@@ -3,13 +3,13 @@ import path from 'node:path';
 
 import { buildCargoFailureMessage, normalizeCargoInvocationArgs } from './run-cargo.mjs';
 
-const workspaceRoot = 'D:\\workspace\\claw-studio';
+const workspaceRoot = 'D:\\workspace\\agent-studio';
 
 assert.deepEqual(
   normalizeCargoInvocationArgs([
     'test',
     '--manifest-path',
-    'packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml',
     '--target-dir',
     'target/check-desktop',
     'embedded_host_bootstrap_exposes_structured_browser_bootstrap_descriptor',
@@ -20,7 +20,7 @@ assert.deepEqual(
     'test',
     '--locked',
     '--manifest-path',
-    path.resolve(workspaceRoot, 'packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml'),
+    path.resolve(workspaceRoot, 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml'),
     '--target-dir',
     path.resolve(workspaceRoot, 'target/check-desktop'),
     'embedded_host_bootstrap_exposes_structured_browser_bootstrap_descriptor',
@@ -33,13 +33,13 @@ assert.deepEqual(
 assert.deepEqual(
   normalizeCargoInvocationArgs([
     'test',
-    '--manifest-path=packages/sdkwork-clawstudio-server/src-host/Cargo.toml',
+    '--manifest-path=packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml',
     '--target-dir=target/check-server',
   ], { cwd: workspaceRoot }),
   [
     'test',
     '--locked',
-    `--manifest-path=${path.resolve(workspaceRoot, 'packages/sdkwork-clawstudio-server/src-host/Cargo.toml')}`,
+    `--manifest-path=${path.resolve(workspaceRoot, 'packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml')}`,
     `--target-dir=${path.resolve(workspaceRoot, 'target/check-server')}`,
   ],
   'run-cargo must support equals-style Cargo path arguments',
@@ -67,13 +67,13 @@ assert.deepEqual(
     'test',
     '--locked',
     '--manifest-path',
-    'packages/sdkwork-clawstudio-server/src-host/Cargo.toml',
+    'packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml',
   ], { cwd: workspaceRoot }),
   [
     'test',
     '--locked',
     '--manifest-path',
-    path.resolve(workspaceRoot, 'packages/sdkwork-clawstudio-server/src-host/Cargo.toml'),
+    path.resolve(workspaceRoot, 'packages/sdkwork-agentstudio-pc-server/src-host/Cargo.toml'),
   ],
   'run-cargo must not duplicate an explicit --locked flag',
 );
@@ -85,7 +85,7 @@ assert.deepEqual(
     'always',
     'test',
     '--manifest-path',
-    'packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml',
+    'packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml',
   ], { cwd: workspaceRoot }),
   [
     '+stable',
@@ -94,7 +94,7 @@ assert.deepEqual(
     'test',
     '--locked',
     '--manifest-path',
-    path.resolve(workspaceRoot, 'packages/sdkwork-clawstudio-desktop/src-tauri/Cargo.toml'),
+    path.resolve(workspaceRoot, 'packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml'),
   ],
   'run-cargo must preserve Cargo global arguments and inject --locked after the build subcommand',
 );
@@ -115,7 +115,7 @@ assert.match(
   buildCargoFailureMessage({
     status: 101,
     stderr: [
-      'error: failed to get `clap` as a dependency of package `sdkwork-clawstudio-server`',
+      'error: failed to get `clap` as a dependency of package `sdkwork-agentstudio-pc-server`',
       'Caused by:',
       '  failed to download from `https://index.crates.io/cl/ap/clap`',
       'Caused by:',

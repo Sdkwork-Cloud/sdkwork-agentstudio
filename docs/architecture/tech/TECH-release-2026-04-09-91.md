@@ -1,7 +1,7 @@
 > Migrated from `docs/release/release-2026-04-09-91.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
-# Claw Studio release-2026-04-09-91
+# Agent Studio release-2026-04-09-91
 
 ## Highlights
 
@@ -12,15 +12,15 @@
 ## Attempt Outcome
 
 - Fresh RED in this loop was explicit:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.test.tsx`
   - failed first because `instanceDetailSectionModels.ts` did not exist yet
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed first because the helper file did not exist and the page still kept the section-model object literals inline
 - Implemented the Step 07 extraction:
-  - added `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`
+  - added `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.ts`
   - exported `InstanceDetailAgentsSectionProps` for the real helper contract
-  - rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` to delegate section-model assembly to the dedicated helper
-  - added `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` to delegate section-model assembly to the dedicated helper
+  - added `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.test.tsx`
   - updated `scripts/sdkwork-instances-contract.test.ts` to enforce the new page -> section-model helper boundary
 - Current hotspot profile after the fresh current-worktree re-baseline:
   - `InstanceDetail.tsx`: `2161`
@@ -33,11 +33,11 @@
 
 ## Change Scope
 
-- `packages/sdkwork-clawstudio-instances/src/components/InstanceDetailAgentsSection.tsx`
-- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.ts`
-- `packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
-- `packages/sdkwork-clawstudio-instances/src/components/index.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/InstanceDetailAgentsSection.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.test.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/components/index.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
 - `scripts/sdkwork-instances-contract.test.ts`
 - `docs/review/step-07-section-model-helper-extraction-2026-04-09.md`
 - `docs/鏋舵瀯/134-2026-04-08-instance-detail-section-decomposition-progress.md`
@@ -47,13 +47,13 @@
 ## Verification Focus
 
 - RED:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
 - GREEN:
-  - `pnpm exec tsx packages/sdkwork-clawstudio-instances/src/components/instanceDetailSectionModels.test.tsx`
+  - `pnpm exec tsx packages/sdkwork-agentstudio-pc-instances/src/components/instanceDetailSectionModels.test.tsx`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm check:sdkwork-instances`
-  - `pnpm --filter @sdkwork/clawstudio-web lint`
+  - `pnpm --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm build`
 - YELLOW:
   - repo-wide `pnpm lint`

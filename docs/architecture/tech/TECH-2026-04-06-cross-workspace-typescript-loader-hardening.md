@@ -6,7 +6,7 @@
 ## Scope
 
 This iteration fixed the Node TypeScript test loader that powers cross-package
-regression checks inside the Claw Studio workspace.
+regression checks inside the Agent Studio workspace.
 
 Files changed:
 
@@ -22,8 +22,8 @@ not resolve sibling workspace packages that live outside this workspace's local
 
 Observed blocked tests:
 
-- `packages/sdkwork-clawstudio-settings/src/services/localAiProxyLogsService.test.ts`
-- `packages/sdkwork-clawstudio-core/src/services/kernelPlatformService.test.ts`
+- `packages/sdkwork-agentstudio-pc-settings/src/services/localAiProxyLogsService.test.ts`
+- `packages/sdkwork-agentstudio-pc-core/src/services/kernelPlatformService.test.ts`
 
 The immediate runtime error was:
 
@@ -74,7 +74,7 @@ Extended `scripts/ts-extension-loader.mjs` with explicit sibling workspace
 package source specs for `@sdkwork/core-pc-react`.
 
 The loader now resolves the package root and all exported source subpaths used
-by Claw Studio:
+by Agent Studio:
 
 - `.`
 - `./app`
@@ -89,7 +89,7 @@ by Claw Studio:
 The fix stayed minimal:
 
 1. shared SDK source aliases still resolve first
-2. sibling workspace aliases are added without changing local `@sdkwork/clawstudio-*`
+2. sibling workspace aliases are added without changing local `@sdkwork/agentstudio-pc-*`
    resolution semantics
 3. local relative fallback behavior remains unchanged
 
@@ -98,8 +98,8 @@ The fix stayed minimal:
 Verified in this iteration:
 
 - `node scripts/ts-extension-loader.test.mjs`
-- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-clawstudio-settings/src/services/localAiProxyLogsService.test.ts','packages/sdkwork-clawstudio-core/src/services/kernelPlatformService.test.ts']))"`
-- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostedBridge.test.ts packages/sdkwork-clawstudio-desktop/src/desktop/desktopHostRuntimeResolver.test.ts packages/sdkwork-clawstudio-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
+- `node --input-type=module -e "import('./scripts/run-node-typescript-check.mjs').then(({ runNodeTypeScriptChecks }) => runNodeTypeScriptChecks(['packages/sdkwork-agentstudio-pc-settings/src/services/localAiProxyLogsService.test.ts','packages/sdkwork-agentstudio-pc-core/src/services/kernelPlatformService.test.ts']))"`
+- `node scripts/run-sdkwork-desktop-check.mjs packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostedBridge.test.ts packages/sdkwork-agentstudio-pc-desktop/src/desktop/desktopHostRuntimeResolver.test.ts packages/sdkwork-agentstudio-pc-desktop/src/desktop/bootstrap/DesktopBootstrapApp.test.ts`
 
 All passed on 2026-04-06.
 

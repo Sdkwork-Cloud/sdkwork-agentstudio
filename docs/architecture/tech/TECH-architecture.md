@@ -5,7 +5,7 @@
 
 ## Dependency Direction
 
-Claw Studio follows a strict dependency flow:
+Agent Studio follows a strict dependency flow:
 
 ```text
 web/desktop -> shell -> feature -> (commons + core + infrastructure + i18n + types + ui)
@@ -29,7 +29,7 @@ They should not own core stores, feature services, or page logic.
 
 ### Shell
 
-`@sdkwork/clawstudio-shell` owns composition concerns:
+`@sdkwork/agentstudio-pc-shell` owns composition concerns:
 
 - router
 - layouts
@@ -42,7 +42,7 @@ The shell assembles feature exports. It should not turn into a monolith with fea
 
 ### Core
 
-`@sdkwork/clawstudio-core` holds cross-feature state and orchestration, such as global stores and shared hooks. It is not a dumping ground for feature-local services.
+`@sdkwork/agentstudio-pc-core` holds cross-feature state and orchestration, such as global stores and shared hooks. It is not a dumping ground for feature-local services.
 
 ### Types And Infrastructure
 
@@ -55,20 +55,20 @@ The shell assembles feature exports. It should not turn into a monolith with fea
 
 Feature packages own their own `components`, `pages`, and `services` directories. Examples include:
 
-- `@sdkwork/clawstudio-chat`
-- `@sdkwork/clawstudio-market`
-- `@sdkwork/clawstudio-settings`
-- `@sdkwork/clawstudio-account`
-- `@sdkwork/clawstudio-extensions`
+- `@sdkwork/agentstudio-pc-chat`
+- `@sdkwork/agentstudio-pc-market`
+- `@sdkwork/agentstudio-pc-settings`
+- `@sdkwork/agentstudio-pc-account`
+- `@sdkwork/agentstudio-pc-extensions`
 
-Feature packages may depend on `@sdkwork/clawstudio-i18n` for locale-aware formatting and language metadata, but they should not initialize a second i18n runtime.
+Feature packages may depend on `@sdkwork/agentstudio-pc-i18n` for locale-aware formatting and language metadata, but they should not initialize a second i18n runtime.
 
 ## Root-Only Imports
 
 Cross-package imports must target the package root:
 
 ```ts
-import { Settings } from '@sdkwork/clawstudio-settings';
+import { Settings } from '@sdkwork/agentstudio-pc-settings';
 ```
 
 This repository rejects imports that reach into another package's internal files.
@@ -91,5 +91,5 @@ pnpm check:arch
 
 ## Why This Matters
 
-The workspace was migrated from `upgrade/claw-studio-v5`, which remains the functional and visual reference baseline. The package structure preserves the same product surface while making ownership explicit and long-term maintenance safer.
+The workspace was migrated from `upgrade/agent-studio-v5`, which remains the functional and visual reference baseline. The package structure preserves the same product surface while making ownership explicit and long-term maintenance safer.
 

@@ -27,11 +27,11 @@
 
 ## Implemented Fix
 
-- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentWorkbenchState.ts`.
+- Added `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailAgentWorkbenchState.ts`.
 - Added two dedicated orchestration entry points:
   - `applyInstanceDetailAgentWorkbenchSyncState(...)`
   - `startLoadInstanceDetailAgentWorkbench(...)`
-- Rewired `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx` so the page now:
+- Rewired `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx` so the page now:
   - routes agent selection validity and reset-state bridging through `applyInstanceDetailAgentWorkbenchSyncState(...)`
   - routes async selected-agent loading through `startLoadInstanceDetailAgentWorkbench(...)`
 - The new helper now owns:
@@ -46,7 +46,7 @@
   - `setAgentWorkbenchError`
   - `setIsAgentWorkbenchLoading`
   - page-owned `console.error(...)` reporting
-- Added `packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentWorkbenchState.test.ts` with direct helper coverage proving:
+- Added `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailAgentWorkbenchState.test.ts` with direct helper coverage proving:
   - empty agent collections reset the page-owned state baseline
   - valid selections are preserved and invalid selections fall back to the first agent
   - agent workbench loading resolves through the injected loader
@@ -80,26 +80,26 @@
 
 ## OpenClaw Fact Sources Re-checked
 
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.ts`
-- `packages/sdkwork-clawstudio-infrastructure/src/platform/webStudio.test.ts`
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawConfigSchemaSupport.test.ts`
-- `packages/sdkwork-clawstudio-channels/src/services/channelService.ts`
-- `packages/sdkwork-clawstudio-market/src/services/marketService.ts`
-- `packages/sdkwork-clawstudio-agent/src/services/agentInstallService.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawManagementCapabilities.ts`
-- `packages/sdkwork-clawstudio-instances/src/services/openClawProviderWorkspacePresentation.ts`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
-- `packages/sdkwork-clawstudio-desktop/src-tauri/src/plugins/mod.rs`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.ts`
+- `packages/sdkwork-agentstudio-pc-infrastructure/src/platform/webStudio.test.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawConfigSchemaSupport.test.ts`
+- `packages/sdkwork-agentstudio-pc-channels/src/services/channelService.ts`
+- `packages/sdkwork-agentstudio-pc-market/src/services/marketService.ts`
+- `packages/sdkwork-agentstudio-pc-agent/src/services/agentInstallService.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawManagementCapabilities.ts`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/openClawProviderWorkspacePresentation.ts`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/framework/services/local_ai_proxy.rs`
+- `packages/sdkwork-agentstudio-pc-desktop/src-tauri/src/plugins/mod.rs`
 
 These sources remain the authority for browser-backed OpenClaw workbench persistence, managed channel/config truth, default-agent skill install flows, managed-provider readonly routing, local proxy provider projection, and desktop plugin/runtime registration. This loop only centralizes page-side agent-workbench selection and load orchestration around those already-authoritative runtime surfaces.
 
 ## Fresh Measurements
 
-- `packages/sdkwork-clawstudio-instances/src/pages/InstanceDetail.tsx`: `1220`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentWorkbenchState.ts`: `95`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
-- `packages/sdkwork-clawstudio-instances/src/services/instanceServiceCore.ts`: `1274`
+- `packages/sdkwork-agentstudio-pc-instances/src/pages/InstanceDetail.tsx`: `1220`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailAgentWorkbenchState.ts`: `95`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceWorkbenchServiceCore.ts`: `1032`
+- `packages/sdkwork-agentstudio-pc-instances/src/services/instanceServiceCore.ts`: `1274`
 
 Relative to the immediately prior `1251` page baseline from `release-2026-04-09-140`, the current dirty worktree now re-measures `InstanceDetail.tsx` at `1220`. This loop records another verified page-side reduction while moving the remaining agent-workbench sync and load orchestration into a dedicated helper.
 
@@ -111,16 +111,16 @@ Relative to the immediately prior `1251` page baseline from `release-2026-04-09-
 ## Verification
 
 - RED:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentWorkbenchState.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailAgentWorkbenchState.test.ts`
   - failed first with `ERR_MODULE_NOT_FOUND` because `instanceDetailAgentWorkbenchState.ts` did not exist yet
 - FOLLOW-UP regression repaired in the same loop:
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - failed after rewiring because the new helper still referenced `agentWorkbenchService.ts` types and violated the page-owned service-authority boundary
 - GREEN:
-  - `node --experimental-strip-types packages/sdkwork-clawstudio-instances/src/services/instanceDetailAgentWorkbenchState.test.ts`
+  - `node --experimental-strip-types packages/sdkwork-agentstudio-pc-instances/src/services/instanceDetailAgentWorkbenchState.test.ts`
   - `node --experimental-strip-types scripts/sdkwork-instances-contract.test.ts`
   - `pnpm.cmd check:sdkwork-instances`
-  - `pnpm.cmd --filter @sdkwork/clawstudio-web lint`
+  - `pnpm.cmd --filter @sdkwork/agentstudio-pc-web lint`
   - `pnpm.cmd build`
 - YELLOW:
   - `pnpm.cmd check:sdkwork-instances` still prints the existing non-blocking warning about supplemental package `@buape/carbon@0.0.0-beta-20260327000044` using an unstable `<1.0.0` version

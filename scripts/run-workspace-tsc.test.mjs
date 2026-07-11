@@ -21,7 +21,7 @@ const tempWorkspaceRoot = mkdtempSync(
 writeFileSync(
   path.join(tempWorkspaceRoot, 'package.json'),
   JSON.stringify({
-    name: '@sdkwork/clawstudio-workspace-test',
+    name: '@sdkwork/agentstudio-workspace-test',
     private: true,
     devDependencies: {
       typescript: '~6.0.2',
@@ -81,13 +81,13 @@ assert.match(
 
 const plan = runner.createWorkspaceTscPlan({
   argv: ['--noEmit'],
-  cwd: 'D:\\workspace\\claw-studio',
+  cwd: 'D:\\workspace\\agent-studio',
   execPath: 'node.exe',
   rootDir: tempWorkspaceRoot,
 });
 
 assert.equal(plan.command, 'node.exe');
-assert.equal(plan.cwd, 'D:\\workspace\\claw-studio');
+assert.equal(plan.cwd, 'D:\\workspace\\agent-studio');
 assert.equal(plan.args.at(-1), '--noEmit');
 assert.match(
   String(plan.args[0] ?? ''),
@@ -109,7 +109,7 @@ assert.equal(
 
 const concurrentPlan = runner.createWorkspaceTscPlan({
   argv: ['--pretty', 'false'],
-  cwd: 'D:\\workspace\\claw-studio',
+  cwd: 'D:\\workspace\\agent-studio',
   execPath: 'node.exe',
   rootDir: tempWorkspaceRoot,
 });
@@ -150,13 +150,13 @@ assert.match(
 assert.equal(
   runner.runWorkspaceTsc({
     argv: ['--noEmit'],
-    cwd: 'D:\\workspace\\claw-studio',
+    cwd: 'D:\\workspace\\agent-studio',
     execPath: 'node.exe',
     rootDir: tempWorkspaceRoot,
     spawnSyncImpl(command, args, options) {
       assert.equal(command, 'node.exe');
       assert.equal(args.at(-1), '--noEmit');
-      assert.equal(options.cwd, 'D:\\workspace\\claw-studio');
+      assert.equal(options.cwd, 'D:\\workspace\\agent-studio');
       assert.equal(options.stdio, 'inherit');
       return { status: 0 };
     },
