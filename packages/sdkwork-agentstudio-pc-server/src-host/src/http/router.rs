@@ -62,7 +62,7 @@ use crate::http::static_assets::StaticAssetMount;
 
 /// Dynamic CORS policy source for the control-plane standalone profile.
 ///
-/// Allows loopback (127.0.0.1, localhost, [::1]) and Tauri desktop origins.
+/// Allows private-network development origins and Tauri desktop origins.
 /// Returns a per-origin `CorsPolicy` overlay that the framework's CORS
 /// interceptor uses for origin validation and header application.
 ///
@@ -111,16 +111,11 @@ impl DynamicCorsPolicySource for ClawServerCorsPolicySource {
     }
 }
 
-/// Returns true if the origin is a loopback or Tauri desktop origin.
+/// Returns true if the origin is a private-network development or Tauri desktop origin.
 fn is_allowed_desktop_hosted_origin(origin: &str) -> bool {
     let normalized = origin.trim().to_ascii_lowercase();
 
-    normalized.starts_with("http://127.0.0.1:")
-        || normalized.starts_with("https://127.0.0.1:")
-        || normalized.starts_with("http://localhost:")
-        || normalized.starts_with("https://localhost:")
-        || normalized.starts_with("http://[::1]:")
-        || normalized.starts_with("https://[::1]:")
+    sdkwork_web_core::is_development_private_network_origin(origin)
         || normalized == "http://tauri.localhost"
         || normalized == "https://tauri.localhost"
         || normalized == "tauri://localhost"
@@ -293,10 +288,8 @@ pub fn build_router(state: ServerState) -> Router {
     let business_router = assets.attach(business_router);
 
     // ── CORS preflight middleware — still Router<ServerState> ─────────────
-    let business_router = business_router.layer(from_fn_with_state(
-        state.clone(),
-        host_control_plane_cors,
-    ));
+    let business_router =
+        business_router.layer(from_fn_with_state(state.clone(), host_control_plane_cors));
 
     // ── Framework infra routes (healthz, readyz, metrics) ───────────────
     let service_config = ServiceRouterConfig::default().with_always_ready();
