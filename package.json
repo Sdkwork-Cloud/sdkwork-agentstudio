@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "app-store:update-create": "sdkwork-run-node ../scripts/app-update-create.mjs",
+    "stop": "node ../sdkwork-specs/tools/stop-sdkwork-workspace-processes.mjs --workspace .",    "app-store:update-create": "sdkwork-run-node ../scripts/app-update-create.mjs",
     "dev": "sdkwork-run-pnpm --filter @sdkwork/agentstudio-pc-web dev",
     "dev:desktop:sqlite": "sdkwork-run-pnpm --dir packages/sdkwork-agentstudio-pc-desktop dev:desktop",
     "dev:desktop:fast": "tauri-dev-fast.cmd",
