@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/sdkwork-api-agentstudio-assembly",
     "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-host-core/src-host",
     "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-host-studio/src-host",
     "apps/sdkwork-agentstudio-pc/packages/sdkwork-agentstudio-pc-server/src-host",
