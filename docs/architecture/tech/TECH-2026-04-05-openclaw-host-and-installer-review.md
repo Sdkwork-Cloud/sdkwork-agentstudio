@@ -111,7 +111,7 @@ The bundled OpenClaw release metadata is now pinned to `2026.4.2` in `config/ope
 
 14. The desktop release `all` phase silently dropped explicit package-build customization flags when delegating into `@sdkwork/agentstudio-pc-desktop`.
    - Root cause:
-     - `run-desktop-release-build.mjs --phase all` previously delegated to `pnpm --filter @sdkwork/agentstudio-pc-desktop run tauri:build` without forwarding the resolved `--profile`, `--vite-mode`, `--bundles`, or caller-provided overrides
+     - `run-desktop-release-build.mjs --phase all` previously delegated to `pnpm --filter @sdkwork/agentstudio-pc-desktop run build:desktop` without forwarding the resolved `--profile`, `--vite-mode`, `--bundles`, or caller-provided overrides
      - direct phase-specific execution paths already respected those values, so the drift existed only in the convenience `all` orchestration path
    - Impact:
      - local or scripted desktop release runs that relied on `--phase all` could silently build with package defaults instead of the requested release profile, Vite mode, bundle set, or target combination

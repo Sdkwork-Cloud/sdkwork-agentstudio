@@ -512,7 +512,7 @@ packages:
   "private": true,
   "scripts": {
     "dev": "pnpm --filter @sdkwork/react-user dev",
-    "dev:tauri": "pnpm --filter @sdkwork/react-user tauri:dev",
+    "dev:tauri": "pnpm --filter @sdkwork/react-user dev:desktop",
     "build": "pnpm -r build",
     "build:app": "pnpm -r build:app",
     "test": "pnpm -r test",
@@ -564,7 +564,7 @@ packages:
     "build:app": "vite build --config vite.app.config.ts",
     "preview": "vite preview --config vite.app.config.ts",
     "tauri": "tauri dev",
-    "tauri:build": "tauri build",
+    "build:desktop": "tauri build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",

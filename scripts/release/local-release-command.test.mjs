@@ -27,7 +27,7 @@ test('local release helper resolves usable defaults for root release commands', 
   assert.equal(planContext.repository, 'Sdkwork-Cloud/agent-studio');
 
   const serverContext = helper.resolveLocalReleaseContext({
-    mode: 'package:server',
+    mode: 'release:package:server',
     env: {},
     platform: 'win32',
     arch: 'x64',
@@ -467,7 +467,7 @@ test('local release helper always refreshes server prerequisites for local serve
   ]);
   const serverResult = helper.ensureLocalServerBuildPrerequisite({
     context: {
-      mode: 'package:server',
+      mode: 'release:package:server',
       target: 'x86_64-pc-windows-msvc',
       platform: 'windows',
     },
@@ -524,7 +524,7 @@ test('local release helper rejects server prerequisite builds that do not materi
   assert.throws(
     () => helper.ensureLocalServerBuildPrerequisite({
       context: {
-        mode: 'package:server',
+        mode: 'release:package:server',
         target: 'x86_64-unknown-linux-gnu',
         platform: 'linux',
       },
@@ -985,7 +985,7 @@ test('local release helper automatically runs server smoke after packaging serve
 
   const callOrder = [];
   await helper.runLocalReleaseCommand({
-    mode: 'package:server',
+    mode: 'release:package:server',
     env: {},
     platform: 'linux',
     arch: 'x64',

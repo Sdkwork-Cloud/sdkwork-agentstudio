@@ -118,7 +118,7 @@ jobs:
         run: pnpm build
 
       - name: Build server workspace
-        run: pnpm server:build
+        run: pnpm build:server
 
       - name: Build docs site
         run: pnpm docs:build
@@ -192,4 +192,4 @@ jobs:
         run: pnpm check:server
 
       - name: Run Windows server build
-        run: pnpm server:build
+        run: pnpm build:server

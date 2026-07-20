@@ -197,7 +197,7 @@ export function ensureLocalServerBuildPrerequisite({
   runServerBuildFn = runServerBuild,
 } = {}) {
   const normalizedMode = String(context?.mode ?? '').trim().toLowerCase();
-  if (normalizedMode !== 'package:server' && normalizedMode !== 'package:container') {
+  if (normalizedMode !== 'release:package:server' && normalizedMode !== 'package:container') {
     return null;
   }
 
@@ -723,7 +723,7 @@ export function resolveLocalReleaseContext({
 
   if (
     normalizedMode === 'package:desktop'
-    || normalizedMode === 'package:server'
+    || normalizedMode === 'release:package:server'
     || normalizedMode === 'smoke:desktop'
     || normalizedMode === 'smoke:server'
   ) {
@@ -862,7 +862,7 @@ export async function runLocalReleaseCommand(options = {}) {
     return context;
   }
 
-  if (context.mode === 'package:server') {
+  if (context.mode === 'release:package:server') {
     ensureLocalServerBuildPrerequisite({
       context,
       fileExists: options.fileExists,

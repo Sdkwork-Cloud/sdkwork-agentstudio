@@ -159,7 +159,7 @@ jobs:
           pnpm check:server
           node scripts/run-cargo.mjs test --manifest-path packages/sdkwork-agentstudio-pc-desktop/src-tauri/Cargo.toml
           pnpm build
-          pnpm server:build
+          pnpm build:server
           pnpm docs:build
 
   desktop-release:

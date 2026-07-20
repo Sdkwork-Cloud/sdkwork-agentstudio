@@ -1,42 +1,232 @@
 {
-  "$schema": "https://sdkwork.com/schemas/topology.spec.v1.json",
+  "schemaVersion": 5,
+  "kind": "sdkwork.app.topology",
   "appId": "sdkwork-agentstudio",
-  "database": {
-    "appPrefix": "SDKWORK_AGENTSTUDIO",
-    "engines": ["sqlite"],
-    "defaultEngine": "sqlite"
+  "archetype": "application-http-gateway",
+  "profileRoot": "etc/topology",
+  "profilePattern": "{deploymentProfile}.{environment}.env",
+  "vocabulary": {
+    "deploymentProfile": {
+      "allowed": [
+        "standalone",
+        "cloud"
+      ]
+    },
+    "environment": {
+      "allowed": [
+        "development",
+        "production"
+      ]
+    },
+    "connectivityPlane": {
+      "allowed": [
+        "application",
+        "platform"
+      ]
+    }
+  },
+  "defaults": {
+    "developmentProfileId": "standalone.development",
+    "productionProfileId": "cloud.production",
+    "desktopBuildProfileId": "standalone.production",
+    "gatewayBind": "127.0.0.1:18797",
+    "acceleratorProfile": "cpu"
+  },
+  "profileFiles": {
+    "standalone.development": "etc/topology/standalone.development.env",
+    "standalone.production": "etc/topology/standalone.production.env",
+    "cloud.development": "etc/topology/cloud.development.env",
+    "cloud.production": "etc/topology/cloud.production.env"
+  },
+  "envKeys": {
+    "deploymentProfile": "SDKWORK_AGENTSTUDIO_DEPLOYMENT_PROFILE",
+    "environment": "SDKWORK_AGENTSTUDIO_ENVIRONMENT",
+    "profileId": "SDKWORK_AGENTSTUDIO_PROFILE_ID",
+    "clientDeploymentProfile": "VITE_SDKWORK_AGENTSTUDIO_DEPLOYMENT_PROFILE",
+    "standaloneGatewayBind": "SDKWORK_AGENTSTUDIO_APPLICATION_PUBLIC_INGRESS_BIND",
+    "apiGatewayBaseUrl": "SDKWORK_AGENTSTUDIO_PLATFORM_API_GATEWAY_HTTP_URL",
+    "clientApiGatewayBaseUrl": "VITE_SDKWORK_AGENTSTUDIO_PLATFORM_API_GATEWAY_HTTP_URL"
   },
   "surfaces": {
     "application.public-ingress": {
-      "kind": "application",
-      "bindEnv": "SDKWORK_AGENTSTUDIO_SERVER_BIND",
-      "websocketPath": "/claw/ws",
-      "description": "Public ingress for the Agent Studio browser/desktop shell and HTTP API."
+      "connectivityPlane": "application",
+      "protocols": [
+        "http",
+        "websocket"
+      ],
+      "bindEnv": "SDKWORK_AGENTSTUDIO_APPLICATION_PUBLIC_INGRESS_BIND",
+      "httpUrlEnv": "SDKWORK_AGENTSTUDIO_APPLICATION_PUBLIC_HTTP_URL",
+      "clientHttpEnv": "VITE_SDKWORK_AGENTSTUDIO_APPLICATION_PUBLIC_HTTP_URL",
+      "websocketUrlEnv": "SDKWORK_AGENTSTUDIO_APPLICATION_PUBLIC_WEBSOCKET_URL",
+      "clientWebsocketEnv": "VITE_SDKWORK_AGENTSTUDIO_APPLICATION_PUBLIC_WEBSOCKET_URL",
+      "websocketPath": "/claw/ws"
     },
     "application.app-http": {
-      "kind": "application",
-      "bindEnv": "SDKWORK_AGENTSTUDIO_SERVER_BIND",
-      "description": "App-API only surface (same upstream as public-ingress in standalone mode)."
+      "connectivityPlane": "application",
+      "protocols": [
+        "http"
+      ],
+      "httpUrlEnv": "SDKWORK_AGENTSTUDIO_APPLICATION_PUBLIC_HTTP_URL",
+      "clientHttpEnv": "VITE_SDKWORK_AGENTSTUDIO_APPLICATION_PUBLIC_HTTP_URL",
+      "optional": true
     },
     "application.backend-http": {
-      "kind": "application",
-      "bindEnv": "SDKWORK_AGENTSTUDIO_SERVER_BIND",
-      "description": "Backend-API only surface (same upstream as public-ingress in standalone mode)."
+      "connectivityPlane": "application",
+      "protocols": [
+        "http"
+      ],
+      "httpUrlEnv": "SDKWORK_AGENTSTUDIO_APPLICATION_PUBLIC_HTTP_URL",
+      "clientHttpEnv": "VITE_SDKWORK_AGENTSTUDIO_APPLICATION_PUBLIC_HTTP_URL",
+      "optional": true
+    },
+    "platform.api-gateway": {
+      "connectivityPlane": "platform",
+      "protocols": [
+        "http"
+      ],
+      "httpUrlEnv": "SDKWORK_AGENTSTUDIO_PLATFORM_API_GATEWAY_HTTP_URL",
+      "clientHttpEnv": "VITE_SDKWORK_AGENTSTUDIO_PLATFORM_API_GATEWAY_HTTP_URL"
     }
   },
   "cloudPublicHosts": {
     "application.public-ingress": {
-      "httpHost": "agentstudio.sdkwork.com",
-      "tls": "sdkwork.com"
+      "httpHost": "api.sdkwork.com"
+    },
+    "platform.api-gateway": {
+      "httpHost": "api.sdkwork.com"
     }
   },
-  "profileFiles": {
-    "cloud.production": "deploy/profiles/cloud.production.env",
-    "cloud.staging": "deploy/profiles/cloud.staging.env",
-    "standalone.development": "deploy/profiles/standalone.development.env"
+  "database": {
+    "appPrefix": "SDKWORK_AGENTSTUDIO",
+    "engines": [
+      "sqlite"
+    ],
+    "defaultEngine": "sqlite"
   },
-  "defaults": {
-    "gatewayBind": "0.0.0.0:18797",
-    "acceleratorProfile": "cpu"
+  "components": {
+    "applicationServer": {
+      "package": "@sdkwork/agentstudio-pc-server",
+      "script": "dev"
+    },
+    "browserClient": {
+      "package": "@sdkwork/agentstudio-pc-web",
+      "script": "dev"
+    },
+    "desktopClient": {
+      "package": "@sdkwork/agentstudio-pc-desktop",
+      "script": "dev:desktop"
+    }
+  },
+  "orchestration": {
+    "profiles": {
+      "standalone.development": {
+        "processes": [
+          {
+            "id": "agentstudio-standalone-gateway",
+            "role": "api-standalone-gateway",
+            "package": "@sdkwork/agentstudio-pc-server",
+            "script": "dev",
+            "required": true
+          },
+          {
+            "id": "agentstudio-browser",
+            "role": "client",
+            "package": "@sdkwork/agentstudio-pc-web",
+            "script": "dev",
+            "runtimeTargets": [
+              "browser"
+            ],
+            "clientArchitectures": [
+              "pc-web"
+            ],
+            "required": true
+          },
+          {
+            "id": "agentstudio-desktop",
+            "role": "client",
+            "package": "@sdkwork/agentstudio-pc-desktop",
+            "script": "dev:desktop",
+            "runtimeTargets": [
+              "desktop"
+            ],
+            "clientArchitectures": [
+              "tauri"
+            ],
+            "required": true
+          }
+        ],
+        "healthSurfaces": [
+          "application.public-ingress"
+        ]
+      },
+      "cloud.development": {
+        "processes": [
+          {
+            "id": "agentstudio-browser",
+            "role": "client",
+            "package": "@sdkwork/agentstudio-pc-web",
+            "script": "dev",
+            "runtimeTargets": [
+              "browser"
+            ],
+            "clientArchitectures": [
+              "pc-web"
+            ],
+            "required": true
+          },
+          {
+            "id": "agentstudio-desktop",
+            "role": "client",
+            "package": "@sdkwork/agentstudio-pc-desktop",
+            "script": "dev:desktop",
+            "runtimeTargets": [
+              "desktop"
+            ],
+            "clientArchitectures": [
+              "tauri"
+            ],
+            "required": true
+          }
+        ],
+        "healthSurfaces": [
+          "application.public-ingress",
+          "platform.api-gateway"
+        ]
+      },
+      "standalone.production": {
+        "processes": [],
+        "healthSurfaces": []
+      },
+      "cloud.production": {
+        "processes": [],
+        "healthSurfaces": []
+      }
+    }
+  },
+  "retired": {
+    "profileFiles": [
+      "deploy/profiles/standalone.development.env",
+      "deploy/profiles/cloud.staging.env",
+      "deploy/profiles/cloud.production.env"
+    ]
+  },
+  "packaging": {
+    "cloudConfigFiles": [],
+    "targets": [
+      {
+        "id": "container-noarch-cloud-container-config-bundle-tar-gz",
+        "profile": "container",
+        "platform": "container",
+        "architecture": "noarch",
+        "formats": [
+          "tar.gz"
+        ],
+        "runner": "ubuntu-24.04",
+        "outputGlob": "dist/cloud-config/sdkwork-agentstudio-api-gateway-config-*.tar.gz",
+        "deploymentProfile": "cloud",
+        "runtimeTarget": "container",
+        "variant": "config-bundle"
+      }
+    ]
   }
 }

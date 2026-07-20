@@ -90,7 +90,7 @@
 - 桌面包已有 OpenClaw 资源 manifest。
 - 已有 `prepare-openclaw-runtime`、`sync-bundled-components`、`openclaw-upgrade-readiness`、`verify-desktop-openclaw-release-assets` 等脚本。
 - 桌面 `package.json` 已把 OpenClaw 资源准备和组件同步纳入 dev/build 链路。
-- 当前 `tauri:dev` / `tauri:build` 链路实际顺序为：Rust 工具链检查 -> OpenClaw Runtime 准备 -> Bundled Components 同步 -> 目标清理/解锁 -> Tauri 启动或打包。
+- 当前 `dev:desktop` / `build:desktop` 链路实际顺序为：Rust 工具链检查 -> OpenClaw Runtime 准备 -> Bundled Components 同步 -> 目标清理/解锁 -> Tauri 启动或打包。
 - `Server/Container/Kubernetes` 已按统一 release flow 输出 native server、container、chart/k8s 产物，不再以模式分叉业务逻辑。
 - OpenClaw 安装引导链已优先复用 Kernel `openClawRuntime.homeDir` 定位 `openclaw.json`，降低多模式/多入口路径漂移。
 - OpenClaw Install Bootstrap 现在把 ClawHub package / skill 目录视为可选增强面；当共享 SDK 目录服务在 Node-safe root 入口、离线或未登录场景下不可用时，仍返回空目录并继续完成本地实例同步与托管 Provider 投影。

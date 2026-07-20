@@ -402,7 +402,7 @@ test('root package exposes release helper scripts for desktop and asset packagin
     /sdkwork-run-node scripts\/release\/local-release-command\.mjs package desktop/,
   );
   assert.match(
-    rootPackage.scripts['package:server'],
+    rootPackage.scripts['release:package:server'],
     /sdkwork-run-node scripts\/release\/local-release-command\.mjs package server/,
   );
   assert.match(rootPackage.scripts['release:desktop'], /sdkwork-run-node scripts\/run-desktop-release-build\.mjs/);
@@ -475,7 +475,7 @@ test('root package exposes release helper scripts for desktop and asset packagin
     /sdkwork-run-node scripts\/release\/local-release-command\.mjs finalize --allow-partial-release/,
     'partial release aggregation must be an explicit local/debug command',
   );
-  assert.match(rootPackage.scripts['server:build'], /sdkwork-run-node scripts\/run-agentstudio-server-build\.mjs/);
+  assert.match(rootPackage.scripts['build:server'], /sdkwork-run-node scripts\/run-agentstudio-server-build\.mjs/);
 });
 
 test('release closure guard passes against the committed release packaging contracts', () => {

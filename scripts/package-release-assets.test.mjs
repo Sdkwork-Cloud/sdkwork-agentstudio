@@ -676,7 +676,7 @@ test('release asset packager explains how to build missing desktop and server re
         serverWebDistDir: webDistDir,
         serverEnvPath: envExamplePath,
       }),
-      /pnpm server:build -- --target x86_64-unknown-linux-gnu/,
+      /pnpm build:server -- --target x86_64-unknown-linux-gnu/,
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -728,7 +728,7 @@ test('server asset packager rejects shared release binaries when an explicit tar
         );
         assert.match(
           error.message,
-          /pnpm server:build -- --target x86_64-unknown-linux-gnu/,
+          /pnpm build:server -- --target x86_64-unknown-linux-gnu/,
         );
         return true;
       },

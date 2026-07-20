@@ -1004,7 +1004,7 @@ Closed in this iteration:
 - the runner now resolves the local `@tauri-apps/cli/tauri.js` entrypoint and
   launches it through `node`
 - desktop `tauri:info` and `tauri:icon` now share the same hardened runner, so
-  this regression cannot survive in side-entry scripts while `tauri:dev` is
+  this regression cannot survive in side-entry scripts while `dev:desktop` is
   fixed
 
 Fresh evidence:

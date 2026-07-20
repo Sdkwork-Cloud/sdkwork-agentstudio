@@ -57,7 +57,7 @@ This is the most stable path because it:
 
 - uses the installed workspace dependency directly
 - avoids shell-specific command lookup
-- works across `tauri:dev`, `tauri:info`, and `tauri:icon`
+- works across `dev:desktop`, `tauri:info`, and `tauri:icon`
 - keeps behavior consistent on Windows, Linux, and macOS
 
 ## Implemented Changes
